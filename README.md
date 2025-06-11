@@ -1,106 +1,139 @@
-# CloudBridge Relay Server Installer
+# CloudBridge Relay Server
 
-This repository contains the installation script and configuration files for the CloudBridge Relay Server.
+Relay-сервер для безопасного проброса TCP-портов и туннелирования трафика между различными участниками через публично доступный сервер.
 
-## Contents
+## Особенности
 
-- `install.sh` - Main installation script
-- `systemd/cloudbridge-relay.service` - Systemd service file
-- `config/config.yaml` - Default configuration file
-- `LICENSE` - MIT License
+* **Безопасность**: Все соединения только исходящие, нет необходимости открывать порты на клиентах
+* **Простота**: Минималистичный протокол на основе JSON
+* **Надежность**: Автоматическое восстановление соединений, keepalive
+* **Масштабируемость**: Ограничение количества туннелей, очистка неактивных соединений
 
-## Quick Install
+## Установка
 
-To install the CloudBridge Relay Server, run:
+### Требования
+
+* Ubuntu Server 22.04 LTS
+* Go 1.21 или выше
+
+### Сборка
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/twogc/cloudbridge-relay-installer/main/install.sh | sudo bash
+# Клонирование репозитория
+git clone https://github.com/twogc/cloudbridge-relay.git
+cd cloudbridge-relay
+
+# Сборка
+./build.sh
 ```
 
-## Manual Installation
+### Установка на сервер
 
-1. Clone this repository:
 ```bash
-git clone https://github.com/twogc/cloudbridge-relay-installer.git
-cd cloudbridge-relay-installer
-```
+# Распаковка архива
+tar xzf build/relay-installer.tar.gz
 
-2. Make the installer executable:
-```bash
-chmod +x install.sh
-```
-
-3. Run the installer:
-```bash
+# Установка
 sudo ./install.sh
 ```
 
-## What Gets Installed
+## Использование
 
-The installer will:
+### Запуск сервера
 
-1. Create necessary directories:
-   - `/etc/cloudbridge-relay/` - Configuration files
-   - `/var/lib/cloudbridge-relay/` - Data directory
-   - `/var/log/cloudbridge-relay/` - Log files
-
-2. Create a system user `cloudbridge-relay`
-
-3. Download and install the latest release of CloudBridge Relay Server
-
-4. Install and configure the systemd service
-
-5. Set up the default configuration
-
-6. Start the service
-
-## Post-Installation
-
-After installation:
-
-1. Check the service status:
 ```bash
-systemctl status cloudbridge-relay
+cloudbridge-relay -addr ":12345" -timeout 10m -max-tunnels 1000
 ```
 
-2. View the logs:
+Параметры:
+* `-addr`: Адрес для прослушивания (по умолчанию ":12345")
+* `-timeout`: Таймаут соединения (по умолчанию 10 минут)
+* `-max-tunnels`: Максимальное количество туннелей (по умолчанию 1000)
+
+### Управление сервисом
+
 ```bash
-tail -f /var/log/cloudbridge-relay/relay.log
+# Статус
+systemctl status relay
+
+# Запуск
+systemctl start relay
+
+# Остановка
+systemctl stop relay
+
+# Перезапуск
+systemctl restart relay
+
+# Просмотр логов
+journalctl -u relay
 ```
 
-3. Edit the configuration:
-```bash
-sudo nano /etc/cloudbridge-relay/config.yaml
-```
+## Протокол
 
-4. Restart the service after configuration changes:
-```bash
-sudo systemctl restart cloudbridge-relay
-```
+### Формат сообщений
 
-## Configuration
+Все сообщения передаются в формате JSON с 4-байтным префиксом длины (BigEndian).
 
-The default configuration is installed at `/etc/cloudbridge-relay/config.yaml`. You can modify it to:
+### Типы сообщений
 
-- Change the listening port
-- Enable/disable TLS
-- Configure rate limiting
-- Adjust logging settings
-- Enable/disable metrics
+* **Register**: Регистрация туннеля
+  ```json
+  {
+    "type": "register",
+    "token": "your-token",
+    "version": "1.0.0"
+  }
+  ```
 
-## Security
+* **Config**: Ответ на регистрацию
+  ```json
+  {
+    "type": "config",
+    "token": "your-token",
+    "public_url": "bore://your-token",
+    "status": "ok"
+  }
+  ```
 
-The installer:
-- Creates a dedicated system user
-- Sets appropriate file permissions
-- Configures systemd service with security hardening
-- Uses TLS by default
+* **Connect**: Запрос на подключение
+  ```json
+  {
+    "type": "connect",
+    "token": "your-token"
+  }
+  ```
 
-## Support
+* **Ping/Pong**: Keepalive
+  ```json
+  {
+    "type": "ping",
+    "token": "your-token",
+    "version": "1.0.0"
+  }
+  ```
 
-For issues and feature requests, please visit:
-https://github.com/twogc/cloudbridge-relay/issues
+* **Error**: Сообщение об ошибке
+  ```json
+  {
+    "type": "error",
+    "error": "error message"
+  }
+  ```
 
-## License
+## Безопасность
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+* Все соединения только исходящие
+* Проброс осуществляется строго по токену
+* Автоматическая очистка неактивных туннелей
+* Ограничение на количество одновременных туннелей
+
+## Логирование
+
+Логи доступны через:
+* systemd journal: `journalctl -u relay`
+* Файлы логов: `/var/log/relay/`
+
+## Лицензия
+
+MIT
