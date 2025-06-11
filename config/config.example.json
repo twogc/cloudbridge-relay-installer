@@ -1,0 +1,20 @@
+{
+    "address": ":8080",
+    "timeout": "30s",
+    "max_tunnels": 1000,
+    "ping_interval": "30s",
+    "cleanup_interval": "1m",
+    "token_validation": {
+        "rest_enabled": true,
+        "rest_endpoint": "http://auth.example.com/validate",
+        "rest_timeout": "5s",
+        "rest_cache_ttl": "1m",
+        "rest_max_retries": 3,
+        "rest_retry_delay": "100ms",
+        "jwt_enabled": false,
+        "jwt_signing_key": "",
+        "jwt_issuer": "",
+        "jwt_max_age": "24h"
+    },
+    "debug": false
+} 

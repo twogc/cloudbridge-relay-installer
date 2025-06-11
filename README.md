@@ -137,3 +137,66 @@ journalctl -u relay
 ## Лицензия
 
 MIT
+
+# CloudBridge Relay Installer
+
+## Описание
+CloudBridge Relay Installer — это инструмент для установки и настройки relay-сервера, который обеспечивает безопасное соединение между клиентами и серверами через туннели.
+
+## Установка
+1. Клонируйте репозиторий:
+   ```bash
+   git clone https://github.com/maxlanies/cloudbridge-relay-installer.git
+   cd cloudbridge-relay-installer
+   ```
+
+2. Установите зависимости:
+   ```bash
+   go mod download
+   ```
+
+3. Соберите проект:
+   ```bash
+   ./build.sh
+   ```
+
+## Использование
+### Запуск relay-сервера
+```bash
+./bin/relay -port 8080 -token-validator rest -token-endpoint http://your-django-server/validate
+```
+
+### Запуск агента
+```bash
+./bin/agent -relay localhost:8080 -token your-token
+```
+
+## Проверка токена
+Relay-сервер проверяет токен, полученный от агента, с помощью Django (или локально, если используется JWT).  
+Ниже приведена схема взаимодействия:
+
+```mermaid
+sequenceDiagram
+    participant Django as "Django (Backend)"
+    participant Agent as "Клиент (Агент)"
+    participant Relay as "Relay-сервер"
+
+    Django->>Agent: Выдаёт токен (через API или вручную)
+    Agent->>Relay: Подключение + Register (с токеном)
+    alt JWT
+        Relay->>Relay: Проверяет подпись и срок действия токена
+    else REST
+        Relay->>Django: REST-запрос: /validate?token=...
+        Django-->>Relay: Ответ: валиден/не валиден
+    end
+    Relay-->>Agent: OK (туннель создан) или Error (отказ)
+```
+
+## Тестирование
+Запустите тесты:
+```bash
+go test ./...
+```
+
+## Лицензия
+MIT
