@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 2GC CloudBridge tunnel - TCP Port Forwarding with Relay
 
 2GC CloudBridge tunnel — это простая система проброса TCP-портов, позволяющая публиковать локальные сервисы через релейный сервер. Аналогична ngrok, но с более простым протоколом и реализацией.
@@ -324,131 +325,111 @@ MIT License
 # CloudBridge Relay Server Installer
 
 Установщик для CloudBridge Relay Server - высокопроизводительного сервера для туннелирования TCP-соединений.
+=======
+# CloudBridge Relay Server Installer
 
-## Особенности
+This repository contains the installation script and configuration files for the CloudBridge Relay Server.
+>>>>>>> d9da572 (feat: add systemd service and config files)
 
-- Автоматическая установка и настройка
-- Поддержка systemd
-- Автоматическое обновление
-- Настраиваемые пути установки
-- Подробное логирование
-- Проверка системных требований
+## Contents
 
-## Требования
+- `install.sh` - Main installation script
+- `systemd/cloudbridge-relay.service` - Systemd service file
+- `config/config.yaml` - Default configuration file
+- `LICENSE` - MIT License
 
-- Linux с systemd
-- curl
-- root права
+## Quick Install
 
-## Быстрая установка
+To install the CloudBridge Relay Server, run:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/twogc/cloudbridge-client-installer/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/twogc/cloudbridge-relay-installer/main/install.sh | sudo bash
 ```
 
-## Ручная установка
+## Manual Installation
 
-1. Скачайте установщик:
+1. Clone this repository:
 ```bash
-curl -O https://raw.githubusercontent.com/twogc/cloudbridge-client-installer/main/install.sh
+git clone https://github.com/twogc/cloudbridge-relay-installer.git
+cd cloudbridge-relay-installer
 ```
 
-2. Сделайте его исполняемым:
+2. Make the installer executable:
 ```bash
 chmod +x install.sh
 ```
 
-3. Запустите установку:
+3. Run the installer:
 ```bash
 sudo ./install.sh
 ```
 
-## Опции установки
+## What Gets Installed
 
+The installer will:
+
+1. Create necessary directories:
+   - `/etc/cloudbridge-relay/` - Configuration files
+   - `/var/lib/cloudbridge-relay/` - Data directory
+   - `/var/log/cloudbridge-relay/` - Log files
+
+2. Create a system user `cloudbridge-relay`
+
+3. Download and install the latest release of CloudBridge Relay Server
+
+4. Install and configure the systemd service
+
+5. Set up the default configuration
+
+6. Start the service
+
+## Post-Installation
+
+After installation:
+
+1. Check the service status:
 ```bash
-Usage: install.sh [options]
-
-Options:
-  -h, --help                 Показать справку
-  -v, --version              Показать версию
-  -d, --debug                Включить отладочный вывод
-  --client-version VERSION   Установить конкретную версию (по умолчанию: latest)
-  --install-dir DIR          Директория установки (по умолчанию: /usr/local/bin)
-  --config-dir DIR           Директория конфигурации (по умолчанию: /etc/cloudbridge-client)
-  --data-dir DIR             Директория данных (по умолчанию: /var/lib/cloudbridge-client)
-  --log-dir DIR              Директория логов (по умолчанию: /var/log/cloudbridge-client)
+systemctl status cloudbridge-relay
 ```
 
-## Примеры
-
-Установка конкретной версии:
+2. View the logs:
 ```bash
-sudo ./install.sh --client-version 1.0.0
+tail -f /var/log/cloudbridge-relay/relay.log
 ```
 
-Установка с отладочным выводом:
+3. Edit the configuration:
 ```bash
-sudo ./install.sh --debug
+sudo nano /etc/cloudbridge-relay/config.yaml
 ```
 
-Установка в пользовательскую директорию:
+4. Restart the service after configuration changes:
 ```bash
-sudo ./install.sh --install-dir /opt/cloudbridge-client
+sudo systemctl restart cloudbridge-relay
 ```
 
-## После установки
+## Configuration
 
-Клиент будет установлен и запущен как системный сервис. Вы можете управлять им с помощью systemd:
+The default configuration is installed at `/etc/cloudbridge-relay/config.yaml`. You can modify it to:
 
-```bash
-# Проверить статус
-systemctl status cloudbridge-client
+- Change the listening port
+- Enable/disable TLS
+- Configure rate limiting
+- Adjust logging settings
+- Enable/disable metrics
 
-# Посмотреть логи
-journalctl -u cloudbridge-client -f
+## Security
 
-# Перезапустить сервис
-systemctl restart cloudbridge-client
-```
+The installer:
+- Creates a dedicated system user
+- Sets appropriate file permissions
+- Configures systemd service with security hardening
+- Uses TLS by default
 
-## Конфигурация
+## Support
 
-Конфигурационный файл находится в `/etc/cloudbridge-client/config.yaml`. После изменения конфигурации перезапустите сервис:
+For issues and feature requests, please visit:
+https://github.com/twogc/cloudbridge-relay/issues
 
-```bash
-sudo systemctl restart cloudbridge-client
-```
+## License
 
-## Обновление
-
-Для обновления до последней версии:
-
-```bash
-sudo ./install.sh
-```
-
-Для обновления до конкретной версии:
-
-```bash
-sudo ./install.sh --client-version 1.1.0
-```
-
-## Удаление
-
-Для удаления клиента:
-
-```bash
-sudo systemctl stop cloudbridge-client
-sudo systemctl disable cloudbridge-client
-sudo rm /etc/systemd/system/cloudbridge-client.service
-sudo rm -rf /etc/cloudbridge-client
-sudo rm -rf /var/lib/cloudbridge-client
-sudo rm -rf /var/log/cloudbridge-client
-sudo rm /usr/local/bin/cloudbridge-client
-sudo userdel cloudbridge-client
-sudo systemctl daemon-reload
-```
-
-## Лицензия
-
-MIT License 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
