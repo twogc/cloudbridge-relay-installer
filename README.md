@@ -210,7 +210,7 @@ MIT License
 ### Из исходного кода
 
 ```bash
-git clone https://github.com/your-org/cloudbridge-relay.git
+git clone https://github.com/twogc/cloudbridge-relay-installer/cloudbridge-relay.git
 cd cloudbridge-relay
 make build
 sudo make install
@@ -219,7 +219,7 @@ sudo make install
 ### Из deb-пакета
 
 ```bash
-wget https://github.com/your-org/cloudbridge-relay/releases/latest/download/cloudbridge-relay.deb
+wget https://github.com/twogc/cloudbridge-relay-installer/cloudbridge-relay/releases/latest/download/cloudbridge-relay.deb
 sudo dpkg -i cloudbridge-relay.deb
 ```
 
