@@ -210,7 +210,7 @@ MIT License
 ### Из исходного кода
 
 ```bash
-git clone https://github.com/twogc/cloudbridge-relay-installer/cloudbridge-relay.git
+git clone https://github.com/your-org/cloudbridge-relay.git
 cd cloudbridge-relay
 make build
 sudo make install
@@ -219,7 +219,7 @@ sudo make install
 ### Из deb-пакета
 
 ```bash
-wget https://github.com/twogc/cloudbridge-relay-installer/cloudbridge-relay/releases/latest/download/cloudbridge-relay.deb
+wget https://github.com/your-org/cloudbridge-relay/releases/latest/download/cloudbridge-relay.deb
 sudo dpkg -i cloudbridge-relay.deb
 ```
 
@@ -343,14 +343,14 @@ MIT License
 ## Быстрая установка
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/twogc/cloudbridge-relay-installer/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/twogc/cloudbridge-client-installer/main/install.sh | sudo bash
 ```
 
 ## Ручная установка
 
 1. Скачайте установщик:
 ```bash
-curl -O https://raw.githubusercontent.com/twogc/cloudbridge-relay-installer/main/install.sh
+curl -O https://raw.githubusercontent.com/twogc/cloudbridge-client-installer/main/install.sh
 ```
 
 2. Сделайте его исполняемым:
@@ -372,18 +372,18 @@ Options:
   -h, --help                 Показать справку
   -v, --version              Показать версию
   -d, --debug                Включить отладочный вывод
-  --relay-version VERSION    Установить конкретную версию (по умолчанию: latest)
+  --client-version VERSION   Установить конкретную версию (по умолчанию: latest)
   --install-dir DIR          Директория установки (по умолчанию: /usr/local/bin)
-  --config-dir DIR           Директория конфигурации (по умолчанию: /etc/cloudbridge-relay)
-  --data-dir DIR             Директория данных (по умолчанию: /var/lib/cloudbridge-relay)
-  --log-dir DIR              Директория логов (по умолчанию: /var/log/cloudbridge-relay)
+  --config-dir DIR           Директория конфигурации (по умолчанию: /etc/cloudbridge-client)
+  --data-dir DIR             Директория данных (по умолчанию: /var/lib/cloudbridge-client)
+  --log-dir DIR              Директория логов (по умолчанию: /var/log/cloudbridge-client)
 ```
 
 ## Примеры
 
 Установка конкретной версии:
 ```bash
-sudo ./install.sh --relay-version 1.0.0
+sudo ./install.sh --client-version 1.0.0
 ```
 
 Установка с отладочным выводом:
@@ -393,30 +393,30 @@ sudo ./install.sh --debug
 
 Установка в пользовательскую директорию:
 ```bash
-sudo ./install.sh --install-dir /opt/cloudbridge-relay
+sudo ./install.sh --install-dir /opt/cloudbridge-client
 ```
 
 ## После установки
 
-Сервер будет установлен и запущен как системный сервис. Вы можете управлять им с помощью systemd:
+Клиент будет установлен и запущен как системный сервис. Вы можете управлять им с помощью systemd:
 
 ```bash
 # Проверить статус
-systemctl status cloudbridge-relay
+systemctl status cloudbridge-client
 
 # Посмотреть логи
-journalctl -u cloudbridge-relay -f
+journalctl -u cloudbridge-client -f
 
 # Перезапустить сервис
-systemctl restart cloudbridge-relay
+systemctl restart cloudbridge-client
 ```
 
 ## Конфигурация
 
-Конфигурационный файл находится в `/etc/cloudbridge-relay/config.yaml`. После изменения конфигурации перезапустите сервис:
+Конфигурационный файл находится в `/etc/cloudbridge-client/config.yaml`. После изменения конфигурации перезапустите сервис:
 
 ```bash
-sudo systemctl restart cloudbridge-relay
+sudo systemctl restart cloudbridge-client
 ```
 
 ## Обновление
@@ -430,25 +430,25 @@ sudo ./install.sh
 Для обновления до конкретной версии:
 
 ```bash
-sudo ./install.sh --relay-version 1.1.0
+sudo ./install.sh --client-version 1.1.0
 ```
 
 ## Удаление
 
-Для удаления сервера:
+Для удаления клиента:
 
 ```bash
-sudo systemctl stop cloudbridge-relay
-sudo systemctl disable cloudbridge-relay
-sudo rm /etc/systemd/system/cloudbridge-relay.service
-sudo rm -rf /etc/cloudbridge-relay
-sudo rm -rf /var/lib/cloudbridge-relay
-sudo rm -rf /var/log/cloudbridge-relay
-sudo rm /usr/local/bin/cloudbridge-relay
-sudo userdel cloudbridge-relay
+sudo systemctl stop cloudbridge-client
+sudo systemctl disable cloudbridge-client
+sudo rm /etc/systemd/system/cloudbridge-client.service
+sudo rm -rf /etc/cloudbridge-client
+sudo rm -rf /var/lib/cloudbridge-client
+sudo rm -rf /var/log/cloudbridge-client
+sudo rm /usr/local/bin/cloudbridge-client
+sudo userdel cloudbridge-client
 sudo systemctl daemon-reload
 ```
 
 ## Лицензия
 
-MIT License
+MIT License 
