@@ -67,4 +67,81 @@ var (
 		Name: "relay_token_cache_misses",
 		Help: "The number of token cache misses",
 	})
-) 
+)
+
+// Metrics represents server metrics
+type Metrics struct {
+	activeConnections    prometheus.Gauge
+	rejectedConnections  prometheus.Counter
+	connectionDuration   prometheus.Histogram
+	bytesTransferred     prometheus.Counter
+	errors              prometheus.Counter
+	latency             prometheus.Histogram
+}
+
+// NewMetrics creates new metrics
+func NewMetrics() *Metrics {
+	return &Metrics{
+		activeConnections: promauto.NewGauge(prometheus.GaugeOpts{
+			Name: "relay_active_connections",
+			Help: "Number of active connections",
+		}),
+		rejectedConnections: promauto.NewCounter(prometheus.CounterOpts{
+			Name: "relay_rejected_connections",
+			Help: "Number of rejected connections",
+		}),
+		connectionDuration: promauto.NewHistogram(prometheus.HistogramOpts{
+			Name:    "relay_connection_duration_seconds",
+			Help:    "Connection duration in seconds",
+			Buckets: prometheus.DefBuckets,
+		}),
+		bytesTransferred: promauto.NewCounter(prometheus.CounterOpts{
+			Name: "relay_bytes_transferred",
+			Help: "Total bytes transferred",
+		}),
+		errors: promauto.NewCounter(prometheus.CounterOpts{
+			Name: "relay_errors",
+			Help: "Number of errors",
+		}),
+		latency: promauto.NewHistogram(prometheus.HistogramOpts{
+			Name:    "relay_latency_seconds",
+			Help:    "Request latency in seconds",
+			Buckets: prometheus.DefBuckets,
+		}),
+	}
+}
+
+// IncActiveConnections increments active connections counter
+func (m *Metrics) IncActiveConnections() {
+	m.activeConnections.Inc()
+}
+
+// DecActiveConnections decrements active connections counter
+func (m *Metrics) DecActiveConnections() {
+	m.activeConnections.Dec()
+}
+
+// IncRejectedConnections increments rejected connections counter
+func (m *Metrics) IncRejectedConnections() {
+	m.rejectedConnections.Inc()
+}
+
+// ObserveConnectionDuration records connection duration
+func (m *Metrics) ObserveConnectionDuration(duration float64) {
+	m.connectionDuration.Observe(duration)
+}
+
+// AddBytesTransferred adds bytes to transferred counter
+func (m *Metrics) AddBytesTransferred(bytes float64) {
+	m.bytesTransferred.Add(bytes)
+}
+
+// IncErrors increments errors counter
+func (m *Metrics) IncErrors() {
+	m.errors.Inc()
+}
+
+// ObserveLatency records request latency
+func (m *Metrics) ObserveLatency(latency float64) {
+	m.latency.Observe(latency)
+} 

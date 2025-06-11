@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atomic"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/maxlanies/bore/internal/metrics"
 	"github.com/maxlanies/bore/internal/proto"
 	"github.com/maxlanies/bore/internal/ratelimit"
 	"github.com/maxlanies/bore/internal/token"
@@ -36,48 +38,43 @@ type Tunnel struct {
 
 // Server represents the relay server
 type Server struct {
-	listener  net.Listener
-	tunnels   map[string]*Tunnel
-	mu        sync.RWMutex
-	logger    *log.Logger
-	validator *token.Validator
-	limiter   *ratelimit.IPLimiter
+	port            int
+	tokenValidator  *token.Validator
+	limiter         *ratelimit.IPLimiter
+	maxConnections  int
+	connCount       atomic.Int32
+	metrics         *metrics.Metrics
+	mu              sync.RWMutex
+	connections     map[string]*Connection
+	listener        net.Listener
+	tunnels         map[string]*Tunnel
+	logger          *log.Logger
 }
 
 // NewServer creates a new server
-func NewServer() (*Server, error) {
-	// Create token validator
-	var validator *token.Validator
-	if *restEndpoint != "" {
-		validator = token.NewValidator(token.Config{
-			RESTEndpoint: *restEndpoint,
-		})
-	} else if *jwtSecret != "" {
-		validator = token.NewValidator(token.Config{
-			JWTSecret: *jwtSecret,
-		})
-	}
-
-	// Create IP-based rate limiter
-	limiter := ratelimit.NewIPLimiter(*rateLimit, *rateBurst)
-
+func NewServer(port int, tokenValidator *token.Validator, limiter *ratelimit.IPLimiter, maxConnections int) *Server {
 	return &Server{
-		tunnels:   make(map[string]*Tunnel),
-		logger:    log.New(os.Stdout, "", log.LstdFlags),
-		validator: validator,
-		limiter:   limiter,
-	}, nil
+		port:           port,
+		tokenValidator: tokenValidator,
+		limiter:        limiter,
+		maxConnections: maxConnections,
+		metrics:        metrics.NewMetrics(),
+		connections:    make(map[string]*Connection),
+		tunnels:        make(map[string]*Tunnel),
+		logger:         log.New(os.Stdout, "", log.LstdFlags),
+	}
 }
 
 // Start starts the server
 func (s *Server) Start() error {
 	var err error
-	s.listener, err = net.Listen("tcp", *addr)
+	s.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", s.port))
 	if err != nil {
-		return fmt.Errorf("failed to listen: %v", err)
+		return fmt.Errorf("failed to start server: %v", err)
 	}
+	defer s.listener.Close()
 
-	s.logger.Printf("Server listening on %s", *addr)
+	log.Printf("Server started on port %d", s.port)
 
 	// Start cleanup loop
 	go s.cleanupLoop()
@@ -86,26 +83,40 @@ func (s *Server) Start() error {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			return fmt.Errorf("failed to accept connection: %v", err)
-		}
-
-		// Get client IP
-		clientIP := conn.RemoteAddr().(*net.TCPAddr).IP.String()
-
-		// Check rate limit
-		if !s.limiter.Allow(clientIP) {
-			s.logger.Printf("Rate limit exceeded for %s", clientIP)
-			conn.Close()
+			log.Printf("Failed to accept connection: %v", err)
 			continue
 		}
 
+		// Check connection limit
+		if s.connCount.Load() >= int32(s.maxConnections) {
+			log.Printf("Connection limit reached (%d), rejecting new connection", s.maxConnections)
+			conn.Close()
+			s.metrics.IncRejectedConnections()
+			continue
+		}
+
+		// Check rate limit
+		remoteAddr := conn.RemoteAddr().String()
+		if !s.limiter.Allow(remoteAddr) {
+			log.Printf("Rate limit exceeded for %s", remoteAddr)
+			conn.Close()
+			s.metrics.IncRejectedConnections()
+			continue
+		}
+
+		s.connCount.Add(1)
+		s.metrics.IncActiveConnections()
 		go s.handleConnection(conn)
 	}
 }
 
 // handleConnection handles a client connection
 func (s *Server) handleConnection(conn net.Conn) {
-	defer conn.Close()
+	defer func() {
+		conn.Close()
+		s.connCount.Add(-1)
+		s.metrics.DecActiveConnections()
+	}()
 
 	// Set read deadline
 	conn.SetReadDeadline(time.Now().Add(*timeout))
@@ -121,8 +132,8 @@ func (s *Server) handleConnection(conn net.Conn) {
 	switch msg.Type {
 	case proto.MessageTypeRegister:
 		// Validate token
-		if s.validator != nil {
-			if !s.validator.Validate(msg.Token) {
+		if s.tokenValidator != nil {
+			if !s.tokenValidator.Validate(msg.Token) {
 				s.logger.Printf("Invalid token: %s", msg.Token)
 				proto.WriteError(conn, "invalid token")
 				return
@@ -272,10 +283,7 @@ func main() {
 	flag.Parse()
 
 	// Create server
-	server, err := NewServer()
-	if err != nil {
-		log.Fatalf("Failed to create server: %v", err)
-	}
+	server := NewServer(8080, nil, nil, 1000)
 
 	// Handle signals
 	sigCh := make(chan os.Signal, 1)
