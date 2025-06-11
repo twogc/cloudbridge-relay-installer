@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"io"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -12,273 +12,283 @@ import (
 	"time"
 
 	"github.com/maxlanies/bore/internal/proto"
+	"github.com/maxlanies/bore/internal/ratelimit"
 	"github.com/maxlanies/bore/internal/token"
 )
 
 var (
-	addr       = flag.String("addr", ":12345", "Address to listen on")
-	timeout    = flag.Duration("timeout", 10*time.Minute, "Connection timeout")
-	maxTunnels = flag.Int("max-tunnels", 1000, "Maximum number of concurrent tunnels")
-
-	// Token validation settings
-	restEnabled    = flag.Bool("rest-enabled", false, "Enable REST token validation")
-	restEndpoint   = flag.String("rest-endpoint", "", "REST API endpoint for token validation")
-	restTimeout    = flag.Duration("rest-timeout", 5*time.Second, "REST API timeout")
-	restCacheTTL   = flag.Duration("rest-cache-ttl", 1*time.Minute, "Token cache TTL")
-	restMaxRetries = flag.Int("rest-max-retries", 3, "Maximum REST API retries")
-	restRetryDelay = flag.Duration("rest-retry-delay", 100*time.Millisecond, "REST API retry delay")
-
-	jwtEnabled    = flag.Bool("jwt-enabled", false, "Enable JWT token validation")
-	jwtSigningKey = flag.String("jwt-key", "", "JWT signing key")
-	jwtIssuer     = flag.String("jwt-issuer", "", "JWT issuer")
-	jwtMaxAge     = flag.Duration("jwt-max-age", 24*time.Hour, "JWT maximum age")
+	addr            = flag.String("addr", ":8080", "Server address")
+	timeout         = flag.Duration("timeout", 30*time.Second, "Connection timeout")
+	maxTunnels      = flag.Int("max-tunnels", 1000, "Maximum number of concurrent tunnels")
+	restEndpoint    = flag.String("rest-endpoint", "", "REST API endpoint for token validation")
+	jwtSecret       = flag.String("jwt-secret", "", "JWT secret for token validation")
+	rateLimit       = flag.Float64("rate-limit", 100, "Rate limit per second")
+	rateBurst       = flag.Int("rate-burst", 50, "Rate limit burst size")
 )
 
-// Error codes for better client handling
-const (
-	ErrEmptyToken     = "EMPTY_TOKEN"
-	ErrTunnelNotFound = "TUNNEL_NOT_FOUND"
-	ErrAlreadyExists  = "ALREADY_EXISTS"
-	ErrInvalidMessage = "INVALID_MESSAGE"
-	ErrTooManyTunnels = "TOO_MANY_TUNNELS"
-)
-
+// Tunnel represents a client tunnel
 type Tunnel struct {
-	conn     net.Conn
-	created  time.Time
-	lastPing time.Time
-	mu       sync.Mutex
+	conn      net.Conn
+	token     string
+	lastPing  time.Time
+	limiter   *ratelimit.Limiter
 }
 
+// Server represents the relay server
 type Server struct {
 	listener  net.Listener
 	tunnels   map[string]*Tunnel
 	mu        sync.RWMutex
-	validator *token.Validator
 	logger    *log.Logger
+	validator *token.Validator
+	limiter   *ratelimit.IPLimiter
 }
 
+// NewServer creates a new server
 func NewServer() (*Server, error) {
-	validatorConfig := token.Config{
-		RESTEnabled:     *restEnabled,
-		RESTEndpoint:    *restEndpoint,
-		RESTTimeout:     *restTimeout,
-		RESTCacheTTL:    *restCacheTTL,
-		RESTMaxRetries:  *restMaxRetries,
-		RESTRetryDelay:  *restRetryDelay,
-		JWTEnabled:      *jwtEnabled,
-		JWTSigningKey:   []byte(*jwtSigningKey),
-		JWTIssuer:       *jwtIssuer,
-		JWTMaxAge:       *jwtMaxAge,
+	// Create token validator
+	var validator *token.Validator
+	if *restEndpoint != "" {
+		validator = token.NewValidator(token.Config{
+			RESTEndpoint: *restEndpoint,
+		})
+	} else if *jwtSecret != "" {
+		validator = token.NewValidator(token.Config{
+			JWTSecret: *jwtSecret,
+		})
 	}
 
-	validator := token.NewValidator(validatorConfig)
+	// Create IP-based rate limiter
+	limiter := ratelimit.NewIPLimiter(*rateLimit, *rateBurst)
 
 	return &Server{
 		tunnels:   make(map[string]*Tunnel),
+		logger:    log.New(os.Stdout, "", log.LstdFlags),
 		validator: validator,
-		logger:    log.New(os.Stdout, "[relay] ", log.LstdFlags),
+		limiter:   limiter,
 	}, nil
 }
 
+// Start starts the server
 func (s *Server) Start() error {
-	listener, err := net.Listen("tcp", *addr)
+	var err error
+	s.listener, err = net.Listen("tcp", *addr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to listen: %v", err)
 	}
-	s.listener = listener
 
+	s.logger.Printf("Server listening on %s", *addr)
+
+	// Start cleanup loop
 	go s.cleanupLoop()
 
-	s.logger.Printf("Server started on %s", *addr)
-	return s.acceptLoop()
-}
-
-func (s *Server) acceptLoop() error {
+	// Start accepting connections
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to accept connection: %v", err)
 		}
+
+		// Get client IP
+		clientIP := conn.RemoteAddr().(*net.TCPAddr).IP.String()
+
+		// Check rate limit
+		if !s.limiter.Allow(clientIP) {
+			s.logger.Printf("Rate limit exceeded for %s", clientIP)
+			conn.Close()
+			continue
+		}
+
 		go s.handleConnection(conn)
 	}
 }
 
+// handleConnection handles a client connection
 func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
+
+	// Set read deadline
 	conn.SetReadDeadline(time.Now().Add(*timeout))
 
-	// 1. Прочитать первый message (handshake)
-	msgAny, err := proto.ReadMessage(conn)
+	// Read message
+	msg, err := proto.ReadMessage(conn)
 	if err != nil {
 		s.logger.Printf("Failed to read message: %v", err)
 		return
 	}
 
-	switch msg := msgAny.(type) {
-	case *proto.RegisterMessage:
-		if msg.Token == "" {
-			proto.WriteError(conn, ErrEmptyToken)
-			return
-		}
+	// Handle message based on type
+	switch msg.Type {
+	case proto.MessageTypeRegister:
 		// Validate token
-		if !s.validator.Validate(msg.Token) {
-			proto.WriteError(conn, "INVALID_TOKEN")
-			return
+		if s.validator != nil {
+			if !s.validator.Validate(msg.Token) {
+				s.logger.Printf("Invalid token: %s", msg.Token)
+				proto.WriteError(conn, "invalid token")
+				return
+			}
 		}
-		// Check and register tunnel
+
+		// Create tunnel
+		tunnel := &Tunnel{
+			conn:     conn,
+			token:    msg.Token,
+			lastPing: time.Now(),
+			limiter:  ratelimit.NewLimiter(*rateLimit, *rateBurst),
+		}
+
+		// Add tunnel
 		s.mu.Lock()
 		if len(s.tunnels) >= *maxTunnels {
 			s.mu.Unlock()
-			proto.WriteError(conn, ErrTooManyTunnels)
+			s.logger.Printf("Maximum number of tunnels reached")
+			proto.WriteError(conn, "maximum number of tunnels reached")
 			return
-		}
-		if _, exists := s.tunnels[msg.Token]; exists {
-			s.mu.Unlock()
-			proto.WriteError(conn, ErrAlreadyExists)
-			return
-		}
-		tunnel := &Tunnel{
-			conn:     conn,
-			created:  time.Now(),
-			lastPing: time.Now(),
 		}
 		s.tunnels[msg.Token] = tunnel
 		s.mu.Unlock()
-		s.logger.Printf("Tunnel registered: %s", msg.Token)
-		// Send config back
-		config := &proto.ConfigMessage{
-			Token:     msg.Token,
-			PublicURL: "bore://" + msg.Token,
-			Status:    "ok",
-		}
-		if err := proto.WriteMessage(conn, config); err != nil {
-			s.logger.Printf("Failed to send config: %v", err)
-			return
-		}
-		// Держим туннель в keepalive
-		s.handleTunnel(msg.Token, tunnel)
-	case *proto.ConnectMessage:
-		// Проверка токена
-		if msg.Token == "" {
-			proto.WriteError(conn, ErrEmptyToken)
-			return
-		}
-		if !s.validator.Validate(msg.Token) {
-			proto.WriteError(conn, "INVALID_TOKEN")
-			return
-		}
+
+		// Send success response
+		proto.WriteMessage(conn, &proto.Message{
+			Type: proto.MessageTypeConfig,
+			Config: &proto.ConfigMessage{
+				Token: msg.Token,
+			},
+		})
+
+		// Handle tunnel
+		s.handleTunnel(tunnel)
+
+	case proto.MessageTypeConnect:
+		// Find tunnel
 		s.mu.RLock()
-		tunnel, exists := s.tunnels[msg.Token]
+		tunnel, ok := s.tunnels[msg.Token]
 		s.mu.RUnlock()
-		if !exists {
-			proto.WriteError(conn, ErrTunnelNotFound)
+
+		if !ok {
+			s.logger.Printf("Tunnel not found: %s", msg.Token)
+			proto.WriteError(conn, "tunnel not found")
 			return
 		}
-		// Bi-directional relay
-		s.logger.Printf("Consumer connected: %s", msg.Token)
-		var once sync.Once
-		closeBoth := func() { once.Do(func() { conn.Close(); tunnel.conn.Close() }) }
-		go func() { defer closeBoth(); _, _ = io.Copy(tunnel.conn, conn) }()
-		go func() { defer closeBoth(); _, _ = io.Copy(conn, tunnel.conn) }()
-		// Wait (simple block)
-		select {}
-	case *proto.PingMessage:
-		if msg.Token == "" {
-			proto.WriteError(conn, ErrEmptyToken)
+
+		// Check rate limit
+		if !tunnel.limiter.Allow() {
+			s.logger.Printf("Rate limit exceeded for tunnel %s", msg.Token)
+			proto.WriteError(conn, "rate limit exceeded")
 			return
 		}
-		if tunnel := s.getTunnel(msg.Token); tunnel != nil {
-			tunnel.mu.Lock()
-			tunnel.lastPing = time.Now()
-			tunnel.mu.Unlock()
+
+		// Handle connection
+		s.handleConnection(conn)
+
+	case proto.MessageTypePing:
+		// Find tunnel
+		s.mu.RLock()
+		tunnel, ok := s.tunnels[msg.Token]
+		s.mu.RUnlock()
+
+		if !ok {
+			s.logger.Printf("Tunnel not found: %s", msg.Token)
+			proto.WriteError(conn, "tunnel not found")
+			return
 		}
-		pong := &proto.PongMessage{Token: msg.Token}
-		proto.WriteMessage(conn, pong)
+
+		// Update last ping
+		tunnel.lastPing = time.Now()
+
+		// Send pong
+		proto.WriteMessage(conn, &proto.Message{
+			Type: proto.MessageTypePong,
+			Pong: &proto.PongMessage{
+				Token: msg.Token,
+			},
+		})
+
 	default:
-		proto.WriteError(conn, ErrInvalidMessage)
+		s.logger.Printf("Unknown message type: %d", msg.Type)
+		proto.WriteError(conn, "unknown message type")
 	}
 }
 
-func (s *Server) handleTunnel(token string, tunnel *Tunnel) {
-	// Keepalive loop
+// handleTunnel handles a tunnel connection
+func (s *Server) handleTunnel(tunnel *Tunnel) {
 	for {
+		// Set read deadline
 		tunnel.conn.SetReadDeadline(time.Now().Add(*timeout))
-		msgAny, err := proto.ReadMessage(tunnel.conn)
+
+		// Read message
+		msg, err := proto.ReadMessage(tunnel.conn)
 		if err != nil {
-			s.logger.Printf("Tunnel closed (%s): %v", token, err)
-			s.mu.Lock()
-			delete(s.tunnels, token)
-			s.mu.Unlock()
-			return
+			s.logger.Printf("Failed to read message: %v", err)
+			break
 		}
-		switch msg := msgAny.(type) {
-		case *proto.PingMessage:
-			tunnel.mu.Lock()
+
+		// Handle message based on type
+		switch msg.Type {
+		case proto.MessageTypePing:
+			// Update last ping
 			tunnel.lastPing = time.Now()
-			tunnel.mu.Unlock()
-			pong := &proto.PongMessage{Token: msg.Token}
-			proto.WriteMessage(tunnel.conn, pong)
+
+			// Send pong
+			proto.WriteMessage(tunnel.conn, &proto.Message{
+				Type: proto.MessageTypePong,
+				Pong: &proto.PongMessage{
+					Token: tunnel.token,
+				},
+			})
+
 		default:
-			// ignore
+			s.logger.Printf("Unknown message type: %d", msg.Type)
+			proto.WriteError(tunnel.conn, "unknown message type")
 		}
 	}
+
+	// Remove tunnel
+	s.mu.Lock()
+	delete(s.tunnels, tunnel.token)
+	s.mu.Unlock()
 }
 
-func (s *Server) getTunnel(token string) *Tunnel {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.tunnels[token]
-}
-
+// cleanupLoop periodically cleans up inactive tunnels
 func (s *Server) cleanupLoop() {
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
+
 	for range ticker.C {
 		s.mu.Lock()
 		now := time.Now()
 		for token, tunnel := range s.tunnels {
-			tunnel.mu.Lock()
 			if now.Sub(tunnel.lastPing) > *timeout {
+				s.logger.Printf("Removing inactive tunnel: %s", token)
 				tunnel.conn.Close()
 				delete(s.tunnels, token)
-				s.logger.Printf("Cleaned up tunnel: %s", token)
 			}
-			tunnel.mu.Unlock()
 		}
 		s.mu.Unlock()
-		// Очистка токен-валидации (если есть cache)
-		s.validator.Cleanup()
 	}
 }
 
 func main() {
 	flag.Parse()
 
-	if *restEnabled && *restEndpoint == "" {
-		log.Fatal("REST endpoint is required when REST validation is enabled")
-	}
-	if *jwtEnabled && *jwtSigningKey == "" {
-		log.Fatal("JWT signing key is required when JWT validation is enabled")
-	}
-
+	// Create server
 	server, err := NewServer()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	// Graceful shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	// Handle signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start server
 	go func() {
-		<-sigChan
-		server.logger.Println("Shutting down...")
-		if server.listener != nil {
-			server.listener.Close()
+		if err := server.Start(); err != nil {
+			log.Fatalf("Server error: %v", err)
 		}
 	}()
 
-	if err := server.Start(); err != nil {
-		log.Fatal(err)
-	}
+	// Wait for signal
+	<-sigCh
+	log.Println("Shutting down...")
 } 
