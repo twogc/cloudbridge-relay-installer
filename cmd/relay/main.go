@@ -28,6 +28,14 @@ var (
 	rateBurst       = flag.Int("rate-burst", 50, "Rate limit burst size")
 )
 
+// Connection represents a client connection
+type Connection struct {
+	conn      net.Conn
+	token     string
+	lastPing  time.Time
+	limiter   *ratelimit.Limiter
+}
+
 // Tunnel represents a client tunnel
 type Tunnel struct {
 	conn      net.Conn
@@ -42,7 +50,7 @@ type Server struct {
 	tokenValidator  *token.Validator
 	limiter         *ratelimit.IPLimiter
 	maxConnections  int
-	connCount       atomic.Int32
+	connCount       int32
 	metrics         *metrics.Metrics
 	mu              sync.RWMutex
 	connections     map[string]*Connection
@@ -88,7 +96,7 @@ func (s *Server) Start() error {
 		}
 
 		// Check connection limit
-		if s.connCount.Load() >= int32(s.maxConnections) {
+		if atomic.LoadInt32(&s.connCount) >= int32(s.maxConnections) {
 			log.Printf("Connection limit reached (%d), rejecting new connection", s.maxConnections)
 			conn.Close()
 			s.metrics.IncRejectedConnections()
@@ -104,7 +112,7 @@ func (s *Server) Start() error {
 			continue
 		}
 
-		s.connCount.Add(1)
+		atomic.AddInt32(&s.connCount, 1)
 		s.metrics.IncActiveConnections()
 		go s.handleConnection(conn)
 	}
@@ -114,7 +122,7 @@ func (s *Server) Start() error {
 func (s *Server) handleConnection(conn net.Conn) {
 	defer func() {
 		conn.Close()
-		s.connCount.Add(-1)
+		atomic.AddInt32(&s.connCount, -1)
 		s.metrics.DecActiveConnections()
 	}()
 
