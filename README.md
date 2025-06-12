@@ -25,7 +25,7 @@ Relay-сервер для безопасного проброса TCP-порто
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/twogc/cloudbridge-relay.git
+git clone https://github.com/twogc/cloudbridge-relay-installer.git
 cd cloudbridge-relay
 
 # Сборка
