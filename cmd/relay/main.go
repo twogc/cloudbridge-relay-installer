@@ -1,17 +1,22 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
 
+	"github.com/maxlanies/cloudbridge-relay-installer/config"
 	"github.com/maxlanies/cloudbridge-relay-installer/internal/metrics"
 	"github.com/maxlanies/cloudbridge-relay-installer/internal/proto"
 	"github.com/maxlanies/cloudbridge-relay-installer/internal/ratelimit"
@@ -21,11 +26,12 @@ import (
 var (
 	addr            = flag.String("addr", ":8080", "Server address")
 	timeout         = flag.Duration("timeout", 30*time.Second, "Connection timeout")
-	maxTunnels      = flag.Int("max-tunnels", 1000, "Maximum number of concurrent tunnels")
+	maxTunnels      = flag.Int("max-tunnels", 10000, "Maximum number of concurrent tunnels")
 	restEndpoint    = flag.String("rest-endpoint", "", "REST API endpoint for token validation")
 	jwtSecret       = flag.String("jwt-secret", "", "JWT secret for token validation")
-	rateLimit       = flag.Float64("rate-limit", 100, "Rate limit per second")
-	rateBurst       = flag.Int("rate-burst", 50, "Rate limit burst size")
+	rateLimit       = flag.Float64("rate-limit", 1000, "Rate limit per second")
+	rateBurst       = flag.Int("rate-burst", 500, "Rate limit burst size")
+	workerPoolSize  = flag.Int("workers", runtime.NumCPU()*2, "Number of worker goroutines")
 )
 
 // Connection represents a client connection
@@ -57,10 +63,14 @@ type Server struct {
 	listener        net.Listener
 	tunnels         map[string]*Tunnel
 	logger          *log.Logger
+	workerPool      chan struct{}
+	ctx             context.Context
+	cancel          context.CancelFunc
 }
 
 // NewServer creates a new server
 func NewServer(port int, tokenValidator *token.Validator, limiter *ratelimit.IPLimiter, maxConnections int) *Server {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Server{
 		port:           port,
 		tokenValidator: tokenValidator,
@@ -70,51 +80,121 @@ func NewServer(port int, tokenValidator *token.Validator, limiter *ratelimit.IPL
 		connections:    make(map[string]*Connection),
 		tunnels:        make(map[string]*Tunnel),
 		logger:         log.New(os.Stdout, "", log.LstdFlags),
+		workerPool:     make(chan struct{}, *workerPoolSize),
+		ctx:            ctx,
+		cancel:         cancel,
 	}
+}
+
+// isIPAllowed checks if the IP address is in the allowed list
+func isIPAllowed(ip string, allowedIPs string) bool {
+	if allowedIPs == "" {
+		return true
+	}
+	
+	ipList := strings.Split(allowedIPs, ",")
+	for _, allowedIP := range ipList {
+		if strings.TrimSpace(allowedIP) == ip {
+			return true
+		}
+	}
+	return false
 }
 
 // Start starts the server
 func (s *Server) Start() error {
 	var err error
-	s.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", s.port))
-	if err != nil {
-		return fmt.Errorf("failed to start server: %v", err)
+	var listener net.Listener
+
+	if *config.UseTLS {
+		// Load TLS certificate
+		cert, err := tls.LoadX509KeyPair(*config.CertFile, *config.KeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to load TLS certificate: %v", err)
+		}
+
+		// Configure TLS
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS12,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			},
+		}
+
+		// Create TLS listener
+		listener, err = tls.Listen("tcp", fmt.Sprintf(":%d", s.port), tlsConfig)
+		if err != nil {
+			return fmt.Errorf("failed to start TLS server: %v", err)
+		}
+	} else {
+		// Create regular TCP listener
+		listener, err = net.Listen("tcp", fmt.Sprintf(":%d", s.port))
+		if err != nil {
+			return fmt.Errorf("failed to start server: %v", err)
+		}
 	}
+
+	s.listener = listener
 	defer s.listener.Close()
 
-	log.Printf("Server started on port %d", s.port)
+	log.Printf("Server started on port %d (TLS: %v, Workers: %d)", s.port, *config.UseTLS, *workerPoolSize)
 
 	// Start cleanup loop
 	go s.cleanupLoop()
 
 	// Start accepting connections
 	for {
-		conn, err := s.listener.Accept()
-		if err != nil {
-			log.Printf("Failed to accept connection: %v", err)
-			continue
-		}
+		select {
+		case <-s.ctx.Done():
+			return nil
+		default:
+			conn, err := s.listener.Accept()
+			if err != nil {
+				log.Printf("Failed to accept connection: %v", err)
+				continue
+			}
 
-		// Check connection limit
-		if atomic.LoadInt32(&s.connCount) >= int32(s.maxConnections) {
-			log.Printf("Connection limit reached (%d), rejecting new connection", s.maxConnections)
-			conn.Close()
-			s.metrics.IncRejectedConnections()
-			continue
-		}
+			// Check connection limit
+			if atomic.LoadInt32(&s.connCount) >= int32(s.maxConnections) {
+				log.Printf("Connection limit reached (%d), rejecting new connection", s.maxConnections)
+				conn.Close()
+				s.metrics.IncRejectedConnections()
+				continue
+			}
 
-		// Check rate limit
-		remoteAddr := conn.RemoteAddr().String()
-		if !s.limiter.Allow(remoteAddr) {
-			log.Printf("Rate limit exceeded for %s", remoteAddr)
-			conn.Close()
-			s.metrics.IncRejectedConnections()
-			continue
-		}
+			// Check rate limit
+			remoteAddr := conn.RemoteAddr().String()
+			if !s.limiter.Allow(remoteAddr) {
+				log.Printf("Rate limit exceeded for %s", remoteAddr)
+				conn.Close()
+				s.metrics.IncRejectedConnections()
+				continue
+			}
 
-		atomic.AddInt32(&s.connCount, 1)
-		s.metrics.IncActiveConnections()
-		go s.handleConnection(conn)
+			// Acquire worker slot
+			select {
+			case s.workerPool <- struct{}{}:
+				atomic.AddInt32(&s.connCount, 1)
+				s.metrics.IncActiveConnections()
+				go func() {
+					defer func() {
+						<-s.workerPool // Release worker slot
+						atomic.AddInt32(&s.connCount, -1)
+						s.metrics.DecActiveConnections()
+					}()
+					s.handleConnection(conn)
+				}()
+			default:
+				// No available workers, reject connection
+				log.Printf("No available workers, rejecting connection from %s", remoteAddr)
+				conn.Close()
+				s.metrics.IncRejectedConnections()
+			}
+		}
 	}
 }
 
@@ -139,6 +219,13 @@ func (s *Server) handleConnection(conn net.Conn) {
 	// Handle message based on type
 	switch msg.Type {
 	case proto.MessageTypeRegister:
+		// Check authentication token
+		if *config.AuthToken != "" && msg.Token != *config.AuthToken {
+			s.logger.Printf("Invalid authentication token from %s", conn.RemoteAddr())
+			proto.WriteError(conn, "invalid authentication token")
+			return
+		}
+
 		// Validate token
 		if s.tokenValidator != nil {
 			if !s.tokenValidator.Validate(msg.Token) {
@@ -290,8 +377,11 @@ func (s *Server) cleanupLoop() {
 func main() {
 	flag.Parse()
 
+	// Create rate limiter
+	limiter := ratelimit.NewIPLimiter(*rateLimit, *rateBurst)
+
 	// Create server
-	server := NewServer(8080, nil, nil, 1000)
+	server := NewServer(8080, nil, limiter, 1000)
 
 	// Handle signals
 	sigCh := make(chan os.Signal, 1)

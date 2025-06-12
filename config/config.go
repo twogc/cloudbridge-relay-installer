@@ -2,9 +2,22 @@ package config
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"time"
+)
+
+var (
+	// Security settings
+	AuthToken = flag.String("auth-token", "", "Authentication token for initial connection")
+	AllowIPs  = flag.String("allow-ips", "", "Comma-separated list of allowed IP addresses (empty for all)")
+	
+	// TLS settings
+	UseTLS     = flag.Bool("tls", false, "Enable TLS encryption")
+	CertFile   = flag.String("cert", "/etc/relay/certs/fullchain.pem", "TLS certificate file")
+	KeyFile    = flag.String("key", "/etc/relay/certs/privkey.pem", "TLS key file")
+	Domain     = flag.String("domain", "", "Domain name for Let's Encrypt certificate")
 )
 
 // Config holds the server configuration
