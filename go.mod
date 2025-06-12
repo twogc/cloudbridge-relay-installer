@@ -1,4 +1,4 @@
-module github.com/maxlanies/bore
+module github.com/maxlanies/cloudbridge-relay-installer
 
 go 1.22
 

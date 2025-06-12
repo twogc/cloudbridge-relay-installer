@@ -1,7 +1,6 @@
 package main
 
 import (
-	"atomic"
 	"flag"
 	"fmt"
 	"log"
@@ -9,13 +8,14 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
-	"github.com/maxlanies/bore/internal/metrics"
-	"github.com/maxlanies/bore/internal/proto"
-	"github.com/maxlanies/bore/internal/ratelimit"
-	"github.com/maxlanies/bore/internal/token"
+	"github.com/maxlanies/cloudbridge-relay-installer/internal/metrics"
+	"github.com/maxlanies/cloudbridge-relay-installer/internal/proto"
+	"github.com/maxlanies/cloudbridge-relay-installer/internal/ratelimit"
+	"github.com/maxlanies/cloudbridge-relay-installer/internal/token"
 )
 
 var (
