@@ -297,4 +297,4 @@ go test ./...
 Этот проект распространяется под проприетарной лицензией. Все права защищены.
 Для получения лицензии или дополнительной информации, пожалуйста, свяжитесь с автором.
 
-Copyright (c) 2024 Maksim Lanies. All Rights Reserved.
+Copyright (c) 2025 Maksim Lanies. All Rights Reserved.
