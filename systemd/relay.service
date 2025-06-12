@@ -1,0 +1,17 @@
+[Unit]
+Description=Cloudbridge Relay Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
+Environment=RELAY_DOMAIN=edge.2gc.ru
+ExecStart=/home/ubuntu/cloudbridge-relay-installer/relay -addr :9090 -auth-token "your-secret-token" -tls -max-tunnels 10000 -rate-limit 1000 -rate-burst 500
+Restart=on-failure
+LimitNOFILE=1000000
+StandardOutput=append:/var/log/relay.log
+StandardError=append:/var/log/relay.log
+
+[Install]
+WantedBy=multi-user.target 
