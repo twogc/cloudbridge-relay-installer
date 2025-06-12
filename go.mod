@@ -1,8 +1,6 @@
 module github.com/maxlanies/cloudbridge-relay-installer
 
-go 1.22
-
-toolchain go1.24.4
+go 1.18
 
 require github.com/golang-jwt/jwt/v5 v5.2.2
 
