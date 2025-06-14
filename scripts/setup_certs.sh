@@ -25,6 +25,11 @@ echo "Stopping services that might use port 80..."
 sudo systemctl stop nginx || true
 sudo systemctl stop apache2 || true
 
+# Stop Docker containers
+echo "Stopping Docker containers..."
+cd "$(dirname "$0")/.."  # Go to project root
+sudo docker-compose down
+
 # Check if port 80 is free
 if sudo lsof -i :80 > /dev/null; then
     echo "Error: Port 80 is still in use. Please stop the service using it."
@@ -35,12 +40,16 @@ fi
 echo "Obtaining certificate for $DOMAIN..."
 if ! sudo certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email admin@2gc.ru; then
     echo "Error: Failed to obtain certificate"
+    # Start Docker containers back
+    sudo docker-compose up -d
     exit 1
 fi
 
 # Verify certificate files exist
 if [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ] || [ ! -f "/etc/letsencrypt/live/$DOMAIN/privkey.pem" ]; then
     echo "Error: Certificate files not found"
+    # Start Docker containers back
+    sudo docker-compose up -d
     exit 1
 fi
 
@@ -52,5 +61,9 @@ sudo cp /etc/letsencrypt/live/$DOMAIN/privkey.pem $CERT_DIR/
 # Set proper permissions
 sudo chown -R ubuntu:ubuntu $CERT_DIR
 sudo chmod 600 $CERT_DIR/*.pem
+
+# Start Docker containers back
+echo "Starting Docker containers..."
+sudo docker-compose up -d
 
 echo "Certificate setup completed successfully for $DOMAIN" 

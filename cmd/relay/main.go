@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	addr            = flag.String("addr", ":8080", "Server address")
+	addr            = flag.String("addr", ":3456", "Server address")
 	timeout         = flag.Duration("timeout", 30*time.Second, "Connection timeout")
 	maxTunnels      = flag.Int("max-tunnels", 10000, "Maximum number of concurrent tunnels")
 	restEndpoint    = flag.String("rest-endpoint", "", "REST API endpoint for token validation")
@@ -381,7 +381,7 @@ func main() {
 	limiter := ratelimit.NewIPLimiter(*rateLimit, *rateBurst)
 
 	// Create server
-	server := NewServer(8080, nil, limiter, 1000)
+	server := NewServer(3456, nil, limiter, 1000)
 
 	// Handle signals
 	sigCh := make(chan os.Signal, 1)
