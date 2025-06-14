@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3456:3456"  # Map port 3456 for Django communication
+    environment:
+      - RELAY_PORT=3456
+      - RELAY_MAX_CONNECTIONS=1000
+      - RELAY_RATE_LIMIT=100
+      - RELAY_RATE_BURST=200
+    volumes:
+      - ./config:/app/config
+    networks:
+      - relay-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - relay-network
+
+volumes:
+  prometheus_data:
+
+networks:
+  relay-network:
+    driver: bridge 

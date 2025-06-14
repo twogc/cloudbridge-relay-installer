@@ -1,9 +1,7 @@
 server:
-  listen: ":443"
+  listen: ":3456"
   tls:
-    enabled: true
-    cert_file: "/etc/cloudbridge-relay/certs/server.crt"
-    key_file: "/etc/cloudbridge-relay/certs/server.key"
+    enabled: false
   max_connections: 10000
   connection_timeout: 60s
 
