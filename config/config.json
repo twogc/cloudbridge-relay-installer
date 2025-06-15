@@ -1,20 +1,44 @@
 {
-    "address": ":8080",
-    "timeout": "30s",
-    "max_tunnels": 1000,
-    "ping_interval": "30s",
-    "cleanup_interval": "1m",
-    "token_validation": {
-        "rest_enabled": true,
-        "rest_endpoint": "http://auth.example.com/validate",
-        "rest_timeout": "5s",
-        "rest_cache_ttl": "1m",
-        "rest_max_retries": 3,
-        "rest_retry_delay": "100ms",
-        "jwt_enabled": false,
-        "jwt_signing_key": "",
-        "jwt_issuer": "",
-        "jwt_max_age": "24h"
+    "server": {
+        "address": ":8080",
+        "port": 8080,
+        "timeout": 60000000000,
+        "max_tunnels": 1000,
+        "ping_interval": 30000000000,
+        "cleanup_interval": 60000000000
     },
-    "debug": false
+    "django": {
+        "api_endpoint": "http://lk-dasjboard-django-lk-app-1:5005/api/relay/token/validate/",
+        "jwt_secret": "supersecret",
+        "jwt_expiry": 3600000000000,
+        "rest_timeout": 5000000000,
+        "rest_cache_ttl": 300000000000,
+        "rest_max_retries": 3,
+        "rest_retry_delay": 100000000
+    },
+    "security": {
+        "tls_enabled": false,
+        "cert_file": "/etc/relay/certs/fullchain.pem",
+        "key_file": "/etc/relay/certs/privkey.pem",
+        "allowed_ips": "",
+        "rate_limit": {
+            "enabled": false,
+            "requests_per_second": 100,
+            "burst": 200
+        }
+    },
+    "metrics": {
+        "enabled": true,
+        "port": ":8081",
+        "path": "/metrics"
+    },
+    "logging": {
+        "level": "debug",
+        "format": "json",
+        "output": "/var/log/relay/relay.log",
+        "fields": {
+            "service": "relay",
+            "environment": "development"
+        }
+    }
 } 

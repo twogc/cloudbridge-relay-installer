@@ -1,24 +1,25 @@
 package token
 
 import (
+	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/maxlanies/cloudbridge-relay-installer/internal/django"
 )
 
 // Config represents the token validator configuration
 type Config struct {
-	RESTEndpoint string
+	DjangoClient *django.Client
 	JWTSecret    string
+	CacheTTL     time.Duration
 }
 
 // Validator implements token validation
 type Validator struct {
 	config     Config
-	client     *http.Client
 	cache      map[string]time.Time
 	mu         sync.RWMutex
 	jwtKey     []byte
@@ -28,9 +29,6 @@ type Validator struct {
 func NewValidator(config Config) *Validator {
 	return &Validator{
 		config: config,
-		client: &http.Client{
-			Timeout: 5 * time.Second,
-		},
 		cache:  make(map[string]time.Time),
 		jwtKey: []byte(config.JWTSecret),
 	}
@@ -49,8 +47,14 @@ func (v *Validator) Validate(token string) bool {
 
 	// Validate token
 	var valid bool
-	if v.config.RESTEndpoint != "" {
-		valid = v.validateREST(token)
+	var err error
+
+	if v.config.DjangoClient != nil {
+		valid, err = v.config.DjangoClient.ValidateToken(context.Background(), token)
+		if err != nil {
+			fmt.Printf("Django validation error: %v\n", err)
+			valid = false
+		}
 	} else if v.config.JWTSecret != "" {
 		valid = v.validateJWT(token)
 	} else {
@@ -61,29 +65,11 @@ func (v *Validator) Validate(token string) bool {
 	if valid {
 		// Cache valid token
 		v.mu.Lock()
-		v.cache[token] = time.Now().Add(5 * time.Minute)
+		v.cache[token] = time.Now().Add(v.config.CacheTTL)
 		v.mu.Unlock()
 	}
 
 	return valid
-}
-
-// validateREST validates a token using a REST API
-func (v *Validator) validateREST(token string) bool {
-	req, err := http.NewRequest("GET", v.config.RESTEndpoint, nil)
-	if err != nil {
-		return false
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := v.client.Do(req)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode == http.StatusOK
 }
 
 // validateJWT validates a token using JWT
