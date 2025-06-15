@@ -4,69 +4,70 @@ import socket
 import json
 import struct
 import base64
+from contextlib import contextmanager
 
-def send_message(host, port, message):
-    # Создаем сокет
+@contextmanager
+def socket_context(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        # Подключаемся к серверу
-        print(f"Connecting to {host}:{port}...")
         sock.connect((host, port))
-        
-        # Преобразуем сообщение в JSON
-        json_data = json.dumps(message)
-        
-        # Получаем длину сообщения
-        length = len(json_data)
-        print(f"Message length: {length}")
-        print(f"Message length (hex): {length:08x}")
-        
-        # Отправляем длину сообщения (4 байта BigEndian)
-        sock.send(struct.pack('>I', length))
-        
-        # Отправляем само сообщение
-        sock.send(json_data.encode())
-        
-        # Получаем ответ
-        response_length_data = sock.recv(4)
-        response_length = struct.unpack('>I', response_length_data)[0]
-        response_data = sock.recv(response_length)
-        response = json.loads(response_data.decode())
-        
-        print(f"Response: {response}")
-        
-    except Exception as e:
-        print(f"Error: {e}")
+        yield sock
     finally:
         sock.close()
 
+def send_message(sock, message):
+    # Convert message to JSON
+    data = json.dumps(message).encode()
+    # Add 4-byte length prefix (BigEndian)
+    length = struct.pack('>I', len(data))
+    # Send length prefix and message
+    sock.sendall(length + data)
+
+def read_message(sock):
+    # Read 4-byte length prefix
+    length_data = sock.recv(4)
+    if len(length_data) != 4:
+        raise Exception("Invalid message length")
+    length = struct.unpack('>I', length_data)[0]
+    # Read message data
+    data = sock.recv(length)
+    return json.loads(data)
+
 if __name__ == '__main__':
-    # Секрет для подписи JWT (base64-decode)
+    # Секрет для подписи JWT (должен совпадать с RELAY_JWT_SECRET в Django)
     secret = "Yk7+4of0fCmcHY+p0QCZHonEMO0+WUvbKsrjfvJL3zk="
     
     # Создаем JWT токен
     payload = {
+        "id": "test-id",           # Добавляем идентификатор
+        "server_id": "test-server",
+        "company_id": "test-company",
         "exp": int(time.time()) + 3600,  # срок действия 1 час
         "iat": int(time.time()),         # время выпуска
-        "sub": "test-user"               # идентификатор пользователя
+        "type": "relay"                  # тип токена
     }
     
     # Генерируем токен
     token = jwt.encode(payload, secret, algorithm="HS256")
     print(f"Generated token: {token}")
     
+    # Декодируем токен для проверки
+    decoded = jwt.decode(token, secret, algorithms=["HS256"])
+    print(f"Decoded token: {json.dumps(decoded, indent=2)}")
+    
     # Тестовое сообщение
     test_message = {
-        'type': 'register',  # MessageTypeRegister
-        'token': token,
-        'version': '1.0.0'
+        'type': 1,  # MessageTypeRegister
+        'token': token
     }
     
     print(f"Message to send: {test_message}")
     
-    # Параметры подключения
-    HOST = '127.0.0.1'
-    PORT = 8080
-    
     # Отправляем сообщение
-    send_message(HOST, PORT, test_message) 
+    with socket_context('127.0.0.1', 8080) as sock:
+        print("Sending message...")
+        send_message(sock, test_message)
+        
+        print("Waiting for response...")
+        response = read_message(sock)
+        print(f"Response: {json.dumps(response, indent=2)}") 

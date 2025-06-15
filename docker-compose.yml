@@ -5,36 +5,42 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: cloudbridge-relay
     ports:
-      - "3456:3456"  # Map port 3456 for Django communication
-    environment:
-      - RELAY_PORT=3456
-      - RELAY_MAX_CONNECTIONS=1000
-      - RELAY_RATE_LIMIT=100
-      - RELAY_RATE_BURST=200
+      - "8080:8080"  # Main server port
+      - "8081:8081"  # Metrics port
     volumes:
-      - ./config:/app/config
+      - ./config/config.json:/app/config/config.json
+      - ./logs:/var/log/relay
+    environment:
+      - LOG_LEVEL=DEBUG
+    command: ["./relay", "--config", "/app/config/config.json", "--log-level", "DEBUG"]
     networks:
       - relay-network
+      - lk_dasjboard_default
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   prometheus:
     image: prom/prometheus:latest
+    container_name: prometheus
     ports:
-      - "9090:9090"
+      - "9091:9090"
     volumes:
       - ./prometheus:/etc/prometheus
-      - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
     networks:
       - relay-network
 
-volumes:
-  prometheus_data:
-
 networks:
   relay-network:
-    driver: bridge 
+    driver: bridge
+  lk_dasjboard_default:
+    external: true
+
+volumes:
+  prometheus_data: 

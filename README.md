@@ -1,300 +1,229 @@
-# CloudBridge Relay Server
+# CloudBridge Relay
 
-Relay-сервер для безопасного проброса TCP-портов и туннелирования трафика между различными участниками через публично доступный сервер.
+CloudBridge Relay - это высокопроизводительный сервер для туннелирования TCP-соединений с поддержкой аутентификации и балансировки нагрузки.
 
-## Особенности
+## Основные возможности
 
-* **Безопасность**: 
-  - Все соединения только исходящие, нет необходимости открывать порты на клиентах
-  - TLS шифрование всех соединений
-  - Поддержка mTLS (mutual TLS) для дополнительной безопасности
-  - Интеграция с Cloudflare для управления сертификатами
-* **Простота**: Минималистичный протокол на основе JSON
-* **Надежность**: Автоматическое восстановление соединений, keepalive
-* **Масштабируемость**: Ограничение количества туннелей, очистка неактивных соединений
+- Туннелирование TCP-соединений
+- Аутентификация через Django API
+- Поддержка TLS/mTLS
+- Балансировка нагрузки
+- Мониторинг и метрики
+- Структурированное логирование
+- Автоматическое переподключение
+- Ограничение скорости запросов
+- Graceful shutdown
 
 ## Установка
 
 ### Требования
 
-* Ubuntu Server 22.04 LTS
-* Go 1.21 или выше
-* Cloudflare API токен (для управления сертификатами)
+- Go 1.21 или выше
+- Docker (опционально)
+- Systemd (для установки как сервис)
 
-### Сборка
-
-```bash
-# Клонирование репозитория
-git clone https://github.com/twogc/cloudbridge-relay-installer.git
-cd cloudbridge-relay
-
-# Сборка
-./build.sh
-```
-
-### Установка на сервер
+### Установка из исходного кода
 
 ```bash
-# Распаковка архива
-tar xzf build/relay-installer.tar.gz
-
-# Установка
-sudo ./install.sh
+git clone https://github.com/maxlanies/cloudbridge-relay-installer.git
+cd cloudbridge-relay-installer
+go build -o relay cmd/relay/main.go
 ```
 
-## Конфигурация TLS
-
-### Использование Cloudflare Edge Certificates
-
-1. Получите API токен Cloudflare с правами на управление сертификатами
-2. Настройте DNS записи для вашего домена в Cloudflare
-3. Укажите параметры TLS в конфигурации:
+### Установка через Docker
 
 ```bash
-cloudbridge-relay \
-  -addr ":443" \
-  -tls-cert /path/to/cert.pem \
-  -tls-key /path/to/key.pem \
-  -mtls-ca /path/to/ca.pem \
-  -mtls-verify true
+docker pull maxlanies/cloudbridge-relay
 ```
 
-### Параметры TLS
+## Конфигурация
 
-* `-tls-cert`: Путь к сертификату TLS
-* `-tls-key`: Путь к приватному ключу TLS
-* `-mtls-ca`: Путь к CA сертификату для mTLS (опционально)
-* `-mtls-verify`: Включить проверку клиентских сертификатов (по умолчанию false)
+### Основные параметры
+
+```json
+{
+  "server": {
+    "port": 8080,
+    "max_tunnels": 1000,
+    "timeout": "30s"
+  },
+  "django": {
+    "api_endpoint": "http://localhost:8000/api",
+    "jwt_secret": "your-secret-key",
+    "rest_timeout": "5s",
+    "rest_cache_ttl": "1m"
+  },
+  "security": {
+    "rate_limit": {
+      "requests_per_second": 100,
+      "burst": 200
+    }
+  }
+}
+```
+
+### Параметры командной строки
+
+- `--config` - путь к файлу конфигурации (по умолчанию: config/config.json)
+- `--workers` - количество рабочих горутин (по умолчанию: количество CPU * 2)
+- `--timeout` - таймаут соединения (по умолчанию: 30s)
+- `--rate-limit` - ограничение скорости запросов (по умолчанию: 100)
+- `--rate-burst` - размер пакета для ограничения скорости (по умолчанию: 200)
+- `--max-tunnels` - максимальное количество туннелей (по умолчанию: 1000)
+- `--log-level` - уровень логирования (DEBUG, INFO, WARNING, ERROR)
+- `--log-file` - путь к файлу логов (по умолчанию: stdout)
 
 ## Использование
 
 ### Запуск сервера
 
 ```bash
-cloudbridge-relay -addr ":12345" -timeout 10m -max-tunnels 1000
+./relay --config config/config.json
 ```
 
-Параметры:
-* `-addr`: Адрес для прослушивания (по умолчанию ":12345")
-* `-timeout`: Таймаут соединения (по умолчанию 10 минут)
-* `-max-tunnels`: Максимальное количество туннелей (по умолчанию 1000)
-
-### Управление сервисом
+### Запуск в Docker
 
 ```bash
-# Статус
-systemctl status relay
+docker run -d \
+  -p 8080:8080 \
+  -v /path/to/config:/app/config \
+  maxlanies/cloudbridge-relay
+```
 
-# Запуск
-systemctl start relay
+### Установка как системный сервис
 
-# Остановка
-systemctl stop relay
-
-# Перезапуск
-systemctl restart relay
-
-# Просмотр логов
-journalctl -u relay
+```bash
+sudo ./install.sh
 ```
 
 ## Протокол
 
 ### Формат сообщений
 
-Все сообщения передаются в формате JSON с 4-байтным префиксом длины (BigEndian).
+Все сообщения передаются в формате JSON с 4-байтовым префиксом длины (BigEndian):
+
+```go
+type Message struct {
+    Type    MessageType `json:"type"`
+    Token   string     `json:"token"`
+    Config  *ConfigMessage  `json:"config,omitempty"`
+    Pong    *PongMessage   `json:"pong,omitempty"`
+    Error   string     `json:"error,omitempty"`
+}
+```
 
 ### Типы сообщений
 
-* **Register**: Регистрация туннеля
-  ```json
-  {
-    "type": "register",
-    "token": "your-token",
-    "version": "1.0.0"
-  }
-  ```
+- `Register` - регистрация туннеля
+- `Connect` - подключение к туннелю
+- `Ping` - проверка активности
+- `Pong` - ответ на ping
+- `Config` - конфигурация туннеля
+- `Error` - сообщение об ошибке
 
-* **Config**: Ответ на регистрацию
-  ```json
-  {
-    "type": "config",
-    "token": "your-token",
-    "public_url": "bore://your-token",
-    "status": "ok"
-  }
-  ```
+## Мониторинг
 
-* **Connect**: Запрос на подключение
-  ```json
-  {
-    "type": "connect",
-    "token": "your-token"
-  }
-  ```
+### Метрики Prometheus
 
-* **Ping/Pong**: Keepalive
-  ```json
-  {
-    "type": "ping",
-    "token": "your-token",
-    "version": "1.0.0"
-  }
-  ```
+- `relay_active_connections` - количество активных соединений
+- `relay_rejected_connections` - количество отклоненных соединений
+- `relay_connection_duration_seconds` - длительность соединений
+- `relay_bytes_transferred` - количество переданных байт
+- `relay_errors_total` - количество ошибок
+- `relay_latency_seconds` - задержка обработки запросов
 
-* **Error**: Сообщение об ошибке
-  ```json
-  {
-    "type": "error",
-    "error": "error message"
+### Логирование
+
+Сервер использует структурированное логирование в формате JSON:
+
+```json
+{
+  "timestamp": "2024-03-14T12:00:00Z",
+  "level": "INFO",
+  "message": "Server started",
+  "fields": {
+    "port": 8080,
+    "tls": true,
+    "workers": 8
   }
-  ```
+}
+```
+
+## Отладка
+
+Подробная информация по отладке доступна в [документации по отладке](docs/debugging.md).
 
 ## Безопасность
 
-* Все соединения только исходящие
-* TLS шифрование всех соединений
-* Поддержка mTLS для дополнительной безопасности
-* Проброс осуществляется строго по токену
-* Автоматическая очистка неактивных туннелей
-* Ограничение на количество одновременных туннелей
-* Интеграция с Cloudflare для управления сертификатами
+- Поддержка TLS/mTLS
+- Валидация токенов через Django API
+- Ограничение скорости запросов
+- Проверка IP-адресов
+- Graceful shutdown
 
-## Логирование
+## Масштабирование
 
-Логи доступны через:
-* systemd journal: `journalctl -u relay`
-* Файлы логов: `/var/log/relay/`
+- Балансировка нагрузки
+- Мониторинг производительности
+- Настраиваемые ограничения соединений
+- Кэширование токенов
+
+## Развертывание
+
+- Поддержка Docker
+- Интеграция с Systemd
+- Скрипты установки
+- Конфигурация через JSON
+
+## Мониторинг
+
+- Метрики Prometheus
+- Проверки здоровья
+- Логирование
+- Отслеживание ошибок
 
 ## Лицензия
 
 MIT
 
-# CloudBridge Relay Installer
+## Авторы
 
-## Описание
-CloudBridge Relay Installer — это инструмент для установки и настройки relay-сервера, который обеспечивает безопасное соединение между клиентами и серверами через туннели. Система поддерживает масштабирование, мониторинг и балансировку нагрузки.
+- Max Lanies
 
-## Возможности
-- Безопасное туннелирование TCP-соединений
-- Поддержка RDP и других TCP-протоколов
-- Масштабирование через кластер relay-серверов
-- Мониторинг производительности и состояния
-- Балансировка нагрузки между серверами
-- Ограничение количества соединений
-- Защита от перегрузки
+## Вклад в проект
 
-## Установка
-1. Клонируйте репозиторий:
-   ```bash
-   git clone https://github.com/maxlanies/cloudbridge-relay-installer.git
-   cd cloudbridge-relay-installer
-   ```
+1. Форкните репозиторий
+2. Создайте ветку для ваших изменений
+3. Внесите изменения
+4. Отправьте pull request
 
-2. Установите зависимости:
-   ```bash
-   go mod download
-   ```
+## Поддержка
 
-3. Соберите проект:
-   ```bash
-   ./build.sh
-   ```
+Если у вас возникли проблемы или есть вопросы, создайте issue в репозитории проекта.
 
-## Использование
-### Запуск relay-сервера
-```bash
-./bin/relay -port 8080 \
-           -token-validator rest \
-           -token-endpoint http://your-django-server/validate \
-           -max-connections 1000 \
-           -rate-limit 100 \
-           -rate-burst 200
+## JWT секрет (RELAY_JWT_SECRET)
+
+Для корректной работы relay-сервера, Django API и тест-клиента необходимо использовать один и тот же секрет для подписи и проверки JWT токенов.
+
+**Текущий секрет:**
+```
+Yk7+4of0fCmcHY+p0QCZHonEMO0+WUvbKsrjfvJL3zk=
 ```
 
-### Запуск агента
-```bash
-./bin/agent -relay localhost:8080 -token your-token
-```
+### Где используется секрет
 
-### Запуск кластера relay-серверов
-```bash
-# Сервер 1
-./bin/relay -port 8080 -cluster-port 8081
+- **Django:**
+  - В настройках (`settings.py`) как `RELAY_JWT_SECRET`.
+  - Используется для проверки токенов во view `/api/relay/token/validate/`.
 
-# Сервер 2
-./bin/relay -port 8082 -cluster-port 8083
+- **Relay-сервер:**
+  - В файле `config/config.json` поле `jwt_secret`.
+  - Используется для валидации токенов, получаемых от клиентов.
 
-# Сервер 3
-./bin/relay -port 8084 -cluster-port 8085
-```
+- **Тест-клиент:**
+  - В файле `test_client.py` переменная `secret`.
+  - Используется для генерации токенов, отправляемых на relay-сервер.
 
-## Проверка токена
-Relay-сервер проверяет токен, полученный от агента, с помощью Django (или локально, если используется JWT).  
-Ниже приведена схема взаимодействия:
-
-```mermaid
-sequenceDiagram
-    participant Django as "Django (Backend)"
-    participant Agent as "Клиент (Агент)"
-    participant Relay as "Relay-сервер"
-
-    Django->>Agent: Выдаёт токен (через API или вручную)
-    Agent->>Relay: Подключение + Register (с токеном)
-    alt JWT
-        Relay->>Relay: Проверяет подпись и срок действия токена
-    else REST
-        Relay->>Django: REST-запрос: /validate?token=...
-        Django-->>Relay: Ответ: валиден/не валиден
-    end
-    Relay-->>Agent: OK (туннель создан) или Error (отказ)
-```
-
-## Масштабирование
-Система поддерживает горизонтальное масштабирование через кластер relay-серверов:
-
-1. **Балансировка нагрузки:**
-   - Round-robin распределение соединений
-   - Автоматическое определение неработающих серверов
-   - Перераспределение нагрузки при сбоях
-
-2. **Мониторинг:**
-   - Количество активных соединений
-   - Количество отклонённых соединений
-   - Длительность соединений
-   - Объём переданных данных
-   - Задержка запросов
-   - Состояние серверов в кластере
-
-3. **Ограничения:**
-   - Максимальное количество соединений на сервер
-   - Rate limiting по IP-адресам
-   - Защита от перегрузки
-
-## Мониторинг
-Система предоставляет метрики в формате Prometheus:
-
-```bash
-# Просмотр метрик
-curl http://localhost:8080/metrics
-```
-
-Основные метрики:
-- `relay_active_connections` - количество активных соединений
-- `relay_rejected_connections` - количество отклонённых соединений
-- `relay_connection_duration_seconds` - длительность соединений
-- `relay_bytes_transferred` - объём переданных данных
-- `relay_errors` - количество ошибок
-- `relay_latency_seconds` - задержка запросов
-
-## Тестирование
-Запустите тесты:
-```bash
-go test ./...
-```
-
-## Лицензия
-Этот проект распространяется под проприетарной лицензией. Все права защищены.
-Для получения лицензии или дополнительной информации, пожалуйста, свяжитесь с автором.
-
-Copyright (c) 2025 Maksim Lanies. All Rights Reserved.
+### Важно
+- Если вы меняете секрет, обязательно обновите его во всех трёх местах.
+- Несовпадение секрета приведёт к ошибкам валидации токена ("invalid token").

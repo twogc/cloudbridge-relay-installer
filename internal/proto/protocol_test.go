@@ -2,7 +2,11 @@ package proto
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
+	"io"
 	"testing"
+	"time"
 )
 
 func TestMessage_GetType(t *testing.T) {
@@ -54,80 +58,243 @@ func TestNewMessage(t *testing.T) {
 	}
 }
 
-func TestReadMessage(t *testing.T) {
+func TestMessageSerialization(t *testing.T) {
 	tests := []struct {
-		name    string
-		msg     RelayMessage
-		wantErr bool
+		name     string
+		msg      *Message
+		wantJSON string
 	}{
 		{
-			"register",
-			&RegisterMessage{Message: Message{Type: MessageTypeRegister, Token: "test"}},
-			false,
+			name: "register message",
+			msg: &Message{
+				Type:  MessageTypeRegister,
+				Token: "test-token",
+			},
+			wantJSON: `{"type":1,"token":"test-token"}`,
 		},
 		{
-			"config",
-			&ConfigMessage{Message: Message{Type: MessageTypeConfig}, PublicURL: "http://test"},
-			false,
+			name: "config message",
+			msg: &Message{
+				Type: MessageTypeConfig,
+				Config: &ConfigMessage{
+					Token: "test-token",
+				},
+			},
+			wantJSON: `{"type":4,"config":{"token":"test-token"}}`,
 		},
 		{
-			"error",
-			&ErrorMessage{Message: Message{Type: MessageTypeError}, Error: "test error"},
-			false,
+			name: "error message",
+			msg: &Message{
+				Type:  MessageTypeError,
+				Error: "test error",
+			},
+			wantJSON: `{"type":6,"error":"test error"}`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Write message
-			var buf bytes.Buffer
-			if err := WriteMessage(&buf, tt.msg); err != nil {
-				t.Fatalf("WriteMessage() error = %v", err)
+			// Test JSON serialization
+			data, err := json.Marshal(tt.msg)
+			if err != nil {
+				t.Fatalf("Failed to marshal message: %v", err)
 			}
 
-			// Read message
-			got, err := ReadMessage(&buf)
+			if string(data) != tt.wantJSON {
+				t.Errorf("JSON = %s, want %s", string(data), tt.wantJSON)
+			}
+
+			// Test JSON deserialization
+			var got Message
+			if err := json.Unmarshal(data, &got); err != nil {
+				t.Fatalf("Failed to unmarshal message: %v", err)
+			}
+
+			if got.Type != tt.msg.Type {
+				t.Errorf("Type = %v, want %v", got.Type, tt.msg.Type)
+			}
+		})
+	}
+}
+
+func TestReadMessage(t *testing.T) {
+	tests := []struct {
+		name    string
+		data    []byte
+		want    *Message
+		wantErr bool
+	}{
+		{
+			name: "valid message",
+			data: []byte{0, 0, 0, 25, 123, 34, 116, 121, 112, 101, 34, 58, 49, 44, 34, 116, 111, 107, 101, 110, 34, 58, 34, 116, 101, 115, 116, 34, 125},
+			want: &Message{
+				Type:  MessageTypeRegister,
+				Token: "test",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "invalid length",
+			data:    []byte{0, 0, 0, 1},
+			wantErr: true,
+		},
+		{
+			name:    "invalid JSON",
+			data:    []byte{0, 0, 0, 5, 123, 34, 116, 121, 112},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ReadMessage(bytes.NewReader(tt.data))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ReadMessage() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !tt.wantErr && got.GetType() != tt.msg.GetType() {
-				t.Errorf("ReadMessage().GetType() = %v, want %v", got.GetType(), tt.msg.GetType())
+			if !tt.wantErr && got.Type != tt.want.Type {
+				t.Errorf("ReadMessage().Type = %v, want %v", got.Type, tt.want.Type)
+			}
+		})
+	}
+}
+
+func TestWriteMessage(t *testing.T) {
+	tests := []struct {
+		name    string
+		msg     *Message
+		wantErr bool
+	}{
+		{
+			name: "register message",
+			msg: &Message{
+				Type:  MessageTypeRegister,
+				Token: "test",
+			},
+			wantErr: false,
+		},
+		{
+			name: "config message",
+			msg: &Message{
+				Type: MessageTypeConfig,
+				Config: &ConfigMessage{
+					Token: "test",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "error message",
+			msg: &Message{
+				Type:  MessageTypeError,
+				Error: "test error",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := WriteMessage(&buf, tt.msg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("WriteMessage() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr {
+				// Read back the message
+				got, err := ReadMessage(&buf)
+				if err != nil {
+					t.Fatalf("Failed to read back message: %v", err)
+				}
+
+				if got.Type != tt.msg.Type {
+					t.Errorf("Type = %v, want %v", got.Type, tt.msg.Type)
+				}
 			}
 		})
 	}
 }
 
 func TestWriteError(t *testing.T) {
-	var buf bytes.Buffer
-	errMsg := "test error"
-	if err := WriteError(&buf, errMsg); err != nil {
-		t.Fatalf("WriteError() error = %v", err)
+	tests := []struct {
+		name    string
+		err     string
+		wantErr bool
+	}{
+		{
+			name:    "valid error",
+			err:     "test error",
+			wantErr: false,
+		},
+		{
+			name:    "empty error",
+			err:     "",
+			wantErr: false,
+		},
 	}
 
-	msg, err := ReadMessage(&buf)
-	if err != nil {
-		t.Fatalf("ReadMessage() error = %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := WriteError(&buf, tt.err)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("WriteError() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
 
-	if errMsg, ok := msg.(*ErrorMessage); !ok || errMsg.Error != errMsg {
-		t.Errorf("WriteError() = %v, want %v", msg, errMsg)
+			if !tt.wantErr {
+				// Read back the message
+				got, err := ReadMessage(&buf)
+				if err != nil {
+					t.Fatalf("Failed to read back error message: %v", err)
+				}
+
+				if got.Type != MessageTypeError {
+					t.Errorf("Type = %v, want %v", got.Type, MessageTypeError)
+				}
+
+				if got.Error != tt.err {
+					t.Errorf("Error = %v, want %v", got.Error, tt.err)
+				}
+			}
+		})
 	}
 }
 
-func TestWritePong(t *testing.T) {
-	var buf bytes.Buffer
-	token := "test-token"
-	if err := WritePong(&buf, token); err != nil {
-		t.Fatalf("WritePong() error = %v", err)
+func TestMessageTimeout(t *testing.T) {
+	// Create a slow reader
+	slowReader := &slowReader{
+		delay: 100 * time.Millisecond,
+		data:  []byte{0, 0, 0, 5, 123, 34, 116, 121, 112, 101, 34, 58, 49, 125},
 	}
 
-	msg, err := ReadMessage(&buf)
-	if err != nil {
-		t.Fatalf("ReadMessage() error = %v", err)
+	// Set a short timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	// Try to read message
+	_, err := ReadMessageWithContext(ctx, slowReader)
+	if err == nil {
+		t.Error("Expected timeout error")
+	}
+}
+
+// slowReader is a reader that introduces a delay
+type slowReader struct {
+	delay time.Duration
+	data  []byte
+	pos   int
+}
+
+func (r *slowReader) Read(p []byte) (n int, err error) {
+	if r.pos >= len(r.data) {
+		return 0, io.EOF
 	}
 
-	if pong, ok := msg.(*PongMessage); !ok || pong.Token != token {
-		t.Errorf("WritePong() = %v, want %v", msg, token)
-	}
+	time.Sleep(r.delay)
+	n = copy(p, r.data[r.pos:])
+	r.pos += n
+	return n, nil
 } 
