@@ -1,0 +1,227 @@
+groups:
+  - name: relay_alerts
+    rules:
+      # High connection rejection rate
+      - alert: HighConnectionRejectionRate
+        expr: rate(relay_rejected_connections_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High connection rejection rate on {{ $labels.instance }}"
+          description: "Connection rejection rate is {{ $value }} per second for the last 5 minutes"
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(relay_errors_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on {{ $labels.instance }}"
+          description: "Error rate is {{ $value }} per second for the last 5 minutes"
+
+      # Too many active connections
+      - alert: TooManyActiveConnections
+        expr: relay_active_connections > 800
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Too many active connections on {{ $labels.instance }}"
+          description: "{{ $value }} active connections (limit: 1000)"
+
+      # Connection limit reached
+      - alert: ConnectionLimitReached
+        expr: relay_active_connections >= 1000
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Connection limit reached on {{ $labels.instance }}"
+          description: "{{ $value }} active connections - limit reached"
+
+      # High latency
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(relay_connection_duration_seconds_bucket[5m])) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High connection latency on {{ $labels.instance }}"
+          description: "95th percentile latency is {{ $value }} seconds"
+
+      # High heartbeat latency
+      - alert: HighHeartbeatLatency
+        expr: histogram_quantile(0.95, rate(relay_heartbeat_latency_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High heartbeat latency on {{ $labels.instance }}"
+          description: "95th percentile heartbeat latency is {{ $value }} seconds"
+
+      # Keycloak Token Validation Failures
+      - alert: KeycloakTokenValidationFailures
+        expr: rate(relay_keycloak_token_validations_total{result="failure"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Keycloak token validation failure rate on {{ $labels.instance }}"
+          description: "Token validation failure rate is {{ $value }} per second for the last 5 minutes"
+
+      # Keycloak JWKS Cache Miss Rate
+      - alert: KeycloakJWKSCacheMissRate
+        expr: rate(relay_keycloak_jwks_cache_misses_total[5m]) / (rate(relay_keycloak_jwks_cache_hits_total[5m]) + rate(relay_keycloak_jwks_cache_misses_total[5m])) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High JWKS cache miss rate on {{ $labels.instance }}"
+          description: "JWKS cache miss rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+
+      # Keycloak JWKS Fetch Duration
+      - alert: KeycloakJWKSFetchDuration
+        expr: histogram_quantile(0.95, rate(relay_keycloak_jwks_fetch_duration_seconds_bucket[5m])) > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow JWKS fetch on {{ $labels.instance }}"
+          description: "95th percentile JWKS fetch duration is {{ $value }} seconds"
+
+      # Keycloak Token Validation Duration
+      - alert: KeycloakTokenValidationDuration
+        expr: histogram_quantile(0.95, rate(relay_keycloak_token_validation_duration_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow Keycloak token validation on {{ $labels.instance }}"
+          description: "95th percentile token validation duration is {{ $value }} seconds"
+
+      # Keycloak Permission Check Failures
+      - alert: KeycloakPermissionCheckFailures
+        expr: rate(relay_keycloak_permission_checks_total{result="denied"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High permission check failure rate on {{ $labels.instance }}"
+          description: "Permission check failure rate is {{ $value }} per second for the last 5 minutes"
+
+      # Business Metrics Alerts
+      - alert: LowActiveUsers
+        expr: relay_business_active_users < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low active users on {{ $labels.instance }}"
+          description: "Only {{ $value }} active users"
+
+      - alert: LowCustomerSatisfaction
+        expr: relay_business_customer_satisfaction < 70
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low customer satisfaction on {{ $labels.instance }}"
+          description: "Customer satisfaction score is {{ $value }}"
+
+      # Technical Metrics Alerts
+      - alert: HighMemoryUsage
+        expr: relay_technical_memory_usage_bytes / 1024 / 1024 > 1000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }} MB"
+
+      - alert: HighGCPauseDuration
+        expr: histogram_quantile(0.95, rate(relay_technical_gc_pause_duration_seconds_bucket[5m])) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High GC pause duration on {{ $labels.instance }}"
+          description: "95th percentile GC pause duration is {{ $value }} seconds"
+
+      - alert: HighNetworkLatency
+        expr: histogram_quantile(0.95, rate(relay_technical_network_latency_seconds_bucket[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network latency on {{ $labels.instance }}"
+          description: "95th percentile network latency is {{ $value }} seconds"
+
+      # Critical Alerts
+      - alert: KeycloakServiceDown
+        expr: up{job="keycloak"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Keycloak service is down on {{ $labels.instance }}"
+          description: "Keycloak service has been down for more than 1 minute"
+
+      - alert: RelayServiceDown
+        expr: up{job="relay"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Relay service is down on {{ $labels.instance }}"
+          description: "Relay service has been down for more than 1 minute"
+
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus is down on {{ $labels.instance }}"
+          description: "Prometheus has been down for more than 1 minute"
+
+      # Performance Alerts
+      - alert: HighDiskIO
+        expr: rate(relay_technical_disk_io_total[5m]) > 1000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk I/O on {{ $labels.instance }}"
+          description: "Disk I/O rate is {{ $value }} operations per second"
+
+      # Security Alerts
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(relay_keycloak_token_validations_total{result="failure"}[5m]) > 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High rate of unauthorized access attempts on {{ $labels.instance }}"
+          description: "Unauthorized access rate is {{ $value }} per second - possible security breach"
+
+      # Capacity Alerts
+      - alert: JWKSCacheFull
+        expr: relay_keycloak_jwks_cache_size > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JWKS cache is getting full on {{ $labels.instance }}"
+          description: "JWKS cache contains {{ $value }} keys"
+
+      # Availability Alerts
+      - alert: ServiceUnavailable
+        expr: (rate(relay_errors_total{code="service_unavailable"}[5m]) > 0) or (rate(relay_errors_total{code="internal_server_error"}[5m]) > 0)
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service unavailable errors on {{ $labels.instance }}"
+          description: "Service is returning unavailable or internal server errors" 

@@ -2,30 +2,56 @@
     "server": {
         "address": ":8080",
         "port": 8080,
-        "timeout": 60000000000,
+        "timeout": "30s",
         "max_tunnels": 1000,
-        "ping_interval": 30000000000,
-        "cleanup_interval": 60000000000
+        "ping_interval": "30s",
+        "cleanup_interval": "1m"
     },
     "django": {
-        "api_endpoint": "http://lk-dasjboard-django-lk-app-1:5005/api/relay/token/validate/",
-        "jwt_secret": "supersecret",
-        "jwt_expiry": 3600000000000,
-        "rest_timeout": 5000000000,
-        "rest_cache_ttl": 300000000000,
+        "api_endpoint": "http://localhost:8000/api",
+        "jwt_secret": "REPLACE_WITH_SECURE_SECRET_FROM_ENVIRONMENT",
+        "jwt_expiry": "24h",
+        "rest_timeout": "5s",
+        "rest_cache_ttl": "5m",
         "rest_max_retries": 3,
-        "rest_retry_delay": 100000000
+        "rest_retry_delay": "100ms"
+    },
+    "keycloak": {
+        "enabled": false,
+        "server_url": "https://keycloak.example.com",
+        "realm": "cloudbridge",
+        "client_id": "relay-client",
+        "client_secret": "REPLACE_WITH_KEYCLOAK_CLIENT_SECRET",
+        "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
+        "token_validation": {
+            "issuer": "https://keycloak.example.com/realms/cloudbridge",
+            "audience": "relay-client",
+            "clock_skew": "30s"
+        },
+        "jwks_cache_ttl": "1h",
+        "http_timeout": "30s"
     },
     "security": {
-        "tls_enabled": false,
+        "tls_enabled": true,
         "cert_file": "/etc/relay/certs/fullchain.pem",
         "key_file": "/etc/relay/certs/privkey.pem",
         "allowed_ips": "",
         "rate_limit": {
-            "enabled": false,
+            "enabled": true,
             "requests_per_second": 100,
             "burst": 200
-        }
+        },
+        "mtls": {
+            "enabled": false,
+            "ca_cert": "/etc/relay/certs/ca.pem",
+            "client_cert": "/etc/relay/certs/client.pem",
+            "client_key": "/etc/relay/certs/client-key.pem"
+        },
+        "cipher_suites": [
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+        ],
+        "min_tls_version": "1.2"
     },
     "metrics": {
         "enabled": true,
@@ -33,12 +59,12 @@
         "path": "/metrics"
     },
     "logging": {
-        "level": "debug",
+        "level": "INFO",
         "format": "json",
         "output": "/var/log/relay/relay.log",
         "fields": {
             "service": "relay",
-            "environment": "development"
+            "version": "1.0.0"
         }
     }
 } 

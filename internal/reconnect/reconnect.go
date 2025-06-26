@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/maxlanies/cloudbridge-relay-installer/internal/errors"
-	"github.com/maxlanies/cloudbridge-relay-installer/internal/logger"
+	"github.com/twogc/cloudbridge-relay-installer/internal/errors"
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 )
 
 // Config represents the reconnection configuration
@@ -26,7 +26,15 @@ func DefaultConfig() *Config {
 		RetryDelay:    time.Second,
 		MaxRetryDelay: time.Minute,
 		BackoffFactor: 2.0,
-		Logger:        logger.NewLogger(nil, logger.INFO),
+		Logger:        logger.NewLogger(logger.Config{
+			Level:    logger.LogLevelInfo,
+			Console:  true,
+			Format:   "json",
+			MaxSize:  100,
+			MaxAge:   30,
+			MaxBackups: 10,
+			Compress: true,
+		}),
 	}
 }
 

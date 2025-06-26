@@ -1,42 +1,140 @@
 # CloudBridge Relay
 
-CloudBridge Relay - это высокопроизводительный сервер для туннелирования TCP-соединений с поддержкой аутентификации и балансировки нагрузки.
+CloudBridge Relay - это высокопроизводительный сервер для туннелирования TCP-соединений с поддержкой аутентификации, балансировки нагрузки и расширенного мониторинга.
 
-## Основные возможности
+## 🚀 Основные возможности
 
-- Туннелирование TCP-соединений
-- Аутентификация через Django API
-- Поддержка TLS/mTLS
-- Балансировка нагрузки
-- Мониторинг и метрики
-- Структурированное логирование
-- Автоматическое переподключение
-- Ограничение скорости запросов
-- Graceful shutdown
+- ✅ **Туннелирование TCP-соединений** с поддержкой TLS/mTLS
+- ✅ **JWT аутентификация** через Django API
+- ✅ **Интеграция с Keycloak** (OAuth 2.0 / OpenID Connect)
+- ✅ **Балансировка нагрузки** (round-robin)
+- ✅ **Ограничение скорости запросов** (rate limiting)
+- ✅ **Расширенный мониторинг** через Prometheus + Grafana
+- ✅ **Алерты и уведомления** через AlertManager
+- ✅ **Структурированное логирование** (JSON) с ротацией
+- ✅ **Автоматическое переподключение**
+- ✅ **Graceful shutdown**
+- ✅ **Health checks**
+- ✅ **Полное тестовое покрытие** (unit, integration, E2E)
 
-## Установка
+## 🔒 Безопасность
+
+### TLS/mTLS поддержка
+- TLS 1.2+ по умолчанию включен
+- Поддержка mTLS (mutual TLS)
+- Настраиваемые cipher suites
+- Автоматическое обновление сертификатов
+
+### Аутентификация
+- JWT токены с валидацией через Django API
+- Интеграция с Keycloak для централизованной аутентификации
+- Кэширование токенов с TTL
+- Безопасное хранение секретов через переменные окружения
+
+### Rate Limiting
+- Ограничение по IP-адресам
+- Настраиваемые лимиты запросов
+- Защита от DDoS атак
+
+## 📊 Мониторинг
+
+### Prometheus метрики
+- Активные соединения и туннели
+- Производительность и задержки
+- Ошибки и отказы
+- Использование ресурсов
+- Keycloak метрики (валидация токенов, JWKS кэш)
+- Бизнес-метрики (активные пользователи, доход)
+
+### Grafana дашборды
+- Готовые дашборды для мониторинга
+- Автоматическая настройка через provisioning
+- Визуализация метрик в реальном времени
+
+### Алерты
+- Настраиваемые алерты Prometheus
+- Уведомления через Slack, Email
+- Escalation policies
+- Автоматическое разрешение
+
+## 📝 Логирование
+
+### Структурированное логирование
+- **Формат:** JSON (по умолчанию), Console
+- **Уровни:** DEBUG, INFO, WARN, ERROR
+- **Ротация:** Автоматическая с настройкой размера и количества файлов
+- **Поля:** timestamp, level, message, user_id, request_id, connection_id, duration, error
+
+### Специализированные методы
+- Логирование соединений и аутентификации
+- Логирование валидации токенов и проверки разрешений
+- Логирование производительности и безопасности
+- Логирование бизнес-событий
+
+## 🧪 Тестирование
+
+### Типы тестов
+- **Unit тесты** - покрытие всех компонентов
+- **Integration тесты** - тестирование взаимодействия
+- **E2E тесты** - полный цикл работы
+- **Performance тесты** - нагрузочное тестирование
+
+### Покрытие
+- Более 80% покрытия кода
+- Автоматизированные тесты в CI/CD
+- Тестирование безопасности
+
+## 🛠️ Установка
 
 ### Требования
 
-- Go 1.21 или выше
-- Docker (опционально)
+- Go 1.18+
+- Docker 20.10+ (опционально)
 - Systemd (для установки как сервис)
 
-### Установка из исходного кода
+### Быстрый старт
 
 ```bash
+# Клонирование репозитория
 git clone https://github.com/maxlanies/cloudbridge-relay-installer.git
 cd cloudbridge-relay-installer
-go build -o relay cmd/relay/main.go
+
+# Сборка
+make build
+
+# Запуск в development режиме
+RELAY_JWT_SECRET=test-secret ./relay --config config/config.json --log-level DEBUG
 ```
 
-### Установка через Docker
+### Docker
 
 ```bash
-docker pull maxlanies/cloudbridge-relay
+# Сборка образа
+docker build -t cloudbridge-relay .
+
+# Запуск контейнера
+docker run -d \
+  --name relay \
+  -p 8080:8080 \
+  -p 8081:8081 \
+  -e RELAY_JWT_SECRET=your-secret \
+  cloudbridge-relay ./relay --config config/config.json
+
+# Просмотр логов
+docker logs relay
 ```
 
-## Конфигурация
+### Системный сервис
+
+```bash
+# Установка как системный сервис
+make install
+
+# Проверка статуса
+sudo systemctl status relay
+```
+
+## ⚙️ Конфигурация
 
 ### Основные параметры
 
@@ -45,185 +143,228 @@ docker pull maxlanies/cloudbridge-relay
   "server": {
     "port": 8080,
     "max_tunnels": 1000,
-    "timeout": "30s"
+    "timeout": "30s",
+    "ping_interval": "30s",
+    "cleanup_interval": "1m"
   },
   "django": {
-    "api_endpoint": "http://localhost:8000/api",
-    "jwt_secret": "your-secret-key",
+    "api_endpoint": "http://your-django-server:8000/api",
+    "jwt_secret": "REPLACE_WITH_SECURE_SECRET_FROM_ENVIRONMENT",
     "rest_timeout": "5s",
-    "rest_cache_ttl": "1m"
+    "rest_cache_ttl": "5m"
+  },
+  "keycloak": {
+    "enabled": false,
+    "server_url": "https://keycloak.example.com",
+    "realm": "cloudbridge",
+    "client_id": "relay-client",
+    "token_validation": {
+      "issuer": "https://keycloak.example.com/realms/cloudbridge",
+      "audience": "relay-client",
+      "clock_skew": "30s"
+    }
   },
   "security": {
+    "tls_enabled": true,
+    "cert_file": "/etc/relay/certs/fullchain.pem",
+    "key_file": "/etc/relay/certs/privkey.pem",
     "rate_limit": {
+      "enabled": true,
       "requests_per_second": 100,
       "burst": 200
     }
+  },
+  "metrics": {
+    "enabled": true,
+    "port": ":8081"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "json",
+    "output": "/var/log/relay/relay.log"
   }
 }
 ```
 
-### Параметры командной строки
+**Важно:** Все поля типа `time.Duration` должны быть указаны в виде строк с суффиксами времени (например, "30s", "5m", "1h").
 
-- `--config` - путь к файлу конфигурации (по умолчанию: config/config.json)
-- `--workers` - количество рабочих горутин (по умолчанию: количество CPU * 2)
-- `--timeout` - таймаут соединения (по умолчанию: 30s)
-- `--rate-limit` - ограничение скорости запросов (по умолчанию: 100)
-- `--rate-burst` - размер пакета для ограничения скорости (по умолчанию: 200)
-- `--max-tunnels` - максимальное количество туннелей (по умолчанию: 1000)
-- `--log-level` - уровень логирования (DEBUG, INFO, WARNING, ERROR)
-- `--log-file` - путь к файлу логов (по умолчанию: stdout)
-
-## Использование
-
-### Запуск сервера
+### Переменные окружения
 
 ```bash
-./relay --config config/config.json
+# Обязательные
+RELAY_JWT_SECRET=your-secure-jwt-secret
+
+# Опциональные
+RELAY_DJANGO_API_ENDPOINT=http://your-django-server:8000/api
+RELAY_LOG_LEVEL=info
+RELAY_TLS_ENABLED=true
+
+# Keycloak (если включен)
+KEYCLOAK_SERVER_URL=https://keycloak.example.com
+KEYCLOAK_REALM=cloudbridge
+KEYCLOAK_CLIENT_ID=relay-client
+KEYCLOAK_CLIENT_SECRET=your-client-secret
 ```
 
-### Запуск в Docker
+## 📖 Документация
+
+### Основная документация
+- [API Reference](docs/api_reference.md) - Полная документация API
+- [Deployment Guide](docs/deployment_guide.md) - Руководство по развертыванию
+- [Client Integration](docs/client_integration.md) - Интеграция клиентов
+- [Debugging](docs/debugging.md) - Отладка и диагностика
+- [Metrics](docs/metrics.md) - Архитектура и использование метрик
+- [Keycloak Integration](docs/keycloak_integration.md) - Интеграция с Keycloak
+
+### Примеры использования
+- [Python Client](examples/python_client.py)
+- [JavaScript Client](examples/javascript_client.js)
+- [Go Client](examples/go_client.go)
+
+## 🔧 Разработка
+
+### Команды Makefile
 
 ```bash
-docker run -d \
-  -p 8080:8080 \
-  -v /path/to/config:/app/config \
-  maxlanies/cloudbridge-relay
+# Сборка
+make build
+
+# Тестирование
+make test-all
+
+# Линтинг
+make lint
+
+# Форматирование
+make fmt
+
+# Docker
+make docker-build
+make docker-run
+
+# Мониторинг
+make setup-monitoring
+
+# Безопасность
+make security-audit
 ```
 
-### Установка как системный сервис
+### Структура проекта
+
+```
+cloudbridge-relay-installer/
+├── cmd/relay/           # Основной сервер
+├── internal/            # Внутренние компоненты
+│   ├── auth/           # Аутентификация
+│   ├── keycloak/       # Интеграция с Keycloak
+│   ├── metrics/        # Prometheus метрики
+│   ├── logger/         # Структурированное логирование
+│   ├── token/          # Валидация токенов
+│   ├── ratelimit/      # Ограничение скорости
+│   └── ...
+├── config/             # Конфигурация
+├── deploy/             # Конфигурации развертывания
+├── docs/               # Документация
+├── scripts/            # Скрипты управления
+└── tests/              # Тесты
+```
+
+## 🚨 Устранение неполадок
+
+### Частые проблемы
+
+#### 1. Ошибка парсинга конфигурации
+```
+Failed to load configuration: failed to parse config file: json: cannot unmarshal string into Go struct field .server.timeout of type time.Duration
+```
+**Решение:** Убедитесь, что все поля `time.Duration` указаны в виде строк с суффиксами времени.
+
+#### 2. Порт уже занят
+```
+Failed to start server: failed to create listener: listen tcp :8080: bind: address already in use
+```
+**Решение:** Остановите процесс, использующий порт 8080, или измените порт в конфигурации.
+
+#### 3. Ошибка Docker контейнера
+```
+docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: "--config": executable file not found in $PATH
+```
+**Решение:** Укажите правильную команду запуска: `cloudbridge-relay ./relay --config config/config.json`
+
+### Диагностика
 
 ```bash
-sudo ./install.sh
+# Проверка статуса
+sudo systemctl status relay
+
+# Просмотр логов
+tail -f /var/log/relay/relay.log
+
+# Проверка метрик
+curl http://localhost:8081/metrics
+
+# Проверка конфигурации
+./relay --config config/config.json --help
 ```
 
-## Протокол
+## 📈 Мониторинг
 
-### Формат сообщений
+### Основные метрики
 
-Все сообщения передаются в формате JSON с 4-байтовым префиксом длины (BigEndian):
+```promql
+# Активные соединения
+relay_active_connections
 
-```go
-type Message struct {
-    Type    MessageType `json:"type"`
-    Token   string     `json:"token"`
-    Config  *ConfigMessage  `json:"config,omitempty"`
-    Pong    *PongMessage   `json:"pong,omitempty"`
-    Error   string     `json:"error,omitempty"`
-}
+# Процент успешных валидаций токенов
+rate(relay_keycloak_token_validations_total{result="success"}[5m]) / 
+rate(relay_keycloak_token_validations_total[5m]) * 100
+
+# Время соединения (95-й перцентиль)
+histogram_quantile(0.95, rate(relay_connection_duration_seconds_bucket[5m]))
 ```
 
-### Типы сообщений
+### Алерты
 
-- `Register` - регистрация туннеля
-- `Connect` - подключение к туннелю
-- `Ping` - проверка активности
-- `Pong` - ответ на ping
-- `Config` - конфигурация туннеля
-- `Error` - сообщение об ошибке
+- Высокий процент неудачных валидаций токенов
+- Медленные операции JWKS
+- Низкая производительность кэша
+- Высокое использование памяти
 
-## Мониторинг
+## 🤝 Поддержка
 
-### Метрики Prometheus
+### Получение помощи
 
-- `relay_active_connections` - количество активных соединений
-- `relay_rejected_connections` - количество отклоненных соединений
-- `relay_connection_duration_seconds` - длительность соединений
-- `relay_bytes_transferred` - количество переданных байт
-- `relay_errors_total` - количество ошибок
-- `relay_latency_seconds` - задержка обработки запросов
+1. Проверьте [документацию](docs/)
+2. Изучите [часто задаваемые вопросы](docs/debugging.md)
+3. Создайте issue в репозитории
 
-### Логирование
+### Сбор информации для поддержки
 
-Сервер использует структурированное логирование в формате JSON:
+```bash
+# Логи
+sudo journalctl -u relay > relay-logs.txt
 
-```json
-{
-  "timestamp": "2024-03-14T12:00:00Z",
-  "level": "INFO",
-  "message": "Server started",
-  "fields": {
-    "port": 8080,
-    "tls": true,
-    "workers": 8
-  }
-}
+# Метрики
+curl http://localhost:8081/metrics > metrics.txt
+
+# Конфигурация
+cat /etc/relay/config.json > config.txt
+
+# Системная информация
+uname -a > system-info.txt
 ```
 
-## Отладка
+## 📄 Лицензия
 
-Подробная информация по отладке доступна в [документации по отладке](docs/debugging.md).
+Этот проект лицензирован под MIT License - см. файл [LICENSE](LICENSE) для деталей.
 
-## Безопасность
+## 🏗️ Архитектура
 
-- Поддержка TLS/mTLS
-- Валидация токенов через Django API
-- Ограничение скорости запросов
-- Проверка IP-адресов
-- Graceful shutdown
+CloudBridge Relay построен с использованием современных практик разработки:
 
-## Масштабирование
-
-- Балансировка нагрузки
-- Мониторинг производительности
-- Настраиваемые ограничения соединений
-- Кэширование токенов
-
-## Развертывание
-
-- Поддержка Docker
-- Интеграция с Systemd
-- Скрипты установки
-- Конфигурация через JSON
-
-## Мониторинг
-
-- Метрики Prometheus
-- Проверки здоровья
-- Логирование
-- Отслеживание ошибок
-
-## Лицензия
-
-MIT
-
-## Авторы
-
-- Max Lanies
-
-## Вклад в проект
-
-1. Форкните репозиторий
-2. Создайте ветку для ваших изменений
-3. Внесите изменения
-4. Отправьте pull request
-
-## Поддержка
-
-Если у вас возникли проблемы или есть вопросы, создайте issue в репозитории проекта.
-
-## JWT секрет (RELAY_JWT_SECRET)
-
-Для корректной работы relay-сервера, Django API и тест-клиента необходимо использовать один и тот же секрет для подписи и проверки JWT токенов.
-
-**Текущий секрет:**
-```
-Yk7+4of0fCmcHY+p0QCZHonEMO0+WUvbKsrjfvJL3zk=
-```
-
-### Где используется секрет
-
-- **Django:**
-  - В настройках (`settings.py`) как `RELAY_JWT_SECRET`.
-  - Используется для проверки токенов во view `/api/relay/token/validate/`.
-
-- **Relay-сервер:**
-  - В файле `config/config.json` поле `jwt_secret`.
-  - Используется для валидации токенов, получаемых от клиентов.
-
-- **Тест-клиент:**
-  - В файле `test_client.py` переменная `secret`.
-  - Используется для генерации токенов, отправляемых на relay-сервер.
-
-### Важно
-- Если вы меняете секрет, обязательно обновите его во всех трёх местах.
-- Несовпадение секрета приведёт к ошибкам валидации токена ("invalid token").
+- **Модульная архитектура** - четкое разделение ответственности
+- **Dependency Injection** - легкое тестирование и конфигурация
+- **Graceful Shutdown** - корректное завершение работы
+- **Health Checks** - мониторинг состояния сервиса
+- **Structured Logging** - удобный анализ логов
+- **Metrics First** - детальный мониторинг производительности
