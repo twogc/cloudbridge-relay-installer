@@ -1,14 +1,18 @@
 package logger
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-// LogLevel represents the severity of the log message
+// LogLevel represents the logging level
 type LogLevel string
 
 const (
@@ -18,76 +22,343 @@ const (
 	ERROR   LogLevel = "ERROR"
 )
 
-// LogEntry represents a single log entry
-type LogEntry struct {
-	Timestamp string      `json:"timestamp"`
-	Level     LogLevel    `json:"level"`
-	Message   string      `json:"message"`
-	Fields    interface{} `json:"fields,omitempty"`
-	Error     string      `json:"error,omitempty"`
+// Config represents logger configuration
+type Config struct {
+	Level      LogLevel `json:"level" yaml:"level"`
+	Output     string   `json:"output" yaml:"output"` // "stdout", "file", "both"
+	FilePath   string   `json:"file_path" yaml:"file_path"`
+	MaxSize    int      `json:"max_size" yaml:"max_size"`       // MB
+	MaxBackups int      `json:"max_backups" yaml:"max_backups"` // number of backup files
+	MaxAge     int      `json:"max_age" yaml:"max_age"`         // days
+	Compress   bool     `json:"compress" yaml:"compress"`
+	JSON       bool     `json:"json" yaml:"json"` // structured logging
 }
 
-// Logger represents a structured logger
+// Logger represents the application logger
 type Logger struct {
-	output io.Writer
-	level  LogLevel
+	zapLogger *zap.Logger
+	config    Config
 }
 
-// NewLogger creates a new logger
-func NewLogger(output io.Writer, level LogLevel) *Logger {
-	if output == nil {
-		output = os.Stdout
+// New creates a new logger instance
+func New(config Config) (*Logger, error) {
+	var cores []zapcore.Core
+
+	// Create encoder
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.TimeKey = "timestamp"
+	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
+
+	var encoder zapcore.Encoder
+	if config.JSON {
+		encoder = zapcore.NewJSONEncoder(encoderConfig)
+	} else {
+		encoder = zapcore.NewConsoleEncoder(encoderConfig)
 	}
+
+	// Parse log level
+	level, err := zapcore.ParseLevel(strings.ToLower(string(config.Level)))
+	if err != nil {
+		return nil, fmt.Errorf("invalid log level: %s", config.Level)
+	}
+
+	// Console output
+	if config.Output == "stdout" || config.Output == "both" {
+		consoleCore := zapcore.NewCore(
+			encoder,
+			zapcore.AddSync(os.Stdout),
+			level,
+		)
+		cores = append(cores, consoleCore)
+	}
+
+	// File output
+	if config.Output == "file" || config.Output == "both" {
+		if config.FilePath == "" {
+			config.FilePath = "logs/relay.log"
+		}
+
+		// Ensure directory exists
+		dir := filepath.Dir(config.FilePath)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, fmt.Errorf("failed to create log directory: %w", err)
+		}
+
+		// Configure log rotation
+		writer := &lumberjack.Logger{
+			Filename:   config.FilePath,
+			MaxSize:    config.MaxSize,    // MB
+			MaxBackups: config.MaxBackups, // number of backup files
+			MaxAge:     config.MaxAge,     // days
+			Compress:   config.Compress,   // compress rotated files
+		}
+
+		fileCore := zapcore.NewCore(
+			encoder,
+			zapcore.AddSync(writer),
+			level,
+		)
+		cores = append(cores, fileCore)
+	}
+
+	if len(cores) == 0 {
+		return nil, fmt.Errorf("no output configured")
+	}
+
+	// Create core
+	core := zapcore.NewTee(cores...)
+
+	// Create logger
+	zapLogger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+
 	return &Logger{
-		output: output,
-		level:  level,
-	}
-}
-
-// log writes a log entry
-func (l *Logger) log(level LogLevel, message string, fields interface{}, err error) {
-	entry := LogEntry{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Level:     level,
-		Message:   message,
-		Fields:    fields,
-	}
-
-	if err != nil {
-		entry.Error = err.Error()
-	}
-
-	data, err := json.Marshal(entry)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to marshal log entry: %v\n", err)
-		return
-	}
-
-	fmt.Fprintln(l.output, string(data))
+		zapLogger: zapLogger,
+		config:    config,
+	}, nil
 }
 
 // Debug logs a debug message
-func (l *Logger) Debug(message string, fields interface{}) {
-	if l.level == DEBUG {
-		l.log(DEBUG, message, fields, nil)
-	}
+func (l *Logger) Debug(msg string, fields ...zap.Field) {
+	l.zapLogger.Debug(msg, fields...)
 }
 
 // Info logs an info message
-func (l *Logger) Info(message string, fields interface{}) {
-	if l.level == DEBUG || l.level == INFO {
-		l.log(INFO, message, fields, nil)
-	}
+func (l *Logger) Info(msg string, fields ...zap.Field) {
+	l.zapLogger.Info(msg, fields...)
 }
 
-// Warning logs a warning message
-func (l *Logger) Warning(message string, fields interface{}) {
-	if l.level != ERROR {
-		l.log(WARNING, message, fields, nil)
-	}
+// Warn logs a warning message
+func (l *Logger) Warn(msg string, fields ...zap.Field) {
+	l.zapLogger.Warn(msg, fields...)
 }
 
 // Error logs an error message
-func (l *Logger) Error(message string, err error, fields interface{}) {
-	l.log(ERROR, message, fields, err)
+func (l *Logger) Error(msg string, fields ...zap.Field) {
+	l.zapLogger.Error(msg, fields...)
+}
+
+// Fatal logs a fatal message and exits
+func (l *Logger) Fatal(msg string, fields ...zap.Field) {
+	l.zapLogger.Fatal(msg, fields...)
+}
+
+// With creates a child logger with additional fields
+func (l *Logger) With(fields ...zap.Field) *Logger {
+	return &Logger{
+		zapLogger: l.zapLogger.With(fields...),
+		config:    l.config,
+	}
+}
+
+// Sync flushes any buffered log entries
+func (l *Logger) Sync() error {
+	return l.zapLogger.Sync()
+}
+
+// Helper methods for common logging patterns
+
+// WithRequestID creates a logger with request ID
+func (l *Logger) WithRequestID(requestID string) *Logger {
+	return l.With(zap.String("request_id", requestID))
+}
+
+// WithUserID creates a logger with user ID
+func (l *Logger) WithUserID(userID string) *Logger {
+	return l.With(zap.String("user_id", userID))
+}
+
+// WithConnectionID creates a logger with connection ID
+func (l *Logger) WithConnectionID(connID string) *Logger {
+	return l.With(zap.String("connection_id", connID))
+}
+
+// WithDuration logs a message with duration
+func (l *Logger) WithDuration(duration time.Duration) *Logger {
+	return l.With(zap.Duration("duration", duration))
+}
+
+// WithError logs a message with error
+func (l *Logger) WithError(err error) *Logger {
+	return l.With(zap.Error(err))
+}
+
+// WithMetrics logs a message with metrics
+func (l *Logger) WithMetrics(metrics map[string]interface{}) *Logger {
+	fields := make([]zap.Field, 0, len(metrics))
+	for k, v := range metrics {
+		fields = append(fields, zap.Any(k, v))
+	}
+	return l.With(fields...)
+}
+
+// LogConnection logs connection events
+func (l *Logger) LogConnection(connID, userID, remoteAddr string, success bool) {
+	fields := []zap.Field{
+		zap.String("connection_id", connID),
+		zap.String("user_id", userID),
+		zap.String("remote_addr", remoteAddr),
+		zap.Bool("success", success),
+	}
+
+	if success {
+		l.Info("Connection established", fields...)
+	} else {
+		l.Error("Connection failed", fields...)
+	}
+}
+
+// LogAuthentication logs authentication events
+func (l *Logger) LogAuthentication(userID, method string, success bool, duration time.Duration) {
+	fields := []zap.Field{
+		zap.String("user_id", userID),
+		zap.String("method", method),
+		zap.Bool("success", success),
+		zap.Duration("duration", duration),
+	}
+
+	if success {
+		l.Info("Authentication successful", fields...)
+	} else {
+		l.Error("Authentication failed", fields...)
+	}
+}
+
+// LogTokenValidation logs token validation events
+func (l *Logger) LogTokenValidation(tokenID, method string, success bool, duration time.Duration, claims map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("token_id", tokenID),
+		zap.String("method", method),
+		zap.Bool("success", success),
+		zap.Duration("duration", duration),
+	}
+
+	if len(claims) > 0 {
+		fields = append(fields, zap.Any("claims", claims))
+	}
+
+	if success {
+		l.Info("Token validation successful", fields...)
+	} else {
+		l.Error("Token validation failed", fields...)
+	}
+}
+
+// LogPermissionCheck logs permission check events
+func (l *Logger) LogPermissionCheck(userID, resource, action string, granted bool, duration time.Duration) {
+	fields := []zap.Field{
+		zap.String("user_id", userID),
+		zap.String("resource", resource),
+		zap.String("action", action),
+		zap.Bool("granted", granted),
+		zap.Duration("duration", duration),
+	}
+
+	if granted {
+		l.Info("Permission granted", fields...)
+	} else {
+		l.Warn("Permission denied", fields...)
+	}
+}
+
+// LogPerformance logs performance metrics
+func (l *Logger) LogPerformance(operation string, duration time.Duration, metadata map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("operation", operation),
+		zap.Duration("duration", duration),
+	}
+
+	if len(metadata) > 0 {
+		fields = append(fields, zap.Any("metadata", metadata))
+	}
+
+	if duration > time.Second {
+		l.Warn("Slow operation detected", fields...)
+	} else {
+		l.Debug("Operation completed", fields...)
+	}
+}
+
+// LogSecurity logs security events
+func (l *Logger) LogSecurity(event string, userID, remoteAddr string, details map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("event", event),
+		zap.String("user_id", userID),
+		zap.String("remote_addr", remoteAddr),
+	}
+
+	if len(details) > 0 {
+		fields = append(fields, zap.Any("details", details))
+	}
+
+	l.Warn("Security event detected", fields...)
+}
+
+// LogBusinessEvent logs business events
+func (l *Logger) LogBusinessEvent(event string, userID string, data map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("event", event),
+		zap.String("user_id", userID),
+	}
+
+	if len(data) > 0 {
+		fields = append(fields, zap.Any("data", data))
+	}
+
+	l.Info("Business event", fields...)
+}
+
+// GetZapLogger returns the underlying zap logger
+func (l *Logger) GetZapLogger() *zap.Logger {
+	return l.zapLogger
+}
+
+// Default logger instance
+var defaultLogger *Logger
+
+// InitDefault initializes the default logger
+func InitDefault(config Config) error {
+	logger, err := New(config)
+	if err != nil {
+		return err
+	}
+	defaultLogger = logger
+	return nil
+}
+
+// GetDefault returns the default logger
+func GetDefault() *Logger {
+	if defaultLogger == nil {
+		// Fallback to basic logger
+		config := Config{
+			Level:  INFO,
+			Output: "stdout",
+			JSON:   false,
+		}
+		logger, _ := New(config)
+		defaultLogger = logger
+	}
+	return defaultLogger
+}
+
+// Convenience functions for default logger
+func Debug(msg string, fields ...zap.Field) {
+	GetDefault().Debug(msg, fields...)
+}
+
+func Info(msg string, fields ...zap.Field) {
+	GetDefault().Info(msg, fields...)
+}
+
+func Warn(msg string, fields ...zap.Field) {
+	GetDefault().Warn(msg, fields...)
+}
+
+func Error(msg string, fields ...zap.Field) {
+	GetDefault().Error(msg, fields...)
+}
+
+func Fatal(msg string, fields ...zap.Field) {
+	GetDefault().Fatal(msg, fields...)
 } 

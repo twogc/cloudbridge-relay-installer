@@ -1,0 +1,66 @@
+# ML Service Dependencies for CloudBridge Relay
+
+# Core ML libraries
+scikit-learn==1.3.0
+numpy==1.24.3
+pandas==2.0.3
+scipy==1.11.1
+
+# Deep Learning (optional)
+tensorflow==2.13.0
+torch==2.0.1
+
+# Data processing
+joblib==1.3.2
+pickle-mixin==1.0.2
+
+# Redis for caching and state management
+redis==4.6.0
+
+# HTTP requests
+requests==2.31.0
+
+# Logging and monitoring
+structlog==23.1.0
+prometheus-client==0.17.1
+
+# API framework
+fastapi==0.100.1
+uvicorn==0.23.2
+pydantic==2.1.1
+
+# Testing
+pytest==7.4.0
+pytest-asyncio==0.21.1
+
+# Development tools
+black==23.7.0
+flake8==6.0.0
+mypy==1.5.1
+
+# Jupyter for development
+jupyter==1.0.0
+matplotlib==3.7.2
+seaborn==0.12.2
+
+# Model serving
+mlflow==2.6.0
+bentoml==1.0.20
+
+# Feature store
+feast==0.34.1
+
+# Time series analysis
+prophet==1.1.4
+statsmodels==0.14.0
+
+# Anomaly detection
+pyod==1.1.1
+isolation-forest==0.1.0
+
+# Security
+cryptography==41.0.3
+passlib==1.7.4
+
+# Environment management
+python-dotenv==1.0.0 

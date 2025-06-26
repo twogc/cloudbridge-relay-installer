@@ -1,38 +1,37 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"os"
-	"os/signal"
 	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 
-	"github.com/maxlanies/cloudbridge-relay-installer/config"
-	"github.com/maxlanies/cloudbridge-relay-installer/internal/django"
-	"github.com/maxlanies/cloudbridge-relay-installer/internal/logger"
-	"github.com/maxlanies/cloudbridge-relay-installer/internal/metrics"
-	"github.com/maxlanies/cloudbridge-relay-installer/internal/proto"
-	"github.com/maxlanies/cloudbridge-relay-installer/internal/ratelimit"
-	"github.com/maxlanies/cloudbridge-relay-installer/internal/token"
+	"github.com/twogc/cloudbridge-relay-installer/config"
+	"github.com/twogc/cloudbridge-relay-installer/internal/django"
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
+	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
+	"github.com/twogc/cloudbridge-relay-installer/internal/proto"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
+	"github.com/twogc/cloudbridge-relay-installer/internal/token"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 )
 
 var (
-	configFile     = flag.String("config", "config/config.json", "Path to configuration file")
+	configFile   = flag.String("config", "config/config.json", "Path to configuration file")
 	workerPoolSize = flag.Int("workers", runtime.NumCPU()*2, "Number of worker goroutines")
-	timeout        = flag.Duration("timeout", 30*time.Second, "Connection timeout")
-	rateLimit      = flag.Int("rate-limit", 100, "Rate limit (requests per second)")
-	rateBurst      = flag.Int("rate-burst", 200, "Rate limit burst")
-	maxTunnels     = flag.Int("max-tunnels", 1000, "Maximum number of tunnels")
-	logLevel       = flag.String("log-level", "INFO", "Log level (DEBUG, INFO, WARNING, ERROR)")
-	logFile        = flag.String("log-file", "", "Log file path (default: stdout)")
+	timeout      = flag.Duration("timeout", 30*time.Second, "Connection timeout")
+	logLevel     = flag.String("log-level", "INFO", "Log level (DEBUG, INFO, WARNING, ERROR)")
+	logFile      = flag.String("log-file", "", "Log file path (empty for stdout)")
+	rateLimit    = flag.Float64("rate-limit", 100, "Rate limit per second")
+	rateBurst    = flag.Int("rate-burst", 200, "Rate limit burst size")
 )
 
 // Connection represents a client connection
@@ -43,12 +42,13 @@ type Connection struct {
 	limiter   *ratelimit.Limiter
 }
 
-// Tunnel represents a client tunnel
+// Tunnel represents a tunnel connection
 type Tunnel struct {
 	conn      net.Conn
 	token     string
 	lastPing  time.Time
 	limiter   *ratelimit.Limiter
+	tunnelInfo *proto.TunnelInfo
 }
 
 // Server represents the relay server
@@ -69,19 +69,34 @@ type Server struct {
 	cancel         context.CancelFunc
 }
 
-// NewServer creates a new server
+// NewServer creates a new server instance
 func NewServer(cfg *config.Config) (*Server, error) {
-	// Create logger
-	var logOutput *os.File
-	var err error
+	// Setup logging
 	if *logFile != "" {
-		logOutput, err = os.OpenFile(*logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
+		if _, err := os.OpenFile(*logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
 			return nil, fmt.Errorf("failed to open log file: %v", err)
 		}
 	}
 
-	logger := logger.NewLogger(logOutput, logger.LogLevel(*logLevel))
+	// Определяем output в зависимости от настроек
+	output := "stdout"
+	if *logFile != "" {
+		output = "both"
+	}
+
+	loggerInstance, err := logger.New(logger.Config{
+		Level:      logger.LogLevel(*logLevel),
+		Output:     output,
+		FilePath:   *logFile,
+		JSON:       true,
+		MaxSize:    100,
+		MaxAge:     30,
+		MaxBackups: 10,
+		Compress:   true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create logger: %v", err)
+	}
 
 	// Create Django client
 	djangoClient := django.NewClient(django.Config{
@@ -109,10 +124,10 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		tokenValidator: tokenValidator,
 		limiter:        limiter,
 		maxConnections: cfg.Server.MaxTunnels,
-		metrics:        metrics.NewMetrics(),
+		metrics:        metrics.NewMetrics(prometheus.DefaultRegisterer),
 		connections:    make(map[string]*Connection),
 		tunnels:        make(map[string]*Tunnel),
-		logger:         logger,
+		logger:         loggerInstance,
 		workerPool:     make(chan struct{}, runtime.NumCPU()*2),
 		ctx:            ctx,
 		cancel:         cancel,
@@ -141,7 +156,7 @@ func (s *Server) Start(cfg *config.Config) error {
 		metricsServer := metrics.NewServer(cfg.Metrics.Port, cfg.Metrics.Path)
 		go func() {
 			if err := metricsServer.Start(); err != nil {
-				s.logger.Error("Failed to start metrics server", err, nil)
+				s.logger.Error("Failed to start metrics server", zap.Error(err))
 			}
 		}()
 	}
@@ -153,13 +168,13 @@ func (s *Server) Start(cfg *config.Config) error {
 		return fmt.Errorf("failed to create listener: %v", err)
 	}
 
-	s.logger.Info("Server started", map[string]interface{}{
-		"port":     s.port,
-		"tls":      *config.UseTLS,
-		"workers":  *workerPoolSize,
-		"timeout":  *timeout,
-		"logLevel": *logLevel,
-	})
+	s.logger.Info("Server started", 
+		zap.Int("port", s.port),
+		zap.Bool("tls", *config.UseTLS),
+		zap.Int("workers", *workerPoolSize),
+		zap.Duration("timeout", *timeout),
+		zap.String("logLevel", *logLevel),
+	)
 
 	// Start cleanup loop
 	go s.cleanupLoop()
@@ -172,15 +187,15 @@ func (s *Server) Start(cfg *config.Config) error {
 		default:
 			conn, err := s.listener.Accept()
 			if err != nil {
-				s.logger.Error("Failed to accept connection", err, nil)
+				s.logger.Error("Failed to accept connection", zap.Error(err))
 				continue
 			}
 
 			// Check connection limit
 			if atomic.LoadInt32(&s.connCount) >= int32(s.maxConnections) {
-				s.logger.Warning("Connection limit reached", map[string]interface{}{
-					"limit": s.maxConnections,
-				})
+				s.logger.Warn("Connection limit reached", 
+					zap.Int("limit", s.maxConnections),
+				)
 				conn.Close()
 				s.metrics.IncRejectedConnections()
 				continue
@@ -189,9 +204,9 @@ func (s *Server) Start(cfg *config.Config) error {
 			// Check rate limit
 			remoteAddr := conn.RemoteAddr().String()
 			if !s.limiter.Allow(remoteAddr) {
-				s.logger.Warning("Rate limit exceeded", map[string]interface{}{
-					"remote_addr": remoteAddr,
-				})
+				s.logger.Warn("Rate limit exceeded", 
+					zap.String("remote_addr", remoteAddr),
+				)
 				conn.Close()
 				s.metrics.IncRejectedConnections()
 				continue
@@ -201,20 +216,20 @@ func (s *Server) Start(cfg *config.Config) error {
 			select {
 			case s.workerPool <- struct{}{}:
 				atomic.AddInt32(&s.connCount, 1)
-				s.metrics.IncActiveConnections()
+				s.metrics.IncConnections()
 				go func() {
 					defer func() {
 						<-s.workerPool // Release worker slot
 						atomic.AddInt32(&s.connCount, -1)
-						s.metrics.DecActiveConnections()
+						s.metrics.DecConnections()
 					}()
 					s.handleConnection(conn)
 				}()
 			default:
 				// No available workers, reject connection
-				s.logger.Warning("No available workers", map[string]interface{}{
-					"remote_addr": remoteAddr,
-				})
+				s.logger.Warn("No available workers", 
+					zap.String("remote_addr", remoteAddr),
+				)
 				conn.Close()
 				s.metrics.IncRejectedConnections()
 			}
@@ -224,248 +239,237 @@ func (s *Server) Start(cfg *config.Config) error {
 
 // handleConnection handles a client connection
 func (s *Server) handleConnection(conn net.Conn) {
-	defer func() {
-		conn.Close()
-		atomic.AddInt32(&s.connCount, -1)
-		s.metrics.DecActiveConnections()
-	}()
+	defer conn.Close()
 
-	// Set read deadline
-	conn.SetReadDeadline(time.Now().Add(*timeout))
+	// Устанавливаем таймауты
+	conn.SetDeadline(time.Now().Add(*timeout))
 
-	// Read message
-	msg, err := proto.ReadMessage(conn)
-	if err != nil {
-		s.logger.Error("Failed to read message", err, map[string]interface{}{
-			"remote_addr": conn.RemoteAddr(),
-		})
+	// Создаем буферизованные reader/writer
+	reader := bufio.NewReader(conn)
+	writer := bufio.NewWriter(conn)
+
+	// Отправляем hello
+	if err := proto.WriteHello(writer, "1.0", []string{"tls", "heartbeat", "tunnel_info"}); err != nil {
+		s.logger.Error("Failed to send hello", zap.Error(err))
 		return
 	}
 
-	// Handle message based on type
-	switch msg.Type {
-	case proto.MessageTypeRegister:
-		// Check authentication token
-		if *config.AuthToken != "" && msg.Token != *config.AuthToken {
-			s.logger.Warning("Invalid authentication token", map[string]interface{}{
-				"remote_addr": conn.RemoteAddr(),
-				"token":       msg.Token,
-			})
-			proto.WriteError(conn, "invalid authentication token")
-			return
-		}
+	// Читаем auth
+	msg, err := proto.ReadMessage(reader)
+	if err != nil {
+		s.logger.Error("Failed to read auth message", zap.Error(err))
+		return
+	}
 
-		// Validate token
-		if s.tokenValidator != nil {
-			if !s.tokenValidator.Validate(msg.Token) {
-				s.logger.Warning("Invalid token", map[string]interface{}{
-					"remote_addr": conn.RemoteAddr(),
-					"token":       msg.Token,
-				})
-				proto.WriteError(conn, "invalid token")
+	if msg.Type != proto.MessageTypeAuth {
+		s.logger.Error("Expected auth message", zap.Error(fmt.Errorf("got %s", msg.Type)))
+		return
+	}
+
+	// Валидируем токен
+	clientID, err := s.tokenValidator.ValidateToken(msg.Token)
+	if err != nil {
+		s.logger.Error("Invalid token", zap.Error(err))
+		proto.WriteError(writer, "invalid_token", "Invalid or expired token")
+		return
+	}
+
+	// Отправляем auth_response
+	if err := proto.WriteAuthResponse(writer, "ok", clientID); err != nil {
+		s.logger.Error("Failed to send auth response", zap.Error(err))
+		return
+	}
+
+	// Создаем соединение
+	connection := &Connection{
+		conn:     conn,
+		token:    msg.Token,
+		lastPing: time.Now(),
+		limiter:  ratelimit.NewLimiter(*rateLimit, *rateBurst),
+	}
+
+	// Добавляем в список соединений
+	s.mu.Lock()
+	s.connections[clientID] = connection
+	s.mu.Unlock()
+
+	// Обрабатываем сообщения
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		default:
+			msg, err := proto.ReadMessage(reader)
+			if err != nil {
+				s.logger.Error("Failed to read message", zap.Error(err))
 				return
 			}
+
+			switch msg.Type {
+			case proto.MessageTypeHeartbeat:
+				s.handleHeartbeat(writer, connection)
+			case proto.MessageTypeTunnelInfo:
+				s.handleTunnelInfo(writer, connection, msg.TunnelInfo)
+			default:
+				s.logger.Error("Unknown message type", zap.Error(fmt.Errorf("got %s", msg.Type)))
+				proto.WriteError(writer, "unknown_message_type", "Unknown message type")
+			}
 		}
-
-		// Create tunnel
-		tunnel := &Tunnel{
-			conn:     conn,
-			token:    msg.Token,
-			lastPing: time.Now(),
-			limiter:  ratelimit.NewLimiter(float64(*rateLimit), *rateBurst),
-		}
-
-		// Add tunnel
-		s.mu.Lock()
-		if len(s.tunnels) >= *maxTunnels {
-			s.mu.Unlock()
-			s.logger.Warning("Maximum number of tunnels reached", nil)
-			proto.WriteError(conn, "maximum number of tunnels reached")
-			return
-		}
-		s.tunnels[msg.Token] = tunnel
-		s.mu.Unlock()
-
-		s.logger.Info("Tunnel registered", map[string]interface{}{
-			"remote_addr": conn.RemoteAddr(),
-			"token":       msg.Token,
-		})
-
-		// Send success response
-		proto.WriteMessage(conn, &proto.Message{
-			Type: proto.MessageTypeConfig,
-			Config: &proto.ConfigMessage{
-				Token: msg.Token,
-			},
-		})
-
-		// Handle tunnel
-		s.handleTunnel(tunnel)
-
-	case proto.MessageTypeConnect:
-		// Find tunnel
-		s.mu.RLock()
-		tunnel, ok := s.tunnels[msg.Token]
-		s.mu.RUnlock()
-
-		if !ok {
-			s.logger.Warning("Tunnel not found", map[string]interface{}{
-				"remote_addr": conn.RemoteAddr(),
-				"token":       msg.Token,
-			})
-			proto.WriteError(conn, "tunnel not found")
-			return
-		}
-
-		// Check rate limit
-		if !tunnel.limiter.Allow() {
-			s.logger.Warning("Rate limit exceeded", map[string]interface{}{
-				"remote_addr": conn.RemoteAddr(),
-				"token":       msg.Token,
-			})
-			proto.WriteError(conn, "rate limit exceeded")
-			return
-		}
-
-		// Handle connection
-		s.handleConnection(conn)
-
-	case proto.MessageTypePing:
-		// Find tunnel
-		s.mu.RLock()
-		tunnel, ok := s.tunnels[msg.Token]
-		s.mu.RUnlock()
-
-		if !ok {
-			s.logger.Warning("Tunnel not found", map[string]interface{}{
-				"remote_addr": conn.RemoteAddr(),
-				"token":       msg.Token,
-			})
-			proto.WriteError(conn, "tunnel not found")
-			return
-		}
-
-		// Update last ping
-		tunnel.lastPing = time.Now()
-
-		// Send pong
-		proto.WriteMessage(conn, &proto.Message{
-			Type: proto.MessageTypePong,
-			Pong: &proto.PongMessage{
-				Token: msg.Token,
-			},
-		})
-
-	default:
-		s.logger.Warning("Unknown message type", map[string]interface{}{
-			"remote_addr": conn.RemoteAddr(),
-			"type":        msg.Type,
-		})
-		proto.WriteError(conn, "unknown message type")
 	}
+}
+
+// handleHeartbeat handles heartbeat messages
+func (s *Server) handleHeartbeat(writer *bufio.Writer, connection *Connection) {
+	connection.lastPing = time.Now()
+	s.metrics.IncHeartbeats()
+
+	if err := proto.WriteHeartbeatResponse(writer); err != nil {
+		s.logger.Error("Failed to send heartbeat response", zap.Error(err))
+	}
+}
+
+// handleTunnelInfo handles tunnel info messages
+func (s *Server) handleTunnelInfo(writer *bufio.Writer, connection *Connection, tunnelInfo *proto.TunnelInfo) {
+	if tunnelInfo == nil {
+		s.logger.Error("Tunnel info is nil", zap.Error(fmt.Errorf("tunnel info is nil")))
+		proto.WriteError(writer, "invalid_tunnel_info", "Tunnel info is required")
+		return
+	}
+
+	// Создаем туннель
+	tunnel := &Tunnel{
+		conn:       connection.conn,
+		token:      connection.token,
+		lastPing:   time.Now(),
+		limiter:    ratelimit.NewLimiter(*rateLimit, *rateBurst),
+		tunnelInfo: tunnelInfo,
+	}
+
+	// Добавляем в список туннелей
+	s.mu.Lock()
+	s.tunnels[tunnelInfo.TunnelID] = tunnel
+	s.mu.Unlock()
+
+	s.metrics.SetActiveTunnels(len(s.tunnels))
+
+	// Запускаем обработку туннеля
+	go s.handleTunnel(tunnel)
+
+	s.logger.Info("Tunnel created", 
+		zap.String("tunnel_id", tunnelInfo.TunnelID),
+		zap.Int("local_port", tunnelInfo.LocalPort),
+		zap.String("remote_host", tunnelInfo.RemoteHost),
+		zap.Int("remote_port", tunnelInfo.RemotePort),
+	)
 }
 
 // handleTunnel handles a tunnel connection
 func (s *Server) handleTunnel(tunnel *Tunnel) {
-	for {
-		// Set read deadline
-		tunnel.conn.SetReadDeadline(time.Now().Add(*timeout))
-
-		// Read message
-		msg, err := proto.ReadMessage(tunnel.conn)
-		if err != nil {
-			s.logger.Error("Failed to read message", err, map[string]interface{}{
-				"token": tunnel.token,
-			})
-			break
-		}
-
-		// Handle message based on type
-		switch msg.Type {
-		case proto.MessageTypePing:
-			// Update last ping
-			tunnel.lastPing = time.Now()
-
-			// Send pong
-			proto.WriteMessage(tunnel.conn, &proto.Message{
-				Type: proto.MessageTypePong,
-				Pong: &proto.PongMessage{
-					Token: tunnel.token,
-				},
-			})
-
-		default:
-			s.logger.Warning("Unknown message type", map[string]interface{}{
-				"token": tunnel.token,
-				"type":  msg.Type,
-			})
-			proto.WriteError(tunnel.conn, "unknown message type")
-		}
-	}
-
-	// Remove tunnel
-	s.mu.Lock()
-	delete(s.tunnels, tunnel.token)
-	s.mu.Unlock()
-
-	s.logger.Info("Tunnel closed", map[string]interface{}{
-		"token": tunnel.token,
-	})
-}
-
-// cleanupLoop periodically cleans up inactive tunnels
-func (s *Server) cleanupLoop() {
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
+	defer func() {
 		s.mu.Lock()
-		now := time.Now()
-		for token, tunnel := range s.tunnels {
-			if now.Sub(tunnel.lastPing) > *timeout {
-				s.logger.Warning("Removing inactive tunnel", map[string]interface{}{
-					"token": token,
-					"age":   now.Sub(tunnel.lastPing).String(),
-				})
-				tunnel.conn.Close()
-				delete(s.tunnels, token)
+		delete(s.tunnels, tunnel.tunnelInfo.TunnelID)
+		s.mu.Unlock()
+		s.metrics.SetActiveTunnels(len(s.tunnels))
+	}()
+
+	// Здесь должна быть логика обработки туннеля
+	// Пока просто логируем
+	s.logger.Info("Tunnel started", 
+		zap.String("tunnel_id", tunnel.tunnelInfo.TunnelID),
+	)
+
+	// Бесконечный цикл для поддержания туннеля
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-time.After(30 * time.Second):
+			// Проверяем активность туннеля
+			if time.Since(tunnel.lastPing) > 60*time.Second {
+				s.logger.Warn("Tunnel inactive", 
+					zap.String("tunnel_id", tunnel.tunnelInfo.TunnelID),
+				)
+				return
 			}
 		}
-		s.mu.Unlock()
 	}
+}
+
+// cleanupLoop periodically cleans up inactive connections
+func (s *Server) cleanupLoop() {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-ticker.C:
+			s.cleanup()
+		}
+	}
+}
+
+// cleanup removes inactive connections and tunnels
+func (s *Server) cleanup() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now()
+
+	// Cleanup connections
+	for clientID, connection := range s.connections {
+		if now.Sub(connection.lastPing) > 5*time.Minute {
+			connection.conn.Close()
+			delete(s.connections, clientID)
+			s.logger.Info("Cleaned up inactive connection", 
+				zap.String("client_id", clientID),
+			)
+		}
+	}
+
+	// Cleanup tunnels
+	for tunnelID, tunnel := range s.tunnels {
+		if now.Sub(tunnel.lastPing) > 5*time.Minute {
+			tunnel.conn.Close()
+			delete(s.tunnels, tunnelID)
+			s.logger.Info("Cleaned up inactive tunnel", 
+				zap.String("tunnel_id", tunnelID),
+			)
+		}
+	}
+
+	s.metrics.SetActiveTunnels(len(s.tunnels))
 }
 
 // Shutdown gracefully shuts down the server
 func (s *Server) Shutdown(ctx context.Context) error {
-	s.cancel() // Cancel the context to stop accepting new connections
-	
-	// Close the listener
+	s.logger.Info("Shutting down server")
+
+	// Cancel context to stop accepting new connections
+	s.cancel()
+
+	// Close listener
 	if s.listener != nil {
 		s.listener.Close()
 	}
 
-	// Wait for all connections to close
-	done := make(chan struct{})
-	go func() {
-		s.mu.Lock()
-		defer s.mu.Unlock()
-		
-		// Close all active connections
-		for _, conn := range s.connections {
-			conn.conn.Close()
-		}
-		for _, tunnel := range s.tunnels {
-			tunnel.conn.Close()
-		}
-		
-		close(done)
-	}()
+	// Close all connections
+	s.mu.Lock()
+	for _, connection := range s.connections {
+		connection.conn.Close()
+	}
+	for _, tunnel := range s.tunnels {
+		tunnel.conn.Close()
+	}
+	s.mu.Unlock()
 
+	// Wait for context cancellation or timeout
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-done:
-		return nil
+	case <-time.After(30 * time.Second):
+		return fmt.Errorf("shutdown timeout")
 	}
 }
 
@@ -475,25 +479,26 @@ func main() {
 	// Load configuration
 	cfg, err := config.Load(*configFile)
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid configuration: %v\n", err)
+		os.Exit(1)
 	}
 
 	// Create server
 	server, err := NewServer(cfg)
 	if err != nil {
-		log.Fatalf("Failed to create server: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to create server: %v\n", err)
+		os.Exit(1)
 	}
 
 	// Start server
 	if err := server.Start(cfg); err != nil {
-		log.Fatalf("Server error: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to start server: %v\n", err)
+		os.Exit(1)
 	}
-
-	// Wait for interrupt signal
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	<-sigCh
-
-	// Shutdown server
-	server.Shutdown(context.Background())
 } 
