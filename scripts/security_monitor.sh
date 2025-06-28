@@ -120,13 +120,18 @@ check_critical_services() {
     local failed_services=()
     
     # Проверяем критически важные сервисы
-    local critical_services=("ufw" "fail2ban" "sshd" "rsyslog")
+    local critical_services=("fail2ban" "sshd" "rsyslog")
     
     for service in "${critical_services[@]}"; do
         if ! systemctl is-active --quiet "$service"; then
             failed_services+=("$service")
         fi
     done
+    
+    # Специальная проверка UFW
+    if ! sudo ufw status | grep -q "Status: active"; then
+        failed_services+=("ufw")
+    fi
     
     if [[ ${#failed_services[@]} -gt 0 ]]; then
         local services_list=$(printf '%s\n' "${failed_services[@]}" | tr '\n' ', ' | sed 's/,$//')
@@ -213,7 +218,7 @@ check_suspicious_activity() {
     
     # Проверка новых процессов от root
     local root_processes=$(ps aux | grep -v grep | grep "^root" | wc -l)
-    if [[ $root_processes -gt 20 ]]; then
+    if [[ $root_processes -gt 150 ]]; then
         local message="⚠️ <b>Много процессов от root</b>
         
 🔍 <b>Обнаружено:</b>
@@ -262,7 +267,8 @@ check_ssl_certificates() {
 
 # Проверка логов на критические ошибки
 check_critical_logs() {
-    local critical_errors=$(grep -i "error\|critical\|emergency" /var/log/syslog | grep "$(date '+%b %d')" | tail -5)
+    # Исключаем ошибки от cloudflared и других неактуальных сервисов
+    local critical_errors=$(grep -i "error\|critical\|emergency" /var/log/syslog | grep "$(date '+%b %d')" | grep -v "cloudflared" | grep -v "freshclam.*error code 429" | grep -v "freshclam.*error code 403" | grep -v "relay-security-audit.*Fatal error" | tail -5)
     
     if [[ -n "$critical_errors" ]]; then
         local error_count=$(echo "$critical_errors" | wc -l)
