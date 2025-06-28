@@ -42,15 +42,17 @@ send_telegram_message() {
         log_warn "Telegram конфигурация не настроена"
         return
     fi
-    
-    # Экранируем специальные символы для URL
-    local escaped_message=$(echo "$message" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g')
-    
+
+    # Удаляем все HTML-теги
+    message=$(echo "$message" | sed 's/<[^>]*>//g')
+    # Экранируем спецсимволы MarkdownV2 по отдельности
+    message=$(echo "$message" | sed 's/[_]/\\_/g' | sed 's/[*]/\\*/g' | sed 's/\[/\\[/g' | sed 's/\]/\\]/g' | sed 's/(/\\(/g' | sed 's/)/\\)/g' | sed 's/~/\\~/g' | sed 's/`/\\`/g' | sed 's/>/\\>/g' | sed 's/#/\\#/g' | sed 's/+/\\+/g' | sed 's/-/\\-/g' | sed 's/=/\\=/g' | sed 's/|/\\|/g' | sed 's/{/\\{/g' | sed 's/}/\\}/g' | sed 's/\./\\./g' | sed 's/!/\\!/g')
+
     local response=$(curl -s -X POST \
         "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
         -d "chat_id=${TELEGRAM_CHAT_ID}" \
-        -d "text=${escaped_message}" \
-        -d "parse_mode=HTML" \
+        -d "text=${message}" \
+        -d "parse_mode=MarkdownV2" \
         2>/dev/null)
     
     if echo "$response" | grep -q '"ok":true'; then
@@ -72,7 +74,7 @@ check_fail2ban_blocks() {
     
     if [[ ! -f "$last_blocks_file" ]]; then
         echo "$current_blocks" > "$last_blocks_file"
-        return
+        return 1
     fi
     
     local last_blocks=$(cat "$last_blocks_file" 2>/dev/null || echo "0")
@@ -102,11 +104,15 @@ check_fail2ban_blocks() {
 🖥️ Сервер: $(hostname)"
 
                 send_telegram_message "$message"
+                echo "$current_blocks" > "$last_blocks_file"
+                return 0
             fi
         fi
         
         echo "$current_blocks" > "$last_blocks_file"
     fi
+    
+    return 1
 }
 
 # Проверка критических сервисов
@@ -133,7 +139,10 @@ check_critical_services() {
 🖥️ Сервер: $(hostname)"
 
         send_telegram_message "$message"
+        return 0
     fi
+    
+    return 1
 }
 
 # Проверка дискового пространства
@@ -154,7 +163,10 @@ check_disk_space() {
 🖥️ Сервер: $(hostname)"
 
         send_telegram_message "$message"
+        return 0
     fi
+    
+    return 1
 }
 
 # Проверка обновлений системы
@@ -172,11 +184,16 @@ check_system_updates() {
 🖥️ Сервер: $(hostname)"
 
         send_telegram_message "$message"
+        return 0
     fi
+    
+    return 1
 }
 
 # Проверка подозрительной активности
 check_suspicious_activity() {
+    local suspicious_found=false
+    
     # Проверка множественных неудачных SSH попыток
     local ssh_failures=$(grep "Failed password" /var/log/auth.log | grep "$(date '+%b %d')" | wc -l)
     
@@ -191,6 +208,7 @@ check_suspicious_activity() {
 🖥️ Сервер: $(hostname)"
 
         send_telegram_message "$message"
+        suspicious_found=true
     fi
     
     # Проверка новых процессов от root
@@ -206,7 +224,14 @@ check_suspicious_activity() {
 🖥️ Сервер: $(hostname)"
 
         send_telegram_message "$message"
+        suspicious_found=true
     fi
+    
+    if [[ "$suspicious_found" == "true" ]]; then
+        return 0
+    fi
+    
+    return 1
 }
 
 # Проверка SSL сертификатов
@@ -228,8 +253,11 @@ check_ssl_certificates() {
 🖥️ Сервер: $(hostname)"
 
             send_telegram_message "$message"
+            return 0
         fi
     fi
+    
+    return 1
 }
 
 # Проверка логов на критические ошибки
@@ -249,20 +277,70 @@ $critical_errors
 🖥️ Сервер: $(hostname)"
 
         send_telegram_message "$message"
+        return 0
     fi
+    
+    return 1
 }
 
 # Основная функция мониторинга
 run_security_check() {
     log_info "Запуск проверки безопасности..."
     
-    check_fail2ban_blocks
-    check_critical_services
-    check_disk_space
-    check_system_updates
-    check_suspicious_activity
-    check_ssl_certificates
-    check_critical_logs
+    local problems_found=false
+    
+    # Проверяем fail2ban блокировки
+    log_info "Проверка fail2ban блокировок..."
+    if check_fail2ban_blocks; then
+        log_info "Найдены новые блокировки fail2ban"
+        problems_found=true
+    fi
+    
+    # Проверяем критические сервисы
+    log_info "Проверка критических сервисов..."
+    if check_critical_services; then
+        log_info "Найдены неработающие сервисы"
+        problems_found=true
+    fi
+    
+    # Проверяем дисковое пространство
+    log_info "Проверка дискового пространства..."
+    if check_disk_space; then
+        log_info "Найдены проблемы с диском"
+        problems_found=true
+    fi
+    
+    # Проверяем обновления системы
+    log_info "Проверка обновлений системы..."
+    if check_system_updates; then
+        log_info "Найдены обновления системы"
+        problems_found=true
+    fi
+    
+    # Проверяем подозрительную активность
+    log_info "Проверка подозрительной активности..."
+    if check_suspicious_activity; then
+        log_info "Найдена подозрительная активность"
+        problems_found=true
+    fi
+    
+    # Проверяем SSL сертификаты
+    log_info "Проверка SSL сертификатов..."
+    if check_ssl_certificates; then
+        log_info "Найдены проблемы с SSL сертификатами"
+        problems_found=true
+    fi
+    
+    # Проверяем критические логи
+    log_info "Проверка критических логов..."
+    if check_critical_logs; then
+        log_info "Найдены критические ошибки в логах"
+        problems_found=true
+    fi
+    
+    if [[ "$problems_found" == "false" ]]; then
+        log_info "Проблем не обнаружено"
+    fi
     
     log_info "Проверка безопасности завершена"
 }
