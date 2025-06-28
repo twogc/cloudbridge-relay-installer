@@ -361,4 +361,256 @@ func Error(msg string, fields ...zap.Field) {
 
 func Fatal(msg string, fields ...zap.Field) {
 	GetDefault().Fatal(msg, fields...)
+}
+
+// AuditLogger represents the audit logger for security events
+type AuditLogger struct {
+	zapLogger *zap.Logger
+	config    Config
+}
+
+// NewAuditLogger creates a new audit logger instance
+func NewAuditLogger(config Config) (*AuditLogger, error) {
+	// Override config for audit logging
+	auditConfig := config
+	auditConfig.JSON = true // Always use JSON for audit logs
+	auditConfig.Level = INFO // Audit logs should be at least INFO level
+	
+	// Set default audit file path if not specified
+	if auditConfig.FilePath == "" {
+		auditConfig.FilePath = "logs/audit.log"
+	}
+	
+	// Ensure audit logs are kept longer
+	if auditConfig.MaxAge == 0 {
+		auditConfig.MaxAge = 365 // Keep audit logs for 1 year by default
+	}
+	if auditConfig.MaxBackups == 0 {
+		auditConfig.MaxBackups = 50 // Keep more backup files for audit
+	}
+
+	var cores []zapcore.Core
+
+	// Create encoder for audit logs
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.TimeKey = "timestamp"
+	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
+
+	encoder := zapcore.NewJSONEncoder(encoderConfig)
+
+	// Parse log level
+	level, err := zapcore.ParseLevel(strings.ToLower(string(auditConfig.Level)))
+	if err != nil {
+		return nil, fmt.Errorf("invalid audit log level: %s", auditConfig.Level)
+	}
+
+	// File output for audit logs
+	if auditConfig.FilePath != "" {
+		// Ensure directory exists
+		dir := filepath.Dir(auditConfig.FilePath)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, fmt.Errorf("failed to create audit log directory: %w", err)
+		}
+
+		// Configure log rotation for audit
+		writer := &lumberjack.Logger{
+			Filename:   auditConfig.FilePath,
+			MaxSize:    auditConfig.MaxSize,    // MB
+			MaxBackups: auditConfig.MaxBackups, // number of backup files
+			MaxAge:     auditConfig.MaxAge,     // days
+			Compress:   auditConfig.Compress,   // compress rotated files
+		}
+
+		fileCore := zapcore.NewCore(
+			encoder,
+			zapcore.AddSync(writer),
+			level,
+		)
+		cores = append(cores, fileCore)
+	}
+
+	// Also log to stdout for audit events (optional)
+	if auditConfig.Output == "stdout" || auditConfig.Output == "both" {
+		consoleCore := zapcore.NewCore(
+			encoder,
+			zapcore.AddSync(os.Stdout),
+			level,
+		)
+		cores = append(cores, consoleCore)
+	}
+
+	if len(cores) == 0 {
+		return nil, fmt.Errorf("no audit output configured")
+	}
+
+	// Create core
+	core := zapcore.NewTee(cores...)
+
+	// Create audit logger
+	zapLogger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+
+	return &AuditLogger{
+		zapLogger: zapLogger,
+		config:    auditConfig,
+	}, nil
+}
+
+// AuditEvent logs an audit event
+func (al *AuditLogger) AuditEvent(event string, userID, remoteAddr string, details map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("event_type", "audit"),
+		zap.String("event", event),
+		zap.String("user_id", userID),
+		zap.String("remote_addr", remoteAddr),
+		zap.Time("timestamp", time.Now()),
+	}
+	
+	// Add additional details
+	for k, v := range details {
+		fields = append(fields, zap.Any(k, v))
+	}
+	
+	al.zapLogger.Info("AUDIT_EVENT", fields...)
+}
+
+// AuditAuthentication logs authentication events
+func (al *AuditLogger) AuditAuthentication(userID, method, remoteAddr string, success bool, duration time.Duration, details map[string]interface{}) {
+	event := "authentication_success"
+	if !success {
+		event = "authentication_failure"
+	}
+	
+	fields := []zap.Field{
+		zap.String("event_type", "audit"),
+		zap.String("event", event),
+		zap.String("user_id", userID),
+		zap.String("method", method),
+		zap.String("remote_addr", remoteAddr),
+		zap.Bool("success", success),
+		zap.Duration("duration", duration),
+		zap.Time("timestamp", time.Now()),
+	}
+	
+	// Add additional details
+	for k, v := range details {
+		fields = append(fields, zap.Any(k, v))
+	}
+	
+	al.zapLogger.Info("AUDIT_AUTHENTICATION", fields...)
+}
+
+// AuditAuthorization logs authorization events
+func (al *AuditLogger) AuditAuthorization(userID, resource, action, remoteAddr string, granted bool, duration time.Duration, details map[string]interface{}) {
+	event := "authorization_granted"
+	if !granted {
+		event = "authorization_denied"
+	}
+	
+	fields := []zap.Field{
+		zap.String("event_type", "audit"),
+		zap.String("event", event),
+		zap.String("user_id", userID),
+		zap.String("resource", resource),
+		zap.String("action", action),
+		zap.String("remote_addr", remoteAddr),
+		zap.Bool("granted", granted),
+		zap.Duration("duration", duration),
+		zap.Time("timestamp", time.Now()),
+	}
+	
+	// Add additional details
+	for k, v := range details {
+		fields = append(fields, zap.Any(k, v))
+	}
+	
+	al.zapLogger.Info("AUDIT_AUTHORIZATION", fields...)
+}
+
+// AuditTunnelCreation logs tunnel creation events
+func (al *AuditLogger) AuditTunnelCreation(userID, tunnelID, remoteAddr string, tunnelInfo map[string]interface{}, details map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("event_type", "audit"),
+		zap.String("event", "tunnel_created"),
+		zap.String("user_id", userID),
+		zap.String("tunnel_id", tunnelID),
+		zap.String("remote_addr", remoteAddr),
+		zap.Time("timestamp", time.Now()),
+	}
+	
+	// Add tunnel info
+	for k, v := range tunnelInfo {
+		fields = append(fields, zap.Any("tunnel_"+k, v))
+	}
+	
+	// Add additional details
+	for k, v := range details {
+		fields = append(fields, zap.Any(k, v))
+	}
+	
+	al.zapLogger.Info("AUDIT_TUNNEL_CREATION", fields...)
+}
+
+// AuditTunnelDeletion logs tunnel deletion events
+func (al *AuditLogger) AuditTunnelDeletion(userID, tunnelID, remoteAddr string, reason string, details map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("event_type", "audit"),
+		zap.String("event", "tunnel_deleted"),
+		zap.String("user_id", userID),
+		zap.String("tunnel_id", tunnelID),
+		zap.String("remote_addr", remoteAddr),
+		zap.String("reason", reason),
+		zap.Time("timestamp", time.Now()),
+	}
+	
+	// Add additional details
+	for k, v := range details {
+		fields = append(fields, zap.Any(k, v))
+	}
+	
+	al.zapLogger.Info("AUDIT_TUNNEL_DELETION", fields...)
+}
+
+// AuditRateLimit logs rate limit events
+func (al *AuditLogger) AuditRateLimit(userID, remoteAddr, limitType string, details map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("event_type", "audit"),
+		zap.String("event", "rate_limit_exceeded"),
+		zap.String("user_id", userID),
+		zap.String("remote_addr", remoteAddr),
+		zap.String("limit_type", limitType),
+		zap.Time("timestamp", time.Now()),
+	}
+	
+	// Add additional details
+	for k, v := range details {
+		fields = append(fields, zap.Any(k, v))
+	}
+	
+	al.zapLogger.Warn("AUDIT_RATE_LIMIT", fields...)
+}
+
+// AuditSecurity logs security events
+func (al *AuditLogger) AuditSecurity(event, userID, remoteAddr string, severity string, details map[string]interface{}) {
+	fields := []zap.Field{
+		zap.String("event_type", "audit"),
+		zap.String("event", event),
+		zap.String("user_id", userID),
+		zap.String("remote_addr", remoteAddr),
+		zap.String("severity", severity),
+		zap.Time("timestamp", time.Now()),
+	}
+	
+	// Add additional details
+	for k, v := range details {
+		fields = append(fields, zap.Any(k, v))
+	}
+	
+	al.zapLogger.Warn("AUDIT_SECURITY", fields...)
+}
+
+// Sync flushes any buffered audit log entries
+func (al *AuditLogger) Sync() error {
+	return al.zapLogger.Sync()
 } 

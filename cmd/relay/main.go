@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"runtime"
 	"strings"
@@ -15,13 +16,16 @@ import (
 
 	"github.com/twogc/cloudbridge-relay-installer/config"
 	"github.com/twogc/cloudbridge-relay-installer/internal/django"
+	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 	"github.com/twogc/cloudbridge-relay-installer/internal/proto"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
 	"github.com/twogc/cloudbridge-relay-installer/internal/token"
+	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"crypto/tls"
 )
 
 var (
@@ -38,31 +42,26 @@ var (
 type Connection struct {
 	conn      net.Conn
 	token     string
+	clientID  string
 	lastPing  time.Time
 	limiter   *ratelimit.Limiter
-}
-
-// Tunnel represents a tunnel connection
-type Tunnel struct {
-	conn      net.Conn
-	token     string
-	lastPing  time.Time
-	limiter   *ratelimit.Limiter
-	tunnelInfo *proto.TunnelInfo
 }
 
 // Server represents the relay server
 type Server struct {
 	port           int
 	tokenValidator *token.Validator
+	keycloakClient *keycloak.Client
 	limiter        *ratelimit.IPLimiter
+	userLimiter    *ratelimit.UserLimiter
+	auditLogger    *logger.AuditLogger
 	maxConnections int
 	connCount      int32
 	metrics        *metrics.Metrics
+	tunnelManager  *tunnel.Manager
 	mu             sync.RWMutex
 	connections    map[string]*Connection
 	listener       net.Listener
-	tunnels        map[string]*Tunnel
 	logger         *logger.Logger
 	workerPool     chan struct{}
 	ctx            context.Context
@@ -105,6 +104,32 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		Timeout:     cfg.Django.RESTTimeout,
 	})
 
+	// Create Keycloak client if enabled
+	var keycloakClient *keycloak.Client
+	if cfg.Keycloak.Enabled {
+		keycloakClient, err = keycloak.NewClient(&keycloak.Config{
+			ServerURL:    cfg.Keycloak.ServerURL,
+			Realm:        cfg.Keycloak.Realm,
+			ClientID:     cfg.Keycloak.ClientID,
+			ClientSecret: cfg.Keycloak.ClientSecret,
+			PublicKey:    cfg.Keycloak.PublicKey,
+			TokenValidation: struct {
+				Issuer     string        `json:"issuer"`
+				Audience   string        `json:"audience"`
+				ClockSkew  time.Duration `json:"clock_skew"`
+			}{
+				Issuer:     cfg.Keycloak.TokenValidation.Issuer,
+				Audience:   cfg.Keycloak.TokenValidation.Audience,
+				ClockSkew:  cfg.Keycloak.TokenValidation.ClockSkew,
+			},
+			HTTPClient: &http.Client{Timeout: cfg.Keycloak.HTTPTimeout},
+			Logger:     loggerInstance,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Keycloak client: %v", err)
+		}
+	}
+
 	// Create token validator
 	tokenValidator := token.NewValidator(token.Config{
 		DjangoClient: djangoClient,
@@ -118,15 +143,48 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		cfg.Security.RateLimit.Burst,
 	)
 
+	// Create user-based rate limiter
+	userLimiter := ratelimit.NewUserLimiter(
+		cfg.Security.RateLimit.RequestsPerSecond,
+		cfg.Security.RateLimit.Burst,
+	)
+
+	// Create audit logger
+	var auditLogger *logger.AuditLogger
+	if cfg.Security.Audit.Enabled {
+		auditLogger, err = logger.NewAuditLogger(logger.Config{
+			Level:      logger.LogLevel(*logLevel),
+			Output:     "file", // Audit logs go to file by default
+			FilePath:   cfg.Security.Audit.LogFile,
+			JSON:       true,
+			MaxSize:    100,    // Default max size in MB
+			MaxAge:     7,      // Default max age in days
+			MaxBackups: 10,     // Default max backups
+			Compress:   true,   // Default compress
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create audit logger: %v", err)
+		}
+	}
+
+	// Create metrics
+	metricsInstance := metrics.NewMetrics(prometheus.DefaultRegisterer)
+
+	// Create tunnel manager
+	tunnelManager := tunnel.NewManager(cfg.Server.MaxTunnels, loggerInstance, metricsInstance)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Server{
 		port:           cfg.Server.Port,
 		tokenValidator: tokenValidator,
+		keycloakClient: keycloakClient,
 		limiter:        limiter,
+		userLimiter:    userLimiter,
+		auditLogger:    auditLogger,
 		maxConnections: cfg.Server.MaxTunnels,
-		metrics:        metrics.NewMetrics(prometheus.DefaultRegisterer),
+		metrics:        metricsInstance,
+		tunnelManager:  tunnelManager,
 		connections:    make(map[string]*Connection),
-		tunnels:        make(map[string]*Tunnel),
 		logger:         loggerInstance,
 		workerPool:     make(chan struct{}, runtime.NumCPU()*2),
 		ctx:            ctx,
@@ -153,13 +211,16 @@ func isIPAllowed(ip string, allowedIPs string) bool {
 func (s *Server) Start(cfg *config.Config) error {
 	// Start metrics server if enabled
 	if cfg.Metrics.Enabled {
-		metricsServer := metrics.NewServer(cfg.Metrics.Port, cfg.Metrics.Path)
+		metricsServer := metrics.NewServer(fmt.Sprintf(":%d", cfg.Metrics.Port), cfg.Metrics.Path)
 		go func() {
 			if err := metricsServer.Start(); err != nil {
 				s.logger.Error("Failed to start metrics server", zap.Error(err))
 			}
 		}()
 	}
+
+	// Start tunnel manager cleanup loop
+	s.tunnelManager.StartCleanupLoop(1*time.Minute, 5*time.Minute)
 
 	// Create listener
 	var err error
@@ -241,6 +302,25 @@ func (s *Server) Start(cfg *config.Config) error {
 func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
+	// Audit TLS connection info if TLS is enabled
+	if tlsConn, ok := conn.(*tls.Conn); ok {
+		state := tlsConn.ConnectionState()
+		if s.auditLogger != nil {
+			s.auditLogger.AuditSecurity(
+				"tls_connection_established",
+				"unknown", // userID not known yet
+				conn.RemoteAddr().String(),
+				"info",
+				map[string]interface{}{
+					"tls_version":     getTLSVersionString(state.Version),
+					"cipher_suite":    getCipherSuiteString(state.CipherSuite),
+					"server_name":     state.ServerName,
+					"negotiated_protocol": state.NegotiatedProtocol,
+				},
+			)
+		}
+	}
+
 	// Устанавливаем таймауты
 	conn.SetDeadline(time.Now().Add(*timeout))
 
@@ -267,10 +347,68 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 
 	// Валидируем токен
-	clientID, err := s.tokenValidator.ValidateToken(msg.Token)
-	if err != nil {
-		s.logger.Error("Invalid token", zap.Error(err))
-		proto.WriteError(writer, "invalid_token", "Invalid or expired token")
+	authStart := time.Now()
+	var clientID string
+	
+	// Try Keycloak validation first if available
+	if s.keycloakClient != nil {
+		tokenInfo, err := s.keycloakClient.ValidateToken(context.Background(), msg.Token)
+		if err == nil {
+			clientID = tokenInfo.Subject
+			s.metrics.IncKeycloakTokenValidations("success", "keycloak")
+		} else {
+			s.logger.Warn("Keycloak validation failed, falling back to Django", zap.Error(err))
+			s.metrics.IncKeycloakTokenValidations("failure", "keycloak")
+			// Fall back to Django validation
+			clientID, err = s.tokenValidator.ValidateToken(msg.Token)
+			if err != nil {
+				s.logger.Error("Both Keycloak and Django validation failed", zap.Error(err))
+				proto.WriteError(writer, "invalid_token", "Invalid or expired token")
+				return
+			}
+		}
+	} else {
+		// Use Django validation only
+		clientID, err = s.tokenValidator.ValidateToken(msg.Token)
+		if err != nil {
+			s.logger.Error("Invalid token", zap.Error(err))
+			proto.WriteError(writer, "invalid_token", "Invalid or expired token")
+			return
+		}
+	}
+	
+	authDuration := time.Since(authStart)
+
+	// Audit successful authentication
+	if s.auditLogger != nil {
+		s.auditLogger.AuditAuthentication(
+			clientID,
+			"jwt",
+			conn.RemoteAddr().String(),
+			true,
+			authDuration,
+			map[string]interface{}{
+				"token_length": len(msg.Token),
+			},
+		)
+	}
+
+	// Rate limiting per user (clientID)
+	if !s.userLimiter.Allow(clientID) {
+		s.logger.Warn("User rate limit exceeded", zap.String("client_id", clientID))
+		// Audit rate limit event
+		if s.auditLogger != nil {
+			s.auditLogger.AuditRateLimit(
+				clientID,
+				conn.RemoteAddr().String(),
+				"user",
+				map[string]interface{}{
+					"rate_limit": s.userLimiter.Rate,
+					"burst": s.userLimiter.Burst,
+				},
+			)
+		}
+		proto.WriteError(writer, "rate_limit_exceeded", "Rate limit exceeded for user")
 		return
 	}
 
@@ -284,6 +422,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	connection := &Connection{
 		conn:     conn,
 		token:    msg.Token,
+		clientID: clientID,
 		lastPing: time.Now(),
 		limiter:  ratelimit.NewLimiter(*rateLimit, *rateBurst),
 	}
@@ -328,7 +467,7 @@ func (s *Server) handleHeartbeat(writer *bufio.Writer, connection *Connection) {
 	}
 }
 
-// handleTunnelInfo handles tunnel info messages
+// handleTunnelInfo handles tunnel info messages and creates TCP proxy
 func (s *Server) handleTunnelInfo(writer *bufio.Writer, connection *Connection, tunnelInfo *proto.TunnelInfo) {
 	if tunnelInfo == nil {
 		s.logger.Error("Tunnel info is nil", zap.Error(fmt.Errorf("tunnel info is nil")))
@@ -336,62 +475,49 @@ func (s *Server) handleTunnelInfo(writer *bufio.Writer, connection *Connection, 
 		return
 	}
 
-	// Создаем туннель
-	tunnel := &Tunnel{
-		conn:       connection.conn,
-		token:      connection.token,
-		lastPing:   time.Now(),
-		limiter:    ratelimit.NewLimiter(*rateLimit, *rateBurst),
-		tunnelInfo: tunnelInfo,
+	// Audit tunnel creation
+	if s.auditLogger != nil {
+		s.auditLogger.AuditTunnelCreation(
+			connection.clientID,
+			tunnelInfo.TunnelID,
+			connection.conn.RemoteAddr().String(),
+			map[string]interface{}{
+				"local_port": tunnelInfo.LocalPort,
+				"remote_host": tunnelInfo.RemoteHost,
+				"remote_port": tunnelInfo.RemotePort,
+			},
+			map[string]interface{}{
+				"connection_id": connection.conn.RemoteAddr().String(),
+			},
+		)
 	}
 
-	// Добавляем в список туннелей
-	s.mu.Lock()
-	s.tunnels[tunnelInfo.TunnelID] = tunnel
-	s.mu.Unlock()
+	// Create TCP proxy tunnel
+	_, err := s.tunnelManager.CreateTunnel(
+		tunnelInfo.TunnelID,
+		connection.conn,
+		tunnelInfo.RemoteHost,
+		tunnelInfo.RemotePort,
+	)
+	if err != nil {
+		s.logger.Error("Failed to create tunnel",
+			zap.String("tunnel_id", tunnelInfo.TunnelID),
+			zap.Error(err),
+		)
+		proto.WriteError(writer, "tunnel_creation_failed", err.Error())
+		return
+	}
 
-	s.metrics.SetActiveTunnels(len(s.tunnels))
-
-	// Запускаем обработку туннеля
-	go s.handleTunnel(tunnel)
-
-	s.logger.Info("Tunnel created", 
+	s.logger.Info("Tunnel created successfully", 
 		zap.String("tunnel_id", tunnelInfo.TunnelID),
 		zap.Int("local_port", tunnelInfo.LocalPort),
 		zap.String("remote_host", tunnelInfo.RemoteHost),
 		zap.Int("remote_port", tunnelInfo.RemotePort),
 	)
-}
 
-// handleTunnel handles a tunnel connection
-func (s *Server) handleTunnel(tunnel *Tunnel) {
-	defer func() {
-		s.mu.Lock()
-		delete(s.tunnels, tunnel.tunnelInfo.TunnelID)
-		s.mu.Unlock()
-		s.metrics.SetActiveTunnels(len(s.tunnels))
-	}()
-
-	// Здесь должна быть логика обработки туннеля
-	// Пока просто логируем
-	s.logger.Info("Tunnel started", 
-		zap.String("tunnel_id", tunnel.tunnelInfo.TunnelID),
-	)
-
-	// Бесконечный цикл для поддержания туннеля
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case <-time.After(30 * time.Second):
-			// Проверяем активность туннеля
-			if time.Since(tunnel.lastPing) > 60*time.Second {
-				s.logger.Warn("Tunnel inactive", 
-					zap.String("tunnel_id", tunnel.tunnelInfo.TunnelID),
-				)
-				return
-			}
-		}
+	// Send success response
+	if err := proto.WriteTunnelInfo(writer, tunnelInfo); err != nil {
+		s.logger.Error("Failed to send tunnel response", zap.Error(err))
 	}
 }
 
@@ -410,7 +536,7 @@ func (s *Server) cleanupLoop() {
 	}
 }
 
-// cleanup removes inactive connections and tunnels
+// cleanup removes inactive connections
 func (s *Server) cleanup() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -420,6 +546,18 @@ func (s *Server) cleanup() {
 	// Cleanup connections
 	for clientID, connection := range s.connections {
 		if now.Sub(connection.lastPing) > 5*time.Minute {
+			// Audit connection cleanup
+			if s.auditLogger != nil {
+				s.auditLogger.AuditEvent(
+					"connection_cleanup",
+					connection.clientID,
+					connection.conn.RemoteAddr().String(),
+					map[string]interface{}{
+						"reason": "inactive_timeout",
+						"inactive_duration": now.Sub(connection.lastPing).String(),
+					},
+				)
+			}
 			connection.conn.Close()
 			delete(s.connections, clientID)
 			s.logger.Info("Cleaned up inactive connection", 
@@ -427,19 +565,6 @@ func (s *Server) cleanup() {
 			)
 		}
 	}
-
-	// Cleanup tunnels
-	for tunnelID, tunnel := range s.tunnels {
-		if now.Sub(tunnel.lastPing) > 5*time.Minute {
-			tunnel.conn.Close()
-			delete(s.tunnels, tunnelID)
-			s.logger.Info("Cleaned up inactive tunnel", 
-				zap.String("tunnel_id", tunnelID),
-			)
-		}
-	}
-
-	s.metrics.SetActiveTunnels(len(s.tunnels))
 }
 
 // Shutdown gracefully shuts down the server
@@ -459,17 +584,45 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	for _, connection := range s.connections {
 		connection.conn.Close()
 	}
-	for _, tunnel := range s.tunnels {
-		tunnel.conn.Close()
-	}
 	s.mu.Unlock()
 
-	// Wait for context cancellation or timeout
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(30 * time.Second):
-		return fmt.Errorf("shutdown timeout")
+	// Shutdown tunnel manager
+	s.tunnelManager.Shutdown()
+
+	s.logger.Info("Server shutdown completed")
+	return nil
+}
+
+// Helper functions for TLS audit logging
+func getTLSVersionString(version uint16) string {
+	switch version {
+	case tls.VersionTLS10:
+		return "1.0"
+	case tls.VersionTLS11:
+		return "1.1"
+	case tls.VersionTLS12:
+		return "1.2"
+	case tls.VersionTLS13:
+		return "1.3"
+	default:
+		return "unknown"
+	}
+}
+
+func getCipherSuiteString(suite uint16) string {
+	switch suite {
+	case tls.TLS_AES_256_GCM_SHA384:
+		return "TLS_AES_256_GCM_SHA384"
+	case tls.TLS_CHACHA20_POLY1305_SHA256:
+		return "TLS_CHACHA20_POLY1305_SHA256"
+	case tls.TLS_AES_128_GCM_SHA256:
+		return "TLS_AES_128_GCM_SHA256"
+	case tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:
+		return "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+	case tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:
+		return "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+	default:
+		return fmt.Sprintf("unknown_%d", suite)
 	}
 }
 

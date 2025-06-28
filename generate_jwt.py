@@ -1,16 +1,31 @@
 import jwt
-import time
+import os
+from datetime import datetime, timedelta
 
-# Ваш секрет
-secret = "Yk7+4of0fCmcHY+p0QCZHonEMO0+WUvbKsrjfvJL3zk="
+def generate_jwt():
+    """Генерация JWT токена для тестирования"""
+    # Получаем секрет из переменной окружения
+    secret = os.getenv("RELAY_JWT_SECRET")
+    if not secret:
+        print("ОШИБКА: Переменная окружения RELAY_JWT_SECRET не установлена")
+        print("Установите её в файле .env или экспортируйте в системе")
+        return None
+    
+    # Полезная нагрузка токена
+    payload = {
+        'user_id': 123,
+        'username': 'test_user',
+        'type': 'relay_access',
+        'exp': datetime.utcnow() + timedelta(hours=1),
+        'iat': datetime.utcnow(),
+        'iss': 'cloudbridge-relay',
+        'aud': 'relay-client'
+    }
+    
+    # Генерация токена
+    token = jwt.encode(payload, secret, algorithm="HS256")
+    print(token)
+    return token
 
-# Параметры токена
-payload = {
-    "exp": int(time.time()) + 3600,  # срок действия 1 час
-    "iat": int(time.time()),         # время выпуска
-    "sub": "test-user"               # любой идентификатор пользователя
-}
-
-# Генерация токена
-token = jwt.encode(payload, secret, algorithm="HS256")
-print(token)
+if __name__ == "__main__":
+    generate_jwt()

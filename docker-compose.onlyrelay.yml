@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  relay:
+    build: .
+    container_name: relay
+    environment:
+      - RELAY_JWT_SECRET=${RELAY_JWT_SECRET}
+      - RELAY_PORT=${RELAY_PORT:-8080}
+      - RELAY_LOG_LEVEL=${RELAY_LOG_LEVEL:-INFO}
+      - RELAY_LOG_FORMAT=${RELAY_LOG_FORMAT:-json}
+      - RELAY_DEV_MODE=${RELAY_DEV_MODE:-false}
+      - RELAY_DEBUG=${RELAY_DEBUG:-false}
+      - RELAY_MAX_TUNNELS=${RELAY_MAX_TUNNELS:-1000}
+      - RELAY_RATE_LIMIT_RPS=${RELAY_RATE_LIMIT_RPS:-100}
+      - RELAY_RATE_LIMIT_BURST=${RELAY_RATE_LIMIT_BURST:-200}
+      - RELAY_METRICS_PORT=${RELAY_METRICS_PORT:-8081}
+      - RELAY_METRICS_PATH=${RELAY_METRICS_PATH:-/metrics}
+      - RELAY_TLS_CERT_FILE=${RELAY_TLS_CERT_FILE:-/etc/relay/certs/fullchain.pem}
+      - RELAY_TLS_KEY_FILE=${RELAY_TLS_KEY_FILE:-/etc/relay/certs/privkey.pem}
+      - RELAY_MTLS_CA_FILE=${RELAY_MTLS_CA_FILE:-/etc/relay/certs/ca.pem}
+      - RELAY_ALLOWED_IPS=${RELAY_ALLOWED_IPS:-127.0.0.1/32,192.168.1.0/24,10.0.0.0/8}
+      - RELAY_TIMEOUT=${RELAY_TIMEOUT:-30s}
+      - RELAY_PING_INTERVAL=${RELAY_PING_INTERVAL:-30s}
+      - RELAY_CLEANUP_INTERVAL=${RELAY_CLEANUP_INTERVAL:-1m}
+      - RELAY_AUTH_PROVIDER=${RELAY_AUTH_PROVIDER:-django}
+      # Django configuration
+      - DJANGO_JWT_SECRET=${RELAY_JWT_SECRET}
+      # Environment
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - DEPLOYMENT_REGION=${DEPLOYMENT_REGION:-moscow}
+      - TZ=${TZ:-Europe/Moscow}
+      - LANG=${LANG:-ru_RU.UTF-8}
+      - LC_ALL=${LC_ALL:-ru_RU.UTF-8}
+      # Compliance
+      - COMPLIANCE_152_FZ=${COMPLIANCE_152_FZ:-true}
+      - COMPLIANCE_187_FZ=${COMPLIANCE_187_FZ:-true}
+      - USE_RUSSIAN_CRYPTO=${USE_RUSSIAN_CRYPTO:-true}
+      - GOST_SIGNATURE_ALGORITHM=${GOST_SIGNATURE_ALGORITHM:-GOST_R_34_10_2012}
+      - GOST_HASH_ALGORITHM=${GOST_HASH_ALGORITHM:-GOST_R_34_11_2012}
+    ports:
+      - "${RELAY_PORT:-8080}:8080"
+      - "${RELAY_METRICS_PORT:-8081}:8081"
+    volumes:
+      - ./certs:/etc/relay/certs:ro
+      - ./logs:/var/log/relay
+      - ./config:/etc/relay/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts:/etc/prometheus/alerts:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./deploy/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-change-this-password-immediately}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox
+    command:
+      - '--config.file=/etc/blackbox_exporter/blackbox.yml'
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./deploy/blackbox/blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9115/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:
+
+networks:
+  relay-network:
+    driver: bridge
+  lk_dasjboard_default:
+    external: true

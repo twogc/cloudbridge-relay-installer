@@ -1,0 +1,31 @@
+[Unit]
+Description=CloudBridge Relay Production Stack
+Documentation=https://github.com/twogc/cloudbridge-relay-installer
+After=docker.service
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/ubuntu/cloudbridge-relay-installer/scripts/start_production.sh --env .env.production
+ExecStop=/usr/bin/docker-compose down
+ExecReload=/usr/bin/docker-compose restart
+TimeoutStartSec=300
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=30
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/ubuntu/cloudbridge-relay-installer
+
+[Install]
+WantedBy=multi-user.target 

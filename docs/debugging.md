@@ -2,11 +2,172 @@
 
 ## Содержание
 
-1. [Логирование](#логирование)
-2. [Метрики](#метрики)
-3. [Диагностика проблем](#диагностика-проблем)
-4. [Профилирование](#профилирование)
-5. [Устранение неполадок](#устранение-неполадок)
+1. [Health Checks и автоматизация](#health-checks-и-автоматизация)
+2. [Логирование](#логирование)
+3. [Метрики](#метрики)
+4. [Диагностика проблем](#диагностика-проблем)
+5. [Профилирование](#профилирование)
+6. [Устранение неполадок](#устранение-неполадок)
+
+## Health Checks и автоматизация
+
+### Проверка здоровья сервисов
+
+CloudBridge Relay v2.0 включает настроенные health checks для всех сервисов:
+
+#### Health Checks в Docker Compose
+
+```yaml
+# Keycloak - проверка порта 8080
+keycloak:
+  healthcheck:
+    test: ["CMD", "sh", "-c", "timeout 5 sh -c '</dev/tcp/localhost/8080'"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+
+# Relay - проверка метрик на порту 8081
+relay:
+  healthcheck:
+    test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/metrics"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+
+# PostgreSQL - встроенный health check
+postgres:
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U keycloak"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+```
+
+#### Проверка статуса health checks
+
+```bash
+# Просмотр статуса всех контейнеров
+docker-compose ps
+
+# Детальная информация о health checks
+docker inspect relay | jq '.[0].State.Health'
+docker inspect keycloak | jq '.[0].State.Health'
+
+# Логи health checks
+docker inspect relay | jq '.[0].State.Health.Log'
+
+# Принудительная проверка health check
+docker exec relay wget --no-verbose --tries=1 --spider http://localhost:8081/metrics
+docker exec keycloak sh -c "timeout 5 sh -c '</dev/tcp/localhost/8080'"
+```
+
+#### Автоматическая диагностика
+
+```bash
+# Запуск полной диагностики
+./scripts/test_integration.sh
+
+# Проверка готовности всех сервисов
+./scripts/start_production.sh --status
+
+# Проверка логов в реальном времени
+./scripts/manage_logs.sh --tail
+
+# Анализ логов
+./scripts/manage_logs.sh --analyze
+```
+
+### Устранение проблем с health checks
+
+#### Проблема: Keycloak показывает "unhealthy"
+
+```bash
+# Проверка, что Keycloak отвечает
+curl -I http://localhost:8080/
+
+# Проверка логов Keycloak
+docker-compose logs keycloak | tail -20
+
+# Проверка подключения к базе данных
+docker exec keycloak sh -c "timeout 5 sh -c '</dev/tcp/postgres/5432'"
+
+# Перезапуск Keycloak
+docker-compose restart keycloak
+```
+
+#### Проблема: Relay показывает "unhealthy"
+
+```bash
+# Проверка метрик Relay
+curl -f http://localhost:8081/metrics
+
+# Проверка логов Relay
+docker-compose logs relay | tail -20
+
+# Проверка, что wget доступен в контейнере
+docker exec relay which wget
+
+# Тестирование health check внутри контейнера
+docker exec relay wget --no-verbose --tries=1 --spider http://localhost:8081/metrics
+
+# Перезапуск Relay
+docker-compose restart relay
+```
+
+#### Проблема: PostgreSQL показывает "unhealthy"
+
+```bash
+# Проверка логов PostgreSQL
+docker-compose logs postgres | tail -20
+
+# Проверка подключения к базе данных
+docker exec postgres pg_isready -U keycloak
+
+# Проверка использования диска
+docker exec postgres df -h
+
+# Перезапуск PostgreSQL
+docker-compose restart postgres
+```
+
+### Автоматическое восстановление
+
+#### Восстановление после сбоев
+
+```bash
+# Автоматическое восстановление
+./scripts/start_production.sh --env .env.production --recover
+
+# Принудительная очистка и перезапуск
+docker-compose down --volumes --remove-orphans
+./scripts/start_production.sh --env .env.production --force
+```
+
+#### Мониторинг и алерты
+
+```bash
+# Настройка алертов Prometheus
+sudo cp deploy/prometheus/alerts/relay_alerts.yml /etc/prometheus/alerts/
+
+# Проверка алертов
+curl http://localhost:9090/api/v1/alerts
+
+# Настройка уведомлений в AlertManager
+curl -X POST http://localhost:9093/api/v1/alerts \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "labels": {
+        "alertname": "RelayDown",
+        "severity": "critical"
+      },
+      "annotations": {
+        "summary": "Relay server is down",
+        "description": "Relay server has been down for more than 1 minute"
+      }
+    }
+  ]'
+```
 
 ## Логирование
 

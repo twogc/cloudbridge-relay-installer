@@ -1,29 +1,32 @@
-# Руководство по развертыванию CloudBridge Relay
+# Руководство по развертыванию CloudBridge Relay v2.0
 
 ## Содержание
 
 1. [Требования](#требования)
 2. [Подготовка окружения](#подготовка-окружения)
-3. [Установка](#установка)
-4. [Конфигурация](#конфигурация)
-5. [Развертывание](#развертывание)
-6. [Мониторинг](#мониторинг)
-7. [Обслуживание](#обслуживание)
-8. [Устранение неполадок](#устранение-неполадок)
+3. [Быстрая установка (рекомендуется)](#быстрая-установка-рекомендуется)
+4. [Установка](#установка)
+5. [Конфигурация](#конфигурация)
+6. [Развертывание](#развертывание)
+7. [Автоматизация](#автоматизация)
+8. [Мониторинг](#мониторинг)
+9. [Обслуживание](#обслуживание)
+10. [Устранение неполадок](#устранение-неполадок)
+11. [Новые функции v2.0](#новые-функции-v20)
 
 ## Требования
 
 ### Системные требования
 
 - **ОС:** Linux (Ubuntu 20.04+, CentOS 8+, RHEL 8+)
-- **CPU:** 2+ ядра
-- **RAM:** 4+ GB
+- **CPU:** 2+ ядра (рекомендуется 4+ для multi-tenancy)
+- **RAM:** 4+ GB (рекомендуется 8+ GB для TCP proxy)
 - **Диск:** 20+ GB свободного места
 - **Сеть:** статический IP-адрес
 
 ### Программные требования
 
-- **Go:** 1.18+
+- **Go:** 1.21+ (обязательно)
 - **Docker:** 20.10+ (опционально)
 - **Docker Compose:** 2.0+ (опционально)
 - **Systemd:** для установки как сервис
@@ -35,6 +38,7 @@
 - **Порт 8081:** порт для метрик и API
 - **Порт 80:** для получения SSL сертификатов
 - **Порт 443:** для HTTPS (опционально)
+- **Диапазон портов 10000-20000:** для TCP proxy туннелей
 
 ## Подготовка окружения
 
@@ -58,12 +62,12 @@ sudo apt install -y curl wget git build-essential
 sudo yum install -y curl wget git gcc
 ```
 
-### 3. Установка Go
+### 3. Установка Go 1.21+
 
 ```bash
-# Скачивание Go
-wget https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz
+# Скачивание Go 1.21.13
+wget https://go.dev/dl/go1.21.13.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.21.13.linux-amd64.tar.gz
 
 # Добавление в PATH
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
@@ -71,6 +75,7 @@ source ~/.bashrc
 
 # Проверка установки
 go version
+# Должно показать: go version go1.21.13 linux/amd64
 ```
 
 ### 4. Установка Docker (опционально)
@@ -88,6 +93,43 @@ sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker
 sudo chmod +x /usr/local/bin/docker-compose
 ```
 
+## Быстрая установка (рекомендуется)
+
+### Автоматическая установка с Docker Compose
+
+```bash
+# Клонирование репозитория
+git clone https://github.com/maxlanies/cloudbridge-relay-installer.git
+cd cloudbridge-relay-installer
+
+# Генерация production секретов
+./scripts/generate_secrets.sh --env .env.production
+
+# Запуск всех сервисов в production режиме
+./scripts/start_production.sh --env .env.production
+
+# Проверка статуса
+docker-compose ps
+```
+
+### Установка как системный сервис (автозапуск)
+
+```bash
+# Установка systemd сервиса
+sudo ./scripts/install_systemd.sh install
+
+# Проверка статуса
+sudo systemctl status cloudbridge-relay
+
+# Управление сервисом
+sudo systemctl start cloudbridge-relay
+sudo systemctl stop cloudbridge-relay
+sudo systemctl restart cloudbridge-relay
+
+# Просмотр логов
+sudo journalctl -u cloudbridge-relay -f
+```
+
 ## Установка
 
 ### Способ 1: Установка из исходного кода
@@ -96,6 +138,9 @@ sudo chmod +x /usr/local/bin/docker-compose
 # Клонирование репозитория
 git clone https://github.com/maxlanies/cloudbridge-relay-installer.git
 cd cloudbridge-relay-installer
+
+# Обновление зависимостей
+go mod tidy
 
 # Сборка
 go build -o relay cmd/relay/main.go
@@ -113,17 +158,18 @@ git clone https://github.com/maxlanies/cloudbridge-relay-installer.git
 cd cloudbridge-relay-installer
 
 # Сборка образа
-docker build -t cloudbridge-relay .
+docker build -t cloudbridge-relay:v2.0 .
 
 # Запуск контейнера
 docker run -d \
   --name relay \
   -p 8080:8080 \
   -p 8081:8081 \
+  -p 10000-20000:10000-20000 \
   -v /etc/relay:/etc/relay \
   -v /var/log/relay:/var/log/relay \
   -e RELAY_JWT_SECRET=your-secret-key \
-  cloudbridge-relay ./relay --config config/config.json
+  cloudbridge-relay:v2.0 ./relay --config config/config.json
 ```
 
 ### Способ 3: Установка как системный сервис
@@ -157,12 +203,14 @@ RELAY_JWT_SECRET=your-secure-jwt-secret
 RELAY_DJANGO_API_ENDPOINT=http://your-django-server:8000/api
 RELAY_LOG_LEVEL=info
 RELAY_TLS_ENABLED=true
+RELAY_TENANT_ENABLED=true
+RELAY_PROXY_ENABLED=true
 EOF
 ```
 
-### 3. Формат конфигурационного файла
+### 3. Формат конфигурационного файла v2.0
 
-CloudBridge Relay поддерживает конфигурацию в формате JSON с поддержкой строковых значений для time.Duration полей:
+CloudBridge Relay v2.0 поддерживает расширенную конфигурацию с новыми функциями:
 
 ```json
 {
@@ -184,7 +232,7 @@ CloudBridge Relay поддерживает конфигурацию в форм�
         "rest_retry_delay": "100ms"
     },
     "keycloak": {
-        "enabled": false,
+        "enabled": true,
         "server_url": "https://keycloak.example.com",
         "realm": "cloudbridge",
         "client_id": "relay-client",
@@ -196,299 +244,595 @@ CloudBridge Relay поддерживает конфигурацию в форм�
             "clock_skew": "30s"
         },
         "jwks_cache_ttl": "1h",
-        "http_timeout": "30s"
+        "http_timeout": "30s",
+        "fallback_to_django": true
     },
-    "security": {
-        "tls_enabled": true,
-        "cert_file": "/etc/relay/certs/fullchain.pem",
-        "key_file": "/etc/relay/certs/privkey.pem",
-        "allowed_ips": "",
-        "rate_limit": {
-            "enabled": true,
-            "requests_per_second": 100,
-            "burst": 200
-        }
+    "tenant": {
+        "enabled": true,
+        "default_limits": {
+            "max_tunnels": 10,
+            "max_connections_per_tunnel": 100,
+            "max_bandwidth_mbps": 100,
+            "max_data_transfer_gb": 1000,
+            "rate_limit_per_second": 1000
+        },
+        "cleanup_interval": "5m",
+        "inactivity_timeout": "1h"
+    },
+    "proxy": {
+        "enabled": true,
+        "buffer_size": 8192,
+        "timeout": "60s",
+        "max_connections": 1000,
+        "port_range": {
+            "start": 10000,
+            "end": 20000
+        },
+        "metrics_enabled": true
+    },
+    "tunnel": {
+        "manager_enabled": true,
+        "max_tunnels_per_tenant": 50,
+        "cleanup_interval": "2m",
+        "heartbeat_timeout": "5m"
+    },
+    "rate_limiting": {
+        "enabled": true,
+        "requests_per_second": 100,
+        "burst": 200,
+        "per_tenant": true
+    },
+    "logging": {
+        "level": "info",
+        "format": "json",
+        "output": "/var/log/relay/relay.log",
+        "max_size": "100MB",
+        "max_age": "30d",
+        "max_backups": 10
     },
     "metrics": {
         "enabled": true,
-        "port": ":8081",
-        "path": "/metrics"
+        "address": ":8081",
+        "path": "/metrics",
+        "collect_interval": "15s"
     },
-    "logging": {
-        "level": "INFO",
-        "format": "json",
-        "output": "/var/log/relay/relay.log"
+    "tls": {
+        "enabled": true,
+        "cert_file": "/etc/relay/certs/server.crt",
+        "key_file": "/etc/relay/certs/server.key",
+        "ca_file": "/etc/relay/certs/ca.crt",
+        "min_version": "1.3",
+        "cipher_suites": [
+            "TLS_AES_256_GCM_SHA384",
+            "TLS_CHACHA20_POLY1305_SHA256",
+            "TLS_AES_128_GCM_SHA256"
+        ]
     }
 }
 ```
 
-**Важно:** Все поля типа `time.Duration` должны быть указаны в виде строк с суффиксами времени:
-- `s` - секунды
-- `m` - минуты  
-- `h` - часы
-- `ms` - миллисекунды
-
-### 4. Настройка SSL сертификатов
+### 4. Настройка multi-tenancy
 
 ```bash
-# Установка Certbot
-sudo apt install -y certbot
-
-# Получение сертификата
-sudo certbot certonly --standalone -d your-domain.com
-
-# Копирование сертификатов
-sudo mkdir -p /etc/relay/certs
-sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem /etc/relay/certs/
-sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem /etc/relay/certs/
-
-# Установка прав доступа
-sudo chown -R relay:relay /etc/relay/certs
-sudo chmod 600 /etc/relay/certs/*.pem
-```
-
-### 5. Настройка файрвола
-
-```bash
-# Ubuntu/Debian (ufw)
-sudo ufw allow 8080/tcp
-sudo ufw allow 8081/tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-
-# CentOS/RHEL (firewalld)
-sudo firewall-cmd --permanent --add-port=8080/tcp
-sudo firewall-cmd --permanent --add-port=8081/tcp
-sudo firewall-cmd --permanent --add-port=80/tcp
-sudo firewall-cmd --permanent --add-port=443/tcp
-sudo firewall-cmd --reload
+# Создание файла конфигурации тенантов
+sudo tee /etc/relay/tenants.yaml << EOF
+tenants:
+  tenant_001:
+    name: "Production Tenant"
+    limits:
+      max_tunnels: 20
+      max_connections_per_tunnel: 200
+      max_bandwidth_mbps: 500
+      max_data_transfer_gb: 5000
+      rate_limit_per_second: 2000
+    allowed_ips:
+      - "192.168.1.0/24"
+    metadata:
+      contact: "admin@company.com"
+      environment: "production"
+  
+  tenant_002:
+    name: "Development Tenant"
+    limits:
+      max_tunnels: 5
+      max_connections_per_tunnel: 50
+      max_bandwidth_mbps: 100
+      max_data_transfer_gb: 1000
+      rate_limit_per_second: 500
+    allowed_ips:
+      - "192.168.2.0/24"
+    metadata:
+      contact: "dev@company.com"
+      environment: "development"
+EOF
 ```
 
 ## Развертывание
 
-### Запуск сервера
+### 1. Запуск сервера
 
 ```bash
-# Запуск с конфигурационным файлом
-./relay --config config/config.json --log-level DEBUG
+# Запуск с конфигурацией
+sudo /usr/local/bin/relay --config /etc/relay/config.json
 
-# Запуск с переменными окружения
-RELAY_JWT_SECRET=your-secret ./relay --config config/config.json
-
-# Запуск в Docker
-docker run -d \
-  --name relay \
-  -p 8080:8080 \
-  -p 8081:8081 \
-  -e RELAY_JWT_SECRET=your-secret \
-  -v /etc/relay:/etc/relay \
-  cloudbridge-relay ./relay --config config/config.json
+# Или через systemd
+sudo systemctl start relay
+sudo systemctl enable relay
 ```
 
-### Проверка работоспособности
+## Автоматизация
+
+### 1. Скрипты автоматизации
+
+CloudBridge Relay v2.0 включает набор скриптов для автоматизации развертывания и управления:
+
+#### Генерация секретов
+```bash
+# Генерация production секретов
+./scripts/generate_secrets.sh --env .env.production
+
+# Генерация development секретов
+./scripts/generate_secrets.sh --env .env.development
+
+# Генерация с кастомными параметрами
+./scripts/generate_secrets.sh --env .env.custom --keycloak-admin admin --keycloak-password secure123
+```
+
+#### Запуск production стека
+```bash
+# Полный запуск всех сервисов
+./scripts/start_production.sh --env .env.production
+
+# Принудительный перезапуск
+./scripts/start_production.sh --env .env.production --force
+
+# Проверка статуса
+./scripts/start_production.sh --status
+
+# Остановка всех сервисов
+./scripts/start_production.sh --stop
+```
+
+#### Установка systemd сервиса
+```bash
+# Установка автозапуска
+sudo ./scripts/install_systemd.sh install
+
+# Удаление сервиса
+sudo ./scripts/install_systemd.sh uninstall
+
+# Проверка статуса
+sudo ./scripts/install_systemd.sh status
+
+# Перезапуск сервиса
+sudo ./scripts/install_systemd.sh restart
+```
+
+### 2. Systemd сервис
+
+Автоматический запуск CloudBridge Relay при старте системы:
 
 ```bash
-# Проверка метрик
+# Файл сервиса: /etc/systemd/system/cloudbridge-relay.service
+[Unit]
+Description=CloudBridge Relay Production Stack
+Documentation=https://github.com/twogc/cloudbridge-relay-installer
+After=docker.service
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/ubuntu/cloudbridge-relay-installer/scripts/start_production.sh --env .env.production
+ExecStop=/usr/bin/docker-compose down
+ExecReload=/usr/bin/docker-compose restart
+TimeoutStartSec=300
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### 3. Мониторинг и алерты
+
+#### Health Checks
+Все сервисы имеют настроенные health checks:
+
+- **Keycloak**: проверка порта 8080
+- **Relay**: проверка метрик на порту 8081
+- **PostgreSQL**: встроенный health check
+- **Grafana**: проверка API health
+- **Prometheus**: встроенный health check
+- **AlertManager**: встроенный health check
+
+#### Автоматические алерты
+```bash
+# Настройка алертов Prometheus
+sudo cp deploy/prometheus/alerts/relay_alerts.yml /etc/prometheus/alerts/
+
+# Проверка алертов
+curl http://localhost:9090/api/v1/alerts
+```
+
+### 4. Резервное копирование
+
+#### Автоматические бэкапы
+```bash
+# Создание бэкапа Keycloak
+./scripts/backup_keycloak.sh
+
+# Создание бэкапа конфигурации
+./scripts/backup_keycloak.sh --config-only
+
+# Восстановление из бэкапа
+./scripts/backup_keycloak.sh --restore backup_20240628.tar.gz
+```
+
+#### Ротация логов
+```bash
+# Настройка logrotate
+sudo tee /etc/logrotate.d/cloudbridge-relay << EOF
+/home/ubuntu/cloudbridge-relay-installer/logs/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 644 ubuntu ubuntu
+    postrotate
+        docker-compose restart relay
+    endscript
+}
+EOF
+```
+
+### 5. Обновления
+
+#### Автоматическое обновление
+```bash
+# Обновление кода
+git pull origin main
+
+# Пересборка образов
+docker-compose build --no-cache
+
+# Перезапуск с новыми образами
+./scripts/start_production.sh --env .env.production --force
+```
+
+#### Откат изменений
+```bash
+# Откат к предыдущей версии
+git checkout v2.0.1
+
+# Пересборка и перезапуск
+docker-compose build --no-cache
+./scripts/start_production.sh --env .env.production --force
+```
+
+### 6. Управление сертификатами
+
+#### Автоматическое обновление SSL
+```bash
+# Настройка автоматического обновления
+./scripts/renew_certs.sh --setup-cron
+
+# Ручное обновление
+./scripts/renew_certs.sh
+
+# Проверка сертификатов
+./scripts/renew_certs.sh --check
+```
+
+### 7. Интеграция с CI/CD
+
+#### GitHub Actions
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: |
+            cd /home/ubuntu/cloudbridge-relay-installer
+            git pull origin main
+            ./scripts/start_production.sh --env .env.production --force
+```
+
+### 8. Мониторинг производительности
+
+#### Метрики в реальном времени
+```bash
+# Просмотр метрик Relay
 curl http://localhost:8081/metrics
 
-# Проверка здоровья сервера
-curl http://localhost:8081/health
+# Просмотр метрик Keycloak
+curl http://localhost:8080/health
+
+# Просмотр метрик PostgreSQL
+docker exec postgres pg_stat_statements
+```
+
+#### Дашборды Grafana
+- **Relay Dashboard**: мониторинг туннелей и соединений
+- **Keycloak Dashboard**: мониторинг аутентификации
+- **System Dashboard**: мониторинг ресурсов системы
+
+### 9. Устранение неполадок
+
+#### Автоматическая диагностика
+```bash
+# Запуск диагностики
+./scripts/test_integration.sh
 
 # Проверка логов
-tail -f /var/log/relay/relay.log
+./scripts/manage_logs.sh --tail
+
+# Очистка старых логов
+./scripts/manage_logs.sh --cleanup
+```
+
+#### Восстановление после сбоев
+```bash
+# Автоматическое восстановление
+./scripts/start_production.sh --env .env.production --recover
+
+# Принудительная очистка
+docker-compose down --volumes --remove-orphans
+./scripts/start_production.sh --env .env.production --force
 ```
 
 ## Мониторинг
 
-### Prometheus метрики
+### 1. Метрики Prometheus
 
-Сервер автоматически экспортирует метрики на порту 8081:
+Сервер экспортирует следующие метрики:
 
 ```bash
-# Получение метрик
-curl http://localhost:8081/metrics
-
 # Основные метрики
-relay_connections_total          # Общее количество соединений
-relay_active_connections         # Активные соединения
-relay_active_tunnels            # Активные туннели
-relay_errors_total              # Количество ошибок
-relay_heartbeats_total          # Количество heartbeat
+relay_connections_total
+relay_tunnels_active
+relay_bytes_transferred_total
+relay_requests_total
+relay_errors_total
+
+# Метрики по тенантам
+relay_tenant_tunnels_active
+relay_tenant_connections_total
+relay_tenant_bytes_transferred_total
+
+# Метрики TCP proxy
+relay_proxy_connections_active
+relay_proxy_bytes_sent_total
+relay_proxy_bytes_received_total
+relay_proxy_errors_total
 ```
 
-### Логирование
+### 2. Настройка Grafana
 
-CloudBridge Relay использует структурированное логирование с поддержкой:
+```bash
+# Создание дашборда
+curl -X POST http://localhost:3000/api/dashboards/db \
+  -H "Content-Type: application/json" \
+  -d @deploy/grafana/dashboards/relay_dashboard.json
+```
 
-- **Форматы:** JSON, Console
-- **Уровни:** DEBUG, INFO, WARN, ERROR
-- **Ротация:** Автоматическая с настройкой размера и количества файлов
-- **Поля:** timestamp, level, message, user_id, request_id, connection_id, duration, error
+### 3. Алерты
 
-Пример лога:
-```json
-{
-  "level": "INFO",
-  "timestamp": "2024-03-14T12:00:00Z",
-  "caller": "main.go:123",
-  "msg": "Server started",
-  "port": 8080,
-  "tls": true,
-  "workers": 4
-}
+```bash
+# Настройка алертов Prometheus
+sudo cp deploy/prometheus/alerts/relay_alerts.yml /etc/prometheus/alerts/
 ```
 
 ## Обслуживание
 
-### Обновление сертификатов
+### 1. Обновление сервера
 
 ```bash
-# Автоматическое обновление через Certbot
-sudo certbot renew
+# Остановка сервиса
+sudo systemctl stop relay
 
-# Копирование обновленных сертификатов
-sudo cp /etc/letsencrypt/live/your-domain.com/fullchain.pem /etc/relay/certs/
-sudo cp /etc/letsencrypt/live/your-domain.com/privkey.pem /etc/relay/certs/
+# Создание бэкапа
+sudo cp /usr/local/bin/relay /usr/local/bin/relay.backup
 
-# Перезапуск сервера
-sudo systemctl restart relay
+# Обновление
+git pull
+go build -o relay cmd/relay/main.go
+sudo cp relay /usr/local/bin/
+
+# Запуск сервиса
+sudo systemctl start relay
 ```
 
-### Ротация логов
-
-Логи автоматически ротируются с настройками:
-- Максимальный размер файла: 100MB
-- Количество файлов: 10
-- Срок хранения: 30 дней
-- Сжатие: включено
-
-### Мониторинг производительности
+### 2. Ротация логов
 
 ```bash
-# Проверка использования ресурсов
-top -p $(pgrep relay)
+# Настройка logrotate
+sudo tee /etc/logrotate.d/relay << EOF
+/var/log/relay/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 644 relay relay
+    postrotate
+        systemctl reload relay
+    endscript
+}
+EOF
+```
 
-# Проверка сетевых соединений
-netstat -tlnp | grep relay
+### 3. Очистка неактивных туннелей
 
-# Проверка логов в реальном времени
-tail -f /var/log/relay/relay.log | jq .
+```bash
+# Автоматическая очистка (настроена в конфигурации)
+# Ручная очистка через API
+curl -X POST http://localhost:8081/api/v1/tunnels/cleanup \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ## Устранение неполадок
 
-### Частые проблемы
-
-#### 1. Ошибка парсинга конфигурации
-```
-Failed to load configuration: failed to parse config file: json: cannot unmarshal string into Go struct field .server.timeout of type time.Duration
-```
-
-**Решение:** Убедитесь, что все поля time.Duration указаны в виде строк с суффиксами времени (например, "30s", "5m", "1h").
-
-#### 2. Порт уже занят
-```
-Failed to start server: failed to create listener: listen tcp :8080: bind: address already in use
-```
-
-**Решение:** Остановите процесс, использующий порт 8080, или измените порт в конфигурации.
-
-#### 3. Ошибка JWT секрета
-```
-JWT secret must be set via RELAY_JWT_SECRET environment variable
-```
-
-**Решение:** Установите переменную окружения RELAY_JWT_SECRET или замените placeholder в конфигурации.
-
-#### 4. Ошибка Docker контейнера
-```
-docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: "--config": executable file not found in $PATH
-```
-
-**Решение:** Укажите правильную команду запуска: `cloudbridge-relay ./relay --config config/config.json`
-
-### Диагностика
+### 1. Проверка логов
 
 ```bash
-# Проверка статуса сервиса
-sudo systemctl status relay
+# Основные логи
+sudo tail -f /var/log/relay/relay.log
 
-# Просмотр логов systemd
+# Systemd логи
 sudo journalctl -u relay -f
 
-# Проверка конфигурации
-./relay --config config/config.json --help
+# Логи TCP proxy
+sudo tail -f /var/log/relay/proxy.log
+```
 
-# Тестирование подключения
-telnet localhost 8080
-telnet localhost 8081
+### 2. Диагностика соединений
+
+```bash
+# Проверка открытых портов
+sudo netstat -tlnp | grep relay
+
+# Проверка TCP соединений
+sudo ss -tlnp | grep relay
 
 # Проверка метрик
-curl -s http://localhost:8081/metrics | grep relay_
+curl http://localhost:8081/metrics | grep relay
 ```
 
-### Получение поддержки
-
-При возникновении проблем:
-
-1. Соберите логи: `sudo journalctl -u relay > relay-logs.txt`
-2. Соберите метрики: `curl http://localhost:8081/metrics > metrics.txt`
-3. Проверьте конфигурацию: `cat /etc/relay/config.json`
-4. Создайте issue в репозитории с приложенными файлами
-
-## Безопасность
-
-### 1. Рекомендации по безопасности
-
-- Используйте сильные JWT секреты
-- Включите TLS для всех соединений
-- Настройте rate limiting
-- Ограничьте доступ по IP-адресам
-- Регулярно обновляйте сертификаты
-- Мониторьте логи на подозрительную активность
-
-### 2. Аудит безопасности
+### 3. Проблемы с multi-tenancy
 
 ```bash
-# Проверка прав доступа
-sudo find /etc/relay -type f -exec ls -la {} \;
+# Проверка конфигурации тенантов
+sudo relay --config /etc/relay/config.json --validate-tenants
 
-# Проверка открытых портов
-sudo netstat -tlnp
-
-# Проверка процессов
-ps aux | grep relay
-
-# Проверка логов безопасности
-sudo journalctl -u relay | grep -i "security\|auth\|error"
+# Просмотр активных тенантов
+curl http://localhost:8081/api/v1/tenants \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-## Поддержка
+## Новые функции v2.0
 
-### Контакты для поддержки
+### 1. TCP Proxy
 
-- **GitHub Issues:** https://github.com/maxlanies/cloudbridge-relay-installer/issues
-- **Документация:** https://github.com/maxlanies/cloudbridge-relay-installer/docs
-- **Wiki:** https://github.com/maxlanies/cloudbridge-relay-installer/wiki
+**Описание:** Полнофункциональный TCP прокси для двунаправленной передачи данных между клиентами и целевыми сервисами.
 
-### Полезные команды
+**Особенности:**
+- Автоматическое управление портами (10000-20000)
+- Буферизация данных с настраиваемым размером буфера
+- Метрики производительности в реальном времени
+- Graceful shutdown соединений
 
-```bash
-# Полная диагностика системы
-sudo relay --diagnostic
+**Конфигурация:**
+```json
+{
+    "proxy": {
+        "enabled": true,
+        "buffer_size": 8192,
+        "timeout": "60s",
+        "max_connections": 1000,
+        "port_range": {
+            "start": 10000,
+            "end": 20000
+        }
+    }
+}
+```
 
-# Проверка здоровья сервиса
-curl http://localhost:8081/health
+### 2. Multi-tenancy
 
-# Получение метрик
-curl http://localhost:8081/metrics
+**Описание:** Поддержка мультитенантности с изоляцией ресурсов и настраиваемыми лимитами.
 
-# Просмотр логов в реальном времени
-sudo journalctl -u relay -f
+**Особенности:**
+- Изоляция ресурсов между тенантами
+- Настраиваемые лимиты на туннели, соединения, трафик
+- IP-фильтрация (whitelist/blacklist)
+- Отслеживание активности и автоматическая очистка
 
-# Перезапуск сервиса
-sudo systemctl restart relay
+**Конфигурация:**
+```yaml
+tenants:
+  tenant_001:
+    name: "Production Tenant"
+    limits:
+      max_tunnels: 20
+      max_connections_per_tunnel: 200
+      max_bandwidth_mbps: 500
+    allowed_ips:
+      - "192.168.1.0/24"
+```
 
-# Проверка конфигурации
-relay --config /etc/relay/config.json --validate
-``` 
+### 3. Tunnel Manager
+
+**Описание:** Централизованное управление активными туннелями с автоматической очисткой и мониторингом.
+
+**Особенности:**
+- Автоматическое создание и удаление туннелей
+- Heartbeat мониторинг
+- Graceful shutdown
+- Метрики по туннелям
+
+### 4. Enhanced Security
+
+**Описание:** Улучшенная безопасность с интеграцией Keycloak и Django fallback.
+
+**Особенности:**
+- Интеграция с Keycloak OIDC
+- Fallback на Django аутентификацию
+- Улучшенная валидация JWT токенов
+- Аудит всех операций
+
+### 5. Go 1.21 и современные зависимости
+
+**Описание:** Обновление до Go 1.21.13 с современными зависимостями.
+
+**Улучшения:**
+- Повышенная производительность
+- Улучшенная безопасность
+- Современные библиотеки
+- Лучшая поддержка TLS 1.3
+
+### 6. Comprehensive Testing
+
+**Описание:** Полный набор unit и integration тестов.
+
+**Покрытие:**
+- TCP proxy функциональность
+- Multi-tenancy
+- Tunnel management
+- Authentication
+- Rate limiting
+- Error handling
+
+### Миграция с v1.x
+
+Для миграции с предыдущих версий:
+
+1. **Обновление Go до 1.21+**
+2. **Обновление конфигурации** (добавление новых секций)
+3. **Настройка multi-tenancy** (опционально)
+4. **Тестирование** новых функций
+5. **Обновление клиентов** для поддержки новых возможностей

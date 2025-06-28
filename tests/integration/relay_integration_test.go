@@ -348,6 +348,100 @@ func TestConcurrentConnections(t *testing.T) {
 	}
 }
 
+// TestUserRateLimiting tests user-based rate limiting functionality
+func TestUserRateLimiting(t *testing.T) {
+	cfg := getDefaultConfig()
+	cfg.Security.RateLimit.Enabled = true
+	cfg.Security.RateLimit.RequestsPerSecond = 1
+	cfg.Security.RateLimit.Burst = 1
+
+	srv, cleanup := startTestServer(cfg)
+	defer cleanup()
+
+	token := "valid-jwt-token"
+	conn1, err := connectAndAuth(srv, token)
+	if err != nil {
+		t.Fatalf("first connection failed: %v", err)
+	}
+	defer conn1.Close()
+
+	// Вторая попытка сразу должна быть заблокирована лимитом
+	conn2, err := connectAndAuth(srv, token)
+	if err == nil {
+		// Должны получить ошибку rate_limit_exceeded
+		resp, err := readErrorResponse(conn2)
+		if err != nil {
+			t.Fatalf("failed to read error response: %v", err)
+		}
+		if resp.Code != "rate_limit_exceeded" {
+			t.Fatalf("expected rate_limit_exceeded, got %s", resp.Code)
+		}
+		conn2.Close()
+	} else {
+		t.Fatalf("second connection failed: %v", err)
+	}
+}
+
+// TestAuditLogging tests audit logging functionality
+func TestAuditLogging(t *testing.T) {
+	cfg := getDefaultConfig()
+	cfg.Security.Audit.Enabled = true
+	cfg.Security.Audit.FilePath = "logs/test_audit.log"
+	cfg.Security.Audit.MaxSize = 10
+	cfg.Security.Audit.MaxAge = 1
+	cfg.Security.Audit.MaxBackups = 2
+	cfg.Security.Audit.Compress = false
+
+	srv, cleanup := startTestServer(cfg)
+	defer cleanup()
+
+	// Test that audit logger was created
+	if srv.auditLogger == nil {
+		t.Fatal("Audit logger should be created when enabled")
+	}
+
+	// Test authentication audit logging
+	token := "valid-jwt-token"
+	conn, err := connectAndAuth(srv, token)
+	if err != nil {
+		t.Fatalf("connection failed: %v", err)
+	}
+	defer conn.Close()
+
+	// Check that audit log file was created
+	if _, err := os.Stat(cfg.Security.Audit.FilePath); os.IsNotExist(err) {
+		t.Fatal("Audit log file should be created")
+	}
+
+	// Clean up test audit log
+	os.Remove(cfg.Security.Audit.FilePath)
+}
+
+// TestTLS13Configuration tests TLS 1.3 configuration
+func TestTLS13Configuration(t *testing.T) {
+	cfg := getDefaultConfig()
+	cfg.Security.TLSEnabled = true
+	cfg.Security.MinTLSVersion = "1.3"
+	cfg.Security.CipherSuites = []string{
+		"TLS_AES_256_GCM_SHA384",
+		"TLS_CHACHA20_POLY1305_SHA256",
+		"TLS_AES_128_GCM_SHA256",
+	}
+
+	// Test that configuration is valid
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("TLS 1.3 configuration should be valid: %v", err)
+	}
+
+	// Test that invalid cipher suites for TLS 1.3 are rejected
+	cfg.Security.CipherSuites = []string{
+		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384", // TLS 1.2 cipher suite
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("TLS 1.3 with TLS 1.2 cipher suites should be rejected")
+	}
+}
+
 // Helper functions
 func hasTLSCertificates() bool {
 	// Check if TLS certificates exist

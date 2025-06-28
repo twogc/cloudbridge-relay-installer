@@ -1,10 +1,16 @@
-import jwt
-import time
-import socket
+import requests
 import json
+import jwt
+import os
+import time
+from datetime import datetime, timedelta
+import socket
 import struct
 import base64
 from contextlib import contextmanager
+
+# URL сервера
+BASE_URL = "http://localhost:8080"
 
 @contextmanager
 def socket_context(host, port):
@@ -33,41 +39,89 @@ def read_message(sock):
     data = sock.recv(length)
     return json.loads(data)
 
-if __name__ == '__main__':
-    # Секрет для подписи JWT (должен совпадать с RELAY_JWT_SECRET в Django)
-    secret = "Yk7+4of0fCmcHY+p0QCZHonEMO0+WUvbKsrjfvJL3zk="
+def generate_jwt_token():
+    """Генерация JWT токена для тестирования"""
+    # Получаем секрет из переменной окружения
+    secret = os.getenv("RELAY_JWT_SECRET")
+    if not secret:
+        print("ОШИБКА: Переменная окружения RELAY_JWT_SECRET не установлена")
+        print("Установите её в файле .env или экспортируйте в системе")
+        return None
     
-    # Создаем JWT токен
+    # Полезная нагрузка токена
     payload = {
-        "id": "test-id",           # Добавляем идентификатор
-        "server_id": "test-server",
-        "company_id": "test-company",
-        "exp": int(time.time()) + 3600,  # срок действия 1 час
-        "iat": int(time.time()),         # время выпуска
-        "type": "relay"                  # тип токена
+        'user_id': 123,
+        'username': 'test_user',
+        'type': 'relay_access',
+        'exp': datetime.utcnow() + timedelta(hours=1),
+        'iat': datetime.utcnow(),
+        'iss': 'cloudbridge-relay',
+        'aud': 'relay-client'
     }
     
-    # Генерируем токен
+    # Генерация токена
     token = jwt.encode(payload, secret, algorithm="HS256")
     print(f"Generated token: {token}")
     
-    # Декодируем токен для проверки
-    decoded = jwt.decode(token, secret, algorithms=["HS256"])
-    print(f"Decoded token: {json.dumps(decoded, indent=2)}")
+    # Декодирование для проверки
+    try:
+        decoded = jwt.decode(token, secret, algorithms=["HS256"])
+        print(f"Decoded token: {json.dumps(decoded, indent=2)}")
+    except Exception as e:
+        print(f"Error decoding token: {e}")
+        return None
     
-    # Тестовое сообщение
-    test_message = {
-        'type': 1,  # MessageTypeRegister
+    return token
+
+def test_relay_api(token):
+    """Тестирование API relay"""
+    if not token:
+        print("Нет токена для тестирования")
+        return
+    
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {token}'
+    }
+    
+    # Тестовые данные
+    data = {
         'token': token
     }
     
-    print(f"Message to send: {test_message}")
-    
-    # Отправляем сообщение
-    with socket_context('127.0.0.1', 8080) as sock:
-        print("Sending message...")
-        send_message(sock, test_message)
+    try:
+        # Тест валидации токена
+        response = requests.post(
+            f"{BASE_URL}/api/relay/token/validate/",
+            headers=headers,
+            json=data,
+            timeout=10
+        )
         
-        print("Waiting for response...")
-        response = read_message(sock)
-        print(f"Response: {json.dumps(response, indent=2)}") 
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.text}")
+        
+        if response.status_code == 200:
+            print("✅ Тест валидации токена прошел успешно")
+        else:
+            print("❌ Тест валидации токена не прошел")
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Ошибка запроса: {e}")
+
+def main():
+    print("=== CloudBridge Relay Test Client ===")
+    print(f"Testing against: {BASE_URL}")
+    print()
+    
+    # Генерация токена
+    token = generate_jwt_token()
+    
+    if token:
+        # Тестирование API
+        test_relay_api(token)
+    else:
+        print("Не удалось сгенерировать токен. Проверьте настройки.")
+
+if __name__ == "__main__":
+    main() 

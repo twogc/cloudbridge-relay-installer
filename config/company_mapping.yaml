@@ -1,0 +1,210 @@
+# Конфигурация маппинга компаний для LDAP интеграции
+# Этот файл определяет структуру компаний и их соответствие с LDAP и Keycloak
+
+companies:
+  # Компания A
+  company-a:
+    realm: company-a
+    display_name: "Company A"
+    description: "Первая компания в системе"
+    
+    # LDAP настройки
+    ldap:
+      base_dn: "OU=CompanyA,DC=example,DC=com"
+      user_dn: "OU=Users,OU=CompanyA,DC=example,DC=com"
+      group_dn: "OU=Groups,OU=CompanyA,DC=example,DC=com"
+      service_account_dn: "CN=RelaySync,OU=ServiceAccounts,OU=CompanyA,DC=example,DC=com"
+      
+      # Разрешенные группы для синхронизации
+      allowed_groups:
+        - "RelayUsers"
+        - "RelayAdmins"
+        - "RelayReadOnly"
+        - "RelayMonitors"
+      
+      # Маппинг групп на роли Keycloak
+      role_mapping:
+        RelayUsers: relay-user
+        RelayAdmins: relay-admin
+        RelayReadOnly: relay-readonly
+        RelayMonitors: relay-monitor
+      
+      # Атрибуты пользователей
+      user_attributes:
+        username: sAMAccountName
+        email: userPrincipalName
+        first_name: givenName
+        last_name: sn
+        display_name: displayName
+        company: company
+        department: department
+        title: title
+        phone: telephoneNumber
+        mobile: mobile
+        
+      # Фильтры для поиска
+      filters:
+        users: "(objectClass=user)"
+        groups: "(objectClass=group)"
+        active_users: "(&(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
+        
+      # Настройки синхронизации
+      sync:
+        interval: "15m"
+        batch_size: 100
+        timeout: "30s"
+        retry_attempts: 3
+        retry_delay: "5s"
+
+  # Компания B
+  company-b:
+    realm: company-b
+    display_name: "Company B"
+    description: "Вторая компания в системе"
+    
+    ldap:
+      base_dn: "OU=CompanyB,DC=example,DC=com"
+      user_dn: "OU=Users,OU=CompanyB,DC=example,DC=com"
+      group_dn: "OU=Groups,OU=CompanyB,DC=example,DC=com"
+      service_account_dn: "CN=RelaySync,OU=ServiceAccounts,OU=CompanyB,DC=example,DC=com"
+      
+      allowed_groups:
+        - "RelayUsers"
+        - "RelayAdmins"
+        - "RelayReadOnly"
+      
+      role_mapping:
+        RelayUsers: relay-user
+        RelayAdmins: relay-admin
+        RelayReadOnly: relay-readonly
+      
+      user_attributes:
+        username: sAMAccountName
+        email: userPrincipalName
+        first_name: givenName
+        last_name: sn
+        display_name: displayName
+        company: company
+        department: department
+        title: title
+        
+      filters:
+        users: "(objectClass=user)"
+        groups: "(objectClass=group)"
+        active_users: "(&(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
+        
+      sync:
+        interval: "15m"
+        batch_size: 100
+        timeout: "30s"
+        retry_attempts: 3
+        retry_delay: "5s"
+
+  # Компания C
+  company-c:
+    realm: company-c
+    display_name: "Company C"
+    description: "Третья компания в системе"
+    
+    ldap:
+      base_dn: "OU=CompanyC,DC=example,DC=com"
+      user_dn: "OU=Users,OU=CompanyC,DC=example,DC=com"
+      group_dn: "OU=Groups,OU=CompanyC,DC=example,DC=com"
+      service_account_dn: "CN=RelaySync,OU=ServiceAccounts,OU=CompanyC,DC=example,DC=com"
+      
+      allowed_groups:
+        - "RelayUsers"
+        - "RelayAdmins"
+      
+      role_mapping:
+        RelayUsers: relay-user
+        RelayAdmins: relay-admin
+      
+      user_attributes:
+        username: sAMAccountName
+        email: userPrincipalName
+        first_name: givenName
+        last_name: sn
+        display_name: displayName
+        company: company
+        
+      filters:
+        users: "(objectClass=user)"
+        groups: "(objectClass=group)"
+        active_users: "(&(objectClass=user)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))"
+        
+      sync:
+        interval: "15m"
+        batch_size: 100
+        timeout: "30s"
+        retry_attempts: 3
+        retry_delay: "5s"
+
+# Глобальные настройки LDAP
+global_ldap:
+  # Настройки подключения
+  server_url: "ldaps://ldap.example.com:636"
+  use_ssl: true
+  insecure_skip_verify: false
+  timeout: "30s"
+  
+  # Настройки аутентификации
+  bind_dn: "CN=RelaySync,OU=ServiceAccounts,DC=example,DC=com"
+  bind_password: "REPLACE_WITH_SECURE_PASSWORD"
+  
+  # Настройки поиска
+  search_timeout: "10s"
+  max_results: 1000
+  
+  # Настройки кэширования
+  cache_ttl: "1h"
+  cache_max_size: 1000
+  
+  # Настройки логирования
+  log_level: "INFO"
+  log_ldap_queries: false
+  
+  # Настройки мониторинга
+  metrics_enabled: true
+  health_check_interval: "5m"
+
+# Настройки изоляции
+isolation:
+  # Строгая изоляция между компаниями
+  strict_isolation: true
+  
+  # Проверка принадлежности к компании
+  company_validation: true
+  
+  # Логирование нарушений изоляции
+  log_violations: true
+  
+  # Блокировка доступа при нарушении
+  block_violations: true
+
+# Настройки уведомлений
+notifications:
+  # Email уведомления
+  email:
+    enabled: true
+    smtp_server: "smtp.example.com:587"
+    smtp_username: "relay-notifications@example.com"
+    smtp_password: "REPLACE_WITH_SECURE_PASSWORD"
+    from_address: "relay-notifications@example.com"
+    to_addresses:
+      - "admin@example.com"
+      - "security@example.com"
+  
+  # Slack уведомления
+  slack:
+    enabled: true
+    webhook_url: "https://hooks.slack.com/services/REPLACE_WITH_WEBHOOK"
+    channel: "#relay-alerts"
+  
+  # События для уведомлений
+  events:
+    sync_failure: true
+    sync_delay: true
+    isolation_violation: true
+    high_user_deletion: true
+    ldap_connection_failure: true 
