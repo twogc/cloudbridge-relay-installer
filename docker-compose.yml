@@ -107,6 +107,7 @@ services:
       - "${RELAY_METRICS_PORT:-8081}:8081"
     volumes:
       - ./certs:/etc/relay/certs:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       - ./logs:/var/log/relay
       - ./config:/etc/relay/config:ro
     networks:

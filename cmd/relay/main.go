@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net"
@@ -25,7 +26,6 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
-	"crypto/tls"
 )
 
 var (
@@ -224,14 +224,52 @@ func (s *Server) Start(cfg *config.Config) error {
 
 	// Create listener
 	var err error
-	s.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", s.port))
-	if err != nil {
-		return fmt.Errorf("failed to create listener: %v", err)
+	
+	// Check if TLS is enabled
+	if cfg.Security.TLSEnabled {
+		// Create TLS configuration
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{},
+			MinVersion:   tls.VersionTLS12,
+		}
+		
+		// Load certificate if files are specified
+		if cfg.Security.CertFile != "" && cfg.Security.KeyFile != "" {
+			cert, err := tls.LoadX509KeyPair(cfg.Security.CertFile, cfg.Security.KeyFile)
+			if err != nil {
+				s.logger.Error("Failed to load TLS certificate", 
+					zap.String("cert_file", cfg.Security.CertFile),
+					zap.String("key_file", cfg.Security.KeyFile),
+					zap.Error(err),
+				)
+				return fmt.Errorf("failed to load TLS certificate: %v", err)
+			}
+			tlsConfig.Certificates = []tls.Certificate{cert}
+		}
+		
+		// Create TCP listener first
+		tcpListener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.port))
+		if err != nil {
+			return fmt.Errorf("failed to create TCP listener: %v", err)
+		}
+		
+		// Wrap with TLS listener
+		s.listener = tls.NewListener(tcpListener, tlsConfig)
+		s.logger.Info("TLS listener created", 
+			zap.String("cert_file", cfg.Security.CertFile),
+			zap.String("key_file", cfg.Security.KeyFile),
+		)
+	} else {
+		// Create regular TCP listener
+		s.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", s.port))
+		if err != nil {
+			return fmt.Errorf("failed to create listener: %v", err)
+		}
 	}
 
 	s.logger.Info("Server started", 
 		zap.Int("port", s.port),
-		zap.Bool("tls", *config.UseTLS),
+		zap.Bool("tls", cfg.Security.TLSEnabled),
 		zap.Int("workers", *workerPoolSize),
 		zap.Duration("timeout", *timeout),
 		zap.String("logLevel", *logLevel),
