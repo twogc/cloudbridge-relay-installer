@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -273,7 +272,7 @@ func (c *Client) validateClaims(claims jwt.MapClaims) error {
 	// Validate not before
 	if nbf, ok := claims["nbf"].(float64); ok {
 		nbfTime := time.Unix(int64(nbf), 0)
-		if time.Now().Sub(c.config.TokenValidation.ClockSkew).Before(nbfTime) {
+		if time.Now().Add(-c.config.TokenValidation.ClockSkew).Before(nbfTime) {
 			return fmt.Errorf("token not yet valid")
 		}
 	}

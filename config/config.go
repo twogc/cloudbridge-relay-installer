@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
+	"github.com/twogc/cloudbridge-relay-installer/internal/tls"
 )
 
 var (
@@ -61,33 +63,38 @@ type configRaw struct {
 		TLSEnabled   bool     `json:"tls_enabled"`
 		CertFile     string   `json:"cert_file"`
 		KeyFile      string   `json:"key_file"`
-		AllowedIPs   string   `json:"allowed_ips"`
+		AllowedIPs   []string `json:"allowed_ips"`
 		RateLimit    struct {
-			Enabled          bool    `json:"enabled"`
+			Enabled           bool    `json:"enabled"`
 			RequestsPerSecond float64 `json:"requests_per_second"`
-			Burst           int     `json:"burst"`
+			Burst             int     `json:"burst"`
 		} `json:"rate_limit"`
 		MTLS struct {
 			Enabled     bool   `json:"enabled"`
-			CACert      string `json:"ca_cert"`
-			ClientCert  string `json:"client_cert"`
-			ClientKey   string `json:"client_key"`
+			CACert      string `json:"ca_file"`
 		} `json:"mtls"`
 		CipherSuites   []string `json:"cipher_suites"`
 		MinTLSVersion  string   `json:"min_tls_version"`
+		Audit          struct {
+			Enabled    bool   `json:"enabled"`
+			LogFile    string `json:"log_file"`
+		} `json:"audit"`
 	} `json:"security"`
 
 	Metrics struct {
 		Enabled bool   `json:"enabled"`
-		Port    string `json:"port"`
+		Port    int    `json:"port"`
 		Path    string `json:"path"`
 	} `json:"metrics"`
 
 	Logging struct {
-		Level  string `json:"level"`
-		Format string `json:"format"`
-		Output string `json:"output"`
-		Fields map[string]string `json:"fields,omitempty"`
+		Level      string `json:"level"`
+		Format     string `json:"format"`
+		Output     string `json:"output"`
+		File       string `json:"file"`
+		MaxSize    string `json:"max_size"`
+		MaxAge     string `json:"max_age"`
+		MaxBackups int    `json:"max_backups"`
 	} `json:"logging"`
 }
 
@@ -133,33 +140,38 @@ type Config struct {
 		TLSEnabled   bool     `json:"tls_enabled"`
 		CertFile     string   `json:"cert_file"`
 		KeyFile      string   `json:"key_file"`
-		AllowedIPs   string   `json:"allowed_ips"`
+		AllowedIPs   []string `json:"allowed_ips"`
 		RateLimit    struct {
-			Enabled          bool    `json:"enabled"`
+			Enabled           bool    `json:"enabled"`
 			RequestsPerSecond float64 `json:"requests_per_second"`
-			Burst           int     `json:"burst"`
+			Burst             int     `json:"burst"`
 		} `json:"rate_limit"`
 		MTLS struct {
 			Enabled     bool   `json:"enabled"`
-			CACert      string `json:"ca_cert"`
-			ClientCert  string `json:"client_cert"`
-			ClientKey   string `json:"client_key"`
+			CACert      string `json:"ca_file"`
 		} `json:"mtls"`
 		CipherSuites   []string `json:"cipher_suites"`
 		MinTLSVersion  string   `json:"min_tls_version"`
+		Audit          struct {
+			Enabled    bool   `json:"enabled"`
+			LogFile    string `json:"log_file"`
+		} `json:"audit"`
 	} `json:"security"`
 
 	Metrics struct {
 		Enabled bool   `json:"enabled"`
-		Port    string `json:"port"`
+		Port    int    `json:"port"`
 		Path    string `json:"path"`
 	} `json:"metrics"`
 
 	Logging struct {
-		Level  string `json:"level"`
-		Format string `json:"format"`
-		Output string `json:"output"`
-		Fields map[string]string `json:"fields,omitempty"`
+		Level      string `json:"level"`
+		Format     string `json:"format"`
+		Output     string `json:"output"`
+		File       string `json:"file"`
+		MaxSize    string `json:"max_size"`
+		MaxAge     string `json:"max_age"`
+		MaxBackups int    `json:"max_backups"`
 	} `json:"logging"`
 }
 
@@ -175,6 +187,29 @@ func parseDuration(s string, defaultVal time.Duration) time.Duration {
 	return d
 }
 
+// replaceEnvVars заменяет переменные окружения в строке
+func replaceEnvVars(s string) string {
+	if s == "" {
+		return s
+	}
+	
+	// Регулярное выражение для поиска ${VAR_NAME}
+	re := regexp.MustCompile(`\$\{([^}]+)\}`)
+	
+	return re.ReplaceAllStringFunc(s, func(match string) string {
+		// Извлекаем имя переменной из ${VAR_NAME}
+		varName := match[2 : len(match)-1]
+		
+		// Получаем значение из переменной окружения
+		if value := os.Getenv(varName); value != "" {
+			return value
+		}
+		
+		// Если переменная не найдена, возвращаем оригинальную строку
+		return match
+	})
+}
+
 // Load loads configuration from a file
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
@@ -182,21 +217,24 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
 	}
 
+	// Заменяем переменные окружения в JSON
+	configStr := string(data)
+	configStr = replaceEnvVars(configStr)
+	
 	var raw configRaw
-	if err := json.Unmarshal(data, &raw); err != nil {
+	if err := json.Unmarshal([]byte(configStr), &raw); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %v", err)
 	}
 
-	// Конвертируем raw config в Config
-	config := Config{}
-	
+	config := &Config{}
+
 	// Server
 	config.Server.Address = raw.Server.Address
 	config.Server.Port = raw.Server.Port
 	config.Server.Timeout = parseDuration(raw.Server.Timeout, 30*time.Second)
 	config.Server.MaxTunnels = raw.Server.MaxTunnels
 	config.Server.PingInterval = parseDuration(raw.Server.PingInterval, 30*time.Second)
-	config.Server.CleanupInterval = parseDuration(raw.Server.CleanupInterval, 1*time.Minute)
+	config.Server.CleanupInterval = parseDuration(raw.Server.CleanupInterval, time.Minute)
 
 	// Django
 	config.Django.APIEndpoint = raw.Django.APIEndpoint
@@ -217,7 +255,7 @@ func Load(path string) (*Config, error) {
 	config.Keycloak.TokenValidation.Issuer = raw.Keycloak.TokenValidation.Issuer
 	config.Keycloak.TokenValidation.Audience = raw.Keycloak.TokenValidation.Audience
 	config.Keycloak.TokenValidation.ClockSkew = parseDuration(raw.Keycloak.TokenValidation.ClockSkew, 30*time.Second)
-	config.Keycloak.JWKSCacheTTL = parseDuration(raw.Keycloak.JWKSCacheTTL, 1*time.Hour)
+	config.Keycloak.JWKSCacheTTL = parseDuration(raw.Keycloak.JWKSCacheTTL, time.Hour)
 	config.Keycloak.HTTPTimeout = parseDuration(raw.Keycloak.HTTPTimeout, 30*time.Second)
 
 	// Security
@@ -229,6 +267,7 @@ func Load(path string) (*Config, error) {
 	config.Security.MTLS = raw.Security.MTLS
 	config.Security.CipherSuites = raw.Security.CipherSuites
 	config.Security.MinTLSVersion = raw.Security.MinTLSVersion
+	config.Security.Audit = raw.Security.Audit
 
 	// Metrics
 	config.Metrics = raw.Metrics
@@ -237,7 +276,7 @@ func Load(path string) (*Config, error) {
 	config.Logging = raw.Logging
 
 	// Load JWT secret from environment if not set
-	if config.Django.JWTSecret == "REPLACE_WITH_SECURE_SECRET_FROM_ENVIRONMENT" {
+	if config.Django.JWTSecret == "${RELAY_JWT_SECRET}" {
 		if secret := os.Getenv("RELAY_JWT_SECRET"); secret != "" {
 			config.Django.JWTSecret = secret
 		} else {
@@ -247,30 +286,57 @@ func Load(path string) (*Config, error) {
 
 	// Load Keycloak configuration from environment
 	if config.Keycloak.Enabled {
-		if config.Keycloak.ServerURL == "" {
+		if config.Keycloak.ServerURL == "${KEYCLOAK_SERVER_URL}" {
 			if url := os.Getenv("KEYCLOAK_SERVER_URL"); url != "" {
 				config.Keycloak.ServerURL = url
 			}
 		}
-		if config.Keycloak.Realm == "" {
+		if config.Keycloak.Realm == "${KEYCLOAK_REALM}" {
 			if realm := os.Getenv("KEYCLOAK_REALM"); realm != "" {
 				config.Keycloak.Realm = realm
 			}
 		}
-		if config.Keycloak.ClientID == "" {
+		if config.Keycloak.ClientID == "${KEYCLOAK_CLIENT_ID}" {
 			if clientID := os.Getenv("KEYCLOAK_CLIENT_ID"); clientID != "" {
 				config.Keycloak.ClientID = clientID
 			}
 		}
-		if config.Keycloak.ClientSecret == "" {
+		if config.Keycloak.ClientSecret == "${KEYCLOAK_CLIENT_SECRET}" {
 			if secret := os.Getenv("KEYCLOAK_CLIENT_SECRET"); secret != "" {
 				config.Keycloak.ClientSecret = secret
 			}
 		}
-		if config.Keycloak.PublicKey == "" {
+		if config.Keycloak.PublicKey == "${KEYCLOAK_PUBLIC_KEY}" {
 			if key := os.Getenv("KEYCLOAK_PUBLIC_KEY"); key != "" {
 				config.Keycloak.PublicKey = key
 			}
+		}
+		if config.Keycloak.TokenValidation.Issuer == "${KEYCLOAK_ISSUER}" {
+			if issuer := os.Getenv("KEYCLOAK_ISSUER"); issuer != "" {
+				config.Keycloak.TokenValidation.Issuer = issuer
+			}
+		}
+		if config.Keycloak.TokenValidation.Audience == "${KEYCLOAK_AUDIENCE}" {
+			if audience := os.Getenv("KEYCLOAK_AUDIENCE"); audience != "" {
+				config.Keycloak.TokenValidation.Audience = audience
+			}
+		}
+	}
+
+	// Load TLS configuration from environment
+	if config.Security.CertFile == "${RELAY_TLS_CERT_FILE}" {
+		if certFile := os.Getenv("RELAY_TLS_CERT_FILE"); certFile != "" {
+			config.Security.CertFile = certFile
+		}
+	}
+	if config.Security.KeyFile == "${RELAY_TLS_KEY_FILE}" {
+		if keyFile := os.Getenv("RELAY_TLS_KEY_FILE"); keyFile != "" {
+			config.Security.KeyFile = keyFile
+		}
+	}
+	if config.Security.MTLS.CACert == "${RELAY_MTLS_CA_FILE}" {
+		if caFile := os.Getenv("RELAY_MTLS_CA_FILE"); caFile != "" {
+			config.Security.MTLS.CACert = caFile
 		}
 	}
 
@@ -282,22 +348,7 @@ func Load(path string) (*Config, error) {
 		config.Server.MaxTunnels = 1000
 	}
 
-	if config.Django.RESTMaxRetries == 0 {
-		config.Django.RESTMaxRetries = 3
-	}
-
-	// Set default security values
-	if config.Security.MinTLSVersion == "" {
-		config.Security.MinTLSVersion = "1.2"
-	}
-	if len(config.Security.CipherSuites) == 0 {
-		config.Security.CipherSuites = []string{
-			"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-			"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-		}
-	}
-
-	return &config, nil
+	return config, nil
 }
 
 // Validate validates the configuration
@@ -373,14 +424,23 @@ func (c *Config) Validate() error {
 
 	if c.Security.MTLS.Enabled {
 		if c.Security.MTLS.CACert == "" {
-			return fmt.Errorf("ca_cert is required when mtls.enabled is true")
+			return fmt.Errorf("ca_file is required when mtls.enabled is true")
 		}
-		if c.Security.MTLS.ClientCert == "" {
-			return fmt.Errorf("client_cert is required when mtls.enabled is true")
-		}
-		if c.Security.MTLS.ClientKey == "" {
-			return fmt.Errorf("client_key is required when mtls.enabled is true")
-		}
+	}
+
+	// Validate TLS configuration
+	if err := tls.ValidateTLSConfig(tls.Config{
+		Enabled:      c.Security.TLSEnabled,
+		CertFile:     c.Security.CertFile,
+		KeyFile:      c.Security.KeyFile,
+		MinVersion:   c.Security.MinTLSVersion,
+		CipherSuites: c.Security.CipherSuites,
+		MTLS: tls.MTLSConfig{
+			Enabled:    c.Security.MTLS.Enabled,
+			CACert:     c.Security.MTLS.CACert,
+		},
+	}); err != nil {
+		return fmt.Errorf("invalid TLS configuration: %v", err)
 	}
 
 	return nil

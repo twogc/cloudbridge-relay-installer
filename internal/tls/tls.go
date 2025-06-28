@@ -102,12 +102,17 @@ func getTLSVersion(version string) uint16 {
 func getCipherSuites(cipherSuites []string) []uint16 {
 	var suites []uint16
 	cipherMap := map[string]uint16{
+		// TLS 1.2 cipher suites
 		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384":   tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256":   tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384": tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 		"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256": tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305":    tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305":  tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+		// TLS 1.3 cipher suites
+		"TLS_AES_256_GCM_SHA384":                  tls.TLS_AES_256_GCM_SHA384,
+		"TLS_CHACHA20_POLY1305_SHA256":            tls.TLS_CHACHA20_POLY1305_SHA256,
+		"TLS_AES_128_GCM_SHA256":                  tls.TLS_AES_128_GCM_SHA256,
 	}
 
 	for _, cipher := range cipherSuites {
@@ -117,6 +122,45 @@ func getCipherSuites(cipherSuites []string) []uint16 {
 	}
 
 	return suites
+}
+
+// ValidateTLSConfig validates TLS configuration for security
+func ValidateTLSConfig(config Config) error {
+	if !config.Enabled {
+		return nil
+	}
+
+	// Validate minimum TLS version
+	minVersion := getTLSVersion(config.MinVersion)
+	if minVersion < tls.VersionTLS12 {
+		return fmt.Errorf("minimum TLS version must be at least 1.2 for security")
+	}
+
+	// For TLS 1.3, ensure only TLS 1.3 cipher suites are used
+	if minVersion == tls.VersionTLS13 {
+		tls13Suites := map[uint16]bool{
+			tls.TLS_AES_256_GCM_SHA384:       true,
+			tls.TLS_CHACHA20_POLY1305_SHA256: true,
+			tls.TLS_AES_128_GCM_SHA256:       true,
+		}
+
+		configuredSuites := getCipherSuites(config.CipherSuites)
+		for _, suite := range configuredSuites {
+			if !tls13Suites[suite] {
+				return fmt.Errorf("TLS 1.3 requires TLS 1.3 cipher suites only")
+			}
+		}
+	}
+
+	// Validate certificate files
+	if config.CertFile == "" {
+		return fmt.Errorf("cert_file is required when TLS is enabled")
+	}
+	if config.KeyFile == "" {
+		return fmt.Errorf("key_file is required when TLS is enabled")
+	}
+
+	return nil
 }
 
 // ValidateCertificate validates TLS certificate

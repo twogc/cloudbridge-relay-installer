@@ -133,6 +133,47 @@ func (l *IPLimiter) Cleanup() {
 	// TODO: Implement cleanup logic
 }
 
+// UserLimiter implements rate limiting per user (e.g., by subject from JWT)
+type UserLimiter struct {
+	limiters map[string]*Limiter
+	Rate     float64
+	Burst    int
+	mu       sync.RWMutex
+}
+
+// NewUserLimiter creates a new user-based rate limiter
+func NewUserLimiter(rate float64, burst int) *UserLimiter {
+	return &UserLimiter{
+		limiters: make(map[string]*Limiter),
+		Rate:     rate,
+		Burst:    burst,
+	}
+}
+
+// Allow checks if a request from a user is allowed
+func (l *UserLimiter) Allow(userID string) bool {
+	l.mu.RLock()
+	limiter, ok := l.limiters[userID]
+	l.mu.RUnlock()
+
+	if !ok {
+		l.mu.Lock()
+		limiter, ok = l.limiters[userID]
+		if !ok {
+			limiter = NewLimiter(l.Rate, l.Burst)
+			l.limiters[userID] = limiter
+		}
+		l.mu.Unlock()
+	}
+
+	return limiter.Allow()
+}
+
+// Cleanup removes old limiters (optional, not implemented)
+func (l *UserLimiter) Cleanup() {
+	// TODO: Implement cleanup logic if needed
+}
+
 func min(a, b float64) float64 {
 	if a < b {
 		return a
