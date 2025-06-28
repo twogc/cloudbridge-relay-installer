@@ -284,9 +284,6 @@ continuous_monitoring() {
 single_check() {
     log_info "Выполнение разовой проверки безопасности"
     run_security_check
-    send_telegram_message "✅ <b>Разовая проверка безопасности завершена</b>
-🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)"
 }
 
 # Обработка аргументов командной строки
