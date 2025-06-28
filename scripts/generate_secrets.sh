@@ -166,9 +166,28 @@ EOF
 # ВНИМАНИЕ: Регулярно ротируйте секреты
 # ВНИМАНИЕ: Используйте менеджер секретов в продакшене
 EOF
-    
-    log "Файл $output_file создан с безопасными секретами"
-    warn "ВАЖНО: Измените URL и другие настройки под ваше окружение!"
+
+# TLS Configuration
+echo "" >> "$output_file"
+echo "# TLS Configuration" >> "$output_file"
+echo "RELAY_TLS_CERT_FILE=/etc/letsencrypt/live/edge.2gc.ru/fullchain.pem" >> "$output_file"
+echo "RELAY_TLS_KEY_FILE=/etc/letsencrypt/live/edge.2gc.ru/privkey.pem" >> "$output_file"
+
+cat >> "$output_file" << 'EOF'
+# =============================================================================
+# TLS/SSL Configuration (Let's Encrypt)
+# =============================================================================
+# Для production используйте сертификаты Let's Encrypt:
+# RELAY_TLS_CERT_FILE=/etc/letsencrypt/live/edge.2gc.ru/fullchain.pem
+# RELAY_TLS_KEY_FILE=/etc/letsencrypt/live/edge.2gc.ru/privkey.pem
+# Для тестов можно использовать самоподписанные сертификаты в ./certs
+EOF
+
+echo "RELAY_TLS_CERT_FILE=/etc/letsencrypt/live/edge.2gc.ru/fullchain.pem" >> "$output_file"
+echo "RELAY_TLS_KEY_FILE=/etc/letsencrypt/live/edge.2gc.ru/privkey.pem" >> "$output_file"
+
+log "Файл $output_file создан с безопасными секретами"
+warn "ВАЖНО: Измените URL и другие настройки под ваше окружение!"
 }
 
 # Показать справку

@@ -836,3 +836,35 @@ tenants:
 3. **Настройка multi-tenancy** (опционально)
 4. **Тестирование** новых функций
 5. **Обновление клиентов** для поддержки новых возможностей
+
+## Автоматическое обновление сертификата Let's Encrypt
+
+Certbot автоматически обновляет сертификаты, но для Docker-контейнера relay нужно перезапускать контейнер после обновления, чтобы он подхватил новый сертификат.
+
+### Настройка post-hook для перезапуска relay
+
+1. Создайте post-hook скрипт:
+   ```bash
+   sudo mkdir -p /etc/letsencrypt/renewal-hooks/post
+   sudo nano /etc/letsencrypt/renewal-hooks/post/reload-relay.sh
+   ```
+   Вставьте в файл:
+   ```bash
+   #!/bin/bash
+   cd /home/ubuntu/cloudbridge-relay-installer
+   /usr/bin/docker-compose restart relay
+   ```
+   Сделайте скрипт исполняемым:
+   ```bash
+   sudo chmod +x /etc/letsencrypt/renewal-hooks/post/reload-relay.sh
+   ```
+
+2. Certbot будет автоматически вызывать этот скрипт после каждого успешного обновления сертификата.
+
+3. Проверить работу можно командой:
+   ```bash
+   sudo certbot renew --dry-run
+   ```
+   В конце процесса контейнер relay будет перезапущен.
+
+**Теперь relay всегда будет использовать актуальный сертификат без ручных действий!**
