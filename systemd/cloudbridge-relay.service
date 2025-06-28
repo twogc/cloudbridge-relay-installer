@@ -8,13 +8,12 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-User=ubuntu
-Group=ubuntu
-WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
+User=root
+Group=root
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/home/ubuntu/cloudbridge-relay-installer/scripts/start_production.sh --env .env.production
-ExecStop=/usr/bin/docker-compose down
-ExecReload=/usr/bin/docker-compose restart
+ExecStart=/bin/bash /usr/local/bin/relay_start_wrapper.sh
+ExecStop=/usr/bin/docker-compose -f /home/ubuntu/cloudbridge-relay-installer/docker-compose.yml down
+ExecReload=/usr/bin/docker-compose -f /home/ubuntu/cloudbridge-relay-installer/docker-compose.yml restart
 TimeoutStartSec=300
 TimeoutStopSec=60
 Restart=on-failure

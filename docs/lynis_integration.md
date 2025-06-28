@@ -25,6 +25,32 @@
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
+## Решенные проблемы
+
+### Проблема с systemd сервисом cloudbridge-relay
+
+**Описание проблемы:** Systemd сервис `cloudbridge-relay.service` не запускался с ошибками:
+- `No such file or directory` для скриптов
+- `Permission denied` для директорий
+- `Changing to the requested working directory failed`
+
+**Причины:**
+1. Неправильные права доступа к директории `/home/ubuntu` (750 вместо 755)
+2. Проблемы с доступом к файлам скриптов в пользовательской директории
+3. Ограничения systemd при работе с пользовательскими директориями
+
+**Решение:**
+1. Исправлены права на директорию: `sudo chmod 755 /home/ubuntu`
+2. Создан wrapper-скрипт `/usr/local/bin/relay_start_wrapper.sh`
+3. Обновлен systemd сервис для использования wrapper-скрипта
+4. Добавлена поддержка запуска от root с переключением на ubuntu
+
+**Результат:** 
+- ✅ Systemd сервис успешно запускается
+- ✅ Все компоненты CloudBridge Relay работают корректно
+- ✅ Интеграция с Lynis функционирует
+- ✅ Документация обновлена с решением проблемы
+
 ## Установка
 
 ### Автоматическая установка
@@ -156,6 +182,27 @@ sudo relay-security-manager fix all
 sudo relay-security-manager schedule status
 sudo relay-security-manager schedule enable
 sudo relay-security-manager schedule disable
+```
+
+### Запуск аудита в фоне
+
+Для длительных аудитов рекомендуется запускать в фоне:
+
+```bash
+# Запуск быстрого аудита в фоне
+sudo relay-security-audit quick &
+
+# Запуск полного аудита в фоне
+sudo relay-security-audit full &
+
+# Проверка статуса фонового процесса
+jobs
+
+# Просмотр вывода фонового процесса
+fg
+
+# Отправка процесса в фон (если запущен в интерактивном режиме)
+# Ctrl+Z, затем: bg
 ```
 
 ### Прямой вызов Lynis
@@ -530,6 +577,97 @@ ls -la /usr/local/bin/relay-security-audit
 sudo chmod +x /usr/local/bin/relay-security-audit
 ```
 
+#### 4. Systemd сервис cloudbridge-relay не запускается
+
+**Причина:** Проблемы с правами доступа к директориям или файлам скриптов
+
+**Симптомы:**
+```bash
+# Ошибка в логах systemd
+sudo journalctl -u cloudbridge-relay.service
+# "No such file or directory" или "Permission denied"
+```
+
+**Решение:**
+
+1. **Проверить права на директории:**
+   ```bash
+   # Проверить права на /home/ubuntu
+   ls -ld /home/ubuntu
+   # Должно быть: drwxr-xr-x
+   
+   # Если права неправильные, исправить:
+   sudo chmod 755 /home/ubuntu
+   ```
+
+2. **Создать wrapper-скрипт для systemd:**
+   ```bash
+   # Создать wrapper-скрипт
+   cat > scripts/relay_start_wrapper.sh << 'EOF'
+   #!/bin/bash
+   
+   # CloudBridge Relay - Production Startup Wrapper
+   # Запускается от root и переключается на ubuntu
+   
+   set -e
+   
+   exec su - ubuntu -c "cd /home/ubuntu/cloudbridge-relay-installer && ./scripts/start_production.sh --env .env.production"
+   EOF
+   
+   # Установить права
+   chmod +x scripts/relay_start_wrapper.sh
+   
+   # Скопировать в системную директорию
+   sudo cp scripts/relay_start_wrapper.sh /usr/local/bin/
+   sudo chmod +x /usr/local/bin/relay_start_wrapper.sh
+   ```
+
+3. **Обновить systemd сервис:**
+   ```bash
+   # Обновить systemd файл
+   sudo cp systemd/cloudbridge-relay.service /etc/systemd/system/
+   
+   # Перезагрузить systemd
+   sudo systemctl daemon-reload
+   
+   # Перезапустить сервис
+   sudo systemctl restart cloudbridge-relay.service
+   ```
+
+4. **Альтернативное решение - запуск от root:**
+   ```bash
+   # Если su не работает в systemd, можно запускать от root
+   # Изменить в systemd/cloudbridge-relay.service:
+   # User=root
+   # Group=root
+   # ExecStart=/bin/bash /home/ubuntu/cloudbridge-relay-installer/scripts/start_production.sh --env .env.production
+   ```
+
+**Проверка работоспособности:**
+```bash
+# Проверить статус сервиса
+sudo systemctl status cloudbridge-relay.service
+
+# Проверить логи
+sudo journalctl -u cloudbridge-relay.service -f
+
+# Ручной запуск для тестирования
+sudo /usr/local/bin/relay_start_wrapper.sh
+```
+
+#### 5. "PID file exists, probably another Lynis process is running"
+
+**Причина:** Предыдущий процесс не завершился корректно
+
+**Решение:**
+```bash
+# Остановить процессы
+sudo pkill -f lynis
+
+# Удалить PID файл
+sudo rm -f /var/log/lynis/lynis.pid
+```
+
 ### Логи и диагностика
 
 ```bash
@@ -623,4 +761,4 @@ sudo systemctl daemon-reload
 - [Lynis GitHub Repository](https://github.com/CISOfy/lynis)
 - [CISOfy Documentation](https://cisofy.com/lynis/)
 - [CloudBridge Relay Documentation](./deployment_guide.md)
-- [Security Guide](./security.md) 
+- [Security Guide](./security.md)
