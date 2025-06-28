@@ -54,6 +54,7 @@ sudo systemctl restart cloudbridge-relay
 - **Enhanced Security**: Улучшенная интеграция с Keycloak и Django fallback
 - **Comprehensive Testing**: Полный набор unit и integration тестов
 - **Tunnel Manager**: Централизованное управление активными туннелями
+- **🛡️ Lynis Security Audit**: Автоматический аудит безопасности с интеграцией Prometheus/Grafana
 
 ### Технические улучшения
 - **Производительность**: Улучшенная производительность TCP proxy с буферизацией
@@ -61,6 +62,7 @@ sudo systemctl restart cloudbridge-relay
 - **Безопасность**: Улучшенная изоляция ресурсов между тенантами
 - **Масштабируемость**: Поддержка тысяч одновременных соединений
 - **Надежность**: Graceful shutdown и автоматическая очистка ресурсов
+- **Security Auditing**: Автоматический аудит безопасности с соответствием ФЗ-152/187
 
 ## Основная концепция
 
@@ -1121,18 +1123,79 @@ curl -X POST https://keycloak.example.com/realms/cloudbridge/protocol/openid-con
 - ✅ **Webhooks** для событий безопасности
 - ✅ **mTLS (Mutual TLS)** - двусторонняя аутентификация
 - ✅ **Edge Networks** - глобальная распределенная сеть
-- ✅ **High Availability (HA)** - кластеризация и отказоустойчивость
-- ✅ **Auto Scaling** - автоматическое масштабирование
-- ✅ **Misuse Protection** - защита от злоупотреблений
-- ✅ **DDoS Protection** - защита от распределенных атак
-- ✅ **Load Testing** - тестирование производительности
-- ✅ **Capacity Planning** - планирование ресурсов
+- ✅ **High Availability и Auto Scaling**
+- ✅ **Продвинутая защита от злоупотреблений**
+- ✅ **Load Testing и Capacity Planning**
 
 ## Безопасность
 
+### Комплексная защита
+
+CloudBridge Relay v2.0 включает многоуровневую систему безопасности:
+
+#### 🔥 Firewall Protection
+- **Автоматическая настройка**: `sudo ./scripts/setup_firewall.sh`
+- **Блокировка всех портов**: кроме SSH (22) и Relay (8082)
+- **Локальный доступ**: порты мониторинга доступны только с localhost
+- **DDoS защита**: rate limiting и автоматическая блокировка
+- **fail2ban**: защита от брутфорс атак
+
+#### 🔐 Аутентификация и авторизация
+- **Keycloak Integration**: OAuth 2.0 / OpenID Connect
+- **JWT токены**: безопасная передача информации о пользователе
+- **mTLS (Mutual TLS)**: двусторонняя аутентификация
+- **Multi-factor authentication**: поддержка MFA через Keycloak
+
+#### 🛡️ Шифрование и сертификаты
+- **Let's Encrypt**: автоматическое обновление сертификатов
+- **Strong cipher suites**: современные алгоритмы шифрования
+- **Российские криптоалгоритмы**: ГОСТ Р 34.10-2012, ГОСТ Р 34.11-2012
+- **Perfect Forward Secrecy**: защита от компрометации ключей
+
+#### 📊 Мониторинг безопасности
+- **Security Analytics Dashboard**: анализ угроз и атак
+- **Real-time alerts**: уведомления о подозрительной активности
+- **ML threat detection**: поведенческий анализ
+- **Audit logging**: детальное логирование всех событий
+
+#### 🛡️ Lynis Security Audit
+- **Автоматический аудит**: ежедневные проверки безопасности системы
+- **Интеграция с Prometheus**: метрики безопасности в реальном времени
+- **Grafana дашборды**: визуализация результатов аудита
+- **Соответствие стандартам**: ФЗ-152, ФЗ-187, ГОСТ Р 57580.1-2017
+- **Автоматическое исправление**: устранение выявленных проблем
+
+```bash
+# Установка Lynis Security Audit
+sudo bash scripts/setup_lynis.sh
+
+# Запуск аудита безопасности
+sudo relay-security-audit full
+
+# Управление аудитом
+sudo relay-security-manager status
+sudo relay-security-manager report
+sudo relay-security-manager fix all
+```
+
+Подробная документация: [📖 Lynis Integration Guide](docs/lynis_integration.md)
+
 ### Обязательные действия после установки
 
-1. **Измените пароли по умолчанию**:
+1. **Настройте firewall**:
+   ```bash
+   # Автоматическая настройка (рекомендуется)
+   sudo ./scripts/setup_firewall.sh
+   
+   # Проверка статуса
+   sudo ./scripts/setup_firewall.sh --check
+   
+   # Управление firewall
+   relay-firewall status
+   relay-firewall allow-ip 192.168.1.100
+   ```
+
+2. **Измените пароли по умолчанию**:
    ```bash
    # Используйте скрипт генерации секретов
    ./scripts/generate_secrets.sh --env .env
@@ -1142,20 +1205,27 @@ curl -X POST https://keycloak.example.com/realms/cloudbridge/protocol/openid-con
    GRAFANA_ADMIN_PASSWORD=your-secure-password
    ```
 
-2. **Настройте HTTPS**:
-   - Замените самоподписанные сертификаты на реальные
-   - Обновите `RELAY_TLS_CERT_FILE` и `RELAY_TLS_KEY_FILE`
-
-3. **Настройте firewall**:
+3. **Настройте HTTPS**:
    ```bash
-   sudo ufw allow 22/tcp    # SSH
-   sudo ufw allow 8080/tcp  # Keycloak Admin Console
-   sudo ufw allow 8082/tcp  # Relay API
-   sudo ufw allow 8081/tcp  # Metrics
-   sudo ufw enable
+   # Получение Let's Encrypt сертификатов
+   sudo certbot certonly --dns-cloudflare --dns-cloudflare-credentials ~/.secrets/cloudflare.ini -d edge.2gc.ru
+   
+   # Автоматическое обновление
+   sudo crontab -e
+   # Добавить: 0 12 * * * /usr/bin/certbot renew --quiet
    ```
 
-4. **Используйте менеджер секретов в продакшене**:
+4. **Настройте fail2ban**:
+   ```bash
+   # Проверка статуса
+   sudo fail2ban-client status
+   
+   # Просмотр заблокированных IP
+   sudo fail2ban-client status sshd
+   sudo fail2ban-client status relay
+   ```
+
+5. **Используйте менеджер секретов в продакшене**:
    - HashiCorp Vault
    - AWS Secrets Manager
    - Azure Key Vault
@@ -1174,444 +1244,89 @@ curl -X POST https://keycloak.example.com/realms/cloudbridge/protocol/openid-con
 ./scripts/generate_secrets.sh --env .env.production
 ```
 
+### Управление безопасностью
+
+#### Firewall Management
+```bash
+# Показать статус
+relay-firewall status
+
+# Разрешить IP адрес
+relay-firewall allow-ip 192.168.1.100
+
+# Заблокировать IP адрес
+relay-firewall deny-ip 10.0.0.50
+
+# Перезагрузить firewall
+relay-firewall reload
+```
+
+#### fail2ban Management
+```bash
+# Проверка статуса
+sudo fail2ban-client status
+
+# Разблокировка IP
+sudo fail2ban-client set sshd unbanip 192.168.1.100
+
+# Просмотр логов
+sudo tail -f /var/log/fail2ban.log
+```
+
+#### Certificate Management
+```bash
+# Проверка сертификатов
+sudo certbot certificates
+
+# Тестирование обновления
+sudo certbot renew --dry-run
+
+# Post-renewal hook для перезапуска relay
+sudo nano /etc/letsencrypt/renewal-hooks/post/restart-relay.sh
+```
+
 ### Соответствие российским требованиям
 
 - ✅ **152-ФЗ**: Защита персональных данных
 - ✅ **187-ФЗ**: Безопасность критической инфраструктуры
 - ✅ **ГОСТ Р 34.10-2012**: Алгоритмы подписи
 - ✅ **ГОСТ Р 34.11-2012**: Алгоритмы хеширования
+- ✅ **ГОСТ Р 57580.1-2017**: Требования к средствам защиты
 
-## Мониторинг
+### Рекомендации по безопасности
 
-### Prometheus метрики
-- Активные соединения и туннели
-- Производительность и задержки
-- Ошибки и отказы
-- Использование ресурсов
-- Keycloak метрики (валидация токенов, JWKS кэш)
-- Бизнес-метрики (активные пользователи, доход)
+#### Регулярные проверки
+1. **Ежедневно**: Проверка логов безопасности
+2. **Еженедельно**: Обновление системы и пакетов
+3. **Ежемесячно**: Аудит настроек безопасности
+4. **Ежеквартально**: Тестирование на проникновение
 
-### Grafana дашборды
-- Готовые дашборды для мониторинга
-- Автоматическая настройка через provisioning
-- Визуализация метрик в реальном времени
-
-### Алерты
-- Настраиваемые алерты Prometheus
-- Уведомления через Slack, Email
-- Escalation policies
-- Автоматическое разрешение
-
-## Логирование
-
-### Структурированное логирование
-- **Формат:** JSON (по умолчанию), Console
-- **Уровни:** DEBUG, INFO, WARN, ERROR
-- **Ротация:** Автоматическая с настройкой размера и количества файлов
-- **Поля:** timestamp, level, message, user_id, request_id, connection_id, duration, error
-
-### Специализированные методы
-- Логирование соединений и аутентификации
-- Логирование валидации токенов и проверки разрешений
-- Логирование производительности и безопасности
-- Логирование бизнес-событий
-
-## Тестирование
-
-### Типы тестов
-- **Unit тесты** - покрытие всех компонентов
-- **Integration тесты** - тестирование взаимодействия
-- **E2E тесты** - полный цикл работы
-- **Performance тесты** - нагрузочное тестирование
-
-### Покрытие
-- Более 80% покрытия кода
-- Автоматизированные тесты в CI/CD
-- Тестирование безопасности
-
-## Установка
-
-### Требования
-
-- Go 1.18+
-- Docker 20.10+ (опционально)
-- Systemd (для установки как сервис)
-
-### Быстрый старт
-
-### Для московского региона
-
+#### Мониторинг
 ```bash
-# Клонирование репозитория
-git clone https://github.com/your-org/cloudbridge-relay-installer.git
-cd cloudbridge-relay-installer
+# Проверка статуса сервисов
+docker-compose ps
 
-# Генерация безопасных секретов
-./scripts/generate_secrets.sh --env .env
+# Просмотр логов безопасности
+docker-compose logs -f relay | grep -i "security\|auth\|error"
 
-# Редактирование конфигурации (при необходимости)
-nano .env
-
-# Запуск сервисов
-docker-compose -f docker-compose.keycloak.yml up -d
+# Проверка метрик безопасности
+curl http://localhost:8081/metrics | grep -i "security\|auth"
 ```
 
-Этот скрипт автоматически:
-- Создаст `.env` файл с настройками для московского региона
-- Настроит часовой пояс Europe/Moscow
-- Установит русскую локаль
-- Создаст необходимые директории
-- Настроит сертификаты
-- Запустит все сервисы с помощью Docker Compose
-- Проверит соответствие российским требованиям
-
-### Стандартная установка
-
+#### Резервное копирование
 ```bash
-# Клонирование репозитория
-git clone https://github.com/your-org/cloudbridge-relay-installer.git
-cd cloudbridge-relay-installer
-
-# Копирование примера конфигурации
-cp env.example .env
-
-# Редактирование конфигурации
-nano .env
-
-# Запуск сервисов
-docker-compose -f docker-compose.keycloak.yml up -d
-```
-
-## Конфигурация
-
-### Основные параметры
-
-```json
-{
-  "server": {
-    "port": 8080,
-    "max_tunnels": 1000,
-    "timeout": "30s",
-    "ping_interval": "30s",
-    "cleanup_interval": "1m"
-  },
-  "keycloak": {
-    "enabled": true,
-    "jwks_url": "https://keycloak.example.com/realms/cloudbridge/protocol/openid-connect/certs",
-    "issuer": "https://keycloak.example.com/realms/cloudbridge",
-    "audience": "relay-client",
-    "token_validation": {
-      "clock_skew": "30s"
-    }
-  },
-  "security": {
-    "tls_enabled": true,
-    "cert_file": "/etc/relay/certs/fullchain.pem",
-    "key_file": "/etc/relay/certs/privkey.pem",
-    "rate_limit": {
-      "enabled": true,
-      "requests_per_second": 100,
-      "burst": 200
-    }
-  },
-  "metrics": {
-    "enabled": true,
-    "port": ":8081"
-  },
-  "logging": {
-    "level": "INFO",
-    "format": "json",
-    "output": "/var/log/relay/relay.log"
-  }
-}
-```
-
-**Важно:** Все поля типа `time.Duration` должны быть указаны в виде строк с суффиксами времени (например, "30s", "5m", "1h").
-
-### Переменные окружения
-
-```bash
-# Опциональные
-RELAY_LOG_LEVEL=info
-RELAY_TLS_ENABLED=true
-
-# Keycloak
-KEYCLOAK_SERVER_URL=https://keycloak.example.com
-KEYCLOAK_REALM=cloudbridge
-KEYCLOAK_CLIENT_ID=relay-client
-KEYCLOAK_CLIENT_SECRET=your-client-secret
-
-# Moscow Region Configuration
-DEPLOYMENT_REGION=moscow
-TZ=Europe/Moscow
-LANG=ru_RU.UTF-8
-LC_ALL=ru_RU.UTF-8
-
-# Russia-Specific Configuration
-COMPLIANCE_152_FZ=true
-COMPLIANCE_187_FZ=true
-USE_RUSSIAN_CRYPTO=true
-```
-
-## Документация
-
-### Основная документация
-- [API Reference](docs/api_reference.md) - Полная документация API
-- [Deployment Guide](docs/deployment_guide.md) - Руководство по развертыванию
-- [Client Integration](docs/client_integration.md) - Интеграция клиентов
-- [Debugging](docs/debugging.md) - Отладка и диагностика
-- [Metrics](docs/metrics.md) - Архитектура и использование метрик
-- [Keycloak Integration](docs/keycloak_integration.md) - Интеграция с Keycloak
-- [Dashboard Guide](docs/dashboard_guide.md) - Руководство по дашбордам и аналитике
-
-### Дашборды и аналитика
-
-CloudBridge Relay v2.0 предоставляет набор специализированных дашбордов для комплексного мониторинга:
-
-#### 🎯 Tunnel Management Dashboard
-- **Управление туннелями**: Создание, закрытие, мониторинг активных туннелей
-- **Анализ трафика**: Передача данных, использование полосы пропускания
-- **Здоровье туннелей**: Статус, качество соединения, ошибки
-- **Управление ресурсами**: Использование памяти и CPU по туннелям
-
-#### 🔒 Security Analytics Dashboard
-- **Аутентификация**: Успешность, неудачные попытки, производительность токенов
-- **Обнаружение угроз**: Подозрительная активность, DDoS атаки, rate limiting
-- **ML анализ**: Аномалии, предсказания угроз, поведенческий анализ
-- **TLS безопасность**: Статус сертификатов, ошибки handshake
-
-#### 🏢 Multi-Tenant Analytics Dashboard
-- **Обзор тенантов**: Активные тенанты, общий доход, удовлетворенность
-- **Использование ресурсов**: Туннели, соединения, полоса пропускания по тенантам
-- **Производительность**: Время отклика, ошибки, SLA соответствие
-- **Бизнес-аналитика**: Доход, удовлетворенность клиентов, тренды использования
-
-#### 📊 Основной Dashboard
-- **Общие метрики**: Активные соединения, производительность системы
-- **Технические метрики**: Память, CPU, сеть, GC
-- **Бизнес-метрики**: Пользователи, доход, удовлетворенность
-
-### Примеры использования
-- [Python Client](examples/python_client.py)
-- [JavaScript Client](examples/javascript_client.js)
-- [Go Client](examples/go_client.go)
-
-## 🔧 Разработка
-
-### Команды Makefile
-
-```bash
-# Сборка
-make build
-
-# Тестирование
-make test-all
-
-# Линтинг
-make lint
-
-# Форматирование
-make fmt
-
-# Docker
-make docker-build
-make docker-run
-
-# Мониторинг
-make setup-monitoring
-
-# Безопасность
-make security-audit
-```
-
-### Структура проекта
-
-```
-cloudbridge-relay-installer/
-├── cmd/                    # Исполняемые файлы
-├── internal/               # Внутренние пакеты
-│   ├── auth/              # Аутентификация
-│   ├── keycloak/          # Интеграция с Keycloak
-│   ├── metrics/           # Метрики
-│   └── tunnel/            # Управление туннелями
-├── config/                # Конфигурация
-├── scripts/               # Скрипты автоматизации
-├── tests/                 # Тесты
-└── docs/                  # Документация
-```
-
-## Устранение неполадок
-
-### Частые проблемы
-
-#### 1. Ошибка парсинга конфигурации
-```
-Failed to load configuration: failed to parse config file: json: cannot unmarshal string into Go struct field .server.timeout of type time.Duration
-```
-**Решение:** Убедитесь, что все поля `time.Duration` указаны в виде строк с суффиксами времени.
-
-#### 2. Порт уже занят
-```
-Failed to start server: failed to create listener: listen tcp :8080: bind: address already in use
-```
-**Решение:** Остановите процесс, использующий порт 8080, или измените порт в конфигурации.
-
-#### 3. Ошибка Docker контейнера
-```
-docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: exec: "--config": executable file not found in $PATH
-```
-**Решение:** Укажите правильную команду запуска: `cloudbridge-relay ./relay --config config/config.json`
-
-### Диагностика
-
-```bash
-# Проверка статуса
-sudo systemctl status relay
-
-# Просмотр логов
-tail -f /var/log/relay/relay.log
-
-# Проверка метрик
-curl http://localhost:8081/metrics
-
-# Проверка конфигурации
-./relay --config config/config.json --help
-```
-
-## Мониторинг
-
-### Основные метрики
-
-```promql
-# Активные соединения
-relay_active_connections
-
-# Процент успешных валидаций токенов
-rate(relay_keycloak_token_validations_total{result="success"}[5m]) / 
-rate(relay_keycloak_token_validations_total[5m]) * 100
-
-# Время соединения (95-й перцентиль)
-histogram_quantile(0.95, rate(relay_connection_duration_seconds_bucket[5m]))
-```
-
-### Алерты
-
-- Высокий процент неудачных валидаций токенов
-- Медленные операции JWKS
-- Низкая производительность кэша
-- Высокое использование памяти
-
-## Поддержка
-
-### Получение помощи
-
-1. Проверьте [документацию](docs/)
-2. Изучите [часто задаваемые вопросы](docs/debugging.md)
-3. Создайте issue в репозитории
-
-### Сбор информации для поддержки
-
-```bash
-# Логи
-sudo journalctl -u relay > relay-logs.txt
-
-# Метрики
-curl http://localhost:8081/metrics > metrics.txt
-
-# Конфигурация
-cat /etc/relay/config.json > config.txt
-
-# Системная информация
-uname -a > system-info.txt
-```
-
-## Лицензия
-
-Этот проект лицензирован под MIT License - см. файл [LICENSE](LICENSE) для деталей.
-
-## Архитектура
-
-CloudBridge Relay построен с использованием современных практик разработки:
-
-- **Модульная архитектура** - четкое разделение ответственности
-- **Dependency Injection** - легкое тестирование и конфигурация
-- **Graceful Shutdown** - корректное завершение работы
-- **Health Checks** - мониторинг состояния сервиса
-- **Structured Logging** - удобный анализ логов
-- **Metrics First** - детальный мониторинг производительности
-
-## Управление
-
-### Основные команды
-
-```bash
-# Запуск сервисов
-docker-compose -f docker-compose.keycloak.yml up -d
-
-# Остановка сервисов
-docker-compose -f docker-compose.keycloak.yml down
-
-# Просмотр логов
-docker-compose -f docker-compose.keycloak.yml logs -f
-
-# Перезапуск сервиса
-docker-compose -f docker-compose.keycloak.yml restart relay
-
-# Обновление сервисов
-docker-compose -f docker-compose.keycloak.yml pull
-docker-compose -f docker-compose.keycloak.yml up -d
-```
-
-### Резервное копирование
-
-```bash
-# Создание резервной копии
+# Автоматическое резервное копирование
 ./scripts/backup_keycloak.sh
 
-# Восстановление из резервной копии
-./scripts/restore_keycloak.sh backup_file.tar.gz
+# Проверка целостности резервных копий
+./scripts/test_integration.sh
 ```
 
-## Сравнение с Cloudflare Argo Tunnel
+### Документация по безопасности
 
-| Функция | Cloudflare Argo Tunnel | CloudBridge Relay |
-|---------|------------------------|-------------------|
-| **Контроль инфраструктуры** | ❌ Зависимость от Cloudflare | ✅ Полный контроль |
-| **Данные** | ❌ Проходят через Cloudflare | ✅ Ваши серверы |
-| **Стоимость** | ❌ Платная подписка | ✅ Собственная инфраструктура |
-| **Кастомизация** | ❌ Ограниченная | ✅ Полная |
-| **Мультитенантность** | ❌ Базовая | ✅ Продвинутая |
-| **AD/LDAP интеграция** | ❌ Отсутствует | ✅ Полная поддержка |
-| **Мониторинг** | ❌ Cloudflare Analytics | ✅ Prometheus + Grafana |
-| **Соответствие требованиям** | ❌ Зависит от юрисдикции | ✅ Полный контроль |
-| **SIEM интеграция** | ❌ Отсутствует | ✅ Полная поддержка |
-| **ML-детекция угроз** | ❌ Отсутствует | ✅ Встроенная |
-| **mTLS аутентификация** | ❌ Отсутствует | ✅ Полная поддержка |
-| **Edge Networks** | ❌ Только Cloudflare PoP | ✅ Собственная сеть |
-| **High Availability** | ❌ Зависит от Cloudflare | ✅ Полный контроль |
-| **Auto Scaling** | ❌ Ограниченное | ✅ Полная автоматизация |
-| **Misuse Protection** | ❌ Базовая | ✅ Продвинутая защита |
-| **DDoS Protection** | ✅ Встроенная | ✅ Настраиваемая |
-| **Load Testing** | ❌ Отсутствует | ✅ Встроенные инструменты |
-
-## Особенности
-
--  Интеграция с Keycloak для централизованной аутентификации
--  Высокая производительность и масштабируемость
--  Встроенный мониторинг с Prometheus и Grafana
--  Поддержка TLS/SSL шифрования
--  Подробное логирование
--  Rate limiting и защита от DDoS
--  Поддержка российских требований (152-ФЗ, 187-ФЗ)
--  **Мультитенантность с изоляцией компаний**
--  **Туннелирование любых TCP сервисов**
--  **Интеграция с Active Directory/LDAP**
--  **Полный контроль над инфраструктурой**
--  **ML-детекция угроз и поведенческий анализ**
--  **SIEM интеграция с внешними системами**
--  **Open API Gateway для интеграций**
--  **mTLS (Mutual TLS) аутентификация**
--  **Глобальная сеть edge-узлов**
--  **High Availability и Auto Scaling**
--  **Продвинутая защита от злоупотреблений**
--  **Load Testing и Capacity Planning**
+Подробная документация доступна в:
+- [📖 Руководство по безопасности](docs/security.md)
+- [🛡️ Lynis Security Audit](docs/lynis_integration.md)
+- [🔧 Настройка firewall](scripts/setup_firewall.sh)
+- [📊 Дашборды безопасности](docs/dashboard_guide.md)
+- [🔐 Интеграция с Keycloak](docs/keycloak_integration.md)

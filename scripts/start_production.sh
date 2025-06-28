@@ -250,6 +250,11 @@ main() {
     log "Запуск CloudBridge Relay в production режиме..."
     echo
     
+    # Восстановление сертификатов перед запуском сервисов
+    if [ -f ./scripts/restore_certs.sh ]; then
+        ./scripts/restore_certs.sh
+    fi
+    
     check_dependencies
     check_env_file "$env_file"
     create_directories

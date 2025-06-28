@@ -271,3 +271,368 @@ curl -X POST -H 'Content-type: application/json' \
 ---
 
 **Важно**: Безопасность - это непрерывный процесс. Регулярно пересматривайте и обновляйте меры безопасности. 
+
+## Обзор
+
+CloudBridge Relay v2.0 включает комплексную систему безопасности, обеспечивающую защиту от различных типов атак и несанкционированного доступа.
+
+## Архитектура безопасности
+
+### 1. Сетевая безопасность
+
+#### Firewall (UFW + iptables)
+- **SSH (порт 22)**: Разрешен для административного доступа
+- **Relay Server (порт 8082)**: Разрешен для клиентских соединений
+- **Порты мониторинга**: Доступны только с localhost (127.0.0.1)
+  - Metrics (8081)
+  - Keycloak (8080)
+  - Grafana (3000)
+  - Prometheus (9090)
+  - AlertManager (9093)
+  - Blackbox (9115)
+
+#### Дополнительная защита
+- **DDoS защита**: Rate limiting для SSH и Relay портов
+- **Блокировка подозрительных пакетов**: Фильтрация TCP флагов
+- **Защита от сканирования**: Автоматическая блокировка при множественных попытках
+
+### 2. Аутентификация и авторизация
+
+#### Keycloak Integration
+- **OAuth 2.0 / OpenID Connect**: Современные протоколы аутентификации
+- **JWT токены**: Безопасная передача информации о пользователе
+- **Multi-factor authentication**: Поддержка MFA через Keycloak
+- **Session management**: Централизованное управление сессиями
+
+#### mTLS (Mutual TLS)
+- **Клиентские сертификаты**: Дополнительный уровень аутентификации
+- **CA валидация**: Проверка подлинности клиентских сертификатов
+
+### 3. Шифрование
+
+#### TLS/SSL
+- **Let's Encrypt сертификаты**: Автоматическое обновление
+- **Strong cipher suites**: Современные алгоритмы шифрования
+- **Perfect Forward Secrecy**: Защита от компрометации ключей
+
+#### Российские криптоалгоритмы
+- **GOST R 34.10-2012**: Алгоритм цифровой подписи
+- **GOST R 34.11-2012**: Хеш-функция
+- **Соответствие 152-ФЗ**: Защита персональных данных
+
+### 4. Мониторинг и обнаружение угроз
+
+#### fail2ban
+- **Автоматическая блокировка**: IP адресов при подозрительной активности
+- **Настраиваемые правила**: Для SSH и Relay сервера
+- **Логирование**: Детальные логи всех событий
+
+#### Prometheus + Grafana
+- **Метрики безопасности**: Отслеживание попыток атак
+- **Алерты**: Уведомления о подозрительной активности
+- **Дашборды**: Визуализация состояния безопасности
+
+## Настройка Firewall
+
+### Автоматическая настройка
+
+```bash
+# Запуск скрипта настройки firewall
+sudo ./scripts/setup_firewall.sh
+
+# Проверка статуса
+sudo ./scripts/setup_firewall.sh --check
+
+# Просмотр плана действий
+sudo ./scripts/setup_firewall.sh --dry-run
+```
+
+### Ручная настройка
+
+#### UFW (Uncomplicated Firewall)
+```bash
+# Установка UFW
+sudo apt-get install ufw
+
+# Настройка политик по умолчанию
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+# Разрешение SSH
+sudo ufw allow 22/tcp
+
+# Разрешение Relay порта
+sudo ufw allow 8082/tcp
+
+# Разрешение портов мониторинга только для localhost
+sudo ufw allow from 127.0.0.1 to any port 8081
+sudo ufw allow from 127.0.0.1 to any port 8080
+sudo ufw allow from 127.0.0.1 to any port 3000
+sudo ufw allow from 127.0.0.1 to any port 9090
+sudo ufw allow from 127.0.0.1 to any port 9093
+sudo ufw allow from 127.0.0.1 to any port 9115
+
+# Включение UFW
+sudo ufw enable
+```
+
+#### iptables (дополнительная защита)
+```bash
+# Очистка правил
+sudo iptables -F
+sudo iptables -X
+
+# Установка политик по умолчанию
+sudo iptables -P INPUT DROP
+sudo iptables -P FORWARD DROP
+sudo iptables -P OUTPUT ACCEPT
+
+# Разрешение loopback
+sudo iptables -A INPUT -i lo -j ACCEPT
+
+# Разрешение установленных соединений
+sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Разрешение SSH с rate limiting
+sudo iptables -A INPUT -p tcp --dport 22 -m limit --limit 6/min --limit-burst 10 -j ACCEPT
+
+# Разрешение Relay порта с rate limiting
+sudo iptables -A INPUT -p tcp --dport 8082 -m limit --limit 30/min --limit-burst 60 -j ACCEPT
+
+# Сохранение правил
+sudo iptables-save > /etc/iptables/rules.v4
+```
+
+### Управление Firewall
+
+```bash
+# Показать статус
+relay-firewall status
+
+# Разрешить IP адрес
+relay-firewall allow-ip 192.168.1.100
+
+# Заблокировать IP адрес
+relay-firewall deny-ip 10.0.0.50
+
+# Перезагрузить firewall
+relay-firewall reload
+```
+
+## Настройка fail2ban
+
+### Установка и настройка
+```bash
+# Установка fail2ban
+sudo apt-get install fail2ban
+
+# Создание конфигурации
+sudo nano /etc/fail2ban/jail.local
+```
+
+### Конфигурация jail.local
+```ini
+[DEFAULT]
+bantime = 3600
+findtime = 600
+maxretry = 3
+
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+
+[relay]
+enabled = true
+port = 8082
+filter = relay
+logpath = /var/log/relay/relay.log
+maxretry = 5
+```
+
+### Фильтр для Relay
+```bash
+# Создание фильтра
+sudo nano /etc/fail2ban/filter.d/relay.conf
+```
+
+Содержимое фильтра:
+```ini
+[Definition]
+failregex = ^.*authentication failed.*from <HOST>.*$
+ignoreregex =
+```
+
+### Управление fail2ban
+```bash
+# Перезапуск fail2ban
+sudo systemctl restart fail2ban
+
+# Проверка статуса
+sudo fail2ban-client status
+
+# Проверка конкретной jail
+sudo fail2ban-client status sshd
+sudo fail2ban-client status relay
+
+# Разблокировка IP
+sudo fail2ban-client set sshd unbanip 192.168.1.100
+```
+
+## Безопасность сертификатов
+
+### Let's Encrypt
+```bash
+# Получение сертификатов
+sudo certbot certonly --dns-cloudflare --dns-cloudflare-credentials ~/.secrets/cloudflare.ini -d edge.2gc.ru
+
+# Автоматическое обновление
+sudo crontab -e
+# Добавить строку:
+# 0 12 * * * /usr/bin/certbot renew --quiet
+```
+
+### Post-renewal hook
+```bash
+# Создание скрипта обновления
+sudo nano /etc/letsencrypt/renewal-hooks/post/restart-relay.sh
+```
+
+Содержимое скрипта:
+```bash
+#!/bin/bash
+docker-compose restart relay
+```
+
+```bash
+# Сделать исполняемым
+sudo chmod +x /etc/letsencrypt/renewal-hooks/post/restart-relay.sh
+```
+
+## Мониторинг безопасности
+
+### Метрики безопасности
+- **Попытки аутентификации**: Успешные и неуспешные
+- **Блокировки IP**: Количество заблокированных адресов
+- **DDoS атаки**: Обнаружение и блокировка
+- **Сканирование портов**: Мониторинг подозрительной активности
+
+### Алерты
+- **Множественные неудачные попытки входа**
+- **Подозрительная активность на портах**
+- **DDoS атаки**
+- **Попытки доступа к заблокированным портам**
+
+### Дашборды безопасности
+- **Security Analytics Dashboard**: Анализ угроз и атак
+- **Tunnel Management Dashboard**: Мониторинг туннелей
+- **Multi-Tenant Analytics**: Анализ активности клиентов
+
+## Соответствие требованиям
+
+### 152-ФЗ (Защита персональных данных)
+- ✅ Шифрование данных в покое и при передаче
+- ✅ Контроль доступа и аутентификация
+- ✅ Логирование и мониторинг
+- ✅ Уведомления о нарушениях
+
+### 187-ФЗ (Безопасность критической инфраструктуры)
+- ✅ Защита от DDoS атак
+- ✅ Обнаружение вторжений
+- ✅ Резервное копирование
+- ✅ Восстановление после инцидентов
+
+### ГОСТ Р 57580.1-2017
+- ✅ Использование российских криптоалгоритмов
+- ✅ Сертифицированные средства защиты
+- ✅ Контроль целостности
+
+## Рекомендации по безопасности
+
+### Регулярные проверки
+1. **Ежедневно**: Проверка логов безопасности
+2. **Еженедельно**: Обновление системы и пакетов
+3. **Ежемесячно**: Аудит настроек безопасности
+4. **Ежеквартально**: Тестирование на проникновение
+
+### Резервное копирование
+```bash
+# Автоматическое резервное копирование
+./scripts/backup_keycloak.sh
+
+# Проверка целостности резервных копий
+./scripts/test_integration.sh
+```
+
+### Обновления
+```bash
+# Обновление системы
+sudo apt-get update && sudo apt-get upgrade
+
+# Обновление Docker образов
+docker-compose pull
+docker-compose up -d
+```
+
+### Мониторинг
+```bash
+# Проверка статуса сервисов
+docker-compose ps
+
+# Просмотр логов
+docker-compose logs -f relay
+
+# Проверка метрик
+curl http://localhost:8081/metrics
+```
+
+## Устранение неполадок
+
+### Проблемы с firewall
+```bash
+# Проверка статуса UFW
+sudo ufw status verbose
+
+# Проверка правил iptables
+sudo iptables -L -n -v
+
+# Временное отключение firewall (только для диагностики!)
+sudo ufw disable
+```
+
+### Проблемы с fail2ban
+```bash
+# Проверка статуса
+sudo fail2ban-client status
+
+# Просмотр логов
+sudo tail -f /var/log/fail2ban.log
+
+# Разблокировка всех IP
+sudo fail2ban-client reload
+```
+
+### Проблемы с сертификатами
+```bash
+# Проверка сертификатов
+sudo certbot certificates
+
+# Тестирование обновления
+sudo certbot renew --dry-run
+
+# Проверка конфигурации nginx
+sudo nginx -t
+```
+
+## Контакты для безопасности
+
+При обнаружении уязвимостей или проблем безопасности:
+- **Email**: security@cloudbridge.ru
+- **Telegram**: @cloudbridge_security
+- **Телефон**: +7 (495) XXX-XX-XX
+
+---
+
+*Данное руководство обновляется регулярно. Последнее обновление: $(date)* 
