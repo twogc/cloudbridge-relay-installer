@@ -31,6 +31,16 @@ modules:
         insecure_skip_verify: false
       preferred_ip_protocol: "ip4"
 
+  # Модуль для внутренних TLS проверок в Docker-среде
+  tls_connect_internal:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      tls: true
+      tls_config:
+        insecure_skip_verify: true
+      preferred_ip_protocol: "ip4"
+
   icmp:
     prober: icmp
     timeout: 5s
@@ -50,7 +60,7 @@ modules:
     tcp:
       tls: true
       tls_config:
-        insecure_skip_verify: false
+        insecure_skip_verify: true
         ca_file: /etc/blackbox/ca.pem
       preferred_ip_protocol: "ip4"
 

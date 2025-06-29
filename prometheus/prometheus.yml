@@ -25,7 +25,7 @@ scrape_configs:
       - targets: ['relay:8080']
     metrics_path: '/probe'
     params:
-      module: ['tls_connect']
+      module: ['tls_connect_internal']
     scrape_interval: 30s
     scrape_timeout: 10s
     relabel_configs:

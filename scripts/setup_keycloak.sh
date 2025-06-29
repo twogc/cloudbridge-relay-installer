@@ -4,6 +4,12 @@
 # Этот скрипт настраивает Keycloak для работы с CloudBridge Relay
 
 set -e
+set -x
+
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -22,19 +28,19 @@ CLIENT_SECRET="${CLIENT_SECRET:-relay-client-secret}"
 
 # Functions
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${BLUE}[INFO]${NC} $1" >&2
 }
 
 log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    echo -e "${GREEN}[SUCCESS]${NC} $1" >&2
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    echo -e "${YELLOW}[WARNING]${NC} $1" >&2
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
 # Check dependencies
@@ -62,7 +68,7 @@ wait_for_keycloak() {
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
-        if curl -s -f "$KEYCLOAK_URL/health" > /dev/null 2>&1; then
+        if curl -s -f "$KEYCLOAK_URL/realms/master" > /dev/null 2>&1; then
             log_success "Keycloak is ready"
             return 0
         fi
@@ -94,6 +100,8 @@ get_admin_token() {
     
     local access_token=$(echo "$token_response" | jq -r '.access_token')
     
+    log_info "Admin token: $access_token"
+    
     if [ "$access_token" = "null" ] || [ -z "$access_token" ]; then
         log_error "Failed to extract access token from response"
         echo "Response: $token_response"
@@ -101,7 +109,6 @@ get_admin_token() {
     fi
     
     echo "$access_token"
-    log_success "Admin token obtained"
 }
 
 # Create realm
@@ -110,26 +117,25 @@ create_realm() {
     
     log_info "Creating realm '$REALM_NAME'..."
     
-    local realm_data=$(cat <<EOF
-{
-    "realm": "$REALM_NAME",
-    "displayName": "CloudBridge",
-    "enabled": true,
-    "displayNameHtml": "<div class=\"kc-logo-text\"><span>CloudBridge</span></div>",
-    "attributes": {
-        "relay.enabled": "true"
-    }
-}
-EOF
-)
+    local realm_data="{\"realm\": \"$REALM_NAME\", \"displayName\": \"CloudBridge\", \"enabled\": true}"
+    echo "$realm_data" > realm.json
+    log_info "Realm data: $realm_data"
+    log_info "Содержимое realm.json: $(cat realm.json)"
+    
+    log_info "Admin token used for curl: $admin_token"
     
     local response=$(curl -s -w "%{http_code}" -X POST "$KEYCLOAK_URL/admin/realms" \
         -H "Authorization: Bearer $admin_token" \
         -H "Content-Type: application/json" \
-        -d "$realm_data")
+        -d @realm.json)
     
     local http_code="${response: -3}"
     local response_body="${response%???}"
+    
+    log_info "HTTP Code: $http_code"
+    log_info "Response: $response_body"
+    
+    rm -f realm.json
     
     if [ "$http_code" = "201" ]; then
         log_success "Realm '$REALM_NAME' created successfully"

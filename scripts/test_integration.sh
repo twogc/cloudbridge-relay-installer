@@ -17,7 +17,7 @@ KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8080}"
 REALM_NAME="${REALM_NAME:-cloudbridge}"
 CLIENT_ID="${CLIENT_ID:-relay-client}"
 CLIENT_SECRET="${CLIENT_SECRET:-relay-client-secret}"
-RELAY_URL="${RELAY_URL:-http://localhost:8080}"
+RELAY_URL="${RELAY_URL:-http://localhost:8081}"
 
 # Functions
 log_info() {
@@ -67,7 +67,7 @@ wait_for_services() {
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
-        if curl -s -f "$KEYCLOAK_URL/health" > /dev/null 2>&1; then
+        if curl -s -f "$KEYCLOAK_URL/realms/master" > /dev/null 2>&1; then
             log_success "Keycloak is ready"
             break
         fi
@@ -85,7 +85,7 @@ wait_for_services() {
     # Wait for Relay
     attempt=1
     while [ $attempt -le $max_attempts ]; do
-        if curl -s -f "$RELAY_URL/health" > /dev/null 2>&1; then
+        if curl -s -f "$RELAY_URL/metrics" > /dev/null 2>&1; then
             log_success "Relay is ready"
             break
         fi
