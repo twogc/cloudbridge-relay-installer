@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # CloudBridge Relay - Security Monitor Setup
-# Установка и настройка системы мониторинга безопасности
+# Установка и настройка системы мониторинга безопасности с Telegram уведомлениями
 
 set -e
 
@@ -25,10 +25,6 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
 # Проверка root прав
 check_root() {
     if [[ $EUID -ne 0 ]]; then
@@ -37,161 +33,220 @@ check_root() {
     fi
 }
 
-# Установка systemd сервиса
-install_service() {
-    log_info "Установка systemd сервиса для мониторинга безопасности..."
+# Установка зависимостей
+install_dependencies() {
+    log_info "Установка зависимостей..."
     
-    # Копируем сервис файл
+    # Обновление пакетов
+    apt-get update
+    
+    # Установка необходимых пакетов
+    apt-get install -y jq curl fail2ban
+    
+    log_info "Зависимости установлены"
+}
+
+# Настройка fail2ban
+setup_fail2ban() {
+    log_info "Настройка fail2ban..."
+    
+    # Проверяем, установлен ли fail2ban
+    if ! command -v fail2ban-client &> /dev/null; then
+        log_warn "fail2ban не установлен, пропускаем настройку"
+        return
+    fi
+    
+    # Создаем конфигурацию для SSH
+    cat > /etc/fail2ban/jail.local << EOF
+[DEFAULT]
+bantime = 3600
+findtime = 600
+maxretry = 3
+
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 3600
+EOF
+    
+    # Перезапускаем fail2ban
+    systemctl restart fail2ban
+    systemctl enable fail2ban
+    
+    log_info "fail2ban настроен и запущен"
+}
+
+# Создание директорий
+create_directories() {
+    log_info "Создание директорий..."
+    
+    mkdir -p /var/lib/security-monitor
+    mkdir -p /var/lib/lynis-telegram
+    mkdir -p /home/ubuntu/cloudbridge-relay-installer/logs
+    
+    # Устанавливаем права доступа
+    chown root:root /var/lib/security-monitor
+    chmod 700 /var/lib/security-monitor
+    
+    chown root:root /var/lib/lynis-telegram
+    chmod 700 /var/lib/lynis-telegram
+    
+    log_info "Директории созданы"
+}
+
+# Установка systemd сервисов
+install_services() {
+    log_info "Установка systemd сервисов..."
+    
+    # Копируем файлы сервисов
     cp systemd/security-monitor.service /etc/systemd/system/
+    cp systemd/lynis-security-audit.service /etc/systemd/system/
+    cp systemd/lynis-security-audit.timer /etc/systemd/system/
     
     # Перезагружаем systemd
     systemctl daemon-reload
     
-    # Включаем автозапуск
-    systemctl enable security-monitor.service
+    # Включаем сервисы
+    systemctl enable security-monitor
+    systemctl enable lynis-security-audit.timer
     
-    log_success "Сервис установлен и включен"
+    log_info "Systemd сервисы установлены"
 }
 
-# Запуск сервиса
-start_service() {
-    log_info "Запуск сервиса мониторинга безопасности..."
+# Настройка Telegram
+setup_telegram() {
+    log_info "Настройка Telegram уведомлений..."
     
-    if systemctl start security-monitor.service; then
-        log_success "Сервис запущен"
-    else
-        log_error "Ошибка запуска сервиса"
-        systemctl status security-monitor.service --no-pager
-        exit 1
+    echo "Для настройки Telegram уведомлений:"
+    echo "1. Создайте бота через @BotFather"
+    echo "2. Получите токен бота"
+    echo "3. Получите Chat ID"
+    echo
+    echo "Затем отредактируйте файлы:"
+    echo "- scripts/lynis_with_telegram.sh"
+    echo "- scripts/security_monitor_telegram.sh"
+    echo
+    echo "И укажите в них:"
+    echo "TELEGRAM_BOT_TOKEN=\"ваш_токен_бота\""
+    echo "TELEGRAM_CHAT_ID=\"ваш_chat_id\""
+    echo
+    read -p "Нажмите Enter для продолжения..."
+}
+
+# Тестирование системы
+test_system() {
+    log_info "Тестирование системы мониторинга..."
+    
+    # Тест Lynis
+    if [[ -f "scripts/lynis_with_telegram.sh" ]]; then
+        log_info "Тестирование Lynis мониторинга..."
+        ./scripts/lynis_with_telegram.sh --test
     fi
-}
-
-# Остановка сервиса
-stop_service() {
-    log_info "Остановка сервиса мониторинга безопасности..."
     
-    if systemctl stop security-monitor.service; then
-        log_success "Сервис остановлен"
-    else
-        log_error "Ошибка остановки сервиса"
+    # Тест Security Monitor
+    if [[ -f "scripts/security_monitor_telegram.sh" ]]; then
+        log_info "Тестирование Security Monitor..."
+        ./scripts/security_monitor_telegram.sh --test
     fi
+    
+    log_info "Тестирование завершено"
 }
 
-# Проверка статуса
-check_status() {
-    log_info "Проверка статуса сервиса..."
+# Показать статус
+show_status() {
+    log_info "Статус системы мониторинга:"
+    echo "================================"
     
-    systemctl status security-monitor.service --no-pager
+    # Статус сервисов
+    echo "Systemd сервисы:"
+    systemctl is-active security-monitor 2>/dev/null && echo "✅ security-monitor: активен" || echo "❌ security-monitor: неактивен"
+    systemctl is-active lynis-security-audit.timer 2>/dev/null && echo "✅ lynis-security-audit.timer: активен" || echo "❌ lynis-security-audit.timer: неактивен"
     
     echo
-    echo "=== Логи сервиса ==="
-    journalctl -u security-monitor.service --no-pager -n 20
+    echo "Зависимости:"
+    command -v jq &> /dev/null && echo "✅ jq: установлен" || echo "❌ jq: не установлен"
+    command -v curl &> /dev/null && echo "✅ curl: установлен" || echo "❌ curl: не установлен"
+    command -v fail2ban-client &> /dev/null && echo "✅ fail2ban: установлен" || echo "❌ fail2ban: не установлен"
+    
+    echo
+    echo "Файлы состояния:"
+    [[ -d "/var/lib/security-monitor" ]] && echo "✅ /var/lib/security-monitor: существует" || echo "❌ /var/lib/security-monitor: не существует"
+    [[ -d "/var/lib/lynis-telegram" ]] && echo "✅ /var/lib/lynis-telegram: существует" || echo "❌ /var/lib/lynis-telegram: не существует"
+    
+    echo
+    echo "Логи:"
+    [[ -f "/var/lib/security-monitor/events.log" ]] && echo "✅ events.log: существует" || echo "❌ events.log: не существует"
+    [[ -f "/var/lib/lynis-telegram/changes.log" ]] && echo "✅ changes.log: существует" || echo "❌ changes.log: не существует"
 }
 
-# Тестовая отправка
-test_notification() {
-    log_info "Отправка тестового уведомления..."
+# Запуск сервисов
+start_services() {
+    log_info "Запуск сервисов..."
     
-    if ./scripts/security_monitor.sh --test; then
-        log_success "Тестовое уведомление отправлено"
-    else
-        log_error "Ошибка отправки тестового уведомления"
-    fi
-}
-
-# Удаление сервиса
-uninstall_service() {
-    log_info "Удаление сервиса мониторинга безопасности..."
+    systemctl start security-monitor
+    systemctl start lynis-security-audit.timer
     
-    # Останавливаем сервис
-    systemctl stop security-monitor.service 2>/dev/null || true
-    
-    # Отключаем автозапуск
-    systemctl disable security-monitor.service 2>/dev/null || true
-    
-    # Удаляем файл сервиса
-    rm -f /etc/systemd/system/security-monitor.service
-    
-    # Перезагружаем systemd
-    systemctl daemon-reload
-    
-    log_success "Сервис удален"
-}
-
-# Показать справку
-show_help() {
-    echo "CloudBridge Relay - Security Monitor Setup"
-    echo
-    echo "Использование: $0 [команда]"
-    echo
-    echo "Команды:"
-    echo "  install     Установить и запустить сервис"
-    echo "  start       Запустить сервис"
-    echo "  stop        Остановить сервис"
-    echo "  restart     Перезапустить сервис"
-    echo "  status      Показать статус сервиса"
-    echo "  test        Отправить тестовое уведомление"
-    echo "  uninstall   Удалить сервис"
-    echo "  help        Показать эту справку"
-    echo
-    echo "Примеры:"
-    echo "  sudo $0 install    Установить и запустить"
-    echo "  sudo $0 status     Проверить статус"
-    echo "  sudo $0 test       Тест уведомлений"
-    echo
-    echo "После установки сервис будет:"
-    echo "• Автоматически запускаться при загрузке системы"
-    echo "• Проверять безопасность каждые 5 минут"
-    echo "• Отправлять уведомления в Telegram при обнаружении проблем"
+    log_info "Сервисы запущены"
 }
 
 # Основная функция
 main() {
-    case "${1:-}" in
-        install)
-            check_root
-            install_service
-            start_service
-            test_notification
-            log_success "Мониторинг безопасности установлен и запущен!"
-            echo
-            echo "Сервис будет автоматически:"
-            echo "• Запускаться при загрузке системы"
-            echo "• Проверять безопасность каждые 5 минут"
-            echo "• Отправлять уведомления в Telegram"
-            ;;
-        start)
-            check_root
-            start_service
-            ;;
-        stop)
-            check_root
-            stop_service
-            ;;
-        restart)
-            check_root
-            stop_service
-            start_service
-            ;;
-        status)
-            check_status
-            ;;
-        test)
-            test_notification
-            ;;
-        uninstall)
-            check_root
-            uninstall_service
-            ;;
-        help|--help|-h)
-            show_help
-            ;;
-        *)
-            show_help
-            exit 1
-            ;;
-    esac
+    log_info "Установка системы мониторинга безопасности"
+    
+    check_root
+    install_dependencies
+    setup_fail2ban
+    create_directories
+    install_services
+    setup_telegram
+    test_system
+    start_services
+    show_status
+    
+    log_info "Установка завершена!"
+    echo
+    echo "Для управления сервисами используйте:"
+    echo "sudo systemctl start/stop/restart security-monitor"
+    echo "sudo systemctl start/stop/restart lynis-security-audit.timer"
+    echo
+    echo "Для просмотра логов:"
+    echo "sudo journalctl -u security-monitor -f"
+    echo "sudo journalctl -u lynis-security-audit -f"
 }
 
-# Запуск основной функции
-main "$@" 
+# Обработка аргументов командной строки
+case "${1:-}" in
+    --help|-h)
+        echo "CloudBridge Relay - Security Monitor Setup"
+        echo
+        echo "Использование: $0 [опции]"
+        echo
+        echo "Опции:"
+        echo "  --help, -h     Показать эту справку"
+        echo "  --status       Показать статус системы"
+        echo "  --test         Только тестирование"
+        echo "  --start        Только запуск сервисов"
+        echo
+        echo "Примеры:"
+        echo "  sudo $0              Полная установка"
+        echo "  sudo $0 --status     Показать статус"
+        echo "  sudo $0 --test       Только тестирование"
+        echo "  sudo $0 --start      Запуск сервисов"
+        ;;
+    --status)
+        show_status
+        ;;
+    --test)
+        test_system
+        ;;
+    --start)
+        start_services
+        show_status
+        ;;
+    *)
+        main
+        ;;
+esac 

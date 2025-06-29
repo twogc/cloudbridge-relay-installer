@@ -9,44 +9,47 @@ sudo bash scripts/setup_lynis.sh
 
 ### Первый запуск
 ```bash
-sudo relay-security-audit full
+sudo ./scripts/lynis_with_telegram.sh
+```
+
+### Исправление проблем безопасности
+```bash
+sudo ./scripts/security_hardening.sh
 ```
 
 ## 📋 Основные команды
 
 ### Аудит безопасности
 ```bash
-# Полный аудит системы
-sudo relay-security-audit full
+# Полный аудит с Telegram уведомлениями
+sudo ./scripts/lynis_with_telegram.sh
 
-# Быстрый аудит
-sudo relay-security-audit quick
+# Быстрый аудит без Telegram
+sudo ./scripts/quick_audit.sh quick
+
+# Полный аудит без Telegram
+sudo ./scripts/quick_audit.sh full
 
 # Аудит Docker окружения
-sudo relay-security-audit docker
+sudo ./scripts/quick_audit.sh docker
 
-# Аудит сетевой безопасности
-sudo relay-security-audit network
-
-# Аудит файловой системы
-sudo relay-security-audit files
+# Исправление проблем безопасности
+sudo ./scripts/security_hardening.sh
 ```
 
 ### Управление
 ```bash
 # Статус сервисов
-sudo relay-security-manager status
+sudo systemctl status relay-security-audit.service
 
 # Последний отчёт
-sudo relay-security-manager report
+sudo cat /var/log/lynis/lynis-report.dat
 
-# Автоисправление проблем
-sudo relay-security-manager fix all
+# Очистка lock-файлов
+sudo rm -f /var/run/lynis_telegram.lock
 
-# Управление расписанием
-sudo relay-security-manager schedule status
-sudo relay-security-manager schedule enable
-sudo relay-security-manager schedule disable
+# Остановка всех процессов Lynis
+sudo pkill -f lynis
 ```
 
 ### Прямой вызов Lynis
@@ -94,45 +97,73 @@ sudo grep -E "(Hardening index|warnings|suggestions)" /var/log/lynis/lynis-repor
 
 ### Частые проблемы
 
-#### Ошибка "Invalid option '/etc/lynis/lynis.conf'"
+#### Ошибка "Lynis превысил таймаут"
 ```bash
-# Обновить скрипт
-sudo cp scripts/relay-security-audit /usr/local/bin/relay-security-audit
-sudo chmod +x /usr/local/bin/relay-security-audit
+# Проблема решена - таймаут убран из всех скриптов
+# Lynis теперь работает столько, сколько нужно
 ```
 
-#### "PID file exists"
+#### "Lynis уже запущен"
 ```bash
-# Остановить процессы
+# Остановить все процессы
 sudo pkill -f lynis
 
-# Удалить PID файл
-sudo rm -f /var/log/lynis/lynis.pid
+# Удалить lock-файл
+sudo rm -f /var/run/lynis_telegram.lock
+
+# Запустить заново
+sudo ./scripts/lynis_with_telegram.sh
 ```
 
 #### "Permission denied"
 ```bash
 # Проверить права
-ls -la /usr/local/bin/relay-security-audit
+ls -la scripts/lynis_with_telegram.sh
 
 # Установить права
-sudo chmod +x /usr/local/bin/relay-security-audit
+sudo chmod +x scripts/lynis_with_telegram.sh
 ```
 
-### Диагностика
+### Решенные проблемы
+
+#### ✅ Таймауты и блокировки
+- **Проблема:** Аудит прерывался по таймауту через 10 минут
+- **Решение:** Таймаут полностью убран из всех скриптов
+- **Результат:** Lynis работает до полного завершения
+
+#### ✅ Параллельные запуски
+- **Проблема:** Systemd-таймер конфликтовал с ручными запусками
+- **Решение:** Автоматический запуск удалён, только ручной
+- **Результат:** Нет конфликтов между запусками
+
+#### ✅ Lock-файлы
+- **Проблема:** Lock-файлы "зависали" после прерываний
+- **Решение:** Автоматическая очистка в скриптах
+- **Результат:** Lock-файлы автоматически удаляются
+
+#### ✅ Ротация логов
+- **Проблема:** Логи накапливались и занимали место
+- **Решение:** Настроен logrotate для автоматической ротации
+- **Результат:** Логи автоматически архивируются
+
+### Новые возможности
+
+#### 🔒 Автоматическое исправление безопасности
 ```bash
-# Логи systemd
-sudo journalctl -u relay-security-audit.service
-sudo journalctl -u lynis-metrics-exporter.service
-
-# Статус сервисов
-sudo systemctl status relay-security-audit.timer
-sudo systemctl status lynis-metrics-exporter
-
-# Проверка конфигурации
-sudo cat /etc/lynis/custom.prf
-sudo cat /etc/lynis/lynis.conf
+# Исправить 47 проблем безопасности одним скриптом
+sudo ./scripts/security_hardening.sh
 ```
+
+#### 📊 Быстрый аудит без Telegram
+```bash
+# Быстрый аудит с анализом результатов
+sudo ./scripts/quick_audit.sh quick
+```
+
+#### 🔄 Автоматическая ротация логов
+- Логи автоматически ротируются через logrotate
+- Старые логи архивируются и удаляются
+- Настроен `/etc/logrotate.d/cloudbridge-relay`
 
 ## 📈 Метрики Prometheus
 
