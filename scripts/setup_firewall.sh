@@ -231,6 +231,28 @@ setup_fail2ban() {
         apt-get install -y fail2ban
     fi
     
+    # Создание директории для логов relay
+    if [[ ! -d /var/log/relay ]]; then
+        mkdir -p /var/log/relay
+    fi
+    
+    # Создание символической ссылки для лог-файла
+    local source_log="/home/ubuntu/cloudbridge-relay-installer/logs/relay.log"
+    local target_log="/var/log/relay/relay.log"
+    
+    # Проверяем, существует ли исходный файл
+    if [[ ! -f "$source_log" ]]; then
+        log_info "Создаем пустой лог-файл..."
+        touch "$source_log"
+        chown ubuntu:ubuntu "$source_log"
+    fi
+    
+    # Создаем символическую ссылку
+    if [[ -L "$target_log" ]]; then
+        rm "$target_log"
+    fi
+    ln -sf "$source_log" "$target_log"
+    
     # Создание конфигурации fail2ban
     cat > /etc/fail2ban/jail.local << EOF
 [DEFAULT]
@@ -253,10 +275,12 @@ logpath = /var/log/relay/relay.log
 maxretry = 5
 EOF
     
-    # Создание фильтра для relay
+    # Создание фильтра для relay (обновленный для JSON логов)
     cat > /etc/fail2ban/filter.d/relay.conf << EOF
 [Definition]
-failregex = ^.*authentication failed.*from <HOST>.*$
+failregex = ^.*"level":"ERROR".*"message":"authentication failed".*"remote_addr":\{"IP":"<HOST>".*$
+            ^.*"level":"ERROR".*"message":"invalid credentials".*"remote_addr":\{"IP":"<HOST>".*$
+            ^.*"level":"ERROR".*"message":"unauthorized access".*"remote_addr":\{"IP":"<HOST>".*$
 ignoreregex =
 EOF
     
