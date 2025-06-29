@@ -868,3 +868,46 @@ Certbot автоматически обновляет сертификаты, н
    В конце процесса контейнер relay будет перезапущен.
 
 **Теперь relay всегда будет использовать актуальный сертификат без ручных действий!**
+
+## Интеграция с Keycloak
+
+### 1. Скопируйте сгенерированный конфиг Keycloak
+
+```bash
+cp keycloak_config.json config/keycloak_config.json
+```
+
+### 2. Обновите основной конфиг relay (config/config.json)
+
+- Откройте файл `config/config.json`.
+- В секции `keycloak`:
+  - Установите `"enabled": true`.
+  - Подставьте значения из `keycloak_config.json`:
+    - `server_url`, `realm`, `client_id`, `client_secret`, `public_key`, `token_validation`.
+
+Пример:
+```json
+"keycloak": {
+  "enabled": true,
+  "server_url": "http://localhost:8080",
+  "realm": "cloudbridge",
+  "client_id": "relay-client",
+  "client_secret": "<секрет из keycloak_config.json>",
+  "public_key": "<публичный ключ из keycloak_config.json>",
+  "token_validation": {
+    "issuer": "http://localhost:8080/realms/cloudbridge",
+    "audience": "relay-client",
+    "clock_skew": "30s"
+  },
+  "jwks_cache_ttl": "1h",
+  "http_timeout": "30s"
+}
+```
+
+### 3. Перезапустите relay
+
+```bash
+sudo docker-compose restart relay
+```
+
+После этого relay будет использовать Keycloak для аутентификации пользователей.

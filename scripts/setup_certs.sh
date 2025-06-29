@@ -36,31 +36,43 @@ if sudo lsof -i :80 > /dev/null; then
     exit 1
 fi
 
-# Obtain certificate
-echo "Obtaining certificate for $DOMAIN..."
-if ! sudo certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email admin@2gc.ru; then
-    echo "Error: Failed to obtain certificate"
+# Check if certificate already exists
+if sudo test -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" && sudo test -f "/etc/letsencrypt/live/$DOMAIN/privkey.pem"; then
+    echo "Certificate for $DOMAIN already exists. Checking if renewal is needed..."
+    # Try to renew certificate (this will only renew if needed)
+    sudo certbot renew --dry-run
+    if [ $? -eq 0 ]; then
+        echo "Certificate is valid and up to date."
+    else
+        echo "Certificate needs renewal. Attempting to renew..."
+        sudo certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email admin@2gc.ru --force-renewal
+    fi
+else
+    # Obtain new certificate
+    echo "Obtaining new certificate for $DOMAIN..."
+    if ! sudo certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email admin@2gc.ru; then
+        echo "Error: Failed to obtain certificate"
+        # Start Docker containers back
+        sudo docker-compose up -d
+        exit 1
+    fi
+fi
+
+# Verify certificate files exist and copy if present
+if sudo test -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" && sudo test -f "/etc/letsencrypt/live/$DOMAIN/privkey.pem"; then
+    echo "Copying certificates..."
+    sudo cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem $CERT_DIR/
+    sudo cp /etc/letsencrypt/live/$DOMAIN/privkey.pem $CERT_DIR/
+    # Set proper permissions
+    sudo chown -R ubuntu:ubuntu $CERT_DIR
+    sudo chmod 600 $CERT_DIR/*.pem
+    echo "Certificates copied to $CERT_DIR."
+else
+    echo "Error: Certificate files not found after certbot operation."
     # Start Docker containers back
     sudo docker-compose up -d
     exit 1
 fi
-
-# Verify certificate files exist
-if [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ] || [ ! -f "/etc/letsencrypt/live/$DOMAIN/privkey.pem" ]; then
-    echo "Error: Certificate files not found"
-    # Start Docker containers back
-    sudo docker-compose up -d
-    exit 1
-fi
-
-# Copy certificates to relay directory
-echo "Copying certificates..."
-sudo cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem $CERT_DIR/
-sudo cp /etc/letsencrypt/live/$DOMAIN/privkey.pem $CERT_DIR/
-
-# Set proper permissions
-sudo chown -R ubuntu:ubuntu $CERT_DIR
-sudo chmod 600 $CERT_DIR/*.pem
 
 # Start Docker containers back
 echo "Starting Docker containers..."

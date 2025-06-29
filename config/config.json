@@ -17,15 +17,15 @@
         "rest_retry_delay": "100ms"
     },
     "keycloak": {
-        "enabled": false,
-        "server_url": "${KEYCLOAK_SERVER_URL}",
-        "realm": "${KEYCLOAK_REALM}",
-        "client_id": "${KEYCLOAK_CLIENT_ID}",
-        "client_secret": "${KEYCLOAK_CLIENT_SECRET}",
-        "public_key": "${KEYCLOAK_PUBLIC_KEY}",
+        "enabled": true,
+        "server_url": "http://localhost:8080",
+        "realm": "cloudbridge",
+        "client_id": "relay-client",
+        "client_secret": "d682s8Sgm3bSMNaD7jgz0Bq2VOkhuc1P",
+        "public_key": "zFLJxvhDL-vwl6QXX5kmMjCfTaTuna1BIwLAGboIAmRfFXCjnDQ7qFh-TNg2x8T8fdJqa1Ye_FylY56F9FdT71K5VdowNJM7u79rCMdGenX2vLg_LenCooQz6MT-93pVnUjOaNEgAL1GaEbDkBh1Hia6yEORTu681S-7kpI5LVskY0nhbrI058OPjzUPH26PkbwWrjOFdYrdQgqeCqUjKxo-uJ0CcQCj-nCPITWJ-mW-NPM04Fok_btceI1ltZB869Rcu7-2Jr_kETbe2kKlLlgdHmyhNrVj4zi9erdTEUoiwKCwKd6Bt2LJoyYyRw6WQrY3vjzX1b6g0lmokdBFUQ",
         "token_validation": {
-            "issuer": "${KEYCLOAK_ISSUER}",
-            "audience": "${KEYCLOAK_AUDIENCE}",
+            "issuer": "http://localhost:8080/realms/cloudbridge",
+            "audience": "relay-client",
             "clock_skew": "30s"
         },
         "jwks_cache_ttl": "1h",

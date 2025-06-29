@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# CloudBridge Relay Firewall Setup Script
-# Настройка firewall для блокировки всех портов, кроме SSH и relay
+# CloudBridge Relay - Настройка файрвола
+# Этот скрипт настраивает UFW для защиты сервисов CloudBridge Relay
 
 set -e
 
-# Цвета для вывода
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Функции для вывода
+# Functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -31,444 +31,232 @@ log_error() {
 
 # Проверка root прав
 check_root() {
-    if [ "$EUID" -ne 0 ]; then
+    if [[ $EUID -ne 0 ]]; then
         log_error "Этот скрипт должен быть запущен с правами root (sudo)"
         exit 1
     fi
 }
 
-# Проверка зависимостей
-check_dependencies() {
-    log_info "Проверка зависимостей..."
-    
+# Проверка UFW
+check_ufw() {
     if ! command -v ufw &> /dev/null; then
-        log_info "Установка UFW..."
-        apt-get update
-        apt-get install -y ufw
+        log_error "UFW не установлен. Установите его: sudo apt install ufw"
+        exit 1
     fi
-    
-    if ! command -v iptables &> /dev/null; then
-        log_info "Установка iptables..."
-        apt-get update
-        apt-get install -y iptables
-    fi
-    
-    log_success "Все зависимости установлены"
 }
 
-# Определение портов relay из переменных окружения
-get_relay_ports() {
-    log_info "Определение портов relay..."
-    
-    # Загрузка переменных из .env файла
-    if [ -f ".env" ]; then
-        source .env
-    fi
-    
-    # Порт relay (по умолчанию 8082)
-    RELAY_PORT=${RELAY_PORT:-8082}
-    
-    # Порт метрик (по умолчанию 8081)
-    RELAY_METRICS_PORT=${RELAY_METRICS_PORT:-8081}
-    
-    # Порт Keycloak (по умолчанию 8080)
-    KEYCLOAK_PORT=${KEYCLOAK_PORT:-8080}
-    
-    # Порт Grafana (по умолчанию 3000)
-    GRAFANA_PORT=${GRAFANA_PORT:-3000}
-    
-    # Порт Prometheus (по умолчанию 9090)
-    PROMETHEUS_PORT=${PROMETHEUS_PORT:-9090}
-    
-    # Порт AlertManager (по умолчанию 9093)
-    ALERTMANAGER_PORT=${ALERTMANAGER_PORT:-9093}
-    
-    # Порт Blackbox (по умолчанию 9115)
-    BLACKBOX_PORT=${BLACKBOX_PORT:-9115}
-    
-    log_info "Определенные порты:"
-    log_info "  Relay: $RELAY_PORT"
-    log_info "  Metrics: $RELAY_METRICS_PORT"
-    log_info "  Keycloak: $KEYCLOAK_PORT"
-    log_info "  Grafana: $GRAFANA_PORT"
-    log_info "  Prometheus: $PROMETHEUS_PORT"
-    log_info "  AlertManager: $ALERTMANAGER_PORT"
-    log_info "  Blackbox: $BLACKBOX_PORT"
-}
-
-# Настройка UFW
-setup_ufw() {
-    log_info "Настройка UFW firewall..."
+# Настройка базовых правил
+setup_basic_rules() {
+    log_info "Настройка базовых правил файрвола..."
     
     # Сброс правил
     ufw --force reset
     
-    # Установка политик по умолчанию
+    # Базовые политики
     ufw default deny incoming
     ufw default allow outgoing
     
-    # Разрешение SSH (порт 22)
+    log_success "Базовые правила настроены"
+}
+
+# Настройка SSH
+setup_ssh() {
+    log_info "Настройка SSH доступа..."
+    
+    # SSH порт
     ufw allow 22/tcp comment "SSH"
-    log_success "SSH (порт 22) разрешен"
     
-    # Разрешение портов relay
-    ufw allow $RELAY_PORT/tcp comment "Relay Server"
-    log_success "Relay Server (порт $RELAY_PORT) разрешен"
+    # Rate limiting для SSH
+    ufw limit 22/tcp comment "SSH rate limiting"
     
-    # Разрешение порта метрик (только для локального доступа)
-    ufw allow from 127.0.0.1 to any port $RELAY_METRICS_PORT comment "Relay Metrics (localhost only)"
-    log_success "Relay Metrics (порт $RELAY_METRICS_PORT) разрешен только для localhost"
+    log_success "SSH доступ настроен"
+}
+
+# Настройка внешних сервисов
+setup_external_services() {
+    log_info "Настройка внешних сервисов..."
     
-    # Разрешение портов мониторинга (только для локального доступа)
-    ufw allow from 127.0.0.1 to any port $KEYCLOAK_PORT comment "Keycloak (localhost only)"
-    ufw allow from 127.0.0.1 to any port $GRAFANA_PORT comment "Grafana (localhost only)"
-    ufw allow from 127.0.0.1 to any port $PROMETHEUS_PORT comment "Prometheus (localhost only)"
-    ufw allow from 127.0.0.1 to any port $ALERTMANAGER_PORT comment "AlertManager (localhost only)"
-    ufw allow from 127.0.0.1 to any port $BLACKBOX_PORT comment "Blackbox (localhost only)"
+    # Keycloak Admin Console (внешний доступ)
+    ufw allow 8080/tcp comment "Keycloak Admin Console"
     
-    log_success "Порты мониторинга разрешены только для localhost"
+    # Relay API (внешний доступ)
+    ufw allow 8082/tcp comment "Relay API"
+    
+    # Relay TLS (внешний доступ)
+    ufw allow 8080/tcp comment "Relay TLS"
+    
+    log_success "Внешние сервисы настроены"
+}
+
+# Настройка внутренних сервисов (только localhost)
+setup_internal_services() {
+    log_info "Настройка внутренних сервисов..."
+    
+    # Relay Metrics (только localhost)
+    ufw allow from 127.0.0.1 to any port 8081 comment "Relay Metrics (localhost only)"
+    
+    # Prometheus (только localhost)
+    ufw allow from 127.0.0.1 to any port 9090 comment "Prometheus (localhost only)"
+    
+    # AlertManager (только localhost)
+    ufw allow from 127.0.0.1 to any port 9093 comment "AlertManager (localhost only)"
+    
+    # Blackbox Exporter (только localhost)
+    ufw allow from 127.0.0.1 to any port 9115 comment "Blackbox Exporter (localhost only)"
+    
+    # Grafana (только localhost)
+    ufw allow from 127.0.0.1 to any port 3000 comment "Grafana (localhost only)"
+    
+    log_success "Внутренние сервисы настроены"
+}
+
+# Настройка Docker сети
+setup_docker_network() {
+    log_info "Настройка Docker сети..."
+    
+    # Разрешить трафик внутри Docker сети
+    ufw allow from 172.16.0.0/12 comment "Docker internal network"
+    ufw allow from 192.168.0.0/16 comment "Docker internal network"
+    ufw allow from 10.0.0.0/8 comment "Docker internal network"
+    
+    log_success "Docker сеть настроена"
+}
+
+# Дополнительные правила безопасности
+setup_security_rules() {
+    log_info "Настройка дополнительных правил безопасности..."
+    
+    # Защита от сканирования
+    ufw deny in on eth0 from 0.0.0.0/0 to any port 1433 comment "Block SQL Server"
+    ufw deny in on eth0 from 0.0.0.0/0 to any port 3389 comment "Block RDP"
+    
+    log_success "Дополнительные правила безопасности настроены"
+}
+
+# Проверка конфигурации
+verify_configuration() {
+    log_info "Проверка конфигурации файрвола..."
+    
+    echo ""
+    log_info "Текущие правила UFW:"
+    ufw status numbered
+    
+    echo ""
+    log_info "Проверка доступности сервисов:"
+    
+    # Проверка внешних сервисов
+    local services=(
+        "8080:Keycloak"
+        "8082:Relay API"
+    )
+    
+    for service in "${services[@]}"; do
+        IFS=':' read -r port name <<< "$service"
+        if ufw status | grep -q "$port/tcp.*ALLOW"; then
+            log_success "$name (порт $port) - разрешен"
+        else
+            log_error "$name (порт $port) - НЕ разрешен"
+        fi
+    done
+    
+    # Проверка внутренних сервисов
+    local internal_services=(
+        "8081:Relay Metrics"
+        "9090:Prometheus"
+        "9093:AlertManager"
+        "9115:Blackbox"
+        "3000:Grafana"
+    )
+    
+    for service in "${internal_services[@]}"; do
+        IFS=':' read -r port name <<< "$service"
+        if ufw status | grep -q "$port.*127.0.0.1"; then
+            log_success "$name (порт $port) - разрешен только localhost"
+        else
+            log_warning "$name (порт $port) - проверьте настройки"
+        fi
+    done
+}
+
+# Активация файрвола
+activate_firewall() {
+    log_info "Активация файрвола..."
     
     # Включение UFW
     ufw --force enable
     
-    log_success "UFW включен и настроен"
-}
-
-# Настройка iptables (дополнительная защита)
-setup_iptables() {
-    log_info "Настройка дополнительных правил iptables..."
-    
-    # Очистка существующих правил
-    iptables -F
-    iptables -X
-    iptables -t nat -F
-    iptables -t nat -X
-    iptables -t mangle -F
-    iptables -t mangle -X
-    
-    # Установка политик по умолчанию
-    iptables -P INPUT DROP
-    iptables -P FORWARD DROP
-    iptables -P OUTPUT ACCEPT
-    
-    # Разрешение loopback
-    iptables -A INPUT -i lo -j ACCEPT
-    iptables -A OUTPUT -o lo -j ACCEPT
-    
-    # Разрешение установленных соединений
-    iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-    
-    # Разрешение SSH
-    iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-    
-    # Разрешение relay порта
-    iptables -A INPUT -p tcp --dport $RELAY_PORT -j ACCEPT
-    
-    # Разрешение портов мониторинга только для localhost
-    iptables -A INPUT -p tcp -s 127.0.0.1 --dport $RELAY_METRICS_PORT -j ACCEPT
-    iptables -A INPUT -p tcp -s 127.0.0.1 --dport $KEYCLOAK_PORT -j ACCEPT
-    iptables -A INPUT -p tcp -s 127.0.0.1 --dport $GRAFANA_PORT -j ACCEPT
-    iptables -A INPUT -p tcp -s 127.0.0.1 --dport $PROMETHEUS_PORT -j ACCEPT
-    iptables -A INPUT -p tcp -s 127.0.0.1 --dport $ALERTMANAGER_PORT -j ACCEPT
-    iptables -A INPUT -p tcp -s 127.0.0.1 --dport $BLACKBOX_PORT -j ACCEPT
-    
-    # Защита от DDoS атак
-    iptables -A INPUT -p tcp --dport 22 -m limit --limit 6/min --limit-burst 10 -j ACCEPT
-    iptables -A INPUT -p tcp --dport $RELAY_PORT -m limit --limit 30/min --limit-burst 60 -j ACCEPT
-    
-    # Блокировка подозрительных пакетов
-    iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
-    iptables -A INPUT -p tcp --tcp-flags ALL ALL -j DROP
-    
-    # Блокировка сканирования портов
-    iptables -A INPUT -p tcp --dport 22 -m recent --name SSH --set
-    iptables -A INPUT -p tcp --dport 22 -m recent --name SSH --update --seconds 60 --hitcount 4 -j DROP
-    
-    log_success "Дополнительные правила iptables настроены"
-}
-
-# Сохранение правил iptables
-save_iptables() {
-    log_info "Сохранение правил iptables..."
-    
-    if command -v iptables-save &> /dev/null; then
-        iptables-save > /etc/iptables/rules.v4
-        log_success "Правила iptables сохранены"
-    else
-        log_warning "iptables-save не найден, правила не сохранены"
-    fi
-}
-
-# Настройка автоматического восстановления правил
-setup_iptables_persistent() {
-    log_info "Настройка автоматического восстановления правил iptables..."
-    
-    # Установка пакета для сохранения правил
-    if ! dpkg -l | grep -q iptables-persistent; then
-        apt-get update
-        echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
-        echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
-        apt-get install -y iptables-persistent
-    fi
-    
-    # Создание скрипта для восстановления правил
-    cat > /etc/network/if-pre-up.d/iptables << 'EOF'
-#!/bin/bash
-iptables-restore < /etc/iptables/rules.v4
-EOF
-    
-    chmod +x /etc/network/if-pre-up.d/iptables
-    
-    log_success "Автоматическое восстановление правил настроено"
-}
-
-# Настройка fail2ban для дополнительной защиты
-setup_fail2ban() {
-    log_info "Настройка fail2ban..."
-    
-    if ! command -v fail2ban-client &> /dev/null; then
-        apt-get update
-        apt-get install -y fail2ban
-    fi
-    
-    # Создание директории для логов relay
-    if [[ ! -d /var/log/relay ]]; then
-        mkdir -p /var/log/relay
-    fi
-    
-    # Создание символической ссылки для лог-файла
-    local source_log="/home/ubuntu/cloudbridge-relay-installer/logs/relay.log"
-    local target_log="/var/log/relay/relay.log"
-    
-    # Проверяем, существует ли исходный файл
-    if [[ ! -f "$source_log" ]]; then
-        log_info "Создаем пустой лог-файл..."
-        touch "$source_log"
-        chown ubuntu:ubuntu "$source_log"
-    fi
-    
-    # Создаем символическую ссылку
-    if [[ -L "$target_log" ]]; then
-        rm "$target_log"
-    fi
-    ln -sf "$source_log" "$target_log"
-    
-    # Создание конфигурации fail2ban
-    cat > /etc/fail2ban/jail.local << EOF
-[DEFAULT]
-bantime = 3600
-findtime = 600
-maxretry = 3
-
-[sshd]
-enabled = true
-port = ssh
-filter = sshd
-logpath = /var/log/auth.log
-maxretry = 3
-
-[relay]
-enabled = true
-port = $RELAY_PORT
-filter = relay
-logpath = /var/log/relay/relay.log
-maxretry = 5
-EOF
-    
-    # Создание фильтра для relay (обновленный для JSON логов)
-    cat > /etc/fail2ban/filter.d/relay.conf << EOF
-[Definition]
-failregex = ^.*"level":"ERROR".*"message":"authentication failed".*"remote_addr":\{"IP":"<HOST>".*$
-            ^.*"level":"ERROR".*"message":"invalid credentials".*"remote_addr":\{"IP":"<HOST>".*$
-            ^.*"level":"ERROR".*"message":"unauthorized access".*"remote_addr":\{"IP":"<HOST>".*$
-ignoreregex =
-EOF
-    
-    # Перезапуск fail2ban
-    systemctl restart fail2ban
-    systemctl enable fail2ban
-    
-    log_success "fail2ban настроен и запущен"
-}
-
-# Перезапуск Docker для восстановления цепочек после изменения iptables
-restart_docker_if_installed() {
-    if command -v docker &> /dev/null; then
-        log_info "Перезапуск Docker для восстановления сетевых цепочек..."
-        systemctl restart docker
-        log_success "Docker перезапущен"
-    else
-        log_info "Docker не установлен, пропускаю перезапуск"
-    fi
-}
-
-# Проверка статуса firewall
-check_firewall_status() {
-    log_info "Проверка статуса firewall..."
-    
-    echo
-    echo "=== Статус UFW ==="
-    ufw status verbose
-    
-    echo
-    echo "=== Правила iptables ==="
-    iptables -L -n -v
-    
-    echo
-    echo "=== Статус fail2ban ==="
-    fail2ban-client status
-    
-    echo
-    echo "=== Открытые порты ==="
-    netstat -tlnp | grep LISTEN
-}
-
-# Создание скрипта для управления firewall
-create_firewall_management_script() {
-    log_info "Создание скрипта управления firewall..."
-    
-    cat > /usr/local/bin/relay-firewall << 'EOF'
-#!/bin/bash
-
-# CloudBridge Relay Firewall Management Script
-
-case "$1" in
-    status)
-        echo "=== UFW Status ==="
-        ufw status verbose
-        echo
-        echo "=== iptables Rules ==="
-        iptables -L -n -v
-        echo
-        echo "=== fail2ban Status ==="
-        fail2ban-client status
-        ;;
-    allow-ip)
-        if [ -z "$2" ]; then
-            echo "Usage: $0 allow-ip <IP_ADDRESS>"
-            exit 1
-        fi
-        ufw allow from $2
-        echo "IP $2 разрешен"
-        ;;
-    deny-ip)
-        if [ -z "$2" ]; then
-            echo "Usage: $0 deny-ip <IP_ADDRESS>"
-            exit 1
-        fi
-        ufw deny from $2
-        echo "IP $2 заблокирован"
-        ;;
-    reload)
-        ufw reload
-        iptables-restore < /etc/iptables/rules.v4
-        systemctl reload fail2ban
-        echo "Firewall перезагружен"
-        ;;
-    *)
-        echo "Usage: $0 {status|allow-ip|deny-ip|reload}"
-        echo
-        echo "Commands:"
-        echo "  status     - Показать статус firewall"
-        echo "  allow-ip   - Разрешить IP адрес"
-        echo "  deny-ip    - Заблокировать IP адрес"
-        echo "  reload     - Перезагрузить firewall"
-        ;;
-esac
-EOF
-    
-    chmod +x /usr/local/bin/relay-firewall
-    
-    log_success "Скрипт управления firewall создан: /usr/local/bin/relay-firewall"
+    log_success "Файрвол активирован"
 }
 
 # Основная функция
 main() {
-    log_info "Начало настройки firewall для CloudBridge Relay"
+    log_info "Настройка файрвола для CloudBridge Relay..."
     
-    # Проверка root прав
     check_root
+    check_ufw
     
-    # Проверка зависимостей
-    check_dependencies
+    setup_basic_rules
+    setup_ssh
+    setup_external_services
+    setup_internal_services
+    setup_docker_network
+    setup_security_rules
     
-    # Определение портов
-    get_relay_ports
+    echo ""
+    log_warning "ВНИМАНИЕ: Файрвол будет активирован!"
+    log_warning "Убедитесь, что у вас есть доступ к SSH, иначе вы можете потерять доступ к серверу."
+    echo ""
     
-    # Настройка UFW
-    setup_ufw
-    
-    # Настройка iptables
-    setup_iptables
-    
-    # Сохранение правил
-    save_iptables
-    
-    # Перезапуск Docker (новое)
-    restart_docker_if_installed
-    
-    # Настройка автоматического восстановления
-    setup_iptables_persistent
-    
-    # Настройка fail2ban
-    setup_fail2ban
-    
-    # Создание скрипта управления
-    create_firewall_management_script
-    
-    # Проверка статуса
-    check_firewall_status
-    
-    log_success "Настройка firewall завершена!"
+    read -p "Продолжить активацию файрвола? (y/N): " -n 1 -r
     echo
-    echo "Доступные команды:"
-    echo "  relay-firewall status     - Показать статус"
-    echo "  relay-firewall allow-ip   - Разрешить IP"
-    echo "  relay-firewall deny-ip    - Заблокировать IP"
-    echo "  relay-firewall reload     - Перезагрузить"
-    echo
-    echo "ВАЖНО: SSH соединение может быть прервано!"
-    echo "Убедитесь, что у вас есть альтернативный доступ к серверу."
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        activate_firewall
+        verify_configuration
+        
+        log_success "Файрвол настроен и активирован!"
+        log_info "Внешние порты (8080, 8082): открыты для всех"
+        log_info "Внутренние порты (8081, 9090, 9093, 9115, 3000): только localhost"
+        log_info "SSH (22): с rate limiting"
+    else
+        log_warning "Активация файрвола отменена"
+        log_info "Для активации запустите: sudo ufw enable"
+    fi
 }
 
-# Обработка аргументов командной строки
+# Обработка аргументов
 case "${1:-}" in
     --help|-h)
-        echo "CloudBridge Relay Firewall Setup Script"
-        echo
         echo "Использование: $0 [опции]"
-        echo
+        echo ""
         echo "Опции:"
         echo "  --help, -h     Показать эту справку"
-        echo "  --check        Только проверить статус"
-        echo "  --dry-run      Показать что будет сделано без применения"
-        echo
+        echo "  --status       Показать статус файрвола"
+        echo "  --disable      Отключить файрвол"
+        echo "  --reset        Сбросить правила файрвола"
+        echo ""
         echo "Примеры:"
-        echo "  sudo $0              Настроить firewall"
-        echo "  sudo $0 --check      Проверить статус"
-        echo "  sudo $0 --dry-run    Показать план действий"
+        echo "  sudo $0                    # Полная настройка"
+        echo "  sudo $0 --status          # Показать статус"
+        echo "  sudo $0 --disable         # Отключить файрвол"
         ;;
-    --check)
-        check_firewall_status
+    --status)
+        ufw status verbose
         ;;
-    --dry-run)
-        log_info "Режим dry-run - показать план действий"
-        get_relay_ports
-        echo
-        echo "Будут настроены следующие правила:"
-        echo "  - Разрешен SSH (порт 22)"
-        echo "  - Разрешен Relay Server (порт $RELAY_PORT)"
-        echo "  - Разрешены порты мониторинга только для localhost:"
-        echo "    * Metrics: $RELAY_METRICS_PORT"
-        echo "    * Keycloak: $KEYCLOAK_PORT"
-        echo "    * Grafana: $GRAFANA_PORT"
-        echo "    * Prometheus: $PROMETHEUS_PORT"
-        echo "    * AlertManager: $ALERTMANAGER_PORT"
-        echo "    * Blackbox: $BLACKBOX_PORT"
-        echo "  - Все остальные порты заблокированы"
-        echo "  - Настроен fail2ban для защиты от атак"
+    --disable)
+        ufw disable
+        log_success "Файрвол отключен"
+        ;;
+    --reset)
+        ufw --force reset
+        log_success "Правила файрвола сброшены"
+        ;;
+    "")
+        main "$@"
         ;;
     *)
-        main
+        log_error "Неизвестная опция: $1"
+        echo "Используйте --help для справки"
+        exit 1
         ;;
 esac 
