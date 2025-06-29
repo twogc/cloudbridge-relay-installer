@@ -9,12 +9,14 @@ Type=oneshot
 User=root
 Group=root
 WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
-ExecStart=/bin/bash /home/ubuntu/cloudbridge-relay-installer/scripts/lynis_with_telegram.sh
+#ExecStartPre=/usr/bin/flock -n /var/run/lynis_telegram.lock -c "true"
+ExecStart=/usr/bin/flock -n /var/run/lynis_telegram.lock /bin/bash /home/ubuntu/cloudbridge-relay-installer/scripts/lynis_with_telegram.sh
 StandardOutput=journal
 StandardError=journal
-TimeoutStartSec=1800
+TimeoutStartSec=900
 TimeoutStopSec=30
-Restart=no
+Restart=on-failure
+RestartSec=30
 
 # Безопасность (упрощенная)
 NoNewPrivileges=true

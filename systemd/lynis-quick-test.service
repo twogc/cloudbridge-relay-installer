@@ -1,0 +1,24 @@
+[Unit]
+Description=Lynis Quick Security Test with Telegram Notifications
+Documentation=https://github.com/twogc/cloudbridge-relay-installer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
+ExecStart=/bin/bash /home/ubuntu/cloudbridge-relay-installer/scripts/lynis_quick_test.sh
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=600
+TimeoutStopSec=30
+Restart=no
+
+# Безопасность (упрощенная)
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target 

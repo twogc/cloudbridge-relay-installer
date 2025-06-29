@@ -2,6 +2,7 @@
 
 # CloudBridge Relay - Lynis Audit with Telegram Notifications
 # Запускает полный аудит безопасности и отправляет результаты в Telegram
+# Отправляет уведомления только о новых событиях
 
 set -e
 
@@ -10,9 +11,15 @@ TELEGRAM_BOT_TOKEN="8188460753:AAF31IbAFk1Z6Sc9hfjxvI9ZweQdHXoW0ug"
 TELEGRAM_CHAT_ID="-1002403555405"
 
 # Конфигурация таймаутов и проверок
-LYNIS_TIMEOUT=1800  # 30 минут максимум
+# LYNIS_TIMEOUT=1200   # Убираем таймаут - пусть работает столько, сколько нужно
 PID_FILE="/var/run/lynis_telegram.pid"
 LOCK_FILE="/var/run/lynis_telegram.lock"
+
+# Файлы для отслеживания изменений
+STATE_DIR="/var/lib/lynis-telegram"
+PREVIOUS_RESULTS="$STATE_DIR/previous_results.json"
+CURRENT_RESULTS="$STATE_DIR/current_results.json"
+CHANGES_LOG="$STATE_DIR/changes.log"
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -32,6 +39,112 @@ log_warn() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Инициализация директории состояния
+init_state_directory() {
+    mkdir -p "$STATE_DIR"
+    if [[ ! -f "$PREVIOUS_RESULTS" ]]; then
+        echo '{"warnings": 0, "suggestions": 0, "security_issues": 0, "score": 0, "issues": [], "suggestions": []}' > "$PREVIOUS_RESULTS"
+    fi
+}
+
+# Извлечение результатов из лога Lynis
+extract_results() {
+    local log_file="$1"
+    local output_file="$2"
+    
+    if [[ ! -f "$log_file" ]]; then
+        log_error "Файл лога не найден: $log_file"
+        return 1
+    fi
+    
+    # Извлекаем основные метрики
+    local warnings=$(grep -c "Warning:" "$log_file" || echo "0")
+    local suggestions=$(grep -c "Suggestion:" "$log_file" || echo "0")
+    local security_issues=$(grep -c "Security issue:" "$log_file" || echo "0")
+    local score=$(grep "Hardening index" "$log_file" | tail -1 | grep -o '[0-9]\+' | head -1 || echo "0")
+    
+    # Извлекаем список проблем безопасности
+    local issues=$(grep -A 1 "Security issue:" "$log_file" | grep -v "^--$" | head -20 | sed 's/^[[:space:]]*//' | jq -R -s -c 'split("\n") | map(select(length > 0))' 2>/dev/null || echo '[]')
+    
+    # Извлекаем список рекомендаций
+    local suggestions_list=$(grep -A 1 "Suggestion:" "$log_file" | grep -v "^--$" | head -20 | sed 's/^[[:space:]]*//' | jq -R -s -c 'split("\n") | map(select(length > 0))' 2>/dev/null || echo '[]')
+    
+    # Создаем JSON с результатами
+    cat > "$output_file" << EOF
+{
+    "warnings": $warnings,
+    "suggestions": $suggestions,
+    "security_issues": $security_issues,
+    "score": $score,
+    "issues": $issues,
+    "suggestions": $suggestions_list,
+    "timestamp": "$(date -Iseconds)"
+}
+EOF
+}
+
+# Сравнение результатов и определение изменений
+detect_changes() {
+    if [[ ! -f "$PREVIOUS_RESULTS" || ! -f "$CURRENT_RESULTS" ]]; then
+        log_warn "Файлы результатов не найдены, считаем это первым запуском"
+        return 1
+    fi
+    
+    # Проверяем, есть ли jq для JSON сравнения
+    if ! command -v jq &> /dev/null; then
+        log_warn "jq не установлен, используем простое сравнение"
+        return 1
+    fi
+    
+    # Сравниваем основные метрики
+    local prev_score=$(jq -r '.score' "$PREVIOUS_RESULTS" 2>/dev/null || echo "0")
+    local curr_score=$(jq -r '.score' "$CURRENT_RESULTS" 2>/dev/null || echo "0")
+    
+    local prev_warnings=$(jq -r '.warnings' "$PREVIOUS_RESULTS" 2>/dev/null || echo "0")
+    local curr_warnings=$(jq -r '.warnings' "$CURRENT_RESULTS" 2>/dev/null || echo "0")
+    
+    local prev_security_issues=$(jq -r '.security_issues' "$PREVIOUS_RESULTS" 2>/dev/null || echo "0")
+    local curr_security_issues=$(jq -r '.security_issues' "$CURRENT_RESULTS" 2>/dev/null || echo "0")
+    
+    # Проверяем изменения
+    local has_changes=false
+    local changes_summary=""
+    
+    if [[ "$prev_score" != "$curr_score" ]]; then
+        has_changes=true
+        changes_summary+="• Hardening Index: $prev_score → $curr_score\n"
+    fi
+    
+    if [[ "$prev_warnings" != "$curr_warnings" ]]; then
+        has_changes=true
+        changes_summary+="• Предупреждения: $prev_warnings → $curr_warnings\n"
+    fi
+    
+    if [[ "$prev_security_issues" != "$curr_security_issues" ]]; then
+        has_changes=true
+        changes_summary+="• Проблемы безопасности: $prev_security_issues → $curr_security_issues\n"
+    fi
+    
+    # Проверяем новые проблемы безопасности
+    local new_issues=$(jq -r '.issues[]' "$CURRENT_RESULTS" 2>/dev/null | while read -r issue; do
+        if ! jq -r '.issues[]' "$PREVIOUS_RESULTS" 2>/dev/null | grep -q "$issue"; then
+            echo "$issue"
+        fi
+    done)
+    
+    if [[ -n "$new_issues" ]]; then
+        has_changes=true
+        changes_summary+="• Новые проблемы безопасности обнаружены\n"
+    fi
+    
+    if [[ "$has_changes" == "true" ]]; then
+        echo -e "$changes_summary"
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Проверка на уже запущенные процессы
@@ -128,9 +241,10 @@ send_telegram_message() {
     fi
 }
 
-# Анализ результатов Lynis
+# Анализ результатов Lynis с учетом изменений
 analyze_lynis_results() {
     local log_file="$1"
+    local changes_summary="$2"
     
     if [[ ! -f "$log_file" ]]; then
         log_error "Файл лога не найден: $log_file"
@@ -158,6 +272,14 @@ analyze_lynis_results() {
 🕐 Время завершения: $(date '+%Y-%m-%d %H:%M:%S')
 
 "
+    
+    # Добавляем информацию об изменениях, если есть
+    if [[ -n "$changes_summary" ]]; then
+        message+="🔄 <b>Обнаружены изменения:</b>
+$changes_summary
+
+"
+    fi
     
     # Добавляем критические проблемы, если есть
     local critical_issues=$(grep -A 2 "Security issue:" "$log_file" | head -10)
@@ -199,6 +321,25 @@ main() {
         exit 1
     fi
     
+    # --- Автоматическая очистка lock-файла, если процесс не существует ---
+    if [[ -f "$LOCK_FILE" ]]; then
+        # Получаем PID процесса, который держит lock-файл (если flock записал PID)
+        LOCK_PID=$(lsof -t "$LOCK_FILE" 2>/dev/null | head -1)
+        if [[ -n "$LOCK_PID" ]]; then
+            if ! ps -p "$LOCK_PID" > /dev/null 2>&1; then
+                echo "[INFO] Lock-файл устарел (PID $LOCK_PID не существует), удаляю..."
+                rm -f "$LOCK_FILE"
+            fi
+        else
+            # Если lsof не находит процесс, просто удаляем lock-файл
+            echo "[INFO] Lock-файл найден, но процесс не обнаружен, удаляю..."
+            rm -f "$LOCK_FILE"
+        fi
+    fi
+    
+    # Инициализация директории состояния
+    init_state_directory
+    
     # Проверка на уже запущенные процессы
     if ! check_running_processes; then
         log_error "Lynis уже запущен. Завершите предыдущий процесс или подождите."
@@ -222,46 +363,51 @@ main() {
     
     log_info "Начало аудита безопасности..."
     log_info "Лог файл: $log_file"
-    log_info "Таймаут: ${LYNIS_TIMEOUT} секунд"
     
     # Отправка уведомления о начале
     send_telegram_message "🔍 <b>Lynis Security Audit начат</b>
 🕐 Время начала: $(date '+%Y-%m-%d %H:%M:%S')
 🖥️ Сервер: $(hostname)"
     
-    # Запуск Lynis с таймаутом
-    local start_time=$(date +%s)
-    local lynis_exit_code=0
-    
-    # Запускаем Lynis с таймаутом
-    if timeout $LYNIS_TIMEOUT lynis audit system > "$log_file" 2>&1; then
+    # Запускаем Lynis без таймаута
+    if lynis audit system --quick > "$log_file" 2>&1; then
         lynis_exit_code=$?
     else
         lynis_exit_code=$?
-        if [[ $lynis_exit_code -eq 124 ]]; then
-            log_error "Lynis превысил таймаут (${LYNIS_TIMEOUT} секунд)"
-            send_telegram_message "⏰ <b>Lynis превысил таймаут</b>
-🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)
-⏱️ Таймаут: ${LYNIS_TIMEOUT} секунд"
-            exit 1
-        fi
     fi
     
-    local end_time=$(date +%s)
-    local duration=$((end_time - start_time))
-    
-    log_info "Аудит завершен за ${duration} секунд (exit code: $lynis_exit_code)"
+    log_info "Аудит завершен (exit code: $lynis_exit_code)"
     
     # Проверяем успешность выполнения
     if [[ $lynis_exit_code -eq 0 ]]; then
-        # Анализ результатов
-        local report=$(analyze_lynis_results "$log_file")
+        # Извлекаем текущие результаты
+        extract_results "$log_file" "$CURRENT_RESULTS"
         
-        # Отправка результатов в Telegram
-        send_telegram_message "$report"
+        # Определяем изменения
+        local changes_summary=$(detect_changes)
+        local has_changes=$?
         
-        log_info "Результаты отправлены в Telegram"
+        # Отправляем уведомление только если есть изменения или это первый запуск
+        if [[ $has_changes -eq 0 || ! -f "$PREVIOUS_RESULTS" ]]; then
+            # Анализ результатов
+            local report=$(analyze_lynis_results "$log_file" "$changes_summary")
+            
+            # Отправка результатов в Telegram
+            send_telegram_message "$report"
+            
+            log_info "Результаты отправлены в Telegram (обнаружены изменения)"
+            
+            # Сохраняем текущие результаты как предыдущие
+            cp "$CURRENT_RESULTS" "$PREVIOUS_RESULTS"
+            
+            # Логируем изменения
+            echo "$(date -Iseconds): Обнаружены изменения в результатах Lynis" >> "$CHANGES_LOG"
+        else
+            log_info "Изменений не обнаружено, уведомление не отправляется"
+            
+            # Обновляем предыдущие результаты для следующего сравнения
+            cp "$CURRENT_RESULTS" "$PREVIOUS_RESULTS"
+        fi
     else
         log_error "Lynis завершился с ошибкой (exit code: $lynis_exit_code)"
         
@@ -289,6 +435,16 @@ setup_telegram() {
     echo "Затем отредактируйте скрипт и укажите:"
     echo "TELEGRAM_BOT_TOKEN=\"ваш_токен_бота\""
     echo "TELEGRAM_CHAT_ID=\"ваш_chat_id\""
+    echo
+    echo "Для корректной работы отслеживания изменений рекомендуется установить jq:"
+    echo "sudo apt-get install jq"
+}
+
+# Функция сброса состояния
+reset_state() {
+    log_info "Сброс состояния отслеживания изменений"
+    rm -f "$PREVIOUS_RESULTS" "$CURRENT_RESULTS"
+    echo "Состояние сброшено. Следующий запуск будет считаться первым."
 }
 
 # Обработка аргументов командной строки
@@ -302,11 +458,15 @@ case "${1:-}" in
         echo "  --help, -h     Показать эту справку"
         echo "  --setup        Настройка Telegram"
         echo "  --test         Тестовая отправка в Telegram"
+        echo "  --reset        Сброс состояния отслеживания изменений"
+        echo "  --force        Принудительная отправка (игнорируя изменения)"
         echo
         echo "Примеры:"
         echo "  sudo $0              Запустить аудит с уведомлениями"
         echo "  sudo $0 --setup      Настройка Telegram"
         echo "  sudo $0 --test       Тестовая отправка"
+        echo "  sudo $0 --reset      Сброс состояния"
+        echo "  sudo $0 --force      Принудительная отправка"
         ;;
     --setup)
         setup_telegram
@@ -318,6 +478,17 @@ case "${1:-}" in
 🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
 🖥️ Сервер: $(hostname)"
         fi
+        ;;
+    --reset)
+        reset_state
+        ;;
+    --force)
+        # Принудительная отправка - копируем текущие результаты как предыдущие
+        # чтобы следующее сравнение показало изменения
+        if [[ -f "$CURRENT_RESULTS" ]]; then
+            cp "$CURRENT_RESULTS" "$PREVIOUS_RESULTS"
+        fi
+        main
         ;;
     *)
         main
