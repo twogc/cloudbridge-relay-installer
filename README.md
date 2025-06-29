@@ -45,6 +45,163 @@ sudo systemctl restart cloudbridge-relay
 - **Prometheus**: http://localhost:9090
 - **AlertManager**: http://localhost:9093
 
+## 🖥️ Развертывание SIEM на отдельном сервере
+
+**⚠️ ВАЖНО: SIEM систему необходимо развертывать на отдельном сервере** для обеспечения оптимальной производительности, безопасности и масштабируемости.
+
+### Почему нужен отдельный сервер?
+
+- **Ресурсные требования**: SIEM требует 16-64GB RAM, интенсивные I/O операции
+- **Безопасность**: Изоляция security инфраструктуры от production систем
+- **Производительность**: Отсутствие конкуренции ресурсов с основными сервисами
+- **Масштабируемость**: Независимое масштабирование SIEM и Relay систем
+- **Надежность**: Отказоустойчивость и независимое восстановление
+
+### Быстрое развертывание SIEM
+
+```bash
+# Скачивание скрипта развертывания
+wget https://raw.githubusercontent.com/maxlanies/cloudbridge-relay-installer/main/scripts/deploy_siem_server.sh
+
+# Установка прав на выполнение
+chmod +x deploy_siem_server.sh
+
+# Запуск полного развертывания
+sudo ./deploy_siem_server.sh --full
+
+# Или минимальное развертывание
+sudo ./deploy_siem_server.sh --minimal
+```
+
+### Требования к серверу SIEM
+
+#### Минимальные требования
+```yaml
+hardware:
+  cpu: "4 vCPU"
+  ram: "16 GB DDR4"
+  storage: "500 GB SSD"
+  network: "1 Gbps"
+  
+software:
+  os: "Ubuntu 20.04+ или 22.04+"
+  docker: "20.10+"
+  docker_compose: "2.0+"
+```
+
+#### Рекомендуемые требования
+```yaml
+hardware:
+  cpu: "8 vCPU"
+  ram: "32 GB DDR4"
+  storage: "2 TB NVMe SSD"
+  network: "10 Gbps"
+```
+
+#### Production требования
+```yaml
+hardware:
+  cpu: "16 vCPU"
+  ram: "64 GB DDR4 ECC"
+  storage: "4 TB NVMe SSD (RAID 1)"
+  network: "25 Gbps"
+```
+
+### Архитектура с отдельным SIEM сервером
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Relay Server  │    │  Keycloak Server│    │  Django Server  │
+│                 │    │                 │    │                 │
+│ - CloudBridge   │    │ - Authentication│    │ - Management    │
+│ - TCP Proxy     │    │ - User Mgmt     │    │ - API           │
+│ - Multi-tenant  │    │ - SSO           │    │ - Dashboard     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   SIEM Server   │
+                    │                 │
+                    │ - Elasticsearch │
+                    │ - Kibana        │
+                    │ - Kafka         │
+                    │ - Collectors    │
+                    │ - Processors    │
+                    │ - Alert Manager │
+                    │ - Web UI        │
+                    └─────────────────┘
+```
+
+### Интеграция с CloudBridge Relay
+
+```bash
+# Настройка сбора данных с Relay сервера
+ssh-keygen -t rsa -b 4096 -f /opt/siem/.ssh/id_rsa -N ""
+ssh-copy-id -i /opt/siem/.ssh/id_rsa.pub ubuntu@your_relay_server_ip
+
+# Конфигурация удаленного сбора
+cat > /opt/siem/siem/config/remote_collectors.yaml << 'EOF'
+remote_collectors:
+  relay_server:
+    host: "your_relay_server_ip"
+    port: 22
+    username: "ubuntu"
+    key_file: "/opt/siem/.ssh/id_rsa"
+    sources:
+      - path: "/var/log/relay/relay.log"
+        type: "relay_logs"
+        interval: 60
+      - path: "http://localhost:8081/metrics"
+        type: "relay_metrics"
+        interval: 30
+EOF
+```
+
+### Доступ к SIEM сервисам
+
+После развертывания будут доступны:
+- **SIEM Web UI**: http://localhost:8081
+- **Kibana**: http://localhost:5601
+- **Grafana**: http://localhost:3000
+- **Prometheus**: http://localhost:9090
+- **Elasticsearch**: http://localhost:9200
+
+### Управление SIEM
+
+```bash
+# Управление сервисом
+sudo systemctl start siem
+sudo systemctl stop siem
+sudo systemctl restart siem
+sudo systemctl status siem
+
+# Просмотр логов
+sudo journalctl -u siem.service -f
+tail -f /opt/siem/logs/*.log
+
+# Мониторинг ресурсов
+/opt/siem/scripts/monitor_siem.sh
+
+# Резервное копирование
+/opt/siem/scripts/backup_siem.sh
+```
+
+### Документация по SIEM
+
+Подробная документация доступна в:
+- [📊 Анализ SIEM системы](docs/siem_integration_analysis.md)
+- [🖥️ Развертывание на отдельном сервере](docs/siem_separate_server_deployment.md)
+- [⚡ Быстрое развертывание](docs/siem_quick_deployment.md)
+- [🔗 Руководство по интеграции](docs/siem_integration_guide.md)
+- [🔄 Руководство по миграции](docs/siem_migration_guide.md)
+- [📋 Полное руководство](docs/SIEM_DEPLOYMENT_COMPLETE_GUIDE.md)
+
+### Автоматизированные скрипты
+
+- [🔧 Скрипт развертывания SIEM сервера](scripts/deploy_siem_server.sh)
+- [🔗 Скрипт интеграции](scripts/integrate_siem.sh)
+
 ## Новые возможности v2.0
 
 ### Ключевые улучшения
@@ -121,12 +278,15 @@ CloudBridge Relay v2.0 позволяет безопасно туннелиро�
 * **Поддержка multi-tenancy и TCP proxy**
 
 #### SIEM-модуль (Python + Elasticsearch + Kafka)
+* **🖥️ Развертывается на отдельном сервере** для оптимальной производительности и безопасности
 * Приём событий из Relay/Django (входы, туннели, ошибки)
 * Обогащение: user-agent, IP, geolocation, threat-level
 * Анализ в реальном времени + историческое хранилище
 * Отправка alert-ов → Telegram/Email/API
 * UI-дэшборды (Grafana или встроенные)
 * **Мониторинг multi-tenant активности**
+* **Автоматическое развертывание** через скрипт `deploy_siem_server.sh`
+* **Интеграция с внешними системами** через REST API и webhooks
 
 #### ML-модуль
 * Feature extraction: паттерны времени, частоты, роли, IP
@@ -152,6 +312,7 @@ CloudBridge Relay v2.0 позволяет безопасно туннелиро�
 * **Load Balancing** - L4/L7 балансировка с health checks
 * **Circuit Breaker** - защита от каскадных отказов
 * **Multi-tenant isolation** - полная изоляция ресурсов между тенантами
+* **🖥️ Dedicated SIEM Server** - отдельный сервер для SIEM системы с высокой производительностью
 
 #### Advanced Security
 * **mTLS (Mutual TLS)** - двусторонняя аутентификация между Relay и клиентами
@@ -214,13 +375,13 @@ Desktop Client ↔ Relay TCP Proxy ↔ Server Client ↔ Internal Service
 ### Метрики и события
 ```
 Relay / Django → Prometheus → Grafana (multi-tenant dashboards)
-Relay / Django → Kafka → SIEM → AlertManager
+Relay / Django → Kafka → SIEM (отдельный сервер) → AlertManager
 SIEM → Telegram, Email, API
 ```
 
 ### Поведенческий анализ
 ```
-SIEM Logs → ML-модель → Risk Score (per tenant)
+SIEM Logs (отдельный сервер) → ML-модель → Risk Score (per tenant)
 ML-модель → Response Engine (отключение токена, предупреждение)
 ```
 
@@ -1330,3 +1491,6 @@ curl http://localhost:8081/metrics | grep -i "security\|auth"
 - [🔧 Настройка firewall](scripts/setup_firewall.sh)
 - [📊 Дашборды безопасности](docs/dashboard_guide.md)
 - [🔐 Интеграция с Keycloak](docs/keycloak_integration.md)
+- [🖥️ SIEM на отдельном сервере](docs/SIEM_DEPLOYMENT_COMPLETE_GUIDE.md)
+- [📊 Анализ SIEM системы](docs/siem_integration_analysis.md)
+- [🔗 Интеграция SIEM](docs/siem_integration_guide.md)

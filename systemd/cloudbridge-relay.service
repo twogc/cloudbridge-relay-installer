@@ -10,10 +10,11 @@ Type=oneshot
 RemainAfterExit=yes
 User=root
 Group=root
+WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/bin/bash /usr/local/bin/relay_start_wrapper.sh
-ExecStop=/usr/bin/docker-compose -f /home/ubuntu/cloudbridge-relay-installer/docker-compose.yml down
-ExecReload=/usr/bin/docker-compose -f /home/ubuntu/cloudbridge-relay-installer/docker-compose.yml restart
+ExecStart=/bin/bash /home/ubuntu/cloudbridge-relay-installer/scripts/start_production.sh --env .env.production
+ExecStop=/usr/bin/docker-compose down
+ExecReload=/usr/bin/docker-compose restart
 TimeoutStartSec=300
 TimeoutStopSec=60
 Restart=on-failure
