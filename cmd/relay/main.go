@@ -369,6 +369,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	// Отправляем hello
 	if err := proto.WriteHello(writer, "1.0", []string{"tls", "heartbeat", "tunnel_info"}); err != nil {
 		s.logger.Error("Failed to send hello", zap.Error(err))
+		s.metrics.IncErrors("hello_failed")
 		return
 	}
 
@@ -376,11 +377,13 @@ func (s *Server) handleConnection(conn net.Conn) {
 	msg, err := proto.ReadMessage(reader)
 	if err != nil {
 		s.logger.Error("Failed to read auth message", zap.Error(err))
+		s.metrics.IncErrors("auth_read_failed")
 		return
 	}
 
 	if msg.Type != proto.MessageTypeAuth {
 		s.logger.Error("Expected auth message", zap.Error(fmt.Errorf("got %s", msg.Type)))
+		s.metrics.IncErrors("invalid_message_type")
 		return
 	}
 
@@ -401,6 +404,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 			clientID, err = s.tokenValidator.ValidateToken(msg.Token)
 			if err != nil {
 				s.logger.Error("Both Keycloak and Django validation failed", zap.Error(err))
+				s.metrics.IncErrors("token_validation_failed")
 				proto.WriteError(writer, "invalid_token", "Invalid or expired token")
 				return
 			}
@@ -410,6 +414,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 		clientID, err = s.tokenValidator.ValidateToken(msg.Token)
 		if err != nil {
 			s.logger.Error("Invalid token", zap.Error(err))
+			s.metrics.IncErrors("token_validation_failed")
 			proto.WriteError(writer, "invalid_token", "Invalid or expired token")
 			return
 		}
@@ -434,6 +439,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	// Rate limiting per user (clientID)
 	if !s.userLimiter.Allow(clientID) {
 		s.logger.Warn("User rate limit exceeded", zap.String("client_id", clientID))
+		s.metrics.IncErrors("rate_limit_exceeded")
 		// Audit rate limit event
 		if s.auditLogger != nil {
 			s.auditLogger.AuditRateLimit(
@@ -453,6 +459,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	// Отправляем auth_response
 	if err := proto.WriteAuthResponse(writer, "ok", clientID); err != nil {
 		s.logger.Error("Failed to send auth response", zap.Error(err))
+		s.metrics.IncErrors("auth_response_failed")
 		return
 	}
 
@@ -479,6 +486,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 			msg, err := proto.ReadMessage(reader)
 			if err != nil {
 				s.logger.Error("Failed to read message", zap.Error(err))
+				s.metrics.IncErrors("message_read_failed")
 				return
 			}
 
@@ -489,6 +497,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 				s.handleTunnelInfo(writer, connection, msg.TunnelInfo)
 			default:
 				s.logger.Error("Unknown message type", zap.Error(fmt.Errorf("got %s", msg.Type)))
+				s.metrics.IncErrors("unknown_message_type")
 				proto.WriteError(writer, "unknown_message_type", "Unknown message type")
 			}
 		}
@@ -502,6 +511,7 @@ func (s *Server) handleHeartbeat(writer *bufio.Writer, connection *Connection) {
 
 	if err := proto.WriteHeartbeatResponse(writer); err != nil {
 		s.logger.Error("Failed to send heartbeat response", zap.Error(err))
+		s.metrics.IncHeartbeatErrors()
 	}
 }
 
@@ -509,6 +519,7 @@ func (s *Server) handleHeartbeat(writer *bufio.Writer, connection *Connection) {
 func (s *Server) handleTunnelInfo(writer *bufio.Writer, connection *Connection, tunnelInfo *proto.TunnelInfo) {
 	if tunnelInfo == nil {
 		s.logger.Error("Tunnel info is nil", zap.Error(fmt.Errorf("tunnel info is nil")))
+		s.metrics.IncErrors("invalid_tunnel_info")
 		proto.WriteError(writer, "invalid_tunnel_info", "Tunnel info is required")
 		return
 	}
