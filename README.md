@@ -1287,6 +1287,45 @@ curl -X POST https://keycloak.example.com/realms/cloudbridge/protocol/openid-con
 - ✅ **High Availability и Auto Scaling**
 - ✅ **Продвинутая защита от злоупотреблений**
 - ✅ **Load Testing и Capacity Planning**
+- ✅ **UDP/QUIC/WireGuard поддержка** — туннелирование UDP-трафика, WireGuard VPN, QUIC/HTTP3, DNS и VoIP, поддержка современных протоколов и низкой задержки
+- ✅ **VPN-аналоги** — создание защищённых сервер-сервер туннелей, split tunneling, корпоративный VPN с мониторингом и SIEM
+
+## 🚀 UDP/QUIC/WireGuard и VPN-функционал
+
+CloudBridge Relay поддерживает не только TCP, но и UDP-трафик, что позволяет реализовать:
+- **WireGuard VPN** (UDP, современный стандарт корпоративного VPN)
+- **QUIC/HTTP3** (UDP, для современных веб-приложений)
+- **DNS/VoIP туннелирование** (UDP)
+- **Split tunneling** и маршрутизацию через relay
+- **Грейсфул рестарты UDP** (без потери соединений)
+- **Мониторинг VPN-туннелей** (Prometheus, Grafana)
+- **SIEM и алерты по VPN**
+
+### Пример создания VPN-туннеля (WireGuard):
+```bash
+./scripts/server_to_server_tunnel.sh create \
+  -i company-vpn \
+  -s1 office-server:51820 \
+  -s2 cloud-server:51820 \
+  --protocol udp \
+  --flow-dissector WIREGUARD \
+  --vpn-mode true
+```
+
+Подробнее: [docs/vpn_quick_start.md](docs/vpn_quick_start.md), [docs/vpn_analog_implementation.md](docs/vpn_analog_implementation.md)
+
+## 🏢 Коробочное решение и коммерческие возможности
+
+CloudBridge Relay доступен как **коробочное решение** (appliance) для корпоративных клиентов, MSP и интеграторов:
+- **CloudBridge Relay Appliance** — сервер с предустановленным ПО, web-интерфейсом, мониторингом, SIEM, поддержкой
+- **Virtual Appliance** — OVA/VMware/KVM-образ для быстрой установки
+- **MSP Edition** — multi-tenant, white-label, API для биллинга и управления клиентами
+- **Лицензирование** — Starter, Professional, Enterprise, Cloud Edition
+- **Готовые решения** — SMB, Enterprise, MSP bundles
+- **Сертификация и аудит** — ISO 27001, SOC2, GDPR, HIPAA, PCI DSS, FIPS 140-2
+- **Техническая поддержка** — SLA, обучение, кастомизация, white-label
+
+**Подробнее:** [docs/commercial_edition.md](docs/commercial_edition.md)
 
 ## Безопасность
 
@@ -1494,3 +1533,43 @@ curl http://localhost:8081/metrics | grep -i "security\|auth"
 - [🖥️ SIEM на отдельном сервере](docs/SIEM_DEPLOYMENT_COMPLETE_GUIDE.md)
 - [📊 Анализ SIEM системы](docs/siem_integration_analysis.md)
 - [🔗 Интеграция SIEM](docs/siem_integration_guide.md)
+
+## Тестирование дашбордов и генерация метрик
+
+Для проверки работы Grafana/Prometheus дашбордов и генерации тестовых метрик используйте следующие скрипты из папки `scripts/`:
+
+- `create_real_connections.sh` — имитирует реальные TCP соединения и туннели к relay серверу.
+- `generate_business_metrics.sh` — генерирует бизнес-метрики (активные пользователи, доход, мультитенантность).
+- `test_vpn_client.sh` — тестирует работу VPN клиента и создает реальные VPN-соединения.
+- `test_tls_connections.sh` — создает TLS-соединения к relay серверу (актуально, если сервер работает только по TLS).
+- `run_all_tests.sh` — запускает все тесты и демонстрации для комплексной проверки дашбордов.
+
+### Как использовать
+
+1. Убедитесь, что сервисы relay, Prometheus и Grafana запущены (`docker-compose up -d`).
+2. Сделайте скрипты исполняемыми (если нужно):
+   ```bash
+   chmod +x scripts/*.sh
+   ```
+3. Запустите комплексный тест:
+   ```bash
+   ./scripts/run_all_tests.sh
+   ```
+   Скрипт автоматически проверит доступность сервисов, создаст тестовые соединения, сгенерирует бизнес-метрики и покажет ссылки для доступа к дашбордам.
+
+4. Для индивидуального теста используйте нужный скрипт, например:
+   ```bash
+   ./scripts/create_real_connections.sh
+   ./scripts/generate_business_metrics.sh
+   ./scripts/test_tls_connections.sh
+   ```
+
+### Примечания
+- Для появления бизнес-метрик убедитесь, что backend поддерживает соответствующие API (например, `/metrics/business`).
+- Для проверки ошибок и отклонённых соединений используйте скрипты, создающие некорректные или plain TCP соединения (`test_tls_connections.sh`).
+- Все метрики появятся в Prometheus и будут отображаться на дашбордах Grafana через 10-60 секунд после запуска тестов.
+
+---
+
+**Вопросы и доработки:**
+Если дашборды не показывают данные — проверьте логи relay сервера и убедитесь, что тестовые скрипты выполняются без ошибок. Для расширения метрик или интеграции с Keycloak используйте REST API Keycloak или обратитесь к документации в папке `docs/`.
