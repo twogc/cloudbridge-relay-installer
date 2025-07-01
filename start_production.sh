@@ -5,6 +5,36 @@
 
 set -e
 
+# Красивая заставка
+show_banner() {
+    echo -e "\033[1;36m"
+    echo "╔══════════════════════════════════════════════════════════════════════════════╗"
+    echo "║                                                                              ║"
+    echo "║                                                                              ║"
+    echo "║                       ██████╗ ███████╗██╗      █████╗ ██╗   ██╗              ║"
+    echo "║                       ██╔══██╗██╔════╝██║     ██╔══██╗╚██╗ ██╔╝              ║"
+    echo "║                       ██████╔╝█████╗  ██║     ███████║ ╚████╔╝               ║"
+    echo "║                       ██╔══██╗██╔══╝  ██║     ██╔══██║  ╚██╔╝                ║"
+    echo "║                       ██║  ██║███████╗███████╗██║  ██║   ██║                 ║"
+    echo "║                       ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝                 ║"
+    echo "║                                                                              ║"
+    echo "║                           Production Environment v2.0                        ║"
+    echo "║                                                                              ║"
+    echo "║  Multi-Tenant Authentication   |  High-Performance TCP Proxy                 ║"
+    echo "║  Enterprise Security           |  Advanced Monitoring & Analytics            ║"
+    echo "║  Auto-Scaling & Load Balancing |  Real-time Metrics & Dashboards             ║"
+    echo "║                                                                              ║"
+    echo "╚══════════════════════════════════════════════════════════════════════════════╝"
+    echo -e "\033[0m"
+    echo -e "\033[1;33m🚀 Starting CloudBridge Relay Production Environment...\033[0m"
+    echo -e "\033[1;33m⏰ $(date '+%Y-%m-%d %H:%M:%S')\033[0m"
+    echo ""
+    echo -e "\033[1;33m═══════════════════════════════════════════════════════════════════════════════\033[0m"
+    echo -e "\033[1;33m Нажмите Enter для запуска production окружения...\033[0m"
+    read -p ""
+    echo ""
+}
+
 # Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -58,7 +88,7 @@ check_env_file() {
     if [[ ! -f "$env_file" ]]; then
         warn "Файл $env_file не найден"
         log "Генерирую новый .env файл..."
-        ./scripts/generate_secrets.sh --env "$env_file"
+        ./scripts/setup/generate_secrets.sh --env "$env_file"
     fi
     
     # Проверяем критичные переменные
@@ -97,7 +127,7 @@ create_directories() {
     # --- Новый блок: автоматическое обновление публичного ключа ---
     if [[ -f "config/public_key.pem" ]]; then
         log "Обновляю публичный ключ Keycloak из config/public_key.pem..."
-        bash scripts/update_keycloak_public_key_from_file.sh config/public_key.pem
+        bash scripts/maintenance/update_keycloak_public_key_from_file.sh config/public_key.pem
     else
         warn "Файл config/public_key.pem не найден. Публичный ключ Keycloak не будет обновлён автоматически."
         warn "Скопируйте публичный ключ из Keycloak UI (Realm Settings → Keys → RS256 → Public Key) в config/public_key.pem для автоматизации!"
@@ -106,7 +136,7 @@ create_directories() {
     # --- Новый блок: автоматическая генерация .env ---
     if [[ ! -f ".env" ]]; then
         log "Файл .env не найден. Генерирую новый .env..."
-        ./scripts/generate_secrets.sh --env .env
+        ./scripts/setup/generate_secrets.sh --env .env
     fi
 }
 
@@ -135,6 +165,15 @@ start_services() {
     docker-compose --env-file "$env_file" up -d
     
     log "Сервисы запущены"
+    
+    # --- Новый блок: автоматическая установка Grafana дашбордов ---
+    log "Установка и проверка Grafana дашбордов..."
+    if [ -f "scripts/setup/setup_dashboards.sh" ]; then
+    chmod +x scripts/setup/setup_dashboards.sh
+    ./scripts/setup/setup_dashboards.sh
+    else
+        warn "Скрипт setup_dashboards.sh не найден. Дашборды не будут установлены автоматически."
+    fi
 }
 
 # Проверка здоровья сервисов
@@ -191,18 +230,34 @@ show_status() {
     docker-compose ps
     echo
     
+    # Красивый финальный экран
+    echo -e "\033[1;32m"
+    echo "╔══════════════════════════════════════════════════════════════════════════════╗"
+    echo "║                                                                              ║"
+    echo "║                    🎉 CloudBridge Relay Successfully Started! 🎉            ║"
+    echo "║                                                                              ║"
+    echo "╚══════════════════════════════════════════════════════════════════════════════╝"
+    echo -e "\033[0m"
+    
     log "URLs сервисов:"
-    echo "  Keycloak: http://localhost:8080"
-    echo "  Relay:    http://localhost:8081"
-    echo "  Grafana:  http://localhost:3000"
-    echo "  Prometheus: http://localhost:9090"
-    echo "  AlertManager: http://localhost:9093"
+    echo -e "  \033[1;36m🔐 Keycloak:\033[0m     http://localhost:8080"
+    echo -e "  \033[1;36m🚀 Relay:\033[0m        http://localhost:8081"
+    echo -e "  \033[1;36m📊 Grafana:\033[0m      http://localhost:3000"
+    echo -e "  \033[1;36m📈 Prometheus:\033[0m   http://localhost:9090"
+    echo -e "  \033[1;36m🚨 AlertManager:\033[0m http://localhost:9093"
     echo
     
     log "Логи сервисов:"
-    echo "  docker-compose logs -f keycloak"
-    echo "  docker-compose logs -f relay"
-    echo "  docker-compose logs -f grafana"
+    echo -e "  \033[1;33mdocker-compose logs -f keycloak\033[0m"
+    echo -e "  \033[1;33mdocker-compose logs -f relay\033[0m"
+    echo -e "  \033[1;33mdocker-compose logs -f grafana\033[0m"
+    
+    echo
+    echo -e "\033[1;35m💡 Quick Tips:\033[0m"
+    echo -e "  • Use \033[1;33m./scripts/start_production.sh --status\033[0m to check service status"
+    echo -e "  • Use \033[1;33mdocker-compose logs -f [service]\033[0m to view real-time logs"
+    echo -e "  • Use \033[1;33m./scripts/setup/setup_dashboards.sh\033[0m to update Grafana dashboards"
+    echo
 }
 
 # Показать справку
@@ -229,6 +284,9 @@ main() {
     local env_file=".env"
     local force_stop=false
     local show_status_only=false
+    
+    # Показываем красивую заставку
+    show_banner
     
     # Парсинг аргументов
     while [[ $# -gt 0 ]]; do
@@ -266,8 +324,8 @@ main() {
     echo
     
     # Восстановление сертификатов перед запуском сервисов
-    if [ -f ./scripts/restore_certs.sh ]; then
-        ./scripts/restore_certs.sh
+    if [ -f ./scripts/maintenance/restore_certs.sh ]; then
+    ./scripts/maintenance/restore_certs.sh
     fi
     
     check_dependencies

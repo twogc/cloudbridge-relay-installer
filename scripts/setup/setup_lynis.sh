@@ -632,7 +632,7 @@ fix_issues() {
             
             # Настройка firewall
             log "Настройка firewall..."
-            /home/ubuntu/cloudbridge-relay-installer/scripts/setup_firewall.sh || true
+            /home/ubuntu/cloudbridge-relay-installer/scripts/setup/setup_firewall.sh || true
             
             # Настройка fail2ban
             log "Настройка fail2ban..."
@@ -640,7 +640,7 @@ fix_issues() {
             systemctl start fail2ban || true
             ;;
         "firewall")
-            /home/ubuntu/cloudbridge-relay-installer/scripts/setup_firewall.sh
+            /home/ubuntu/cloudbridge-relay-installer/scripts/setup/setup_firewall.sh
             ;;
         "updates")
             apt-get update && apt-get upgrade -y || yum update -y
@@ -688,7 +688,7 @@ case ${1:-help} in
         esac
         ;;
     "install")
-        /home/ubuntu/cloudbridge-relay-installer/scripts/setup_lynis.sh
+        /home/ubuntu/cloudbridge-relay-installer/scripts/setup/setup_lynis.sh
         ;;
     "uninstall")
         apt-get remove -y lynis || yum remove -y lynis || true

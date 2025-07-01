@@ -126,8 +126,8 @@ setup_telegram() {
     echo "3. Получите Chat ID"
     echo
     echo "Затем отредактируйте файлы:"
-    echo "- scripts/lynis_with_telegram.sh"
-    echo "- scripts/security_monitor_telegram.sh"
+    echo "- scripts/security/lynis_with_telegram.sh"
+echo "- scripts/security/security_monitor_telegram.sh"
     echo
     echo "И укажите в них:"
     echo "TELEGRAM_BOT_TOKEN=\"ваш_токен_бота\""
@@ -141,16 +141,16 @@ test_system() {
     log_info "Тестирование системы мониторинга..."
     
     # Тест Lynis
-    if [[ -f "scripts/lynis_with_telegram.sh" ]]; then
-        log_info "Тестирование Lynis мониторинга..."
-        ./scripts/lynis_with_telegram.sh --test
-    fi
-    
-    # Тест Security Monitor
-    if [[ -f "scripts/security_monitor_telegram.sh" ]]; then
-        log_info "Тестирование Security Monitor..."
-        ./scripts/security_monitor_telegram.sh --test
-    fi
+    if [[ -f "scripts/security/lynis_with_telegram.sh" ]]; then
+    log_info "Тестирование Lynis мониторинга..."
+    ./scripts/security/lynis_with_telegram.sh --test
+fi
+
+# Тест Security Monitor
+if [[ -f "scripts/security/security_monitor_telegram.sh" ]]; then
+    log_info "Тестирование Security Monitor..."
+    ./scripts/security/security_monitor_telegram.sh --test
+fi
     
     log_info "Тестирование завершено"
 }

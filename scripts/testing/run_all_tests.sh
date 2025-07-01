@@ -88,11 +88,11 @@ run_connection_tests() {
     log_header "ТЕСТИРОВАНИЕ СОЕДИНЕНИЙ"
     
     log_info "Запуск тестов реальных соединений..."
-    ./scripts/create_real_connections.sh &
+    ./scripts/utils/create_real_connections.sh &
     local connection_pid=$!
     
     log_info "Запуск тестов VPN клиента..."
-    ./scripts/test_vpn_client.sh &
+    ./scripts/testing/test_vpn_client.sh &
     local vpn_pid=$!
     
     echo "PID тестов соединений: $connection_pid"
@@ -109,7 +109,7 @@ run_business_tests() {
     log_header "ТЕСТИРОВАНИЕ БИЗНЕС-МЕТРИК"
     
     log_info "Запуск генерации бизнес-метрик..."
-    ./scripts/generate_business_metrics.sh &
+    ./scripts/utils/generate_business_metrics.sh &
     local business_pid=$!
     
     echo "PID бизнес-метрик: $business_pid"

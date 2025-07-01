@@ -190,12 +190,12 @@ tail -f /opt/siem/logs/*.log
 ### Документация по SIEM
 
 Подробная документация доступна в:
-- [📊 Анализ SIEM системы](docs/siem_integration_analysis.md)
-- [🖥️ Развертывание на отдельном сервере](docs/siem_separate_server_deployment.md)
-- [⚡ Быстрое развертывание](docs/siem_quick_deployment.md)
-- [🔗 Руководство по интеграции](docs/siem_integration_guide.md)
-- [🔄 Руководство по миграции](docs/siem_migration_guide.md)
-- [📋 Полное руководство](docs/SIEM_DEPLOYMENT_COMPLETE_GUIDE.md)
+- [📊 Анализ SIEM системы](docs/integration/siem_integration_analysis.md)
+- [🖥️ Развертывание на отдельном сервере](docs/deployment/siem_separate_server_deployment.md)
+- [⚡ Быстрое развертывание](docs/deployment/siem_quick_deployment.md)
+- [🔗 Руководство по интеграции](docs/integration/siem_integration_guide.md)
+- [🔄 Руководство по миграции](docs/integration/siem_migration_guide.md)
+- [📋 Полное руководство](docs/deployment/SIEM_DEPLOYMENT_COMPLETE_GUIDE.md)
 
 ### Автоматизированные скрипты
 
@@ -1312,7 +1312,7 @@ CloudBridge Relay поддерживает не только TCP, но и UDP-т
   --vpn-mode true
 ```
 
-Подробнее: [docs/vpn_quick_start.md](docs/vpn_quick_start.md), [docs/vpn_analog_implementation.md](docs/vpn_analog_implementation.md)
+Подробнее: [docs/guides/vpn_quick_start.md](docs/guides/vpn_quick_start.md), [docs/guides/vpn_analog_implementation.md](docs/guides/vpn_analog_implementation.md)
 
 ## 🏢 Коробочное решение и коммерческие возможности
 
@@ -1325,7 +1325,7 @@ CloudBridge Relay доступен как **коробочное решение*
 - **Сертификация и аудит** — ISO 27001, SOC2, GDPR, HIPAA, PCI DSS, FIPS 140-2
 - **Техническая поддержка** — SLA, обучение, кастомизация, white-label
 
-**Подробнее:** [docs/commercial_edition.md](docs/commercial_edition.md)
+**Подробнее:** [docs/guides/commercial_edition.md](docs/guides/commercial_edition.md)
 
 ## Безопасность
 
@@ -1378,7 +1378,7 @@ sudo relay-security-manager report
 sudo relay-security-manager fix all
 ```
 
-Подробная документация: [📖 Lynis Integration Guide](docs/lynis_integration.md)
+Подробная документация: [📖 Lynis Integration Guide](docs/security/lynis_integration.md)
 
 ### Обязательные действия после установки
 
@@ -1525,14 +1525,14 @@ curl http://localhost:8081/metrics | grep -i "security\|auth"
 ### Документация по безопасности
 
 Подробная документация доступна в:
-- [📖 Руководство по безопасности](docs/security.md)
-- [🛡️ Lynis Security Audit](docs/lynis_integration.md)
-- [🔧 Настройка firewall](scripts/setup_firewall.sh)
-- [📊 Дашборды безопасности](docs/dashboard_guide.md)
-- [🔐 Интеграция с Keycloak](docs/keycloak_integration.md)
-- [🖥️ SIEM на отдельном сервере](docs/SIEM_DEPLOYMENT_COMPLETE_GUIDE.md)
-- [📊 Анализ SIEM системы](docs/siem_integration_analysis.md)
-- [🔗 Интеграция SIEM](docs/siem_integration_guide.md)
+- [📖 Руководство по безопасности](docs/security/security.md)
+- [🛡️ Lynis Security Audit](docs/security/lynis_integration.md)
+- [🔧 Настройка firewall](scripts/setup/setup_firewall.sh)
+- [📊 Дашборды безопасности](docs/guides/dashboard_guide.md)
+- [🔐 Интеграция с Keycloak](docs/integration/keycloak_integration.md)
+- [🖥️ SIEM на отдельном сервере](docs/deployment/SIEM_DEPLOYMENT_COMPLETE_GUIDE.md)
+- [📊 Анализ SIEM системы](docs/integration/siem_integration_analysis.md)
+- [🔗 Интеграция SIEM](docs/integration/siem_integration_guide.md)
 
 ## Тестирование дашбордов и генерация метрик
 
