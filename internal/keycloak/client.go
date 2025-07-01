@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -97,7 +98,8 @@ func NewClient(config *Config) (*Client, error) {
 
 	// Parse public key if provided
 	if config.PublicKey != "" {
-		publicKey, err := parseRSAPublicKey(config.PublicKey)
+		pemStr := strings.ReplaceAll(config.PublicKey, "\\n", "\n")
+		publicKey, err := parseRSAPublicKey(pemStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse public key: %v", err)
 		}

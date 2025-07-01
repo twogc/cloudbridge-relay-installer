@@ -186,6 +186,13 @@ EOF
 echo "RELAY_TLS_CERT_FILE=/etc/letsencrypt/live/edge.2gc.ru/fullchain.pem" >> "$output_file"
 echo "RELAY_TLS_KEY_FILE=/etc/letsencrypt/live/edge.2gc.ru/privkey.pem" >> "$output_file"
 
+# --- Новый блок: oneline-публичный ключ для .env ---
+if [[ -f "config/public_key.pem" ]]; then
+    echo "# Keycloak Public Key (oneline, для совместимости)" >> "$output_file"
+    KEYCLOAK_PUBLIC_KEY_ONELINE=$(awk 'NF {sub(/\n/,"")} 1' ORS='' config/public_key.pem | base64 -w0)
+    echo "KEYCLOAK_PUBLIC_KEY_ONELINE=$KEYCLOAK_PUBLIC_KEY_ONELINE" >> "$output_file"
+fi
+
 log "Файл $output_file создан с безопасными секретами"
 warn "ВАЖНО: Измените URL и другие настройки под ваше окружение!"
 }

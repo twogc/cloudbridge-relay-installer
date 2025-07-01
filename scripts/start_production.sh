@@ -102,6 +102,12 @@ create_directories() {
         warn "Файл config/public_key.pem не найден. Публичный ключ Keycloak не будет обновлён автоматически."
         warn "Скопируйте публичный ключ из Keycloak UI (Realm Settings → Keys → RS256 → Public Key) в config/public_key.pem для автоматизации!"
     fi
+
+    # --- Новый блок: автоматическая генерация .env ---
+    if [[ ! -f ".env" ]]; then
+        log "Файл .env не найден. Генерирую новый .env..."
+        ./scripts/generate_secrets.sh --env .env
+    fi
 }
 
 # Остановка существующих контейнеров
