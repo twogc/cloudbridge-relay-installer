@@ -8,6 +8,7 @@ import (
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/errors"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
+	"go.uber.org/zap"
 )
 
 // Config represents the reconnection configuration
@@ -21,20 +22,24 @@ type Config struct {
 
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
+	loggerInstance, err := logger.New(logger.Config{
+		Level:      logger.INFO,
+		Output:     "stdout",
+		JSON:       true,
+		MaxSize:    100,
+		MaxAge:     30,
+		MaxBackups: 10,
+		Compress:   true,
+	})
+	if err != nil {
+		panic(err)
+	}
 	return &Config{
 		MaxRetries:    5,
 		RetryDelay:    time.Second,
 		MaxRetryDelay: time.Minute,
 		BackoffFactor: 2.0,
-		Logger:        logger.NewLogger(logger.Config{
-			Level:    logger.LogLevelInfo,
-			Console:  true,
-			Format:   "json",
-			MaxSize:  100,
-			MaxAge:   30,
-			MaxBackups: 10,
-			Compress: true,
-		}),
+		Logger:        loggerInstance,
 	}
 }
 
@@ -82,10 +87,10 @@ func (c *Connection) Connect(ctx context.Context) error {
 			conn, err := net.Dial("tcp", c.addr)
 			if err != nil {
 				lastErr = err
-				c.config.Logger.Warning("Connection failed", map[string]interface{}{
-					"attempt": i + 1,
-					"error":   err.Error(),
-				})
+				c.config.Logger.Warn("Connection failed",
+					zap.Int("attempt", i+1),
+					zap.String("error", err.Error()),
+				)
 
 				// Wait before retrying
 				select {
@@ -104,9 +109,9 @@ func (c *Connection) Connect(ctx context.Context) error {
 
 			// Connection successful
 			c.conn = conn
-			c.config.Logger.Info("Connection established", map[string]interface{}{
-				"remote_addr": conn.RemoteAddr(),
-			})
+			c.config.Logger.Info("Connection established",
+				zap.Any("remote_addr", conn.RemoteAddr()),
+			)
 
 			// Call onConnect callback
 			if c.onConnect != nil {
@@ -136,9 +141,9 @@ func (c *Connection) monitorConnection(ctx context.Context) {
 			// Try to read from connection
 			_, err := c.conn.Read(buf)
 			if err != nil {
-				c.config.Logger.Warning("Connection lost", map[string]interface{}{
-					"error": err.Error(),
-				})
+				c.config.Logger.Warn("Connection lost",
+					zap.String("error", err.Error()),
+				)
 
 				// Call onDisconnect callback
 				if c.onDisconnect != nil {
@@ -150,7 +155,7 @@ func (c *Connection) monitorConnection(ctx context.Context) {
 
 				// Try to reconnect
 				if err := c.Connect(ctx); err != nil {
-					c.config.Logger.Error("Reconnection failed", err, nil)
+					c.config.Logger.Error("Reconnection failed", zap.Error(err))
 					return
 				}
 			}

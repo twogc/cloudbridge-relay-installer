@@ -87,7 +87,6 @@ services:
       - KEYCLOAK_REALM=${KEYCLOAK_REALM:-cloudbridge}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-relay-client}
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET:-your-keycloak-client-secret-here}
-      - KEYCLOAK_PUBLIC_KEY=${KEYCLOAK_PUBLIC_KEY:-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...}
       - KEYCLOAK_ISSUER=${KEYCLOAK_ISSUER:-http://keycloak:8080/realms/cloudbridge}
       - KEYCLOAK_AUDIENCE=${KEYCLOAK_AUDIENCE:-relay-client}
       # Environment

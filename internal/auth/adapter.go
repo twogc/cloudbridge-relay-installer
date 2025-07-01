@@ -187,7 +187,21 @@ func (p *KeycloakProvider) CheckPermission(ctx context.Context, token string, re
 		return false, err
 	}
 
-	return p.client.CheckPermission(tokenInfo, resource, action), nil
+	kt := &keycloak.TokenInfo{
+		Subject:    tokenInfo.Subject,
+		Issuer:     tokenInfo.Issuer,
+		Audience:   tokenInfo.Audience,
+		ExpiresAt:  tokenInfo.ExpiresAt,
+		IssuedAt:   tokenInfo.IssuedAt,
+		NotBefore:  tokenInfo.NotBefore,
+		Username:   tokenInfo.Username,
+		Email:      tokenInfo.Email,
+		FullName:   tokenInfo.FullName,
+		Groups:     tokenInfo.Groups,
+		Roles:      tokenInfo.Roles,
+		Claims:     tokenInfo.Claims,
+	}
+	return p.client.CheckPermission(kt, resource, action), nil
 }
 
 // DjangoProvider implements Provider interface for Django

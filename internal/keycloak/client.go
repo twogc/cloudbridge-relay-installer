@@ -3,8 +3,12 @@ package keycloak
 import (
 	"context"
 	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"net/http"
 	"sync"
 	"time"
@@ -366,13 +370,38 @@ func (c *Client) CheckPermission(tokenInfo *TokenInfo, resource, action string) 
 
 // Helper functions
 func parseRSAPublicKey(publicKeyPEM string) (*rsa.PublicKey, error) {
-	// Implementation for parsing PEM public key
-	// This would parse the public key from PEM format
-	return nil, fmt.Errorf("not implemented")
+	block, _ := pem.Decode([]byte(publicKeyPEM))
+	if block == nil || block.Type != "PUBLIC KEY" {
+		return nil, fmt.Errorf("failed to decode PEM block containing public key")
+	}
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	rsaPub, ok := pub.(*rsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("not RSA public key")
+	}
+	return rsaPub, nil
 }
 
 func jwkToRSAPublicKey(jwk JWK) (*rsa.PublicKey, error) {
-	// Implementation for converting JWK to RSA public key
-	// This would decode the base64url-encoded N and E values
-	return nil, fmt.Errorf("not implemented")
+	// Decode base64url-encoded N and E
+	nBytes, err := base64.RawURLEncoding.DecodeString(jwk.N)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode N: %v", err)
+	}
+	eBytes, err := base64.RawURLEncoding.DecodeString(jwk.E)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode E: %v", err)
+	}
+	// Convert eBytes to int
+	e := 0
+	for _, b := range eBytes {
+		e = e<<8 + int(b)
+	}
+	return &rsa.PublicKey{
+		N: new(big.Int).SetBytes(nBytes),
+		E: e,
+	}, nil
 } 
