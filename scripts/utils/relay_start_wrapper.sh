@@ -5,4 +5,4 @@
 
 set -e
 
-exec su - ubuntu -c "cd /home/ubuntu/cloudbridge-relay-installer && ./scripts/start_production.sh --env .env.production" 
+exec su - ubuntu -c "cd /home/ubuntu/cloudbridge-relay-installer && ./scripts/utils/start_production.sh --env .env.production" 

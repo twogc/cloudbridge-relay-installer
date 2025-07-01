@@ -42,7 +42,7 @@ install_cron() {
     log_info "Установка cron задачи для мониторинга безопасности..."
     
     # Создаем временный файл с cron задачей
-    local cron_job="*/5 * * * * cd /home/ubuntu/cloudbridge-relay-installer && /usr/bin/bash scripts/security_monitor.sh --once >> logs/security-monitor-cron.log 2>&1"
+    local cron_job="*/5 * * * * cd /home/ubuntu/cloudbridge-relay-installer && /usr/bin/bash scripts/security/security_monitor.sh --once >> logs/security-monitor-cron.log 2>&1"
     
     # Добавляем задачу в crontab пользователя ubuntu
     (crontab -u ubuntu -l 2>/dev/null; echo "$cron_job") | crontab -u ubuntu -
@@ -80,7 +80,7 @@ check_status() {
 test_notification() {
     log_info "Отправка тестового уведомления..."
     
-    if sudo -u ubuntu /usr/bin/bash scripts/security_monitor.sh --test; then
+    if sudo -u ubuntu /usr/bin/bash scripts/security/security_monitor.sh --test; then
         log_success "Тестовое уведомление отправлено"
     else
         log_error "Ошибка отправки тестового уведомления"

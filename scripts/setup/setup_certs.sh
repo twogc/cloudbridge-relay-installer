@@ -1,4 +1,14 @@
 #!/bin/bash
+set -e
+
+# Проверяем, есть ли сертификаты для восстановления
+if [ -f "scripts/maintenance/restore_certs.sh" ]; then
+    echo -e "\033[1;34m[INFO]\033[0m Восстановление существующих сертификатов..."
+    bash scripts/maintenance/restore_certs.sh
+else
+    echo -e "\033[1;34m[INFO]\033[0m Настройка сертификатов (заглушка)"
+    # TODO: интегрировать scripts/setup_certs.sh и scripts/restore_certs.sh
+fi
 
 # Check if domain is provided
 if [ -z "$1" ]; then

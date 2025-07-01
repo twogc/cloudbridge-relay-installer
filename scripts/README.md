@@ -1,241 +1,109 @@
-# CloudBridge Relay - Keycloak Automation Scripts
+# CloudBridge Relay Scripts
 
-Этот каталог содержит скрипты для автоматизации настройки и управления Keycloak для CloudBridge Relay.
+Организованная коллекция скриптов для управления CloudBridge Relay.
 
-## Скрипты
+## Структура папок
 
-### 1. `setup_keycloak.sh` - Основная настройка Keycloak
-Автоматически настраивает Keycloak для работы с CloudBridge Relay.
-
-**Использование:**
-```bash
-# Базовая настройка
-./scripts/setup_keycloak.sh
-
-# Настройка с кастомными параметрами
-KEYCLOAK_URL=https://keycloak.company.com \
-REALM_NAME=cloudbridge-prod \
-CLIENT_ID=relay-client-prod \
-./scripts/setup_keycloak.sh
+```
+scripts/
+├── setup/           # Скрипты установки и настройки
+├── security/        # Скрипты безопасности и аудита
+├── maintenance/     # Скрипты обслуживания и мониторинга
+├── testing/         # Скрипты тестирования
+├── utils/           # Утилитарные скрипты
+├── siem/            # Скрипты SIEM интеграции
+└── README.md        # Этот файл
 ```
 
-**Что делает:**
-- Создает realm `cloudbridge`
-- Создает клиент `relay-client`
-- Создает роли и группы
-- Создает базовых пользователей
-- Генерирует конфигурационный файл
+## Быстрый старт
 
-### 2. `create_users.sh` - Создание пользователей
-Создает пользователей в Keycloak с соответствующими ролями и атрибутами.
-
-**Использование:**
+### Полная установка:
 ```bash
-# Создание стандартных пользователей
-./scripts/create_users.sh
-
-# Создание кастомного пользователя
-./scripts/create_users.sh custom john john@company.com password123 relay-user 20 200 192.168.1.0/24
+./setup_cloudbridge.sh
 ```
 
-**Создаваемые пользователи:**
-- `admin/SecurePassword123!` - администратор (relay-admin)
-- `user/UserPassword123!` - обычный пользователь (relay-user)
-- `monitor/MonitorPassword123!` - мониторинг (relay-monitor)
-
-### 3. `backup_keycloak.sh` - Резервное копирование
-Выполняет полное резервное копирование Keycloak с возможностью сжатия и шифрования.
-
-**Использование:**
+### Интерактивная установка:
 ```bash
-# Базовое резервное копирование
-./scripts/backup_keycloak.sh
-
-# Резервное копирование с шифрованием
-ENCRYPT_BACKUP=true \
-ENCRYPTION_PASSWORD=mysecretpassword \
-./scripts/backup_keycloak.sh
-
-# Резервное копирование без сжатия
-COMPRESS_BACKUP=false \
-./scripts/backup_keycloak.sh
+./scripts/setup/interactive_setup.sh
 ```
 
-**Что копируется:**
-- Realm конфигурация
-- Пользователи
-- Клиенты
-- Роли
-- Группы
-
-### 4. `test_integration.sh` - Тестирование интеграции
-Тестирует интеграцию между Keycloak и CloudBridge Relay.
-
-**Использование:**
+### Проверка безопасности:
 ```bash
-# Тестирование с локальными сервисами
-./scripts/test_integration.sh
-
-# Тестирование с кастомными URL
-KEYCLOAK_URL=https://keycloak.company.com \
-RELAY_URL=https://relay.company.com \
-./scripts/test_integration.sh
+./scripts/security/security_check.sh
 ```
 
-**Что тестируется:**
-- Создание realm и клиентов
-- JWKS endpoint
-- OpenID Connect конфигурация
-- Аутентификация пользователей
-- Интеграция с Relay
-- Go интеграционные тесты
-
-## Переменные окружения
-
-Все скрипты поддерживают следующие переменные окружения:
-
-| Переменная | Описание | По умолчанию |
-|------------|----------|--------------|
-| `KEYCLOAK_URL` | URL Keycloak сервера | `http://localhost:8080` |
-| `KEYCLOAK_ADMIN` | Имя администратора | `admin` |
-| `KEYCLOAK_ADMIN_PASSWORD` | Пароль администратора | `admin123` |
-| `REALM_NAME` | Имя realm | `cloudbridge` |
-| `CLIENT_ID` | ID клиента | `relay-client` |
-| `CLIENT_SECRET` | Секрет клиента | `relay-client-secret` |
-| `RELAY_URL` | URL Relay сервера | `http://localhost:8080` |
-
-### Дополнительные переменные для backup_keycloak.sh
-
-| Переменная | Описание | По умолчанию |
-|------------|----------|--------------|
-| `BACKUP_DIR` | Директория для резервных копий | `./backups` |
-| `BACKUP_RETENTION_DAYS` | Дни хранения резервных копий | `30` |
-| `COMPRESS_BACKUP` | Сжатие резервных копий | `true` |
-| `ENCRYPT_BACKUP` | Шифрование резервных копий | `false` |
-| `ENCRYPTION_PASSWORD` | Пароль для шифрования | - |
-
-## Зависимости
-
-Все скрипты требуют следующие инструменты:
-
-- `curl` - для HTTP запросов
-- `jq` - для работы с JSON
-- `gzip` - для сжатия (если включено)
-- `openssl` - для шифрования (если включено)
-- `go` - для запуска тестов
-
-**Установка зависимостей (Ubuntu/Debian):**
+### Запуск всех тестов:
 ```bash
-sudo apt update
-sudo apt install curl jq gzip openssl golang-go
+./scripts/testing/run_all_tests.sh
 ```
 
-**Установка зависимостей (CentOS/RHEL):**
+## Основные категории
+
+### 📦 Setup
+Скрипты для первоначальной установки и настройки системы.
+- Интерактивная установка
+- Настройка Keycloak
+- Конфигурация сертификатов
+- Установка дашбордов
+
+### 🔒 Security
+Скрипты для обеспечения безопасности и аудита.
+- Проверки безопасности
+- Аудит с помощью Lynis
+- Мониторинг безопасности
+- Усиление защиты
+
+### 🔧 Maintenance
+Скрипты для обслуживания и мониторинга.
+- Резервное копирование
+- Управление сертификатами
+- Ротация логов
+- Обновление конфигураций
+
+### 🧪 Testing
+Скрипты для тестирования и проверки работоспособности.
+- Интеграционные тесты
+- Тесты TLS соединений
+- Тесты VPN клиента
+- Комплексные тесты
+
+### 🛠️ Utils
+Утилитарные скрипты для управления системой.
+- Запуск сервисов
+- Создание пользователей
+- Генерация метрик
+- Системные утилиты
+
+### 📊 SIEM
+Скрипты для интеграции с SIEM системами.
+- Развертывание SIEM сервера
+- Интеграция с внешними системами
+
+## Автоматизация
+
+Рекомендуемые cron задачи:
+
 ```bash
-sudo yum install curl jq gzip openssl golang
+# Ежедневные задачи
+0 1 * * * /path/to/scripts/maintenance/backup_keycloak.sh
+0 2 * * * /path/to/scripts/security/relay-security-audit
+0 4 * * * /path/to/scripts/testing/run_all_tests.sh
+0 5 * * * /path/to/scripts/utils/generate_business_metrics.sh
+
+# Еженедельные задачи
+0 3 * * 0 /path/to/scripts/maintenance/manage_logs.sh
+
+# Ежемесячные задачи
+0 2 1 * * /path/to/scripts/maintenance/renew_certs.sh
 ```
 
-## Последовательность использования
+## Документация
 
-### 1. Первоначальная настройка
-```bash
-# 1. Запуск Keycloak
-docker-compose -f docker-compose.keycloak.yml up -d
-
-# 2. Ожидание готовности Keycloak
-sleep 30
-
-# 3. Настройка Keycloak
-./scripts/setup_keycloak.sh
-
-# 4. Создание пользователей
-./scripts/create_users.sh
-
-# 5. Тестирование интеграции
-./scripts/test_integration.sh
-```
-
-### 2. Ежедневное резервное копирование
-```bash
-# Добавить в crontab
-0 2 * * * /path/to/cloudbridge-relay-installer/scripts/backup_keycloak.sh
-```
-
-### 3. Создание новых пользователей
-```bash
-# Создание пользователя с ролью relay-user
-./scripts/create_users.sh custom alice alice@company.com password123 relay-user
-
-# Создание администратора
-./scripts/create_users.sh custom bob bob@company.com password123 relay-admin
-```
-
-## Troubleshooting
-
-### Проблемы с подключением к Keycloak
-```bash
-# Проверка доступности
-curl -I http://localhost:8080/health
-
-# Проверка логинов
-docker-compose -f docker-compose.keycloak.yml logs keycloak
-```
-
-### Проблемы с аутентификацией
-```bash
-# Проверка realm
-curl -s http://localhost:8080/realms/cloudbridge/.well-known/openid_configuration
-
-# Проверка клиента
-curl -s http://localhost:8080/realms/cloudbridge/protocol/openid-connect/certs
-```
-
-### Проблемы с резервным копированием
-```bash
-# Проверка прав доступа
-ls -la ./backups/
-
-# Проверка места на диске
-df -h
-```
-
-## Безопасность
-
-### Рекомендации по безопасности
-1. **Измените пароли по умолчанию** после первоначальной настройки
-2. **Используйте HTTPS** в продакшене
-3. **Включите шифрование** для резервных копий
-4. **Ограничьте доступ** к скриптам только администраторам
-5. **Регулярно обновляйте** пароли пользователей
-
-### Переменные для продакшена
-```bash
-# Продакшен конфигурация
-export KEYCLOAK_URL="https://keycloak.company.com"
-export KEYCLOAK_ADMIN_PASSWORD="REPLACE_WITH_SECURE_PASSWORD"
-export CLIENT_SECRET="REPLACE_WITH_SECURE_SECRET"
-export ENCRYPT_BACKUP="true"
-export ENCRYPTION_PASSWORD="REPLACE_WITH_SECURE_ENCRYPTION_PASSWORD"
-```
-
-## Логирование
-
-Все скрипты выводят подробные логи с цветовой кодировкой:
-- 🔵 **INFO** - информационные сообщения
-- 🟢 **SUCCESS** - успешные операции
-- 🟡 **WARNING** - предупреждения
-- 🔴 **ERROR** - ошибки
-
-Для отключения цветного вывода используйте переменную:
-```bash
-export NO_COLOR=1
-```
+Каждая папка содержит свой README.md файл с подробным описанием скриптов.
 
 ## Поддержка
 
-При возникновении проблем:
-1. Проверьте логи скриптов
-2. Убедитесь в доступности Keycloak
-3. Проверьте переменные окружения
-4. Обратитесь к документации проекта
-5. Создайте issue в репозитории проекта 
+Для получения помощи используйте:
+- Документацию в папке `docs/`
+- README файлы в каждой папке
+- Логи системы в папке `logs/` 

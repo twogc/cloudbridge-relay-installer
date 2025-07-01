@@ -69,7 +69,7 @@ install_service() {
     fi
     
     # Создаем копию с правильным пользователем
-    sed "s/User=ubuntu/User=$user/g; s/Group=ubuntu/Group=$user/g; s|WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer|WorkingDirectory=$project_dir|g; s|ExecStart=/home/ubuntu/cloudbridge-relay-installer/scripts/start_production.sh|ExecStart=$project_dir/scripts/start_production.sh|g; s|ReadWritePaths=/home/ubuntu/cloudbridge-relay-installer|ReadWritePaths=$project_dir|g" "$source_file" > "$service_file"
+    sed "s/User=ubuntu/User=$user/g; s/Group=ubuntu/Group=$user/g; s|WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer|WorkingDirectory=$project_dir|g; s|ExecStart=/home/ubuntu/cloudbridge-relay-installer/scripts/start_production.sh|ExecStart=$project_dir/scripts/utils/start_production.sh|g; s|ReadWritePaths=/home/ubuntu/cloudbridge-relay-installer|ReadWritePaths=$project_dir|g" "$source_file" > "$service_file"
     
     # Устанавливаем правильные права
     chmod 644 "$service_file"

@@ -410,15 +410,23 @@ get_public_key() {
         exit 1
     fi
     
-    local public_key=$(echo "$jwks_response" | jq -r '.keys[0].n')
+    # Получаем base64-encoded ключ из x5c (полный сертификат)
+    local base64_key=$(echo "$jwks_response" | jq -r '.keys[0].x5c[0]')
     
-    if [ "$public_key" = "null" ] || [ -z "$public_key" ]; then
+    if [ "$base64_key" = "null" ] || [ -z "$base64_key" ]; then
         log_error "Failed to extract public key"
         exit 1
     fi
     
-    echo "$public_key"
-    log_success "Public key obtained"
+    # Формируем полный PEM формат
+    local pem_key="-----BEGIN PUBLIC KEY-----"
+    pem_key+=$'\n'
+    pem_key+="$base64_key"
+    pem_key+=$'\n'
+    pem_key+="-----END PUBLIC KEY-----"
+    
+    echo "$pem_key"
+    log_success "Public key obtained in PEM format"
 }
 
 # Generate configuration
@@ -491,4 +499,13 @@ main() {
 }
 
 # Run main function
-main "$@" 
+main "$@"
+
+    # Интегрируем существующий interactive_setup.sh
+    if [ -f "scripts/interactive_setup.sh" ]; then
+        echo -e "\033[1;34m[INFO]\033[0m Запуск интерактивной настройки Keycloak..."
+        bash scripts/interactive_setup.sh
+    else
+        echo -e "\033[1;34m[INFO]\033[0m Интерактивная настройка Keycloak (заглушка)"
+        # TODO: интегрировать scripts/interactive_setup.sh
+    fi 

@@ -338,7 +338,7 @@ main() {
         log_info "  - monitor/MonitorPassword123! (relay-monitor role)"
         log_info ""
         log_info "To create custom users, use:"
-        log_info "  ./scripts/create_users.sh custom <username> <email> <password> [role] [max_tunnels] [rate_limit] [allowed_ips]"
+        log_info "  ./scripts/utils/create_users.sh custom <username> <email> <password> [role] [max_tunnels] [rate_limit] [allowed_ips]"
         exit 0
     else
         log_error "Some user operations failed. Please check the configuration."

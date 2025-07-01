@@ -46,7 +46,7 @@ update_certificates() {
     # Проверка существования сертификатов Let's Encrypt
     if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
         log_error "Сертификаты Let's Encrypt для домена $domain не найдены"
-        log_info "Запустите: ./scripts/setup_certs.sh $domain"
+        log_info "Запустите: ./scripts/setup/setup_certs.sh $domain"
         exit 1
     fi
     

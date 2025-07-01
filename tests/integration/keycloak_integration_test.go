@@ -2,7 +2,6 @@ package integration
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -34,11 +33,16 @@ func TestKeycloakIntegration(t *testing.T) {
 	cfg.Keycloak.TokenValidation.ClockSkew = 30 * time.Second
 
 	// Create logger
-	logger := logger.NewLogger(logger.Config{
+	logCfg := logger.Config{
 		Level:   logger.DEBUG,
-		Console: true,
-		Format:  "json",
-	})
+		Output:  "stdout",
+		JSON:    true,
+	}
+	loggerInstance, err := logger.New(logCfg)
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
+	logger := loggerInstance
 
 	// Test Keycloak client creation
 	t.Run("CreateKeycloakClient", func(t *testing.T) {
@@ -170,11 +174,16 @@ func TestKeycloakJWKS(t *testing.T) {
 	cfg.Keycloak.ServerURL = "http://localhost:8080"
 	cfg.Keycloak.Realm = "cloudbridge"
 
-	logger := logger.NewLogger(logger.Config{
+	logCfg := logger.Config{
 		Level:   logger.DEBUG,
-		Console: true,
-		Format:  "json",
-	})
+		Output:  "stdout",
+		JSON:    true,
+	}
+	loggerInstance, err := logger.New(logCfg)
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
+	logger := loggerInstance
 
 	keycloakConfig := &keycloak.Config{
 		ServerURL: cfg.Keycloak.ServerURL,
@@ -188,7 +197,7 @@ func TestKeycloakJWKS(t *testing.T) {
 	// Test JWKS fetching
 	t.Run("FetchJWKS", func(t *testing.T) {
 		ctx := context.Background()
-		jwks, err := client.(*keycloak.Client).FetchJWKS(ctx)
+		jwks, err := client.FetchJWKS(ctx)
 		require.NoError(t, err)
 		assert.NotNil(t, jwks)
 		assert.NotEmpty(t, jwks.Keys)
@@ -199,7 +208,7 @@ func TestKeycloakJWKS(t *testing.T) {
 		ctx := context.Background()
 		
 		// First, get JWKS to find a key ID
-		jwks, err := client.(*keycloak.Client).FetchJWKS(ctx)
+		jwks, err := client.FetchJWKS(ctx)
 		require.NoError(t, err)
 		require.NotEmpty(t, jwks.Keys)
 
@@ -207,7 +216,7 @@ func TestKeycloakJWKS(t *testing.T) {
 		assert.NotEmpty(t, kid)
 
 		// Get public key for this key ID
-		publicKey, err := client.(*keycloak.Client).GetPublicKey(ctx, kid)
+		publicKey, err := client.GetPublicKey(ctx, kid)
 		require.NoError(t, err)
 		assert.NotNil(t, publicKey)
 	})
@@ -225,11 +234,16 @@ func TestKeycloakClaims(t *testing.T) {
 	cfg.Keycloak.TokenValidation.Audience = "relay-client"
 	cfg.Keycloak.TokenValidation.ClockSkew = 30 * time.Second
 
-	logger := logger.NewLogger(logger.Config{
+	logCfg := logger.Config{
 		Level:   logger.DEBUG,
-		Console: true,
-		Format:  "json",
-	})
+		Output:  "stdout",
+		JSON:    true,
+	}
+	loggerInstance, err := logger.New(logCfg)
+	if err != nil {
+		t.Fatalf("failed to create logger: %v", err)
+	}
+	logger := loggerInstance
 
 	keycloakConfig := &keycloak.Config{
 		TokenValidation: struct {
@@ -257,7 +271,7 @@ func TestKeycloakClaims(t *testing.T) {
 			"nbf": float64(time.Now().Unix()),
 		}
 
-		err := client.(*keycloak.Client).ValidateClaims(claims)
+		err := client.ValidateClaims(claims)
 		assert.NoError(t, err)
 	})
 
@@ -269,7 +283,7 @@ func TestKeycloakClaims(t *testing.T) {
 			"exp": float64(time.Now().Add(time.Hour).Unix()),
 		}
 
-		err := client.(*keycloak.Client).ValidateClaims(claims)
+		err := client.ValidateClaims(claims)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid issuer")
 	})
@@ -282,7 +296,7 @@ func TestKeycloakClaims(t *testing.T) {
 			"exp": float64(time.Now().Add(time.Hour).Unix()),
 		}
 
-		err := client.(*keycloak.Client).ValidateClaims(claims)
+		err := client.ValidateClaims(claims)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid audience")
 	})
@@ -295,7 +309,7 @@ func TestKeycloakClaims(t *testing.T) {
 			"exp": float64(time.Now().Add(-time.Hour).Unix()), // Expired 1 hour ago
 		}
 
-		err := client.(*keycloak.Client).ValidateClaims(claims)
+		err := client.ValidateClaims(claims)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "token expired")
 	})
@@ -308,7 +322,7 @@ func TestKeycloakClaims(t *testing.T) {
 			"nbf": float64(time.Now().Add(time.Hour).Unix()), // Valid in 1 hour
 		}
 
-		err := client.(*keycloak.Client).ValidateClaims(claims)
+		err := client.ValidateClaims(claims)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "token not yet valid")
 	})
@@ -337,21 +351,4 @@ func getKeycloakToken(cfg *config.Config) (string, error) {
 	// 3. Return the access token
 	
 	return "placeholder-token", fmt.Errorf("not implemented - requires running Keycloak instance")
-}
-
-// Mock functions for testing (these would be implemented in the actual keycloak package)
-
-func (c *keycloak.Client) FetchJWKS(ctx context.Context) (*keycloak.JWKS, error) {
-	// This would be implemented in the actual keycloak package
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (c *keycloak.Client) GetPublicKey(ctx context.Context, kid string) (*rsa.PublicKey, error) {
-	// This would be implemented in the actual keycloak package
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (c *keycloak.Client) ValidateClaims(claims map[string]interface{}) error {
-	// This would be implemented in the actual keycloak package
-	return fmt.Errorf("not implemented")
 } 
