@@ -98,22 +98,79 @@ wait_for_grafana() {
 get_grafana_api_key() {
     log_info "Получение API ключа Grafana..."
     
-    # Создание API ключа
-    local api_key_response=$(curl -s -X POST \
+    # Загружаем пароль из .env файла
+    local grafana_password="admin"
+    if [ -f ".env" ]; then
+        grafana_password=$(grep "GRAFANA_ADMIN_PASSWORD" .env | cut -d'=' -f2)
+        log_info "Используем пароль из .env файла"
+    else
+        log_warning "Файл .env не найден, используем пароль по умолчанию"
+    fi
+    
+    # Создание service account
+    local service_account_response=$(curl -s -X POST \
         -H "Content-Type: application/json" \
         -d '{
             "name": "cloudbridge-relay",
             "role": "Admin"
         }' \
-        http://admin:admin@localhost:3000/api/auth/keys)
+        "http://admin:${grafana_password}@localhost:3000/api/serviceaccounts")
     
-    if echo "$api_key_response" | grep -q "key"; then
-        local api_key=$(echo "$api_key_response" | grep -o '"key":"[^"]*"' | cut -d'"' -f4)
-        echo "$api_key"
-        log_success "API ключ получен"
+    if echo "$service_account_response" | grep -q '"id"'; then
+        local service_account_id=$(echo "$service_account_response" | grep -o '"id":[0-9]*' | cut -d':' -f2)
+        log_info "Service account создан с ID: $service_account_id"
+        
+        # Создание токена для service account
+        local token_response=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -d '{
+                "name": "cloudbridge-relay-token"
+            }' \
+            "http://admin:${grafana_password}@localhost:3000/api/serviceaccounts/${service_account_id}/tokens")
+        
+        if echo "$token_response" | grep -q '"key"'; then
+            local api_key=$(echo "$token_response" | grep -o '"key":"[^"]*"' | cut -d'"' -f4)
+            echo "$api_key"
+            log_success "API ключ получен"
+        else
+            log_error "Не удалось получить токен для service account"
+            return 1
+        fi
     else
-        log_error "Не удалось получить API ключ"
+        log_error "Не удалось создать service account"
         return 1
+    fi
+}
+
+# Удаление существующих дашбордов
+delete_existing_dashboards() {
+    local api_key=$1
+    
+    log_info "Удаление существующих дашбордов..."
+    
+    # Получение списка всех дашбордов
+    local dashboards_response=$(curl -s \
+        -H "Authorization: Bearer $api_key" \
+        http://localhost:3000/api/search?type=dash-db)
+    
+    if echo "$dashboards_response" | grep -q '"uid"'; then
+        # Извлекаем UID всех дашбордов
+        local uids=$(echo "$dashboards_response" | grep -o '"uid":"[^"]*"' | cut -d'"' -f4)
+        
+        for uid in $uids; do
+            log_info "Удаление дашборда с UID: $uid"
+            local delete_response=$(curl -s -X DELETE \
+                -H "Authorization: Bearer $api_key" \
+                "http://localhost:3000/api/dashboards/uid/$uid")
+            
+            if echo "$delete_response" | grep -q '"message":"Dashboard deleted"'; then
+                log_success "Дашборд $uid удалён"
+            else
+                log_warning "Не удалось удалить дашборд $uid"
+            fi
+        done
+    else
+        log_info "Существующих дашбордов не найдено"
     fi
 }
 
@@ -122,6 +179,9 @@ install_dashboards() {
     local api_key=$1
     
     log_info "Установка дашбордов..."
+    
+    # Удаление существующих дашбордов
+    delete_existing_dashboards "$api_key"
     
     local dashboards=(
         "relay_dashboard.json:CloudBridge Relay Dashboard"
@@ -137,20 +197,30 @@ install_dashboards() {
         log_info "Установка дашборда: $title"
         
         if [ -f "deploy/grafana/dashboards/$file" ]; then
-            # Чтение и модификация дашборда
+            # Чтение дашборда без внешнего ключа 'dashboard'
             local dashboard_json=$(cat "deploy/grafana/dashboards/$file")
-            
+
+            # Оборачиваем в структуру для Grafana API
+            local post_json=$(jq -c --argjson dash "$dashboard_json" '{dashboard: $dash, overwrite: true, folderId: 0}' <<< "$dashboard_json")
+
+            # Логирование для отладки
+            log_info "Содержимое дашборда $file (первые 200 символов):"
+            echo "${dashboard_json:0:200}..."
+
             # Установка дашборда через API
             local response=$(curl -s -X POST \
                 -H "Content-Type: application/json" \
                 -H "Authorization: Bearer $api_key" \
-                -d "$dashboard_json" \
+                -d "$post_json" \
                 http://localhost:3000/api/dashboards/db)
-            
+
             if echo "$response" | grep -q '"status":"success"'; then
                 log_success "Дашборд '$title' установлен"
             else
-                log_warning "Не удалось установить дашборд '$title' (возможно, уже существует)"
+                log_warning "Не удалось установить дашборд '$title'"
+                log_info "Ответ API: $response"
+                log_info "Отправленный JSON (первые 500 символов):"
+                echo "${post_json:0:500}..."
             fi
         else
             log_error "Файл дашборда не найден: deploy/grafana/dashboards/$file"
@@ -223,6 +293,12 @@ create_grafana_users() {
     
     log_info "Создание пользователей Grafana..."
     
+    # Загружаем пароль из .env файла для создания пользователя
+    local grafana_password="admin"
+    if [ -f ".env" ]; then
+        grafana_password=$(grep "GRAFANA_ADMIN_PASSWORD" .env | cut -d'=' -f2)
+    fi
+    
     # Создание пользователя для мониторинга
     local user_response=$(curl -s -X POST \
         -H "Content-Type: application/json" \
@@ -268,6 +344,9 @@ main() {
     if [ -z "$api_key" ]; then
         exit 1
     fi
+    
+    # Удаление существующих дашбордов
+    delete_existing_dashboards "$api_key"
     
     # Установка дашбордов
     install_dashboards "$api_key"

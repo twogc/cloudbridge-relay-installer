@@ -1,395 +1,393 @@
 {
-  "dashboard": {
-    "id": null,
-    "title": "CloudBridge Relay Dashboard",
-    "tags": ["relay", "tunnel", "monitoring", "keycloak"],
-    "style": "dark",
-    "timezone": "browser",
-    "panels": [
-      {
-        "id": 1,
-        "title": "Active Connections",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "relay_active_connections",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 800},
-                {"color": "red", "value": 950}
-              ]
-            }
-          }
-        },
-        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
-      },
-      {
-        "id": 2,
-        "title": "Connection Rate",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(relay_connections_total[5m])",
-            "legendFormat": "connections/sec"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0}
-      },
-      {
-        "id": 3,
-        "title": "Error Rate",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(relay_errors_total[5m])",
-            "legendFormat": "{{code}}"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 0}
-      },
-      {
-        "id": 4,
-        "title": "Connection Duration",
-        "type": "heatmap",
-        "targets": [
-          {
-            "expr": "rate(relay_connection_duration_seconds_bucket[5m])",
-            "format": "heatmap"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
-      },
-      {
-        "id": 5,
-        "title": "Keycloak Token Validations",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(relay_keycloak_token_validations_total[5m])",
-            "legendFormat": "{{result}} ({{provider}})"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
-      },
-      {
-        "id": 6,
-        "title": "JWKS Cache Performance",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "relay_keycloak_jwks_cache_hits_total",
-            "legendFormat": "Cache Hits"
+  "id": null,
+  "title": "CloudBridge Relay Dashboard",
+  "tags": ["relay", "tunnel", "monitoring", "keycloak"],
+  "style": "dark",
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Connections",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "relay_active_connections",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
           },
-          {
-            "expr": "relay_keycloak_jwks_cache_misses_total",
-            "legendFormat": "Cache Misses"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "palette-classic"
-            }
-          }
-        },
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
-      },
-      {
-        "id": 7,
-        "title": "JWKS Cache Size",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "relay_keycloak_jwks_cache_size",
-            "legendFormat": "Cached Keys"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 50},
-                {"color": "red", "value": 100}
-              ]
-            }
-          }
-        },
-        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 16}
-      },
-      {
-        "id": 8,
-        "title": "JWKS Fetch Duration",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(relay_keycloak_jwks_fetch_duration_seconds_bucket[5m]))",
-            "legendFormat": "95th percentile"
-          },
-          {
-            "expr": "histogram_quantile(0.50, rate(relay_keycloak_jwks_fetch_duration_seconds_bucket[5m]))",
-            "legendFormat": "50th percentile"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 16}
-      },
-      {
-        "id": 9,
-        "title": "Token Validation Duration",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(relay_keycloak_token_validation_duration_seconds_bucket[5m]))",
-            "legendFormat": "{{method}} - 95th percentile"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
-      },
-      {
-        "id": 10,
-        "title": "Permission Checks",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(relay_keycloak_permission_checks_total[5m])",
-            "legendFormat": "{{resource}}:{{action}} ({{result}})"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
-      },
-      {
-        "id": 11,
-        "title": "Business Metrics",
-        "type": "row",
-        "collapsed": false,
-        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 32}
-      },
-      {
-        "id": 12,
-        "title": "Active Users",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "relay_business_active_users",
-            "legendFormat": "Active Users"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 1000},
-                {"color": "red", "value": 2000}
-              ]
-            }
-          }
-        },
-        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 33}
-      },
-      {
-        "id": 13,
-        "title": "Revenue per Hour",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "rate(relay_business_revenue_per_hour_total[1h])",
-            "legendFormat": "Revenue/Hour"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "steps": [
-                {"color": "green", "value": null},
-                {"color": "yellow", "value": 100},
-                {"color": "red", "value": 500}
-              ]
-            },
-            "unit": "currencyUSD"
-          }
-        },
-        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 33}
-      },
-      {
-        "id": 14,
-        "title": "Customer Satisfaction",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "relay_business_customer_satisfaction",
-            "legendFormat": "Satisfaction Score"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "steps": [
-                {"color": "red", "value": null},
-                {"color": "yellow", "value": 70},
-                {"color": "green", "value": 85}
-              ]
-            },
-            "unit": "percent"
-          }
-        },
-        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 33}
-      },
-      {
-        "id": 15,
-        "title": "Technical Metrics",
-        "type": "row",
-        "collapsed": false,
-        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 41}
-      },
-      {
-        "id": 16,
-        "title": "Memory Usage",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "relay_technical_memory_usage_bytes / 1024 / 1024",
-            "legendFormat": "Memory (MB)"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 42}
-      },
-      {
-        "id": 17,
-        "title": "GC Pause Duration",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(relay_technical_gc_pause_duration_seconds_bucket[5m]))",
-            "legendFormat": "95th percentile"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 42}
-      },
-      {
-        "id": 18,
-        "title": "Network Latency",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(relay_technical_network_latency_seconds_bucket[5m]))",
-            "legendFormat": "95th percentile"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 50}
-      },
-      {
-        "id": 19,
-        "title": "Disk I/O Operations",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(relay_technical_disk_io_total[5m])",
-            "legendFormat": "IO operations/sec"
-          }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 50}
-      },
-      {
-        "id": 20,
-        "title": "System Health",
-        "type": "row",
-        "collapsed": false,
-        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 58}
-      },
-      {
-        "id": 21,
-        "title": "System Status",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "up{job=\"relay\"}",
-            "legendFormat": "Relay Status"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "thresholds": {
-              "steps": [
-                {"color": "red", "value": null},
-                {"color": "green", "value": 1}
-              ]
-            },
-            "mappings": [
-              {
-                "options": {
-                  "0": {"text": "DOWN", "color": "red"},
-                  "1": {"text": "UP", "color": "green"}
-                },
-                "type": "value"
-              }
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 800},
+              {"color": "red", "value": 950}
             ]
           }
+        }
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+    },
+    {
+      "id": 2,
+      "title": "Connection Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(relay_connections_total[5m])",
+          "legendFormat": "connections/sec"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0}
+    },
+    {
+      "id": 3,
+      "title": "Error Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(relay_errors_total[5m])",
+          "legendFormat": "{{code}}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 18, "y": 0}
+    },
+    {
+      "id": 4,
+      "title": "Connection Duration",
+      "type": "heatmap",
+      "targets": [
+        {
+          "expr": "rate(relay_connection_duration_seconds_bucket[5m])",
+          "format": "heatmap"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+    },
+    {
+      "id": 5,
+      "title": "Keycloak Token Validations",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(relay_keycloak_token_validations_total[5m])",
+          "legendFormat": "{{result}} ({{provider}})"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+    },
+    {
+      "id": 6,
+      "title": "JWKS Cache Performance",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "relay_keycloak_jwks_cache_hits_total",
+          "legendFormat": "Cache Hits"
         },
-        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 59}
-      },
-      {
-        "id": 22,
-        "title": "Error Rate by Type",
-        "type": "piechart",
-        "targets": [
-          {
-            "expr": "rate(relay_errors_total[5m])",
-            "legendFormat": "{{code}}"
+        {
+          "expr": "relay_keycloak_jwks_cache_misses_total",
+          "legendFormat": "Cache Misses"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
           }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 59}
+        }
       },
-      {
-        "id": 23,
-        "title": "Connection Rejection Rate",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(relay_rejected_connections_total[5m])",
-            "legendFormat": "Rejections/sec"
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+    },
+    {
+      "id": 7,
+      "title": "JWKS Cache Size",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "relay_keycloak_jwks_cache_size",
+          "legendFormat": "Cached Keys"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 50},
+              {"color": "red", "value": 100}
+            ]
           }
-        ],
-        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 59}
-      }
-    ],
-    "time": {
-      "from": "now-1h",
-      "to": "now"
+        }
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 16}
     },
-    "refresh": "30s",
-    "schemaVersion": 27,
-    "version": 1,
-    "links": [],
-    "annotations": {
-      "list": []
+    {
+      "id": 8,
+      "title": "JWKS Fetch Duration",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(relay_keycloak_jwks_fetch_duration_seconds_bucket[5m]))",
+          "legendFormat": "95th percentile"
+        },
+        {
+          "expr": "histogram_quantile(0.50, rate(relay_keycloak_jwks_fetch_duration_seconds_bucket[5m]))",
+          "legendFormat": "50th percentile"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 18, "y": 16}
     },
-    "templating": {
-      "list": []
+    {
+      "id": 9,
+      "title": "Token Validation Duration",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(relay_keycloak_token_validation_duration_seconds_bucket[5m]))",
+          "legendFormat": "{{method}} - 95th percentile"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24}
+    },
+    {
+      "id": 10,
+      "title": "Permission Checks",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(relay_keycloak_permission_checks_total[5m])",
+          "legendFormat": "{{resource}}:{{action}} ({{result}})"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24}
+    },
+    {
+      "id": 11,
+      "title": "Business Metrics",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 32}
+    },
+    {
+      "id": 12,
+      "title": "Active Users",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "relay_business_active_users",
+          "legendFormat": "Active Users"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1000},
+              {"color": "red", "value": 2000}
+            ]
+          }
+        }
+      },
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 33}
+    },
+    {
+      "id": 13,
+      "title": "Revenue per Hour",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(relay_business_revenue_per_hour_total[1h])",
+          "legendFormat": "Revenue/Hour"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 100},
+              {"color": "red", "value": 500}
+            ]
+          },
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 33}
+    },
+    {
+      "id": 14,
+      "title": "Customer Satisfaction",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "relay_business_customer_satisfaction",
+          "legendFormat": "Satisfaction Score"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 70},
+              {"color": "green", "value": 85}
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 33}
+    },
+    {
+      "id": 15,
+      "title": "Technical Metrics",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 41}
+    },
+    {
+      "id": 16,
+      "title": "Memory Usage",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "relay_technical_memory_usage_bytes / 1024 / 1024",
+          "legendFormat": "Memory (MB)"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 42}
+    },
+    {
+      "id": 17,
+      "title": "GC Pause Duration",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(relay_technical_gc_pause_duration_seconds_bucket[5m]))",
+          "legendFormat": "95th percentile"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 42}
+    },
+    {
+      "id": 18,
+      "title": "Network Latency",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(relay_technical_network_latency_seconds_bucket[5m]))",
+          "legendFormat": "95th percentile"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 50}
+    },
+    {
+      "id": 19,
+      "title": "Disk I/O Operations",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(relay_technical_disk_io_total[5m])",
+          "legendFormat": "IO operations/sec"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 50}
+    },
+    {
+      "id": 20,
+      "title": "System Health",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 58}
+    },
+    {
+      "id": 21,
+      "title": "System Status",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "up{job=\"relay\"}",
+          "legendFormat": "Relay Status"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "green", "value": 1}
+            ]
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {"text": "DOWN", "color": "red"},
+                "1": {"text": "UP", "color": "green"}
+              },
+              "type": "value"
+            }
+          ]
+        }
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 59}
+    },
+    {
+      "id": 22,
+      "title": "Error Rate by Type",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "rate(relay_errors_total[5m])",
+          "legendFormat": "{{code}}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 6, "y": 59}
+    },
+    {
+      "id": 23,
+      "title": "Connection Rejection Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(relay_rejected_connections_total[5m])",
+          "legendFormat": "Rejections/sec"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 18, "y": 59}
     }
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "schemaVersion": 27,
+  "version": 1,
+  "links": [],
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": []
   }
 } 
