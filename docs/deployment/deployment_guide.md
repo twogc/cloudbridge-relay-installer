@@ -175,11 +175,16 @@ docker run -d \
 ### Способ 3: Установка как системный сервис
 
 ```bash
-# Запуск скрипта установки
-sudo ./install.sh
+# Установка systemd сервиса
+sudo ./scripts/utils/install_systemd.sh install
 
 # Проверка статуса
-sudo systemctl status relay
+sudo systemctl status cloudbridge-relay
+
+# Управление сервисом
+sudo systemctl start cloudbridge-relay
+sudo systemctl stop cloudbridge-relay
+sudo systemctl restart cloudbridge-relay
 ```
 
 ## Конфигурация
