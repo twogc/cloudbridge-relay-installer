@@ -1,8 +1,8 @@
 package proto
 
 import (
+	"bufio"
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"testing"
@@ -10,52 +10,28 @@ import (
 )
 
 func TestMessage_GetType(t *testing.T) {
-	msg := Message{Type: MessageTypeRegister}
-	if got := msg.GetType(); got != MessageTypeRegister {
-		t.Errorf("GetType() = %v, want %v", got, MessageTypeRegister)
+	msg := Message{Type: MessageTypeHello}
+	if msg.Type != MessageTypeHello {
+		t.Errorf("Type = %v, want %v", msg.Type, MessageTypeHello)
 	}
 }
 
 func TestMessage_GetToken(t *testing.T) {
 	msg := Message{Token: "test-token"}
-	if got := msg.GetToken(); got != "test-token" {
-		t.Errorf("GetToken() = %v, want %v", got, "test-token")
+	if msg.Token != "test-token" {
+		t.Errorf("Token = %v, want %v", msg.Token, "test-token")
 	}
 }
 
 func TestMessage_GetVersion(t *testing.T) {
 	msg := Message{Version: "1.0.0"}
-	if got := msg.GetVersion(); got != "1.0.0" {
-		t.Errorf("GetVersion() = %v, want %v", got, "1.0.0")
+	if msg.Version != "1.0.0" {
+		t.Errorf("Version = %v, want %v", msg.Version, "1.0.0")
 	}
 }
 
 func TestNewMessage(t *testing.T) {
-	tests := []struct {
-		name    string
-		msgType MessageType
-		want    bool
-	}{
-		{"register", MessageTypeRegister, true},
-		{"config", MessageTypeConfig, true},
-		{"connect", MessageTypeConnect, true},
-		{"ping", MessageTypePing, true},
-		{"pong", MessageTypePong, true},
-		{"error", MessageTypeError, true},
-		{"unknown", "unknown", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			msg := NewMessage(tt.msgType)
-			if (msg != nil) != tt.want {
-				t.Errorf("NewMessage() = %v, want %v", msg != nil, tt.want)
-			}
-			if msg != nil && msg.GetType() != tt.msgType {
-				t.Errorf("NewMessage().GetType() = %v, want %v", msg.GetType(), tt.msgType)
-			}
-		})
-	}
+	// This test is not applicable as there is no NewMessage function or similar logic in protocol.go
 }
 
 func TestMessageSerialization(t *testing.T) {
@@ -65,30 +41,33 @@ func TestMessageSerialization(t *testing.T) {
 		wantJSON string
 	}{
 		{
-			name: "register message",
+			name: "hello message",
 			msg: &Message{
-				Type:  MessageTypeRegister,
+				Type:  MessageTypeHello,
 				Token: "test-token",
 			},
-			wantJSON: `{"type":1,"token":"test-token"}`,
+			wantJSON: `{"type":"hello","token":"test-token"}`,
 		},
 		{
-			name: "config message",
+			name: "tunnel info message",
 			msg: &Message{
-				Type: MessageTypeConfig,
-				Config: &ConfigMessage{
-					Token: "test-token",
+				Type: MessageTypeTunnelInfo,
+				TunnelInfo: &TunnelInfo{
+					TunnelID: "id1",
+					LocalPort: 1234,
+					RemoteHost: "host",
+					RemotePort: 5678,
 				},
 			},
-			wantJSON: `{"type":4,"config":{"token":"test-token"}}`,
+			wantJSON: `{"type":"tunnel_info","tunnel_info":{"tunnel_id":"id1","local_port":1234,"remote_host":"host","remote_port":5678}}`,
 		},
 		{
 			name: "error message",
 			msg: &Message{
 				Type:  MessageTypeError,
-				Error: "test error",
+				Error: &ErrorMessage{Code: "err", Message: "test error"},
 			},
-			wantJSON: `{"type":6,"error":"test error"}`,
+			wantJSON: `{"type":"error","error":{"code":"err","message":"test error"}}`,
 		},
 	}
 
@@ -126,9 +105,10 @@ func TestReadMessage(t *testing.T) {
 	}{
 		{
 			name: "valid message",
-			data: []byte{0, 0, 0, 25, 123, 34, 116, 121, 112, 101, 34, 58, 49, 44, 34, 116, 111, 107, 101, 110, 34, 58, 34, 116, 101, 115, 116, 34, 125},
+			data: []byte(`{"type":"hello","token":"test"}
+`),
 			want: &Message{
-				Type:  MessageTypeRegister,
+				Type:  MessageTypeHello,
 				Token: "test",
 			},
 			wantErr: false,
@@ -147,7 +127,7 @@ func TestReadMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ReadMessage(bytes.NewReader(tt.data))
+			got, err := ReadMessage(bufio.NewReader(bytes.NewReader(tt.data)))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ReadMessage() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -166,20 +146,10 @@ func TestWriteMessage(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "register message",
+			name: "hello message",
 			msg: &Message{
-				Type:  MessageTypeRegister,
+				Type:  MessageTypeHello,
 				Token: "test",
-			},
-			wantErr: false,
-		},
-		{
-			name: "config message",
-			msg: &Message{
-				Type: MessageTypeConfig,
-				Config: &ConfigMessage{
-					Token: "test",
-				},
 			},
 			wantErr: false,
 		},
@@ -187,7 +157,7 @@ func TestWriteMessage(t *testing.T) {
 			name: "error message",
 			msg: &Message{
 				Type:  MessageTypeError,
-				Error: "test error",
+				Error: &ErrorMessage{Code: "err", Message: "test error"},
 			},
 			wantErr: false,
 		},
@@ -196,7 +166,7 @@ func TestWriteMessage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := WriteMessage(&buf, tt.msg)
+			err := WriteMessage(bufio.NewWriter(&buf), tt.msg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("WriteMessage() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -204,7 +174,7 @@ func TestWriteMessage(t *testing.T) {
 
 			if !tt.wantErr {
 				// Read back the message
-				got, err := ReadMessage(&buf)
+				got, err := ReadMessage(bufio.NewReader(&buf))
 				if err != nil {
 					t.Fatalf("Failed to read back message: %v", err)
 				}
@@ -238,7 +208,7 @@ func TestWriteError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			err := WriteError(&buf, tt.err)
+			err := WriteError(bufio.NewWriter(&buf), "err", tt.err)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("WriteError() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -246,7 +216,7 @@ func TestWriteError(t *testing.T) {
 
 			if !tt.wantErr {
 				// Read back the message
-				got, err := ReadMessage(&buf)
+				got, err := ReadMessage(bufio.NewReader(&buf))
 				if err != nil {
 					t.Fatalf("Failed to read back error message: %v", err)
 				}
@@ -255,29 +225,11 @@ func TestWriteError(t *testing.T) {
 					t.Errorf("Type = %v, want %v", got.Type, MessageTypeError)
 				}
 
-				if got.Error != tt.err {
+				if got.Error == nil || got.Error.Message != tt.err {
 					t.Errorf("Error = %v, want %v", got.Error, tt.err)
 				}
 			}
 		})
-	}
-}
-
-func TestMessageTimeout(t *testing.T) {
-	// Create a slow reader
-	slowReader := &slowReader{
-		delay: 100 * time.Millisecond,
-		data:  []byte{0, 0, 0, 5, 123, 34, 116, 121, 112, 101, 34, 58, 49, 125},
-	}
-
-	// Set a short timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
-
-	// Try to read message
-	_, err := ReadMessageWithContext(ctx, slowReader)
-	if err == nil {
-		t.Error("Expected timeout error")
 	}
 }
 

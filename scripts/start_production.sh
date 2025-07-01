@@ -93,6 +93,15 @@ create_directories() {
     chmod 755 backups
     
     log "Директории созданы"
+
+    # --- Новый блок: автоматическое обновление публичного ключа ---
+    if [[ -f "config/public_key.pem" ]]; then
+        log "Обновляю публичный ключ Keycloak из config/public_key.pem..."
+        bash scripts/update_keycloak_public_key_from_file.sh config/public_key.pem
+    else
+        warn "Файл config/public_key.pem не найден. Публичный ключ Keycloak не будет обновлён автоматически."
+        warn "Скопируйте публичный ключ из Keycloak UI (Realm Settings → Keys → RS256 → Public Key) в config/public_key.pem для автоматизации!"
+    fi
 }
 
 # Остановка существующих контейнеров

@@ -15,7 +15,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/twogc/cloudbridge-relay-installer/config"
+	"github.com/twogc/cloudbridge-relay-installer/internal/adminapi"
 	"github.com/twogc/cloudbridge-relay-installer/internal/django"
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
@@ -24,7 +26,6 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
 	"github.com/twogc/cloudbridge-relay-installer/internal/token"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 )
 
@@ -677,6 +678,13 @@ func getCipherSuiteString(suite uint16) string {
 
 func main() {
 	flag.Parse()
+
+	// Запуск admin API в отдельной горутине (порт 8082)
+	go func() {
+		if err := adminapi.RunServer(":8082"); err != nil {
+			fmt.Fprintf(os.Stderr, "Admin API server error: %v\n", err)
+		}
+	}()
 
 	// Load configuration
 	cfg, err := config.Load(*configFile)

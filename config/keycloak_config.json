@@ -1,11 +1,11 @@
 {
   "keycloak": {
-    "enabled": true,
+    "enabled": false,
     "server_url": "http://localhost:8080",
     "realm": "cloudbridge",
     "client_id": "relay-client",
     "client_secret": "d682s8Sgm3bSMNaD7jgz0Bq2VOkhuc1P",
-    "public_key": "zFLJxvhDL-vwl6QXX5kmMjCfTaTuna1BIwLAGboIAmRfFXCjnDQ7qFh-TNg2x8T8fdJqa1Ye_FylY56F9FdT71K5VdowNJM7u79rCMdGenX2vLg_LenCooQz6MT-93pVnUjOaNEgAL1GaEbDkBh1Hia6yEORTu681S-7kpI5LVskY0nhbrI058OPjzUPH26PkbwWrjOFdYrdQgqeCqUjKxo-uJ0CcQCj-nCPITWJ-mW-NPM04Fok_btceI1ltZB869Rcu7-2Jr_kETbe2kKlLlgdHmyhNrVj4zi9erdTEUoiwKCwKd6Bt2LJoyYyRw6WQrY3vjzX1b6g0lmokdBFUQ",
+    "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqprrPm7O708uLh+xnTc3WeweGhgeBNPnInl9VFAT7GtXMVfNDG2Gqr/f0aVActW8k3XA9QFKvRQeAEp6cAq16Qa1zFlBAnT8ZTU0Ii+ncNO33wq1jAtHhcmnOeQ1MVCL1qKtoa8k+mpAsn9U49u3IM/SxIPFN7hkVDQaTeq0giAiSgwSNlN6r41T5Nkf0fXETbDSnLY07lkV6vs5zuCT4HTShMrYCnczswhVznP14tYke7Me5gvUgHagtFZcf11pLywVMklOdAMuGm26v2jaTCwCoHpnpBanRiqxylXjfGzk1GRvBr8JDu540PYS2p4keC6hx2t/WG42QGNgZJJ36wIDAQAB",
     "token_validation": {
       "issuer": "http://localhost:8080/realms/cloudbridge",
       "audience": "relay-client",
