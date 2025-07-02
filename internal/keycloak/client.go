@@ -16,6 +16,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
+	"go.uber.org/zap"
 )
 
 // Config represents Keycloak configuration
@@ -211,24 +212,44 @@ func (c *Client) fetchJWKS(ctx context.Context) (*JWKS, error) {
 	url := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs", 
 		c.config.ServerURL, c.config.Realm)
 
+	if c.logger != nil {
+		c.logger.Info("Fetching JWKS", zap.String("url", url))
+	}
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
+		if c.logger != nil {
+			c.logger.Error("Failed to create JWKS request", zap.Error(err))
+		}
 		return nil, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		if c.logger != nil {
+			c.logger.Error("Failed to fetch JWKS", zap.Error(err), zap.String("url", url))
+		}
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		if c.logger != nil {
+			c.logger.Error("JWKS request failed", zap.Int("status", resp.StatusCode), zap.String("url", url))
+		}
 		return nil, fmt.Errorf("failed to fetch JWKS: %s", resp.Status)
 	}
 
 	var jwks JWKS
 	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
+		if c.logger != nil {
+			c.logger.Error("Failed to decode JWKS", zap.Error(err))
+		}
 		return nil, err
+	}
+
+	if c.logger != nil {
+		c.logger.Info("JWKS fetched successfully", zap.Int("keys_count", len(jwks.Keys)))
 	}
 
 	return &jwks, nil

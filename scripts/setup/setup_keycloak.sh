@@ -501,6 +501,22 @@ main() {
 # Run main function
 main "$@"
 
+# Напоминание о сертификатах для HTTPS Keycloak
+if [[ ! -f "certs/fullchain.pem" || ! -f "certs/privkey.pem" ]]; then
+    echo -e "${YELLOW}[WARNING] Для HTTPS Keycloak нужны certs/fullchain.pem и certs/privkey.pem!${NC}"
+    echo -e "${YELLOW}[WARNING] Без них Keycloak не сможет работать по 443 (HTTPS).${NC}"
+else
+    echo -e "${GREEN}[INFO] SSL-сертификаты для Keycloak найдены. HTTPS будет работать.${NC}"
+fi
+
+# Напоминание о KC_HOSTNAME
+if [[ -z "$KC_HOSTNAME" || "$KC_HOSTNAME" == "localhost" ]]; then
+    echo -e "${YELLOW}[WARNING] Переменная KC_HOSTNAME не задана или равна 'localhost'."
+    echo -e "${YELLOW}[WARNING] Для корректных редиректов укажите внешний домен, например: edge.2gc.ru${NC}"
+else
+    echo -e "${GREEN}[INFO] KC_HOSTNAME: $KC_HOSTNAME${NC}"
+fi
+
     # Интегрируем существующий interactive_setup.sh
     if [ -f "scripts/interactive_setup.sh" ]; then
         echo -e "\033[1;34m[INFO]\033[0m Запуск интерактивной настройки Keycloak..."

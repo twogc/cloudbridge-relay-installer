@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudbridge Relay Admin Dashboard - Демо</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .demo-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .demo-header p {
+            margin: 0.5rem 0 0 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .demo-tabs {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0 2rem;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-tab-btn {
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            margin-right: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .demo-tab-btn:hover {
+            color: #333;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .demo-tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        .demo-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 0 0 12px 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-status-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .demo-status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .demo-status-card h3 {
+            margin: 0 0 1rem 0;
+            color: #333;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .demo-status-indicator {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .demo-status-indicator.success {
+            background: #28a745;
+            color: white;
+        }
+
+        .demo-status-indicator.error {
+            background: #dc3545;
+            color: white;
+        }
+
+        .demo-status-card p {
+            margin: 0.5rem 0;
+            color: #666;
+        }
+
+        .demo-audit-table {
+            overflow-x: auto;
+        }
+
+        .demo-audit-table table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #333;
+        }
+
+        .demo-audit-table th {
+            background: #f8f9fa;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .demo-audit-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .demo-audit-table tr:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .demo-audit-table pre {
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            max-width: 300px;
+            overflow-x: auto;
+            margin: 0;
+        }
+
+        .demo-note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 2rem;
+            color: #856404;
+        }
+
+        .demo-note h4 {
+            margin: 0 0 0.5rem 0;
+            color: #856404;
+        }
+
+        .demo-note p {
+            margin: 0.5rem 0;
+        }
+
+        .demo-note ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .demo-container {
+                padding: 1rem;
+            }
+            
+            .demo-status-cards {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .demo-audit-table table {
+                min-width: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <!-- Header -->
+        <div class="demo-header">
+            <h1>Cloudbridge Relay Admin Dashboard</h1>
+            <p>Демонстрация интерфейса административной панели</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="demo-tabs">
+            <button class="demo-tab-btn active" onclick="showTab('overview')">Обзор</button>
+            <button class="demo-tab-btn" onclick="showTab('audit')">Аудит</button>
+            <button class="demo-tab-btn" onclick="showTab('settings')">Настройки</button>
+        </div>
+
+        <!-- Content -->
+        <div class="demo-content">
+            <!-- Overview Tab -->
+            <div id="overview-tab" class="demo-tab">
+                <div class="demo-status-cards">
+                    <div class="demo-status-card">
+                        <h3>Статус API</h3>
+                        <div class="demo-status-indicator success">Работает</div>
+                        <p>Admin API сервер функционирует нормально</p>
+                    </div>
+                    
+                    <div class="demo-status-card">
+                        <h3>Пользователь</h3>
+                        <p><strong>Имя:</strong> admin</p>
+                        <p><strong>Email:</strong> admin@example.com</p>
+                        <p><strong>Роли:</strong> admin-ui, operator</p>
+                    </div>
+
+                    <div class="demo-status-card">
+                        <h3>Система</h3>
+                        <div class="demo-status-indicator success">Стабильная</div>
+                        <p>Все сервисы работают корректно</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Tab -->
+            <div id="audit-tab" class="demo-tab" style="display: none;">
+                <h3>Аудит логи</h3>
+                <div class="demo-audit-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Событие</th>
+                                <th>Пользователь</th>
+                                <th>Детали</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>15.01.2024 12:15:00</td>
+                                <td>api_access</td>
+                                <td>admin</td>
+                                <td>
+                                    <pre>{"endpoint":"/api/audit/logs","method":"GET","status_code":200}</pre>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>15.01.2024 12:10:00</td>
+                                <td>api_access</td>
+                                <td>admin</td>
+                                <td>
+                                    <pre>{"endpoint":"/api/status","method":"GET","status_code":200}</pre>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>15.01.2024 12:05:00</td>
+                                <td>dashboard_access</td>
+                                <td>admin</td>
+                                <td>
+                                    <pre>{"page":"overview","session_id":"sess_12345"}</pre>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>15.01.2024 11:30:00</td>
+                                <td>backup_created</td>
+                                <td>system</td>
+                                <td>
+                                    <pre>{"backup_type":"full","size":"2.5GB","location":"/backups/backup_20240115_113000.tar.gz"}</pre>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>15.01.2024 11:25:00</td>
+                                <td>security_alert</td>
+                                <td>system</td>
+                                <td>
+                                    <pre>{"type":"failed_login","ip":"192.168.1.200","attempts":3}</pre>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="demo-tab" style="display: none;">
+                <h3>Настройки</h3>
+                <p>Настройки будут добавлены в будущих версиях.</p>
+            </div>
+        </div>
+
+        <!-- Demo Note -->
+        <div class="demo-note">
+            <h4>Демонстрационная версия</h4>
+            <p>Это демонстрационная версия административной панели Cloudbridge Relay. В реальной версии:</p>
+            <ul>
+                <li>Требуется авторизация через Keycloak</li>
+                <li>Данные загружаются из реального admin API</li>
+                <li>Аудит логи отображаются в реальном времени</li>
+                <li>Доступ ограничен пользователями с ролью "admin-ui"</li>
+            </ul>
+            <p><strong>Для доступа к полной версии:</strong> <a href="/" style="color: #667eea;">Перейти к приложению</a></p>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Скрываем все табы
+            const tabs = document.querySelectorAll('.demo-tab');
+            tabs.forEach(tab => tab.style.display = 'none');
+            
+            // Убираем активный класс со всех кнопок
+            const buttons = document.querySelectorAll('.demo-tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // Показываем выбранный таб
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            
+            // Добавляем активный класс к кнопке
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html> 

@@ -679,13 +679,6 @@ func getCipherSuiteString(suite uint16) string {
 func main() {
 	flag.Parse()
 
-	// Запуск admin API в отдельной горутине (порт 8082)
-	go func() {
-		if err := adminapi.RunServer(":8082"); err != nil {
-			fmt.Fprintf(os.Stderr, "Admin API server error: %v\n", err)
-		}
-	}()
-
 	// Load configuration
 	cfg, err := config.Load(*configFile)
 	if err != nil {
@@ -698,6 +691,60 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Invalid configuration: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Setup logger for adminapi
+	adminLogger, err := logger.New(logger.Config{
+		Level:      logger.LogLevel(cfg.Logging.Level),
+		Output:     cfg.Logging.Output,
+		FilePath:   cfg.Logging.File,
+		JSON:       cfg.Logging.Format == "json",
+		MaxSize:    100,
+		MaxAge:     30,
+		MaxBackups: 10,
+		Compress:   true,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create admin logger: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Create Keycloak client for adminapi
+	var adminKeycloakClient *keycloak.Client
+	if cfg.Keycloak.Enabled {
+		fmt.Printf("Creating Keycloak client for admin API...\n")
+		adminKeycloakClient, err = keycloak.NewClient(&keycloak.Config{
+			ServerURL:    cfg.Keycloak.ServerURL,
+			Realm:        cfg.Keycloak.Realm,
+			ClientID:     cfg.Keycloak.ClientID,
+			ClientSecret: cfg.Keycloak.ClientSecret,
+			PublicKey:    cfg.Keycloak.PublicKey,
+			TokenValidation: struct {
+				Issuer     string        `json:"issuer"`
+				Audience   string        `json:"audience"`
+				ClockSkew  time.Duration `json:"clock_skew"`
+			}{
+				Issuer:     cfg.Keycloak.TokenValidation.Issuer,
+				Audience:   cfg.Keycloak.TokenValidation.Audience,
+				ClockSkew:  cfg.Keycloak.TokenValidation.ClockSkew,
+			},
+			HTTPClient: &http.Client{Timeout: cfg.Keycloak.HTTPTimeout},
+			Logger:     adminLogger,
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create Keycloak client for adminapi: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Keycloak client created successfully for admin API\n")
+	} else {
+		fmt.Printf("Keycloak is disabled in configuration - admin API will run without authentication\n")
+	}
+
+	// Запуск admin API в отдельной горутине (порт 8082)
+	go func() {
+		if err := adminapi.RunServer(":8082", adminKeycloakClient, adminLogger); err != nil {
+			fmt.Fprintf(os.Stderr, "Admin API server error: %v\n", err)
+		}
+	}()
 
 	// Create server
 	server, err := NewServer(cfg)
