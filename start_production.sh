@@ -18,11 +18,12 @@ show_banner() {
     echo "║                       ██║  ██║███████╗███████╗██║  ██║   ██║                 ║"
     echo "║                       ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝                 ║"
     echo "║                                                                              ║"
-    echo "║                           Production Environment v2.0                        ║"
+    echo "║                           Production Environment v2.1                        ║"
     echo "║                                                                              ║"
     echo "║  Multi-Tenant Authentication   |  High-Performance TCP Proxy                 ║"
     echo "║  Enterprise Security           |  Advanced Monitoring & Analytics            ║"
     echo "║  Auto-Scaling & Load Balancing |  Real-time Metrics & Dashboards             ║"
+    echo "║  Custom Keycloak Theme         |  Playa Design System                        ║"
     echo "║                                                                              ║"
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo -e "\033[0m"
@@ -111,6 +112,7 @@ create_directories() {
     
     mkdir -p keycloak/data
     mkdir -p keycloak/imports
+    mkdir -p keycloak/themes
     mkdir -p logs
     mkdir -p certs
     mkdir -p backups
@@ -174,6 +176,23 @@ start_services() {
     else
         warn "Скрипт setup_dashboards.sh не найден. Дашборды не будут установлены автоматически."
     fi
+    
+    # --- Новый блок: автоматическая настройка темы Keycloak ---
+    log "Настройка кастомной темы Playa для Keycloak..."
+    if [ -f "scripts/setup/setup_keycloak_theme.sh" ]; then
+        chmod +x scripts/setup/setup_keycloak_theme.sh
+        # Проверяем, что переменные окружения установлены
+        if [[ -n "$KEYCLOAK_ADMIN" && -n "$KEYCLOAK_ADMIN_PASSWORD" ]]; then
+            log "Настраиваю тему Playa для Keycloak..."
+            ./scripts/setup/setup_keycloak_theme.sh
+        else
+            warn "KEYCLOAK_ADMIN или KEYCLOAK_ADMIN_PASSWORD не установлены"
+            warn "Тема Keycloak не будет настроена автоматически"
+            warn "Запустите вручную: ./scripts/setup/setup_keycloak_theme.sh"
+        fi
+    else
+        warn "Скрипт setup_keycloak_theme.sh не найден. Тема Keycloak не будет настроена автоматически."
+    fi
 }
 
 # Проверка здоровья сервисов
@@ -212,6 +231,14 @@ check_health() {
            curl -f http://localhost:8081/metrics &> /dev/null && \
            curl -f http://localhost:3000/api/health &> /dev/null; then
             log "🎉 Все сервисы запущены и готовы к работе!"
+            
+            # Проверяем наличие темы
+            if [ -d "keycloak/themes/playa" ]; then
+                log "✅ Кастомная тема Playa найдена"
+            else
+                warn "⚠️  Кастомная тема Playa не найдена в keycloak/themes/playa"
+            fi
+            
             return 0
         fi
         
@@ -246,6 +273,10 @@ show_status() {
     echo -e "  \033[1;36m📈 Prometheus:\033[0m   http://localhost:9090"
     echo -e "  \033[1;36m🚨 AlertManager:\033[0m http://localhost:9093"
     echo
+    log "Тема Keycloak:"
+    echo -e "  \033[1;36m🎨 Кастомная тема:\033[0m Playa (автоматически настроена)"
+    echo -e "  \033[1;36m🔗 Страница входа:\033[0m http://localhost:8080/realms/cloudbridge/protocol/openid-connect/auth"
+    echo
     
     log "Логи сервисов:"
     echo -e "  \033[1;33mdocker-compose logs -f keycloak\033[0m"
@@ -257,6 +288,7 @@ show_status() {
     echo -e "  • Use \033[1;33m./scripts/start_production.sh --status\033[0m to check service status"
     echo -e "  • Use \033[1;33mdocker-compose logs -f [service]\033[0m to view real-time logs"
     echo -e "  • Use \033[1;33m./scripts/setup/setup_dashboards.sh\033[0m to update Grafana dashboards"
+    echo -e "  • Use \033[1;33m./scripts/setup/setup_keycloak_theme.sh\033[0m to reconfigure Keycloak theme"
     echo
 }
 
@@ -331,10 +363,14 @@ main() {
     check_dependencies
     check_env_file "$env_file"
     create_directories
+    check_keycloak_theme
     
     if [[ "$force_stop" == true ]]; then
         stop_existing_containers
     fi
+    
+    # Вызов проверки сертификатов перед запуском сервисов
+    check_certificates
     
     start_services "$env_file"
     
@@ -350,4 +386,47 @@ main() {
 }
 
 # Запуск скрипта
-main "$@" 
+main "$@"
+
+# Добавляем новую функцию для проверки сертификатов
+check_certificates() {
+    if [[ ! -f "certs/fullchain.pem" || ! -f "certs/privkey.pem" ]]; then
+        warn "ВНИМАНИЕ: Для HTTPS Keycloak нужны certs/fullchain.pem и certs/privkey.pem!"
+        warn "Keycloak не сможет стартовать по HTTPS (443) без этих файлов."
+    else
+        log "SSL-сертификаты для Keycloak найдены. HTTPS будет работать."
+    fi
+}
+
+# Добавляем функцию для проверки темы Keycloak
+check_keycloak_theme() {
+    log "Проверка кастомной темы Keycloak..."
+    
+    if [ -d "keycloak/themes/playa" ]; then
+        local theme_files=$(find keycloak/themes/playa -type f | wc -l)
+        log "✅ Кастомная тема Playa найдена ($theme_files файлов)"
+        
+        # Проверяем основные файлы темы
+        if [ -f "keycloak/themes/playa/theme.properties" ]; then
+            log "✅ Основной файл конфигурации темы найден"
+        else
+            warn "⚠️  Файл theme.properties не найден"
+        fi
+        
+        if [ -f "keycloak/themes/playa/login/css/style.css" ]; then
+            log "✅ CSS файл темы найден"
+        else
+            warn "⚠️  CSS файл темы не найден"
+        fi
+        
+        if [ -f "keycloak/themes/playa/login/index.ftl" ]; then
+            log "✅ Шаблон входа найден"
+        else
+            warn "⚠️  Шаблон входа не найден"
+        fi
+        
+    else
+        warn "⚠️  Кастомная тема Playa не найдена в keycloak/themes/playa"
+        warn "Тема не будет применена автоматически"
+    fi
+} 

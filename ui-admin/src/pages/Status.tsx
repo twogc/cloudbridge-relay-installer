@@ -14,7 +14,7 @@ export default function Status() {
         setMessage(data.message);
         setLoading(false);
       })
-      .catch(err => {
+      .catch(() => {
         setError('Ошибка запроса к API');
         setLoading(false);
       });

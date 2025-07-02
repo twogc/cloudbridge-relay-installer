@@ -25,6 +25,8 @@ scripts/setup/setup_keycloak.sh
 echo -e "\033[1;36m[4/7]\033[0m Настройка сертификатов..."
 scripts/setup/setup_certs.sh
 
+echo -e "\033[1;33mПроверьте, что в certs/ есть fullchain.pem и privkey.pem для HTTPS Keycloak!\033[0m"
+
 echo -e "\033[1;36m[5/7]\033[0m Запуск сервисов..."
 scripts/utils/start_production.sh
 

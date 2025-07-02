@@ -76,16 +76,20 @@ setup_ssh() {
 setup_external_services() {
     log_info "Настройка внешних сервисов..."
     
-    # Keycloak Admin Console (внешний доступ)
+    # Keycloak Admin Console (HTTP)
     ufw allow 8080/tcp comment "Keycloak Admin Console"
+    # Keycloak HTTPS (443)
+    ufw allow 443/tcp comment "Keycloak HTTPS (443)"
     
     # Relay API (внешний доступ)
-    ufw allow 8082/tcp comment "Relay API"
+    ufw allow 8083/tcp comment "Relay API (external)"
     
-    # Relay TLS (внешний доступ)
-    ufw allow 8080/tcp comment "Relay TLS"
+    # Не открываем 8081 и 8082 наружу
+    # ufw allow 8081/tcp comment "Relay Metrics (открыт для всех)"
+    # ufw allow 8082/tcp comment "Relay API (открыт для всех)"
     
     log_success "Внешние сервисы настроены"
+    log_info "Порт 443 (HTTPS) открыт для Keycloak. Не забудьте про сертификаты!"
 }
 
 # Настройка внутренних сервисов (только localhost)
@@ -94,16 +98,14 @@ setup_internal_services() {
     
     # Relay Metrics (только localhost)
     ufw allow from 127.0.0.1 to any port 8081 comment "Relay Metrics (localhost only)"
-    
+    # Relay API (только localhost)
+    ufw allow from 127.0.0.1 to any port 8082 comment "Relay API (localhost only)"
     # Prometheus (только localhost)
     ufw allow from 127.0.0.1 to any port 9090 comment "Prometheus (localhost only)"
-    
     # AlertManager (только localhost)
     ufw allow from 127.0.0.1 to any port 9093 comment "AlertManager (localhost only)"
-    
     # Blackbox Exporter (только localhost)
     ufw allow from 127.0.0.1 to any port 9115 comment "Blackbox Exporter (localhost only)"
-    
     # Grafana (только localhost)
     ufw allow from 127.0.0.1 to any port 3000 comment "Grafana (localhost only)"
     
@@ -147,7 +149,7 @@ verify_configuration() {
     # Проверка внешних сервисов
     local services=(
         "8080:Keycloak"
-        "8082:Relay API"
+        "8083:Relay API"
     )
     
     for service in "${services[@]}"; do
@@ -162,6 +164,7 @@ verify_configuration() {
     # Проверка внутренних сервисов
     local internal_services=(
         "8081:Relay Metrics"
+        "8082:Relay API"
         "9090:Prometheus"
         "9093:AlertManager"
         "9115:Blackbox"
@@ -215,8 +218,8 @@ main() {
         verify_configuration
         
         log_success "Файрвол настроен и активирован!"
-        log_info "Внешние порты (8080, 8082): открыты для всех"
-        log_info "Внутренние порты (8081, 9090, 9093, 9115, 3000): только localhost"
+        log_info "Внешние порты (8080, 8083): открыты для всех"
+        log_info "Внутренние порты (8081, 8082, 9090, 9093, 9115, 3000): только localhost"
         log_info "SSH (22): с rate limiting"
     else
         log_warning "Активация файрвола отменена"
