@@ -35,19 +35,28 @@ jobs:
         version: latest
         args: --timeout=5m
 
-    - name: Run security scan
+    - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
         scan-type: 'fs'
         scan-ref: '.'
         format: 'sarif'
         output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
 
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
+
+    - name: Run CodeQL analysis
+      uses: github/codeql-action/init@v3
+      with:
+        languages: go
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
 
     - name: Run tests
       run: go test -v -race -coverprofile=coverage.out ./...
@@ -75,24 +84,130 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run gosec
-      uses: securecodewarrior/github-action-gosec@master
+    - name: Set up Go
+      uses: actions/setup-go@v4
       with:
-        args: '-fmt sarif -out results.sarif ./...'
+        go-version: '1.21'
+        cache: true
 
-    - name: Upload gosec results
-      uses: github/codeql-action/upload-sarif@v3
+    - name: Install Python
+      uses: actions/setup-python@v4
       with:
-        sarif_file: 'results.sarif'
+        python-version: '3.11'
+
+    - name: Install security tools
+      run: |
+        # Install gosec
+        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        
+        # Install safety for Python dependencies
+        pip install safety==3.5.2
+        
+        # Install jq for JSON processing
+        sudo apt-get update && sudo apt-get install -y jq
+
+    - name: Run comprehensive Go security scan
+      run: |
+        # Run gosec with detailed output
+        gosec -fmt json -out gosec-results.json ./...
+        gosec -fmt text -out gosec-results.txt ./...
+        gosec -fmt html -out gosec-results.html ./...
+        
+        # Check for critical issues
+        if jq -e '.Issues[] | select(.severity == "HIGH" or .severity == "CRITICAL")' gosec-results.json > /dev/null 2>&1; then
+          echo "❌ CRITICAL or HIGH security issues found!"
+          jq -r '.Issues[] | select(.severity == "HIGH" or .severity == "CRITICAL") | "\(.severity): \(.rule_id) - \(.details) in \(.file):\(.line)"' gosec-results.json
+          exit 1
+        else
+          echo "✅ No CRITICAL or HIGH security issues found"
+        fi
+
+    - name: Run Python dependency security scan
+      run: |
+        # Check ML requirements
+        if [ -f "ml/requirements.txt" ]; then
+          safety check -r ml/requirements.txt --json --output ml-security-results.json
+          echo "ML dependencies security check completed"
+        fi
+        
+        # Check SIEM requirements
+        if [ -f "siem/requirements.txt" ]; then
+          safety check -r siem/requirements.txt --json --output siem-security-results.json
+          echo "SIEM dependencies security check completed"
+        fi
+
+    - name: Run custom security scripts
+      run: |
+        # Make scripts executable
+        chmod +x scripts/security/*.sh
+        
+        # Run comprehensive security audit
+        ./scripts/security/security_audit_report.sh --quick
+        
+        # Run Go security check
+        ./scripts/security/check_go_security.sh --text
+        
+        # Run dependency security check
+        ./scripts/security/check_dependencies_security.sh --json
 
     - name: Check for secrets
       uses: trufflesecurity/trufflehog@main
       with:
         args: --only-verified --format json --output trufflehog-results.json
 
-    - name: Run dependency scan
+    - name: Run dependency vulnerability scan
       run: |
-        go list -json -deps ./... | nancy sleuth
+        # Install and run nancy for Go dependencies
+        go install github.com/sonatype-nexus-community/nancy@latest
+        go list -json -deps ./... | nancy sleuth --output json > nancy-results.json
+
+    - name: Upload security artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          gosec-results.*
+          *-security-results.json
+          trufflehog-results.json
+          nancy-results.json
+          security_reports/
+
+    - name: Upload SARIF results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'gosec-results.json'
+
+    - name: Security summary
+      run: |
+        echo "🔒 SECURITY SCAN SUMMARY"
+        echo "========================"
+        
+        # Go security summary
+        if [ -f "gosec-results.json" ]; then
+          TOTAL_ISSUES=$(jq '.Issues | length' gosec-results.json)
+          HIGH_ISSUES=$(jq '.Issues[] | select(.severity == "HIGH") | .rule_id' gosec-results.json | wc -l)
+          CRITICAL_ISSUES=$(jq '.Issues[] | select(.severity == "CRITICAL") | .rule_id' gosec-results.json | wc -l)
+          
+          echo "Go Security (gosec):"
+          echo "  - Total issues: $TOTAL_ISSUES"
+          echo "  - High severity: $HIGH_ISSUES"
+          echo "  - Critical severity: $CRITICAL_ISSUES"
+        fi
+        
+        # Python security summary
+        if [ -f "ml-security-results.json" ]; then
+          ML_VULNS=$(jq '.vulnerabilities | length' ml-security-results.json)
+          echo "ML Dependencies: $ML_VULNS vulnerabilities"
+        fi
+        
+        if [ -f "siem-security-results.json" ]; then
+          SIEM_VULNS=$(jq '.vulnerabilities | length' siem-security-results.json)
+          echo "SIEM Dependencies: $SIEM_VULNS vulnerabilities"
+        fi
+        
+        echo "========================"
 
   # Performance testing
   performance:
