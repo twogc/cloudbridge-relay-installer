@@ -1,0 +1,492 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Multi-Tenant Analytics Dashboard",
+    "tags": ["relay", "multi-tenant", "analytics", "business"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Tenant Overview",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Active Tenants",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_tenant_active_count",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 50},
+                {"color": "red", "value": 100}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 1}
+      },
+      {
+        "id": 3,
+        "title": "Total Revenue",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_business_total_revenue",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 10000},
+                {"color": "green", "value": 50000}
+              ]
+            },
+            "unit": "currencyUSD"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 1}
+      },
+      {
+        "id": 4,
+        "title": "Average Customer Satisfaction",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "avg(relay_business_customer_satisfaction)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "green", "value": 85}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 1}
+      },
+      {
+        "id": 5,
+        "title": "Resource Utilization",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_tenant_resource_utilization_percent",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 1}
+      },
+      {
+        "id": 6,
+        "title": "Tenant Resource Usage",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
+      },
+      {
+        "id": 7,
+        "title": "Tunnels per Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "relay_tenant_active_tunnels",
+            "legendFormat": "{{tenant_id}} - {{tenant_name}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 10}
+      },
+      {
+        "id": 8,
+        "title": "Connections per Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "relay_tenant_active_connections",
+            "legendFormat": "{{tenant_id}} - {{tenant_name}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10}
+      },
+      {
+        "id": 9,
+        "title": "Bandwidth Usage per Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tenant_bandwidth_bytes_total[5m]) / 1024 / 1024",
+            "legendFormat": "{{tenant_id}} - {{tenant_name}} - MB/s"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 18}
+      },
+      {
+        "id": 10,
+        "title": "Data Transfer per Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "relay_tenant_data_transfer_gb",
+            "legendFormat": "{{tenant_id}} - {{tenant_name}} - GB"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 18}
+      },
+      {
+        "id": 11,
+        "title": "Tenant Performance",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 26}
+      },
+      {
+        "id": 12,
+        "title": "Response Time by Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(relay_tenant_response_time_seconds_bucket[5m]))",
+            "legendFormat": "{{tenant_id}} - 95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(relay_tenant_response_time_seconds_bucket[5m]))",
+            "legendFormat": "{{tenant_id}} - 50th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 27}
+      },
+      {
+        "id": 13,
+        "title": "Error Rate by Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tenant_errors_total[5m])",
+            "legendFormat": "{{tenant_id}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 27}
+      },
+      {
+        "id": 14,
+        "title": "Tenant SLA Compliance",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_tenant_sla_compliance_percent",
+            "legendFormat": "{{tenant_id}} - {{sla_type}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 95},
+                {"color": "green", "value": 99}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 35}
+      },
+      {
+        "id": 15,
+        "title": "Tenant Uptime",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "relay_tenant_uptime_percent",
+            "legendFormat": "{{tenant_id}} - {{tenant_name}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 16, "x": 8, "y": 35}
+      },
+      {
+        "id": 16,
+        "title": "Tenant Security",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 43}
+      },
+      {
+        "id": 17,
+        "title": "Security Incidents by Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tenant_security_incidents_total[5m])",
+            "legendFormat": "{{tenant_id}} - {{incident_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 44}
+      },
+      {
+        "id": 18,
+        "title": "Failed Authentication by Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tenant_auth_failures_total[5m])",
+            "legendFormat": "{{tenant_id}} - {{failure_reason}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 44}
+      },
+      {
+        "id": 19,
+        "title": "Tenant Risk Score",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "relay_tenant_risk_score",
+            "legendFormat": "{{tenant_id}} - {{tenant_name}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 50},
+                {"color": "red", "value": 80}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 52}
+      },
+      {
+        "id": 20,
+        "title": "Tenant Isolation Violations",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_tenant_isolation_violations_total",
+            "legendFormat": "{{tenant_id}} - {{violation_type}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 5},
+                {"color": "red", "value": 20}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 52}
+      },
+      {
+        "id": 21,
+        "title": "Tenant Access Patterns",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tenant_access_patterns_total[5m])",
+            "legendFormat": "{{tenant_id}} - {{pattern_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 52}
+      },
+      {
+        "id": 22,
+        "title": "Business Analytics",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 60}
+      },
+      {
+        "id": 23,
+        "title": "Revenue by Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tenant_revenue_total[1h])",
+            "legendFormat": "{{tenant_id}} - {{tenant_name}} - $/hour"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 61}
+      },
+      {
+        "id": 24,
+        "title": "Customer Satisfaction by Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "relay_tenant_customer_satisfaction",
+            "legendFormat": "{{tenant_id}} - {{tenant_name}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 61}
+      },
+      {
+        "id": 25,
+        "title": "Tenant Usage Trends",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 69}
+      },
+      {
+        "id": 26,
+        "title": "Daily Active Users by Tenant",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "relay_tenant_daily_active_users",
+            "legendFormat": "{{tenant_id}} - {{tenant_name}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 70}
+      },
+      {
+        "id": 27,
+        "title": "Peak Usage Hours by Tenant",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "relay_tenant_usage_heatmap",
+            "format": "heatmap"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 70}
+      },
+      {
+        "id": 28,
+        "title": "Tenant Comparison Table",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "relay_tenant_comparison_metrics",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "job": true,
+                "instance": true
+              },
+              "renameByName": {
+                "tenant_id": "Tenant ID",
+                "tenant_name": "Tenant Name",
+                "active_tunnels": "Active Tunnels",
+                "active_connections": "Active Connections",
+                "bandwidth_mbps": "Bandwidth (Mbps)",
+                "data_transfer_gb": "Data Transfer (GB)",
+                "response_time_ms": "Response Time (ms)",
+                "error_rate_percent": "Error Rate (%)",
+                "sla_compliance_percent": "SLA Compliance (%)",
+                "risk_score": "Risk Score",
+                "revenue_per_hour": "Revenue ($/hour)",
+                "customer_satisfaction": "Customer Satisfaction"
+              }
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 78}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": [],
+    "annotations": {
+      "list": []
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "tenant_id",
+          "type": "query",
+          "query": "label_values(relay_tenant_active_tunnels, tenant_id)",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "tenant_name",
+          "type": "query",
+          "query": "label_values(relay_tenant_active_tunnels, tenant_name)",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "sla_type",
+          "type": "query",
+          "query": "label_values(relay_tenant_sla_compliance_percent, sla_type)",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    }
+  }
+} 

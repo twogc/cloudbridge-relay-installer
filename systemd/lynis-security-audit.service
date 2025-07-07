@@ -1,0 +1,26 @@
+[Unit]
+Description=Lynis Security Audit with Telegram Notifications
+Documentation=https://github.com/twogc/cloudbridge-relay-installer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
+#ExecStartPre=/usr/bin/flock -n /var/run/lynis_telegram.lock -c "true"
+ExecStart=/usr/bin/flock -n /var/run/lynis_telegram.lock /bin/bash /home/ubuntu/cloudbridge-relay-installer/scripts/lynis_with_telegram.sh
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=900
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=30
+
+# Безопасность (упрощенная)
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target 

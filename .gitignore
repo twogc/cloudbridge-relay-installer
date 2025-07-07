@@ -1,0 +1,86 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+.env.backup.*
+
+# Secrets and sensitive data
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+keys/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+backups/
+*.backup
+*.bak
+
+# Temporary files
+*.tmp
+*.temp
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Build artifacts
+build/
+dist/
+*.exe
+relay
+
+# Certificates and keys
+certs/
+ssl/
+
+# Keycloak data
+keycloak/data/
+keycloak/imports/
+
+# Test coverage
+coverage/
+*.cover
+.coverage
+
+# Node modules (if any)
+node_modules/
+
+# Python virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# JWT tokens and secrets in test files
+test_*.py
+generate_jwt.py 
