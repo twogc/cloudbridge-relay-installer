@@ -3,6 +3,8 @@ package tenant
 import (
 	"context"
 	"fmt"
+	"net"
+	"strings"
 	"sync"
 	"time"
 
@@ -182,9 +184,27 @@ func (m *Manager) IsIPAllowed(tenantID string, ip string) bool {
 		return true
 	}
 
+	// Parse the IP to check
+	checkIP := net.ParseIP(ip)
+	if checkIP == nil {
+		return false
+	}
+
 	for _, allowedIP := range limits.AllowedIPs {
-		if allowedIP == ip {
-			return true
+		// Check if it's a CIDR range
+		if strings.Contains(allowedIP, "/") {
+			_, ipNet, err := net.ParseCIDR(allowedIP)
+			if err != nil {
+				continue
+			}
+			if ipNet.Contains(checkIP) {
+				return true
+			}
+		} else {
+			// Check exact IP match
+			if allowedIP == ip {
+				return true
+			}
 		}
 	}
 
