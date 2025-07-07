@@ -80,9 +80,9 @@ func New(config Config) (*Logger, error) {
 			config.FilePath = "logs/relay.log"
 		}
 
-		// Ensure directory exists
+		// Ensure directory exists with secure permissions
 		dir := filepath.Dir(config.FilePath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0750); err != nil {
 			return nil, fmt.Errorf("failed to create log directory: %w", err)
 		}
 
@@ -408,9 +408,9 @@ func NewAuditLogger(config Config) (*AuditLogger, error) {
 
 	// File output for audit logs
 	if auditConfig.FilePath != "" {
-		// Ensure directory exists
+		// Ensure directory exists with secure permissions
 		dir := filepath.Dir(auditConfig.FilePath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0750); err != nil {
 			return nil, fmt.Errorf("failed to create audit log directory: %w", err)
 		}
 

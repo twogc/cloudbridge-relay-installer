@@ -1,7 +1,7 @@
 import { getAccessToken } from '../config/keycloak';
 
 // Базовый URL для admin API
-const API_BASE_URL = 'http://localhost:8083';
+const API_BASE_URL = `https://${window.location.hostname}:8083`;
 
 // Типы для API ответов
 export interface ApiStatus {

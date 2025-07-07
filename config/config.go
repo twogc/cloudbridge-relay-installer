@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"time"
+
 	"github.com/twogc/cloudbridge-relay-installer/internal/tls"
 )
 
@@ -212,6 +214,11 @@ func replaceEnvVars(s string) string {
 
 // Load loads configuration from a file
 func Load(path string) (*Config, error) {
+	// Validate file path to prevent path traversal
+	if !isValidConfigPath(path) {
+		return nil, fmt.Errorf("invalid config file path")
+	}
+	
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
@@ -444,4 +451,34 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// isValidConfigPath validates config file path to prevent path traversal
+func isValidConfigPath(path string) bool {
+	// Check for path traversal attempts
+	if strings.Contains(path, "..") || strings.Contains(path, "~") || strings.Contains(path, "//") {
+		return false
+	}
+	
+	// Only allow absolute paths or paths starting with allowed directories
+	allowedPrefixes := []string{
+		"./config/",
+		"/etc/cloudbridge/",
+		"config/",
+		"./",
+	}
+	
+	// Normalize path
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return false
+	}
+	
+	for _, prefix := range allowedPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	
+	return false
 } 

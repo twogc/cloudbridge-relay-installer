@@ -44,8 +44,8 @@
             "loginResetCredentials": "${url.loginResetCredentialsUrl}",
             "login": "${url.loginUrl}",
             "registration": "${url.registrationUrl}",
-            "loginAction": "${url.loginAction}",
-            "registrationAction": "${url.registrationAction}",
+            "loginAction": "${url.loginAction!'#'}",
+            "registrationAction": "${url.registrationAction!'#'}",
             "resourcesPath": "${url.resourcesPath}"
         },
         "titles": {

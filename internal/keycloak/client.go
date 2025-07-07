@@ -366,6 +366,21 @@ func (c *Client) claimsToTokenInfo(claims jwt.MapClaims) (*TokenInfo, error) {
 		}
 	}
 
+	// Extract client roles
+	if resourceAccess, ok := claims["resource_access"].(map[string]interface{}); ok {
+		for _, v := range resourceAccess {
+			if client, ok := v.(map[string]interface{}); ok {
+				if roles, ok := client["roles"].([]interface{}); ok {
+					for _, role := range roles {
+						if roleStr, ok := role.(string); ok {
+							tokenInfo.Roles = append(tokenInfo.Roles, roleStr)
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return tokenInfo, nil
 }
 

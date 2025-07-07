@@ -113,7 +113,14 @@ func (p *Proxy) transferData(src, dst net.Conn, direction string) {
 			return
 		default:
 			// Set read timeout
-			src.SetReadDeadline(time.Now().Add(30 * time.Second))
+			if err := src.SetReadDeadline(time.Now().Add(30 * time.Second)); err != nil {
+				p.logger.Error("Failed to set read deadline",
+					zap.String("tunnel_id", p.tunnelID),
+					zap.String("direction", direction),
+					zap.Error(err),
+				)
+				return
+			}
 
 			// Read data from source
 			n, err := src.Read(buffer)
@@ -141,7 +148,14 @@ func (p *Proxy) transferData(src, dst net.Conn, direction string) {
 			p.updateStats(direction, int64(n))
 
 			// Set write timeout
-			dst.SetWriteDeadline(time.Now().Add(30 * time.Second))
+			if err := dst.SetWriteDeadline(time.Now().Add(30 * time.Second)); err != nil {
+				p.logger.Error("Failed to set write deadline",
+					zap.String("tunnel_id", p.tunnelID),
+					zap.String("direction", direction),
+					zap.Error(err),
+				)
+				return
+			}
 
 			// Write data to destination
 			_, err = dst.Write(buffer[:n])
@@ -192,11 +206,21 @@ func (p *Proxy) Close() {
 	p.cancel()
 
 	if p.clientConn != nil {
-		p.clientConn.Close()
+		if err := p.clientConn.Close(); err != nil {
+			p.logger.Error("Failed to close client connection",
+				zap.String("tunnel_id", p.tunnelID),
+				zap.Error(err),
+			)
+		}
 	}
 
 	if p.serverConn != nil {
-		p.serverConn.Close()
+		if err := p.serverConn.Close(); err != nil {
+			p.logger.Error("Failed to close server connection",
+				zap.String("tunnel_id", p.tunnelID),
+				zap.Error(err),
+			)
+		}
 	}
 
 	duration := time.Since(p.stats.StartTime)

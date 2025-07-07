@@ -39,10 +39,10 @@ func NewTLSConfig(config Config) (*tls.Config, error) {
 		return nil, fmt.Errorf("failed to load TLS certificate: %v", err)
 	}
 
-	// Create TLS config
+	// Create TLS config with secure defaults
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		MinVersion:   getTLSVersion(config.MinVersion),
+		MinVersion:   tls.VersionTLS12, // Enforce minimum TLS 1.2 for security
 		CipherSuites: getCipherSuites(config.CipherSuites),
 	}
 
@@ -174,6 +174,12 @@ func ValidateCertificate(certFile, keyFile string) error {
 
 // GetCertificateInfo returns certificate information
 func GetCertificateInfo(certFile string) (map[string]interface{}, error) {
+	// Validate file path to prevent path traversal
+	if !isValidCertPath(certFile) {
+		return nil, fmt.Errorf("invalid certificate file path")
+	}
+	
+	// #nosec G304 -- path validated by isValidCertPath
 	certPEM, err := os.ReadFile(certFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read certificate: %v", err)
@@ -198,4 +204,34 @@ func GetCertificateInfo(certFile string) (map[string]interface{}, error) {
 		"dns_names":    cert.DNSNames,
 		"ip_addresses": cert.IPAddresses,
 	}, nil
+}
+
+// isValidCertPath validates certificate file path to prevent path traversal
+func isValidCertPath(path string) bool {
+	// Check for path traversal attempts
+	if strings.Contains(path, "..") || strings.Contains(path, "~") || strings.Contains(path, "//") {
+		return false
+	}
+	
+	// Only allow absolute paths or paths starting with allowed directories
+	allowedPrefixes := []string{
+		"./certs/",
+		"/etc/ssl/certs/",
+		"/etc/pki/tls/certs/",
+		"certs/",
+	}
+	
+	// Normalize path
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return false
+	}
+	
+	for _, prefix := range allowedPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	
+	return false
 } 

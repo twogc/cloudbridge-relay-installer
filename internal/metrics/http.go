@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -23,5 +24,14 @@ func NewServer(port, path string) *Server {
 // Start starts the metrics server
 func (s *Server) Start() error {
 	http.Handle(s.path, promhttp.Handler())
-	return http.ListenAndServe(s.port, nil)
+	
+	// Create server with timeouts for security
+	server := &http.Server{
+		Addr:         s.port,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+	
+	return server.ListenAndServe()
 } 
