@@ -1,0 +1,49 @@
+name: "CodeQL Config"
+
+# Disable default queries and use custom query suites
+disable-default-queries: false
+
+# Additional query suites to run
+queries:
+  # Use the `security-and-quality` query suite for security and quality checks
+  - uses: security-and-quality
+  # Use the `security-extended` query suite for additional security checks
+  - uses: security-extended
+  # Use the `security-experimental` query suite for experimental security checks
+  - uses: security-experimental
+
+# Paths to exclude from analysis
+paths-ignore:
+  - "**/*.test.go"
+  - "**/*_test.go"
+  - "**/vendor/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/docs/**"
+  - "**/scripts/**"
+  - "**/security_reports/**"
+
+# Paths to include in analysis
+paths:
+  - "cmd/**"
+  - "internal/**"
+  - "config/**"
+
+# Query filters
+query-filters:
+  # Include security queries
+  - include:
+      tags contain: security
+  # Include quality queries
+  - include:
+      tags contain: correctness
+  # Exclude experimental queries in production
+  - exclude:
+      tags contain: experimental
+      when: "production"
+
+# Additional configuration
+evaluator-log:
+  verbosity: 2
+  log-level: 3 
