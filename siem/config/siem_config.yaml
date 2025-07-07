@@ -1,0 +1,356 @@
+# SIEM Configuration File
+# CloudBridge SIEM System v1.0
+
+# Основные настройки
+general:
+  environment: production
+  log_level: INFO
+  timezone: Europe/Moscow
+  data_retention_days: 90
+
+# Настройки сбора данных
+collection:
+  # Интервалы сбора
+  relay_logs_interval: 60  # секунды
+  relay_metrics_interval: 30  # секунды
+  keycloak_events_interval: 120  # секунды
+  system_events_interval: 300  # секунды
+  
+  # Источники данных
+  sources:
+    relay:
+      enabled: true
+      log_file: /var/log/relay/relay.log
+      metrics_url: http://relay:8081/metrics
+      max_file_size_mb: 100
+    
+    keycloak:
+      enabled: true
+      admin_url: http://keycloak:8080/admin
+      auth_url: http://keycloak:8080
+      admin_username: admin
+      admin_password: admin
+      realm: cloudbridge
+    
+    system:
+      enabled: true
+      journalctl_since: 1 hour ago
+      include_units:
+        - cloudbridge-relay.service
+        - keycloak.service
+        - postgresql.service
+
+# Настройки обработки событий
+processing:
+  # Правила детекции
+  detection_rules:
+    brute_force_detection:
+      enabled: true
+      threshold: 5
+      time_window: 300  # 5 минут
+      severity: high
+      tags: [brute_force, authentication]
+    
+    suspicious_ip_detection:
+      enabled: true
+      ip_blacklist:
+        - 192.168.1.100
+        - 10.0.0.50
+      severity: medium
+      tags: [suspicious_ip, network]
+    
+    unusual_user_activity:
+      enabled: true
+      max_events_per_hour: 100
+      time_window: 3600  # 1 час
+      severity: medium
+      tags: [user_behavior, anomaly]
+    
+    relay_anomaly_detection:
+      enabled: true
+      error_threshold: 10
+      time_window: 600  # 10 минут
+      severity: high
+      tags: [relay, anomaly, errors]
+    
+    data_exfiltration_detection:
+      enabled: true
+      large_data_transfer_mb: 100
+      time_window: 3600  # 1 час
+      severity: critical
+      tags: [data_exfiltration, data_loss]
+  
+  # Обогащение событий
+  enrichment:
+    geolocation:
+      enabled: true
+      provider: maxmind  # maxmind, ipapi, ipinfo
+      api_key: your-api-key
+    
+    threat_intelligence:
+      enabled: true
+      providers:
+        - abuseipdb
+        - virustotal
+        - alienvault
+      api_keys:
+        abuseipdb: your-abuseipdb-key
+        virustotal: your-virustotal-key
+        alienvault: your-alienvault-key
+    
+    user_behavior_analysis:
+      enabled: true
+      learning_period_days: 30
+      anomaly_threshold: 0.8
+
+# Настройки уведомлений
+alerting:
+  # Общие настройки
+  min_severity: medium  # low, medium, high, critical
+  quiet_hours:
+    enabled: true
+    start: 22
+    end: 8
+  
+  # Каналы уведомлений
+  channels:
+    email:
+      enabled: false
+      smtp_server: smtp.gmail.com
+      smtp_port: 587
+      username: your-email@gmail.com
+      password: your-app-password
+      from_email: siem@yourcompany.com
+      to_emails:
+        - admin@yourcompany.com
+        - security@yourcompany.com
+      subject_template: "[SIEM Alert] {severity} - {title}"
+    
+    telegram:
+      enabled: false
+      bot_token: your-bot-token
+      chat_id: your-chat-id
+      parse_mode: HTML
+      disable_web_page_preview: true
+    
+    slack:
+      enabled: false
+      webhook_url: https://hooks.slack.com/services/your/webhook/url
+      channel: #security-alerts
+      username: SIEM Bot
+      icon_emoji: ":warning:"
+    
+    webhook:
+      enabled: false
+      url: https://your-webhook-endpoint.com/alerts
+      method: POST
+      headers:
+        Content-Type: application/json
+        Authorization: Bearer your-webhook-token
+      timeout: 10
+    
+    pagerduty:
+      enabled: false
+      api_key: your-pagerduty-api-key
+      service_id: your-service-id
+    
+    teams:
+      enabled: false
+      webhook_url: https://your-organization.webhook.office.com/webhookb2/your-webhook-url
+      title_template: "🚨 Security Alert: {title}"
+  
+  # Эскалация уведомлений
+  escalation:
+    enabled: true
+    rules:
+      - condition: "severity == 'critical'"
+        actions:
+          - "immediate_notification"
+          - "create_incident"
+          - "call_oncall"
+        timeout: 300  # 5 минут
+      
+      - condition: "severity == 'high' and count > 5"
+        actions:
+          - "escalate_to_manager"
+          - "create_incident"
+        timeout: 1800  # 30 минут
+
+# Настройки хранения данных
+storage:
+  elasticsearch:
+    hosts:
+      - http://elasticsearch:9200
+    username: elastic
+    password: changeme
+    index_prefix: siem
+    shards: 1
+    replicas: 0
+    refresh_interval: 1s
+    
+  redis:
+    host: redis
+    port: 6379
+    password: null
+    db: 0
+    max_connections: 10
+    
+  kafka:
+    bootstrap_servers:
+      - kafka:9092
+    topic_prefix: siem
+    partitions: 3
+    replication_factor: 1
+
+# Настройки мониторинга
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+    
+  grafana:
+    enabled: true
+    url: http://grafana:3000
+    username: admin
+    password: admin
+    
+  health_checks:
+    enabled: true
+    interval: 30
+    timeout: 10
+
+# Настройки безопасности
+security:
+  # Шифрование данных
+  encryption:
+    enabled: true
+    algorithm: AES-256-GCM
+    key_rotation_days: 30
+    
+  # Аутентификация и авторизация
+  authentication:
+    type: keycloak  # keycloak, ldap, basic
+    keycloak:
+      server_url: http://keycloak:8080
+      realm: siem
+      client_id: siem-client
+      client_secret: your-client-secret
+    
+  # Аудит
+  audit:
+    enabled: true
+    log_level: INFO
+    retention_days: 365
+    
+  # Соответствие требованиям
+  compliance:
+    152_fz: true  # Защита персональных данных
+    187_fz: true  # Безопасность критической инфраструктуры
+    gdpr: false   # GDPR (если применимо)
+    sox: false    # SOX (если применимо)
+
+# Настройки производительности
+performance:
+  # Ограничения ресурсов
+  limits:
+    max_events_per_second: 1000
+    max_concurrent_processors: 10
+    max_memory_usage_mb: 2048
+    max_disk_usage_gb: 100
+    
+  # Оптимизация
+  optimization:
+    batch_size: 100
+    batch_timeout: 5  # секунды
+    compression: true
+    indexing_optimization: true
+    
+  # Кэширование
+  caching:
+    enabled: true
+    ttl_seconds: 3600
+    max_size_mb: 512
+
+# Настройки резервного копирования
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Каждый день в 2:00
+  retention_days: 30
+  storage:
+    type: local  # local, s3, gcs
+    path: /backup/siem
+    compression: true
+    encryption: true
+
+# Настройки интеграций
+integrations:
+  # Интеграция с внешними системами
+  external_systems:
+    ticketing:
+      enabled: false
+      type: jira  # jira, servicenow, zendesk
+      url: https://your-company.atlassian.net
+      username: your-username
+      api_token: your-api-token
+      project_key: SIEM
+      
+    orchestration:
+      enabled: false
+      type: ansible  # ansible, terraform, puppet
+      playbook_path: /etc/siem/playbooks
+      inventory_path: /etc/siem/inventory
+      
+    threat_intelligence:
+      enabled: false
+      providers:
+        - name: alienvault
+          url: https://otx.alienvault.com
+          api_key: your-api-key
+        - name: virustotal
+          url: https://www.virustotal.com
+          api_key: your-api-key
+          
+  # API настройки
+  api:
+    enabled: true
+    port: 8080
+    rate_limit: 100  # запросов в минуту
+    authentication: true
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:3000
+        - https://your-domain.com
+
+# Настройки логирования
+logging:
+  level: INFO
+  format: json
+  output: stdout  # stdout, file, syslog
+  file:
+    path: /var/log/siem/siem.log
+    max_size_mb: 100
+    max_files: 10
+    compress: true
+  
+  # Структурированное логирование
+  structured:
+    enabled: true
+    include_fields:
+      - timestamp
+      - level
+      - message
+      - source
+      - event_type
+      - user_id
+      - ip_address
+      
+  # Аудит логов
+  audit:
+    enabled: true
+    sensitive_fields:
+      - password
+      - token
+      - api_key
+      - secret 

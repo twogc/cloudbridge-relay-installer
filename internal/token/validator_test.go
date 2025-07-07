@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/twogc/cloudbridge-relay-installer/internal/django"
 )
 
 // mockHTTPClient is a mock implementation of HTTPDoer
@@ -27,14 +28,14 @@ func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 
 func TestValidator_Validate_EmptyToken(t *testing.T) {
 	v := NewValidator(Config{})
-	if v.Validate("") {
+	if _, err := v.ValidateToken(""); err == nil {
 		t.Error("empty token should be invalid")
 	}
 }
 
 func TestValidator_Validate_NoValidation(t *testing.T) {
 	v := NewValidator(Config{})
-	if !v.Validate("any-token") {
+	if _, err := v.ValidateToken("any-token"); err != nil {
 		t.Error("token should be valid when no validation is configured")
 	}
 }
@@ -51,16 +52,19 @@ func TestValidator_REST(t *testing.T) {
 	defer server.Close()
 
 	validator := NewValidator(Config{
-		RESTEndpoint: server.URL,
+		DjangoClient: django.NewClient(django.Config{
+			APIEndpoint: server.URL,
+			Timeout:     time.Second,
+		}),
 	})
 
-	if !validator.Validate("valid-token") {
+	if _, err := validator.ValidateToken("valid-token"); err != nil {
 		t.Error("Expected valid token to be accepted")
 	}
-	if validator.Validate("invalid-token") {
+	if _, err := validator.ValidateToken("invalid-token"); err == nil {
 		t.Error("Expected invalid token to be rejected")
 	}
-	if !validator.Validate("valid-token") {
+	if _, err := validator.ValidateToken("valid-token"); err != nil {
 		t.Error("Expected cached token to be accepted")
 	}
 }
@@ -80,7 +84,7 @@ func TestValidator_JWT(t *testing.T) {
 		t.Fatalf("Failed to create test token: %v", err)
 	}
 
-	if !validator.Validate(tokenString) {
+	if _, err := validator.ValidateToken(tokenString); err != nil {
 		t.Error("Expected valid token to be accepted")
 	}
 
@@ -90,11 +94,11 @@ func TestValidator_JWT(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test token: %v", err)
 	}
-	if validator.Validate(tokenString) {
+	if _, err := validator.ValidateToken(tokenString); err == nil {
 		t.Error("Expected expired token to be rejected")
 	}
 
-	if validator.Validate(tokenString+"invalid") {
+	if _, err := validator.ValidateToken(tokenString+"invalid"); err == nil {
 		t.Error("Expected token with invalid signature to be rejected")
 	}
 
@@ -104,25 +108,28 @@ func TestValidator_JWT(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create test token: %v", err)
 	}
-	if !validator.Validate(tokenString) {
+	if _, err := validator.ValidateToken(tokenString); err != nil {
 		t.Error("Expected cached token to be accepted")
 	}
 }
 
 func TestValidator_NoValidation(t *testing.T) {
 	validator := NewValidator(Config{})
-	if !validator.Validate("any-token") {
+	if _, err := validator.ValidateToken("any-token"); err != nil {
 		t.Error("Expected any token to be accepted when no validation is configured")
 	}
 }
 
 func TestValidator_Cleanup(t *testing.T) {
 	validator := NewValidator(Config{
-		RESTEndpoint: "http://example.com",
+		DjangoClient: django.NewClient(django.Config{
+			APIEndpoint: "http://example.com",
+			Timeout:     time.Second,
+		}),
 	})
 	validator.mu.Lock()
-	validator.cache["token1"] = time.Now().Add(time.Hour)
-	validator.cache["token2"] = time.Now().Add(-time.Hour)
+	validator.cache["token1"] = TokenInfo{ClientID: "client1", Expiry: time.Now().Add(time.Hour)}
+	validator.cache["token2"] = TokenInfo{ClientID: "client2", Expiry: time.Now().Add(-time.Hour)}
 	validator.mu.Unlock()
 
 	validator.Cleanup()

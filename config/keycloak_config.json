@@ -1,0 +1,17 @@
+{
+  "keycloak": {
+    "enabled": true,
+    "server_url": "http://keycloak:8080",
+    "realm": "cloudbridge",
+    "client_id": "relay-client",
+    "client_secret": "JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM",
+    "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwYizA49h313kUlnaCD8u\n3oWgVV0o3mEPpuyhfpp+o/PQNvg6oolodiUhum9uHROvXWT/OPlPLy6fsC3hpprl\nVII7DiFuRYxtWU24O1Nd66sLt8lNxfTHKH/fwlS4opPHaHZkFzIXrKNeJvTf+kO/h\nHial8Dut+Z/tIBcwBrPWVll6P/4wpruZlK6dWoNtpac/m6RYyrEMnX+nQ9DZ3S/bS\nA1SUvRASCWxk/qQQpz/Zp3sgqLNa12h/JztEUuHm1RyshKFvHsTwJuuvmXzzJyAMP\nPTHr0M0jcdYH64VJFoDSp6xWgqFpuCn3WqevXCVSMfeI1g4TzLDUEBZdesI4PawID\nAQAB\n-----END PUBLIC KEY-----",
+    "token_validation": {
+      "issuer": "http://localhost:8080/realms/cloudbridge",
+      "audience": "relay-client",
+      "clock_skew": "30s"
+    },
+    "jwks_cache_ttl": "1h",
+    "http_timeout": "30s"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "server": {
+    "address": ":8080",
+    "port": 8080,
+    "timeout": "30s",
+    "max_tunnels": 1000,
+    "ping_interval": "30s",
+    "cleanup_interval": "1m"
+  },
+  "django": {
+    "api_endpoint": "http://localhost:8000/api",
+    "jwt_secret": "${RELAY_JWT_SECRET}",
+    "jwt_expiry": "24h",
+    "rest_timeout": "5s",
+    "rest_cache_ttl": "5m",
+    "rest_max_retries": 3,
+    "rest_retry_delay": "100ms"
+  },
+  "keycloak": {
+    "enabled": true,
+    "server_url": "http://keycloak:8080",
+    "realm": "cloudbridge",
+    "client_id": "relay-client",
+    "client_secret": "JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM",
+    "public_key": "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4gYpWaHsl+K0l8GG1IIL\\nwgw9Rx3CMtN7Xe0otQJxDjh8QGGk6Lsve11miF78bJ0WjlzaS3yo9oPIkG2N2H9v\\nR//p0vt72ZkMHq9Yn47b+vBxqfONl2I7Ndy7YXxOKLO0IU4j1taMdAEs5iQAVaMy\\nRxsG3Im0ea2kgkPiMwTOUNFXk8BIJaEDyOJgBkmPsSbfGNtGQ+EpdXIupuSFzYw\\naPA8DvEV2pOnUmMqai8tV1wOux39SCnx+PMEn9CmWfFUE+xQd/y/ph3cPa/sGcwX\\nxgh+7RgxAt0hu7yOT2UKwOKauzUQvrXuQVYcjeYee459NLPG2x57xhc6Ic1EdFaN\\nBTQIDAQAB\\n-----END PUBLIC KEY-----",
+    "token_validation": {
+      "issuer": "https://edge.2gc.ru/realms/cloudbridge",
+      "audience": "relay-client",
+      "clock_skew": "30s"
+    },
+    "jwks_cache_ttl": "1h",
+    "http_timeout": "30s"
+  },
+  "security": {
+    "tls_enabled": true,
+    "cert_file": "${RELAY_TLS_CERT_FILE}",
+    "key_file": "${RELAY_TLS_KEY_FILE}",
+    "allowed_ips": [
+      "0.0.0.0/0"
+    ],
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_second": 100,
+      "burst": 200
+    },
+    "mtls": {
+      "enabled": false,
+      "ca_file": "${RELAY_MTLS_CA_FILE}"
+    },
+    "cipher_suites": [
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256",
+      "TLS_AES_128_GCM_SHA256"
+    ],
+    "min_tls_version": "1.3",
+    "audit": {
+      "enabled": true,
+      "log_file": "/var/log/relay/audit.log"
+    }
+  },
+  "metrics": {
+    "enabled": true,
+    "port": 8081,
+    "path": "/metrics"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "json",
+    "output": "file",
+    "file": "/var/log/relay/relay.log",
+    "max_size": "100MB",
+    "max_age": "30d",
+    "max_backups": 10
+  }
+}

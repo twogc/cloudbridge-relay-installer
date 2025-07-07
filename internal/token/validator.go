@@ -1,25 +1,32 @@
 package token
 
 import (
+	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/twogc/cloudbridge-relay-installer/internal/django"
 )
 
 // Config represents the token validator configuration
 type Config struct {
-	RESTEndpoint string
+	DjangoClient *django.Client
 	JWTSecret    string
+	CacheTTL     time.Duration
+}
+
+// TokenInfo represents cached token information
+type TokenInfo struct {
+	ClientID string
+	Expiry   time.Time
 }
 
 // Validator implements token validation
 type Validator struct {
 	config     Config
-	client     *http.Client
-	cache      map[string]time.Time
+	cache      map[string]TokenInfo
 	mu         sync.RWMutex
 	jwtKey     []byte
 }
@@ -28,66 +35,54 @@ type Validator struct {
 func NewValidator(config Config) *Validator {
 	return &Validator{
 		config: config,
-		client: &http.Client{
-			Timeout: 5 * time.Second,
-		},
-		cache:  make(map[string]time.Time),
+		cache:  make(map[string]TokenInfo),
 		jwtKey: []byte(config.JWTSecret),
 	}
 }
 
-// Validate validates a token
-func (v *Validator) Validate(token string) bool {
+// ValidateToken validates a token and returns the client ID
+func (v *Validator) ValidateToken(token string) (string, error) {
 	// Check cache first
 	v.mu.RLock()
-	expiry, ok := v.cache[token]
+	info, ok := v.cache[token]
 	v.mu.RUnlock()
 
-	if ok && time.Now().Before(expiry) {
-		return true
+	if ok && time.Now().Before(info.Expiry) {
+		return info.ClientID, nil
 	}
 
 	// Validate token
-	var valid bool
-	if v.config.RESTEndpoint != "" {
-		valid = v.validateREST(token)
+	var clientID string
+	var err error
+
+	if v.config.DjangoClient != nil {
+		clientID, err = v.config.DjangoClient.ValidateToken(context.Background(), token)
+		if err != nil {
+			return "", fmt.Errorf("Django validation error: %v", err)
+		}
 	} else if v.config.JWTSecret != "" {
-		valid = v.validateJWT(token)
+		clientID, err = v.validateJWT(token)
+		if err != nil {
+			return "", fmt.Errorf("JWT validation error: %v", err)
+		}
 	} else {
 		// No validation configured
-		valid = true
+		return "", fmt.Errorf("no validation configured")
 	}
 
-	if valid {
-		// Cache valid token
-		v.mu.Lock()
-		v.cache[token] = time.Now().Add(5 * time.Minute)
-		v.mu.Unlock()
+	// Cache valid token
+	v.mu.Lock()
+	v.cache[token] = TokenInfo{
+		ClientID: clientID,
+		Expiry:   time.Now().Add(v.config.CacheTTL),
 	}
+	v.mu.Unlock()
 
-	return valid
+	return clientID, nil
 }
 
-// validateREST validates a token using a REST API
-func (v *Validator) validateREST(token string) bool {
-	req, err := http.NewRequest("GET", v.config.RESTEndpoint, nil)
-	if err != nil {
-		return false
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := v.client.Do(req)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode == http.StatusOK
-}
-
-// validateJWT validates a token using JWT
-func (v *Validator) validateJWT(token string) bool {
+// validateJWT validates a token using JWT and returns the client ID
+func (v *Validator) validateJWT(token string) (string, error) {
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -97,17 +92,23 @@ func (v *Validator) validateJWT(token string) bool {
 	})
 
 	if err != nil {
-		return false
+		return "", fmt.Errorf("failed to parse JWT: %v", err)
 	}
 
 	// Check expiration
 	if exp, ok := claims["exp"].(float64); ok {
 		if time.Now().Unix() > int64(exp) {
-			return false
+			return "", fmt.Errorf("token expired")
 		}
 	}
 
-	return true
+	// Get client ID
+	clientID, ok := claims["client_id"].(string)
+	if !ok {
+		return "", fmt.Errorf("missing client_id in token")
+	}
+
+	return clientID, nil
 }
 
 // Cleanup removes expired tokens from the cache
@@ -116,8 +117,8 @@ func (v *Validator) Cleanup() {
 	defer v.mu.Unlock()
 
 	now := time.Now()
-	for token, expiry := range v.cache {
-		if now.After(expiry) {
+	for token, info := range v.cache {
+		if now.After(info.Expiry) {
 			delete(v.cache, token)
 		}
 	}
