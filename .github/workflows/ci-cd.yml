@@ -173,11 +173,20 @@ jobs:
           nancy-results.json
           security_reports/
 
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+
     - name: Upload SARIF results
       uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
-        sarif_file: 'gosec-results.json'
+        sarif_file: 'trivy-results.sarif'
 
     - name: Security summary
       run: |
