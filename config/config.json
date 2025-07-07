@@ -24,7 +24,7 @@
     "client_secret": "JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM",
     "public_key": "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4gYpWaHsl+K0l8GG1IIL\\nwgw9Rx3CMtN7Xe0otQJxDjh8QGGk6Lsve11miF78bJ0WjlzaS3yo9oPIkG2N2H9v\\nR//p0vt72ZkMHq9Yn47b+vBxqfONl2I7Ndy7YXxOKLO0IU4j1taMdAEs5iQAVaMy\\nRxsG3Im0ea2kgkPiMwTOUNFXk8BIJaEDyOJgBkmPsSbfGNtGQ+EpdXIupuSFzYw\\naPA8DvEV2pOnUmMqai8tV1wOux39SCnx+PMEn9CmWfFUE+xQd/y/ph3cPa/sGcwX\\nxgh+7RgxAt0hu7yOT2UKwOKauzUQvrXuQVYcjeYee459NLPG2x57xhc6Ic1EdFaN\\nBTQIDAQAB\\n-----END PUBLIC KEY-----",
     "token_validation": {
-      "issuer": "http://keycloak:8080/realms/cloudbridge",
+      "issuer": "https://edge.2gc.ru/realms/cloudbridge",
       "audience": "relay-client",
       "clock_skew": "30s"
     },

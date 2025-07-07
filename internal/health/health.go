@@ -78,6 +78,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Encode response
 	if err := json.NewEncoder(w).Encode(status); err != nil {
 		http.Error(w, "Failed to encode health status", http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -93,7 +94,10 @@ func (c *Checker) Handler() http.Handler {
 		status.Timestamp = time.Now()
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(status)
+		if err := json.NewEncoder(w).Encode(status); err != nil {
+			http.Error(w, "Failed to encode health status", http.StatusInternalServerError)
+			return
+		}
 	})
 }
 

@@ -1,0 +1,24 @@
+Results:
+
+
+[/home/ubuntu/cloudbridge-relay-installer/internal/tls/tls.go:182] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    181: 	
+  > 182: 	certPEM, err := os.ReadFile(certFile)
+    183: 	if err != nil {
+
+Autofix: 
+
+[/home/ubuntu/cloudbridge-relay-installer/config/config.go:222] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    221: 	
+  > 222: 	data, err := os.ReadFile(path)
+    223: 	if err != nil {
+
+Autofix: 
+
+Summary:
+  Gosec  : v2.22.5
+  Files  : 20
+  Lines  : 5900
+  Nosec  : 0
+  Issues : 2
+

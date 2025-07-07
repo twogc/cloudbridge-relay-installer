@@ -1,13 +1,11 @@
 package adminapi
 
 import (
-	"net/http"
-
 	"bufio"
-	"encoding/json"
-	"os"
-
 	"context"
+	"encoding/json"
+	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-contrib/cors"
@@ -76,7 +74,7 @@ func RunServer(addr string, keycloakClient *keycloak.Client, logger *logger.Logg
 
 	// CORS: разрешаем только UI-админку (замените origin на ваш реальный)
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"}, // TODO: заменить на production origin
+		AllowOrigins:     []string{"http://localhost:5173", "https://edge.2gc.ru:5173"}, // Добавляем production origin
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -84,7 +82,7 @@ func RunServer(addr string, keycloakClient *keycloak.Client, logger *logger.Logg
 		MaxAge:           12 * 60 * 60,
 	}))
 
-	r.Use(AuthMiddleware(keycloakClient, logger))
+	r.Use(AuthMiddleware(keycloakClient, logger)) // Re-enabled authentication
 
 	r.GET("/api/status", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -95,9 +93,12 @@ func RunServer(addr string, keycloakClient *keycloak.Client, logger *logger.Logg
 
 	r.GET("/api/audit/logs", func(c *gin.Context) {
 		const maxLines = 100
-		file, err := os.Open("logs/audit.log")
+		file, err := os.Open("/var/log/relay/audit.log")
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot open audit log"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "cannot open audit log", "details": err.Error()})
+			if logger != nil {
+				logger.Error("Cannot open audit log", zap.Error(err))
+			}
 			return
 		}
 		defer file.Close()
@@ -130,5 +131,17 @@ func RunServer(addr string, keycloakClient *keycloak.Client, logger *logger.Logg
 		c.JSON(http.StatusOK, gin.H{"events": events})
 	})
 
+	// Проверяем наличие TLS сертификатов
+	certFile := "/etc/relay/certs/fullchain.pem"
+	keyFile := "/etc/relay/certs/privkey.pem"
+	
+	if _, err := os.Stat(certFile); err == nil {
+		if _, err := os.Stat(keyFile); err == nil {
+			logger.Info("Starting Admin API with HTTPS", zap.String("addr", addr))
+			return r.RunTLS(addr, certFile, keyFile)
+		}
+	}
+	
+	logger.Info("Starting Admin API with HTTP", zap.String("addr", addr))
 	return r.Run(addr)
 } 

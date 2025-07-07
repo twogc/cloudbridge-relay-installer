@@ -71,9 +71,9 @@ type Server struct {
 
 // NewServer creates a new server instance
 func NewServer(cfg *config.Config) (*Server, error) {
-	// Setup logging
+	// Setup logging with secure file permissions
 	if *logFile != "" {
-		if _, err := os.OpenFile(*logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
+		if _, err := os.OpenFile(*logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600); err != nil {
 			return nil, fmt.Errorf("failed to open log file: %v", err)
 		}
 	}
@@ -291,12 +291,15 @@ func (s *Server) Start(cfg *config.Config) error {
 				continue
 			}
 
-			// Check connection limit
-			if atomic.LoadInt32(&s.connCount) >= int32(s.maxConnections) {
+			// Check connection limit with overflow protection
+			currentCount := atomic.LoadInt32(&s.connCount)
+			if currentCount >= 0 && int(currentCount) >= s.maxConnections {
 				s.logger.Warn("Connection limit reached", 
 					zap.Int("limit", s.maxConnections),
 				)
-				conn.Close()
+				if err := conn.Close(); err != nil {
+					s.logger.Error("Failed to close connection on limit reached", zap.Error(err))
+				}
 				s.metrics.IncRejectedConnections()
 				continue
 			}
@@ -307,7 +310,9 @@ func (s *Server) Start(cfg *config.Config) error {
 				s.logger.Warn("Rate limit exceeded", 
 					zap.String("remote_addr", remoteAddr),
 				)
-				conn.Close()
+				if err := conn.Close(); err != nil {
+					s.logger.Error("Failed to close connection on rate limit", zap.Error(err))
+				}
 				s.metrics.IncRejectedConnections()
 				continue
 			}
@@ -330,7 +335,9 @@ func (s *Server) Start(cfg *config.Config) error {
 				s.logger.Warn("No available workers", 
 					zap.String("remote_addr", remoteAddr),
 				)
-				conn.Close()
+				if err := conn.Close(); err != nil {
+					s.logger.Error("Failed to close connection on no workers", zap.Error(err))
+				}
 				s.metrics.IncRejectedConnections()
 			}
 		}
@@ -361,7 +368,10 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 
 	// Устанавливаем таймауты
-	conn.SetDeadline(time.Now().Add(*timeout))
+	if err := conn.SetDeadline(time.Now().Add(*timeout)); err != nil {
+		s.logger.Error("Failed to set connection deadline", zap.Error(err))
+		return
+	}
 
 	// Создаем буферизованные reader/writer
 	reader := bufio.NewReader(conn)
@@ -406,7 +416,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 			if err != nil {
 				s.logger.Error("Both Keycloak and Django validation failed", zap.Error(err))
 				s.metrics.IncErrors("token_validation_failed")
-				proto.WriteError(writer, "invalid_token", "Invalid or expired token")
+				if err := proto.WriteError(writer, "invalid_token", "Invalid or expired token"); err != nil {
+					s.logger.Error("Failed to write error response", zap.Error(err))
+				}
 				return
 			}
 		}
@@ -416,7 +428,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 		if err != nil {
 			s.logger.Error("Invalid token", zap.Error(err))
 			s.metrics.IncErrors("token_validation_failed")
-			proto.WriteError(writer, "invalid_token", "Invalid or expired token")
+			if err := proto.WriteError(writer, "invalid_token", "Invalid or expired token"); err != nil {
+				s.logger.Error("Failed to write error response", zap.Error(err))
+			}
 			return
 		}
 	}
@@ -453,7 +467,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 				},
 			)
 		}
-		proto.WriteError(writer, "rate_limit_exceeded", "Rate limit exceeded for user")
+		if err := proto.WriteError(writer, "rate_limit_exceeded", "Rate limit exceeded for user"); err != nil {
+			s.logger.Error("Failed to write rate limit error", zap.Error(err))
+		}
 		return
 	}
 
@@ -499,7 +515,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 			default:
 				s.logger.Error("Unknown message type", zap.Error(fmt.Errorf("got %s", msg.Type)))
 				s.metrics.IncErrors("unknown_message_type")
-				proto.WriteError(writer, "unknown_message_type", "Unknown message type")
+				if err := proto.WriteError(writer, "unknown_message_type", "Unknown message type"); err != nil {
+					s.logger.Error("Failed to write unknown message type error", zap.Error(err))
+				}
 			}
 		}
 	}
@@ -521,7 +539,9 @@ func (s *Server) handleTunnelInfo(writer *bufio.Writer, connection *Connection, 
 	if tunnelInfo == nil {
 		s.logger.Error("Tunnel info is nil", zap.Error(fmt.Errorf("tunnel info is nil")))
 		s.metrics.IncErrors("invalid_tunnel_info")
-		proto.WriteError(writer, "invalid_tunnel_info", "Tunnel info is required")
+		if err := proto.WriteError(writer, "invalid_tunnel_info", "Tunnel info is required"); err != nil {
+			s.logger.Error("Failed to write invalid tunnel info error", zap.Error(err))
+		}
 		return
 	}
 
@@ -554,7 +574,9 @@ func (s *Server) handleTunnelInfo(writer *bufio.Writer, connection *Connection, 
 			zap.String("tunnel_id", tunnelInfo.TunnelID),
 			zap.Error(err),
 		)
-		proto.WriteError(writer, "tunnel_creation_failed", err.Error())
+		if err := proto.WriteError(writer, "tunnel_creation_failed", err.Error()); err != nil {
+			s.logger.Error("Failed to write tunnel creation error", zap.Error(err))
+		}
 		return
 	}
 
@@ -608,7 +630,9 @@ func (s *Server) cleanup() {
 					},
 				)
 			}
-			connection.conn.Close()
+			if err := connection.conn.Close(); err != nil {
+				s.logger.Error("Failed to close connection during cleanup", zap.Error(err))
+			}
 			delete(s.connections, clientID)
 			s.logger.Info("Cleaned up inactive connection", 
 				zap.String("client_id", clientID),
@@ -626,13 +650,17 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	// Close listener
 	if s.listener != nil {
-		s.listener.Close()
+		if err := s.listener.Close(); err != nil {
+			s.logger.Error("Failed to close listener", zap.Error(err))
+		}
 	}
 
 	// Close all connections
 	s.mu.Lock()
 	for _, connection := range s.connections {
-		connection.conn.Close()
+		if err := connection.conn.Close(); err != nil {
+			s.logger.Error("Failed to close connection during shutdown", zap.Error(err))
+		}
 	}
 	s.mu.Unlock()
 

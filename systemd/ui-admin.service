@@ -1,0 +1,17 @@
+[Unit]
+Description=CloudBridge Admin UI
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer/ui-admin
+ExecStart=/usr/bin/npm run dev
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=PORT=5173
+
+[Install]
+WantedBy=multi-user.target 

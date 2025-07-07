@@ -1,131 +1,144 @@
-# CloudBridge Relay Documentation
+# 📚 Документация CloudBridge Relay
 
-Полная документация по CloudBridge Relay - системе для создания защищенных VPN туннелей с поддержкой мультитенантности.
+Добро пожаловать в документацию CloudBridge Relay v2.0! Здесь вы найдете всю необходимую информацию для работы с системой.
 
-## 📚 Структура документации
+## 📁 Структура документации
 
 ```
 docs/
-├── guides/           # Руководства и инструкции
-├── deployment/       # Документация по развертыванию
-├── security/         # Документация по безопасности
-├── integration/      # Документация по интеграциям
-├── troubleshooting/  # Устранение неполадок
-├── reports/          # Отчеты и технические задания
-├── changelog/        # Журналы изменений
-└── README.md         # Этот файл
+├── 📋 guides/           # Руководства и инструкции (13 файлов)
+├── 🚀 deployment/       # Документация по развертыванию (7 файлов)
+├── 🔒 security/         # Документация по безопасности (7 файлов)
+├── 🔗 integration/      # Документация по интеграциям (16 файлов)
+├── 🔧 troubleshooting/  # Устранение неполадок (4 файла)
+├── 📊 reports/          # Отчеты и технические задания (8 файлов)
+├── 📝 changelog/        # Журналы изменений (4 файла)
+└── 📖 README.md         # Этот файл
 ```
 
 ## 🚀 Быстрый старт
 
 ### Для новых пользователей:
-1. [Руководство по быстрому старту с Telegram](guides/quick_start_telegram.md)
-2. [Руководство по развертыванию](deployment/deployment_guide.md)
-3. [Настройка уведомлений Telegram](guides/telegram_notifications_setup.md)
+1. **[Быстрый старт с Telegram](guides/quick_start_telegram.md)** - Начните здесь
+2. **[Руководство по развертыванию](deployment/deployment_guide.md)** - Основная установка
+3. **[Настройка уведомлений](guides/telegram_notifications_setup.md)** - Конфигурация уведомлений
 
 ### Для администраторов:
-1. [Руководство по безопасности](security/security.md)
-2. [Интеграция с Keycloak](integration/keycloak_integration.md)
-3. [Мониторинг безопасности](security/security_monitoring.md)
-
-## 📖 Основные разделы
-
-### 📋 Guides - Руководства
-- **API Reference** - Справочник по API
-- **Dashboard Guide** - Руководство по дашбордам
-- **Metrics** - Метрики и мониторинг
-- **Multi-tenancy Guide** - Руководство по мультитенантности
-- **Ports Configuration** - Конфигурация портов
-- **Quick Start Telegram** - Быстрый старт с Telegram
-- **Quick Token Guide** - Руководство по токенам
-- **TCP Proxy Guide** - Руководство по TCP прокси
-
-### 🚀 Deployment - Развертывание
-- **Deployment Guide** - Основное руководство по развертыванию
-- **Moscow Region Quickstart** - Быстрый старт для московского региона
-- **SIEM Quick Deployment** - Быстрое развертывание SIEM
-- **SIEM Separate Server Deployment** - Развертывание SIEM на отдельном сервере
-- **SIEM Deployment Complete Guide** - Полное руководство по развертыванию SIEM
-
-### 🔒 Security - Безопасность
-- **Security** - Основная документация по безопасности
-- **Security Hardening Checklist** - Чек-лист усиления безопасности
-- **Security Monitoring** - Мониторинг безопасности
-- **Security Monitoring Telegram** - Мониторинг безопасности с Telegram
-- **Lynis Integration** - Интеграция с Lynis
-- **Lynis Quick Reference** - Быстрая справка по Lynis
-
-### 🔗 Integration - Интеграции
-- **Keycloak Integration** - Интеграция с Keycloak
-- **Keycloak Technical Specification** - Техническая спецификация Keycloak
-- **LDAP/AD Integration** - Интеграция с LDAP/Active Directory
-- **SIEM Integration Guide** - Руководство по интеграции с SIEM
-- **Client Integration** - Интеграция клиентов
-- **Server Client Implementation** - Реализация сервер-клиент
-- **Server Client Testing** - Тестирование сервер-клиент
-
-### 🔧 Troubleshooting - Устранение неполадок
-- **Debugging** - Отладка системы
-- **Fail2ban Troubleshooting** - Устранение проблем с Fail2ban
-- **Blackbox TLS Fix** - Исправление проблем с TLS в Blackbox
-
-### 📊 Reports - Отчеты
-- **Tech Task Monitoring Security** - Техническое задание по мониторингу безопасности
-- **Migration Guide v2** - Руководство по миграции v2
-- **Alertmanager Status Report** - Отчет о статусе Alertmanager
-- **Blackbox TLS Fix Report** - Отчет об исправлении TLS в Blackbox
-- **Firewall Ports Report** - Отчет о портах файрвола
-- **Firewall Setup Complete** - Полная настройка файрвола
-
-### 📝 Changelog - Журналы изменений
-- **CHANGELOG** - Основной журнал изменений
-- **CHANGELOG v2** - Журнал изменений версии 2
-
-## 🎯 Рекомендуемые маршруты чтения
+1. **[Руководство по безопасности](security/security.md)** - Основы безопасности
+2. **[Интеграция с Keycloak](integration/keycloak_integration.md)** - Аутентификация
+3. **[Мониторинг безопасности](security/security_monitoring.md)** - Настройка мониторинга
 
 ### Для разработчиков:
-1. [API Reference](guides/api_reference.md)
-2. [Server Client Technical Specification](integration/server_client_technical_specification.md)
-3. [Client Integration](integration/client_integration.md)
-4. [Debugging](troubleshooting/debugging.md)
+1. **[Справочник по API](guides/api_reference.md)** - API документация
+2. **[Технические спецификации](integration/server_client_technical_specification.md)** - Спецификации
+3. **[Руководство по отладке](troubleshooting/debugging.md)** - Отладка
 
-### Для DevOps инженеров:
-1. [Deployment Guide](deployment/deployment_guide.md)
-2. [Security](security/security.md)
-3. [Metrics](guides/metrics.md)
-4. [Troubleshooting](troubleshooting/debugging.md)
+## 📋 Основные разделы
 
-### Для администраторов безопасности:
-1. [Security](security/security.md)
-2. [Security Hardening Checklist](security/security_hardening_checklist.md)
-3. [Lynis Integration](security/lynis_integration.md)
-4. [SIEM Integration Guide](integration/siem_integration_guide.md)
+### 📋 Guides - Руководства
+Руководства по использованию различных функций системы:
+- API справочник
+- Автоматизация процессов
+- Дашборды и метрики
+- Мультитенантность
+- TCP прокси
+- VPN аналоги
+- Vue темы
+
+**[📋 Подробнее о руководствах](guides/README.md)**
+
+### 🚀 Deployment - Развертывание
+Документация по установке и развертыванию:
+- Основное руководство по развертыванию
+- Быстрый старт для московского региона
+- Развертывание SIEM
+- Production обновления
+
+**[🚀 Подробнее о развертывании](deployment/README.md)**
+
+### 🔒 Security - Безопасность
+Документация по безопасности системы:
+- Основы безопасности
+- Интеграция с Lynis
+- Мониторинг безопасности
+- Чек-листы безопасности
+
+**[🔒 Подробнее о безопасности](security/README.md)**
+
+### 🔗 Integration - Интеграции
+Документация по интеграциям с внешними системами:
+- Keycloak интеграция
+- SIEM интеграция
+- LDAP/AD интеграция
+- Сервер-клиент архитектура
+
+**[🔗 Подробнее об интеграциях](integration/README.md)**
+
+### 🔧 Troubleshooting - Устранение неполадок
+Руководства по решению проблем:
+- Отладка системы
+- Исправление TLS проблем
+- Устранение проблем с Fail2ban
+
+**[🔧 Подробнее об устранении неполадок](troubleshooting/README.md)**
+
+### 📊 Reports - Отчеты
+Технические отчеты и задания:
+- Отчеты о статусе сервисов
+- Отчеты безопасности
+- Технические задания
+
+**[📊 Подробнее об отчетах](reports/README.md)**
+
+### 📝 Changelog - Журналы изменений
+История изменений системы:
+- Основной журнал изменений
+- Журнал изменений v2
+- Production обновления
+
+**[📝 Подробнее о журналах изменений](changelog/README.md)**
 
 ## 🔍 Поиск документации
 
-### По ключевым словам:
-- **Установка**: [Deployment Guide](deployment/deployment_guide.md)
-- **Безопасность**: [Security](security/security.md)
-- **Keycloak**: [Keycloak Integration](integration/keycloak_integration.md)
-- **SIEM**: [SIEM Integration Guide](integration/siem_integration_guide.md)
-- **Мониторинг**: [Metrics](guides/metrics.md)
-- **Отладка**: [Debugging](troubleshooting/debugging.md)
-- **Telegram**: [Quick Start Telegram](guides/quick_start_telegram.md)
+### По функциональности:
+- **Аутентификация**: [Keycloak интеграция](integration/keycloak_integration.md)
+- **Мониторинг**: [Дашборды](guides/dashboard_guide.md), [Метрики](guides/metrics.md)
+- **Безопасность**: [Lynis](security/lynis_integration.md), [Gosec](security/gosec_checklist.md)
+- **SIEM**: [Архитектура](integration/ARCHITECTURE.md), [Интеграция](integration/siem_integration_guide.md)
+
+### По роли пользователя:
+- **Администратор**: [Безопасность](security/security.md), [Развертывание](deployment/deployment_guide.md)
+- **Разработчик**: [API](guides/api_reference.md), [Спецификации](integration/server_client_technical_specification.md)
+- **Оператор**: [Мониторинг](guides/dashboard_guide.md), [Устранение неполадок](troubleshooting/debugging.md)
+
+## 📈 Статистика документации
+
+- **Всего файлов**: 59
+- **Руководства**: 13
+- **Развертывание**: 7
+- **Безопасность**: 7
+- **Интеграции**: 16
+- **Устранение неполадок**: 4
+- **Отчеты**: 8
+- **Журналы изменений**: 4
+
+## 🤝 Вклад в документацию
+
+При добавлении новой документации:
+1. Разместите файл в соответствующей папке
+2. Обновите README файл раздела
+3. Добавьте ссылку в этот файл при необходимости
+4. Обновите отчет о реорганизации
 
 ## 📞 Поддержка
 
-При возникновении вопросов:
-1. Проверьте раздел [Troubleshooting](troubleshooting/debugging.md)
-2. Изучите [Debugging](troubleshooting/debugging.md)
-3. Обратитесь к [Security](security/security.md) для проблем безопасности
-4. Создайте issue в репозитории проекта
-
-## 🔄 Обновления
-
-Последние изменения в документации:
-- [CHANGELOG](changelog/CHANGELOG.md) - основной журнал изменений
-- [CHANGELOG v2](changelog/CHANGELOG_v2.md) - изменения версии 2
+Если вы не можете найти нужную информацию:
+1. Проверьте [руководство по устранению неполадок](troubleshooting/debugging.md)
+2. Изучите [журналы изменений](changelog/CHANGELOG.md)
+3. Обратитесь к [техническим отчетам](reports/)
 
 ---
 
-*Документация обновляется регулярно. Для получения последней версии обратитесь к репозиторию проекта.* 
+**Последнее обновление**: Июль 2025  
+**Версия документации**: 2.0  
+**Статус**: Полная реорганизация завершена ✅ 

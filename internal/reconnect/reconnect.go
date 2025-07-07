@@ -116,7 +116,9 @@ func (c *Connection) Connect(ctx context.Context) error {
 			// Call onConnect callback
 			if c.onConnect != nil {
 				if err := c.onConnect(conn); err != nil {
-					conn.Close()
+					if closeErr := conn.Close(); closeErr != nil {
+						c.config.Logger.Error("Failed to close connection after onConnect error", zap.Error(closeErr))
+					}
 					return err
 				}
 			}
@@ -151,7 +153,9 @@ func (c *Connection) monitorConnection(ctx context.Context) {
 				}
 
 				// Close connection
-				c.conn.Close()
+				if err := c.conn.Close(); err != nil {
+					c.config.Logger.Error("Failed to close connection during monitoring", zap.Error(err))
+				}
 
 				// Try to reconnect
 				if err := c.Connect(ctx); err != nil {
