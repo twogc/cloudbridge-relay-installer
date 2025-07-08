@@ -193,6 +193,22 @@ start_services() {
     else
         warn "Скрипт setup_keycloak_theme.sh не найден. Тема Keycloak не будет настроена автоматически."
     fi
+
+    # --- Новый блок: запуск ML сервиса ---
+    log "Запуск ML Anomaly Detection API..."
+    if [ -f "ml/anomaly_api.py" ]; then
+        # Останавливаем предыдущий процесс ML сервиса, если он запущен
+        pkill -f "uvicorn anomaly_api:app" 2>/dev/null || true
+        sleep 2
+        
+        # Запускаем ML сервис в фоне
+        cd ml && nohup uvicorn anomaly_api:app --reload --host 0.0.0.0 --port 8000 > ../logs/ml_api.log 2>&1 &
+        cd ..
+        
+        log "ML сервис запущен на порту 8000"
+    else
+        warn "Файл ml/anomaly_api.py не найден. ML сервис не будет запущен."
+    fi
 }
 
 # Проверка здоровья сервисов
@@ -226,10 +242,18 @@ check_health() {
             warn "⏳ Grafana еще не готов..."
         fi
         
+        # Проверяем ML сервис
+        if curl -f http://localhost:8000/health &> /dev/null; then
+            log "✅ ML сервис запущен и отвечает"
+        else
+            warn "⏳ ML сервис еще не готов..."
+        fi
+        
         # Если все сервисы готовы, выходим
         if curl -f http://localhost:8080/ &> /dev/null && \
            curl -f http://localhost:8081/metrics &> /dev/null && \
-           curl -f http://localhost:3000/api/health &> /dev/null; then
+           curl -f http://localhost:3000/api/health &> /dev/null && \
+           curl -f http://localhost:8000/health &> /dev/null; then
             log "🎉 Все сервисы запущены и готовы к работе!"
             
             # Проверяем наличие темы
@@ -272,6 +296,7 @@ show_status() {
     echo -e "  \033[1;36m📊 Grafana:\033[0m      http://localhost:3000"
     echo -e "  \033[1;36m📈 Prometheus:\033[0m   http://localhost:9090"
     echo -e "  \033[1;36m🚨 AlertManager:\033[0m http://localhost:9093"
+    echo -e "  \033[1;36m🤖 ML API:\033[0m       http://localhost:8000"
     echo
     log "Тема Keycloak:"
     echo -e "  \033[1;36m🎨 Кастомная тема:\033[0m Playa (автоматически настроена)"
@@ -282,6 +307,7 @@ show_status() {
     echo -e "  \033[1;33mdocker-compose logs -f keycloak\033[0m"
     echo -e "  \033[1;33mdocker-compose logs -f relay\033[0m"
     echo -e "  \033[1;33mdocker-compose logs -f grafana\033[0m"
+    echo -e "  \033[1;33mtail -f logs/ml_api.log\033[0m"
     
     echo
     echo -e "\033[1;35m💡 Quick Tips:\033[0m"
