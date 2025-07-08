@@ -55,12 +55,83 @@ POST /detect
 
 ---
 
-## Структура файлов
-- `ml/anomaly_detector.py` — основная логика ML
-- `ml/train_anomaly_detector.py` — обучение моделей на CSV
-- `ml/anomaly_api.py` — REST API (FastAPI)
-- `ml/historical_data_example.csv` — пример данных
-- `ml/requirements.txt` — зависимости
+## Переменные окружения и конфигурирование
+
+- `MODEL_PATH` — путь к файлу модели (по умолчанию `models.joblib`)
+- `REDIS_HOST`, `REDIS_PORT` — параметры Redis (по умолчанию localhost:6379)
+- `IFOREST_CONTAMINATION`, `IFOREST_N_ESTIMATORS` — параметры IsolationForest
+- `MLP_HIDDEN_LAYERS`, `MLP_MAX_ITER` — параметры MLPRegressor
+
+Можно задать через `.env` или переменные окружения (см. пример `ml/.env.example`).
+
+---
+
+## Запуск в Docker
+
+### Dockerfile
+В папке `ml/` есть готовый Dockerfile. Пример сборки и запуска:
+```bash
+cd ml
+# Сборка
+sudo docker build -t anomaly-ml .
+# Запуск
+sudo docker run --rm -p 8000:8000 \
+  -e MODEL_PATH=models.joblib \
+  -e REDIS_HOST=localhost \
+  -e REDIS_PORT=6379 \
+  anomaly-ml
+```
+
+### Docker Compose
+Пример файла `ml/docker-compose.yml`:
+```yaml
+version: '3.8'
+services:
+  anomaly-ml:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=models.joblib
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+    volumes:
+      - ./models.joblib:/app/models.joblib:ro
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+```
+
+---
+
+## Рекомендации по ресурсам
+- **Минимум:** 1 CPU, 1 ГБ RAM, 100 МБ диск
+- **Рекомендуется:** 2 CPU, 2 ГБ RAM, 1 ГБ+ диск
+- **Порт:** 8000 (можно изменить)
+- **GPU не требуется**
+
+---
+
+## Обновление и переобучение модели
+- Для обновления модели обучите новую модель (`train_anomaly_detector.py`) и замените файл `models.joblib`.
+- Сервис автоматически подхватит новую модель при перезапуске контейнера или сервиса.
+- Для hot-swap без остановки — реализуйте atomic-rename файла модели и health-check.
+
+---
+
+## Примеры ошибок и валидации
+- Все числовые поля должны быть неотрицательными, error_rate — от 0 до 1.
+- Пример ошибки:
+```json
+{"detail":[{"type":"int_parsing","loc":["body","bytes_sent"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"not_a_number"}]}
+```
+- Если отсутствует обязательное поле:
+```json
+{"detail":[{"type":"missing","loc":["body","packets_sent"],"msg":"Field required","input":{...}}]}
+```
 
 ---
 
@@ -82,7 +153,8 @@ print(response.json())
 
 ---
 
-## Советы
-- Для production используйте отдельное окружение (venv).
+## Советы и развитие
+- Для production используйте отдельное окружение (venv, Docker).
 - Регулярно обновляйте зависимости и переобучайте модели на новых данных.
-- Для расширения — добавьте новые признаки, типы аномалий, интеграцию с алертингом. 
+- Для расширения — добавьте новые признаки, типы аномалий, интеграцию с алертингом (Prometheus, Alertmanager).
+- Возможна автоматизация переобучения (скрипт, endpoint, cron). 
