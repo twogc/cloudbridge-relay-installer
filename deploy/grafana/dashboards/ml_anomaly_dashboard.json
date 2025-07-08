@@ -1,0 +1,67 @@
+{
+  "id": null,
+  "title": "ML Anomaly Monitoring",
+  "tags": ["ml", "anomaly", "monitoring"],
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Detected Anomalies",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "anomaly_detected_total",
+          "legendFormat": "Detected Anomalies",
+          "refId": "A"
+        }
+      ],
+      "id": 1,
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}
+    },
+    {
+      "type": "gauge",
+      "title": "Error Rate",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "error_rate_last",
+          "legendFormat": "Error Rate",
+          "refId": "B"
+        }
+      ],
+      "id": 2,
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "unit": "percent"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Detect Requests Total",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "detect_requests_total",
+          "legendFormat": "Detect Requests",
+          "refId": "C"
+        }
+      ],
+      "id": 3,
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}
+    }
+  ],
+  "templating": {"list": []},
+  "annotations": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timepicker": {},
+  "editable": true,
+  "gnetId": null
+} 
