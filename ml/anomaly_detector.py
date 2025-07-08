@@ -22,26 +22,42 @@ import time
 from datetime import datetime, timedelta
 import redis
 import requests
+import structlog
+import os
+from dotenv import load_dotenv
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+structlog.configure(
+    processors=[
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.JSONRenderer()
+    ]
+)
+logger = structlog.get_logger(__name__)
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'), override=True)
 
 
 class AnomalyDetector:
     """Main anomaly detection service"""
     
-    def __init__(self, redis_host: str = 'localhost', redis_port: int = 6379):
+    def __init__(self, redis_host: str = None, redis_port: int = None):
+        redis_host = redis_host or os.getenv('REDIS_HOST', 'localhost')
+        redis_port = int(redis_port or os.getenv('REDIS_PORT', 6379))
+        iforest_contamination = float(os.getenv('IFOREST_CONTAMINATION', 0.1))
+        iforest_n_estimators = int(os.getenv('IFOREST_N_ESTIMATORS', 100))
+        mlp_hidden_layers = tuple(int(x) for x in os.getenv('MLP_HIDDEN_LAYERS', '100,50').split(','))
+        mlp_max_iter = int(os.getenv('MLP_MAX_ITER', 1000))
         self.redis_client = redis.Redis(host=redis_host, port=redis_port, decode_responses=True)
         self.scaler = StandardScaler()
         self.isolation_forest = IsolationForest(
-            contamination=0.1,
+            contamination=iforest_contamination,
             random_state=42,
-            n_estimators=100
+            n_estimators=iforest_n_estimators
         )
         self.performance_predictor = MLPRegressor(
-            hidden_layer_sizes=(100, 50),
-            max_iter=1000,
+            hidden_layer_sizes=mlp_hidden_layers,
+            max_iter=mlp_max_iter,
             random_state=42
         )
         self.models_trained = False
@@ -104,7 +120,7 @@ class AnomalyDetector:
                 performance_targets.append(data_point['latency'])
         
         if len(features_list) < 100:
-            logger.warning("Insufficient data for training. Need at least 100 samples.")
+            logger.warning("Insufficient data for training. Need at least 100 samples.", sample_count=len(features_list))
             return False
         
         # Convert to numpy arrays
@@ -122,12 +138,13 @@ class AnomalyDetector:
             self.performance_predictor.fit(X_scaled, y_performance)
         
         self.models_trained = True
-        logger.info("Models trained successfully!")
+        logger.info("Models trained successfully!", sample_count=len(features_list))
         return True
     
     def detect_anomalies(self, data: Dict) -> Dict:
         """Detect anomalies in real-time data"""
         if not self.models_trained:
+            logger.warning("Detection called before models trained.")
             return {
                 'anomaly_score': 0.0,
                 'is_anomaly': False,
@@ -139,6 +156,7 @@ class AnomalyDetector:
         try:
             # Extract features
             features = self.extract_features(data)
+            logger.debug("Extracted features", features=features.tolist())
             features_scaled = self.scaler.transform(features)
             
             # Get anomaly score from isolation forest
@@ -155,6 +173,7 @@ class AnomalyDetector:
             
             # Generate recommendations
             recommendations = self._generate_recommendations(data, anomaly_type, anomaly_probability)
+            logger.info("Anomaly detection result", anomaly_score=anomaly_probability, is_anomaly=is_anomaly, anomaly_type=anomaly_type, recommendations=recommendations)
             
             return {
                 'anomaly_score': float(anomaly_probability),
@@ -167,7 +186,7 @@ class AnomalyDetector:
             }
             
         except Exception as e:
-            logger.error(f"Error in anomaly detection: {e}")
+            logger.error("Error in anomaly detection", error=str(e), data=data)
             return {
                 'anomaly_score': 0.0,
                 'is_anomaly': False,
@@ -277,26 +296,27 @@ class AnomalyDetector:
     def save_models(self, filepath: str):
         """Save trained models to disk"""
         if self.models_trained:
-            model_data = {
-                'scaler': self.scaler,
-                'isolation_forest': self.isolation_forest,
-                'performance_predictor': self.performance_predictor,
-                'trained_at': datetime.now().isoformat()
-            }
-            joblib.dump(model_data, filepath)
-            logger.info(f"Models saved to {filepath}")
+            try:
+                joblib.dump({
+                    'scaler': self.scaler,
+                    'isolation_forest': self.isolation_forest,
+                    'performance_predictor': self.performance_predictor
+                }, filepath)
+                logger.info("Models saved", filepath=filepath)
+            except Exception as e:
+                logger.error("Error saving models", error=str(e), filepath=filepath)
     
     def load_models(self, filepath: str):
         """Load trained models from disk"""
         try:
-            model_data = joblib.load(filepath)
-            self.scaler = model_data['scaler']
-            self.isolation_forest = model_data['isolation_forest']
-            self.performance_predictor = model_data['performance_predictor']
+            models = joblib.load(filepath)
+            self.scaler = models['scaler']
+            self.isolation_forest = models['isolation_forest']
+            self.performance_predictor = models['performance_predictor']
             self.models_trained = True
-            logger.info(f"Models loaded from {filepath}")
+            logger.info("Models loaded from file", filepath=filepath)
         except Exception as e:
-            logger.error(f"Error loading models: {e}")
+            logger.error("Error loading models", error=str(e), filepath=filepath)
 
 
 class MLService:

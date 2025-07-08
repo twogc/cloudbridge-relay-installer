@@ -18,8 +18,8 @@ required_fields = [
     'timestamp', 'bytes_sent', 'bytes_received', 'packets_sent', 'packets_received',
     'connection_duration', 'requests_per_second', 'error_rate', 'user_id_hash',
     'session_duration', 'requests_in_session', 'unique_endpoints',
-    'failed_auth_attempts', 'suspicious_ips', 'rate_limit_violations', 'ssl_errors',
-    'latency'  # для обучения performance_predictor
+    'failed_auth_attempts', 'suspicious_ips', 'rate_limit_violations', 'ssl_errors'
+    # 'latency'  # для обучения performance_predictor (делаем не обязательным)
 ]
 missing = [f for f in required_fields if f not in df.columns]
 if missing:
