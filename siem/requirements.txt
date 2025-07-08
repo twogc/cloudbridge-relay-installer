@@ -59,7 +59,7 @@ tqdm>=4.65.0
 # Веб-интерфейс
 jinja2==3.1.2
 schedule==1.2.0
-aiofiles==23.2.1
+aiofiles==24.1.0
 
 # Дополнительные утилиты
 python-dotenv==1.0.0
