@@ -1290,6 +1290,17 @@ curl -X POST https://keycloak.example.com/realms/cloudbridge/protocol/openid-con
 - ✅ **UDP/QUIC/WireGuard поддержка** — туннелирование UDP-трафика, WireGuard VPN, QUIC/HTTP3, DNS и VoIP, поддержка современных протоколов и низкой задержки
 - ✅ **VPN-аналоги** — создание защищённых сервер-сервер туннелей, split tunneling, корпоративный VPN с мониторингом и SIEM
 
+## 📈 Мониторинг ML-сервиса через Prometheus и Grafana
+
+- ML FastAPI сервис экспортирует метрики (`anomaly_detected_total`, `error_rate_last`, `detect_requests_total`) на endpoint `/metrics`.
+- Prometheus собирает метрики с ML API (job `ml-anomaly-api`).
+- В Grafana автоматически подгружается dashboard из папки `deploy/grafana/dashboards` через provisioning (`grafana/provisioning/dashboards/default.yaml`).
+- Для появления dashboard после обновления файлов — перезапустите Grafana:
+  ```bash
+  docker restart <container_id_grafana>
+  ```
+- Подробнее: [docs/ML_Monitoring_and_Grafana.md](docs/ML_Monitoring_and_Grafana.md)
+
 ## 🚀 UDP/QUIC/WireGuard и VPN-функционал
 
 CloudBridge Relay поддерживает не только TCP, но и UDP-трафик, что позволяет реализовать:
