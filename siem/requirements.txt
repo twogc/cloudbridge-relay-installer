@@ -20,7 +20,7 @@ colorlog>=6.7.0
 
 # Уведомления
 python-telegram-bot==20.7
-slack-sdk==3.26.1
+slack-sdk==3.35.0
 
 # Безопасность
 cryptography>=41.0.0
