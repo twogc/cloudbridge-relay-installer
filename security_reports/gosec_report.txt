@@ -1,10 +1,73 @@
 Results:
 
 
+[/home/ubuntu/cloudbridge-relay-installer/internal/quic/connection.go:153] - G115 (CWE-190): integer overflow conversion int64 -> uint64 (Confidence: MEDIUM, Severity: HIGH)
+    152: 
+  > 153: 	id := uint64(stream.StreamID())
+    154: 	quicStream := &Stream{
+
+Autofix: 
+
+[/home/ubuntu/cloudbridge-relay-installer/internal/quic/connection.go:121] - G115 (CWE-190): integer overflow conversion int64 -> uint64 (Confidence: MEDIUM, Severity: HIGH)
+    120: 
+  > 121: 	id := uint64(stream.StreamID())
+    122: 	quicStream := &Stream{
+
+Autofix: 
+
+[/home/ubuntu/cloudbridge-relay-installer/internal/quic/config.go:104] - G402 (CWE-295): TLS InsecureSkipVerify may be true. (Confidence: LOW, Severity: HIGH)
+    103: 	return &tls.Config{
+  > 104: 		InsecureSkipVerify: c.InsecureSkipVerify,
+    105: 		NextProtos:         []string{"h3", "h3-29", "h3-28", "h3-27"},
+
+Autofix: 
+
+[/home/ubuntu/cloudbridge-relay-installer/internal/quic/connection.go:272] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    271: 		if err == io.EOF {
+  > 272: 			s.Close()
+    273: 		}
+
+Autofix: 
+
+[/home/ubuntu/cloudbridge-relay-installer/internal/quic/connection.go:220] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    219: 	for _, stream := range qc.streams {
+  > 220: 		stream.Close()
+    221: 	}
+
+Autofix: 
+
+[/home/ubuntu/cloudbridge-relay-installer/internal/protocol/selector.go:220] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    219: 				if bestProtocol != ps.Current() {
+  > 220: 					ps.SwitchTo(bestProtocol)
+    221: 				}
+
+Autofix: 
+
+[/home/ubuntu/cloudbridge-relay-installer/internal/protocol/selector.go:197] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    196: 			)
+  > 197: 			ps.SwitchTo(fallback)
+    198: 		}
+
+Autofix: 
+
+[/home/ubuntu/cloudbridge-relay-installer/internal/connection/pool.go:385] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    384: 	for _, conn := range cp.connections {
+  > 385: 		conn.Close()
+    386: 	}
+
+Autofix: 
+
+[/home/ubuntu/cloudbridge-relay-installer/internal/connection/pool.go:290] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    289: 	// Close the connection
+  > 290: 	conn.Close()
+    291: 	
+
+Autofix: 
+
 Summary:
   Gosec  : v2.22.5
-  Files  : 20
-  Lines  : 5929
+  Files  : 26
+  Lines  : 7951
   Nosec  : 2
-  Issues : 0
+  Issues : 9
 

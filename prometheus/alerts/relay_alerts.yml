@@ -1,0 +1,82 @@
+groups:
+  - name: relay_alerts
+    rules:
+      # Алерт на высокую загрузку CPU
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 2 minutes"
+
+      # Алерт на высокое использование памяти
+      - alert: HighMemoryUsage
+        expr: (process_resident_memory_bytes / container_memory_usage_bytes) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% for more than 2 minutes"
+
+      # Алерт на недоступность relay сервера
+      - alert: RelayServerDown
+        expr: up{job="relay"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Relay server is down"
+          description: "Relay server has been down for more than 1 minute"
+
+      # Алерт на высокое количество ошибок
+      - alert: HighErrorRate
+        expr: rate(relay_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 10 errors per second for more than 2 minutes"
+
+      # Алерт на circuit breaker
+      - alert: CircuitBreakerOpen
+        expr: relay_circuit_breaker_state == 1
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit breaker is open"
+          description: "Circuit breaker has been open for more than 30 seconds"
+
+      # Алерт на проблемы с health check
+      - alert: HealthCheckFailed
+        expr: relay_health_check_status == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Health check failed"
+          description: "Health check has been failing for more than 1 minute"
+
+      # Алерт на высокую латентность
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(relay_request_duration_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency detected"
+          description: "95th percentile latency is above 1 second for more than 2 minutes"
+
+      # Алерт на превышение лимита туннелей
+      - alert: TunnelLimitReached
+        expr: relay_active_tunnels / relay_max_tunnels > 0.9
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tunnel limit almost reached"
+          description: "Active tunnels are above 90% of maximum capacity"

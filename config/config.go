@@ -99,6 +99,64 @@ type configRaw struct {
 		MaxAge     string `json:"max_age"`
 		MaxBackups int    `json:"max_backups"`
 	} `json:"logging"`
+
+	Protocol struct {
+		AutoSelect      bool   `json:"auto_select"`
+		Preferred       string `json:"preferred"`
+		Fallback        string `json:"fallback"`
+		SwitchThreshold float64 `json:"switch_threshold"`
+		HealthCheckInterval string `json:"health_check_interval"`
+	} `json:"protocol"`
+
+	QUIC struct {
+		Enabled         bool   `json:"enabled"`
+		MaxStreams      int    `json:"max_streams"`
+		KeepAlive       bool   `json:"keep_alive"`
+		IdleTimeout     string `json:"idle_timeout"`
+		HandshakeTimeout string `json:"handshake_timeout"`
+	} `json:"quic"`
+
+	ZeroTrust struct {
+		Enabled         bool   `json:"enabled"`
+		ClientDaemon    bool   `json:"client_daemon"`
+		ServiceDiscovery bool  `json:"service_discovery"`
+		AutoReconnect   bool   `json:"auto_reconnect"`
+		
+		CircuitBreaker struct {
+			Enabled           bool   `json:"enabled"`
+			FailureThreshold  int64  `json:"failure_threshold"`
+			SuccessThreshold  int64  `json:"success_threshold"`
+			Timeout           string `json:"timeout"`
+			WindowSize        string `json:"window_size"`
+		} `json:"circuit_breaker"`
+		
+		HealthCheck struct {
+			Enabled  bool   `json:"enabled"`
+			Interval string `json:"interval"`
+			Timeout  string `json:"timeout"`
+			
+			Checks []struct {
+				Name        string `json:"name"`
+				Type        string `json:"type"`
+				URL         string `json:"url,omitempty"`
+				Host        string `json:"host,omitempty"`
+				Description string `json:"description,omitempty"`
+			} `json:"checks"`
+		} `json:"health_check"`
+		
+		RateLimit struct {
+			Enabled     bool  `json:"enabled"`
+			RequestsPer int64 `json:"requests_per"`
+			WindowSize  int64 `json:"window_size"`
+		} `json:"rate_limit"`
+		
+		Authentication struct {
+			Enabled     bool   `json:"enabled"`
+			Type        string `json:"type"`
+			JWTSecret   string `json:"jwt_secret,omitempty"`
+			KeycloakURL string `json:"keycloak_url,omitempty"`
+		} `json:"authentication"`
+	} `json:"zero_trust"`
 }
 
 // Config represents the server configuration
@@ -176,6 +234,66 @@ type Config struct {
 		MaxAge     string `json:"max_age"`
 		MaxBackups int    `json:"max_backups"`
 	} `json:"logging"`
+
+	Protocol struct {
+		AutoSelect      bool     `json:"auto_select"`
+		Preferred       string   `json:"preferred"`
+		Fallback        string   `json:"fallback"`
+		SwitchThreshold float64  `json:"switch_threshold"`
+		HealthCheckInterval time.Duration `json:"health_check_interval"`
+	} `json:"protocol"`
+
+	QUIC struct {
+		Enabled         bool          `json:"enabled"`
+		MaxStreams      int           `json:"max_streams"`
+		KeepAlive       bool          `json:"keep_alive"`
+		IdleTimeout     time.Duration `json:"idle_timeout"`
+		HandshakeTimeout time.Duration `json:"handshake_timeout"`
+	} `json:"quic"`
+
+	ZeroTrust struct {
+		Enabled         bool `json:"enabled"`
+		ClientDaemon    bool `json:"client_daemon"`
+		ServiceDiscovery bool `json:"service_discovery"`
+		AutoReconnect   bool `json:"auto_reconnect"`
+		
+		CircuitBreaker struct {
+			Enabled           bool
+			FailureThreshold  int64
+			SuccessThreshold  int64
+			Timeout           time.Duration
+			WindowSize        time.Duration
+		}
+		
+		HealthCheck struct {
+			Enabled  bool
+			Interval time.Duration
+			Timeout  time.Duration
+			Checks   []HealthCheckConfig
+		}
+		
+		RateLimit struct {
+			Enabled     bool
+			RequestsPer int64
+			WindowSize  int64
+		}
+		
+		Authentication struct {
+			Enabled     bool
+			Type        string
+			JWTSecret   string
+			KeycloakURL string
+		}
+	} `json:"zero_trust"`
+}
+
+// HealthCheckConfig represents a health check configuration
+type HealthCheckConfig struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	URL         string `json:"url,omitempty"`
+	Host        string `json:"host,omitempty"`
+	Description string `json:"description,omitempty"`
 }
 
 // parseDuration парсит строку в time.Duration с значением по умолчанию
@@ -283,6 +401,60 @@ func Load(path string) (*Config, error) {
 
 	// Logging
 	config.Logging = raw.Logging
+
+	// Protocol
+	config.Protocol.AutoSelect = raw.Protocol.AutoSelect
+	config.Protocol.Preferred = raw.Protocol.Preferred
+	config.Protocol.Fallback = raw.Protocol.Fallback
+	config.Protocol.SwitchThreshold = raw.Protocol.SwitchThreshold
+	config.Protocol.HealthCheckInterval = parseDuration(raw.Protocol.HealthCheckInterval, 30*time.Second)
+
+	// QUIC
+	config.QUIC.Enabled = raw.QUIC.Enabled
+	config.QUIC.MaxStreams = raw.QUIC.MaxStreams
+	config.QUIC.KeepAlive = raw.QUIC.KeepAlive
+	config.QUIC.IdleTimeout = parseDuration(raw.QUIC.IdleTimeout, 30*time.Second)
+	config.QUIC.HandshakeTimeout = parseDuration(raw.QUIC.HandshakeTimeout, 10*time.Second)
+
+	// ZeroTrust
+	config.ZeroTrust.Enabled = raw.ZeroTrust.Enabled
+	config.ZeroTrust.ClientDaemon = raw.ZeroTrust.ClientDaemon
+	config.ZeroTrust.ServiceDiscovery = raw.ZeroTrust.ServiceDiscovery
+	config.ZeroTrust.AutoReconnect = raw.ZeroTrust.AutoReconnect
+	
+	// ZeroTrust CircuitBreaker
+	config.ZeroTrust.CircuitBreaker.Enabled = raw.ZeroTrust.CircuitBreaker.Enabled
+	config.ZeroTrust.CircuitBreaker.FailureThreshold = raw.ZeroTrust.CircuitBreaker.FailureThreshold
+	config.ZeroTrust.CircuitBreaker.SuccessThreshold = raw.ZeroTrust.CircuitBreaker.SuccessThreshold
+	config.ZeroTrust.CircuitBreaker.Timeout = parseDuration(raw.ZeroTrust.CircuitBreaker.Timeout, 30*time.Second)
+	config.ZeroTrust.CircuitBreaker.WindowSize = parseDuration(raw.ZeroTrust.CircuitBreaker.WindowSize, 60*time.Second)
+	
+	// ZeroTrust HealthCheck
+	config.ZeroTrust.HealthCheck.Enabled = raw.ZeroTrust.HealthCheck.Enabled
+	config.ZeroTrust.HealthCheck.Interval = parseDuration(raw.ZeroTrust.HealthCheck.Interval, 30*time.Second)
+	config.ZeroTrust.HealthCheck.Timeout = parseDuration(raw.ZeroTrust.HealthCheck.Timeout, 10*time.Second)
+	
+	// Convert health check configurations
+	for _, check := range raw.ZeroTrust.HealthCheck.Checks {
+		config.ZeroTrust.HealthCheck.Checks = append(config.ZeroTrust.HealthCheck.Checks, HealthCheckConfig{
+			Name:        check.Name,
+			Type:        check.Type,
+			URL:         check.URL,
+			Host:        check.Host,
+			Description: check.Description,
+		})
+	}
+	
+	// ZeroTrust RateLimit
+	config.ZeroTrust.RateLimit.Enabled = raw.ZeroTrust.RateLimit.Enabled
+	config.ZeroTrust.RateLimit.RequestsPer = raw.ZeroTrust.RateLimit.RequestsPer
+	config.ZeroTrust.RateLimit.WindowSize = raw.ZeroTrust.RateLimit.WindowSize
+	
+	// ZeroTrust Authentication
+	config.ZeroTrust.Authentication.Enabled = raw.ZeroTrust.Authentication.Enabled
+	config.ZeroTrust.Authentication.Type = raw.ZeroTrust.Authentication.Type
+	config.ZeroTrust.Authentication.JWTSecret = raw.ZeroTrust.Authentication.JWTSecret
+	config.ZeroTrust.Authentication.KeycloakURL = raw.ZeroTrust.Authentication.KeycloakURL
 
 	// Load JWT secret from environment if not set
 	if config.Django.JWTSecret == "${RELAY_JWT_SECRET}" {
