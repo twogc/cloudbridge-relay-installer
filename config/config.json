@@ -1,14 +1,14 @@
 {
   "server": {
-    "address": ":8080",
-    "port": 8080,
+    "address": ":3456",
+    "port": 3456,
     "timeout": "30s",
     "max_tunnels": 1000,
     "ping_interval": "30s",
     "cleanup_interval": "1m"
   },
   "django": {
-    "api_endpoint": "http://localhost:8000/api",
+    "api_endpoint": "http://localhost:8000/api/",
     "jwt_secret": "${RELAY_JWT_SECRET}",
     "jwt_expiry": "24h",
     "rest_timeout": "5s",
@@ -17,59 +17,115 @@
     "rest_retry_delay": "100ms"
   },
   "keycloak": {
-    "enabled": true,
-    "server_url": "http://keycloak:8080",
-    "realm": "cloudbridge",
-    "client_id": "relay-client",
-    "client_secret": "JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM",
-    "public_key": "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwYizA49h313kUlnaCD8u\\n3oWgVV0o3mEPpuyhfpp+o/PQNvg6oolodiUhum9uHROvXWT/OPlPLy6fsC3hpprl\\nVII7DiFuRYxtWU24O1Nd66sLt8lNxfTHKH/fwlS4opPHaHZkFzIXrKNeJvTf+kO/h\\nHial8Dut+Z/tIBcwBrPWVll6P/4wpruZlK6dWoNtpac/m6RYyrEMnX+nQ9DZ3S/bS\\nA1SUvRASCWxk/qQQpz/Zp3sgqLNa12h/JztEUuHm1RyshKFvHsTwJuuvmXzzJyAMP\\nPTHr0M0jcdYH64VJFoDSp6xWgqFpuCn3WqevXCVSMfeI1g4TzLDUEBZdesI4PawID\\nAQAB\\n-----END PUBLIC KEY-----",
+    "enabled": false,
+    "server_url": "${KEYCLOAK_SERVER_URL}",
+    "realm": "${KEYCLOAK_REALM}",
+    "client_id": "${KEYCLOAK_CLIENT_ID}",
+    "client_secret": "${KEYCLOAK_CLIENT_SECRET}",
+    "public_key": "${KEYCLOAK_PUBLIC_KEY}",
     "token_validation": {
-      "issuer": "https://edge.2gc.ru/realms/cloudbridge",
-      "audience": "relay-client",
+      "issuer": "${KEYCLOAK_ISSUER}",
+      "audience": "${KEYCLOAK_AUDIENCE}",
       "clock_skew": "30s"
     },
     "jwks_cache_ttl": "1h",
     "http_timeout": "30s"
   },
   "security": {
-    "tls_enabled": true,
+    "tls_enabled": false,
     "cert_file": "${RELAY_TLS_CERT_FILE}",
     "key_file": "${RELAY_TLS_KEY_FILE}",
-    "allowed_ips": [
-      "0.0.0.0/0"
-    ],
+    "allowed_ips": [],
     "rate_limit": {
       "enabled": true,
-      "requests_per_second": 100,
+      "requests_per_second": 100.0,
       "burst": 200
     },
     "mtls": {
       "enabled": false,
       "ca_file": "${RELAY_MTLS_CA_FILE}"
     },
-    "cipher_suites": [
-      "TLS_AES_256_GCM_SHA384",
-      "TLS_CHACHA20_POLY1305_SHA256",
-      "TLS_AES_128_GCM_SHA256"
-    ],
-    "min_tls_version": "1.3",
+    "cipher_suites": [],
+    "min_tls_version": "1.2",
     "audit": {
       "enabled": true,
-      "log_file": "/var/log/relay/audit.log"
+      "log_file": "logs/audit.log"
     }
   },
   "metrics": {
     "enabled": true,
-    "port": 8081,
+    "port": 9090,
     "path": "/metrics"
   },
   "logging": {
-    "level": "INFO",
+    "level": "info",
     "format": "json",
-    "output": "file",
-    "file": "/var/log/relay/relay.log",
+    "output": "stdout",
+    "file": "",
     "max_size": "100MB",
     "max_age": "30d",
     "max_backups": 10
+  },
+  "protocol": {
+    "auto_select": true,
+    "preferred": "quic",
+    "fallback": "http2",
+    "switch_threshold": 0.8,
+    "health_check_interval": "30s"
+  },
+  "quic": {
+    "enabled": true,
+    "max_streams": 100,
+    "keep_alive": true,
+    "idle_timeout": "30s",
+    "handshake_timeout": "10s"
+  },
+  "zero_trust": {
+    "enabled": true,
+    "client_daemon": false,
+    "service_discovery": false,
+    "auto_reconnect": true,
+    "circuit_breaker": {
+      "enabled": true,
+      "failure_threshold": 5,
+      "success_threshold": 3,
+      "timeout": "30s",
+      "window_size": "60s"
+    },
+    "health_check": {
+      "enabled": true,
+      "interval": "30s",
+      "timeout": "10s",
+      "checks": [
+        {
+          "name": "server_health",
+          "type": "http",
+          "url": "http://localhost:3456/health",
+          "description": "Server health check"
+        },
+        {
+          "name": "database_ping",
+          "type": "ping",
+          "host": "localhost",
+          "description": "Database connectivity check"
+        },
+        {
+          "name": "custom_check",
+          "type": "custom",
+          "description": "Custom health check"
+        }
+      ]
+    },
+    "rate_limit": {
+      "enabled": true,
+      "requests_per": 100,
+      "window_size": 60
+    },
+    "authentication": {
+      "enabled": true,
+      "type": "jwt",
+      "jwt_secret": "${RELAY_JWT_SECRET}",
+      "keycloak_url": "${KEYCLOAK_SERVER_URL}"
+    }
   }
 }
