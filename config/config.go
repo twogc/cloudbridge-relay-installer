@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -219,6 +220,7 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("invalid config file path")
 	}
 	
+	// #nosec G304 - path validated by isValidConfigPath
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
@@ -455,11 +457,12 @@ func (c *Config) Validate() error {
 
 // isValidConfigPath validates config file path to prevent path traversal
 func isValidConfigPath(path string) bool {
+	// Canonicalize path
+	path = filepath.Clean(strings.TrimSpace(path))
 	// Check for path traversal attempts
 	if strings.Contains(path, "..") || strings.Contains(path, "~") || strings.Contains(path, "//") {
 		return false
 	}
-	
 	// Only allow absolute paths or paths starting with allowed directories
 	allowedPrefixes := []string{
 		"./config/",
@@ -467,18 +470,13 @@ func isValidConfigPath(path string) bool {
 		"config/",
 		"./",
 	}
-	
-	// Normalize path
-	path = strings.TrimSpace(path)
 	if path == "" {
 		return false
 	}
-	
 	for _, prefix := range allowedPrefixes {
 		if strings.HasPrefix(path, prefix) {
 			return true
 		}
 	}
-	
 	return false
 } 
