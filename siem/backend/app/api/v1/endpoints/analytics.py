@@ -6,8 +6,8 @@ from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime, timedelta
 import structlog
 
-from ...services.events import EventService
-from ...services.alerts import AlertService
+from app.services.events import EventService
+from app.services.alerts import AlertService
 
 router = APIRouter()
 logger = structlog.get_logger()

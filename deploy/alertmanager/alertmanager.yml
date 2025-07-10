@@ -35,6 +35,37 @@ receivers:
       insecure_skip_verify: false
       server_name: "smtp.rusender.ru"
 
+- name: 'siem-critical'
+  email_configs:
+  - to: "security@2gc.ru"
+    from: "siem@2gc.ru"
+    smarthost: "smtp.rusender.ru:465"
+    auth_username: "siem@2gc.ru"
+    auth_password: "${SIEM_EMAIL_PASSWORD}"
+    send_resolved: true
+    require_tls: false
+    tls_config:
+      insecure_skip_verify: false
+      server_name: "smtp.rusender.ru"
+  telegram_configs:
+  - bot_token: "${TELEGRAM_BOT_TOKEN}"
+    chat_id: "${TELEGRAM_CHAT_ID}"
+    parse_mode: "HTML"
+    send_resolved: true
+
+- name: 'siem-warning'
+  email_configs:
+  - to: "admin@2gc.ru"
+    from: "siem@2gc.ru"
+    smarthost: "smtp.rusender.ru:465"
+    auth_username: "siem@2gc.ru"
+    auth_password: "${SIEM_EMAIL_PASSWORD}"
+    send_resolved: true
+    require_tls: false
+    tls_config:
+      insecure_skip_verify: false
+      server_name: "smtp.rusender.ru"
+
 inhibit_rules:
   - source_match:
       severity: 'critical'

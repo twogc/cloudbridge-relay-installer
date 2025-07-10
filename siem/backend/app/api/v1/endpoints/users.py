@@ -5,7 +5,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 import structlog
 
-from ...schemas.users import UserCreate, UserUpdate, UserResponse, UserRole
+from app.schemas.users import UserCreate, UserUpdate, UserResponse, UserRole
 
 router = APIRouter()
 logger = structlog.get_logger()

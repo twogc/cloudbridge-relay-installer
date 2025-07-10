@@ -5,7 +5,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 import structlog
 
-from ...schemas.correlation_rules import CorrelationRuleCreate, CorrelationRuleUpdate, CorrelationRuleResponse
+from app.schemas.correlation_rules import CorrelationRuleCreate, CorrelationRuleUpdate, CorrelationRuleResponse
 
 router = APIRouter()
 logger = structlog.get_logger()

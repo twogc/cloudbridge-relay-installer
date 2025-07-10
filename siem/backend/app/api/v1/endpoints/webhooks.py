@@ -7,7 +7,8 @@ import structlog
 from datetime import datetime
 import uuid
 
-from ...services.events import EventService
+from app.services.events import EventService
+from app.schemas.events import EventCreate
 
 router = APIRouter()
 logger = structlog.get_logger()

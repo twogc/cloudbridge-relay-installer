@@ -5,6 +5,15 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, EmailStr
 import uuid
+from enum import Enum
+
+
+class UserRole(str, Enum):
+    """User role enumeration"""
+    ADMIN = "admin"
+    USER = "user"
+    ANALYST = "analyst"
+    VIEWER = "viewer"
 
 
 class UserBase(BaseModel):
@@ -40,3 +49,12 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True 
+
+
+class UserList(BaseModel):
+    """Schema for user list responses"""
+    users: List[UserResponse] = Field(..., description="List of users")
+    total: int = Field(..., description="Total number of users")
+    page: int = Field(..., description="Current page")
+    size: int = Field(..., description="Page size")
+    pages: int = Field(..., description="Total number of pages") 
