@@ -1,0 +1,394 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: siem-postgres
+    environment:
+      POSTGRES_DB: siem
+      POSTGRES_USER: siem
+      POSTGRES_PASSWORD: password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - siem-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U siem -d siem"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: siem-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - siem-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: siem-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - cluster.name=siem-cluster
+      - node.name=siem-node-1
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - siem-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # RabbitMQ for Celery
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: siem-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=siem
+      - RABBITMQ_DEFAULT_PASS=password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - siem-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # SIEM Backend API
+  siem-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: siem-api
+    environment:
+      - DATABASE_URL=postgresql://siem:password@postgres:5432/siem
+      - REDIS_URL=redis://redis:6379/0
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - SECRET_KEY=your-secret-key-change-in-production
+      - DEBUG=false
+      - HOST=0.0.0.0
+      - PORT=8000
+      - WORKERS=4
+      - CLOUDFLARE_AGENT_URL=https://cloudbridge-ai-monitoring-agent.2gc.workers.dev
+      - ML_API_URL=http://localhost:8000/detect
+      - RELAY_METRICS_URL=http://localhost:9090/metrics
+      - PROMETHEUS_URL=http://prometheus:9090
+      - GRAFANA_URL=http://grafana:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - siem-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./logs:/app/logs
+
+  # Celery Worker for Background Tasks
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: siem-celery-worker
+    command: celery -A app.celery worker --loglevel=info --concurrency=4
+    environment:
+      - DATABASE_URL=postgresql://siem:password@postgres:5432/siem
+      - REDIS_URL=redis://redis:6379/0
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CELERY_BROKER_URL=amqp://siem:password@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - siem-network
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  # Celery Beat for Scheduled Tasks
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: siem-celery-beat
+    command: celery -A app.celery beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://siem:password@postgres:5432/siem
+      - REDIS_URL=redis://redis:6379/0
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CELERY_BROKER_URL=amqp://siem:password@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - siem-network
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  # SIEM Frontend
+  siem-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: siem-frontend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
+    ports:
+      - "3000:80"
+    depends_on:
+      - siem-api
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # SIEM Collector
+  siem-collector:
+    build:
+      context: .
+      dockerfile: collectors/Dockerfile
+    container_name: siem-collector
+    environment:
+      - RELAY_LOG_FILE=/var/log/relay/relay.log
+      - RELAY_METRICS_URL=http://relay:8081/metrics
+      - KEYCLOAK_ADMIN_URL=http://keycloak:8080/admin
+      - KEYCLOAK_AUTH_URL=http://keycloak:8080
+      - KEYCLOAK_ADMIN_USERNAME=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=changeme
+      - SIEM_API_URL=http://siem-api:8000
+    volumes:
+      - /var/log/relay:/var/log/relay:ro
+    depends_on:
+      - elasticsearch
+      - siem-api
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # SIEM Event Processor
+  siem-processor:
+    build:
+      context: .
+      dockerfile: processors/Dockerfile
+    container_name: siem-processor
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - SIEM_API_URL=http://siem-api:8000
+    depends_on:
+      - elasticsearch
+      - redis
+      - siem-api
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # SIEM Alert Manager
+  siem-alert-manager:
+    build:
+      context: .
+      dockerfile: alerting/Dockerfile
+    container_name: siem-alert-manager
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=changeme
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - SIEM_API_URL=http://siem-api:8000
+      - MIN_SEVERITY=medium
+      - QUIET_HOURS_START=22
+      - QUIET_HOURS_END=8
+      # Email settings (optional)
+      - EMAIL_SMTP_SERVER=smtp.gmail.com
+      - EMAIL_SMTP_PORT=587
+      - EMAIL_USERNAME=your-email@gmail.com
+      - EMAIL_PASSWORD=your-app-password
+      - EMAIL_FROM=siem@yourcompany.com
+      - EMAIL_TO=admin@yourcompany.com,security@yourcompany.com
+      # Telegram settings (optional)
+      - TELEGRAM_BOT_TOKEN=your-bot-token
+      - TELEGRAM_CHAT_ID=your-chat-id
+      # Slack settings (optional)
+      - SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/webhook/url
+    depends_on:
+      - elasticsearch
+      - redis
+      - siem-api
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: siem-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts:/etc/prometheus/alerts:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # Alertmanager
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: siem-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: siem-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: siem-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - siem-api
+      - siem-frontend
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # Logstash for log processing (optional)
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: siem-logstash
+    environment:
+      - LS_JAVA_OPTS=-Xmx1g -Xms1g
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    depends_on:
+      - elasticsearch
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+  # Kibana for log visualization (optional)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: siem-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - siem-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:
+  rabbitmq_data:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:
+
+networks:
+  siem-network:
+    driver: bridge 
