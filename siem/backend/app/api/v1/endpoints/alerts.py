@@ -5,8 +5,8 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 import uuid
 
-from ...schemas.alerts import AlertCreate, AlertUpdate, AlertResponse, AlertFilter, AlertStats
-from ...services.alerts import AlertService
+from app.schemas.alerts import AlertCreate, AlertUpdate, AlertResponse, AlertFilter, AlertStats
+from app.services.alerts import AlertService
 
 router = APIRouter()
 

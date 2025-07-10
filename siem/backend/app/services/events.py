@@ -20,6 +20,7 @@ class EventService:
     
     async def get_events(
         self,
+        tenant_id: str,
         source: Optional[str] = None,
         severity: Optional[str] = None,
         category: Optional[str] = None,
@@ -30,6 +31,7 @@ class EventService:
         # TODO: Implement database query
         self.logger.info(
             "Getting events",
+            tenant_id=tenant_id,
             source=source,
             severity=severity,
             category=category,
@@ -40,10 +42,10 @@ class EventService:
         # Mock response for now
         return []
     
-    async def get_event_by_id(self, event_id: str) -> Optional[EventResponse]:
+    async def get_event_by_id(self, event_id: str, tenant_id: Optional[str] = None) -> Optional[EventResponse]:
         """Get event by ID"""
         # TODO: Implement database query
-        self.logger.info("Getting event by ID", event_id=event_id)
+        self.logger.info("Getting event by ID", event_id=event_id, tenant_id=tenant_id)
         
         # Mock response for now
         return None
@@ -63,31 +65,32 @@ class EventService:
             category=event.category,
             data=event.data,
             tags=event.tags,
+            tenant_id=event.tenant_id,
             correlation_id=event.correlation_id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )
     
-    async def update_event(self, event_id: str, event: EventUpdate) -> Optional[EventResponse]:
+    async def update_event(self, event_id: str, event: EventUpdate, tenant_id: Optional[str] = None) -> Optional[EventResponse]:
         """Update event"""
         # TODO: Implement database update
-        self.logger.info("Updating event", event_id=event_id, event_data=event.dict())
+        self.logger.info("Updating event", event_id=event_id, event_data=event.dict(), tenant_id=tenant_id)
         
         # Mock response for now
         return None
     
-    async def delete_event(self, event_id: str) -> bool:
+    async def delete_event(self, event_id: str, tenant_id: Optional[str] = None) -> bool:
         """Delete event"""
         # TODO: Implement database deletion
-        self.logger.info("Deleting event", event_id=event_id)
+        self.logger.info("Deleting event", event_id=event_id, tenant_id=tenant_id)
         
         # Mock response for now
         return False
     
-    async def get_correlated_events(self, event_id: str) -> List[EventResponse]:
+    async def get_correlated_events(self, event_id: str, tenant_id: Optional[str] = None) -> List[EventResponse]:
         """Get events correlated with the specified event"""
         # TODO: Implement correlation logic
-        self.logger.info("Getting correlated events", event_id=event_id)
+        self.logger.info("Getting correlated events", event_id=event_id, tenant_id=tenant_id)
         
         # Mock response for now
         return []

@@ -1,19 +1,12 @@
-# 🔒 CloudBridge SIEM System
+# 🎯 CloudBridge SIEM v2.0
 
-Полнофункциональная система Security Information and Event Management (SIEM) для CloudBridge Relay v2.0, интегрированная с существующей архитектурой мониторинга.
+Система управления информацией и событиями безопасности (SIEM) для CloudBridge Relay v2.0
 
-## 🎯 Обзор
+## 📋 Обзор
 
-CloudBridge SIEM — это современная система мониторинга безопасности, которая:
+CloudBridge SIEM - это комплексная система мониторинга безопасности, которая интегрируется с существующей архитектурой CloudBridge Relay v2.0. Система обеспечивает сбор, анализ и корреляцию событий безопасности в реальном времени.
 
-- **Собирает события** из CloudBridge Relay, Keycloak и Django API
-- **Анализирует угрозы** с помощью правил детекции и поведенческого анализа
-- **Отправляет уведомления** через email, Telegram, Slack и другие каналы
-- **Визуализирует данные** через интеграцию с существующими Grafana дашбордами
-- **Соответствует требованиям** 152-ФЗ и 187-ФЗ
-- **Поддерживает multi-tenancy** с полной изоляцией данных
-
-## 🏗️ Архитектура
+### 🏗️ Архитектура
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -37,387 +30,429 @@ CloudBridge SIEM — это современная система монитор
                     │ - Alert Manager │
                     │ - Web UI        │
                     └─────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │   Monitoring    │
-                    │                 │
-                    │ - Prometheus    │
-                    │ - Grafana       │
-                    │ - AlertManager  │
-                    └─────────────────┘
 ```
 
-## 🚀 Быстрый запуск
+## 🚀 Быстрый старт
 
-### ⚠️ ВАЖНО: Развертывание на отдельном сервере
+### Предварительные требования
 
-**SIEM систему необходимо развертывать на отдельном сервере** для обеспечения оптимальной производительности, безопасности и масштабируемости.
+- Docker и Docker Compose
+- Минимум 8GB RAM
+- 100GB свободного места на диске
+- Linux/Unix система
 
-### Требования к серверу
-
-#### Минимальные требования
-- **CPU**: 4 vCPU
-- **RAM**: 16 GB DDR4
-- **Storage**: 500 GB SSD
-- **Network**: 1 Gbps
-- **OS**: Ubuntu 20.04+ или 22.04+
-
-#### Рекомендуемые требования
-- **CPU**: 8 vCPU
-- **RAM**: 32 GB DDR4
-- **Storage**: 2 TB NVMe SSD
-- **Network**: 10 Gbps
-
-#### Production требования
-- **CPU**: 16 vCPU
-- **RAM**: 64 GB DDR4 ECC
-- **Storage**: 4 TB NVMe SSD (RAID 1)
-- **Network**: 25 Gbps
-
-### Автоматическое развертывание
+### 1. Клонирование репозитория
 
 ```bash
-# Скачивание скрипта развертывания
-wget https://raw.githubusercontent.com/maxlanies/cloudbridge-relay-installer/main/scripts/deploy_siem_server.sh
-
-# Установка прав на выполнение
-chmod +x deploy_siem_server.sh
-
-# Запуск полного развертывания
-sudo ./deploy_siem_server.sh --full
-
-# Или минимальное развертывание
-sudo ./deploy_siem_server.sh --minimal
+git clone <repository-url>
+cd cloudbridge-relay-installer/siem
 ```
 
-### Ручное развертывание
+### 2. Настройка переменных окружения
+
+Создайте файл `.env` в корне SIEM директории:
 
 ```bash
-# Подготовка системы
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y docker.io docker-compose nginx git curl wget
+# SIEM Configuration
+SIEM_EMAIL_PASSWORD=your-email-password
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token
+TELEGRAM_CHAT_ID=your-telegram-chat-id
+JWT_SECRET_KEY=your-jwt-secret-key
 
-# Установка SIEM
-sudo mkdir -p /opt/siem
-sudo chown $USER:$USER /opt/siem
-cd /opt/siem
-git clone https://github.com/maxlanies/cloudbridge-relay-installer.git .
+# External Services
+RELAY_METRICS_URL=http://relay:8081/metrics
+KEYCLOAK_ADMIN_URL=http://keycloak:8080/auth/admin
+DJANGO_API_URL=http://django:8000/api
 
-# Запуск SIEM
-cd siem
-docker-compose -f docker-compose.siem.yml up -d
+# Monitoring
+PROMETHEUS_URL=http://localhost:9090
+GRAFANA_URL=http://localhost:3000
 ```
 
-## 📊 Доступ к сервисам
-
-После запуска будут доступны:
-
-| Сервис | URL | Логин/Пароль | Описание |
-|--------|-----|--------------|----------|
-| **SIEM Web UI** | http://localhost:8081 | - | Главный веб-интерфейс |
-| **Kibana** | http://localhost:5601 | - | Визуализация и поиск событий |
-| **Elasticsearch** | http://localhost:9200 | - | API для поиска данных |
-| **Kafka** | localhost:9092 | - | Потоковая обработка |
-| **Redis** | localhost:6379 | - | Кэширование |
-| **RabbitMQ** | http://localhost:15672 | guest/guest | Очереди сообщений |
-
-## 🔧 Интеграция с CloudBridge Relay
-
-### Настройка сбора данных
+### 3. Запуск системы
 
 ```bash
-# Создание SSH ключей для безопасного доступа
-ssh-keygen -t rsa -b 4096 -f /opt/siem/.ssh/id_rsa -N ""
+# Запуск всех сервисов
+docker-compose up -d
 
-# Копирование ключа на сервер Relay
-ssh-copy-id -i /opt/siem/.ssh/id_rsa.pub ubuntu@your_relay_server_ip
+# Проверка статуса
+docker-compose ps
+
+# Просмотр логов
+docker-compose logs -f siem-api
 ```
 
-### Конфигурация удаленного сбора
+### 4. Доступ к интерфейсам
+
+- **SIEM Web UI**: http://localhost:3000
+- **Grafana**: http://localhost:3001 (admin/admin)
+- **Kibana**: http://localhost:5601
+- **Prometheus**: http://localhost:9090
+- **AlertManager**: http://localhost:9093
+
+## 🔧 Конфигурация
+
+### Основные настройки
+
+Основная конфигурация находится в файле `config/siem_config.yaml`:
 
 ```yaml
-# /opt/siem/siem/config/remote_collectors.yaml
-remote_collectors:
-  relay_server:
-    host: "your_relay_server_ip"
-    port: 22
-    username: "ubuntu"
-    key_file: "/opt/siem/.ssh/id_rsa"
-    sources:
-      - path: "/var/log/relay/relay.log"
-        type: "relay_logs"
-        interval: 60
-      - path: "http://localhost:8081/metrics"
-        type: "relay_metrics"
-        interval: 30
-      - path: "http://localhost:8080/admin/realms/cloudbridge/events"
-        type: "keycloak_events"
-        interval: 120
-      - path: "http://localhost:8000/api/v1/audit-logs"
-        type: "django_audit"
-        interval: 60
+# Application Settings
+app:
+  name: "CloudBridge SIEM"
+  version: "2.0.0"
+  debug: false
+  log_level: "INFO"
+  timezone: "Europe/Moscow"
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
 ```
 
-## 📈 Правила детекции
+### Правила детекции
 
-### Встроенные правила
-
-1. **Brute Force Detection**
-   - Детекция множественных неудачных попыток входа
-   - Настраиваемый порог и временное окно
-
-2. **Suspicious Activity**
-   - Обнаружение подозрительной активности
-   - Анализ паттернов поведения
-
-3. **Data Exfiltration**
-   - Детекция несанкционированного доступа к данным
-   - Мониторинг больших объемов передачи данных
-
-4. **Privilege Escalation**
-   - Обнаружение попыток повышения привилегий
-   - Мониторинг административных действий
-
-### Настройка правил
+Правила детекции настраиваются в файле `config/detection_rules.yaml`:
 
 ```yaml
-# siem/config/detection_rules.yaml
 rules:
   brute_force:
-    enabled: true
+    name: "Brute Force Attack Detection"
     description: "Множественные неудачные попытки входа"
+    enabled: true
+    severity: "high"
     conditions:
       event_type: "authentication_failure"
       time_window: 300
       threshold: 5
-    actions:
-      - type: "alert"
-        severity: "high"
-      - type: "block_ip"
-        duration: 3600
 ```
 
-## 🔔 Уведомления
+### Уведомления
 
-### Поддерживаемые каналы
-
-- **Email** (SMTP)
-- **Telegram**
-- **Slack**
-- **Webhooks**
-- **SMS** (опционально)
-
-### Настройка уведомлений
+Настройка уведомлений в `config/siem_config.yaml`:
 
 ```yaml
-# siem/config/notifications.yaml
 notifications:
   email:
     enabled: true
-    smtp_server: "smtp.gmail.com"
-    smtp_port: 587
-    username: "your-email@gmail.com"
-    password: "your-app-password"
-    from: "siem@yourcompany.com"
-    to: ["security@yourcompany.com", "admin@yourcompany.com"]
-    
+    smtp_server: "smtp.rusender.ru"
+    smtp_port: 465
+    username: "siem@2gc.ru"
+    password: "${SIEM_EMAIL_PASSWORD}"
+  
   telegram:
     enabled: true
-    bot_token: "your-bot-token"
-    chat_id: "your-chat-id"
-    
-  slack:
-    enabled: true
-    webhook_url: "https://hooks.slack.com/services/your/webhook/url"
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+    chat_id: "${TELEGRAM_CHAT_ID}"
 ```
 
-## 🎨 Веб-интерфейс
+## 📊 Мониторинг и метрики
 
-### Основные функции
+### Prometheus метрики
 
-- **Dashboard** - главная панель с обзором событий
-- **Events** - просмотр и поиск событий безопасности
-- **Alerts** - управление алертами и уведомлениями
-- **Rules** - настройка правил детекции
-- **Analytics** - аналитика и отчеты
-- **Settings** - настройки системы
+SIEM система экспортирует следующие метрики:
 
-### Multi-tenant поддержка
+- `siem_events_total` - общее количество событий
+- `siem_events_by_type` - события по типам
+- `siem_events_by_source` - события по источникам
+- `siem_events_by_severity` - события по важности
+- `siem_alerts_active` - активные алерты
+- `siem_alerts_critical` - критические алерты
+- `siem_correlations_active` - активные корреляции
 
-- Переключение между тенантами
-- Изоляция данных в UI
-- Tenant-specific настройки
-- Роли и права доступа
+### Grafana дашборды
 
-## 🔗 Интеграция с существующим мониторингом
+Включены готовые дашборды:
 
-### Prometheus Integration
+- **SIEM Events Dashboard** - обзор событий безопасности
+- **SIEM Alerts Dashboard** - управление алертами
+- **SIEM Correlation Dashboard** - корреляция событий
 
-SIEM автоматически интегрируется с существующим Prometheus:
+## 🔐 Безопасность
+
+### Multi-tenant изоляция
+
+Система поддерживает изоляцию данных по тенантам:
+
+```python
+# Автоматическое определение тенанта
+tenant_id = await get_current_tenant(request)
+
+# Изоляция данных
+events = await event_service.get_events(tenant_id=tenant_id)
+```
+
+### Аутентификация
+
+Интеграция с Keycloak для аутентификации:
 
 ```yaml
-# Автоматически добавляется в prometheus/prometheus.yml:
-scrape_configs:
-  - job_name: 'siem-backend'
-    static_configs:
-      - targets: ['siem-server:8000']
-    metrics_path: '/metrics'
-    scrape_interval: 15s
+keycloak:
+  admin_url: "http://keycloak:8080/auth/admin"
+  realm: "cloudbridge"
+  client_id: "siem-client"
+  client_secret: "siem-secret"
 ```
-
-### Grafana Integration
-
-Создаются новые дашборды в существующей Grafana:
-
-- **SIEM Events Dashboard** - мониторинг событий безопасности
-- **SIEM Alerts Dashboard** - управление алертами
-- **SIEM Correlation Dashboard** - анализ корреляций
-- **SIEM Security Dashboard** - общая безопасность
-
-### AlertManager Integration
-
-Интеграция с существующим AlertManager для централизованного управления алертами.
-
-## 🔒 Безопасность
-
-### Аутентификация и авторизация
-
-- **Keycloak OIDC** интеграция
-- **RBAC** (Role-Based Access Control)
-- **Multi-tenant изоляция**
-- **Audit logging** всех действий
 
 ### Шифрование
 
-- **TLS 1.3** для всех соединений
-- **Data encryption** at rest
-- **Secure communication** между компонентами
+- TLS 1.3 для всех соединений
+- Шифрование данных в состоянии покоя
+- Безопасное хранение секретов
 
-### Соответствие требованиям
+## 🔄 Интеграция с существующими системами
 
-- **152-ФЗ** - защита персональных данных
-- **187-ФЗ** - безопасность критической информационной инфраструктуры
-- **ISO 27001** - информационная безопасность
+### Relay Integration
 
-## 📊 Производительность
+Сбор данных из CloudBridge Relay:
 
-### Метрики производительности
+```yaml
+relay:
+  metrics_url: "http://relay:8081/metrics"
+  log_file: "/var/log/relay/relay.log"
+  api_url: "http://relay:8081/api"
+```
+
+### Keycloak Integration
+
+Сбор событий аутентификации:
+
+```yaml
+keycloak:
+  admin_url: "http://keycloak:8080/auth/admin"
+  realm: "cloudbridge"
+```
+
+### Django API Integration
+
+Сбор бизнес-событий:
+
+```yaml
+django:
+  api_url: "http://django:8000/api"
+  api_key: "siem-api-key"
+```
+
+## 📈 Производительность
+
+### Требования к производительности
 
 - **Events/sec**: > 10,000
 - **Alert latency**: < 100ms
-- **Storage retention**: 90 дней
+- **Storage**: 90 дней retention
 - **Uptime**: 99.9%
 
-### Масштабирование
+### Оптимизация
 
-- **Горизонтальное масштабирование**
-- **Auto-scaling** на основе нагрузки
-- **Load balancing**
-- **High availability**
-
-## 🛠️ Управление
-
-### Системные команды
-
-```bash
-# Управление сервисом
-sudo systemctl start siem
-sudo systemctl stop siem
-sudo systemctl restart siem
-sudo systemctl status siem
-
-# Просмотр логов
-sudo journalctl -u siem.service -f
-tail -f /opt/siem/logs/*.log
-
-# Мониторинг ресурсов
-/opt/siem/scripts/monitor_siem.sh
-
-# Резервное копирование
-/opt/siem/scripts/backup_siem.sh
+```yaml
+performance:
+  max_events_per_second: 10000
+  event_processing_timeout: 100
+  batch_size: 1000
+  worker_threads: 8
+  max_memory_usage: "8GB"
 ```
 
-### Docker команды
+## 🛠️ Разработка
 
-```bash
-# Просмотр контейнеров
-docker ps
+### Структура проекта
 
-# Просмотр логов
-docker-compose -f docker-compose.siem.yml logs -f
-
-# Перезапуск сервисов
-docker-compose -f docker-compose.siem.yml restart
-
-# Обновление образов
-docker-compose -f docker-compose.siem.yml pull
-docker-compose -f docker-compose.siem.yml up -d
+```
+siem/
+├── backend/                 # FastAPI backend
+│   ├── app/
+│   │   ├── api/            # API endpoints
+│   │   ├── models/         # Data models
+│   │   ├── schemas/        # Pydantic schemas
+│   │   ├── services/       # Business logic
+│   │   └── main.py         # FastAPI app
+│   └── requirements.txt
+├── frontend/               # React frontend
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── pages/          # Page components
+│   │   └── App.tsx
+│   └── package.json
+├── collectors/             # Event collectors
+├── processors/             # Event processors
+├── alerting/               # Alert management
+├── config/                 # Configuration files
+└── docker-compose.yml      # Docker orchestration
 ```
 
-## 📚 Документация
+### Локальная разработка
 
-### Основная документация
+```bash
+# Запуск в режиме разработки
+docker-compose -f docker-compose.dev.yml up -d
 
-- **[Техническое задание](TECHNICAL_SPECIFICATION.md)** - подробное ТЗ для разработчика
-- **[Руководство по развертыванию](../docs/deployment/SIEM_DEPLOYMENT_COMPLETE_GUIDE.md)** - полное руководство
-- **[Руководство по интеграции](../docs/integration/siem_integration_guide.md)** - интеграция с CloudBridge Relay
-- **[Анализ SIEM системы](../docs/integration/siem_integration_analysis.md)** - архитектурный анализ
+# Просмотр логов
+docker-compose logs -f
 
-### API документация
+# Тестирование API
+curl http://localhost:8000/api/v1/events
+```
 
-- **OpenAPI/Swagger**: http://localhost:8081/docs
-- **API Reference**: http://localhost:8081/redoc
+## 🧪 Тестирование
 
-## 🐛 Troubleshooting
+### Unit тесты
 
-### Частые проблемы
+```bash
+# Запуск тестов backend
+cd backend
+python -m pytest tests/
 
-1. **SIEM не собирает события**
-   - Проверьте подключение к источникам данных
-   - Убедитесь в правильности конфигурации коллекторов
+# Запуск тестов frontend
+cd frontend
+npm test
+```
 
-2. **Высокое потребление ресурсов**
-   - Проверьте настройки Elasticsearch
-   - Оптимизируйте правила детекции
+### Интеграционные тесты
 
-3. **Алерты не отправляются**
-   - Проверьте настройки уведомлений
-   - Убедитесь в доступности внешних сервисов
+```bash
+# Запуск интеграционных тестов
+docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+```
 
-### Логи и диагностика
+### Load тестирование
+
+```bash
+# Тестирование производительности
+python scripts/load_test.py --events 10000 --duration 60
+```
+
+## 📚 API Документация
+
+### Swagger UI
+
+Доступ к API документации: http://localhost:8000/docs
+
+### Основные endpoints
+
+```bash
+# События
+GET    /api/v1/events          # Получение событий
+POST   /api/v1/events          # Создание события
+GET    /api/v1/events/{id}     # Получение события по ID
+
+# Алерты
+GET    /api/v1/alerts          # Получение алертов
+POST   /api/v1/alerts          # Создание алерта
+PUT    /api/v1/alerts/{id}     # Обновление алерта
+
+# Корреляции
+GET    /api/v1/correlations    # Получение корреляций
+POST   /api/v1/correlations    # Создание корреляции
+
+# Аналитика
+GET    /api/v1/analytics       # Аналитические данные
+```
+
+## 🔧 Обслуживание
+
+### Backup
+
+```bash
+# Создание backup
+./scripts/backup.sh
+
+# Восстановление из backup
+./scripts/restore.sh backup-2024-01-01.tar.gz
+```
+
+### Мониторинг
+
+```bash
+# Проверка здоровья системы
+curl http://localhost:8000/health
+
+# Просмотр метрик
+curl http://localhost:8000/metrics
+```
+
+### Логи
 
 ```bash
 # Просмотр логов SIEM
-tail -f /opt/siem/logs/siem.log
+docker-compose logs -f siem-api
 
-# Проверка состояния Elasticsearch
-curl -X GET "localhost:9200/_cluster/health?pretty"
+# Просмотр логов Elasticsearch
+docker-compose logs -f elasticsearch
 
-# Проверка Kafka
-docker exec -it siem_kafka_1 kafka-topics --list --bootstrap-server localhost:9092
-
-# Проверка Redis
-docker exec -it siem_redis_1 redis-cli ping
+# Просмотр логов Kafka
+docker-compose logs -f kafka
 ```
 
-## 🤝 Поддержка
+## 🚨 Troubleshooting
 
-### Получение помощи
+### Частые проблемы
 
-- **Документация**: [docs/](../docs/)
-- **Issues**: GitHub Issues
-- **Discussions**: GitHub Discussions
-- **Email**: support@2gc.ru
+#### 1. Elasticsearch не запускается
 
-### Сообщество
+```bash
+# Проверка ресурсов
+docker stats
 
+# Увеличение памяти для Elasticsearch
+export ES_JAVA_OPTS="-Xms2g -Xmx2g"
+```
+
+#### 2. Kafka соединение отказано
+
+```bash
+# Проверка статуса Kafka
+docker-compose ps kafka
+
+# Перезапуск Kafka
+docker-compose restart kafka
+```
+
+#### 3. Проблемы с аутентификацией
+
+```bash
+# Проверка Keycloak
+curl http://keycloak:8080/auth/realms/cloudbridge
+
+# Проверка токенов
+./scripts/debug_token.sh
+```
+
+### Логи и отладка
+
+```bash
+# Включение debug режима
+export DEBUG=true
+docker-compose up -d
+
+# Просмотр детальных логов
+docker-compose logs -f --tail=100
+```
+
+## 📞 Поддержка
+
+### Контакты
+
+- **Email**: security@2gc.ru
 - **Telegram**: @cloudbridge_support
-- **Discord**: CloudBridge Community
-- **Blog**: https://blog.2gc.ru
+- **Документация**: https://docs.2gc.ru/siem
+
+### Сообщение об ошибках
+
+При обнаружении проблем создайте issue с:
+
+1. Описанием проблемы
+2. Логами системы
+3. Версией системы
+4. Шагами для воспроизведения
+
+## 📄 Лицензия
+
+Copyright © 2024 2GC. Все права защищены.
 
 ---
 
 **Версия**: 2.0.0  
-**Последнее обновление**: 2024  
-**Лицензия**: MIT  
-**Поддержка**: CloudBridge Team 
+**Дата**: 2024-01-01  
+**Статус**: Production Ready 

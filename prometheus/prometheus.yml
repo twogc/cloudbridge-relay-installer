@@ -51,4 +51,28 @@ scrape_configs:
     metrics_path: '/metrics'
     scheme: 'http'
     scrape_interval: 15s
+    scrape_timeout: 5s
+
+  # SIEM Backend API
+  - job_name: 'siem-backend'
+    static_configs:
+      - targets: ['siem-server:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 5s
+
+  # SIEM Event Processor
+  - job_name: 'siem-processor'
+    static_configs:
+      - targets: ['siem-server:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 5s
+
+  # SIEM Alert Manager
+  - job_name: 'siem-alerts'
+    static_configs:
+      - targets: ['siem-server:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
     scrape_timeout: 5s 

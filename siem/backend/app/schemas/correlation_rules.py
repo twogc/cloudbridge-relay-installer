@@ -44,3 +44,12 @@ class CorrelationRuleResponse(CorrelationRuleBase):
 
     class Config:
         from_attributes = True 
+
+
+class CorrelationRuleList(BaseModel):
+    """Schema for correlation rule list responses"""
+    rules: List[CorrelationRuleResponse] = Field(..., description="List of correlation rules")
+    total: int = Field(..., description="Total number of rules")
+    page: int = Field(..., description="Current page")
+    size: int = Field(..., description="Page size")
+    pages: int = Field(..., description="Total number of pages") 
