@@ -127,5 +127,62 @@
       "jwt_secret": "${RELAY_JWT_SECRET}",
       "keycloak_url": "${KEYCLOAK_SERVER_URL}"
     }
+  },
+  "ingress": {
+    "enabled": true,
+    "bastion_mode": false,
+    "ip_access_control": {
+      "enabled": false,
+      "default_allow": true,
+      "rules": []
+    },
+    "tls": {
+      "enabled": true,
+      "cert_file": "${RELAY_TLS_CERT_FILE}",
+      "key_file": "${RELAY_TLS_KEY_FILE}",
+      "min_version": "1.2",
+      "cipher_suites": [],
+      "verify_client_cert": false,
+      "client_ca_file": "",
+      "insecure_skip_verify": false
+    },
+    "connection_pool": {
+      "max_size": 100,
+      "idle_timeout": "90s",
+      "max_idle": 10,
+      "max_lifetime": "1h"
+    },
+    "rules": [
+      {
+        "hostname": "api.example.com",
+        "path": "/api/.*",
+        "service": "https://localhost:8000"
+      },
+      {
+        "hostname": "ssh.example.com",
+        "service": "ssh://localhost:22"
+      },
+      {
+        "hostname": "*",
+        "service": "https://localhost:8080"
+      }
+    ],
+    "origin_request": {
+      "connect_timeout": "30s",
+      "tls_timeout": "10s",
+      "tcp_keep_alive": "30s",
+      "keep_alive_connections": 100,
+      "keep_alive_timeout": "90s",
+      "http_host_header": "",
+      "origin_server_name": "",
+      "no_tls_verify": false,
+      "ca_pool": "",
+      "disable_chunked_encoding": false,
+      "bastion_mode": false,
+      "proxy_address": "127.0.0.1",
+      "proxy_port": 0,
+      "proxy_type": "",
+      "http2_origin": true
+    }
   }
 }
