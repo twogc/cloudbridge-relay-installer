@@ -122,6 +122,136 @@ func (rw *RollingWindow) Count() int {
 	return len(rw.values)
 }
 
+var (
+	// Prometheus metrics
+	latencyHistogram    *prometheus.HistogramVec
+	throughputGauge     *prometheus.GaugeVec
+	errorRateCounter    *prometheus.CounterVec
+	successRateGauge    *prometheus.GaugeVec
+	switchCounter       *prometheus.CounterVec
+	connectionGauge     *prometheus.GaugeVec
+	bandwidthGauge      *prometheus.GaugeVec
+	packetLossGauge     *prometheus.GaugeVec
+	rttGauge            *prometheus.GaugeVec
+
+	// Internal metrics storage
+	metrics     map[Protocol]*DetailedMetrics
+	mu          sync.RWMutex
+	logger      *zap.Logger
+	windowSize  time.Duration
+
+	AuthFailures = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "relay_auth_failures_total",
+			Help: "Total number of authentication failures",
+		},
+		[]string{"reason"},
+	)
+	RateLimitExceeded = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "relay_rate_limit_exceeded_total",
+			Help: "Total number of rate limit exceeded events",
+		},
+		[]string{"client_id"},
+	)
+	CircuitBreakerState = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "relay_circuit_breaker_state",
+			Help: "Current state of the circuit breaker (0=closed, 1=open, 2=half-open)",
+		},
+		[]string{"breaker_name"},
+	)
+)
+
+func init() {
+	// Prometheus metrics
+	latencyHistogram = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name: "protocol_latency_seconds",
+			Help: "Protocol latency in seconds",
+			Buckets: []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0},
+		},
+		[]string{"protocol"},
+	)
+	throughputGauge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "protocol_throughput_bytes_per_second",
+			Help: "Protocol throughput in bytes per second",
+		},
+		[]string{"protocol"},
+	)
+	errorRateCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "protocol_errors_total",
+			Help: "Total number of protocol errors",
+		},
+		[]string{"protocol", "error_type"},
+	)
+	successRateGauge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "protocol_success_rate",
+			Help: "Protocol success rate (0.0 to 1.0)",
+		},
+		[]string{"protocol"},
+	)
+	switchCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "protocol_switches_total",
+			Help: "Total number of protocol switches",
+		},
+		[]string{"from", "to", "reason"},
+	)
+	connectionGauge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "protocol_active_connections",
+			Help: "Number of active connections per protocol",
+		},
+		[]string{"protocol"},
+	)
+	bandwidthGauge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "protocol_bandwidth_utilization",
+			Help: "Bandwidth utilization percentage",
+		},
+		[]string{"protocol"},
+	)
+	packetLossGauge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "protocol_packet_loss_percentage",
+			Help: "Packet loss percentage",
+		},
+		[]string{"protocol"},
+	)
+	rttGauge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "protocol_rtt_seconds",
+			Help: "Round-trip time in seconds",
+		},
+		[]string{"protocol"},
+	)
+
+	// Internal metrics storage
+	metrics = make(map[Protocol]*DetailedMetrics)
+	logger = zap.NewNop() // Placeholder, replace with actual logger
+	windowSize = 30 * time.Second // Default window size
+
+	// Register Prometheus metrics
+	prometheus.MustRegister(
+		latencyHistogram,
+		throughputGauge,
+		errorRateCounter,
+		successRateGauge,
+		switchCounter,
+		connectionGauge,
+		bandwidthGauge,
+		packetLossGauge,
+		rttGauge,
+		AuthFailures,
+		RateLimitExceeded,
+		CircuitBreakerState,
+	)
+}
+
 // NewProtocolMetricsCollector creates a new metrics collector
 func NewProtocolMetricsCollector(windowSize time.Duration, logger *zap.Logger) *ProtocolMetricsCollector {
 	collector := &ProtocolMetricsCollector{
@@ -414,4 +544,15 @@ func (pmc *ProtocolMetricsCollector) Cleanup() {
 			)
 		}
 	}
+} 
+
+// Утилиты для обновления метрик
+func IncAuthFailure(reason string) {
+	AuthFailures.WithLabelValues(reason).Inc()
+}
+func IncRateLimitExceeded(clientID string) {
+	RateLimitExceeded.WithLabelValues(clientID).Inc()
+}
+func SetCircuitBreakerState(breakerName string, state int) {
+	CircuitBreakerState.WithLabelValues(breakerName).Set(float64(state))
 } 

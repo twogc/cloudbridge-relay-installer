@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/twogc/cloudbridge-relay-installer/internal/circuitbreaker"
 	"github.com/twogc/cloudbridge-relay-installer/internal/health"
 	"go.uber.org/zap"
@@ -21,6 +23,12 @@ func main() {
 
 	fmt.Println("=== Zero Trust Architecture Demo ===")
 	fmt.Println()
+
+	// Start Prometheus metrics server
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":9090", nil)
+	}()
 
 	// Demo 1: Circuit Breaker
 	fmt.Println("1. Circuit Breaker Demo")
