@@ -109,9 +109,9 @@ services:
       - GOST_SIGNATURE_ALGORITHM=${GOST_SIGNATURE_ALGORITHM:-GOST_R_34_10_2012}
       - GOST_HASH_ALGORITHM=${GOST_HASH_ALGORITHM:-GOST_R_34_11_2012}
     ports:
-      - "${RELAY_PORT:-8082}:8080"
+      - "${RELAY_PORT:-8082}:3456"
       - "8083:8082"
-      - "${RELAY_METRICS_PORT:-8081}:8081"
+      - "${RELAY_METRICS_PORT:-8081}:9090"
     volumes:
       - ./certs:/etc/relay/certs:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro

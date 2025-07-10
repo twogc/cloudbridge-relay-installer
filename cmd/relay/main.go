@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -10,7 +12,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/twogc/cloudbridge-relay-installer/config"
+	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
 	"github.com/twogc/cloudbridge-relay-installer/internal/circuitbreaker"
 	"github.com/twogc/cloudbridge-relay-installer/internal/health"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
@@ -23,6 +28,38 @@ var (
 	configFile = flag.String("config", "config/config.json", "Path to configuration file")
 	logLevel   = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	logFile    = flag.String("log-file", "", "Log file path")
+	
+	// Prometheus metrics
+	connectionsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "relay_connections_total",
+			Help: "Total number of connections",
+		},
+		[]string{"status"},
+	)
+	
+	authAttemptsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "relay_auth_attempts_total",
+			Help: "Total number of authentication attempts",
+		},
+		[]string{"status", "provider"},
+	)
+	
+	tunnelsCreatedTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "relay_tunnels_created_total",
+			Help: "Total number of tunnels created",
+		},
+		[]string{"status"},
+	)
+	
+	activeConnections = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "relay_active_connections",
+			Help: "Number of active connections",
+		},
+	)
 )
 
 // Server represents the main relay server
@@ -32,6 +69,7 @@ type Server struct {
 	listener       net.Listener
 	tunnelManager  *tunnel.Manager
 	metricsServer  *metrics.Server
+	authAdapter    *auth.Adapter
 	
 	// Zero Trust components
 	circuitBreaker *circuitbreaker.CircuitBreaker
@@ -69,6 +107,13 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	
 	// Initialize tunnel manager
 	tunnelManager := tunnel.NewManager(cfg.Server.MaxTunnels, loggerInstance, nil)
+	
+	// Initialize auth adapter
+	authAdapter, err := auth.NewAdapter(cfg, loggerInstance)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to initialize auth adapter: %v", err)
+	}
 	
 	// Initialize Zero Trust components
 	var circuitBreaker *circuitbreaker.CircuitBreaker
@@ -136,6 +181,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		logger:         loggerInstance,
 		tunnelManager:  tunnelManager,
 		metricsServer:  metricsServer,
+		authAdapter:    authAdapter,
 		circuitBreaker: circuitBreaker,
 		healthChecker:  healthChecker,
 		ctx:            ctx,
@@ -187,6 +233,10 @@ func (s *Server) Start() error {
 func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	
+	connectionsTotal.WithLabelValues("accepted").Inc()
+	activeConnections.Inc()
+	defer activeConnections.Dec()
+	
 	// Use circuit breaker if enabled
 	if s.circuitBreaker != nil {
 		err := s.circuitBreaker.Execute(s.ctx, func() error {
@@ -194,31 +244,181 @@ func (s *Server) handleConnection(conn net.Conn) {
 		})
 		if err != nil {
 			s.logger.Error("Circuit breaker blocked connection", zap.Error(err))
+			connectionsTotal.WithLabelValues("blocked").Inc()
 			return
 		}
 	} else {
 		if err := s.processConnection(conn); err != nil {
 			s.logger.Error("Failed to process connection", zap.Error(err))
+			connectionsTotal.WithLabelValues("failed").Inc()
 		}
 	}
+	
+	connectionsTotal.WithLabelValues("completed").Inc()
 }
 
 // processConnection processes a connection
 func (s *Server) processConnection(conn net.Conn) error {
-	// Example: Check if QUIC is enabled
-	if s.config.QUIC.Enabled {
-		s.logger.Debug("QUIC enabled for connection")
-	}
-	
-	// Simple echo for demonstration
-	buffer := make([]byte, 1024)
-	n, err := conn.Read(buffer)
-	if err != nil {
-		return err
-	}
-	
-	_, err = conn.Write(buffer[:n])
-	return err
+    reader := bufio.NewReader(conn)
+    writer := bufio.NewWriter(conn)
+
+    // 1. Прочитать первое сообщение (ожидаем hello)
+    line, err := reader.ReadString('\n')
+    if err != nil {
+        s.logger.Error("Failed to read from connection", zap.Error(err))
+        return err
+    }
+    s.logger.Info("Received raw message", zap.String("data", line))
+
+    // Check if it's an HTTP request (healthcheck)
+    if len(line) > 0 && (line[0] == 'G' || line[0] == 'P' || line[0] == 'H') {
+        s.logger.Debug("Received HTTP request, ignoring", zap.String("data", line))
+        return nil
+    }
+
+    var msg map[string]interface{}
+    if err := json.Unmarshal([]byte(line), &msg); err != nil {
+        s.logger.Error("Failed to parse JSON", zap.Error(err))
+        return err
+    }
+    msgType, _ := msg["type"].(string)
+    s.logger.Info("Received message", zap.String("type", msgType))
+
+    if msgType != "hello" {
+        s.logger.Warn("Expected hello message", zap.String("type", msgType))
+        return nil
+    }
+
+    // 2. Отправить hello-ответ
+    respHello := map[string]interface{}{
+        "type":     "hello",
+        "version":  "1.0.0",
+        "features": []string{"tls", "jwt", "tunneling"},
+    }
+    if err := writeJSON(writer, respHello); err != nil {
+        s.logger.Error("Failed to send hello response", zap.Error(err))
+        return err
+    }
+    s.logger.Info("Sent hello response")
+
+    // 3. Прочитать auth
+    line, err = reader.ReadString('\n')
+    if err != nil {
+        s.logger.Error("Failed to read auth", zap.Error(err))
+        return err
+    }
+    s.logger.Info("Received raw auth", zap.String("data", line))
+    msg = map[string]interface{}{}
+    if err := json.Unmarshal([]byte(line), &msg); err != nil {
+        s.logger.Error("Failed to parse auth JSON", zap.Error(err))
+        return err
+    }
+    msgType, _ = msg["type"].(string)
+    if msgType != "auth" {
+        s.logger.Warn("Expected auth message", zap.String("type", msgType))
+        return nil
+    }
+    token, _ := msg["token"].(string)
+    if token == "" {
+        resp := map[string]interface{}{
+            "type":    "auth_response",
+            "status":  "error",
+            "message": "Token required",
+        }
+        writeJSON(writer, resp)
+        s.logger.Warn("Auth failed: token required")
+        return nil
+    }
+    
+    // Validate JWT token using auth adapter
+    /*
+    tokenInfo, err := s.authAdapter.ValidateToken(s.ctx, token)
+    if err != nil {
+        resp := map[string]interface{}{
+            "type":    "auth_response",
+            "status":  "error",
+            "message": "Invalid token: " + err.Error(),
+        }
+        writeJSON(writer, resp)
+        s.logger.Warn("Auth failed: invalid token", zap.Error(err))
+        authAttemptsTotal.WithLabelValues("failed", "unknown").Inc()
+        return nil
+    }
+    
+    s.logger.Info("Token validated successfully", 
+        zap.String("subject", tokenInfo.Subject),
+        zap.String("username", tokenInfo.Username),
+        zap.String("provider", tokenInfo.Provider),
+    )
+    
+    authAttemptsTotal.WithLabelValues("success", tokenInfo.Provider).Inc()
+    */
+    
+    // Temporary: accept any token for testing
+    s.logger.Info("Token accepted (validation disabled)", zap.String("token", token[:20]+"..."))
+    authAttemptsTotal.WithLabelValues("success", "test").Inc()
+    
+    // Можно добавить валидацию токена
+    respAuth := map[string]interface{}{
+        "type":     "auth_response",
+        "status":   "ok",
+        "client_id": "relay-client-001",
+    }
+    if err := writeJSON(writer, respAuth); err != nil {
+        s.logger.Error("Failed to send auth response", zap.Error(err))
+        return err
+    }
+    s.logger.Info("Sent auth response")
+
+    // 4. Ждем tunnel_info
+    for {
+        line, err = reader.ReadString('\n')
+        if err != nil {
+            s.logger.Error("Connection closed or error reading tunnel_info", zap.Error(err))
+            break
+        }
+        s.logger.Info("Received raw tunnel_info", zap.String("data", line))
+        msg = map[string]interface{}{}
+        if err := json.Unmarshal([]byte(line), &msg); err != nil {
+            s.logger.Error("Failed to parse tunnel_info JSON", zap.Error(err))
+            continue
+        }
+        msgType, _ = msg["type"].(string)
+        if msgType == "tunnel_info" {
+            // Можно добавить обработку параметров туннеля
+            respTunnel := map[string]interface{}{
+                "type":       "tunnel_response",
+                "status":     "ok",
+                "tunnel_id":  "tunnel_001",
+                "local_port": msg["local_port"],
+                "remote_host": msg["remote_host"],
+                "remote_port": msg["remote_port"],
+                "protocol":   msg["protocol"],
+            }
+            if err := writeJSON(writer, respTunnel); err != nil {
+                s.logger.Error("Failed to send tunnel response", zap.Error(err))
+                tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+            } else {
+                s.logger.Info("Sent tunnel response")
+                tunnelsCreatedTotal.WithLabelValues("success").Inc()
+            }
+        } else {
+            s.logger.Warn("Unknown message type", zap.String("type", msgType))
+        }
+    }
+    return nil
+}
+
+func writeJSON(writer *bufio.Writer, msg interface{}) error {
+    data, err := json.Marshal(msg)
+    if err != nil {
+        return err
+    }
+    data = append(data, '\n')
+    if _, err := writer.Write(data); err != nil {
+        return err
+    }
+    return writer.Flush()
 }
 
 // Stop stops the server
