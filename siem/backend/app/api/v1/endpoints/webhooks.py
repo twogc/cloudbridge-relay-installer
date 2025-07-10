@@ -25,7 +25,7 @@ async def cloudflare_agent_webhook(request: Request):
         # Extract event data
         event_data = {
             "event_id": str(uuid.uuid4()),
-            "timestamp": body.get("timestamp", datetime.utcnow().isoformat()),
+            "timestamp": datetime.fromisoformat(body.get("timestamp", datetime.utcnow().isoformat())),
             "source": "cloudflare_agent",
             "severity": body.get("severity", "medium"),
             "category": "security",
@@ -37,12 +37,11 @@ async def cloudflare_agent_webhook(request: Request):
                 "context": body.get("context", {})
             },
             "tags": body.get("tags", []),
-            "correlation_id": body.get("correlation_id")
+            "correlation_id": uuid.UUID(body.get("correlation_id")) if body.get("correlation_id") else None
         }
         
         # Create event
         event_service = EventService()
-        from ...schemas.events import EventCreate
         event_create = EventCreate(**event_data)
         created_event = await event_service.create_event(event_create)
         
@@ -54,6 +53,9 @@ async def cloudflare_agent_webhook(request: Request):
             "message": "Event created successfully"
         }
         
+    except ValueError as e:
+        logger.error("Validation error in Cloudflare Agent webhook", error=str(e))
+        raise HTTPException(status_code=400, detail=f"Invalid data format: {str(e)}")
     except Exception as e:
         logger.error("Error processing Cloudflare Agent webhook", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to process webhook")
@@ -70,7 +72,7 @@ async def ml_api_webhook(request: Request):
         # Extract event data
         event_data = {
             "event_id": str(uuid.uuid4()),
-            "timestamp": body.get("timestamp", datetime.utcnow().isoformat()),
+            "timestamp": datetime.fromisoformat(body.get("timestamp", datetime.utcnow().isoformat())),
             "source": "ml_api",
             "severity": "high" if body.get("is_anomaly", False) else "medium",
             "category": "anomaly",
@@ -83,12 +85,11 @@ async def ml_api_webhook(request: Request):
                 "features_used": body.get("features_used", 0)
             },
             "tags": ["ml_analysis", "anomaly_detection"] + (["anomaly"] if body.get("is_anomaly") else []),
-            "correlation_id": body.get("correlation_id")
+            "correlation_id": uuid.UUID(body.get("correlation_id")) if body.get("correlation_id") else None
         }
         
         # Create event
         event_service = EventService()
-        from ...schemas.events import EventCreate
         event_create = EventCreate(**event_data)
         created_event = await event_service.create_event(event_create)
         
@@ -100,6 +101,9 @@ async def ml_api_webhook(request: Request):
             "message": "Event created successfully"
         }
         
+    except ValueError as e:
+        logger.error("Validation error in ML API webhook", error=str(e))
+        raise HTTPException(status_code=400, detail=f"Invalid data format: {str(e)}")
     except Exception as e:
         logger.error("Error processing ML API webhook", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to process webhook")
@@ -116,7 +120,7 @@ async def relay_metrics_webhook(request: Request):
         # Extract event data
         event_data = {
             "event_id": str(uuid.uuid4()),
-            "timestamp": body.get("timestamp", datetime.utcnow().isoformat()),
+            "timestamp": datetime.fromisoformat(body.get("timestamp", datetime.utcnow().isoformat())),
             "source": "relay_metrics",
             "severity": "info",
             "category": "performance",
@@ -131,12 +135,11 @@ async def relay_metrics_webhook(request: Request):
                 "metrics": body
             },
             "tags": ["relay_metrics", "performance"],
-            "correlation_id": body.get("correlation_id")
+            "correlation_id": uuid.UUID(body.get("correlation_id")) if body.get("correlation_id") else None
         }
         
         # Create event
         event_service = EventService()
-        from ...schemas.events import EventCreate
         event_create = EventCreate(**event_data)
         created_event = await event_service.create_event(event_create)
         
@@ -148,6 +151,9 @@ async def relay_metrics_webhook(request: Request):
             "message": "Event created successfully"
         }
         
+    except ValueError as e:
+        logger.error("Validation error in Relay Metrics webhook", error=str(e))
+        raise HTTPException(status_code=400, detail=f"Invalid data format: {str(e)}")
     except Exception as e:
         logger.error("Error processing Relay Metrics webhook", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to process webhook")
@@ -164,7 +170,7 @@ async def system_logs_webhook(request: Request):
         # Extract event data
         event_data = {
             "event_id": str(uuid.uuid4()),
-            "timestamp": body.get("timestamp", datetime.utcnow().isoformat()),
+            "timestamp": datetime.fromisoformat(body.get("timestamp", datetime.utcnow().isoformat())),
             "source": "system_logs",
             "severity": body.get("severity", "info"),
             "category": "system",
@@ -175,12 +181,11 @@ async def system_logs_webhook(request: Request):
                 "context": body.get("context", {})
             },
             "tags": ["system_logs"] + body.get("tags", []),
-            "correlation_id": body.get("correlation_id")
+            "correlation_id": uuid.UUID(body.get("correlation_id")) if body.get("correlation_id") else None
         }
         
         # Create event
         event_service = EventService()
-        from ...schemas.events import EventCreate
         event_create = EventCreate(**event_data)
         created_event = await event_service.create_event(event_create)
         
@@ -192,6 +197,9 @@ async def system_logs_webhook(request: Request):
             "message": "Event created successfully"
         }
         
+    except ValueError as e:
+        logger.error("Validation error in System Logs webhook", error=str(e))
+        raise HTTPException(status_code=400, detail=f"Invalid data format: {str(e)}")
     except Exception as e:
         logger.error("Error processing System Logs webhook", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to process webhook")
