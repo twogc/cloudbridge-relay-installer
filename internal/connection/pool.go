@@ -41,6 +41,12 @@ type ConnectionPool struct {
 	// Context for cleanup
 	ctx    context.Context
 	cancel context.CancelFunc
+	
+	// New components for enhanced connection management
+	retryStrategy        RetryStrategy
+	gracefulShutdown     *GracefulShutdownManager
+	lifecycleManager     *ConnectionLifecycleManager
+	waitGroupManager     *WaitGroupManager
 }
 
 // LoadBalancer interface for connection load balancing
@@ -170,6 +176,22 @@ func NewConnectionPool(
 ) *ConnectionPool {
 	ctx, cancel := context.WithCancel(context.Background())
 	
+	// Create retry strategy
+	retryConfig := DefaultRetryConfig()
+	retryConfig.Logger = logger
+	retryStrategy := NewBackoffHandler(retryConfig)
+	
+	// Create graceful shutdown manager
+	gracefulConfig := DefaultGracefulShutdownConfig()
+	gracefulConfig.Logger = logger
+	gracefulShutdown := NewGracefulShutdownManager(gracefulConfig)
+	
+	// Create lifecycle manager
+	lifecycleManager := NewConnectionLifecycleManager(logger)
+	
+	// Create wait group manager
+	waitGroupManager := NewWaitGroupManager(logger)
+	
 	pool := &ConnectionPool{
 		connections:     make(map[string]*PooledConnection),
 		balancer:        NewRoundRobinBalancer(),
@@ -181,6 +203,10 @@ func NewConnectionPool(
 		cleanupInterval: cleanupInterval,
 		ctx:             ctx,
 		cancel:          cancel,
+		retryStrategy:   retryStrategy,
+		gracefulShutdown: gracefulShutdown,
+		lifecycleManager: lifecycleManager,
+		waitGroupManager: waitGroupManager,
 	}
 	
 	// Start cleanup goroutine
@@ -189,10 +215,15 @@ func NewConnectionPool(
 	return pool
 }
 
-// GetConnection gets a connection from the pool
+// GetConnection gets a connection from the pool with retry logic
 func (cp *ConnectionPool) GetConnection(remoteAddr string) (*PooledConnection, error) {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
+	
+	// Check if shutdown is in progress
+	if cp.gracefulShutdown.IsShuttingDown() {
+		return nil, &ConnectionError{Message: "Connection pool is shutting down", Retryable: false}
+	}
 	
 	// Check if we have an existing connection
 	if conn, exists := cp.connections[remoteAddr]; exists && conn.IsHealthy() {
@@ -457,4 +488,88 @@ func (pc *PooledConnection) GetID() string {
 // GetRemoteAddr returns the remote address
 func (pc *PooledConnection) GetRemoteAddr() string {
 	return pc.remoteAddr
+}
+
+// GracefulShutdown performs graceful shutdown of the connection pool
+func (cp *ConnectionPool) GracefulShutdown(ctx context.Context, gracePeriod time.Duration) error {
+	cp.logger.Info("Starting graceful shutdown of connection pool",
+		zap.Duration("grace_period", gracePeriod),
+		zap.Int("connection_count", len(cp.connections)))
+	
+	return cp.lifecycleManager.Shutdown(ctx, gracePeriod)
+}
+
+// IsShuttingDown returns true if the pool is shutting down
+func (cp *ConnectionPool) IsShuttingDown() bool {
+	return cp.gracefulShutdown.IsShuttingDown()
+}
+
+// GetConnectionWithRetry gets a connection with retry logic
+func (cp *ConnectionPool) GetConnectionWithRetry(remoteAddr string, maxAttempts int) (*PooledConnection, error) {
+	var lastErr error
+	
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		conn, err := cp.GetConnection(remoteAddr)
+		if err == nil {
+			return conn, nil
+		}
+		
+		lastErr = err
+		
+		// Check if we should retry
+		if !cp.retryStrategy.ShouldRetry(err, attempt) {
+			break
+		}
+		
+		// Get backoff duration
+		backoffDuration := cp.retryStrategy.GetBackoffDuration(attempt)
+		if backoffDuration == 0 {
+			break
+		}
+		
+		cp.logger.Debug("Retrying connection",
+			zap.String("remote_addr", remoteAddr),
+			zap.Int("attempt", attempt+1),
+			zap.Duration("backoff", backoffDuration),
+			zap.Error(err))
+		
+		// Wait before retry
+		select {
+		case <-time.After(backoffDuration):
+			continue
+		case <-cp.ctx.Done():
+			return nil, cp.ctx.Err()
+		}
+	}
+	
+	return nil, lastErr
+}
+
+// AddActiveRequest increments the active request counter
+func (cp *ConnectionPool) AddActiveRequest() {
+	cp.gracefulShutdown.AddActiveRequest()
+	cp.waitGroupManager.Add(1)
+}
+
+// RemoveActiveRequest decrements the active request counter
+func (cp *ConnectionPool) RemoveActiveRequest() {
+	cp.gracefulShutdown.RemoveActiveRequest()
+	cp.waitGroupManager.Done()
+}
+
+// WaitForActiveRequests waits for all active requests to complete
+func (cp *ConnectionPool) WaitForActiveRequests(timeout time.Duration) error {
+	return cp.waitGroupManager.WaitWithTimeout(timeout)
+}
+
+// GetRetryStats returns retry statistics
+func (cp *ConnectionPool) GetRetryStats() map[string]interface{} {
+	if backoffHandler, ok := cp.retryStrategy.(*BackoffHandler); ok {
+		return map[string]interface{}{
+			"retries":           backoffHandler.Retries(),
+			"max_retries":       backoffHandler.GetMaxAttempts(),
+			"reached_max":       backoffHandler.ReachedMaxRetries(),
+		}
+	}
+	return map[string]interface{}{}
 } 

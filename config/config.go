@@ -285,6 +285,80 @@ type Config struct {
 			KeycloakURL string
 		}
 	} `json:"zero_trust"`
+
+	// Новые настройки для ingress улучшений
+	Ingress struct {
+		Enabled     bool `json:"enabled"`
+		BastionMode bool `json:"bastion_mode"`
+		
+		IPAccessControl struct {
+			Enabled      bool     `json:"enabled"`
+			DefaultAllow bool     `json:"default_allow"`
+			Rules        []struct {
+				Prefix string `json:"prefix"`
+				Ports  []int  `json:"ports"`
+				Allow  bool   `json:"allow"`
+			} `json:"rules"`
+		} `json:"ip_access_control"`
+		
+		TLS struct {
+			Enabled            bool     `json:"enabled"`
+			CertFile           string   `json:"cert_file"`
+			KeyFile            string   `json:"key_file"`
+			MinVersion         string   `json:"min_version"`
+			CipherSuites       []string `json:"cipher_suites"`
+			VerifyClientCert   bool     `json:"verify_client_cert"`
+			ClientCAFile       string   `json:"client_ca_file"`
+			InsecureSkipVerify bool     `json:"insecure_skip_verify"`
+		} `json:"tls"`
+		
+		ConnectionPool struct {
+			MaxSize     int           `json:"max_size"`
+			IdleTimeout time.Duration `json:"idle_timeout"`
+			MaxIdle     int           `json:"max_idle"`
+			MaxLifetime time.Duration `json:"max_lifetime"`
+		} `json:"connection_pool"`
+		
+		Rules []struct {
+			Hostname string `json:"hostname"`
+			Path     string `json:"path"`
+			Service  string `json:"service"`
+			OriginRequest *struct {
+				ConnectTimeout         time.Duration `json:"connect_timeout"`
+				TLSTimeout            time.Duration `json:"tls_timeout"`
+				TCPKeepAlive          time.Duration `json:"tcp_keep_alive"`
+				KeepAliveConnections  int           `json:"keep_alive_connections"`
+				HTTPHostHeader        string        `json:"http_host_header"`
+				OriginServerName      string        `json:"origin_server_name"`
+				NoTLSVerify           bool          `json:"no_tls_verify"`
+				CAPool                string        `json:"ca_pool"`
+				DisableChunkedEncoding bool          `json:"disable_chunked_encoding"`
+				BastionMode           bool          `json:"bastion_mode"`
+				ProxyAddress          string        `json:"proxy_address"`
+				ProxyPort             uint          `json:"proxy_port"`
+				ProxyType             string        `json:"proxy_type"`
+				HTTP2Origin           bool          `json:"http2_origin"`
+			} `json:"origin_request,omitempty"`
+		} `json:"rules"`
+		
+		OriginRequest struct {
+			ConnectTimeout         time.Duration `json:"connect_timeout"`
+			TLSTimeout            time.Duration `json:"tls_timeout"`
+			TCPKeepAlive          time.Duration `json:"tcp_keep_alive"`
+			KeepAliveConnections  int           `json:"keep_alive_connections"`
+			KeepAliveTimeout      time.Duration `json:"keep_alive_timeout"`
+			HTTPHostHeader        string        `json:"http_host_header"`
+			OriginServerName      string        `json:"origin_server_name"`
+			NoTLSVerify           bool          `json:"no_tls_verify"`
+			CAPool                string        `json:"ca_pool"`
+			DisableChunkedEncoding bool          `json:"disable_chunked_encoding"`
+			BastionMode           bool          `json:"bastion_mode"`
+			ProxyAddress          string        `json:"proxy_address"`
+			ProxyPort             uint          `json:"proxy_port"`
+			ProxyType             string        `json:"proxy_type"`
+			HTTP2Origin           bool          `json:"http2_origin"`
+		} `json:"origin_request"`
+	} `json:"ingress"`
 }
 
 // HealthCheckConfig represents a health check configuration

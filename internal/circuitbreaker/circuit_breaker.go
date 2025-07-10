@@ -45,12 +45,19 @@ type CircuitBreaker struct {
 	successThreshold int64
 	timeout          time.Duration
 	windowSize       time.Duration
+	autoRecovery     bool
 	
 	// Metrics
 	totalRequests    int64
 	totalFailures    int64
 	totalSuccesses   int64
 	totalTimeouts    int64
+	stateChanges     int64
+	recoveryAttempts int64
+	
+	// Auto recovery
+	recoveryStartTime time.Time
+	isRecovering      bool
 	
 	mu               sync.RWMutex
 	logger           *zap.Logger
@@ -63,6 +70,7 @@ type Config struct {
 	SuccessThreshold  int64         `json:"success_threshold"`
 	Timeout           time.Duration `json:"timeout"`
 	WindowSize        time.Duration `json:"window_size"`
+	AutoRecovery      bool          `json:"auto_recovery"`
 	Logger            *zap.Logger   `json:"-"`
 }
 
@@ -74,6 +82,7 @@ func DefaultConfig(name string) *Config {
 		SuccessThreshold: 3,
 		Timeout:          30 * time.Second,
 		WindowSize:       60 * time.Second,
+		AutoRecovery:     true,
 	}
 }
 
@@ -94,6 +103,7 @@ func NewCircuitBreaker(config *Config) *CircuitBreaker {
 		successThreshold: config.SuccessThreshold,
 		timeout:          config.Timeout,
 		windowSize:       config.WindowSize,
+		autoRecovery:     config.AutoRecovery,
 		logger:           config.Logger,
 	}
 }
@@ -379,4 +389,109 @@ func (cb *CircuitBreaker) IsHealthy() bool {
 // GetName returns the circuit breaker name
 func (cb *CircuitBreaker) GetName() string {
 	return cb.name
+}
+
+// StartRecovery starts automatic recovery process
+func (cb *CircuitBreaker) StartRecovery(ctx context.Context) error {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	
+	if !cb.autoRecovery {
+		return errors.New("auto recovery is disabled")
+	}
+	
+	if cb.isRecovering {
+		return errors.New("recovery already in progress")
+	}
+	
+	cb.isRecovering = true
+	cb.recoveryStartTime = time.Now()
+	cb.recoveryAttempts++
+	
+	cb.logger.Info("Starting automatic recovery",
+		zap.String("name", cb.name),
+		zap.Int64("recovery_attempts", cb.recoveryAttempts))
+	
+	// Start recovery goroutine
+	go cb.recoveryLoop(ctx)
+	
+	return nil
+}
+
+// IsRecovering returns true if recovery is in progress
+func (cb *CircuitBreaker) IsRecovering() bool {
+	cb.mu.RLock()
+	defer cb.mu.RUnlock()
+	return cb.isRecovering
+}
+
+// GetRecoveryProgress returns recovery progress as a percentage
+func (cb *CircuitBreaker) GetRecoveryProgress() float64 {
+	cb.mu.RLock()
+	defer cb.mu.RUnlock()
+	
+	if !cb.isRecovering {
+		return 0.0
+	}
+	
+	elapsed := time.Since(cb.recoveryStartTime)
+	progress := float64(elapsed) / float64(cb.timeout)
+	
+	if progress > 1.0 {
+		return 1.0
+	}
+	
+	return progress
+}
+
+// recoveryLoop handles automatic recovery
+func (cb *CircuitBreaker) recoveryLoop(ctx context.Context) {
+	ticker := time.NewTicker(cb.timeout / 10) // Check every 10% of timeout
+	defer ticker.Stop()
+	
+	for {
+		select {
+		case <-ctx.Done():
+			cb.mu.Lock()
+			cb.isRecovering = false
+			cb.mu.Unlock()
+			return
+		case <-ticker.C:
+			cb.mu.Lock()
+			if cb.state == Open && time.Since(cb.lastFailure) > cb.timeout {
+				cb.state = HalfOpen
+				cb.stateChanges++
+				cb.isRecovering = false
+				cb.logger.Info("Circuit breaker recovered to half-open state",
+					zap.String("name", cb.name))
+			}
+			cb.mu.Unlock()
+		}
+	}
+}
+
+// GetMetrics returns circuit breaker metrics
+func (cb *CircuitBreaker) GetMetrics() map[string]interface{} {
+	cb.mu.RLock()
+	defer cb.mu.RUnlock()
+	
+	successRate := cb.calculateSuccessRate()
+	
+	return map[string]interface{}{
+		"name":               cb.name,
+		"state":              cb.state.String(),
+		"total_requests":     cb.totalRequests,
+		"total_failures":     cb.totalFailures,
+		"total_successes":    cb.totalSuccesses,
+		"total_timeouts":     cb.totalTimeouts,
+		"state_changes":      cb.stateChanges,
+		"recovery_attempts":  cb.recoveryAttempts,
+		"success_rate":       successRate,
+		"is_recovering":      cb.isRecovering,
+		"recovery_progress":  cb.GetRecoveryProgress(),
+		"failure_count":      cb.failureCount,
+		"success_count":      cb.successCount,
+		"last_failure":       cb.lastFailure,
+		"last_success":       cb.lastSuccess,
+	}
 } 

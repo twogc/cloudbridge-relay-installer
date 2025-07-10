@@ -1,43 +1,28 @@
-# Environment files
-.env
-.env.local
-.env.production
-.env.staging
-.env.backup.*
-
-# Secrets and sensitive data
-*.pem
-*.key
-*.crt
-*.p12
-*.pfx
-secrets/
-keys/
-
-# Logs
-*.log
-logs/
-*.log.*
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Backup files
-backups/
-*.backup
-*.bak
-
-# Temporary files
-*.tmp
-*.temp
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
 *.so
+*.dylib
+
+# Test binary, built with 'go test -c'
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+coverage.html
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Build artifacts
+bin/
+build/
+releases/
+dist/
 
 # IDE files
 .vscode/
@@ -48,39 +33,135 @@ __pycache__/
 
 # OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Configuration files with secrets
+config/secrets.json
+config/production.json
+.env
+.env.local
+.env.production
+
+# Certificates and keys
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+certs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
 
 # Docker
 .dockerignore
 
-# Build artifacts
-build/
-dist/
-*.exe
-relay
+# Kubernetes
+k8s/secrets/
 
-# Certificates and keys
-certs/
-ssl/
+# Air (hot reload)
+tmp/
 
-# Keycloak data
-keycloak/data/
-keycloak/imports/
+# Profiling
+*.prof
+*.pprof
 
-# Test coverage
-coverage/
-*.cover
-.coverage
+# Coverage
+coverage.out
+coverage.html
 
-# Node modules (if any)
+# Dependencies
+vendor/
+
+# Go modules
+go.sum
+
+# Test artifacts
+test-results/
+junit.xml
+
+# Documentation build
+docs/build/
+docs/_build/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Archive files
+*.tar.gz
+*.zip
+*.rar
+
+# Node.js (if any frontend tools are used)
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Python virtual environment
-venv/
+# Python (if any scripts are used)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 env/
-.venv/
-.env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# JWT tokens and secrets in test files
-test_*.py
-generate_jwt.py 
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache
+.cache/
+*.cache
+
+# Local development
+.local/
+local/
+
+# Monitoring data
+prometheus_data/
+grafana_data/
+
+# Backup and restore
+backups/
+restore/
+
+# Performance data
+perf.data
+perf.data.old
+
+# Memory dumps
+*.dump
+*.hprof
+
+# Temporary test files
+test_*
+*_test.go.bak
+
+# Generated files
+generated/
+gen/
+
+# Local configuration overrides
+config.local.json
+config.dev.json 
