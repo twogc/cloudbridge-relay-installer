@@ -142,7 +142,7 @@
       "rules": []
     },
     "tls": {
-      "enabled": true,
+      "enabled": false,
       "cert_file": "${RELAY_TLS_CERT_FILE}",
       "key_file": "${RELAY_TLS_KEY_FILE}",
       "min_version": "1.2",
