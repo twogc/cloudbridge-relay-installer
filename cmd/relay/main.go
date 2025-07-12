@@ -284,6 +284,13 @@ func (s *Server) processConnection(conn net.Conn) error {
         s.logger.Debug("Received HTTP request, handling as HTTP", zap.String("data", line))
         return s.handleHTTPRequest(conn, line, reader)
     }
+    
+    // Additional check for HTTP requests that might not start with method
+    if len(line) > 0 && (strings.Contains(line, "HTTP/") || strings.Contains(line, "Host:") || 
+        strings.Contains(line, "User-Agent:")) {
+        s.logger.Debug("Detected HTTP request by content, handling as HTTP", zap.String("data", line))
+        return s.handleHTTPRequest(conn, line, reader)
+    }
 
     var msg map[string]interface{}
     if err := json.Unmarshal([]byte(line), &msg); err != nil {
@@ -420,13 +427,15 @@ func (s *Server) processConnection(conn net.Conn) error {
 
 // handleHTTPRequest handles HTTP requests (like health checks)
 func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufio.Reader) error {
-    // Read the rest of the HTTP request
+    // Read the rest of the HTTP request headers
     var lines []string
     lines = append(lines, firstLine)
     
+    // Read headers until empty line
     for {
         line, err := reader.ReadString('\n')
         if err != nil {
+            // If we can't read more, just proceed with what we have
             break
         }
         lines = append(lines, line)
@@ -435,10 +444,30 @@ func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufi
         }
     }
     
+    // Skip body for now - we don't need it for health checks and 404 responses
+    
     // Parse the first line to get method and path
     parts := strings.Fields(firstLine)
     if len(parts) < 2 {
-        return fmt.Errorf("invalid HTTP request line: %s", firstLine)
+        // If we can't parse the request line, return 400 Bad Request
+        errorResponse := `{"error": "Invalid request line"}`
+        response := "HTTP/1.1 400 Bad Request\r\n"
+        response += "Content-Type: application/json\r\n"
+        response += "Connection: close\r\n"
+        response += fmt.Sprintf("Content-Length: %d\r\n", len(errorResponse))
+        response += "\r\n"
+        response += errorResponse
+        
+        _, writeErr := conn.Write([]byte(response))
+        if writeErr != nil {
+            return writeErr
+        }
+        
+        // Ensure all data is written before closing
+        if tcpConn, ok := conn.(*net.TCPConn); ok {
+            tcpConn.CloseWrite()
+        }
+        return nil
     }
     
     method := parts[0]
@@ -452,11 +481,20 @@ func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufi
         response += "Access-Control-Allow-Origin: *\r\n"
         response += "Access-Control-Allow-Methods: GET, OPTIONS\r\n"
         response += "Access-Control-Allow-Headers: Content-Type\r\n"
+        response += "Connection: close\r\n"
         response += "Content-Length: 0\r\n"
         response += "\r\n"
         
         _, writeErr := conn.Write([]byte(response))
-        return writeErr
+        if writeErr != nil {
+            return writeErr
+        }
+        
+        // Ensure all data is written before closing
+        if tcpConn, ok := conn.(*net.TCPConn); ok {
+            tcpConn.CloseWrite()
+        }
+        return nil
     }
     
     // Handle health endpoint
@@ -465,15 +503,25 @@ func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufi
     }
     
     // Return 404 for unknown paths
+    errorResponse := `{"error": "Not Found"}`
     response := "HTTP/1.1 404 Not Found\r\n"
     response += "Content-Type: application/json\r\n"
     response += "Access-Control-Allow-Origin: *\r\n"
-    response += "Content-Length: 25\r\n"
+    response += "Connection: close\r\n"
+    response += fmt.Sprintf("Content-Length: %d\r\n", len(errorResponse))
     response += "\r\n"
-    response += `{"error": "Not Found"}`
+    response += errorResponse
     
     _, writeErr := conn.Write([]byte(response))
-    return writeErr
+    if writeErr != nil {
+        return writeErr
+    }
+    
+    // Ensure all data is written before closing
+    if tcpConn, ok := conn.(*net.TCPConn); ok {
+        tcpConn.CloseWrite()
+    }
+    return nil
 }
 
 // handleHealthHTTP handles HTTP health check requests
@@ -502,12 +550,21 @@ func (s *Server) handleHealthHTTP(conn net.Conn) error {
     response += "Access-Control-Allow-Origin: *\r\n"
     response += "Access-Control-Allow-Methods: GET, OPTIONS\r\n"
     response += "Access-Control-Allow-Headers: Content-Type\r\n"
+    response += "Connection: close\r\n"
     response += fmt.Sprintf("Content-Length: %d\r\n", len(jsonData))
     response += "\r\n"
     response += string(jsonData)
 
     _, err = conn.Write([]byte(response))
-    return err
+    if err != nil {
+        return err
+    }
+    
+    // Ensure all data is written before closing
+    if tcpConn, ok := conn.(*net.TCPConn); ok {
+        tcpConn.CloseWrite()
+    }
+    return nil
 }
 
 func writeJSON(writer *bufio.Writer, msg interface{}) error {
