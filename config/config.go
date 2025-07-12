@@ -90,6 +90,12 @@ type configRaw struct {
 		Path    string `json:"path"`
 	} `json:"metrics"`
 
+	API struct {
+		Enabled bool   `json:"enabled"`
+		Port    int    `json:"port"`
+		Version string `json:"version"`
+	} `json:"api"`
+
 	Logging struct {
 		Level      string `json:"level"`
 		Format     string `json:"format"`
@@ -224,6 +230,12 @@ type Config struct {
 		Port    int    `json:"port"`
 		Path    string `json:"path"`
 	} `json:"metrics"`
+
+	API struct {
+		Enabled bool   `json:"enabled"`
+		Port    int    `json:"port"`
+		Version string `json:"version"`
+	} `json:"api"`
 
 	Logging struct {
 		Level      string `json:"level"`
@@ -472,6 +484,9 @@ func Load(path string) (*Config, error) {
 
 	// Metrics
 	config.Metrics = raw.Metrics
+
+	// API
+	config.API = raw.API
 
 	// Logging
 	config.Logging = raw.Logging
