@@ -68,8 +68,9 @@ generate_all_secrets() {
     echo "GRAFANA_ADMIN_PASSWORD=$(generate_password 16)"
     echo
     
-    # Пароль базы данных
-    echo "# Database Password"
+    # Пароль и логин базы данных
+    echo "# Database Credentials"
+    echo "KEYCLOAK_DB_USER=$(generate_password 10 | tr '[:upper:]' '[:lower:]')"
     echo "KEYCLOAK_DB_PASSWORD=$(generate_password 16)"
     echo
     
@@ -143,6 +144,13 @@ EOF
     
     echo "KEYCLOAK_DB_PASSWORD=$(generate_password 16)" >> "$output_file"
     
+    cat >> "$output_file" << 'EOF'
+# Database Credentials
+EOF
+
+echo "KEYCLOAK_DB_USER=$(generate_password 10 | tr '[:upper:]' '[:lower:]')" >> "$output_file"
+echo "KEYCLOAK_DB_PASSWORD=$(generate_password 16)" >> "$output_file"
+
     cat >> "$output_file" << 'EOF'
 
 # =============================================================================

@@ -41,17 +41,17 @@ receivers:
     from: "siem@2gc.ru"
     smarthost: "smtp.rusender.ru:465"
     auth_username: "siem@2gc.ru"
-    auth_password: "${SIEM_EMAIL_PASSWORD}"
+    auth_password: "test-siem-password"
     send_resolved: true
     require_tls: false
     tls_config:
       insecure_skip_verify: false
       server_name: "smtp.rusender.ru"
-  telegram_configs:
-  - bot_token: "${TELEGRAM_BOT_TOKEN}"
-    chat_id: "${TELEGRAM_CHAT_ID}"
-    parse_mode: "HTML"
-    send_resolved: true
+  # telegram_configs:
+  # - bot_token: "test-bot-token"
+  #   chat_id: "test-chat-id"
+  #   parse_mode: "HTML"
+  #   send_resolved: true
 
 - name: 'siem-warning'
   email_configs:
@@ -59,7 +59,7 @@ receivers:
     from: "siem@2gc.ru"
     smarthost: "smtp.rusender.ru:465"
     auth_username: "siem@2gc.ru"
-    auth_password: "${SIEM_EMAIL_PASSWORD}"
+    auth_password: "test-siem-password"
     send_resolved: true
     require_tls: false
     tls_config:

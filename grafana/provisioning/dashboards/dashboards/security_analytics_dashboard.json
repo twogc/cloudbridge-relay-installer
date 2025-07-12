@@ -1,0 +1,441 @@
+{
+  "title": "Security Analytics Dashboard",
+  "dashboard": {
+    "id": null,
+    "title": "Security Analytics Dashboard",
+    "tags": ["relay", "security", "analytics", "threat-detection"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Security Overview",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Authentication Success Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(relay_keycloak_token_validations_total{result=\"success\"}[5m]) / rate(relay_keycloak_token_validations_total[5m]) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 95},
+                {"color": "green", "value": 99}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 1}
+      },
+      {
+        "id": 3,
+        "title": "Failed Authentication Attempts",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_keycloak_token_validations_total{result=\"failure\"}[5m])",
+            "legendFormat": "{{provider}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 1}
+      },
+      {
+        "id": 4,
+        "title": "Rejected Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_rejected_connections_total[5m])",
+            "legendFormat": "{{reason}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 1}
+      },
+      {
+        "id": 5,
+        "title": "Token Validation Performance",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}
+      },
+      {
+        "id": 6,
+        "title": "JWKS Cache Performance",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_keycloak_jwks_cache_hits_total / (relay_keycloak_jwks_cache_hits_total + relay_keycloak_jwks_cache_misses_total) * 100",
+            "legendFormat": "Cache Hit Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 80},
+                {"color": "green", "value": 95}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 10}
+      },
+      {
+        "id": 7,
+        "title": "JWKS Fetch Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(relay_keycloak_jwks_fetch_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(relay_keycloak_jwks_fetch_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 10}
+      },
+      {
+        "id": 8,
+        "title": "Token Validation Duration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(relay_keycloak_token_validation_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{method}} - 95th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 10}
+      },
+      {
+        "id": 9,
+        "title": "Permission Analysis",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18}
+      },
+      {
+        "id": 10,
+        "title": "Permission Check Success Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(relay_keycloak_permission_checks_total{result=\"allowed\"}[5m]) / rate(relay_keycloak_permission_checks_total[5m]) * 100",
+            "legendFormat": "Success Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 80},
+                {"color": "green", "value": 95}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 19}
+      },
+      {
+        "id": 11,
+        "title": "Permission Denials by Resource",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "rate(relay_keycloak_permission_checks_total{result=\"denied\"}[5m])",
+            "legendFormat": "{{resource}}:{{action}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 19}
+      },
+      {
+        "id": 12,
+        "title": "Permission Checks by User",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_keycloak_permission_checks_total[5m])",
+            "legendFormat": "{{user_id}} - {{resource}}:{{action}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 19}
+      },
+      {
+        "id": 13,
+        "title": "Threat Detection",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 27}
+      },
+      {
+        "id": 14,
+        "title": "Suspicious Activity Detected",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_security_suspicious_activities_total",
+            "legendFormat": "Suspicious Activities"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 10},
+                {"color": "red", "value": 50}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 28}
+      },
+      {
+        "id": 15,
+        "title": "Rate Limiting Violations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_security_rate_limit_violations_total[5m])",
+            "legendFormat": "{{client_ip}} - {{limit_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 28}
+      },
+      {
+        "id": 16,
+        "title": "DDoS Attack Attempts",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_security_ddos_attempts_total[5m])",
+            "legendFormat": "{{attack_type}} from {{source_ip}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 28}
+      },
+      {
+        "id": 17,
+        "title": "Security Events Timeline",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 36}
+      },
+      {
+        "id": 18,
+        "title": "Security Events by Type",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_security_events_total[5m])",
+            "legendFormat": "{{event_type}} - {{severity}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 37}
+      },
+      {
+        "id": 19,
+        "title": "Failed Login Attempts by IP",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "relay_security_failed_logins_by_ip",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "job": true,
+                "instance": true
+              },
+              "renameByName": {
+                "client_ip": "Client IP",
+                "failed_attempts": "Failed Attempts",
+                "last_attempt": "Last Attempt",
+                "geolocation": "Location",
+                "threat_level": "Threat Level"
+              }
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 37}
+      },
+      {
+        "id": 20,
+        "title": "ML Threat Detection",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 45}
+      },
+      {
+        "id": 21,
+        "title": "ML Anomaly Score",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "relay_ml_anomaly_score",
+            "legendFormat": "{{user_id}} - {{feature}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 46}
+      },
+      {
+        "id": 22,
+        "title": "ML Threat Predictions",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_ml_threat_predictions_total",
+            "legendFormat": "{{prediction_type}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 46}
+      },
+      {
+        "id": 23,
+        "title": "TLS Security",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 54}
+      },
+      {
+        "id": 24,
+        "title": "TLS Certificate Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_tls_certificate_status",
+            "legendFormat": "{{cert_type}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "mappings": [
+              {
+                "options": {
+                  "0": {"text": "INVALID", "color": "red"},
+                  "1": {"text": "VALID", "color": "green"}
+                },
+                "type": "value"
+              }
+            ]
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 55}
+      },
+      {
+        "id": 25,
+        "title": "TLS Handshake Failures",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tls_handshake_failures_total[5m])",
+            "legendFormat": "{{failure_reason}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 55}
+      },
+      {
+        "id": 26,
+        "title": "Certificate Expiration",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "relay_tls_certificate_expiration_days",
+            "legendFormat": "{{cert_type}} - Days to Expiry"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 55}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": [],
+    "annotations": {
+      "list": []
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "user_id",
+          "type": "query",
+          "query": "label_values(relay_keycloak_permission_checks_total, user_id)",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "resource",
+          "type": "query",
+          "query": "label_values(relay_keycloak_permission_checks_total, resource)",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "severity",
+          "type": "query",
+          "query": "label_values(relay_security_events_total, severity)",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    }
+  }
+} 

@@ -22,7 +22,7 @@
     "realm": "${KEYCLOAK_REALM}",
     "client_id": "${KEYCLOAK_CLIENT_ID}",
     "client_secret": "${KEYCLOAK_CLIENT_SECRET}",
-    "public_key": "${KEYCLOAK_PUBLIC_KEY}",
+    "public_key": "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwYizA49h313kUlnaCD8u\\n3oWgVV0o3mEPpuyhfpp+o/PQNvg6oolodiUhum9uHROvXWT/OPlPLy6fsC3hpprl\\nVII7DiFuRYxtWU24O1Nd66sLt8lNxfTHKH/fwlS4opPHaHZkFzIXrKNeJvTf+kO/h\\nHial8Dut+Z/tIBcwBrPWVll6P/4wpruZlK6dWoNtpac/m6RYyrEMnX+nQ9DZ3S/bS\\nA1SUvRASCWxk/qQQpz/Zp3sgqLNa12h/JztEUuHm1RyshKFvHsTwJuuvmXzzJyAMP\\nPTHr0M0jcdYH64VJFoDSp6xWgqFpuCn3WqevXCVSMfeI1g4TzLDUEBZdesI4PawID\\nAQAB\\n-----END PUBLIC KEY-----",
     "token_validation": {
       "issuer": "${KEYCLOAK_ISSUER}",
       "audience": "${KEYCLOAK_AUDIENCE}",
@@ -38,7 +38,7 @@
     "allowed_ips": [],
     "rate_limit": {
       "enabled": true,
-      "requests_per_second": 100.0,
+      "requests_per_second": 100,
       "burst": 200
     },
     "mtls": {
@@ -54,8 +54,13 @@
   },
   "metrics": {
     "enabled": true,
-    "port": 9090,
+    "port": 8081,
     "path": "/metrics"
+  },
+  "api": {
+    "enabled": true,
+    "port": 8082,
+    "version": "1.0.0"
   },
   "logging": {
     "level": "info",

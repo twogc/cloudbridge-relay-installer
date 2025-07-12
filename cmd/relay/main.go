@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -67,6 +70,7 @@ type Server struct {
 	config         *config.Config
 	logger         *logger.Logger
 	listener       net.Listener
+	httpServer     *http.Server
 	tunnelManager  *tunnel.Manager
 	metricsServer  *metrics.Server
 	authAdapter    *auth.Adapter
@@ -77,6 +81,7 @@ type Server struct {
 	
 	ctx    context.Context
 	cancel context.CancelFunc
+	startTime time.Time
 }
 
 // NewServer creates a new relay server
@@ -186,6 +191,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		healthChecker:  healthChecker,
 		ctx:            ctx,
 		cancel:         cancel,
+		startTime:      time.Now(),
 	}, nil
 }
 
@@ -271,9 +277,12 @@ func (s *Server) processConnection(conn net.Conn) error {
     s.logger.Info("Received raw message", zap.String("data", line))
 
     // Check if it's an HTTP request (healthcheck)
-    if len(line) > 0 && (line[0] == 'G' || line[0] == 'P' || line[0] == 'H') {
-        s.logger.Debug("Received HTTP request, ignoring", zap.String("data", line))
-        return nil
+    if len(line) > 0 && (strings.HasPrefix(line, "GET ") || strings.HasPrefix(line, "POST ") || 
+        strings.HasPrefix(line, "PUT ") || strings.HasPrefix(line, "DELETE ") || 
+        strings.HasPrefix(line, "HEAD ") || strings.HasPrefix(line, "OPTIONS ") ||
+        strings.HasPrefix(line, "HTTP/")) {
+        s.logger.Debug("Received HTTP request, handling as HTTP", zap.String("data", line))
+        return s.handleHTTPRequest(conn, line, reader)
     }
 
     var msg map[string]interface{}
@@ -409,6 +418,98 @@ func (s *Server) processConnection(conn net.Conn) error {
     return nil
 }
 
+// handleHTTPRequest handles HTTP requests (like health checks)
+func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufio.Reader) error {
+    // Read the rest of the HTTP request
+    var lines []string
+    lines = append(lines, firstLine)
+    
+    for {
+        line, err := reader.ReadString('\n')
+        if err != nil {
+            break
+        }
+        lines = append(lines, line)
+        if line == "\r\n" || line == "\n" {
+            break // End of headers
+        }
+    }
+    
+    // Parse the first line to get method and path
+    parts := strings.Fields(firstLine)
+    if len(parts) < 2 {
+        return fmt.Errorf("invalid HTTP request line: %s", firstLine)
+    }
+    
+    method := parts[0]
+    path := parts[1]
+    
+    s.logger.Debug("HTTP request", zap.String("method", method), zap.String("path", path))
+    
+    // Handle OPTIONS request (CORS preflight)
+    if method == "OPTIONS" {
+        response := "HTTP/1.1 200 OK\r\n"
+        response += "Access-Control-Allow-Origin: *\r\n"
+        response += "Access-Control-Allow-Methods: GET, OPTIONS\r\n"
+        response += "Access-Control-Allow-Headers: Content-Type\r\n"
+        response += "Content-Length: 0\r\n"
+        response += "\r\n"
+        
+        _, writeErr := conn.Write([]byte(response))
+        return writeErr
+    }
+    
+    // Handle health endpoint
+    if path == "/health" {
+        return s.handleHealthHTTP(conn)
+    }
+    
+    // Return 404 for unknown paths
+    response := "HTTP/1.1 404 Not Found\r\n"
+    response += "Content-Type: application/json\r\n"
+    response += "Access-Control-Allow-Origin: *\r\n"
+    response += "Content-Length: 25\r\n"
+    response += "\r\n"
+    response += `{"error": "Not Found"}`
+    
+    _, writeErr := conn.Write([]byte(response))
+    return writeErr
+}
+
+// handleHealthHTTP handles HTTP health check requests
+func (s *Server) handleHealthHTTP(conn net.Conn) error {
+    status := map[string]interface{}{
+        "status":    "ok",
+        "version":   s.config.API.Version,
+        "timestamp": time.Now().Format(time.RFC3339),
+        "service":   "cloudbridge-relay",
+        "uptime":    time.Since(s.startTime).String(),
+        "components": map[string]interface{}{
+            "tcp_server":     "running",
+            "metrics":        s.metricsServer != nil,
+            "health_checker": s.healthChecker != nil,
+            "circuit_breaker": s.circuitBreaker != nil,
+        },
+    }
+
+    jsonData, err := json.Marshal(status)
+    if err != nil {
+        return err
+    }
+
+    response := "HTTP/1.1 200 OK\r\n"
+    response += "Content-Type: application/json\r\n"
+    response += "Access-Control-Allow-Origin: *\r\n"
+    response += "Access-Control-Allow-Methods: GET, OPTIONS\r\n"
+    response += "Access-Control-Allow-Headers: Content-Type\r\n"
+    response += fmt.Sprintf("Content-Length: %d\r\n", len(jsonData))
+    response += "\r\n"
+    response += string(jsonData)
+
+    _, err = conn.Write([]byte(response))
+    return err
+}
+
 func writeJSON(writer *bufio.Writer, msg interface{}) error {
     data, err := json.Marshal(msg)
     if err != nil {
@@ -433,6 +534,15 @@ func (s *Server) Stop() {
 	// Stop metrics server
 	if s.metricsServer != nil {
 		// Note: metrics.Server doesn't have Stop method, it will stop when context is cancelled
+	}
+	
+	// Close HTTP server
+	if s.httpServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := s.httpServer.Shutdown(ctx); err != nil {
+			s.logger.Error("Error shutting down HTTP server", zap.Error(err))
+		}
 	}
 	
 	// Close listener

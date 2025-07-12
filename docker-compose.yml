@@ -13,6 +13,8 @@ services:
     ports:
       - "8080:8080"  # Основной порт сервиса
       - "8081:8081"  # Порт метрик и health check
+      - "8082:8082"  # Порт API сервера
+      - "3456:3456"  # Порт relay сервера
     volumes:
       - ./config:/app/config:ro
       - ./logs:/app/logs
@@ -30,7 +32,7 @@ services:
       - postgres
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3456/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -87,7 +89,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     networks:
       - cloudbridge-network
@@ -111,8 +113,8 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     networks:
       - cloudbridge-network
     restart: unless-stopped
@@ -126,7 +128,7 @@ services:
     ports:
       - "9093:9093"
     volumes:
-      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./deploy/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager
     networks:
       - cloudbridge-network
@@ -136,25 +138,25 @@ services:
       - '--storage.path=/alertmanager'
 
   # Traefik для reverse proxy
-  traefik:
-    image: traefik:v2.10
-    container_name: cloudbridge-traefik
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8082:8080"  # Traefik dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./monitoring/traefik.yml:/etc/traefik/traefik.yml:ro
-    networks:
-      - cloudbridge-network
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=admin:$$2y$$10$$H6usMkkq.rYwONghjKXCyOejlMzFbGVD6lKPMBFpJYHjgeXdDpCuG"
+  # traefik:
+  #   image: traefik:v2.10
+  #   container_name: cloudbridge-traefik
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "8082:8080"  # Traefik dashboard
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro
+  #     - ./monitoring/traefik.yml:/etc/traefik/traefik.yml:ro
+  #   networks:
+  #     - cloudbridge-network
+  #   restart: unless-stopped
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+  #     - "traefik.http.routers.traefik.service=api@internal"
+  #     - "traefik.http.routers.traefik.middlewares=auth"
+  #     - "traefik.http.middlewares.auth.basicauth.users=admin:$$2y$$10$$H6usMkkq.rYwONghjKXCyOejlMzFbGVD6lKPMBFpJYHjgeXdDpCuG"
 
   # Jaeger для distributed tracing
   jaeger:
