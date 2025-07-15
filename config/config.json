@@ -91,7 +91,7 @@
     "service_discovery": false,
     "auto_reconnect": true,
     "circuit_breaker": {
-      "enabled": true,
+      "enabled": false,
       "failure_threshold": 5,
       "success_threshold": 3,
       "timeout": "30s",

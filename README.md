@@ -1,77 +1,68 @@
-# 🚀 CloudBridge Relay v2.0
+# 🚀 CloudBridge Relay: Глобальная защищённая сеть корпоративного доступа
 
-**Enterprise-grade высокопроизводительный relay сервер с интеграцией лучших практик Cloudflare**
+**CloudBridge Relay** — масштабируемая платформа корпоративного доступа, построенная по принципу сотовой сети:
+- **Edge-серверы** — “роуминговые хабы”, определяют оптимальный relay по локации и нагрузке
+- **Relay-серверы** — “базовые станции”, обеспечивают защищённое подключение и маршрутизацию
+- **Клиенты** — “мобильные телефоны”, автоматически подключаются к ближайшей “вышке”
+- **Enterprise коробка** — для компаний, которые хотят собственную изолированную relay-инфраструктуру
+- **Мультиарендность и IAM** — каждая компания полностью изолирована, может интегрировать свой AD/LDAP, управлять пользователями, ролями, SSO
+- **ERP/Server Client/Django** — серверный клиент и ERP-система для автоматизации бизнес-процессов
+- **Десктоп-приложение** — для удобного доступа и управления туннелями
 
-[![Go Version](https://img.shields.io/badge/Go-1.21+-blue.svg)](https://golang.org)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](https://github.com/cloudbridge/relay)
-[![Uptime](https://img.shields.io/badge/Uptime-99.9%25-success.svg)](https://status.cloudbridge.com)
+---
 
-## 🎯 О проекте
-
-CloudBridge Relay v2.0 - это современный, высокопроизводительный relay сервер, созданный с интеграцией лучших практик и компонентов из Cloudflare cloudflared. Система обеспечивает enterprise-grade производительность, надежность и безопасность для высоконагруженных приложений.
-
-### 🏆 Ключевые достижения
-
-- **🚀 Производительность**: 30-50% снижение задержки
-- **🛡️ Надежность**: 99.9% uptime с автоматическим восстановлением
-- **📈 Масштабируемость**: Поддержка 1000+ одновременных соединений
-- **🔒 Безопасность**: Многоуровневая защита и полный аудит
-- **📊 Мониторинг**: 200+ метрик и proactive alerts
-
-## ✨ Основные возможности
-
-### 🔄 Multi-Protocol Support
-- **QUIC Protocol**: 30-50% снижение latency
-- **HTTP/2 Optimization**: Эффективное переиспользование соединений
-- **WebSocket Support**: Real-time communication
-- **Automatic Fallback**: Надежные механизмы отказоустойчивости
-
-### 🧠 Intelligent Connection Management
-- **Adaptive Retry**: Exponential backoff с jitter
-- **Circuit Breaker**: Автоматическое восстановление после сбоев
-- **Graceful Shutdown**: Корректное завершение активных соединений
-- **Connection Multiplexing**: Эффективное переиспользование
-
-### 📊 Advanced Monitoring
-- **200+ Performance Metrics**: Детальная статистика
-- **Health Check System**: Автоматическая проверка состояния
-- **Diagnostic Endpoints**: Продвинутые инструменты отладки
-- **Real-time Alerts**: Proactive уведомления
-
-### 🔒 Enterprise Security
-- **Bastion Mode**: Безопасный доступ к внутренним сервисам
-- **IP-based Access Control**: Гранулярный контроль доступа
-- **Enhanced TLS**: Улучшенные настройки безопасности
-- **DDoS Protection**: Встроенная защита от атак
-
-## 🏗️ Архитектура
+## 🌐 Архитектурная концепция
 
 ```
-CloudBridge Relay v2.0
-├── Protocol Layer
-│   ├── QUIC (30-50% latency reduction)
-│   ├── HTTP/2 (connection reuse)
-│   ├── WebSocket (real-time)
-│   └── Automatic Fallback
-├── Connection Management
-│   ├── Retry Strategy (exponential backoff)
-│   ├── Circuit Breaker (auto recovery)
-│   ├── Graceful Shutdown (clean termination)
-│   └── Performance Monitoring
-├── Security Layer
-│   ├── Bastion Mode
-│   ├── IP-based Access Control
-│   ├── Enhanced TLS
-│   └── DDoS Protection
-└── Monitoring & Health
-    ├── 200+ Performance Metrics
-    ├── Health Check System
-    ├── Diagnostic Endpoints
-    └── Real-time Alerts
+Клиент (Desktop/Web/Server) 
+   │
+   ▼
+Edge-сервер (определяет ближайший relay по локации/нагрузке)
+   │
+   ▼
+Relay-сервер (базовая станция, маршрутизация, безопасность, Zero Trust)
+   │
+   ▼
+Внутренние сервисы/ERP/AD/LDAP/Cloud
 ```
+
+- **Edge-сервер**: точка входа, балансировка и маршрутизация на оптимальный relay
+- **Relay-сервер**: защищённый шлюз, поддержка множества протоколов, изоляция арендаторов
+- **Enterprise коробка**: on-premise relay для крупных компаний, создание собственных “вышек”
+- **Мультиарендность**: каждый клиент — отдельный арендатор, поддержка tenant-specific IDP, ролей, политик
+- **ERP/Server Client/Django**: интеграция с корпоративными системами, автоматизация, API-first
+- **Десктоп-приложение**: удобный клиент для пользователей и администраторов
+
+---
+
+## 🏆 Ключевые возможности
+
+- **Глобальная сеть relay-серверов** (как сотовые вышки)
+- **Edge routing** — интеллектуальная маршрутизация по локации и нагрузке
+- **Enterprise коробка** — частная relay-инфраструктура для крупных компаний
+- **Мультиарендность и IAM** — изоляция, кастомные роли, интеграция с AD/LDAP/SAML/OIDC
+- **Zero Trust** — многоуровневая безопасность, минимальные привилегии, аудит
+- **API-first** — автоматизация, интеграция с ERP, SIEM, мониторингом
+- **Мониторинг и алерты** — Prometheus, Grafana, 200+ метрик
+- **Гибкая архитектура** — SaaS, on-premise, hybrid, white-label, edge computing
+
+---
+
+## 📦 Основные компоненты
+
+- **Edge-серверы** — балансировка, маршрутизация, отказоустойчивость
+- **Relay-серверы** — защищённые точки доступа, поддержка QUIC, HTTP/2, WebSocket
+- **Enterprise коробка** — on-premise relay для изолированных корпоративных сетей
+- **Server Client** — серверный клиент для интеграции с внутренними сервисами
+- **Django ERP** — корпоративная ERP-система, управление пользователями, интеграциями, бизнес-процессами
+- **Десктоп-приложение** — для пользователей и администраторов
+- **Keycloak Multi-Tenancy** — IAM, мультиарендность, SSO, интеграция с корпоративными IDP
+
+---
 
 ## 🚀 Быстрый старт
+
+(оставьте секцию установки и запуска как есть, добавьте ссылку на документацию по edge/enterprise/desktop/erp)
 
 ### Требования
 - Go 1.21+
@@ -246,21 +237,22 @@ go test -tags=performance ./tests/
 
 ## 📚 Документация
 
-### Основная документация
-- [📖 API Reference](docs/guides/api_reference.md)
-- [⚙️ Configuration Guide](docs/deployment/deployment_guide.md)
-- [📊 Monitoring Guide](docs/guides/dashboard_guide.md)
-- [🔧 Troubleshooting](docs/troubleshooting/debugging.md)
+- [Архитектура и сценарии](docs/VISION_AND_FUTURE_CAPABILITIES.md)
+- [Zero Trust и безопасность](docs/zero_trust_architecture.md)
+- [Интеграция с Keycloak и AD/LDAP](docs/integration/keycloak_integration.md)
+- [API Reference](docs/guides/api_reference.md)
+- [Мультиарендность и IAM](docs/reports/tech_task_keycloak_multitenancy.md)
+- [Мониторинг и алерты](docs/guides/dashboard_guide.md)
+- [Интеграция с ERP/Server Client](docs/integration/ARCHITECTURE.md)
 
-### Техническая документация
-- [🏗️ Architecture](docs/integration/ARCHITECTURE.md)
-- [📈 Metrics Reference](docs/guides/metrics_reference.md)
-- [🔄 QUIC Protocol](docs/guides/quic_protocol.md)
-- [🔗 Connection Management](docs/guides/connection_management.md)
+---
 
-### Отчеты
-- [📋 Technical Specification](docs/technical_requirements/CLOUDFLARED_INTEGRATION_TECHNICAL_SPECIFICATION.md)
-- [🎉 Final Report](docs/reports/CLOUDFLARED_INTEGRATION_FINAL_REPORT.md)
+## 💡 Почему CloudBridge Relay?
+
+- **Масштабируемость уровня операторов связи**
+- **Гибкость для B2B, MSP, Enterprise**
+- **Безопасность и Zero Trust по умолчанию**
+- **Готовность к интеграции с любыми корпоративными системами**
 
 ## 🚀 Развертывание
 
