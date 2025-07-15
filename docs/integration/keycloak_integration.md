@@ -1,3 +1,19 @@
+# Внедрение Multi-Tenancy (2025): что сделано и как интегрировано
+
+В рамках обновления CloudBridge Relay:
+- Собрано и интегрировано расширение [Keycloak Multi-Tenancy](https://github.com/anarsultanov/keycloak-multi-tenancy) (v26.1.0):
+  - Клонирование репозитория, сборка JAR через Maven под JDK 17
+  - Монтирование JAR в Keycloak через docker-compose (volume ./keycloak_providers)
+- Настроено использование HTTPS с реальными сертификатами (монтирование /etc/relay/certs в контейнер)
+- Keycloak теперь работает на 443 порту (внешний) с внутренним 8443
+- Переменные окружения и команда запуска Keycloak обновлены для поддержки TLS
+- После перезапуска Keycloak расширение Multi-Tenancy доступно в админке
+- Включены Required Actions: Review tenant invitations, Create tenant, Select active tenant
+- Проверена работа REST API Multi-Tenancy (создание, просмотр, управление арендаторами, приглашениями, членствами)
+- Документация и практические шаги по установке добавлены в [tech_task_keycloak_multitenancy.md](../reports/tech_task_keycloak_multitenancy.md)
+
+---
+
 # Интеграция CloudBridge Relay с Keycloak
 
 ## Обзор

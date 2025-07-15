@@ -1,91 +1,103 @@
-# CloudBridge Relay v2.0 - Docker Compose
-# Enterprise-grade высокопроизводительный relay сервер
-
 version: '3.8'
 
 services:
-  # Основной сервис CloudBridge Relay
+  postgres:
+    image: postgres:15-alpine
+    container_name: cloudbridge-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-cloudbridge}
+      - POSTGRES_USER=${POSTGRES_USER:-cloudbridge}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-cloudbridge123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cloudbridge-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-cloudbridge} -d $${POSTGRES_DB:-cloudbridge}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: cloudbridge-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
+    volumes:
+      - redis_data:/data
+    networks:
+      - cloudbridge-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$${REDIS_PASSWORD:-redis123}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.5
+    container_name: cloudbridge-keycloak
+    restart: unless-stopped
+    environment:
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=${POSTGRES_USER:-cloudbridge}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD:-cloudbridge123}
+      - KC_HTTPS_CERTIFICATE_FILE=/etc/x509/https/fullchain.pem
+      - KC_HTTPS_CERTIFICATE_KEY_FILE=/etc/x509/https/privkey.pem
+    volumes:
+      - ./keycloak_providers:/opt/keycloak/providers
+      - /etc/relay/certs:/etc/x509/https:ro
+    command: start-dev --https-certificate-file=/etc/x509/https/fullchain.pem --https-certificate-key-file=/etc/x509/https/privkey.pem
+    ports:
+      - "443:8443"
+    depends_on:
+      - postgres
+    networks:
+      - cloudbridge-network
+
   cloudbridge-relay:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: cloudbridge-relay
+    restart: unless-stopped
+    environment:
+      - RELAY_CONFIG_PATH=/app/config/config.json
+      - RELAY_LOG_LEVEL=${RELAY_LOG_LEVEL:-debug}
+      - RELAY_METRICS_PORT=${RELAY_METRICS_PORT:-8081}
+      - RELAY_SERVER_PORT=${RELAY_SERVER_PORT:-8080}
+      - TZ=${TZ:-UTC}
     ports:
-      - "8080:8080"  # Основной порт сервиса
-      - "8081:8081"  # Порт метрик и health check
-      - "8082:8082"  # Порт API сервера
-      - "3456:3456"  # Порт relay сервера
+      - "8080:8080"
+      - "8081:8081"
+      - "8082:8082"
+      - "3456:3456"
     volumes:
       - ./config:/app/config:ro
       - ./logs:/app/logs
       - ./data:/app/data
-    environment:
-      - RELAY_CONFIG_PATH=/app/config/config.json
-      - RELAY_LOG_LEVEL=debug
-      - RELAY_METRICS_PORT=8081
-      - RELAY_SERVER_PORT=8080
-      - TZ=UTC
     networks:
       - cloudbridge-network
     depends_on:
       - redis
       - postgres
-    restart: unless-stopped
+      - keycloak
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3456/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.relay.rule=Host(`relay.localhost`)"
-      - "traefik.http.services.relay.loadbalancer.server.port=8080"
 
-  # Redis для кэширования и сессий
-  redis:
-    image: redis:7-alpine
-    container_name: cloudbridge-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - cloudbridge-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    command: redis-server --appendonly yes --requirepass redis123
-
-  # PostgreSQL для хранения данных
-  postgres:
-    image: postgres:15-alpine
-    container_name: cloudbridge-postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_DB=cloudbridge
-      - POSTGRES_USER=cloudbridge
-      - POSTGRES_PASSWORD=cloudbridge123
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
-    networks:
-      - cloudbridge-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cloudbridge -d cloudbridge"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Prometheus для мониторинга
   prometheus:
     image: prom/prometheus:v2.45.0
     container_name: cloudbridge-prometheus
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
@@ -93,7 +105,6 @@ services:
       - prometheus_data:/prometheus
     networks:
       - cloudbridge-network
-    restart: unless-stopped
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -102,77 +113,24 @@ services:
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
 
-  # Grafana для визуализации метрик
   grafana:
     image: grafana/grafana:10.0.0
     container_name: cloudbridge-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
     ports:
       - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     networks:
       - cloudbridge-network
-    restart: unless-stopped
     depends_on:
       - prometheus
 
-  # AlertManager для алертов
-  alertmanager:
-    image: prom/alertmanager:v0.25.0
-    container_name: cloudbridge-alertmanager
-    ports:
-      - "9093:9093"
-    volumes:
-      - ./deploy/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager_data:/alertmanager
-    networks:
-      - cloudbridge-network
-    restart: unless-stopped
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-
-  # Traefik для reverse proxy
-  # traefik:
-  #   image: traefik:v2.10
-  #   container_name: cloudbridge-traefik
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #     - "8082:8080"  # Traefik dashboard
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - ./monitoring/traefik.yml:/etc/traefik/traefik.yml:ro
-  #   networks:
-  #     - cloudbridge-network
-  #   restart: unless-stopped
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
-  #     - "traefik.http.routers.traefik.service=api@internal"
-  #     - "traefik.http.routers.traefik.middlewares=auth"
-  #     - "traefik.http.middlewares.auth.basicauth.users=admin:$$2y$$10$$H6usMkkq.rYwONghjKXCyOejlMzFbGVD6lKPMBFpJYHjgeXdDpCuG"
-
-  # Jaeger для distributed tracing
-  jaeger:
-    image: jaegertracing/all-in-one:1.47
-    container_name: cloudbridge-jaeger
-    ports:
-      - "16686:16686"  # UI
-      - "14268:14268"  # HTTP collector
-      - "14250:14250"  # gRPC collector
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-    networks:
-      - cloudbridge-network
-    restart: unless-stopped
-
-# Сети
 networks:
   cloudbridge-network:
     driver: bridge
@@ -180,7 +138,6 @@ networks:
       config:
         - subnet: 172.20.0.0/16
 
-# Тома для постоянного хранения данных
 volumes:
   redis_data:
     driver: local
@@ -189,6 +146,4 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
-    driver: local
-  alertmanager_data:
     driver: local
