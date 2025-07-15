@@ -1,3 +1,17 @@
+# Выполнено на 2025 год
+
+- Собрано и интегрировано расширение [Keycloak Multi-Tenancy](https://github.com/anarsultanov/keycloak-multi-tenancy) (v26.1.0):
+  - Клонирован репозиторий, выполнена сборка JAR через Maven (JDK 17)
+  - JAR-файл смонтирован в Keycloak через docker-compose (volume ./keycloak_providers)
+- Настроен Keycloak для работы по HTTPS (монтирование /etc/relay/certs с реальными сертификатами)
+- Keycloak работает на 443 порту (внешний) с внутренним 8443
+- docker-compose обновлён: добавлены volumes, переменные окружения, команда запуска с поддержкой TLS
+- После перезапуска Keycloak расширение Multi-Tenancy доступно в админке
+- Включены Required Actions: Review tenant invitations, Create tenant, Select active tenant
+- Проверена работа REST API Multi-Tenancy (создание, просмотр, управление арендаторами, приглашениями, членствами)
+
+---
+
 # Техническое задание: Внедрение Keycloak Multi-Tenancy для CloudBridge Relay
 
 ## 1. Цели и задачи
@@ -106,3 +120,129 @@
 **Ответственный:** [ФИО, контакт]
 
 **Дата:** [указать дату] 
+
+# Подробности по настройке Multi-Tenancy, API и claims
+
+## 1. Настройка realm и Required Actions
+
+- Войдите в Keycloak Admin UI (https://<ваш-домен>/admin)
+- Перейдите в нужный realm или создайте новый
+- В разделе Authentication > Required Actions включите и расставьте в следующем порядке:
+  1. Review tenant invitations
+  2. Create tenant
+  3. Select active tenant
+- В Realm Settings > Login включите Verify email (только пользователи с подтверждённой почтой видят приглашения)
+
+## 2. Настройка claims для токенов
+
+- В разделе Client Scopes создайте или отредактируйте мапперы:
+  - **active_tenant** — текущий активный tenant пользователя
+  - **all_tenants** — список всех tenants, к которым принадлежит пользователь
+- Пример маппера (User Attribute Mapper):
+  - Name: active_tenant
+  - User Attribute: active_tenant
+  - Token Claim Name: active_tenant
+  - Claim JSON Type: String
+  - Add to ID token: true
+  - Add to access token: true
+
+## 3. Интеграция внешних IDP для арендаторов
+
+- Для каждого tenant можно добавить отдельный Identity Provider (OIDC, SAML, LDAP, AD)
+- В разделе Identity Providers создайте нужный IDP и укажите alias (например, tenant1-oidc)
+- В настройках Multi-Tenancy расширения можно указать tenant-specific IDP через API или UI
+
+## 4. Примеры работы с Multi-Tenancy API
+
+- **Получить список арендаторов:**
+  ```http
+  GET /realms/<realm>/tenants
+  Authorization: Bearer <admin-token>
+  ```
+- **Создать арендатора:**
+  ```http
+  POST /realms/<realm>/tenants
+  Content-Type: application/json
+  Authorization: Bearer <admin-token>
+  {
+    "name": "tenant1",
+    "attributes": {"company": ["Acme"]}
+  }
+  ```
+- **Обновить арендатора:**
+  ```http
+  PUT /realms/<realm>/tenants/<tenantId>
+  Content-Type: application/json
+  Authorization: Bearer <admin-token>
+  {
+    "name": "tenant1-new",
+    "attributes": {"company": ["Acme"]}
+  }
+  ```
+- **Удалить арендатора:**
+  ```http
+  DELETE /realms/<realm>/tenants/<tenantId>
+  Authorization: Bearer <admin-token>
+  ```
+- **Список приглашений:**
+  ```http
+  GET /realms/<realm>/tenants/<tenantId>/invitations
+  Authorization: Bearer <admin-token>
+  ```
+
+## 5. Рекомендации
+
+- Для работы с API используйте admin-токен (получить через стандартный endpoint /protocol/openid-connect/token)
+- Для интеграции с внешними IDP используйте tenant-specific настройки в расширении
+- Для автоматизации создания/управления tenant-ами используйте предоставленный OpenAPI (openapi.json) 
+
+# Структура проекта и примеры интеграции IDP, claims, автоматизации
+
+## Где что находится
+
+- **keycloak-multi-tenancy/** — исходники расширения Multi-Tenancy (Java, Maven)
+- **keycloak_providers/** — собранный JAR-файл расширения для Keycloak
+- **config/** — конфигурационные файлы (в т.ч. keycloak_config.json)
+- **scripts/setup/** — скрипты автоматизации и настройки (setup_keycloak.sh, setup_ldap_integration.sh, setup_certs.sh и др.)
+- **docs/integration/** — документация по интеграции Keycloak, Multi-Tenancy, LDAP, OIDC, SAML и др.
+
+## Примеры интеграции внешних IDP для арендаторов
+
+### OIDC (OpenID Connect)
+1. В Keycloak Admin UI: Identity Providers → Add provider → OpenID Connect
+2. Заполнить поля:
+   - Alias: tenant1-oidc
+   - Client ID, Client Secret, Discovery URL — от внешнего провайдера
+3. В настройках расширения Multi-Tenancy указать alias для tenant
+
+### LDAP
+1. В Keycloak Admin UI: User Federation → Add provider → LDAP
+2. Заполнить:
+   - Connection URL: ldap://ldap.example.com
+   - Bind DN, Bind Credential, User Search Base и др.
+3. Для tenant-specific LDAP используйте скрипт scripts/setup/setup_ldap_integration.sh
+
+### SAML
+1. Identity Providers → Add provider → SAML
+2. Заполнить:
+   - Alias: tenant1-saml
+   - Single Sign-On Service URL, Entity ID, сертификаты
+3. Привязать к нужному tenant через расширение
+
+## Пример настройки claims (active_tenant, all_tenants)
+1. В разделе Client Scopes → <scope> → Mappers → Create
+2. Тип: User Attribute
+3. User Attribute: active_tenant
+4. Token Claim Name: active_tenant
+5. Claim JSON Type: String
+6. Add to ID token: true, Add to access token: true
+
+## Пример автоматизации через bash-скрипты
+- **scripts/setup/setup_keycloak.sh** — автоматизация развёртывания и настройки Keycloak
+- **scripts/setup/setup_ldap_integration.sh** — автоматизация интеграции LDAP
+- **scripts/setup/setup_certs.sh** — автоматизация установки сертификатов
+
+Пример вызова скрипта для настройки LDAP:
+```bash
+bash scripts/setup/setup_ldap_integration.sh --tenant tenant1 --ldap-url ldap://ldap.example.com --bind-dn "cn=admin,dc=example,dc=com" --bind-credential "password"
+``` 
