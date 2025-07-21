@@ -62,6 +62,15 @@ send_telegram_message() {
     fi
 }
 
+# Фильтрация сообщений, которые не нужно отправлять в Telegram
+should_ignore_alert() {
+    local message="$1"
+    if echo "$message" | grep -q -E "emergency\\.service|icmp_ignore_bogus_error_responses|Install a file integrity tool"; then
+        return 0  # игнорировать
+    fi
+    return 1  # не игнорировать
+}
+
 # Проверка новых блокировок Fail2Ban
 check_fail2ban_blocks() {
     local current_blocks=$(sudo fail2ban-client status | grep "Total banned" | awk '{print $4}' | tr '\n' ' ' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -282,10 +291,45 @@ $critical_errors
 🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
 🖥️ Сервер: $(hostname)"
 
-        send_telegram_message "$message"
+        if ! should_ignore_alert "$message"; then
+            send_telegram_message "$message"
+        else
+            log_info "Сообщение не отправлено в Telegram (игнорируется по фильтру)"
+        fi
         return 0
     fi
     
+    return 1
+}
+
+# Проверка попыток доступа к портам в логах UFW
+check_firewall_logs() {
+    local ufw_log="/var/log/ufw.log"
+    local last_alert_file="logs/last_ufw_block_alert.txt"
+    local today=$(date '+%b %e')
+    if [[ ! -f "$ufw_log" ]]; then
+        log_warn "Лог UFW не найден ($ufw_log)"
+        return 1
+    fi
+    # Найти последние 10 блокировок за сегодня
+    local blocked=$(grep "$today" "$ufw_log" | grep "UFW BLOCK" | tail -10)
+    if [[ -z "$blocked" ]]; then
+        log_info "Попыток доступа к портам (UFW BLOCK) не обнаружено"
+        return 1
+    fi
+    # Проверка, были ли уже отправлены эти блокировки
+    local last_alert=""
+    if [[ -f "$last_alert_file" ]]; then
+        last_alert=$(cat "$last_alert_file")
+    fi
+    local blocked_hash=$(echo "$blocked" | md5sum | awk '{print $1}')
+    if [[ "$blocked_hash" != "$last_alert" ]]; then
+        log_warn "Обнаружены попытки доступа к портам (UFW BLOCK):"
+        echo "$blocked"
+        send_telegram_message "🚨 Обнаружены попытки доступа к портам (UFW BLOCK):\n$blocked"
+        echo "$blocked_hash" > "$last_alert_file"
+        return 0
+    fi
     return 1
 }
 
@@ -341,6 +385,12 @@ run_security_check() {
     log_info "Проверка критических логов..."
     if check_critical_logs; then
         log_info "Найдены критические ошибки в логах"
+        problems_found=true
+    fi
+    # Проверяем попытки доступа к портам (UFW BLOCK)
+    log_info "Проверка логов firewall (UFW BLOCK)..."
+    if check_firewall_logs; then
+        log_info "Обнаружены попытки доступа к портам (UFW BLOCK)"
         problems_found=true
     fi
     
