@@ -1,0 +1,12 @@
+[Unit]
+Description=Suricata alert to Telegram daemon
+After=network.target suricata.service
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /home/ubuntu/cloudbridge-relay-installer/scripts/security/snort_suricata_alert.sh
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target 
