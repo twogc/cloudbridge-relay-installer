@@ -77,8 +77,8 @@ send_telegram_message() {
     
     log_info "Отправка уведомления в Telegram..."
     
-    # Экранируем специальные символы для URL
-    local escaped_message=$(echo "$message" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g')
+    # Экранируем только амперсанд для HTML-форматирования
+    local escaped_message=$(echo "$message" | sed 's/&/\&amp;/g')
     
     local response=$(curl -s -X POST \
         "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
@@ -123,17 +123,17 @@ check_fail2ban_events() {
     
     if [[ -n "$new_blocks" ]]; then
         local block_count=$(echo "$new_blocks" | wc -l)
-        local message="🚨 <b>Обнаружены новые блокировки fail2ban</b>
-        
-📊 <b>Статистика:</b>
+        local message="ALERT: Обнаружены новые блокировки fail2ban
+
+Статистика:
 • Количество новых блокировок: $block_count
 • Временной интервал: $last_check → $current_time
 
-🔍 <b>Последние блокировки:</b>
+Последние блокировки:
 $(echo "$new_blocks" | tail -5 | sed 's/^/• /')
 
-🖥️ Сервер: $(hostname)
-🕐 Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
+Сервер: $(hostname)
+Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
         
         send_telegram_message "$message"
         
@@ -176,18 +176,18 @@ check_auth_events() {
         local failed_count=$(echo "$new_failed_logins" | wc -l)
         local unique_ips=$(echo "$new_failed_logins" | grep -oE 'from [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | cut -d' ' -f2 | sort | uniq | wc -l)
         
-        local message="🔐 <b>Обнаружены новые неудачные попытки входа</b>
-        
-📊 <b>Статистика:</b>
+        local message="ALERT: Обнаружены новые неудачные попытки входа
+
+Статистика:
 • Количество неудачных попыток: $failed_count
 • Уникальных IP адресов: $unique_ips
 • Временной интервал: $last_check → $current_time
 
-🔍 <b>Последние попытки:</b>
+Последние попытки:
 $(echo "$new_failed_logins" | tail -3 | sed 's/^/• /')
 
-🖥️ Сервер: $(hostname)
-🕐 Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
+Сервер: $(hostname)
+Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
         
         send_telegram_message "$message"
         
@@ -221,24 +221,43 @@ check_system_events() {
             log_epoch = mktime(gensub(/[-:]/, " ", "g", log_time))
             
             if (log_epoch > last_epoch) {
-                print $0
+                # Фильтруем некритичные ошибки Docker
+                if ($0 !~ /dockerd.*ShouldRestart failed/ && 
+                    $0 !~ /dockerd.*restart canceled/ && 
+                    $0 !~ /dockerd.*Error handling plugin refcount operation/ && 
+                    $0 !~ /dockerd.*legacy plugin: Unable to find plugin without name/ && 
+                    $0 !~ /dockerd.*container will not be restarted/ && 
+                    $0 !~ /dockerd.*hasBeenManuallyStopped=true/ && 
+                    $0 !~ /dockerd.*daemonShuttingDown=false/ &&
+                    $0 !~ /dockerd.*Error running exec/ &&
+                    $0 !~ /dockerd.*stream copy error/ &&
+                    $0 !~ /dockerd.*executable file not found/ &&
+                    $0 !~ /dockerd.*unable to start container process/ &&
+                    $0 !~ /containerd.*cleanup warnings/ &&
+                    $0 !~ /containerd.*failed to remove runc container/ &&
+                    $0 !~ /containerd.*runc did not terminate successfully/ &&
+                    $0 !~ /cloudflared/ &&
+                    $0 !~ /freshclam.*error code 429/ &&
+                    $0 !~ /freshclam.*error code 403/) {
+                    print $0
+                }
             }
         }
     ' "$SYSTEM_LOG")
     
     if [[ -n "$critical_events" ]]; then
         local event_count=$(echo "$critical_events" | wc -l)
-        local message="⚠️ <b>Обнаружены критические системные события</b>
-        
-📊 <b>Статистика:</b>
+        local message="ALERT: Обнаружены критические системные события
+
+Статистика:
 • Количество критических событий: $event_count
 • Временной интервал: $last_check → $current_time
 
-🔍 <b>Последние события:</b>
+Последние события:
 $(echo "$critical_events" | tail -5 | sed 's/^/• /')
 
-🖥️ Сервер: $(hostname)
-🕐 Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
+Сервер: $(hostname)
+Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
         
         send_telegram_message "$message"
         
@@ -256,17 +275,17 @@ check_disk_usage() {
     local threshold=80
     
     if [[ $disk_usage -gt $threshold ]]; then
-        local message="💾 <b>Высокое использование диска</b>
-        
-📊 <b>Статистика:</b>
+        local message="ALERT: Высокое использование диска
+
+Статистика:
 • Использование диска: ${disk_usage}%
 • Пороговое значение: ${threshold}%
 
-🔍 <b>Детали:</b>
+Детали:
 $(df -h / | tail -1)
 
-🖥️ Сервер: $(hostname)
-🕐 Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
+Сервер: $(hostname)
+Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
         
         send_telegram_message "$message"
         echo "$(date -Iseconds): Высокое использование диска: ${disk_usage}%" >> "$EVENTS_LOG"
@@ -279,17 +298,17 @@ check_memory_usage() {
     local threshold=85
     
     if [[ $mem_usage -gt $threshold ]]; then
-        local message="🧠 <b>Высокое использование памяти</b>
-        
-📊 <b>Статистика:</b>
+        local message="ALERT: Высокое использование памяти
+
+Статистика:
 • Использование памяти: ${mem_usage}%
 • Пороговое значение: ${threshold}%
 
-🔍 <b>Детали:</b>
+Детали:
 $(free -h | head -2)
 
-🖥️ Сервер: $(hostname)
-🕐 Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
+Сервер: $(hostname)
+Время проверки: $(date '+%Y-%m-%d %H:%M:%S')"
         
         send_telegram_message "$message"
         echo "$(date -Iseconds): Высокое использование памяти: ${mem_usage}%" >> "$EVENTS_LOG"
@@ -380,10 +399,10 @@ case "${1:-}" in
         ;;
     --test)
         if check_telegram_config; then
-            send_telegram_message "🧪 <b>Тестовое сообщение мониторинга</b>
-✅ Система мониторинга безопасности работает
-🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)"
+            send_telegram_message "Тестовое сообщение мониторинга
+Система мониторинга безопасности работает
+Время: $(date '+%Y-%m-%d %H:%M:%S')
+Сервер: $(hostname)"
         fi
         ;;
     *)
