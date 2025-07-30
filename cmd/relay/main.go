@@ -371,7 +371,13 @@ func (s *Server) processConnection(conn net.Conn) error {
     */
     
     // Temporary: accept any token for testing
-    s.logger.Info("Token accepted (validation disabled)", zap.String("token", token[:20]+"..."))
+    var tokenLog string
+    if len(token) > 20 {
+        tokenLog = token[:20] + "..."
+    } else {
+        tokenLog = token
+    }
+    s.logger.Info("Token accepted (validation disabled)", zap.String("token", tokenLog))
     authAttemptsTotal.WithLabelValues("success", "test").Inc()
     
     // Можно добавить валидацию токена

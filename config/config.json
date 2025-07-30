@@ -142,14 +142,35 @@
       "rules": []
     },
     "tls": {
-      "enabled": false,
-      "cert_file": "${RELAY_TLS_CERT_FILE}",
-      "key_file": "${RELAY_TLS_KEY_FILE}",
-      "min_version": "1.2",
-      "cipher_suites": [],
-      "verify_client_cert": false,
-      "client_ca_file": "",
-      "insecure_skip_verify": false
+      "automation": {
+        "enabled": true,
+        "provider": "letsencrypt",
+        "domains": [
+          "edge.2gc.ru",
+          "*.tenant.edge.2gc.ru"
+        ],
+        "cert_dir": "./certs"
+      }
+    },
+    "edge_routing": {
+      "routes": [
+        {
+          "sni": "edge.2gc.ru",
+          "backend": "127.0.0.1:8443"
+        },
+        {
+          "sni": "tenant1.tenant.edge.2gc.ru",
+          "backend": "10.0.0.2:8443"
+        },
+        {
+          "sni": "tenant2.tenant.edge.2gc.ru",
+          "backend": "10.0.0.3:8443"
+        },
+        {
+          "sni": "*.tenant.edge.2gc.ru",
+          "backend": "10.0.0.100:8443"
+        }
+      ]
     },
     "connection_pool": {
       "max_size": 100,
