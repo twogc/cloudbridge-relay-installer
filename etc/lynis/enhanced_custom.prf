@@ -1,0 +1,132 @@
+# CloudBridge Relay - Enhanced Lynis Profile
+# Расширенный профиль для аудита безопасности
+
+# Основные настройки
+auditor="CloudBridge Relay"
+hostid="cloudbridge-relay-$(hostname)"
+hostid2="$(hostname)-$(date +%s)"
+
+# Настройки логирования
+LOG_FILE=/var/log/lynis/lynis.log
+REPORT_FILE=/var/log/lynis/lynis-report.dat
+
+# Настройки сканирования
+QUICK=1
+SKIP_TESTS=""
+SKIP_CATEGORIES=""
+
+# Включение плагинов
+plugin=pam
+plugin=systemd
+plugin=docker
+plugin=network
+
+# Настройки безопасности
+SKIP_ALWAYS=""
+
+# Дополнительные проверки
+# Проверка Docker контейнеров
+test_skip_always=""
+
+# Проверка сетевой безопасности
+test_skip_always=""
+
+# Проверка системных сервисов
+test_skip_always=""
+
+# Настройки уведомлений
+NOTIFICATION_EMAIL=""
+NOTIFICATION_LEVEL="warning"
+
+# Настройки отчетов
+REPORT_FORMAT="text"
+REPORT_SAVE=1
+
+# Настройки производительности
+MAX_THREADS=4
+TIMEOUT=300
+
+# Дополнительные пути для проверки
+SCAN_HOME_DIRS=1
+SCAN_OPEN_PORTS=1
+SCAN_SYSTEM_BINARIES=1
+
+# Настройки для контейнеров
+DOCKER_SCAN=1
+DOCKER_IMAGES_SCAN=1
+DOCKER_CONTAINERS_SCAN=1
+
+# Настройки для сетевой безопасности
+NETWORK_SCAN=1
+FIREWALL_SCAN=1
+SSH_SCAN=1
+
+# Настройки для системных сервисов
+SERVICES_SCAN=1
+SYSTEMD_SCAN=1
+PAM_SCAN=1
+
+# Настройки для файловой системы
+FILESYSTEM_SCAN=1
+PERMISSIONS_SCAN=1
+MOUNT_SCAN=1
+
+# Настройки для пользователей
+USERS_SCAN=1
+GROUPS_SCAN=1
+PASSWORDS_SCAN=1
+
+# Настройки для процессов
+PROCESSES_SCAN=1
+SERVICES_SCAN=1
+DAEMONS_SCAN=1
+
+# Настройки для логов
+LOGS_SCAN=1
+AUDIT_SCAN=1
+SYSTEM_LOGS_SCAN=1
+
+# Настройки для обновлений
+UPDATES_SCAN=1
+PACKAGES_SCAN=1
+REPOSITORIES_SCAN=1
+
+# Настройки для конфигурации
+CONFIG_SCAN=1
+SETTINGS_SCAN=1
+PROFILES_SCAN=1
+
+# Настройки для мониторинга
+MONITORING_SCAN=1
+ALERTS_SCAN=1
+NOTIFICATIONS_SCAN=1
+
+# Настройки для резервного копирования
+BACKUP_SCAN=1
+RECOVERY_SCAN=1
+DISASTER_RECOVERY_SCAN=1
+
+# Настройки для соответствия
+COMPLIANCE_SCAN=1
+STANDARDS_SCAN=1
+POLICIES_SCAN=1
+
+# Настройки для документации
+DOCUMENTATION_SCAN=1
+PROCEDURES_SCAN=1
+GUIDELINES_SCAN=1
+
+# Настройки для обучения
+TRAINING_SCAN=1
+AWARENESS_SCAN=1
+KNOWLEDGE_SCAN=1
+
+# Настройки для улучшения
+IMPROVEMENT_SCAN=1
+OPTIMIZATION_SCAN=1
+ENHANCEMENT_SCAN=1
+
+# Настройки для будущего
+FUTURE_SCAN=1
+PLANNING_SCAN=1
+STRATEGY_SCAN=1 
