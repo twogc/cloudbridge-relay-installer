@@ -256,7 +256,10 @@ check_system_updates() {
     fi
     
     local updates_count=$(apt list --upgradable 2>/dev/null | grep -c upgradable || echo "0")
-    updates_count=$(echo "$updates_count" | tr -d '[:space:]')
+    updates_count=$(echo "$updates_count" | tr -d '[:space:]' | sed 's/^0*//' || echo "0")
+    if [[ -z "$updates_count" ]]; then
+        updates_count="0"
+    fi
     
     if [[ "$updates_count" =~ ^[0-9]+$ && $updates_count -gt $SYSTEM_UPDATES_THRESHOLD ]]; then
         # Файл для отслеживания последнего уведомления об обновлениях
@@ -274,7 +277,28 @@ check_system_updates() {
         local min_interval=${SYSTEM_UPDATES_ALERT_INTERVAL:-86400}  # 24 часа по умолчанию
         
         if [[ $time_diff -gt $min_interval ]]; then
-            local message="[UPDATE] <b>Доступны обновления системы</b><br><br>[PACKAGES] <b>Обновления:</b><br>• Количество пакетов: $updates_count<br>• Рекомендуется обновить систему<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+            # Получаем список пакетов для обновления с версиями
+            local packages_info=""
+            local packages_output=$(apt list --upgradable 2>/dev/null | grep upgradable | head -5)
+            
+            if [[ -n "$packages_output" ]]; then
+                packages_info="<br>• Обновляемые пакеты:<br>"
+                while IFS= read -r line; do
+                    if [[ -n "$line" ]]; then
+                        local package_name=$(echo "$line" | cut -d'/' -f1)
+                        # Извлекаем версии более точно
+                        local current_version=$(echo "$line" | sed 's/.*\[upgradable from: \(.*\)\]/\1/' | cut -d' ' -f1)
+                        local new_version=$(echo "$line" | awk '{print $2}')
+                        packages_info="$packages_info  - $package_name: $current_version → $new_version<br>"
+                    fi
+                done <<< "$packages_output"
+                
+                if [[ $updates_count -gt 5 ]]; then
+                    packages_info="$packages_info  - ... и еще $((updates_count - 5)) пакетов<br>"
+                fi
+            fi
+            
+            local message="[UPDATE] <b>Доступны обновления системы</b><br><br>[PACKAGES] <b>Обновления:</b><br>• Количество пакетов: $updates_count$packages_info<br>• Рекомендуется обновить систему<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
 
             send_telegram_message "$message"
             
