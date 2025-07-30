@@ -76,20 +76,21 @@ setup_ssh() {
 setup_external_services() {
     log_info "Настройка внешних сервисов..."
     
-    # Keycloak Admin Console (HTTP)
-    ufw allow 8080/tcp comment "Keycloak Admin Console"
-    # Keycloak HTTPS (443)
-    ufw allow 443/tcp comment "Keycloak HTTPS (443)"
-    
     # Relay API (внешний доступ)
     ufw allow 8083/tcp comment "Relay API (external)"
+    
+    # Открываю все порты relay сервера для всех
+    ufw allow 8080/tcp comment "Relay Server API (external/internal)"
+    ufw allow 8081/tcp comment "Relay Server Metrics (external/internal)"
+    ufw allow 8082/tcp comment "Relay Server API 2 (external/internal)"
+    ufw allow 3456/tcp comment "Relay Server Custom (external/internal)"
     
     # Не открываем 8081 и 8082 наружу
     # ufw allow 8081/tcp comment "Relay Metrics (открыт для всех)"
     # ufw allow 8082/tcp comment "Relay API (открыт для всех)"
     
     log_success "Внешние сервисы настроены"
-    log_info "Порт 443 (HTTPS) открыт для Keycloak. Не забудьте про сертификаты!"
+    log_info "Keycloak закрыт для внешнего доступа - только внутренний доступ по 10.0.0.249"
 }
 
 # Настройка внутренних сервисов (только localhost)
@@ -110,6 +111,30 @@ setup_internal_services() {
     ufw allow from 127.0.0.1 to any port 3000 comment "Grafana (localhost only)"
     
     log_success "Внутренние сервисы настроены"
+}
+
+# Настройка доступа к Keycloak (только внутренний доступ)
+setup_keycloak_access() {
+    log_info "Настройка доступа к Keycloak..."
+    
+    # Получаем IP адрес сервера
+    local server_ip=$(ip route get 1.1.1.1 | awk '{print $7}' | head -1)
+    if [[ -z "$server_ip" ]]; then
+        server_ip="10.0.0.242"  # fallback
+    fi
+    
+    # Keycloak Admin Console (только для внутреннего адреса)
+    ufw allow from $server_ip to any port 8080 comment "Keycloak Admin Console (internal only)"
+    
+    # Блокируем внешний доступ к Keycloak
+    ufw deny 8080/tcp comment "Block external Keycloak Admin Console"
+    # Keycloak HTTPS (только для localhost, внутреннего IP и 10.0.0.249)
+    ufw allow from 127.0.0.1 to any port 9443 proto tcp comment "Keycloak HTTPS (localhost)"
+    ufw allow from 10.0.0.242 to any port 9443 proto tcp comment "Keycloak HTTPS (local VM IP)"
+    ufw allow from 10.0.0.249 to any port 9443 proto tcp comment "Keycloak HTTPS (только 10.0.0.249)"
+    ufw delete allow 9443/tcp 2>/dev/null || true
+    
+    log_success "Доступ к Keycloak настроен (только $server_ip, порт 443 доступен только внутри Docker сети)"
 }
 
 # Настройка Docker сети
@@ -148,7 +173,6 @@ verify_configuration() {
     
     # Проверка внешних сервисов
     local services=(
-        "8080:Keycloak"
         "8083:Relay API"
     )
     
@@ -160,6 +184,40 @@ verify_configuration() {
             log_error "$name (порт $port) - НЕ разрешен"
         fi
     done
+    
+    # Проверка Keycloak (только внутренний доступ)
+    log_info "Проверка доступа к Keycloak:"
+    
+    # Получаем IP адрес сервера
+    local server_ip=$(ip route get 1.1.1.1 | awk '{print $7}' | head -1)
+    if [[ -z "$server_ip" ]]; then
+        server_ip="10.0.0.242"  # fallback
+    fi
+    
+    if ufw status | grep -q "8080.*ALLOW.*$server_ip"; then
+        log_success "Keycloak Admin Console (порт 8080) - разрешен только для $server_ip"
+    else
+        log_error "Keycloak Admin Console (порт 8080) - НЕ настроен правильно"
+    fi
+    
+    if ufw status | grep -q "443.*DENY.*Anywhere"; then
+        log_success "Keycloak HTTPS (порт 443) - заблокирован для внешнего доступа (доступен только внутри Docker сети)"
+    else
+        log_warning "Keycloak HTTPS (порт 443) - не заблокирован для внешнего доступа"
+    fi
+    
+    # Проверка блокировки внешнего доступа к Keycloak
+    if ufw status | grep -q "8080/tcp.*DENY.*Anywhere"; then
+        log_success "Внешний доступ к Keycloak Admin Console (порт 8080) - заблокирован"
+    else
+        log_warning "Внешний доступ к Keycloak Admin Console (порт 8080) - не заблокирован"
+    fi
+    
+    if ufw status | grep -q "443/tcp.*DENY.*Anywhere"; then
+        log_success "Внешний доступ к Keycloak HTTPS (порт 443) - заблокирован"
+    else
+        log_warning "Внешний доступ к Keycloak HTTPS (порт 443) - не заблокирован"
+    fi
     
     # Проверка внутренних сервисов
     local internal_services=(
@@ -202,6 +260,7 @@ main() {
     setup_ssh
     setup_external_services
     setup_internal_services
+    setup_keycloak_access
     setup_docker_network
     setup_security_rules
     
@@ -218,7 +277,8 @@ main() {
         verify_configuration
         
         log_success "Файрвол настроен и активирован!"
-        log_info "Внешние порты (8080, 8083): открыты для всех"
+        log_info "Внешние порты (8083): открыты для всех"
+        log_info "Keycloak (8080): только для внутреннего адреса $server_ip, (443): только внутри Docker сети"
         log_info "Внутренние порты (8081, 8082, 9090, 9093, 9115, 3000): только localhost"
         log_info "SSH (22): с rate limiting"
     else

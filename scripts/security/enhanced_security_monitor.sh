@@ -217,11 +217,33 @@ check_disk_space() {
     local usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
     
     if [[ $usage -gt $DISK_USAGE_THRESHOLD ]]; then
-        local free_space=$(df -h / | awk 'NR==2 {print $4}')
-        local message="[DISK] <b>Мало места на диске</b><br><br>[STATS] <b>Использование диска:</b><br>• Использовано: ${usage}%<br>• Свободно: $free_space<br>• Порог: ${DISK_USAGE_THRESHOLD}%<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+        # Файл для отслеживания последнего уведомления о диске
+        local last_disk_file="$STATE_DIR/last_disk_space_alert.txt"
+        local current_time=$(date +%s)
+        local last_alert_time=0
+        
+        # Читаем время последнего уведомления
+        if [[ -f "$last_disk_file" ]]; then
+            last_alert_time=$(cat "$last_disk_file" 2>/dev/null || echo "0")
+        fi
+        
+        # Проверяем, прошло ли достаточно времени с последнего уведомления
+        local time_diff=$((current_time - last_alert_time))
+        local min_interval=${DISK_SPACE_ALERT_INTERVAL:-21600}  # 6 часов по умолчанию
+        
+        if [[ $time_diff -gt $min_interval ]]; then
+            local free_space=$(df -h / | awk 'NR==2 {print $4}')
+            local message="[DISK] <b>Мало места на диске</b><br><br>[STATS] <b>Использование диска:</b><br>• Использовано: ${usage}%<br>• Свободно: $free_space<br>• Порог: ${DISK_USAGE_THRESHOLD}%<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
 
-        send_telegram_message "$message"
-        return 0
+            send_telegram_message "$message"
+            
+            # Сохраняем время отправки уведомления
+            echo "$current_time" > "$last_disk_file"
+            return 0
+        else
+            log_info "Уведомление о дисковом пространстве уже отправлено недавно (${time_diff} сек назад)"
+            return 1
+        fi
     fi
     
     return 1
@@ -235,11 +257,34 @@ check_system_updates() {
     
     local updates_count=$(apt list --upgradable 2>/dev/null | grep -c upgradable || echo "0")
     updates_count=$(echo "$updates_count" | tr -d '[:space:]')
+    
     if [[ "$updates_count" =~ ^[0-9]+$ && $updates_count -gt $SYSTEM_UPDATES_THRESHOLD ]]; then
-        local message="[UPDATE] <b>Доступны обновления системы</b><br><br>[PACKAGES] <b>Обновления:</b><br>• Количество пакетов: $updates_count<br>• Рекомендуется обновить систему<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+        # Файл для отслеживания последнего уведомления об обновлениях
+        local last_update_file="$STATE_DIR/last_system_update_alert.txt"
+        local current_time=$(date +%s)
+        local last_alert_time=0
+        
+        # Читаем время последнего уведомления
+        if [[ -f "$last_update_file" ]]; then
+            last_alert_time=$(cat "$last_update_file" 2>/dev/null || echo "0")
+        fi
+        
+        # Проверяем, прошло ли достаточно времени с последнего уведомления
+        local time_diff=$((current_time - last_alert_time))
+        local min_interval=${SYSTEM_UPDATES_ALERT_INTERVAL:-86400}  # 24 часа по умолчанию
+        
+        if [[ $time_diff -gt $min_interval ]]; then
+            local message="[UPDATE] <b>Доступны обновления системы</b><br><br>[PACKAGES] <b>Обновления:</b><br>• Количество пакетов: $updates_count<br>• Рекомендуется обновить систему<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
 
-        send_telegram_message "$message"
-        return 0
+            send_telegram_message "$message"
+            
+            # Сохраняем время отправки уведомления
+            echo "$current_time" > "$last_update_file"
+            return 0
+        else
+            log_info "Уведомление об обновлениях уже отправлено недавно (${time_diff} сек назад)"
+            return 1
+        fi
     fi
     
     return 1
@@ -252,24 +297,65 @@ check_suspicious_activity() {
     fi
     
     local suspicious_found=false
+    local current_time=$(date +%s)
     
     # Проверка множественных неудачных SSH попыток
     local ssh_failures=$(grep "Failed password" /var/log/auth.log | grep "$(date '+%b %d')" | wc -l)
     
     if [[ $ssh_failures -gt $SSH_FAILURES_THRESHOLD ]]; then
-        local message="[ALERT] <b>Подозрительная активность SSH</b><br><br>[DETECTED] <b>Обнаружено:</b><br>• Неудачных попыток входа: $ssh_failures<br>• Возможная атака брутфорс<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+        # Файл для отслеживания последнего уведомления о SSH
+        local last_ssh_file="$STATE_DIR/last_ssh_activity_alert.txt"
+        local last_alert_time=0
+        
+        # Читаем время последнего уведомления
+        if [[ -f "$last_ssh_file" ]]; then
+            last_alert_time=$(cat "$last_ssh_file" 2>/dev/null || echo "0")
+        fi
+        
+        # Проверяем, прошло ли достаточно времени с последнего уведомления
+        local time_diff=$((current_time - last_alert_time))
+        local min_interval=${SSH_ACTIVITY_ALERT_INTERVAL:-3600}  # 1 час по умолчанию
+        
+        if [[ $time_diff -gt $min_interval ]]; then
+            local message="[ALERT] <b>Подозрительная активность SSH</b><br><br>[DETECTED] <b>Обнаружено:</b><br>• Неудачных попыток входа: $ssh_failures<br>• Возможная атака брутфорс<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
 
-        send_telegram_message "$message"
-        suspicious_found=true
+            send_telegram_message "$message"
+            
+            # Сохраняем время отправки уведомления
+            echo "$current_time" > "$last_ssh_file"
+            suspicious_found=true
+        else
+            log_info "Уведомление о SSH активности уже отправлено недавно (${time_diff} сек назад)"
+        fi
     fi
     
     # Проверка новых процессов от root
     local root_processes=$(ps aux | grep -v grep | grep "^root" | wc -l)
     if [[ $root_processes -gt $ROOT_PROCESSES_THRESHOLD ]]; then
-        local message="[WARNING] <b>Много процессов от root</b><br><br>[DETECTED] <b>Обнаружено:</b><br>• Процессов от root: $root_processes<br>• Рекомендуется проверить<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+        # Файл для отслеживания последнего уведомления о процессах root
+        local last_root_file="$STATE_DIR/last_root_processes_alert.txt"
+        local last_alert_time=0
+        
+        # Читаем время последнего уведомления
+        if [[ -f "$last_root_file" ]]; then
+            last_alert_time=$(cat "$last_root_file" 2>/dev/null || echo "0")
+        fi
+        
+        # Проверяем, прошло ли достаточно времени с последнего уведомления
+        local time_diff=$((current_time - last_alert_time))
+        local min_interval=${ROOT_PROCESSES_ALERT_INTERVAL:-7200}  # 2 часа по умолчанию
+        
+        if [[ $time_diff -gt $min_interval ]]; then
+            local message="[WARNING] <b>Много процессов от root</b><br><br>[DETECTED] <b>Обнаружено:</b><br>• Процессов от root: $root_processes<br>• Рекомендуется проверить<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
 
-        send_telegram_message "$message"
-        suspicious_found=true
+            send_telegram_message "$message"
+            
+            # Сохраняем время отправки уведомления
+            echo "$current_time" > "$last_root_file"
+            suspicious_found=true
+        else
+            log_info "Уведомление о процессах root уже отправлено недавно (${time_diff} сек назад)"
+        fi
     fi
     
     if [[ "$suspicious_found" == "true" ]]; then
@@ -292,10 +378,32 @@ check_ssl_certificates() {
         local days_until_expiry=$(( (expiry_timestamp - current_timestamp) / 86400 ))
         
         if [[ $days_until_expiry -lt 30 ]]; then
-            local message="[SSL] <b>SSL сертификат скоро истечет</b><br><br>[CERT] <b>Сертификат:</b><br>• Дней до истечения: $days_until_expiry<br>• Дата истечения: $expiry_date<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+            # Файл для отслеживания последнего уведомления об SSL
+            local last_ssl_file="$STATE_DIR/last_ssl_cert_alert.txt"
+            local current_time=$(date +%s)
+            local last_alert_time=0
+            
+            # Читаем время последнего уведомления
+            if [[ -f "$last_ssl_file" ]]; then
+                last_alert_time=$(cat "$last_ssl_file" 2>/dev/null || echo "0")
+            fi
+            
+            # Проверяем, прошло ли достаточно времени с последнего уведомления
+            local time_diff=$((current_time - last_alert_time))
+            local min_interval=${SSL_CERT_ALERT_INTERVAL:-43200}  # 12 часов по умолчанию
+            
+            if [[ $time_diff -gt $min_interval ]]; then
+                local message="[SSL] <b>SSL сертификат скоро истечет</b><br><br>[CERT] <b>Сертификат:</b><br>• Дней до истечения: $days_until_expiry<br>• Дата истечения: $expiry_date<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
 
-            send_telegram_message "$message"
-            return 0
+                send_telegram_message "$message"
+                
+                # Сохраняем время отправки уведомления
+                echo "$current_time" > "$last_ssl_file"
+                return 0
+            else
+                log_info "Уведомление об SSL сертификате уже отправлено недавно (${time_diff} сек назад)"
+                return 1
+            fi
         fi
     fi
     

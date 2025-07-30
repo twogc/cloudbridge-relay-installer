@@ -41,6 +41,7 @@ check_telegram_config() {
 # Отправка сообщения в Telegram
 send_telegram_message() {
     local message="$1"
+    local telegram_log="logs/telegram-error.log"
     
     if ! check_telegram_config; then
         log_warn "Пропускаю отправку в Telegram"
@@ -49,20 +50,22 @@ send_telegram_message() {
     
     log_info "Отправка уведомления в Telegram..."
     
-    # Экранируем специальные символы для URL
-    local escaped_message=$(echo "$message" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g')
+    # Экранируем только амперсанд для HTML-форматирования
+    local escaped_message=$(echo "$message" | sed 's/&/\&amp;/g')
     
     local response=$(curl -s -X POST \
         "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
         -d "chat_id=${TELEGRAM_CHAT_ID}" \
         -d "text=${escaped_message}" \
         -d "parse_mode=HTML" \
-        2>/dev/null)
+        2>&1)
     
     if echo "$response" | grep -q '"ok":true'; then
         log_info "Сообщение отправлено в Telegram"
     else
         log_error "Ошибка отправки в Telegram: $response"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $response" >> "$telegram_log"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] MESSAGE: $message" >> "$telegram_log"
     fi
 }
 
@@ -79,9 +82,9 @@ quick_lynis_test() {
     log_info "Лог файл: $log_file"
     
     # Отправка уведомления о начале
-    send_telegram_message "🔍 <b>Быстрый тест Lynis начат</b>
-🕐 Время начала: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)"
+    send_telegram_message "Быстрый тест Lynis начат
+Время начала: $(date '+%Y-%m-%d %H:%M:%S')
+Сервер: $(hostname)"
     
     # Запуск Lynis в быстром режиме с таймаутом 5 минут
     local start_time=$(date +%s)
@@ -95,10 +98,10 @@ quick_lynis_test() {
         lynis_exit_code=$?
         if [[ $lynis_exit_code -eq 124 ]]; then
             log_error "Lynis превысил таймаут (5 минут)"
-            send_telegram_message "⏰ <b>Lynis превысил таймаут</b>
-🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)
-⏱️ Таймаут: 5 минут"
+            send_telegram_message "Lynis превысил таймаут
+Время: $(date '+%Y-%m-%d %H:%M:%S')
+Сервер: $(hostname)
+Таймаут: 5 минут"
             return 1
         fi
     fi
@@ -117,24 +120,24 @@ quick_lynis_test() {
         local score=$(grep "Hardening index" "$log_file" | tail -1 | grep -o '[0-9]\+' | head -1 || echo "0")
         
         # Формируем сообщение
-        local message="🔒 <b>Быстрый тест Lynis завершен</b>
-        
-📊 <b>Результаты:</b>
+        local message="Быстрый тест Lynis завершен
+
+Результаты:
 • Hardening Index: ${score}/100
 • Предупреждений: ${warnings}
 • Рекомендаций: ${suggestions}
 • Проблем безопасности: ${security_issues}
 
-📁 Лог файл: $log_file
-⏱️ Время выполнения: ${duration} секунд
-🕐 Время завершения: $(date '+%Y-%m-%d %H:%M:%S')
+Лог файл: $log_file
+Время выполнения: ${duration} секунд
+Время завершения: $(date '+%Y-%m-%d %H:%M:%S')
 
 "
         
         # Добавляем критические проблемы, если есть
         local critical_issues=$(grep -A 2 "Security issue:" "$log_file" | head -10)
         if [[ -n "$critical_issues" ]]; then
-            message+="⚠️ <b>Критические проблемы:</b>
+            message+="Критические проблемы:
 $critical_issues
 
 "
@@ -143,7 +146,7 @@ $critical_issues
         # Добавляем рекомендации
         local top_suggestions=$(grep -A 1 "Suggestion:" "$log_file" | head -6)
         if [[ -n "$top_suggestions" ]]; then
-            message+="💡 <b>Топ рекомендаций:</b>
+            message+="Топ рекомендаций:
 $top_suggestions
 
 "
@@ -151,11 +154,11 @@ $top_suggestions
         
         # Оценка безопасности
         if [[ $score -ge 80 ]]; then
-            message+="✅ <b>Отличная безопасность!</b>"
+            message+="Отличная безопасность!"
         elif [[ $score -ge 60 ]]; then
-            message+="⚠️ <b>Хорошая безопасность, но есть возможности для улучшения</b>"
+            message+="Хорошая безопасность, но есть возможности для улучшения"
         else
-            message+="🚨 <b>Требуется внимание к безопасности!</b>"
+            message+="Требуется внимание к безопасности!"
         fi
         
         # Отправка результатов в Telegram
@@ -167,11 +170,11 @@ $top_suggestions
         
         # Отправляем информацию об ошибке
         local error_info=$(tail -10 "$log_file" | head -5)
-        send_telegram_message "❌ <b>Lynis завершился с ошибкой</b>
-🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)
-📊 Exit code: $lynis_exit_code
-📋 Последние строки лога:
+        send_telegram_message "Lynis завершился с ошибкой
+Время: $(date '+%Y-%m-%d %H:%M:%S')
+Сервер: $(hostname)
+Exit code: $lynis_exit_code
+Последние строки лога:
 $error_info"
         return 1
     fi
@@ -194,10 +197,10 @@ case "${1:-}" in
         ;;
     --test)
         if check_telegram_config; then
-            send_telegram_message "🧪 <b>Тестовое сообщение быстрого теста</b>
-✅ Быстрый тест Lynis настроен правильно
-🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)"
+            send_telegram_message "Тестовое сообщение быстрого теста
+Быстрый тест Lynis настроен правильно
+Время: $(date '+%Y-%m-%d %H:%M:%S')
+Сервер: $(hostname)"
         fi
         ;;
     *)

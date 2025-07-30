@@ -196,6 +196,135 @@
 - Для интеграции с внешними IDP используйте tenant-specific настройки в расширении
 - Для автоматизации создания/управления tenant-ами используйте предоставленный OpenAPI (openapi.json) 
 
+## Получение токенов авторизации
+
+### 1. OAuth Token (для пользователей)
+
+#### Через curl (Password Grant):
+```bash
+curl -X POST https://edge.2gc.ru/realms/cloudbridge/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "client_id=relay-client" \
+  -d "client_secret=JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM" \
+  -d "username=your_username" \
+  -d "password=your_password"
+```
+
+#### Через curl (Client Credentials Grant):
+```bash
+curl -X POST https://edge.2gc.ru/realms/cloudbridge/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=relay-client" \
+  -d "client_secret=JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM"
+```
+
+#### Через JavaScript (для веб-приложений):
+```javascript
+const tokenResponse = await fetch('https://edge.2gc.ru/realms/cloudbridge/protocol/openid-connect/token', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/x-www-form-urlencoded',
+  },
+  body: new URLSearchParams({
+    grant_type: 'password',
+    client_id: 'relay-client',
+    client_secret: 'JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM',
+    username: 'your_username',
+    password: 'your_password'
+  })
+});
+
+const tokenData = await tokenResponse.json();
+const accessToken = tokenData.access_token;
+```
+
+### 2. Admin Token (для управления Multi-Tenancy)
+
+#### Получение admin токена:
+```bash
+curl -X POST https://edge.2gc.ru/realms/cloudbridge/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "client_id=admin-cli" \
+  -d "username=admin" \
+  -d "password=admin"
+```
+
+### 3. API Key (для сервисов)
+
+#### Создание API Key через Keycloak Admin UI:
+1. Войдите в Keycloak Admin Console (https://edge.2gc.ru/admin)
+2. Перейдите в Clients → relay-client → Credentials
+3. Скопируйте Client Secret: `JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM`
+
+#### Использование API Key в заголовках:
+```bash
+curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+     -H "X-API-Key: JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM" \
+     https://edge.2gc.ru/realms/cloudbridge/tenants
+```
+
+### 4. Тестирование токенов
+
+#### Проверка токена:
+```bash
+curl -X POST https://edge.2gc.ru/realms/cloudbridge/protocol/openid-connect/userinfo \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+#### Декодирование JWT токена:
+```bash
+echo "YOUR_ACCESS_TOKEN" | cut -d. -f2 | base64 -d | jq .
+```
+
+### 5. Примеры для Multi-Tenancy API
+
+#### Создание tenant с admin токеном:
+```bash
+curl -X POST https://edge.2gc.ru/realms/cloudbridge/tenants \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN" \
+  -d '{
+    "name": "tenant1",
+    "attributes": {"company": ["Acme Corp"]}
+  }'
+```
+
+#### Получение списка tenants:
+```bash
+curl -X GET https://edge.2gc.ru/realms/cloudbridge/tenants \
+  -H "Authorization: Bearer ADMIN_ACCESS_TOKEN"
+```
+
+### 6. Настройки для тестирования
+
+- **Realm**: cloudbridge
+- **Client ID**: relay-client  
+- **Client Secret**: JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM
+- **Admin Client**: admin-cli
+- **Admin User**: max0r
+- **Admin Password**: 7Thbngy^
+- **URL**: https://edge.2gc.ru (порт 443)
+
+### 7. Актуальные токены (обновлено 2025)
+
+#### OAuth Token (Access Token):
+```
+eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJsc2E0ekI0cEhqN2YyejAxWXVfMXp5dnBEUFNtS1ZaelNvTkdZb0NZenA0In0.eyJleHAiOjE3NTM2MDAyMzEsImlhdCI6MTc1MzU5OTkzMSwianRpIjoib25sdHJvOmIyMmUyODNkLWMxYzYtZGI5My04YWEzLTZkYzhmYWY4MzI1YyIsImlzcyI6Imh0dHBzOi8vZWRnZS4yZ2MucnUvcmVhbG1zL2Nsb3VkYnJpZGdlIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiYWRtaW4tY2xpIiwic2lkIjoiNzZlNmY3ODQtMzJmMS00OWY1LTk3MDctNTIyZDFkMzI2ZGNhIiwic2NvcGUiOiJwcm9maWxlIGVtYWlsIn0.c_rmwhtsZ2G59CbB6vFwAh77cXCkxOniA6tHWCWWCDp-4-UqAYz5IqDGEgriCB4dLQHfDy390eyDccrew3l1n1mHou66eMc4ltq9-vbIyNl12Puj8HnPbCfzPsBY5pd9EQP3oXcuu6Qh6bva6n1ueJEU8hfM5Aqp2zRElIZeyoqqCjr7DT_uKs35O44xxrXXcS9bF2bn7Shz7_3y9WzMaJNvQS7a9yxI0lSQkKI7MAAVeOgyMFiDcKSWGIFZTVKubGnX5-3oLJ0eW0BS6HdVylUPwRP2M3Onfi4Bsx7IB8KHrQ-r_m-6BhcAxu2UWonL_5z_EigMxzFMjkRa5ww4nQ
+```
+
+#### Refresh Token:
+```
+eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI5MTdiMDFiOC1jZTI0LTQwYjktOWNiZS03YzA3ZThjNGY0YTQifQ.eyJleHAiOjE3NTM2MDE3MzEsImlhdCI6MTc1MzU5OTkzMSwianRpIjoiZDM4MGM0MjAtYWM1Mi0xYjU4LWUyNjUtMDU1NWU4NjFiZjczIiwiaXNzIjoiaHR0cHM6Ly9lZGdlLjJnYy5ydS9yZWFsbXMvY2xvdWRicmlkZ2UiLCJhdWQiOiJodHRwczovL2VkZ2UuMmdjLnJ1L3JlYWxtcy9jbG91ZGJyaWRnZSIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJhZG1pbi1jbGkiLCJzaWQiOiI3NmU2Zjc4NC0zMmYxLTQ5ZjUtOTcwNy01MjJkMWQzMjZkY2EiLCJzY29wZSI6ImFjciB3ZWItb3JpZ2lucyBwcm9maWxlIGVtYWlsIGJhc2ljIHJvbGVzIn0.STh8U882j8W4ZZbPkDhGnpys0LSbS1nUOYx0R8bzqJkWD4dRS80L-2Zf2UVj5KecUH6U5YqdS5JRnGToFmDOhw
+```
+
+#### API Key (Client Secret):
+```
+JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM
+```
+
 # Структура проекта и примеры интеграции IDP, claims, автоматизации
 
 ## Где что находится

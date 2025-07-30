@@ -36,7 +36,9 @@ SIEM_WEBHOOK_URL = "https://staging-siem.example.com/api/v1/webhook"
 name = "cloudbridge-ai-monitoring-agent-prod"
 
 [env.production.vars]
-RELAY_METRICS_URL = "https://prod-relay.example.com/metrics"
-ML_API_URL = "https://prod-ml.example.com/detect"
-SIEM_API_URL = "https://prod-siem.example.com/api/v1/alerts"
-SIEM_WEBHOOK_URL = "https://prod-siem.example.com/api/v1/webhook" 
+RELAY_METRICS_URL = "https://edge.2gc.ru:8081/metrics"
+ML_API_URL = "https://edge.2gc.ru:8000/detect"
+SIEM_API_URL = "https://edge.2gc.ru:8081/api/v1/alerts"
+SIEM_WEBHOOK_URL = "https://edge.2gc.ru:8081/api/v1/webhook"
+RELAY_SERVER_URL = "https://edge.2gc.ru:3456"
+API_SERVER_URL = "https://edge.2gc.ru:8082" 
