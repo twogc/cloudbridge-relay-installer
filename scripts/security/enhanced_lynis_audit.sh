@@ -36,11 +36,16 @@ log_error() {
 send_telegram_message() {
     local message="$1"
     if [[ -n "$TELEGRAM_BOT_TOKEN" && -n "$TELEGRAM_CHAT_ID" ]]; then
-        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+        local response=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${message}" \
-            -d "parse_mode=HTML" > /dev/null
-        log_info "Сообщение отправлено в Telegram"
+            -d "parse_mode=HTML")
+        
+        if echo "$response" | grep -q '"ok":true'; then
+            log_info "Сообщение отправлено в Telegram"
+        else
+            log_error "Ошибка отправки в Telegram: $response"
+        fi
     else
         log_warn "Telegram не настроен"
     fi
@@ -58,7 +63,14 @@ check_lynis_updates() {
     local update_status=$(lynis --check-update 2>/dev/null | grep -c "Outdated" || echo "0")
     
     if [[ $update_status -gt 0 ]]; then
-        local message="[LYNIS] <b>Доступно обновление Lynis</b><br><br>[UPDATE] <b>Информация:</b><br>• Рекомендуется обновить Lynis до последней версии<br>• Текущая версия может не содержать последние проверки безопасности<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+        local message="[LYNIS] <b>Доступно обновление Lynis</b>
+
+[UPDATE] <b>Информация:</b>
+• Рекомендуется обновить Lynis до последней версии
+• Текущая версия может не содержать последние проверки безопасности
+
+[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')
+[SERVER] <b>Сервер:</b> $(hostname)"
         send_telegram_message "$message"
         return 1
     fi
@@ -113,7 +125,16 @@ run_docker_audit() {
         fi
         
         if [[ $docker_security_issues -gt 0 ]]; then
-            local message="[DOCKER] <b>Проблемы безопасности Docker</b><br><br>[STATS] <b>Статистика:</b><br>• Контейнеров: $containers<br>• Образов: $images<br>• Привилегированных контейнеров: $privileged_containers<br>• Контейнеров с root: $root_containers<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+            local message="[DOCKER] <b>Проблемы безопасности Docker</b>
+
+[STATS] <b>Статистика:</b>
+• Контейнеров: $containers
+• Образов: $images
+• Привилегированных контейнеров: $privileged_containers
+• Контейнеров с root: $root_containers
+
+[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')
+[SERVER] <b>Сервер:</b> $(hostname)"
             send_telegram_message "$message"
         fi
         
@@ -137,21 +158,29 @@ run_network_audit() {
     
     if [[ $ssh_failures -gt 50 ]]; then
         suspicious_activity=true
-        network_issues+="• Много неудачных SSH попыток ($ssh_failures)<br>"
+        network_issues+="• Много неудачных SSH попыток ($ssh_failures)
+"
     fi
     
     if [[ $firewall_status -eq 0 ]]; then
         suspicious_activity=true
-        network_issues+="• UFW не активен<br>"
+        network_issues+="• UFW не активен
+"
     fi
     
     if [[ $open_ports -gt 20 ]]; then
         suspicious_activity=true
-        network_issues+="• Много открытых портов ($open_ports)<br>"
+        network_issues+="• Много открытых портов ($open_ports)
+"
     fi
     
     if [[ "$suspicious_activity" == "true" ]]; then
-        local message="[NETWORK] <b>Проблемы сетевой безопасности</b><br><br>[ISSUES] <b>Обнаружено:</b><br>$network_issues<br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+        local message="[NETWORK] <b>Проблемы сетевой безопасности</b>
+
+[ISSUES] <b>Обнаружено:</b>
+$network_issues
+[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')
+[SERVER] <b>Сервер:</b> $(hostname)"
         send_telegram_message "$message"
     fi
     
@@ -184,7 +213,14 @@ analyze_results() {
     # Отправляем уведомление если есть критические проблемы
     if [[ $critical_issues -gt 0 ]]; then
         local critical_details=$(grep "Suggestion.*CRITICAL" "$report_file" | head -3 | sed 's/^/• /')
-        local message="[LYNIS] <b>Критические проблемы безопасности</b><br><br>[CRITICAL] <b>Обнаружено:</b><br>$critical_details<br><br>[SCORE] <b>Hardening Index:</b> $score<br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+        local message="[LYNIS] <b>Критические проблемы безопасности</b>
+
+[CRITICAL] <b>Обнаружено:</b>
+$critical_details
+
+[SCORE] <b>Hardening Index:</b> $score
+[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')
+[SERVER] <b>Сервер:</b> $(hostname)"
         send_telegram_message "$message"
     fi
     
@@ -235,7 +271,14 @@ main() {
 case "${1:-}" in
     --test)
         log_info "Тестовый режим"
-        send_telegram_message "[LYNIS] <b>Тест расширенного аудита</b><br><br>[TEST] <b>Информация:</b><br>• Система расширенного аудита работает<br>• Готов к выполнению полного аудита<br><br>[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')<br>[SERVER] <b>Сервер:</b> $(hostname)"
+        send_telegram_message "[LYNIS] <b>Тест расширенного аудита</b>
+
+[TEST] <b>Информация:</b>
+• Система расширенного аудита работает
+• Готов к выполнению полного аудита
+
+[TIME] <b>Время:</b> $(date '+%Y-%m-%d %H:%M:%S')
+[SERVER] <b>Сервер:</b> $(hostname)"
         ;;
     --help|-h)
         echo "Использование: $0 [опции]"
