@@ -369,11 +369,20 @@ main() {
 Время начала: $(date '+%Y-%m-%d %H:%M:%S')
 Сервер: $(hostname)"
     
-    # Запускаем Lynis без таймаута
-    if lynis audit system --quick > "$log_file" 2>&1; then
+    # Запускаем Lynis с таймаутом 10 минут
+    if timeout 600 lynis audit system --quick > "$log_file" 2>&1; then
         lynis_exit_code=$?
     else
         lynis_exit_code=$?
+        # Проверяем, был ли это таймаут
+        if [[ $lynis_exit_code -eq 124 ]]; then
+            log_warn "Lynis превысил таймаут (10 минут)"
+            send_telegram_message "Lynis превысил таймаут
+Время: $(date '+%Y-%m-%d %H:%M:%S')
+Сервер: $(hostname)
+Таймаут: 10 минут"
+            exit 1
+        fi
     fi
     
     log_info "Аудит завершен (exit code: $lynis_exit_code)"
