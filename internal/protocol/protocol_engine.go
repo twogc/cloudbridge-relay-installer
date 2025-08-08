@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -124,13 +125,22 @@ func NewProtocolEngine(preferredOrder []Protocol, switchThreshold float64, logge
 		}
 	}
 
-	// Register Prometheus metrics
-	prometheus.MustRegister(
+	// Register Prometheus metrics (ignore duplicates)
+	collectors := []prometheus.Collector{
 		engine.prometheusMetrics.protocolLatency,
 		engine.prometheusMetrics.protocolErrors,
 		engine.prometheusMetrics.protocolSwitches,
 		engine.prometheusMetrics.protocolSuccess,
-	)
+	}
+	
+	for _, collector := range collectors {
+		if err := prometheus.Register(collector); err != nil {
+			// Ignore already registered errors
+			if !strings.Contains(err.Error(), "duplicate metrics collector") {
+				logger.Error("Failed to register prometheus metric", zap.Error(err))
+			}
+		}
+	}
 
 	return engine
 }

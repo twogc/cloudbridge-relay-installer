@@ -1,0 +1,288 @@
+# 🔒 Конфигурация внешнего биллинг API
+# Безопасная интеграция с внешним биллингом через Cadence Workflow
+
+billing:
+  external:
+    enabled: true
+    base_url: "${EXTERNAL_BILLING_BASE_URL}"
+    
+    # Аутентификация
+    auth:
+      method: "token"  # token, oauth2, api_key
+      token_url: "/auth/token"
+      client_id: "${EXTERNAL_BILLING_CLIENT_ID}"
+      client_secret: "${EXTERNAL_BILLING_CLIENT_SECRET}"
+      token_refresh_interval: "1h"
+      
+    # Безопасность данных
+    security:
+      encryption_key: "${ENCRYPTION_KEY}"
+      salt: "${ENCRYPTION_SALT}"
+      data_retention_days: 30
+      
+      # Маскирование данных
+      masking:
+        email_pattern: "***@***"
+        phone_pattern: "***"
+        name_pattern: "***"
+        organization_pattern: "***"
+        
+      # Поля для маскирования
+      sensitive_fields:
+        - "email"
+        - "phone"
+        - "name"
+        - "organization"
+        - "payment_details"
+        - "bank_account"
+        - "passport_number"
+        
+    # Rate limiting
+    rate_limiting:
+      requests_per_second: 10
+      burst_size: 20
+      per_endpoint_limits:
+        users: 5
+        subscriptions: 3
+        payments: 2
+        agreements: 3
+        tariffs: 5
+        
+    # Retry configuration
+    retry:
+      max_retries: 3
+      base_delay: "1s"
+      max_delay: "30s"
+      backoff_factor: 2.0
+      
+    # API endpoints mapping
+    endpoints:
+      # Авторизация
+      auth:
+        get_token: "/auth/token"
+        
+      # Пользователи
+      users:
+        list: "/users"
+        create: "/users"
+        get: "/users/{user_id}"
+        update: "/users/{user_id}"
+        delete: "/users/{user_id}"
+        notices_list: "/users/{user_id}/notices"
+        notices_create: "/users/{user_id}/notices"
+        
+      # Договоры
+      agreements:
+        list: "/agreements"
+        create: "/agreements"
+        get: "/agreements/{agrm_id}"
+        update: "/agreements/{agrm_id}"
+        delete: "/agreements/{agrm_id}"
+        
+      # Подписки
+      subscriptions:
+        list: "/subscriptions"
+        create: "/subscriptions"
+        get: "/subscriptions/{subscr_id}"
+        update: "/subscriptions/{subscr_id}"
+        edit: "/subscriptions/{subscr_id}"
+        delete: "/subscriptions/{subscr_id}"
+        history_list: "/subscriptions/{subscr_id}/history"
+        history_get: "/subscriptions/{subscr_id}/history/{instance_id}"
+        history_delete: "/subscriptions/{subscr_id}/history/{instance_id}"
+        blocks_list: "/subscriptions/{subscr_id}/history/{instance_id}/blocks"
+        
+      # Периоды тарификации
+      periods:
+        list: "/periods"
+        create: "/periods"
+        update: "/periods/{period_id}"
+        delete: "/periods/{period_id}"
+        
+      # Тарифы
+      tariffs:
+        list: "/tariffs"
+        create: "/tariffs"
+        get: "/tariffs/{tar_id}"
+        update: "/tariffs/{tar_id}"
+        delete: "/tariffs/{tar_id}"
+        periods_list: "/tariffs/{tar_id}/periods"
+        periods_create: "/tariffs/{tar_id}/periods"
+        periods_delete: "/tariffs/{tar_id}/periods/{tariff_period_id}"
+        services_list: "/tariffs/{tar_id}/services"
+        services_create: "/tariffs/{tar_id}/services"
+        services_update: "/tariffs/{tar_id}/services/{service_id}"
+        services_delete: "/tariffs/{tar_id}/services/{service_id}"
+        prices_list: "/tariffs/{tar_id}/services/{service_id}/prices"
+        prices_create: "/tariffs/{tar_id}/services/{service_id}/prices"
+        prices_update: "/tariffs/{tar_id}/services/{service_id}/prices/{price_id}"
+        prices_delete: "/tariffs/{tar_id}/services/{service_id}/prices/{price_id}"
+        
+      # Каталоги услуг
+      catalogs:
+        list: "/tariffs/catalogs"
+        create: "/tariffs/catalogs"
+        update: "/tariffs/catalogs/{catalog_id}"
+        delete: "/tariffs/catalogs/{catalog_id}"
+        services_list: "/tariffs/catalogs/{catalog_id}/services"
+        services_create: "/tariffs/catalogs/{catalog_id}/services"
+        services_update: "/tariffs/catalogs/{catalog_id}/services/{catalog_service_id}"
+        services_delete: "/tariffs/catalogs/{catalog_id}/services/{catalog_service_id}"
+        
+      # Списания
+      charges:
+        list: "/charges"
+        balance_changes: "/balance_changes"
+        
+      # Платежи
+      payments:
+        list: "/payments"
+        eps_create: "/eps_payments"
+        registry_upload: "/payments_registry"
+        
+      # Предварительные платежи
+      prepayments:
+        list: "/prepayments"
+        create: "/prepayments"
+        
+      # Автоматические платежи
+      autopayments:
+        list: "/autopayments"
+        create: "/autopayments"
+        update: "/autopayments/{auto_payment_id}"
+        delete: "/autopayments/{auto_payment_id}"
+        
+      # Рекомендованный платеж
+      recommended_payment:
+        get: "/recommendedpayment"
+        
+      # Документы
+      documents:
+        list: "/documents"
+        create: "/documents"
+        download: "/documents/{document_id}"
+        templates_list: "/documents/templates"
+        
+      # Массовая загрузка
+      bulk:
+        upload: "/bulk"
+        
+      # Служебные опции
+      options:
+        get: "/options/{name}"
+        
+      # Дополнительные поля
+      additional_fields:
+        list: "/additional_fields"
+        values_list: "/additional_fields/values"
+        values_update: "/additional_fields/values"
+        
+      # Клиентские функции
+      client:
+        user_get: "/client/user"
+        user_update: "/client/user"
+        agreements_list: "/client/agreements"
+        subscriptions_list: "/client/subscriptions"
+        subscriptions_create: "/client/subscriptions"
+        subscriptions_get: "/client/subscriptions/{subscr_id}"
+        subscriptions_update: "/client/subscriptions/{subscr_id}"
+        subscriptions_edit: "/client/subscriptions/{subscr_id}"
+        subscriptions_history_list: "/client/subscriptions/{subscr_id}/history"
+        subscriptions_history_get: "/client/subscriptions/{subscr_id}/history/{instance_id}"
+        subscriptions_history_delete: "/client/subscriptions/{subscr_id}/history/{instance_id}"
+        documents_list: "/client/documents"
+        documents_create: "/client/documents"
+        documents_download: "/client/documents/{document_id}"
+        autopayments_list: "/client/autopayments"
+        autopayments_create: "/client/autopayments"
+        autopayments_update: "/client/autopayments/{auto_payment_id}"
+        autopayments_delete: "/client/autopayments/{auto_payment_id}"
+        eps_payments_create: "/client/eps_payments"
+        tariffs_list: "/client/tariffs"
+        tariffs_get: "/client/tariffs/{tar_id}"
+        tariffs_periods_list: "/client/tariffs/{tar_id}/periods"
+        tariffs_services_list: "/client/tariffs/{tar_id}/services"
+        recommended_payment_get: "/client/recommendedpayment"
+        charges_list: "/client/charges"
+        balance_changes_list: "/client/balance_changes"
+        
+      # Организации
+      organizations:
+        list: "/organizations"
+        get: "/organizations/{organization_id}"
+        
+    # Cadence Workflow конфигурация
+    cadence:
+      # Workflow для синхронизации пользователей
+      user_sync:
+        enabled: true
+        schedule: "0 */6 * * *"  # Каждые 6 часов
+        batch_size: 100
+        timeout: "30m"
+        
+      # Workflow для синхронизации подписок
+      subscription_sync:
+        enabled: true
+        schedule: "0 */2 * * *"  # Каждые 2 часа
+        batch_size: 50
+        timeout: "20m"
+        
+      # Workflow для обработки платежей
+      payment_processing:
+        enabled: true
+        schedule: "*/5 * * * *"  # Каждые 5 минут
+        batch_size: 20
+        timeout: "10m"
+        
+      # Workflow для синхронизации тарифов
+      tariff_sync:
+        enabled: true
+        schedule: "0 0 * * *"    # Ежедневно в полночь
+        batch_size: 200
+        timeout: "15m"
+        
+    # Мониторинг и аудит
+    monitoring:
+      # Метрики
+      metrics:
+        enabled: true
+        namespace: "external_billing"
+        
+      # Логирование
+      logging:
+        level: "info"
+        format: "json"
+        sensitive_data_masking: true
+        
+      # Алерты
+      alerts:
+        enabled: true
+        endpoints:
+          - "users"
+          - "subscriptions"
+          - "payments"
+        error_threshold: 5
+        timeout_threshold: "30s"
+        
+    # Обработка ошибок
+    error_handling:
+      # Коды ошибок для retry
+      retry_codes:
+        - 429  # Too Many Requests
+        - 500  # Internal Server Error
+        - 502  # Bad Gateway
+        - 503  # Service Unavailable
+        - 504  # Gateway Timeout
+        
+      # Коды ошибок для circuit breaker
+      circuit_breaker_codes:
+        - 500
+        - 502
+        - 503
+        - 504
+        
+      # Circuit breaker настройки
+      circuit_breaker:
+        failure_threshold: 5
+        recovery_timeout: "60s"
+        half_open_max_requests: 3
