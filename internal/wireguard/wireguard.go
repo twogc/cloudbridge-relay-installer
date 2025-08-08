@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -23,6 +24,10 @@ type WireGuardInterface struct {
 	mu          sync.RWMutex
 	logger      *zap.Logger
 	isRunning   bool
+	
+	// Интеграция с реальным WireGuard
+	realAdapter *RealWireGuardAdapter
+	useRealWireGuard bool
 }
 
 // WireGuardPeer представляет WireGuard peer
@@ -188,6 +193,14 @@ func NewWireGuardInterface(name string, port int) *WireGuardInterface {
 	// Генерируем ключи
 	privateKey, publicKey := generateKeyPair()
 	
+	// Проверяем доступность реального WireGuard
+	useRealWireGuard := checkRealWireGuardAvailability()
+	
+	var realAdapter *RealWireGuardAdapter
+	if useRealWireGuard {
+		realAdapter = NewRealWireGuardAdapter(name, zap.NewNop())
+	}
+	
 	return &WireGuardInterface{
 		Name:       name,
 		ListenPort: port,
@@ -195,6 +208,8 @@ func NewWireGuardInterface(name string, port int) *WireGuardInterface {
 		PublicKey:  publicKey,
 		Peers:      make(map[string]*WireGuardPeer),
 		logger:     zap.NewNop(),
+		realAdapter: realAdapter,
+		useRealWireGuard: useRealWireGuard,
 	}
 }
 
@@ -209,6 +224,31 @@ func generateKeyPair() (string, string) {
 	
 	return base64.StdEncoding.EncodeToString(privateKeyBytes),
 		   base64.StdEncoding.EncodeToString(publicKeyBytes[:])
+}
+
+// checkRealWireGuardAvailability проверяет доступность реального WireGuard
+func checkRealWireGuardAvailability() bool {
+	// Проверяем наличие wireguard-go
+	if _, err := exec.LookPath("wireguard-go"); err != nil {
+		return false
+	}
+	
+	// Проверяем наличие wg команды
+	if _, err := exec.LookPath("wg"); err != nil {
+		return false
+	}
+	
+	// Проверяем наличие ip команды
+	if _, err := exec.LookPath("ip"); err != nil {
+		return false
+	}
+	
+	return true
+}
+
+// CheckRealWireGuardAvailability экспортированная функция для проверки доступности
+func CheckRealWireGuardAvailability() bool {
+	return checkRealWireGuardAvailability()
 }
 
 // NewMeshTopology создает новую mesh topology
@@ -288,10 +328,50 @@ func (wgi *WireGuardInterface) Start() error {
 		return fmt.Errorf("WireGuard interface already running")
 	}
 	
-	// В реальной реализации здесь будет создание WireGuard интерфейса
-	// wg-quick up wgi.Name
+	if wgi.useRealWireGuard && wgi.realAdapter != nil {
+		// Используем реальный WireGuard
+		config := &WireGuardConfig{
+			Interface: struct {
+				Name       string `json:"name"`
+				ListenPort int    `json:"listen_port"`
+				Address    string `json:"address"`
+				PrivateKey string `json:"private_key"`
+				MTU        int    `json:"mtu"`
+			}{
+				Name:       wgi.Name,
+				ListenPort: wgi.ListenPort,
+				Address:    wgi.Address,
+				PrivateKey: wgi.PrivateKey,
+				MTU:        1420,
+			},
+			Peers: []WireGuardPeerConfig{},
+		}
+		
+		// Добавляем существующих пиров
+		for _, peer := range wgi.Peers {
+			config.Peers = append(config.Peers, WireGuardPeerConfig{
+				PublicKey:  peer.PublicKey,
+				AllowedIPs: peer.AllowedIPs,
+				Endpoint:   peer.Endpoint,
+			})
+		}
+		
+		if err := wgi.realAdapter.Start(config); err != nil {
+			wgi.logger.Error("Failed to start real WireGuard, falling back to simulation", zap.Error(err))
+			wgi.useRealWireGuard = false
+		} else {
+			wgi.isRunning = true
+			wgi.logger.Info("Real WireGuard interface started",
+				zap.String("name", wgi.Name),
+				zap.Int("port", wgi.ListenPort),
+			)
+			return nil
+		}
+	}
+	
+	// Fallback на симуляцию
 	wgi.isRunning = true
-	wgi.logger.Info("WireGuard interface started",
+	wgi.logger.Info("Simulated WireGuard interface started",
 		zap.String("name", wgi.Name),
 		zap.Int("port", wgi.ListenPort),
 	)
@@ -307,8 +387,13 @@ func (wgi *WireGuardInterface) Stop() error {
 		return fmt.Errorf("WireGuard interface not running")
 	}
 	
-	// В реальной реализации здесь будет остановка WireGuard интерфейса
-	// wg-quick down wgi.Name
+	if wgi.useRealWireGuard && wgi.realAdapter != nil {
+		// Останавливаем реальный WireGuard
+		if err := wgi.realAdapter.Stop(); err != nil {
+			wgi.logger.Error("Failed to stop real WireGuard", zap.Error(err))
+		}
+	}
+	
 	wgi.isRunning = false
 	wgi.logger.Info("WireGuard interface stopped",
 		zap.String("name", wgi.Name),
@@ -321,13 +406,33 @@ func (wgi *WireGuardInterface) AddPeer(peer *WireGuardPeer) error {
 	wgi.mu.Lock()
 	defer wgi.mu.Unlock()
 	
-	// В реальной реализации здесь будет добавление peer в WireGuard
-	// wg set wgi.Name peer peer.PublicKey endpoint peer.Endpoint allowed-ips peer.AllowedIPs
-	wgi.Peers[peer.PublicKey] = peer
-	wgi.logger.Info("WireGuard peer added",
-		zap.String("public_key", peer.PublicKey),
-		zap.String("endpoint", peer.Endpoint),
-	)
+	if wgi.useRealWireGuard && wgi.realAdapter != nil && wgi.isRunning {
+		// Добавляем пира в реальный WireGuard
+		realPeer := &WireGuardPeerConfig{
+			PublicKey:  peer.PublicKey,
+			AllowedIPs: peer.AllowedIPs,
+			Endpoint:   peer.Endpoint,
+		}
+		
+		if err := wgi.realAdapter.AddPeer(realPeer); err != nil {
+			wgi.logger.Error("Failed to add peer to real WireGuard", zap.Error(err))
+			// Fallback на симуляцию
+			wgi.Peers[peer.PublicKey] = peer
+		} else {
+			wgi.logger.Info("Peer added to real WireGuard",
+				zap.String("public_key", peer.PublicKey),
+				zap.String("endpoint", peer.Endpoint),
+			)
+			return nil
+		}
+	} else {
+		// Используем симуляцию
+		wgi.Peers[peer.PublicKey] = peer
+		wgi.logger.Info("Peer added to simulated WireGuard",
+			zap.String("public_key", peer.PublicKey),
+			zap.String("endpoint", peer.Endpoint),
+		)
+	}
 	
 	return nil
 }
@@ -336,8 +441,14 @@ func (wgi *WireGuardInterface) RemovePeer(publicKey string) error {
 	wgi.mu.Lock()
 	defer wgi.mu.Unlock()
 	
-	// В реальной реализации здесь будет удаление peer из WireGuard
-	// wg set wgi.Name peer publicKey remove
+	if wgi.useRealWireGuard && wgi.realAdapter != nil && wgi.isRunning {
+		// Удаляем пира из реального WireGuard
+		if err := wgi.realAdapter.RemovePeer(publicKey); err != nil {
+			wgi.logger.Error("Failed to remove peer from real WireGuard", zap.Error(err))
+		}
+	}
+	
+	// Удаляем из симуляции
 	delete(wgi.Peers, publicKey)
 	wgi.logger.Info("WireGuard peer removed",
 		zap.String("public_key", publicKey),
@@ -350,6 +461,18 @@ func (wgi *WireGuardInterface) GetStatus() map[string]interface{} {
 	wgi.mu.RLock()
 	defer wgi.mu.RUnlock()
 	
+	if wgi.useRealWireGuard && wgi.realAdapter != nil && wgi.isRunning {
+		// Получаем статус реального WireGuard
+		status, err := wgi.realAdapter.GetStatus()
+		if err != nil {
+			wgi.logger.Error("Failed to get real WireGuard status", zap.Error(err))
+		} else {
+			status["mode"] = "real"
+			return status
+		}
+	}
+	
+	// Fallback на симуляцию
 	peers := make([]map[string]interface{}, 0)
 	for _, peer := range wgi.Peers {
 		peers = append(peers, map[string]interface{}{
@@ -369,6 +492,8 @@ func (wgi *WireGuardInterface) GetStatus() map[string]interface{} {
 		"status":      "running",
 		"is_running":  wgi.isRunning,
 		"peers":       peers,
+		"mode":        "simulated",
+		"real_wireguard_available": wgi.useRealWireGuard,
 	}
 }
 
