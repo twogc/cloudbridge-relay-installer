@@ -163,6 +163,87 @@ type configRaw struct {
 			KeycloakURL string `json:"keycloak_url,omitempty"`
 		} `json:"authentication"`
 	} `json:"zero_trust"`
+
+	// Enhanced QUIC Configuration
+	EnhancedQUIC struct {
+		Enabled         bool   `json:"enabled"`
+		MaxStreams      int    `json:"max_streams"`
+		KeepAlive       bool   `json:"keep_alive"`
+		IdleTimeout     string `json:"idle_timeout"`
+		HandshakeTimeout string `json:"handshake_timeout"`
+		DDoSProtection  bool   `json:"ddos_protection"`
+		GeographicRouting bool `json:"geographic_routing"`
+		KeycloakIntegration bool `json:"keycloak_integration"`
+	} `json:"enhanced_quic"`
+
+	// WireGuard P2P Mesh Configuration
+	WireGuard struct {
+		Enabled     bool   `json:"enabled"`
+		Interface   struct {
+			Name       string `json:"name"`
+			ListenPort int    `json:"listen_port"`
+			Address    string `json:"address"`
+		} `json:"interface"`
+		Discovery   struct {
+			RegistryURL       string `json:"registry_url"`
+			HeartbeatInterval string `json:"heartbeat_interval"`
+			MaxPeers          int    `json:"max_peers"`
+		} `json:"discovery"`
+		Mesh       struct {
+			Enabled           bool   `json:"enabled"`
+			AutoDiscovery     bool   `json:"auto_discovery"`
+			MaxConnections    int    `json:"max_connections"`
+			RoutingStrategy   string `json:"routing_strategy"`
+		} `json:"mesh"`
+		SiteToSite struct {
+			Enabled           bool   `json:"enabled"`
+			CorporateNetworks []struct {
+				NetworkID     string `json:"network_id"`
+				CIDR          string `json:"cidr"`
+				TenantID      string `json:"tenant_id"`
+			} `json:"corporate_networks"`
+		} `json:"site_to_site"`
+	} `json:"wireguard"`
+
+	// Post-Quantum Cryptography Configuration
+	Quantum struct {
+		Enabled         bool   `json:"enabled"`
+		Algorithm       string `json:"algorithm"`
+		HybridMode      bool   `json:"hybrid_mode"`
+		KeySize         int    `json:"key_size"`
+		SignatureScheme string `json:"signature_scheme"`
+		FallbackEnabled bool   `json:"fallback_enabled"`
+		KeyRotationDays int    `json:"key_rotation_days"`
+		WireGuard       struct {
+			Enabled bool `json:"enabled"`
+		} `json:"wireguard"`
+		EnhancedQUIC    struct {
+			Enabled bool `json:"enabled"`
+		} `json:"enhanced_quic"`
+	} `json:"quantum"`
+
+	// AI Analytics Configuration
+	AI struct {
+		Enabled           bool   `json:"enabled"`
+		BehaviorAnalysis  struct {
+			Enabled       bool    `json:"enabled"`
+			ModelPath     string  `json:"model_path"`
+			Threshold     float64 `json:"threshold"`
+			LearningRate  float64 `json:"learning_rate"`
+		} `json:"behavior_analysis"`
+		PredictiveSecurity struct {
+			Enabled    bool    `json:"enabled"`
+			Confidence float64 `json:"confidence"`
+		} `json:"predictive_security"`
+		AutomatedResponse struct {
+			Enabled bool `json:"enabled"`
+		} `json:"automated_response"`
+		Monitoring struct {
+			Enabled      bool   `json:"enabled"`
+			DashboardURL string `json:"dashboard_url"`
+			RefreshRate  string `json:"refresh_rate"`
+		} `json:"monitoring"`
+	} `json:"ai"`
 }
 
 // Config represents the server configuration
@@ -391,6 +472,87 @@ type Config struct {
 			HTTP2Origin           bool          `json:"http2_origin"`
 		} `json:"origin_request"`
 	} `json:"ingress"`
+
+	// Enhanced QUIC Configuration
+	EnhancedQUIC struct {
+		Enabled         bool          `json:"enabled"`
+		MaxStreams      int           `json:"max_streams"`
+		KeepAlive       bool          `json:"keep_alive"`
+		IdleTimeout     time.Duration `json:"idle_timeout"`
+		HandshakeTimeout time.Duration `json:"handshake_timeout"`
+		DDoSProtection  bool          `json:"ddos_protection"`
+		GeographicRouting bool        `json:"geographic_routing"`
+		KeycloakIntegration bool      `json:"keycloak_integration"`
+	} `json:"enhanced_quic"`
+
+	// WireGuard P2P Mesh Configuration
+	WireGuard struct {
+		Enabled     bool   `json:"enabled"`
+		Interface   struct {
+			Name       string `json:"name"`
+			ListenPort int    `json:"listen_port"`
+			Address    string `json:"address"`
+		} `json:"interface"`
+		Discovery   struct {
+			RegistryURL       string        `json:"registry_url"`
+			HeartbeatInterval time.Duration `json:"heartbeat_interval"`
+			MaxPeers          int           `json:"max_peers"`
+		} `json:"discovery"`
+		Mesh       struct {
+			Enabled           bool   `json:"enabled"`
+			AutoDiscovery     bool   `json:"auto_discovery"`
+			MaxConnections    int    `json:"max_connections"`
+			RoutingStrategy   string `json:"routing_strategy"`
+		} `json:"mesh"`
+		SiteToSite struct {
+			Enabled           bool   `json:"enabled"`
+			CorporateNetworks []struct {
+				NetworkID     string `json:"network_id"`
+				CIDR          string `json:"cidr"`
+				TenantID      string `json:"tenant_id"`
+			} `json:"corporate_networks"`
+		} `json:"site_to_site"`
+	} `json:"wireguard"`
+
+	// Post-Quantum Cryptography Configuration
+	Quantum struct {
+		Enabled         bool   `json:"enabled"`
+		Algorithm       string `json:"algorithm"`
+		HybridMode      bool   `json:"hybrid_mode"`
+		KeySize         int    `json:"key_size"`
+		SignatureScheme string `json:"signature_scheme"`
+		FallbackEnabled bool   `json:"fallback_enabled"`
+		KeyRotationDays int    `json:"key_rotation_days"`
+		WireGuard       struct {
+			Enabled bool `json:"enabled"`
+		} `json:"wireguard"`
+		EnhancedQUIC    struct {
+			Enabled bool `json:"enabled"`
+		} `json:"enhanced_quic"`
+	} `json:"quantum"`
+
+	// AI Analytics Configuration
+	AI struct {
+		Enabled           bool   `json:"enabled"`
+		BehaviorAnalysis  struct {
+			Enabled       bool    `json:"enabled"`
+			ModelPath     string  `json:"model_path"`
+			Threshold     float64 `json:"threshold"`
+			LearningRate  float64 `json:"learning_rate"`
+		} `json:"behavior_analysis"`
+		PredictiveSecurity struct {
+			Enabled    bool    `json:"enabled"`
+			Confidence float64 `json:"confidence"`
+		} `json:"predictive_security"`
+		AutomatedResponse struct {
+			Enabled bool `json:"enabled"`
+		} `json:"automated_response"`
+		Monitoring struct {
+			Enabled      bool          `json:"enabled"`
+			DashboardURL string        `json:"dashboard_url"`
+			RefreshRate  time.Duration `json:"refresh_rate"`
+		} `json:"monitoring"`
+	} `json:"ai"`
 }
 
 // HealthCheckConfig represents a health check configuration
@@ -637,6 +799,45 @@ func Load(path string) (*Config, error) {
 	if config.Server.MaxTunnels == 0 {
 		config.Server.MaxTunnels = 1000
 	}
+
+	// Enhanced QUIC
+	config.EnhancedQUIC.Enabled = raw.EnhancedQUIC.Enabled
+	config.EnhancedQUIC.MaxStreams = raw.EnhancedQUIC.MaxStreams
+	config.EnhancedQUIC.KeepAlive = raw.EnhancedQUIC.KeepAlive
+	config.EnhancedQUIC.IdleTimeout = parseDuration(raw.EnhancedQUIC.IdleTimeout, 30*time.Second)
+	config.EnhancedQUIC.HandshakeTimeout = parseDuration(raw.EnhancedQUIC.HandshakeTimeout, 10*time.Second)
+	config.EnhancedQUIC.DDoSProtection = raw.EnhancedQUIC.DDoSProtection
+	config.EnhancedQUIC.GeographicRouting = raw.EnhancedQUIC.GeographicRouting
+	config.EnhancedQUIC.KeycloakIntegration = raw.EnhancedQUIC.KeycloakIntegration
+
+	// WireGuard
+	config.WireGuard.Enabled = raw.WireGuard.Enabled
+	config.WireGuard.Interface = raw.WireGuard.Interface
+	config.WireGuard.Discovery.RegistryURL = raw.WireGuard.Discovery.RegistryURL
+	config.WireGuard.Discovery.HeartbeatInterval = parseDuration(raw.WireGuard.Discovery.HeartbeatInterval, 30*time.Second)
+	config.WireGuard.Discovery.MaxPeers = raw.WireGuard.Discovery.MaxPeers
+	config.WireGuard.Mesh = raw.WireGuard.Mesh
+	config.WireGuard.SiteToSite = raw.WireGuard.SiteToSite
+
+	// Quantum
+	config.Quantum.Enabled = raw.Quantum.Enabled
+	config.Quantum.Algorithm = raw.Quantum.Algorithm
+	config.Quantum.HybridMode = raw.Quantum.HybridMode
+	config.Quantum.KeySize = raw.Quantum.KeySize
+	config.Quantum.SignatureScheme = raw.Quantum.SignatureScheme
+	config.Quantum.FallbackEnabled = raw.Quantum.FallbackEnabled
+	config.Quantum.KeyRotationDays = raw.Quantum.KeyRotationDays
+	config.Quantum.WireGuard = raw.Quantum.WireGuard
+	config.Quantum.EnhancedQUIC = raw.Quantum.EnhancedQUIC
+
+	// AI
+	config.AI.Enabled = raw.AI.Enabled
+	config.AI.BehaviorAnalysis = raw.AI.BehaviorAnalysis
+	config.AI.PredictiveSecurity = raw.AI.PredictiveSecurity
+	config.AI.AutomatedResponse = raw.AI.AutomatedResponse
+	config.AI.Monitoring.Enabled = raw.AI.Monitoring.Enabled
+	config.AI.Monitoring.DashboardURL = raw.AI.Monitoring.DashboardURL
+	config.AI.Monitoring.RefreshRate = parseDuration(raw.AI.Monitoring.RefreshRate, 30*time.Second)
 
 	return config, nil
 }

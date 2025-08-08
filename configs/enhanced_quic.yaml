@@ -10,8 +10,11 @@ enhanced_quic:
   keep_alive: true
   idle_timeout: 30s
   handshake_timeout: 10s
-  max_incoming_streams: 100
-  max_incoming_uni_streams: 100
+  
+  # Enhanced функции
+  ddos_protection: true
+  geographic_routing: true
+  keycloak_integration: false
   
   # Управление потоком данных
   initial_stream_receive_window: 524288      # 512KB
