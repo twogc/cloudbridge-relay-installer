@@ -18,15 +18,18 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/twogc/cloudbridge-relay-installer/config"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
 	"github.com/twogc/cloudbridge-relay-installer/internal/balancer"
 	"github.com/twogc/cloudbridge-relay-installer/internal/circuitbreaker"
 	"github.com/twogc/cloudbridge-relay-installer/internal/health"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
+	"github.com/twogc/cloudbridge-relay-installer/internal/quantum"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
+	"github.com/twogc/cloudbridge-relay-installer/internal/wireguard"
 	"go.uber.org/zap"
 )
 
@@ -89,6 +92,28 @@ type Server struct {
 	ipRateLimit           *ratelimit.IPLimiter
 	enhancedKeycloakAuth  *auth.EnhancedKeycloakAuth
 	enhancedEnabled       bool
+	
+	// WireGuard P2P Mesh components
+	wireGuardEnabled      bool
+	wireGuardInterface    *wireguard.WireGuardInterface
+	wireGuardMesh         *wireguard.MeshTopology
+	wireGuardPeerDiscovery *wireguard.PeerDiscovery
+	quicOverWireGuard     *wireguard.QUICOverWireGuard
+	hybridRouter          *wireguard.HybridRouter
+	siteToSiteManager     *wireguard.SiteToSiteManager
+	
+	// Post-Quantum Cryptography components
+	quantumEnabled        bool
+	quantumConfig         *quantum.PQCConfig
+	quantumWireGuard      *quantum.QuantumWireGuardInterface
+	quantumEnhancedQUIC   *quantum.QuantumEnhancedQUIC
+	
+	// AI Analytics components
+	aiAnalyticsEnabled    bool
+	aiBehaviorAnalyzer    *ai.BehaviorAnalyzer
+	aiPredictiveSecurity  *ai.PredictiveSecurity
+	aiAutomatedResponse   *ai.AutomatedResponse
+	aiMonitoring          *ai.AIMonitoring
 	
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -193,7 +218,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 	
 	// Initialize Enhanced QUIC components
-	enhancedEnabled := false // Можно добавить в конфигурацию
+	enhancedEnabled := cfg.EnhancedQUIC.Enabled // Из конфигурации
 	var enhancedQUICManager *EnhancedQUICManager
 	var tenantMgr *tenant.Manager
 	var loadBal *balancer.Balancer
@@ -244,6 +269,95 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		}, zap.NewNop())
 	}
 	
+	// Initialize WireGuard P2P Mesh components
+	wireGuardEnabled := cfg.WireGuard.Enabled
+	var wireGuardInterface *wireguard.WireGuardInterface
+	var wireGuardMesh *wireguard.MeshTopology
+	var wireGuardPeerDiscovery *wireguard.PeerDiscovery
+	var quicOverWireGuard *wireguard.QUICOverWireGuard
+	var hybridRouter *wireguard.HybridRouter
+	var siteToSiteManager *wireguard.SiteToSiteManager
+	
+	if wireGuardEnabled {
+		// Create WireGuard interface
+		wireGuardInterface = wireguard.NewWireGuardInterface(
+			cfg.WireGuard.Interface.Name,
+			cfg.WireGuard.Interface.ListenPort,
+		)
+		
+		// Initialize mesh topology
+		wireGuardMesh = wireguard.NewMeshTopology(wireGuardInterface)
+		
+		// Initialize peer discovery
+		discoveryConfig := &wireguard.DiscoveryConfig{
+			RegistryURL:       cfg.WireGuard.Discovery.RegistryURL,
+			HeartbeatInterval: cfg.WireGuard.Discovery.HeartbeatInterval,
+			MaxPeers:          cfg.WireGuard.Discovery.MaxPeers,
+		}
+		wireGuardPeerDiscovery = wireguard.NewPeerDiscovery(discoveryConfig, wireGuardInterface)
+		
+		// Initialize QUIC over WireGuard
+		quicOverWireGuard = wireguard.NewQUICOverWireGuard(wireGuardInterface, enhancedQUICManager)
+		
+		// Initialize hybrid router
+		hybridRouter = wireguard.NewHybridRouter(loadBal, wireGuardMesh)
+		
+		// Initialize site-to-site manager
+		siteToSiteManager = wireguard.NewSiteToSiteManager(wireGuardMesh)
+		
+		loggerInstance.Info("WireGuard P2P Mesh initialized",
+			zap.String("interface", cfg.WireGuard.Interface.Name),
+			zap.Int("listen_port", cfg.WireGuard.Interface.ListenPort),
+		)
+	}
+	
+	// Initialize Post-Quantum Cryptography components
+	quantumEnabled := cfg.Quantum.Enabled
+	var quantumConfig *quantum.PQCConfig
+	var quantumWireGuard *quantum.QuantumWireGuardInterface
+	var quantumEnhancedQUIC *quantum.QuantumEnhancedQUIC
+	
+	if quantumEnabled {
+		// Create PQC configuration
+		quantumConfig = quantum.NewPQCConfig()
+		
+		// Initialize quantum-resistant WireGuard
+		if wireGuardInterface != nil {
+			quantumWireGuard = quantum.NewQuantumWireGuardInterface(wireGuardInterface, quantumConfig)
+		}
+		
+		// Initialize quantum-resistant Enhanced QUIC
+		if enhancedQUICManager != nil {
+			quantumEnhancedQUIC = quantum.NewQuantumEnhancedQUIC(enhancedQUICManager, quantumConfig)
+		}
+		
+		loggerInstance.Info("Post-Quantum Cryptography initialized",
+			zap.String("algorithm", string(quantumConfig.Algorithm)),
+			zap.Bool("hybrid_mode", quantumConfig.HybridMode),
+		)
+	}
+	
+	// Initialize AI Analytics components
+	aiAnalyticsEnabled := cfg.AI.Enabled
+	var aiBehaviorAnalyzer *ai.BehaviorAnalyzer
+	var aiPredictiveSecurity *ai.PredictiveSecurity
+	var aiAutomatedResponse *ai.AutomatedResponse
+	var aiMonitoring *ai.AIMonitoring
+	
+	if aiAnalyticsEnabled {
+		// Initialize AI components
+		aiBehaviorAnalyzer = ai.NewBehaviorAnalyzer()
+		aiPredictiveSecurity = ai.NewPredictiveSecurity()
+		aiAutomatedResponse = ai.NewAutomatedResponse()
+		aiMonitoring = ai.NewAIMonitoring()
+		
+		loggerInstance.Info("AI Analytics initialized",
+			zap.Bool("behavior_analysis", aiBehaviorAnalyzer.Enabled),
+			zap.Bool("predictive_security", aiPredictiveSecurity.Enabled),
+			zap.Bool("automated_response", aiAutomatedResponse.Enabled),
+		)
+	}
+	
 	return &Server{
 		config:                cfg,
 		logger:                loggerInstance,
@@ -258,6 +372,22 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		ipRateLimit:           ipRateLimit,
 		enhancedKeycloakAuth:  enhancedKeycloakAuth,
 		enhancedEnabled:       enhancedEnabled,
+		wireGuardEnabled:      wireGuardEnabled,
+		wireGuardInterface:    wireGuardInterface,
+		wireGuardMesh:         wireGuardMesh,
+		wireGuardPeerDiscovery: wireGuardPeerDiscovery,
+		quicOverWireGuard:     quicOverWireGuard,
+		hybridRouter:          hybridRouter,
+		siteToSiteManager:     siteToSiteManager,
+		quantumEnabled:        quantumEnabled,
+		quantumConfig:         quantumConfig,
+		quantumWireGuard:      quantumWireGuard,
+		quantumEnhancedQUIC:   quantumEnhancedQUIC,
+		aiAnalyticsEnabled:    aiAnalyticsEnabled,
+		aiBehaviorAnalyzer:    aiBehaviorAnalyzer,
+		aiPredictiveSecurity:  aiPredictiveSecurity,
+		aiAutomatedResponse:   aiAutomatedResponse,
+		aiMonitoring:          aiMonitoring,
 		ctx:                   ctx,
 		cancel:                cancel,
 		startTime:             time.Now(),
