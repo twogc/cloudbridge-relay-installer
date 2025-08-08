@@ -133,14 +133,15 @@ flowchart TD
 - **🔐 Advanced Authentication** — интеграция с Keycloak (edge.2gc.ru) для enterprise SSO
 - **📊 200+ метрик мониторинга** — детальная аналитика производительности
 
-### 🌐 **WireGuard P2P Mesh Network: Enterprise VPN Replacement**
+### 🌐 **Quantum-Resistant WireGuard P2P Mesh Network: Enterprise VPN Replacement**
 
 - **🔗 WireGuard Site-to-Site Tunnels** — автоматические туннели между relay серверами
 - **⚡ Kernel-space Performance** — WireGuard в ядре + Enhanced QUIC в userspace
-- **🛡️ Cryptographic Security** — proven WireGuard cryptography для peer connections
+- **🛡️ Quantum-Resistant Security** — CRYSTALS-Kyber + CRYSTALS-Dilithium для future-proof cryptography
 - **📈 Automatic Mesh Formation** — dynamic peer discovery и WireGuard configuration
 - **🏢 Corporate Network Integration** — direct connectivity между `192.168.x.0/24` networks
 - **🔐 Zero Trust Authentication** — Keycloak-based key exchange для WireGuard peers
+- **🔮 Future-Proof Protection** — post-quantum cryptography готов к квантовым компьютерам
 
 ### 🏢 **Замена корпоративных VPN решений**
 
@@ -150,6 +151,7 @@ flowchart TD
 - **⚡ Kernel-space Performance** — WireGuard в ядре + Enhanced QUIC в userspace для optimal performance
 - **🔐 Zero Trust WireGuard** — cryptographic key exchange через Keycloak для peer authentication
 - **🌍 Corporate Network Integration** — direct connectivity между `192.168.x.0/24` networks через WireGuard mesh
+- **🔮 Quantum-Resistant Keys** — hybrid X25519 + CRYSTALS-Kyber для maximum security
 
 ### 🔐 **Enterprise Security & Compliance**
 
@@ -157,6 +159,7 @@ flowchart TD
 - **🔑 Multi-Factor Authentication** — интеграция с AD/LDAP/SAML/OIDC
 - **📋 Compliance Ready** — GDPR, SOC2, ISO27001, 152-ФЗ
 - **🔍 Real-time Threat Detection** — интеграция с SIEM системами
+- **🔮 Quantum-Resistant Cryptography** — CRYSTALS-Kyber + CRYSTALS-Dilithium для защиты от квантовых угроз
 
 ### 🛡️ **Внутренняя защита сервера (Server-Side Security)**
 
@@ -225,6 +228,7 @@ flowchart TD
 - **🌐 WireGuard P2P Mesh** — distributed architecture без единых точек отказа
 - **🔐 Zero Trust WireGuard** — cryptographic authentication через Keycloak для peer connections
 - **🏢 VPN Replacement** — direct site-to-site connectivity через WireGuard mesh
+- **🔮 Quantum-Resistant** — post-quantum cryptography для future-proof security
 
 ---
 
@@ -713,17 +717,17 @@ cloudbridge-relay/
 - **$400M ARR** — прогноз выручки к 2029 году
 
 ### **🏆 Почему мы выиграем:**
-1. **🥇 Первые с WireGuard + Enhanced QUIC** в enterprise сегменте
+1. **🥇 Первые с Quantum-Resistant WireGuard + Enhanced QUIC** в enterprise сегменте
 2. **🥇 WireGuard P2P mesh архитектура** без единых точек отказа
 3. **🥇 Serverless управление** через Cloudflare Workers  
-4. **🥇 Zero Trust WireGuard** из коробки без сложных настроек
+4. **🥇 Zero Trust WireGuard + Post-Quantum Cryptography** из коробки
 
 ### **🎯 Миссия:**
 > **Сделать корпоративный доступ к ресурсам таким же простым, как подключение к WiFi, но в 10 раз безопаснее и быстрее.**
 
 ---
 
-**CloudBridge Relay v2.2** - Enterprise-grade решение нового поколения с WireGuard P2P Mesh, Enhanced QUIC, мультиарендностью, DDoS защитой и интеграцией с Keycloak для высоконагруженных корпоративных сетей.
+**CloudBridge Relay v2.2** - Enterprise-grade решение нового поколения с Quantum-Resistant WireGuard P2P Mesh, Enhanced QUIC, мультиарендностью, DDoS защитой и интеграцией с Keycloak для высоконагруженных корпоративных сетей.
 
 **🚀 Статус**: ✅ Production Ready (Enhanced QUIC)  
 **📦 Версия**: 2.2 с WireGuard P2P Mesh поддержкой  
@@ -733,7 +737,8 @@ cloudbridge-relay/
 **⚡ Производительность**: +50% улучшение задержки  
 **🏢 Multi-Tenancy**: Полная изоляция арендаторов  
 **🛡️ DDoS Protection**: Встроенная защита от атак  
-**🌐 WireGuard P2P Mesh**: Enterprise VPN replacement с kernel-space performance  
+**🌐 Quantum-Resistant WireGuard P2P Mesh**: Enterprise VPN replacement с post-quantum cryptography  
 **🔄 Site-to-Site VPN**: Direct connectivity через WireGuard tunnels  
+**🔮 Post-Quantum Cryptography**: CRYSTALS-Kyber + CRYSTALS-Dilithium для future-proof security  
 **🛡️ Server Security**: MITRE ATT&CK, YARA/Sigma rules, Telegram alerting  
 **⚡ Cloudflare Workers**: Serverless управление с edge computing на 330+ локациях
