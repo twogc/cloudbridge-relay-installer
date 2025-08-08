@@ -501,6 +501,17 @@ func (s *Server) Start() error {
 		s.logger.Info("AutoSwitchManager started")
 	}
 	
+	// Инициализация P2P Manager
+	if s.p2pManager != nil && s.wireGuardEnabled {
+		go func() {
+			if err := s.p2pManager.Initialize(s.ctx); err != nil {
+				s.logger.Error("Failed to initialize P2P Manager", zap.Error(err))
+			} else {
+				s.logger.Info("P2P Manager initialized successfully")
+			}
+		}()
+	}
+	
 	// Handle connections
 	for {
 		conn, err := listener.Accept()
