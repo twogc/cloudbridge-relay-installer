@@ -160,6 +160,7 @@ flowchart TD
 - **📋 Compliance Ready** — GDPR, SOC2, ISO27001, 152-ФЗ
 - **🔍 Real-time Threat Detection** — интеграция с SIEM системами
 - **🔮 Quantum-Resistant Cryptography** — CRYSTALS-Kyber + CRYSTALS-Dilithium для защиты от квантовых угроз
+- **🤖 ИИ-аналитика** — интеллектуальная безопасность с анализом поведения и предиктивным обнаружением угроз
 
 ### 🛡️ **Внутренняя защита сервера (Server-Side Security)**
 
@@ -171,6 +172,15 @@ flowchart TD
 - **📈 Lynis Security Auditing** — регулярный аудит безопасности системы
 - **🔐 Container Security** — защита Docker контейнеров и изоляция процессов
 - **📱 Telegram Alerting** — мгновенные уведомления о событиях безопасности
+
+### 🤖 **ИИ-аналитика и интеллектуальная безопасность**
+
+- **🧠 Анализ поведения** — обнаружение аномалий в реальном времени с помощью машинного обучения
+- **🔮 Предиктивная безопасность** — предотвращение угроз до их возникновения через ИИ-анализ
+- **⚡ Автоматическое реагирование** — мгновенное устранение угроз с помощью ИИ-автоматизации
+- **📊 ИИ-мониторинг** — непрерывный анализ поведения пользователей и сетевого трафика
+- **🎯 Zero Trust + ИИ** — объединение принципов Zero Trust с ИИ-анализом для предиктивного обнаружения
+- **🔄 Адаптивная безопасность** — система, которая учится и адаптируется для защиты вашей организации
 
 #### 🔍 **Детальная архитектура внутренней защиты:**
 
@@ -194,6 +204,12 @@ flowchart TD
 - Sigma Rules: анализ паттернов атак, веб-атак, разведки
 - Suricata IDS: сетевая защита, блокировка malware, DDoS митигация
 
+**ИИ-аналитика и интеллектуальная безопасность:**
+- Machine Learning: анализ поведения пользователей и аномалий
+- Predictive Analytics: предиктивное обнаружение угроз
+- Automated Response: автоматическое блокирование и устранение угроз
+- Behavioral Analysis: непрерывный мониторинг и адаптация
+
 ---
 
 ## 📊 **Сравнение с традиционными решениями**
@@ -204,7 +220,7 @@ flowchart TD
 | **💰 Стоимость внедрения** | ✅ Низкая | 🟡 Средняя | 🔴 Высокая | 🔴 Очень высокая |
 | **🔧 Сложность настройки** | ✅ Минимальная | 🔴 Высокая | 🔴 Высокая | 🔴 Очень высокая |
 | **🌐 Глобальное покрытие** | ✅ Anycast + Edge | 🔴 Ограниченное | 🟡 Региональное | 🟡 Провайдер-зависимое |
-| **🛡️ Безопасность** | ✅ Zero Trust | 🟡 IPSec/L2TP | 🟡 Базовая | 🟡 Сетевая |
+| **🛡️ Безопасность** | ✅ Zero Trust + ИИ | 🟡 IPSec/L2TP | 🟡 Базовая | 🟡 Сетевая |
 | **📈 Масштабируемость** | ✅ Безграничная | 🔴 Ограниченная | 🟡 Средняя | 🟡 Дорогая |
 | **🔄 Отказоустойчивость** | ✅ Mesh Network | 🔴 Single Point | 🟡 Дублирование | 🟡 Резервирование |
 
@@ -229,6 +245,7 @@ flowchart TD
 - **🔐 Zero Trust WireGuard** — cryptographic authentication через Keycloak для peer connections
 - **🏢 VPN Replacement** — direct site-to-site connectivity через WireGuard mesh
 - **🔮 Quantum-Resistant** — post-quantum cryptography для future-proof security
+- **🤖 ИИ-аналитика** — интеллектуальная безопасность с предиктивным обнаружением угроз
 
 ---
 
@@ -720,14 +737,14 @@ cloudbridge-relay/
 1. **🥇 Первые с Quantum-Resistant WireGuard + Enhanced QUIC** в enterprise сегменте
 2. **🥇 WireGuard P2P mesh архитектура** без единых точек отказа
 3. **🥇 Serverless управление** через Cloudflare Workers  
-4. **🥇 Zero Trust WireGuard + Post-Quantum Cryptography** из коробки
+4. **🥇 Zero Trust WireGuard + Post-Quantum Cryptography + ИИ-аналитика** из коробки
 
 ### **🎯 Миссия:**
 > **Сделать корпоративный доступ к ресурсам таким же простым, как подключение к WiFi, но в 10 раз безопаснее и быстрее.**
 
 ---
 
-**CloudBridge Relay v2.2** - Enterprise-grade решение нового поколения с Quantum-Resistant WireGuard P2P Mesh, Enhanced QUIC, мультиарендностью, DDoS защитой и интеграцией с Keycloak для высоконагруженных корпоративных сетей.
+**CloudBridge Relay v2.2** - Enterprise-grade решение нового поколения с Quantum-Resistant WireGuard P2P Mesh, Enhanced QUIC, ИИ-аналитикой, мультиарендностью, DDoS защитой и интеграцией с Keycloak для высоконагруженных корпоративных сетей.
 
 **🚀 Статус**: ✅ Production Ready (Enhanced QUIC)  
 **📦 Версия**: 2.2 с WireGuard P2P Mesh поддержкой  
@@ -740,5 +757,6 @@ cloudbridge-relay/
 **🌐 Quantum-Resistant WireGuard P2P Mesh**: Enterprise VPN replacement с post-quantum cryptography  
 **🔄 Site-to-Site VPN**: Direct connectivity через WireGuard tunnels  
 **🔮 Post-Quantum Cryptography**: CRYSTALS-Kyber + CRYSTALS-Dilithium для future-proof security  
+**🤖 ИИ-аналитика**: Интеллектуальная безопасность с предиктивным обнаружением угроз  
 **🛡️ Server Security**: MITRE ATT&CK, YARA/Sigma rules, Telegram alerting  
 **⚡ Cloudflare Workers**: Serverless управление с edge computing на 330+ локациях
