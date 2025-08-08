@@ -1,9 +1,9 @@
-# Техническое задание: Реализация P2P Network в CloudBridge Relay
+# Техническое задание: Реализация WireGuard P2P Mesh Network в CloudBridge Relay
 
 ## 📋 **Общая информация**
 
 - **Проект**: CloudBridge Relay
-- **Задача**: Интеграция P2P Mesh Network
+- **Задача**: Интеграция WireGuard P2P Mesh Network
 - **Версия**: v2.2
 - **Дата создания**: Январь 2025
 - **Приоритет**: Высокий
@@ -13,32 +13,32 @@
 
 ## 🎯 **Цель проекта**
 
-Интегрировать **P2P Mesh Network** в существующую архитектуру CloudBridge Relay для создания:
+Интегрировать **WireGuard-based P2P Mesh Network** в существующую архитектуру CloudBridge Relay для создания:
 
-- **Прямых server-to-server соединений** с децентрализованной архитектурой
-- **Автоматического peer discovery** и mesh topology management
-- **Интеллектуальной маршрутизации** через оптимальные peer paths
-- **Fault tolerance** с автоматическим failover между peers
-- **Performance optimization** за счет direct peer connections
+- **Site-to-Site VPN замещения** с WireGuard туннелями между relay серверами
+- **Автоматического WireGuard peer discovery** и mesh topology management
+- **Hybrid routing** — Enhanced QUIC поверх WireGuard tunnels для optimal performance
+- **Zero Trust VPN architecture** с автоматическим failover между WireGuard peers
+- **Enterprise VPN replacement** за счет direct WireGuard site-to-site connections
 
 ---
 
 ## 🏗️ **Архитектурная концепция**
 
-### **Принцип "Mesh of Relays"**
+### **Принцип "WireGuard Mesh of Relays"**
 
 ```mermaid
 graph TB
-    subgraph "P2P Mesh Network"
-        R1[Relay Moscow<br/>🇷🇺] <--> R2[Relay SPb<br/>🇷🇺]
-        R1 <--> R3[Relay London<br/>🇬🇧]
-        R1 <--> R4[Relay Frankfurt<br/>🇩🇪]
-        R2 <--> R3
-        R2 <--> R4
-        R3 <--> R4
-        R3 <--> R5[Relay NewYork<br/>🇺🇸]
-        R4 <--> R6[Relay Singapore<br/>🇸🇬]
-        R5 <--> R6
+    subgraph "WireGuard P2P Mesh Network"
+        R1[Relay Moscow<br/>🇷🇺<br/>wg0: 10.100.1.1] -.-> R2[Relay SPb<br/>🇷🇺<br/>wg0: 10.100.1.2]
+        R1 -.-> R3[Relay London<br/>🇬🇧<br/>wg0: 10.100.2.1]
+        R1 -.-> R4[Relay Frankfurt<br/>🇩🇪<br/>wg0: 10.100.2.2]
+        R2 -.-> R3
+        R2 -.-> R4
+        R3 -.-> R4
+        R3 -.-> R5[Relay NewYork<br/>🇺🇸<br/>wg0: 10.100.3.1]
+        R4 -.-> R6[Relay Singapore<br/>🇸🇬<br/>wg0: 10.100.3.2]
+        R5 -.-> R6
         
         style R1 fill:#e1f5fe
         style R2 fill:#e1f5fe
@@ -48,26 +48,38 @@ graph TB
         style R6 fill:#fff3e0
     end
     
-    subgraph "Clients"
+    subgraph "Enhanced QUIC over WireGuard"
+        direction TB
+        EQ1[Enhanced QUIC<br/>Client Traffic]
+        EQ2[Enhanced QUIC<br/>Multi-Tenant Routing]
+        EQ3[Enhanced QUIC<br/>Keycloak Auth]
+    end
+    
+    subgraph "Clients (Public Internet)"
         C1[Client Moscow] --> R1
         C2[Client London] --> R3
         C3[Client New York] --> R5
     end
     
-    subgraph "Corporate Networks"
-        CN1[Corp Network A] --> R2
-        CN2[Corp Network B] --> R4
-        CN3[Corp Network C] --> R6
+    subgraph "Corporate Networks (Site-to-Site)"
+        CN1[Corp Network A<br/>192.168.1.0/24] --> R2
+        CN2[Corp Network B<br/>192.168.2.0/24] --> R4
+        CN3[Corp Network C<br/>192.168.3.0/24] --> R6
     end
+    
+    R1 --> EQ1
+    R3 --> EQ2
+    R5 --> EQ3
 ```
 
-### **Ключевые принципы**
+### **Ключевые принципы WireGuard P2P Mesh**
 
-1. **Hybrid Architecture**: Hub-and-spoke + P2P mesh для оптимальной производительности
-2. **Geographic Optimization**: Использование существующего GeographicRouter для P2P routing
-3. **Enhanced QUIC Integration**: P2P поверх Enhanced QUIC для мультитенантности
-4. **Zero Trust P2P**: Все peer connections через Keycloak authentication
-5. **Intelligent Routing**: Автоматический выбор между hub и P2P paths
+1. **WireGuard Site-to-Site VPN Replacement**: Автоматические WireGuard туннели между relay серверами
+2. **Enhanced QUIC over WireGuard**: Multi-tenant routing поверх secure WireGuard tunnels
+3. **Zero Trust WireGuard Mesh**: Cryptographic key exchange через Keycloak для WireGuard peers
+4. **Hybrid Architecture**: Public Enhanced QUIC + Private WireGuard mesh для optimal security/performance
+5. **Automatic WireGuard Configuration**: Dynamic peer discovery и auto-configuration WireGuard interfaces
+6. **Corporate Network Integration**: Direct site-to-site connectivity через WireGuard без традиционных VPN
 
 ---
 
