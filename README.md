@@ -339,14 +339,40 @@ go test -tags=performance ./tests/
 
 ## 📚 Документация
 
-- [Архитектура Edge Relay с Anycast](docs/EDGE_ARCHITECTURE.md)
-- [Архитектура и сценарии](docs/VISION_AND_FUTURE_CAPABILITIES.md)
-- [Zero Trust и безопасность](docs/zero_trust_architecture.md)
-- [Интеграция с Keycloak и AD/LDAP](docs/integration/keycloak_integration.md)
-- [API Reference](docs/guides/api_reference.md)
-- [Мультиарендность и IAM](docs/reports/tech_task_keycloak_multitenancy.md)
-- [Мониторинг и алерты](docs/guides/dashboard_guide.md)
-- [Интеграция с ERP/Server Client](docs/integration/ARCHITECTURE.md)
+### 🏗️ Архитектура и планирование
+- [📖 Архитектура Edge Relay с Anycast](docs/EDGE_ARCHITECTURE.md)
+- [🔮 Архитектура и сценарии](docs/VISION_AND_FUTURE_CAPABILITIES.md)
+- [🛡️ Zero Trust и безопасность](docs/zero_trust_architecture.md)
+- [📋 Статус документации](docs/DOCUMENTATION_STATUS.md)
+
+### 🔗 Интеграции
+- [🔑 Enhanced QUIC интеграция](docs/integration/ENHANCED_QUIC_INTEGRATION_SUMMARY.md)
+- [🔒 Интеграция с Keycloak](docs/integration/keycloak_integration.md)
+- [🏢 Интеграция с AD/LDAP](docs/integration/ldap_ad_integration_technical_specification.md)
+- [🏗️ Архитектура интеграций](docs/integration/ARCHITECTURE.md)
+- [🌐 Keycloak Edge Update](docs/integration/KEYCLOAK_EDGE_UPDATE.md)
+
+### 📖 Руководства
+- [🏥 Health Check Guide](docs/guides/README_HEALTH.md)
+- [🔐 Tokens Guide](docs/keycloak_tokens_guide.md)
+- [📊 ML Anomaly Detection](docs/ml_anomaly_detection.md)
+
+### 🔒 Безопасность
+- [🛡️ Security Monitoring](docs/security/README.md)
+- [📋 Security Audit Guide](docs/security/SECURITY_AUDIT_GUIDE.md)
+- [🔧 Security Hardening](docs/security/security_hardening_checklist.md)
+
+### 📝 Changelog и отчеты
+- [📋 Основной Changelog](docs/changelog/CHANGELOG.md)
+- [📊 Stage 4 Summary](docs/changelog/STAGE4_SUMMARY.md)
+- [📈 Отчеты разработки](docs/reports/)
+
+### 🚀 Enhanced QUIC Features
+- [⚡ Enhanced QUIC Implementation](docs/integration/ENHANCED_QUIC_IMPLEMENTATION_COMPLETE.md)
+- [📋 Integration Task](docs/integration/INTEGRATION_TASK_ENHANCED_QUIC.md)
+- [🔒 Multi-tenancy поддержка](docs/integration/ENHANCED_QUIC_INTEGRATION_COMPLETE.md)
+- [🛡️ DDoS Protection](docs/integration/ENHANCED_QUIC_INTEGRATION_COMPLETE.md)
+- [🌍 Geographic Routing](docs/integration/ENHANCED_QUIC_INTEGRATION_COMPLETE.md)
 
 ---
 
