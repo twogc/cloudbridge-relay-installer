@@ -30,6 +30,12 @@ type QUICConnection struct {
 	bytesSent     int64
 	streamCount   int32
 	lastActivity  time.Time
+	
+	// Enhanced QUIC поддержка
+	enhancedConn   *EnhancedConnection
+	tenantID       string
+	enhancedConfig *EnhancedConfig
+	enhancedMode   bool
 }
 
 // Stream represents a QUIC stream
@@ -58,6 +64,33 @@ func NewQUICConnection(config *Config, logger *zap.Logger) *QUICConnection {
 		ctx:        ctx,
 		cancel:     cancel,
 		lastActivity: time.Now(),
+		enhancedMode: false, // По умолчанию обычный режим
+	}
+}
+
+// NewEnhancedQUICConnection создает новое QUIC соединение с Enhanced функциями
+func NewEnhancedQUICConnection(config *Config, enhancedConfig *EnhancedConfig, tenantID string, logger *zap.Logger) *QUICConnection {
+	if config == nil {
+		config = DefaultConfig()
+	}
+	
+	if enhancedConfig == nil {
+		enhancedConfig = DefaultEnhancedConfig()
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	return &QUICConnection{
+		streams:        make(map[uint64]*Stream),
+		config:         config,
+		tlsConfig:      config.GetTLSConfig(),
+		logger:         logger,
+		ctx:            ctx,
+		cancel:         cancel,
+		lastActivity:   time.Now(),
+		tenantID:       tenantID,
+		enhancedConfig: enhancedConfig,
+		enhancedMode:   true,
 	}
 }
 
@@ -65,6 +98,17 @@ func NewQUICConnection(config *Config, logger *zap.Logger) *QUICConnection {
 func (qc *QUICConnection) Dial(ctx context.Context, addr string) error {
 	qc.logger.Info("Dialing QUIC connection", zap.String("addr", addr))
 
+	// Если включен Enhanced режим, используем Enhanced соединение
+	if qc.enhancedMode && qc.enhancedConfig != nil {
+		return qc.dialEnhanced(ctx, addr)
+	}
+
+	// Обычное QUIC соединение
+	return qc.dialRegular(ctx, addr)
+}
+
+// dialRegular устанавливает обычное QUIC соединение
+func (qc *QUICConnection) dialRegular(ctx context.Context, addr string) error {
 	// Create QUIC transport
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
@@ -99,6 +143,33 @@ func (qc *QUICConnection) Dial(ctx context.Context, addr string) error {
 
 	qc.logger.Info("QUIC connection established",
 		zap.String("addr", addr),
+	)
+
+	// Start stream management
+	go qc.manageStreams()
+
+	return nil
+}
+
+// dialEnhanced устанавливает Enhanced QUIC соединение
+func (qc *QUICConnection) dialEnhanced(ctx context.Context, addr string) error {
+	qc.logger.Info("Dialing Enhanced QUIC connection", 
+		zap.String("addr", addr),
+		zap.String("tenant_id", qc.tenantID),
+	)
+
+	// Создаем Enhanced соединение
+	enhancedConn, err := DialWithTenant("udp", addr, qc.tenantID, qc.enhancedConfig)
+	if err != nil {
+		return fmt.Errorf("failed to establish Enhanced QUIC connection: %v", err)
+	}
+
+	qc.enhancedConn = enhancedConn
+	qc.lastActivity = time.Now()
+
+	qc.logger.Info("Enhanced QUIC connection established",
+		zap.String("addr", addr),
+		zap.String("tenant_id", qc.tenantID),
 	)
 
 	// Start stream management
@@ -238,7 +309,14 @@ func (qc *QUICConnection) Close() error {
 		}
 	}
 
-	// Close connection
+	// Close Enhanced connection if available
+	if qc.enhancedConn != nil {
+		if err := qc.enhancedConn.Close(); err != nil {
+			qc.logger.Error("Error closing Enhanced QUIC connection", zap.Error(err))
+		}
+	}
+
+	// Close regular connection
 	if qc.conn != nil {
 		if err := qc.conn.CloseWithError(0, "connection closed"); err != nil {
 			qc.logger.Error("Error closing QUIC connection", zap.Error(err))
@@ -267,13 +345,23 @@ func (qc *QUICConnection) GetStats() map[string]interface{} {
 	qc.mu.RLock()
 	defer qc.mu.RUnlock()
 
-	return map[string]interface{}{
+	stats := map[string]interface{}{
 		"bytes_received":   qc.bytesReceived,
 		"bytes_sent":       qc.bytesSent,
 		"stream_count":     qc.streamCount,
 		"last_activity":    qc.lastActivity,
 		"closed":           qc.closed,
+		"enhanced_mode":    qc.enhancedMode,
+		"tenant_id":        qc.tenantID,
 	}
+
+	// Добавляем Enhanced статистику, если доступна
+	if qc.enhancedConn != nil {
+		enhancedStats := qc.enhancedConn.GetStats()
+		stats["enhanced_stats"] = enhancedStats
+	}
+
+	return stats
 }
 
 // Stream methods
@@ -284,7 +372,13 @@ func (s *Stream) Read(p []byte) (n int, err error) {
 	s.lastActivity = time.Now()
 	s.mu.Unlock()
 
-	n, err = (*s.stream).Read(p)
+	// Используем Enhanced соединение, если доступно
+	if s.conn.enhancedMode && s.conn.enhancedConn != nil {
+		n, err = s.conn.enhancedConn.Read(p)
+	} else {
+		n, err = (*s.stream).Read(p)
+	}
+	
 	if err != nil {
 		if err == io.EOF {
 			if closeErr := s.Close(); closeErr != nil {
@@ -309,7 +403,13 @@ func (s *Stream) Write(p []byte) (n int, err error) {
 	s.lastActivity = time.Now()
 	s.mu.Unlock()
 
-	n, err = (*s.stream).Write(p)
+	// Используем Enhanced соединение, если доступно
+	if s.conn.enhancedMode && s.conn.enhancedConn != nil {
+		n, err = s.conn.enhancedConn.Write(p)
+	} else {
+		n, err = (*s.stream).Write(p)
+	}
+	
 	if err != nil {
 		return n, err
 	}
@@ -346,4 +446,64 @@ func (s *Stream) IsClosed() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.closed
+}
+
+// CreateEnhancedConnection создает Enhanced соединение для существующего QUIC соединения
+func (qc *QUICConnection) CreateEnhancedConnection(tenantID string, config *EnhancedConfig) error {
+	qc.mu.Lock()
+	defer qc.mu.Unlock()
+
+	if qc.enhancedConn != nil {
+		return fmt.Errorf("Enhanced connection already exists")
+	}
+
+	if config == nil {
+		config = DefaultEnhancedConfig()
+	}
+
+	// Настраиваем Enhanced конфигурацию на основе обычной
+	config.MaxStreams = qc.config.MaxStreams
+	config.IdleTimeout = qc.config.IdleTimeout
+	config.HandshakeTimeout = qc.config.HandshakeTimeout
+	config.MaxIncomingStreams = qc.config.MaxIncomingStreams
+	config.MaxIncomingUniStreams = qc.config.MaxIncomingUniStreams
+	config.TLSConfig = qc.tlsConfig
+
+	// Создаем Enhanced соединение
+	enhancedConn, err := DialWithTenant("udp", qc.conn.RemoteAddr().String(), tenantID, config)
+	if err != nil {
+		return fmt.Errorf("failed to create Enhanced connection: %v", err)
+	}
+
+	qc.enhancedConn = enhancedConn
+	qc.tenantID = tenantID
+	qc.enhancedConfig = config
+	qc.enhancedMode = true
+
+	qc.logger.Info("Enhanced QUIC connection created",
+		zap.String("tenant_id", tenantID),
+	)
+
+	return nil
+}
+
+// GetEnhancedConnection возвращает Enhanced соединение
+func (qc *QUICConnection) GetEnhancedConnection() *EnhancedConnection {
+	qc.mu.RLock()
+	defer qc.mu.RUnlock()
+	return qc.enhancedConn
+}
+
+// IsEnhancedMode проверяет, включен ли Enhanced режим
+func (qc *QUICConnection) IsEnhancedMode() bool {
+	qc.mu.RLock()
+	defer qc.mu.RUnlock()
+	return qc.enhancedMode
+}
+
+// GetTenantID возвращает ID тенанта
+func (qc *QUICConnection) GetTenantID() string {
+	qc.mu.RLock()
+	defer qc.mu.RUnlock()
+	return qc.tenantID
 } 

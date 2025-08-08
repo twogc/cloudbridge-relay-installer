@@ -494,4 +494,23 @@ func (cb *CircuitBreaker) GetMetrics() map[string]interface{} {
 		"last_failure":       cb.lastFailure,
 		"last_success":       cb.lastSuccess,
 	}
+}
+
+// GetPrometheusMetrics returns metrics in Prometheus format
+func (cb *CircuitBreaker) GetPrometheusMetrics() map[string]float64 {
+	cb.mu.RLock()
+	defer cb.mu.RUnlock()
+
+	return map[string]float64{
+		"circuit_breaker_state":           float64(cb.state),
+		"circuit_breaker_failure_count":   float64(cb.failureCount),
+		"circuit_breaker_success_count":   float64(cb.successCount),
+		"circuit_breaker_total_requests":  float64(cb.totalRequests),
+		"circuit_breaker_total_failures":  float64(cb.totalFailures),
+		"circuit_breaker_total_successes": float64(cb.totalSuccesses),
+		"circuit_breaker_total_timeouts":  float64(cb.totalTimeouts),
+		"circuit_breaker_state_changes":   float64(cb.stateChanges),
+		"circuit_breaker_success_rate":    cb.calculateSuccessRate(),
+		"circuit_breaker_recovery_progress": cb.GetRecoveryProgress(),
+	}
 } 

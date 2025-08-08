@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -47,6 +48,9 @@ type ConnectionPool struct {
 	gracefulShutdown     *GracefulShutdownManager
 	lifecycleManager     *ConnectionLifecycleManager
 	waitGroupManager     *WaitGroupManager
+	
+	// HTTP/2 connection reuse
+	http2Reuse *HTTP2ConnectionReuse
 }
 
 // LoadBalancer interface for connection load balancing
@@ -192,6 +196,11 @@ func NewConnectionPool(
 	// Create wait group manager
 	waitGroupManager := NewWaitGroupManager(logger)
 	
+	// Create HTTP/2 connection reuse
+	http2Config := DefaultHTTP2ReuseConfig()
+	http2Config.Logger = logger
+	http2Reuse := NewHTTP2ConnectionReuse(http2Config)
+	
 	pool := &ConnectionPool{
 		connections:     make(map[string]*PooledConnection),
 		balancer:        NewRoundRobinBalancer(),
@@ -207,6 +216,7 @@ func NewConnectionPool(
 		gracefulShutdown: gracefulShutdown,
 		lifecycleManager: lifecycleManager,
 		waitGroupManager: waitGroupManager,
+		http2Reuse:      http2Reuse,
 	}
 	
 	// Start cleanup goroutine
@@ -422,6 +432,13 @@ func (cp *ConnectionPool) Close() error {
 	
 	cp.connections = make(map[string]*PooledConnection)
 	
+	// Close HTTP/2 connection reuse
+	if cp.http2Reuse != nil {
+		if err := cp.http2Reuse.Close(); err != nil {
+			cp.logger.Error("Error closing HTTP/2 connection reuse", zap.Error(err))
+		}
+	}
+	
 	cp.logger.Info("Connection pool closed")
 	return nil
 }
@@ -572,4 +589,19 @@ func (cp *ConnectionPool) GetRetryStats() map[string]interface{} {
 		}
 	}
 	return map[string]interface{}{}
+}
+
+// GetHTTP2Connection returns an HTTP/2 connection for the specified address
+func (cp *ConnectionPool) GetHTTP2Connection(addr string) (*http.Client, error) {
+	return cp.http2Reuse.GetConnection(addr)
+}
+
+// ReturnHTTP2Connection returns an HTTP/2 connection to the pool
+func (cp *ConnectionPool) ReturnHTTP2Connection(addr string, client *http.Client) {
+	cp.http2Reuse.ReturnConnection(addr, client)
+}
+
+// GetHTTP2Stats returns HTTP/2 connection reuse statistics
+func (cp *ConnectionPool) GetHTTP2Stats() map[string]interface{} {
+	return cp.http2Reuse.GetStats()
 } 

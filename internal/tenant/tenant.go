@@ -10,6 +10,7 @@ import (
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
+	"github.com/twogc/cloudbridge-relay-installer/internal/quic"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
 	"go.uber.org/zap"
 )
@@ -47,6 +48,10 @@ type Manager struct {
 	mu            sync.RWMutex
 	ctx           context.Context
 	cancel        context.CancelFunc
+	
+	// Enhanced QUIC интеграция
+	enhancedTenantManager *quic.TenantManager
+	enhancedEnabled       bool
 }
 
 // NewManager creates a new tenant manager
@@ -60,7 +65,28 @@ func NewManager(logger *logger.Logger, metrics *metrics.Metrics) *Manager {
 		metrics:      metrics,
 		ctx:          ctx,
 		cancel:       cancel,
+		enhancedEnabled: false, // По умолчанию отключено
 	}
+}
+
+// NewManagerWithEnhanced создает новый tenant manager с Enhanced QUIC поддержкой
+func NewManagerWithEnhanced(logger *logger.Logger, metrics *metrics.Metrics) *Manager {
+	ctx, cancel := context.WithCancel(context.Background())
+	
+	m := &Manager{
+		tenants:      make(map[string]*Tenant),
+		tenantLimits: make(map[string]*TenantLimits),
+		logger:       logger,
+		metrics:      metrics,
+		ctx:          ctx,
+		cancel:       cancel,
+		enhancedEnabled: true,
+	}
+	
+	// Инициализируем Enhanced TenantManager
+	m.InitEnhancedTenantManager()
+	
+	return m
 }
 
 // CreateTenant creates a new tenant
@@ -86,11 +112,19 @@ func (m *Manager) CreateTenant(id, name string, limits *TenantLimits) error {
 	m.tenants[id] = tenant
 	m.tenantLimits[id] = limits
 
+	// Добавляем в Enhanced TenantManager, если включен
+	if m.enhancedEnabled && m.enhancedTenantManager != nil {
+		// Конвертируем лимиты в формат Enhanced QUIC
+		bandwidthLimit := int64(limits.MaxConnections * 1024 * 1024) // 1MB на соединение
+		m.enhancedTenantManager.AddTenant(id, bandwidthLimit, limits.MaxConnections)
+	}
+
 	m.logger.Info("Tenant created",
 		zap.String("tenant_id", id),
 		zap.String("tenant_name", name),
 		zap.Int("max_tunnels", limits.MaxTunnels),
 		zap.Int("max_connections", limits.MaxConnections),
+		zap.Bool("enhanced_enabled", m.enhancedEnabled),
 	)
 
 	return nil
@@ -308,4 +342,68 @@ func (m *Manager) GetTenantCount() int {
 // SetTunnelManager sets the tunnel manager for tenant-specific tunnel tracking
 func (m *Manager) SetTunnelManager(tm *tunnel.Manager) {
 	m.tunnelManager = tm
+}
+
+// InitEnhancedTenantManager инициализирует Enhanced TenantManager
+func (m *Manager) InitEnhancedTenantManager() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	
+	m.enhancedTenantManager = quic.NewTenantManager()
+	m.enhancedEnabled = true
+	
+	// Синхронизируем существующих тенантов с Enhanced
+	for id, limits := range m.tenantLimits {
+		bandwidthLimit := int64(limits.MaxConnections * 1024 * 1024) // 1MB на соединение
+		m.enhancedTenantManager.AddTenant(id, bandwidthLimit, limits.MaxConnections)
+	}
+	
+	m.logger.Info("Enhanced TenantManager initialized",
+		zap.Int("synced_tenants", len(m.tenants)),
+	)
+}
+
+// GetEnhancedTenantManager возвращает Enhanced TenantManager
+func (m *Manager) GetEnhancedTenantManager() *quic.TenantManager {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.enhancedTenantManager
+}
+
+// IsEnhancedEnabled проверяет, включен ли Enhanced режим
+func (m *Manager) IsEnhancedEnabled() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.enhancedEnabled
+}
+
+// EnableEnhanced включает Enhanced режим
+func (m *Manager) EnableEnhanced() {
+	if !m.enhancedEnabled {
+		m.InitEnhancedTenantManager()
+	}
+}
+
+// DisableEnhanced отключает Enhanced режим
+func (m *Manager) DisableEnhanced() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	
+	m.enhancedEnabled = false
+	m.enhancedTenantManager = nil
+	
+	m.logger.Info("Enhanced mode disabled")
+}
+
+// CheckEnhancedTenantLimits проверяет лимиты через Enhanced TenantManager
+func (m *Manager) CheckEnhancedTenantLimits(tenantID string) error {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	
+	if !m.enhancedEnabled || m.enhancedTenantManager == nil {
+		// Fallback к обычной проверке
+		return m.CheckTenantLimits(tenantID, 0, 0)
+	}
+	
+	return m.enhancedTenantManager.CheckTenantLimits(tenantID)
 } 

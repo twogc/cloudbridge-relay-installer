@@ -176,7 +176,23 @@
       "max_size": 100,
       "idle_timeout": "90s",
       "max_idle": 10,
-      "max_lifetime": "1h"
+      "max_lifetime": "1h",
+      "retry": {
+        "max_retries": 5,
+        "base_time": "1s",
+        "max_delay": "30s",
+        "jitter": 0.1,
+        "retry_forever": false
+      },
+      "graceful_shutdown": {
+        "grace_period": "30s",
+        "max_wait_time": "60s"
+      },
+      "http2_reuse": {
+        "max_connections": 100,
+        "max_idle_time": "90s",
+        "cleanup_interval": "60s"
+      }
     },
     "rules": [
       {

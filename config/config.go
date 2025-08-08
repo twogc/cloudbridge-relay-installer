@@ -324,12 +324,32 @@ type Config struct {
 			InsecureSkipVerify bool     `json:"insecure_skip_verify"`
 		} `json:"tls"`
 		
-		ConnectionPool struct {
-			MaxSize     int           `json:"max_size"`
-			IdleTimeout time.Duration `json:"idle_timeout"`
-			MaxIdle     int           `json:"max_idle"`
-			MaxLifetime time.Duration `json:"max_lifetime"`
-		} `json:"connection_pool"`
+			ConnectionPool struct {
+		MaxSize     int           `json:"max_size"`
+		IdleTimeout time.Duration `json:"idle_timeout"`
+		MaxIdle     int           `json:"max_idle"`
+		MaxLifetime time.Duration `json:"max_lifetime"`
+		
+		// Enhanced connection management
+		Retry struct {
+			MaxRetries   uint          `json:"max_retries"`
+			BaseTime     time.Duration `json:"base_time"`
+			MaxDelay     time.Duration `json:"max_delay"`
+			Jitter       float64       `json:"jitter"`
+			RetryForever bool          `json:"retry_forever"`
+		} `json:"retry"`
+		
+		GracefulShutdown struct {
+			GracePeriod time.Duration `json:"grace_period"`
+			MaxWaitTime time.Duration `json:"max_wait_time"`
+		} `json:"graceful_shutdown"`
+		
+		HTTP2Reuse struct {
+			MaxConnections  int           `json:"max_connections"`
+			MaxIdleTime     time.Duration `json:"max_idle_time"`
+			CleanupInterval time.Duration `json:"cleanup_interval"`
+		} `json:"http2_reuse"`
+	} `json:"connection_pool"`
 		
 		Rules []struct {
 			Hostname string `json:"hostname"`
