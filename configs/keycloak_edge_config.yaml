@@ -1,0 +1,155 @@
+# Конфигурация для интеграции с Keycloak на edge.2gc.ru
+# Configuration for Keycloak integration with edge.2gc.ru
+
+keycloak:
+  # Основные настройки подключения к Keycloak
+  server_url: "https://edge.2gc.ru"
+  realm: "cloudbridge"
+  
+  # Клиент для Enhanced QUIC
+  client_id: "enhanced-quic-client"
+  client_secret: "${KEYCLOAK_ENHANCED_QUIC_CLIENT_SECRET}"
+  
+  # Административные учетные данные
+  admin_username: "${KEYCLOAK_ADMIN_USERNAME}"
+  admin_password: "${KEYCLOAK_ADMIN_PASSWORD}"
+  
+  # Настройки аутентификации
+  authentication:
+    # Валидация токенов
+    token_validation:
+      enabled: true
+      cache_ttl: 300s  # 5 минут кэширования токенов
+      verify_signature: true
+      verify_expiration: true
+      verify_audience: true
+      
+    # Настройки JWT
+    jwt:
+      algorithm: "RS256"
+      issuer: "https://edge.2gc.ru/realms/cloudbridge"
+      audience: "enhanced-quic-client"
+      
+    # Обновление токенов
+    token_refresh:
+      enabled: true
+      refresh_threshold: 60s  # Обновлять за 60 секунд до истечения
+      
+  # Настройки соединения
+  connection:
+    timeout: 10s
+    retry_attempts: 3
+    retry_delay: 2s
+    
+    # Пул соединений
+    connection_pool:
+      max_idle_connections: 10
+      max_connections_per_host: 20
+      idle_connection_timeout: 90s
+      
+  # Настройки безопасности
+  security:
+    # TLS настройки
+    tls:
+      verify_certificate: true
+      min_version: "1.2"
+      
+    # Проверка HTTPS
+    verify_https: true
+    
+  # Логирование Keycloak операций
+  logging:
+    level: "info"
+    log_requests: false  # Не логировать запросы в production
+    log_responses: false # Не логировать ответы в production
+    log_errors: true
+    
+  # Мониторинг и метрики
+  monitoring:
+    enabled: true
+    metrics_prefix: "enhanced_quic_keycloak"
+    
+    # Health check для Keycloak
+    health_check:
+      enabled: true
+      endpoint: "/realms/cloudbridge/.well-known/openid_configuration"
+      interval: 30s
+      timeout: 5s
+      
+  # Кэширование
+  caching:
+    enabled: true
+    
+    # Кэш токенов
+    token_cache:
+      ttl: 300s
+      max_entries: 10000
+      cleanup_interval: 60s
+      
+    # Кэш пользователей
+    user_cache:
+      ttl: 600s  # 10 минут
+      max_entries: 5000
+      cleanup_interval: 120s
+      
+    # Кэш ролей
+    role_cache:
+      ttl: 1800s  # 30 минут
+      max_entries: 1000
+      cleanup_interval: 300s
+
+# Переменные окружения для production
+# Environment variables for production
+env_variables:
+  required:
+    - KEYCLOAK_ENHANCED_QUIC_CLIENT_SECRET
+    - KEYCLOAK_ADMIN_USERNAME
+    - KEYCLOAK_ADMIN_PASSWORD
+    
+  optional:
+    - KEYCLOAK_SERVER_URL  # Переопределить server_url
+    - KEYCLOAK_REALM       # Переопределить realm
+    - KEYCLOAK_CLIENT_ID   # Переопределить client_id
+
+# Примеры использования
+# Usage examples
+examples:
+  # Базовая аутентификация
+  basic_auth: |
+    curl -X POST "https://edge.2gc.ru/realms/cloudbridge/protocol/openid-connect/token" \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "grant_type=client_credentials" \
+      -d "client_id=enhanced-quic-client" \
+      -d "client_secret=${KEYCLOAK_ENHANCED_QUIC_CLIENT_SECRET}"
+      
+  # Проверка конфигурации
+  check_config: |
+    curl -s "https://edge.2gc.ru/realms/cloudbridge/.well-known/openid_configuration" | jq .
+    
+  # Проверка здоровья
+  health_check: |
+    curl -s "https://edge.2gc.ru/realms/cloudbridge" -o /dev/null -w "%{http_code}"
+
+# Troubleshooting
+troubleshooting:
+  common_issues:
+    - issue: "Connection timeout"
+      solution: "Проверьте доступность edge.2gc.ru и настройки firewall"
+      
+    - issue: "Invalid client credentials"
+      solution: "Проверьте KEYCLOAK_ENHANCED_QUIC_CLIENT_SECRET в переменных окружения"
+      
+    - issue: "Token validation failed"
+      solution: "Проверьте настройки realm и client_id в Keycloak"
+      
+    - issue: "Certificate verification failed"
+      solution: "Убедитесь что SSL сертификат edge.2gc.ru валиден"
+
+# Рекомендации по безопасности
+security_recommendations:
+  - "Используйте сильные пароли для admin аккаунта"
+  - "Регулярно ротируйте client_secret"
+  - "Включите логирование безопасности в Keycloak"
+  - "Используйте HTTPS для всех соединений"
+  - "Настройте правильные CORS политики"
+  - "Ограничьте сетевой доступ к Keycloak серверу"

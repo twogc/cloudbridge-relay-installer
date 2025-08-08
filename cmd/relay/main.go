@@ -19,10 +19,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/twogc/cloudbridge-relay-installer/config"
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
+	"github.com/twogc/cloudbridge-relay-installer/internal/balancer"
 	"github.com/twogc/cloudbridge-relay-installer/internal/circuitbreaker"
 	"github.com/twogc/cloudbridge-relay-installer/internal/health"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
+	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
 	"go.uber.org/zap"
 )
@@ -78,6 +81,14 @@ type Server struct {
 	// Zero Trust components
 	circuitBreaker *circuitbreaker.CircuitBreaker
 	healthChecker  *health.HealthChecker
+	
+	// Enhanced QUIC components
+	enhancedQUICManager   *EnhancedQUICManager
+	tenantManager         *tenant.Manager
+	loadBalancer          *balancer.Balancer
+	ipRateLimit           *ratelimit.IPLimiter
+	enhancedKeycloakAuth  *auth.EnhancedKeycloakAuth
+	enhancedEnabled       bool
 	
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -181,17 +192,75 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		metricsServer = metrics.NewServer(fmt.Sprintf(":%d", cfg.Metrics.Port), cfg.Metrics.Path)
 	}
 	
+	// Initialize Enhanced QUIC components
+	enhancedEnabled := false // Можно добавить в конфигурацию
+	var enhancedQUICManager *EnhancedQUICManager
+	var tenantMgr *tenant.Manager
+	var loadBal *balancer.Balancer
+	var ipRateLimit *ratelimit.IPLimiter
+	var enhancedKeycloakAuth *auth.EnhancedKeycloakAuth
+	
+	if enhancedEnabled {
+		// Конвертируем logger.Logger в *zap.Logger для Enhanced компонентов
+		zapLogger := zap.NewNop() // Fallback
+		
+		// Инициализируем Enhanced QUIC Manager
+		enhancedQUICManager = NewEnhancedQUICManager(zapLogger)
+		
+		// Инициализируем дополнительные компоненты для Enhanced режима
+		tenantMgr = tenant.NewManagerWithEnhanced(loggerInstance, nil)
+		loadBal = balancer.NewBalancerWithEnhanced()
+		ipRateLimit = ratelimit.NewIPLimiterWithEnhanced(100.0, 1000) // 100 req/sec, burst 1000
+		
+		// Инициализируем Enhanced Keycloak Auth
+		keycloakConfig := &auth.KeycloakConfig{
+			ServerURL:    "https://edge.2gc.ru",
+			Realm:        "cloudbridge",
+			ClientID:     "quic-client",
+			ClientSecret: "secret",
+		}
+		enhancedKeycloakAuth = auth.NewEnhancedKeycloakAuth(keycloakConfig, zapLogger)
+		
+		// Настраиваем интеграции
+		if err := enhancedQUICManager.SetupIntegrations(tenantMgr, loadBal, ipRateLimit, enhancedKeycloakAuth); err != nil {
+			loggerInstance.Error("Failed to setup Enhanced QUIC integrations", zap.Error(err))
+			enhancedEnabled = false
+		} else {
+			if err := enhancedQUICManager.Initialize(); err != nil {
+				loggerInstance.Error("Failed to initialize Enhanced QUIC", zap.Error(err))
+				enhancedEnabled = false
+			} else {
+				loggerInstance.Info("Enhanced QUIC initialized successfully")
+			}
+		}
+	} else {
+		// Инициализируем обычные компоненты
+		tenantMgr = tenant.NewManager(loggerInstance, nil)
+		loadBal = balancer.NewBalancer()
+		ipRateLimit = ratelimit.NewIPLimiter(100.0, 1000)
+		enhancedKeycloakAuth = auth.NewKeycloakAuthCompatible(&auth.KeycloakConfig{
+			ServerURL: "https://edge.2gc.ru",
+			Realm:     "cloudbridge",
+		}, zap.NewNop())
+	}
+	
 	return &Server{
-		config:         cfg,
-		logger:         loggerInstance,
-		tunnelManager:  tunnelManager,
-		metricsServer:  metricsServer,
-		authAdapter:    authAdapter,
-		circuitBreaker: circuitBreaker,
-		healthChecker:  healthChecker,
-		ctx:            ctx,
-		cancel:         cancel,
-		startTime:      time.Now(),
+		config:                cfg,
+		logger:                loggerInstance,
+		tunnelManager:         tunnelManager,
+		metricsServer:         metricsServer,
+		authAdapter:           authAdapter,
+		circuitBreaker:        circuitBreaker,
+		healthChecker:         healthChecker,
+		enhancedQUICManager:   enhancedQUICManager,
+		tenantManager:         tenantMgr,
+		loadBalancer:          loadBal,
+		ipRateLimit:           ipRateLimit,
+		enhancedKeycloakAuth:  enhancedKeycloakAuth,
+		enhancedEnabled:       enhancedEnabled,
+		ctx:                   ctx,
+		cancel:                cancel,
+		startTime:             time.Now(),
 	}, nil
 }
 
@@ -265,6 +334,20 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 // processConnection processes a connection
 func (s *Server) processConnection(conn net.Conn) error {
+    // Получаем IP клиента
+    clientIP := conn.RemoteAddr().String()
+    if tcpAddr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+        clientIP = tcpAddr.IP.String()
+    }
+    
+    // Проверяем rate limiting через Enhanced QUIC или обычный IP rate limiter
+    if s.ipRateLimit != nil {
+        if !s.ipRateLimit.Allow(clientIP) {
+            s.logger.Warn("Rate limit exceeded", zap.String("client_ip", clientIP))
+            return fmt.Errorf("rate limit exceeded for IP %s", clientIP)
+        }
+    }
+    
     reader := bufio.NewReader(conn)
     writer := bufio.NewWriter(conn)
 
@@ -377,8 +460,26 @@ func (s *Server) processConnection(conn net.Conn) error {
     } else {
         tokenLog = token
     }
-    s.logger.Info("Token accepted (validation disabled)", zap.String("token", tokenLog))
-    authAttemptsTotal.WithLabelValues("success", "test").Inc()
+    
+    // Проверяем через Enhanced Keycloak Auth, если включен
+    if s.enhancedEnabled && s.enhancedKeycloakAuth != nil {
+        if isValid, err := s.enhancedKeycloakAuth.ValidateTokenEnhanced(token); err != nil || !isValid {
+            resp := map[string]interface{}{
+                "type":    "auth_response",
+                "status":  "error",
+                "message": "Enhanced authentication failed: " + err.Error(),
+            }
+            writeJSON(writer, resp)
+            s.logger.Warn("Enhanced auth failed", zap.Error(err), zap.Bool("is_valid", isValid))
+            authAttemptsTotal.WithLabelValues("failed", "enhanced").Inc()
+            return nil
+        }
+        s.logger.Info("Enhanced token validation successful", zap.String("token", tokenLog))
+        authAttemptsTotal.WithLabelValues("success", "enhanced").Inc()
+    } else {
+        s.logger.Info("Token accepted (validation disabled)", zap.String("token", tokenLog))
+        authAttemptsTotal.WithLabelValues("success", "test").Inc()
+    }
     
     // Можно добавить валидацию токена
     respAuth := map[string]interface{}{
@@ -407,21 +508,87 @@ func (s *Server) processConnection(conn net.Conn) error {
         }
         msgType, _ = msg["type"].(string)
         if msgType == "tunnel_info" {
-            // Можно добавить обработку параметров туннеля
+            // Получаем параметры туннеля
+            localPort, _ := msg["local_port"]
+            remoteHost, _ := msg["remote_host"].(string)
+            remotePort, _ := msg["remote_port"]
+            protocol, _ := msg["protocol"].(string)
+            tenantID, _ := msg["tenant_id"].(string)
+            
+            // Если tenant_id не указан, используем "default"
+            if tenantID == "" {
+                tenantID = "default"
+            }
+            
+            // Проверяем лимиты тенанта через Enhanced QUIC
+            if s.enhancedEnabled && s.enhancedQUICManager != nil {
+                if err := s.enhancedQUICManager.ValidateConnection(clientIP, tenantID, token); err != nil {
+                    respTunnel := map[string]interface{}{
+                        "type":       "tunnel_response",
+                        "status":     "error",
+                        "message":    "Enhanced validation failed: " + err.Error(),
+                    }
+                    writeJSON(writer, respTunnel)
+                    s.logger.Warn("Enhanced tunnel validation failed", 
+                        zap.String("tenant_id", tenantID),
+                        zap.String("client_ip", clientIP),
+                        zap.Error(err),
+                    )
+                    tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+                    continue
+                }
+                
+                // Получаем оптимальный сервер через Enhanced Geographic Router
+                if targetServer, err := s.enhancedQUICManager.GetServerByGeo(clientIP); err == nil {
+                    s.logger.Info("Enhanced geographic routing",
+                        zap.String("client_ip", clientIP),
+                        zap.String("target_server", targetServer),
+                    )
+                }
+            }
+            
+            // Проверяем лимиты через обычный Tenant Manager
+            if s.tenantManager != nil {
+                if err := s.tenantManager.CheckTenantLimits(tenantID, 1, 1); err != nil {
+                    respTunnel := map[string]interface{}{
+                        "type":       "tunnel_response",
+                        "status":     "error",
+                        "message":    "Tenant limits exceeded: " + err.Error(),
+                    }
+                    writeJSON(writer, respTunnel)
+                    s.logger.Warn("Tenant limits exceeded", 
+                        zap.String("tenant_id", tenantID),
+                        zap.Error(err),
+                    )
+                    tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+                    continue
+                }
+                
+                // Обновляем активность тенанта
+                s.tenantManager.UpdateTenantActivity(tenantID)
+            }
+            
             respTunnel := map[string]interface{}{
                 "type":       "tunnel_response",
                 "status":     "ok",
-                "tunnel_id":  "tunnel_001",
-                "local_port": msg["local_port"],
-                "remote_host": msg["remote_host"],
-                "remote_port": msg["remote_port"],
-                "protocol":   msg["protocol"],
+                "tunnel_id":  fmt.Sprintf("tunnel_%s_%d", tenantID, time.Now().Unix()),
+                "local_port": localPort,
+                "remote_host": remoteHost,
+                "remote_port": remotePort,
+                "protocol":   protocol,
+                "tenant_id":  tenantID,
+                "enhanced_mode": s.enhancedEnabled,
             }
+            
             if err := writeJSON(writer, respTunnel); err != nil {
                 s.logger.Error("Failed to send tunnel response", zap.Error(err))
                 tunnelsCreatedTotal.WithLabelValues("failed").Inc()
             } else {
-                s.logger.Info("Sent tunnel response")
+                s.logger.Info("Sent tunnel response",
+                    zap.String("tenant_id", tenantID),
+                    zap.String("protocol", protocol),
+                    zap.Bool("enhanced_mode", s.enhancedEnabled),
+                )
                 tunnelsCreatedTotal.WithLabelValues("success").Inc()
             }
         } else {
@@ -539,11 +706,29 @@ func (s *Server) handleHealthHTTP(conn net.Conn) error {
         "service":   "cloudbridge-relay",
         "uptime":    time.Since(s.startTime).String(),
         "components": map[string]interface{}{
-            "tcp_server":     "running",
-            "metrics":        s.metricsServer != nil,
-            "health_checker": s.healthChecker != nil,
-            "circuit_breaker": s.circuitBreaker != nil,
+            "tcp_server":        "running",
+            "metrics":           s.metricsServer != nil,
+            "health_checker":    s.healthChecker != nil,
+            "circuit_breaker":   s.circuitBreaker != nil,
+            "enhanced_quic":     s.enhancedEnabled,
+            "tenant_manager":    s.tenantManager != nil,
+            "load_balancer":     s.loadBalancer != nil,
+            "rate_limiter":      s.ipRateLimit != nil,
+            "enhanced_keycloak": s.enhancedKeycloakAuth != nil,
         },
+    }
+    
+    // Добавляем Enhanced QUIC статистику
+    if s.enhancedEnabled && s.enhancedQUICManager != nil {
+        status["enhanced_quic_stats"] = s.enhancedQUICManager.GetStats()
+    }
+    
+    // Добавляем статистику тенантов
+    if s.tenantManager != nil {
+        status["tenant_stats"] = map[string]interface{}{
+            "total_tenants": s.tenantManager.GetTenantCount(),
+            "enhanced_mode": s.tenantManager.IsEnhancedEnabled(),
+        }
     }
 
     jsonData, err := json.Marshal(status)
@@ -588,6 +773,16 @@ func writeJSON(writer *bufio.Writer, msg interface{}) error {
 // Stop stops the server
 func (s *Server) Stop() {
 	s.logger.Info("Stopping relay server...")
+	
+	// Stop Enhanced QUIC Manager
+	if s.enhancedQUICManager != nil {
+		s.enhancedQUICManager.Disable()
+	}
+	
+	// Shutdown tenant manager
+	if s.tenantManager != nil {
+		s.tenantManager.Shutdown()
+	}
 	
 	// Stop health checker
 	if s.healthChecker != nil {

@@ -174,12 +174,18 @@ func (b *BackoffHandler) SetGracePeriod() time.Duration {
 		maxTimeToWait = b.maxDelay
 	}
 	
+	// Ensure maxTimeToWait is at least 1 nanosecond to avoid panic
+	if maxTimeToWait <= 0 {
+		maxTimeToWait = time.Nanosecond
+	}
 	timeToWait := time.Duration(rand.Int63n(maxTimeToWait.Nanoseconds()))
 	b.resetDeadline = b.Clock.Now().Add(timeToWait)
 
-	b.logger.Info("Grace period set",
-		zap.Duration("grace_period", timeToWait),
-		zap.Uint("retries", b.retries))
+	if b.logger != nil {
+		b.logger.Info("Grace period set",
+			zap.Duration("grace_period", timeToWait),
+			zap.Uint("retries", b.retries))
+	}
 
 	return timeToWait
 }
@@ -197,11 +203,18 @@ func (b *BackoffHandler) Backoff(ctx context.Context) bool {
 	
 	b.retries++
 	maxTimeToWait := b.GetBackoffDuration(int(b.retries))
+	
+	// Ensure maxTimeToWait is at least 1 nanosecond to avoid panic
+	if maxTimeToWait <= 0 {
+		maxTimeToWait = time.Nanosecond
+	}
 	timeToWait := time.Duration(rand.Int63n(maxTimeToWait.Nanoseconds()))
 	
-	b.logger.Debug("Backoff delay",
-		zap.Duration("delay", timeToWait),
-		zap.Uint("retry", b.retries))
+	if b.logger != nil {
+		b.logger.Debug("Backoff delay",
+			zap.Duration("delay", timeToWait),
+			zap.Uint("retry", b.retries))
+	}
 
 	select {
 	case <-b.Clock.After(timeToWait):
@@ -219,6 +232,62 @@ func (b *BackoffHandler) Retries() int {
 // ReachedMaxRetries returns true if maximum retries have been reached
 func (b *BackoffHandler) ReachedMaxRetries() bool {
 	return b.retries >= b.maxRetries && !b.retryForever
+}
+
+// GetMaxBackoffDuration returns the maximum backoff duration without modifying state
+func (b *BackoffHandler) GetMaxBackoffDuration(ctx context.Context) (time.Duration, bool) {
+	select {
+	case <-ctx.Done():
+		return time.Duration(0), false
+	default:
+	}
+
+	if !b.resetDeadline.IsZero() && b.Clock.Now().After(b.resetDeadline) {
+		// b.retries would be set to 0 at this point
+		return time.Second, true
+	}
+
+	if b.retries >= b.maxRetries && !b.retryForever {
+		return time.Duration(0), false
+	}
+
+	maxTimeToWait := b.GetBackoffDuration(int(b.retries + 1))
+	return maxTimeToWait, true
+}
+
+// BackoffTimer returns a channel that sends the current time when the exponential backoff timeout expires
+// Returns nil if the maximum number of retries have been used
+func (b *BackoffHandler) BackoffTimer() <-chan time.Time {
+	if !b.resetDeadline.IsZero() && b.Clock.Now().After(b.resetDeadline) {
+		b.retries = 0
+		b.resetDeadline = time.Time{}
+	}
+
+	if b.retries >= b.maxRetries {
+		if !b.retryForever {
+			return nil
+		}
+	} else {
+		b.retries++
+	}
+
+	timeToWait := b.GetBackoffDuration(int(b.retries))
+	return b.Clock.After(timeToWait)
+}
+
+// GetStats returns backoff statistics
+func (b *BackoffHandler) GetStats() map[string]interface{} {
+	return map[string]interface{}{
+		"retries":           b.retries,
+		"max_retries":       b.maxRetries,
+		"retry_forever":     b.retryForever,
+		"base_time":         b.baseTime.String(),
+		"max_delay":         b.maxDelay.String(),
+		"jitter":            b.jitter,
+		"reached_max":       b.ReachedMaxRetries(),
+		"reset_deadline":    b.resetDeadline,
+		"has_reset_deadline": !b.resetDeadline.IsZero(),
+	}
 }
 
 // Custom error types for better error handling

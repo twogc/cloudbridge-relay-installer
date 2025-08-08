@@ -1,0 +1,67 @@
+{
+  "name": "@twogc/enhanced-quic",
+  "version": "1.0.0",
+  "description": "Enterprise-grade QUIC protocol with multi-tenancy, security, and geographic routing",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts",
+    "prepare": "npm run build",
+    "release": "npm run build && npm publish"
+  },
+  "keywords": [
+    "quic",
+    "protocol",
+    "multi-tenancy",
+    "security",
+    "ddos-protection",
+    "geographic-routing",
+    "enterprise",
+    "cloudflare",
+    "tunnel",
+    "relay"
+  ],
+  "author": {
+    "name": "TwoGC Team",
+    "email": "support@twogc.com",
+    "url": "https://twogc.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/twogc/enhanced-quic.git"
+  },
+  "bugs": {
+    "url": "https://github.com/twogc/enhanced-quic/issues"
+  },
+  "homepage": "https://github.com/twogc/enhanced-quic#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "uuid": "^9.0.0",
+    "prom-client": "^15.0.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+} 
