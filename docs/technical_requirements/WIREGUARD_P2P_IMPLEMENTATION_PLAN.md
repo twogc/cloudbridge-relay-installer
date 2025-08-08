@@ -1,6 +1,6 @@
 # WireGuard P2P Mesh Network: Детальный план реализации
 
-## 🏗️ **Архитектурная модель: "Enhanced QUIC over WireGuard"**
+## 🏗️ **Архитектурная модель: "Quantum-Resistant Enhanced QUIC over WireGuard"**
 
 ### **Концептуальная схема**
 
@@ -17,13 +17,14 @@ graph TB
         WG2 <-.-> WG3
     end
     
-    subgraph "Layer 2: Enhanced QUIC Application Layer"
+    subgraph "Layer 2: Quantum-Resistant Enhanced QUIC Application Layer"
         direction TB
-        EQ1[Enhanced QUIC Server<br/>Binding: wg0:8080]
+        EQ1[Quantum-Enhanced QUIC Server<br/>Binding: wg0:8080]
         EQ2[Multi-Tenant Router<br/>Tenant Isolation]
         EQ3[Keycloak Auth<br/>User Authentication]
+        EQ4[PQC Key Exchange<br/>CRYSTALS-Kyber]
         
-        EQ1 --> EQ2 --> EQ3
+        EQ1 --> EQ2 --> EQ3 --> EQ4
     end
     
     subgraph "Layer 3: Client & Corporate Integration"
@@ -55,6 +56,13 @@ graph TB
 
 ```
 internal/
+├── quantum/
+│   ├── pqc_config.go                # Post-Quantum Cryptography configuration
+│   ├── wireguard_pqc.go             # Quantum-resistant WireGuard
+│   ├── enhanced_quic_pqc.go         # Quantum-resistant Enhanced QUIC
+│   ├── key_exchange.go              # Quantum key exchange (CRYSTALS-Kyber)
+│   ├── signature.go                 # Quantum signatures (CRYSTALS-Dilithium)
+│   └── hybrid_crypto.go             # Hybrid classical + quantum cryptography
 ├── wireguard/
 │   ├── interface/
 │   │   ├── wg_interface.go          # WireGuard interface management
@@ -88,7 +96,217 @@ cmd/relay/main.go                    # + WireGuard initialization
 
 ## 🛠️ **Детальная реализация по фазам**
 
-### **🔸 Phase 1: WireGuard Foundation (Недели 1-3)**
+### **🔸 Phase 0: Quantum-Resistant Cryptography Foundation (Недели 0-1)**
+
+#### **Week 0: Post-Quantum Cryptography Research & Planning**
+
+**Задача 0.1: Создать `internal/quantum/crypto_research.md`**
+```markdown
+# Post-Quantum Cryptography для CloudBridge Relay
+
+## Стандарты NIST PQC (Post-Quantum Cryptography)
+
+### Криптографические примитивы для квантово-устойчивого шифрования:
+
+1. **CRYSTALS-Kyber** (Key Encapsulation Mechanism)
+   - Выбран NIST как основной стандарт
+   - Размер ключа: 800-1184 bytes
+   - Уровень безопасности: 128-256 bits
+   - Применение: Key exchange для WireGuard
+
+2. **CRYSTALS-Dilithium** (Digital Signature)
+   - Выбран NIST как основной стандарт  
+   - Размер подписи: 2700-3366 bytes
+   - Уровень безопасности: 128-256 bits
+   - Применение: Peer authentication
+
+3. **SPHINCS+** (Hash-based Signature)
+   - Backup signature scheme
+   - Размер подписи: 8080-49216 bytes
+   - Применение: Fallback authentication
+
+4. **Falcon** (Lattice-based Signature)
+   - Альтернативный signature scheme
+   - Компактные подписи: 666-1280 bytes
+   - Применение: Compact authentication
+
+## Гибридные схемы для CloudBridge Relay
+
+### WireGuard + Post-Quantum Hybrid:
+- **Classical**: X25519 для текущей безопасности
+- **Quantum-resistant**: CRYSTALS-Kyber для future-proofing
+- **Hybrid approach**: Both algorithms simultaneously
+- **Fallback**: Pure classical при недоступности PQC
+
+### Enhanced QUIC + Post-Quantum:
+- **TLS 1.3**: с PQC cipher suites
+- **Certificate chains**: с PQC signatures
+- **Key exchange**: Hybrid X25519 + Kyber
+```
+
+**Задача 0.2: Создать `internal/quantum/pqc_config.go`**
+```go
+package quantum
+
+import (
+    "crypto/rand"
+    "encoding/base64"
+    "time"
+)
+
+// Post-Quantum Cryptography Configuration
+type PQCConfig struct {
+    Enabled           bool                `yaml:"enabled"`
+    Algorithm         PQCAlgorithm        `yaml:"algorithm"`
+    HybridMode        bool                `yaml:"hybrid_mode"`
+    KeySize           PQCKeySize          `yaml:"key_size"`
+    SignatureScheme   PQCSignatureScheme  `yaml:"signature_scheme"`
+    FallbackEnabled   bool                `yaml:"fallback_enabled"`
+    KeyRotationDays   int                 `yaml:"key_rotation_days"`
+}
+
+type PQCAlgorithm string
+const (
+    PQCKyber        PQCAlgorithm = "kyber"
+    PQCDilithium    PQCAlgorithm = "dilithium"
+    PQCFalcon       PQCAlgorithm = "falcon"
+    PQCSphincsPlus  PQCAlgorithm = "sphincs_plus"
+    PQCHybrid       PQCAlgorithm = "hybrid"
+)
+
+type PQCKeySize int
+const (
+    PQCLevel1 PQCKeySize = 128  // Kyber-512, Dilithium2
+    PQCLevel3 PQCKeySize = 192  // Kyber-768, Dilithium3  
+    PQCLevel5 PQCKeySize = 256  // Kyber-1024, Dilithium5
+)
+
+type PQCSignatureScheme string
+const (
+    PQCSigDilithium   PQCSignatureScheme = "dilithium"
+    PQCSigFalcon      PQCSignatureScheme = "falcon"
+    PQCSigSphincsPlus PQCSignatureScheme = "sphincs_plus"
+)
+
+// Quantum-resistant key pair
+type PQCKeyPair struct {
+    PublicKey     []byte
+    PrivateKey    []byte
+    Algorithm     PQCAlgorithm
+    KeySize       PQCKeySize
+    CreatedAt     time.Time
+    ExpiresAt     time.Time
+    HybridMode    bool
+}
+
+// Hybrid key pair (Classical + Quantum-resistant)
+type HybridKeyPair struct {
+    Classical     *ClassicalKeyPair
+    Quantum       *PQCKeyPair
+    Combined      []byte  // Combined public key
+}
+
+type ClassicalKeyPair struct {
+    PublicKey     []byte
+    PrivateKey    []byte
+    Algorithm     string  // "X25519", "RSA-2048", etc.
+}
+```
+
+#### **Week 1: Quantum-Resistant WireGuard Implementation**
+
+**Задача 1.1: Создать `internal/quantum/wireguard_pqc.go`**
+```go
+package quantum
+
+import (
+    "crypto/rand"
+    "fmt"
+    "time"
+    
+    "golang.zx2c4.com/wireguard/wgctrl/wgtypes"
+)
+
+// Quantum-resistant WireGuard interface
+type QuantumWireGuardInterface struct {
+    wgInterface     *wginterface.WireGuardInterface
+    pqcConfig       *PQCConfig
+    hybridKeyPair   *HybridKeyPair
+    peerKeys        map[string]*HybridKeyPair
+    keyExchange     *QuantumKeyExchange
+    mu              sync.RWMutex
+}
+
+// Quantum-resistant key exchange
+type QuantumKeyExchange struct {
+    localHybridKey  *HybridKeyPair
+    peerHybridKeys  map[string]*HybridKeyPair
+    sessionKeys     map[string]*QuantumSessionKey
+    keyRotationTicker *time.Ticker
+}
+
+type QuantumSessionKey struct {
+    ClassicalKey    []byte
+    QuantumKey      []byte
+    CombinedKey     []byte
+    PeerID          string
+    CreatedAt       time.Time
+    ExpiresAt       time.Time
+    Algorithm       PQCAlgorithm
+}
+
+// Methods for quantum-resistant WireGuard
+func NewQuantumWireGuardInterface(wgInterface *wginterface.WireGuardInterface, pqcConfig *PQCConfig) *QuantumWireGuardInterface
+func (qwg *QuantumWireGuardInterface) GenerateHybridKeyPair() (*HybridKeyPair, error)
+func (qwg *QuantumWireGuardInterface) ExchangeQuantumKeys(peerID string, peerHybridKey *HybridKeyPair) (*QuantumSessionKey, error)
+func (qwg *QuantumWireGuardInterface) EstablishQuantumTunnel(peerID string) error
+func (qwg *QuantumWireGuardInterface) RotateQuantumKeys() error
+func (qwg *QuantumWireGuardInterface) ValidateQuantumSignature(data []byte, signature []byte, peerID string) error
+```
+
+**Задача 1.2: Создать `internal/quantum/enhanced_quic_pqc.go`**
+```go
+package quantum
+
+import (
+    "crypto/tls"
+    "crypto/x509"
+)
+
+// Quantum-resistant Enhanced QUIC
+type QuantumEnhancedQUIC struct {
+    enhancedQUIC    *quic.EnhancedConnection
+    pqcConfig       *PQCConfig
+    tlsConfig       *QuantumTLSConfig
+    certificate     *QuantumCertificate
+    mu              sync.RWMutex
+}
+
+type QuantumTLSConfig struct {
+    *tls.Config
+    PQCEnabled      bool
+    PQCAlgorithm    PQCAlgorithm
+    HybridMode      bool
+    PQCCipherSuites []uint16
+}
+
+type QuantumCertificate struct {
+    *x509.Certificate
+    PQCAlgorithm    PQCAlgorithm
+    PQCKeyPair      *PQCKeyPair
+    HybridKeyPair   *HybridKeyPair
+    QuantumSignature []byte
+}
+
+// Methods for quantum-resistant Enhanced QUIC
+func NewQuantumEnhancedQUIC(enhancedQUIC *quic.EnhancedConnection, pqcConfig *PQCConfig) *QuantumEnhancedQUIC
+func (qeq *QuantumEnhancedQUIC) GenerateQuantumCertificate() (*QuantumCertificate, error)
+func (qeq *QuantumEnhancedQUIC) EstablishQuantumConnection(peerID string) error
+func (qeq *QuantumEnhancedQUIC) ValidateQuantumCertificate(cert *QuantumCertificate) error
+func (qeq *QuantumEnhancedQUIC) SendQuantumEncryptedData(data []byte, peerID string) error
+```
+
+### **🔸 Phase 1: WireGuard Foundation (Недели 2-4)**
 
 #### **Week 1: WireGuard Interface Management**
 
@@ -675,20 +893,22 @@ enhanced_quic:
 
 ---
 
-## 🎯 **Ключевые преимущества WireGuard P2P подхода**
+## 🎯 **Ключевые преимущества Quantum-Resistant WireGuard P2P подхода**
 
 ### **✅ Технические преимущества:**
-1. **🔒 Cryptographic Security**: WireGuard's proven cryptography для P2P security
+1. **🔒 Quantum-Resistant Security**: CRYSTALS-Kyber + CRYSTALS-Dilithium для future-proof cryptography
 2. **⚡ Performance**: Kernel-space WireGuard + userspace Enhanced QUIC = optimal performance  
 3. **🌐 NAT Traversal**: WireGuard's UDP hole punching + Enhanced QUIC reliability
 4. **🔄 VPN Replacement**: Direct site-to-site connectivity без traditional VPN complexity
 5. **📊 Unified Management**: Single platform for client access + corporate connectivity
+6. **🔮 Future-Proof**: Post-quantum cryptography готов к квантовым компьютерам
 
 ### **✅ Бизнес преимущества:**
 1. **💰 Cost Reduction**: Замена дорогих VPN appliances на software solution
-2. **⚙️ Simplified Management**: Unified dashboard для WireGuard + Enhanced QUIC
-3. **📈 Market Differentiation**: Единственное WireGuard + QUIC enterprise решение
+2. **⚙️ Simplified Management**: Unified dashboard для WireGuard + Enhanced QUIC + PQC
+3. **📈 Market Differentiation**: Единственное Quantum-Resistant WireGuard + QUIC enterprise решение
 4. **🚀 Competitive Edge**: Modern technology stack vs legacy VPN vendors
+5. **🔮 Future-Proof Investment**: Quantum-resistant cryptography защищает от future threats
 
 ---
 
@@ -715,4 +935,4 @@ enhanced_quic:
 
 ---
 
-**Этот план реализует полноценную WireGuard P2P Mesh архитектуру с интеграцией Enhanced QUIC для замены корпоративных VPN решений!** 🚀
+**Этот план реализует полноценную Quantum-Resistant WireGuard P2P Mesh архитектуру с интеграцией Enhanced QUIC для замены корпоративных VPN решений и защиты от квантовых угроз!** 🚀🔮
