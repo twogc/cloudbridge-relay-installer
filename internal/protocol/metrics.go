@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -324,8 +325,8 @@ func NewProtocolMetricsCollector(windowSize time.Duration, logger *zap.Logger) *
 		windowSize: windowSize,
 	}
 
-	// Register Prometheus metrics
-	prometheus.MustRegister(
+	// Register Prometheus metrics (ignore duplicates)
+	collectors := []prometheus.Collector{
 		collector.latencyHistogram,
 		collector.throughputGauge,
 		collector.errorRateCounter,
@@ -335,7 +336,16 @@ func NewProtocolMetricsCollector(windowSize time.Duration, logger *zap.Logger) *
 		collector.bandwidthGauge,
 		collector.packetLossGauge,
 		collector.rttGauge,
-	)
+	}
+	
+	for _, metric := range collectors {
+		if err := prometheus.Register(metric); err != nil {
+			// Ignore already registered errors
+			if !strings.Contains(err.Error(), "duplicate metrics collector") {
+				logger.Error("Failed to register prometheus metric", zap.Error(err))
+			}
+		}
+	}
 
 	return collector
 }

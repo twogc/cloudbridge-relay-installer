@@ -25,6 +25,9 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/health"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
+	"github.com/twogc/cloudbridge-relay-installer/internal/p2c"
+	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
+	"github.com/twogc/cloudbridge-relay-installer/internal/protocol"
 	"github.com/twogc/cloudbridge-relay-installer/internal/quantum"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
@@ -108,13 +111,21 @@ type Server struct {
 	quantumWireGuard      *quantum.QuantumWireGuardInterface
 	quantumEnhancedQUIC   *quantum.QuantumEnhancedQUIC
 	
-	// AI Analytics components
+		// AI Analytics components
 	aiAnalyticsEnabled    bool
 	aiBehaviorAnalyzer    *ai.BehaviorAnalyzer
 	aiPredictiveSecurity  *ai.PredictiveSecurity
 	aiAutomatedResponse   *ai.AutomatedResponse
 	aiMonitoring          *ai.AIMonitoring
-	
+
+	// Мультипротокольные компоненты
+	protocolSelector    *protocol.IntelligentProtocolSelector
+	protocolEngine      *protocol.ProtocolEngine
+	p2pManager          *p2p.P2PManager
+	p2cManager          *p2c.P2CManager
+	connectionHandler   *protocol.UnifiedConnectionHandler
+	autoSwitchManager   *protocol.AutoSwitchManager
+
 	ctx    context.Context
 	cancel context.CancelFunc
 	startTime time.Time
@@ -357,6 +368,61 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			zap.Bool("automated_response", aiAutomatedResponse.Enabled),
 		)
 	}
+
+	// Initialize Multiprotocol components
+	// Convert logger.Logger to *zap.Logger for protocol components
+	zapLogger := zap.NewNop() // Fallback to no-op logger
+
+	protocolSelector := protocol.NewIntelligentProtocolSelector(protocol.ProtocolSelectorConfig{
+		Strategy:             protocol.PerformanceBased,
+		PreferredOrder:       []protocol.Protocol{protocol.QUIC, protocol.HTTP2, protocol.WebSocket},
+		SwitchThreshold:      cfg.Protocol.SwitchThreshold,
+		HealthCheckInterval:  cfg.Protocol.HealthCheckInterval,
+		Logger:               zapLogger,
+	})
+
+	protocolEngine := protocol.NewProtocolEngine([]protocol.Protocol{protocol.QUIC, protocol.HTTP2, protocol.WebSocket}, cfg.Protocol.SwitchThreshold, zapLogger)
+
+	// Initialize P2P Manager
+	p2pManager := p2p.NewP2PManager(
+		wireGuardMesh,
+		wireGuardPeerDiscovery,
+		hybridRouter,
+		siteToSiteManager,
+		zapLogger,
+	)
+
+	// Initialize P2C Manager
+	p2cEnhancedQUICManager := p2c.NewEnhancedQUICManager(zapLogger)
+	p2cManager := p2c.NewP2CManager(
+		p2cEnhancedQUICManager,
+		tenantMgr,
+		loadBal,
+		ipRateLimit,
+		zapLogger,
+	)
+
+	// Initialize Unified Connection Handler
+	connectionHandler := protocol.NewUnifiedConnectionHandler(
+		protocolSelector,
+		p2pManager,
+		p2cManager,
+		zapLogger,
+	)
+
+	// Initialize Auto Switch Manager
+	autoSwitchManager := protocol.NewAutoSwitchManager(
+		protocolSelector,
+		p2pManager,
+		p2cManager,
+		zapLogger,
+	)
+
+	loggerInstance.Info("Multiprotocol components initialized",
+		zap.Bool("p2p_enabled", wireGuardEnabled),
+		zap.Bool("p2c_enabled", enhancedEnabled),
+		zap.Bool("auto_switch_enabled", cfg.Protocol.AutoSelect),
+	)
 	
 	return &Server{
 		config:                cfg,
@@ -388,6 +454,12 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		aiPredictiveSecurity:  aiPredictiveSecurity,
 		aiAutomatedResponse:   aiAutomatedResponse,
 		aiMonitoring:          aiMonitoring,
+		protocolSelector:      protocolSelector,
+		protocolEngine:        protocolEngine,
+		p2pManager:            p2pManager,
+		p2cManager:            p2cManager,
+		connectionHandler:     connectionHandler,
+		autoSwitchManager:     autoSwitchManager,
 		ctx:                   ctx,
 		cancel:                cancel,
 		startTime:             time.Now(),
@@ -417,7 +489,17 @@ func (s *Server) Start() error {
 		zap.Bool("zero_trust_enabled", s.config.ZeroTrust.Enabled),
 		zap.Bool("circuit_breaker_enabled", s.config.ZeroTrust.CircuitBreaker.Enabled),
 		zap.Bool("health_check_enabled", s.config.ZeroTrust.HealthCheck.Enabled),
+		zap.Bool("multiprotocol_enabled", s.connectionHandler != nil),
+		zap.Bool("auto_switch_enabled", s.autoSwitchManager != nil),
 	)
+
+	// Запуск автоматического переключения протоколов
+	if s.autoSwitchManager != nil {
+		go func() {
+			s.autoSwitchManager.Start(s.ctx)
+		}()
+		s.logger.Info("AutoSwitchManager started")
+	}
 	
 	// Handle connections
 	for {
@@ -650,16 +732,22 @@ func (s *Server) processConnection(conn net.Conn) error {
                 tenantID = "default"
             }
             
-            // Проверяем лимиты тенанта через Enhanced QUIC
-            if s.enhancedEnabled && s.enhancedQUICManager != nil {
-                if err := s.enhancedQUICManager.ValidateConnection(clientIP, tenantID, token); err != nil {
+            // Использование унифицированного обработчика для мультипротокольной обработки
+            if s.connectionHandler != nil {
+                s.logger.Info("Using unified connection handler for multiprotocol processing",
+                    zap.String("tenant_id", tenantID),
+                    zap.String("client_ip", clientIP),
+                )
+                
+                // Обработка соединения через унифицированный обработчик
+                if err := s.connectionHandler.HandleConnection(s.ctx, conn, tenantID); err != nil {
                     respTunnel := map[string]interface{}{
                         "type":       "tunnel_response",
                         "status":     "error",
-                        "message":    "Enhanced validation failed: " + err.Error(),
+                        "message":    "Multiprotocol processing failed: " + err.Error(),
                     }
                     writeJSON(writer, respTunnel)
-                    s.logger.Warn("Enhanced tunnel validation failed", 
+                    s.logger.Warn("Multiprotocol processing failed", 
                         zap.String("tenant_id", tenantID),
                         zap.String("client_ip", clientIP),
                         zap.Error(err),
@@ -668,12 +756,36 @@ func (s *Server) processConnection(conn net.Conn) error {
                     continue
                 }
                 
-                // Получаем оптимальный сервер через Enhanced Geographic Router
-                if targetServer, err := s.enhancedQUICManager.GetServerByGeo(clientIP); err == nil {
-                    s.logger.Info("Enhanced geographic routing",
-                        zap.String("client_ip", clientIP),
-                        zap.String("target_server", targetServer),
-                    )
+                s.logger.Info("Multiprotocol processing completed successfully",
+                    zap.String("tenant_id", tenantID),
+                    zap.String("client_ip", clientIP),
+                )
+            } else {
+                // Fallback к существующей логике Enhanced QUIC
+                if s.enhancedEnabled && s.enhancedQUICManager != nil {
+                    if err := s.enhancedQUICManager.ValidateConnection(clientIP, tenantID, token); err != nil {
+                        respTunnel := map[string]interface{}{
+                            "type":       "tunnel_response",
+                            "status":     "error",
+                            "message":    "Enhanced validation failed: " + err.Error(),
+                        }
+                        writeJSON(writer, respTunnel)
+                        s.logger.Warn("Enhanced tunnel validation failed", 
+                            zap.String("tenant_id", tenantID),
+                            zap.String("client_ip", clientIP),
+                            zap.Error(err),
+                        )
+                        tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+                        continue
+                    }
+                    
+                    // Получаем оптимальный сервер через Enhanced Geographic Router
+                    if targetServer, err := s.enhancedQUICManager.GetServerByGeo(clientIP); err == nil {
+                        s.logger.Info("Enhanced geographic routing",
+                            zap.String("client_ip", clientIP),
+                            zap.String("target_server", targetServer),
+                        )
+                    }
                 }
             }
             
