@@ -19,7 +19,7 @@
 #### Добавление в GitHub:
 1. Откройте https://github.com/twogc/cloudbridge-relay-installer/settings/secrets/actions
 2. Нажмите **New repository secret**
-3. Имя: `GITHUB_TOKEN`
+3. Имя: `GH_TOKEN` (не GITHUB_TOKEN!)
 4. Значение: вставьте скопированный токен
 5. Нажмите **Add secret**
 
@@ -71,7 +71,7 @@
 ## Проверка секретов
 
 После добавления секретов вы должны увидеть:
-- ✅ GITHUB_TOKEN
+- ✅ GH_TOKEN
 - ✅ DOCKERHUB_USERNAME  
 - ✅ DOCKERHUB_TOKEN
 
@@ -89,7 +89,7 @@ jobs:
     steps:
     - name: Test GitHub Token
       run: |
-        curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+        curl -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
         https://api.github.com/user
         
     - name: Test Docker Hub

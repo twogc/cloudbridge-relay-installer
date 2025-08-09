@@ -43,7 +43,7 @@ jobs:
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.GH_TOKEN }}
 
     - name: Extract metadata
       id: meta
@@ -129,7 +129,7 @@ jobs:
         files: |
           dist/*.tar.gz
           dist/*.zip
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GH_TOKEN }}
 
     - name: Update Docker Hub description
       uses: peter-evans/dockerhub-description@v3
