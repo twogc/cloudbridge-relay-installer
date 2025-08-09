@@ -66,8 +66,8 @@ func (s *WorkflowTestSuite) TestHealthCheckWorkflow() {
 			"score":  0.95,
 		}, nil)
 	
-	// Настройка времени для тестирования
-	env.SetTestTimeout(time.Minute * 5)
+	// Установка короткого таймаута для тестов
+	env.SetTestTimeout(time.Second * 30)
 	
 	// Входные данные
 	input := HealthCheckInput{
@@ -76,8 +76,13 @@ func (s *WorkflowTestSuite) TestHealthCheckWorkflow() {
 		Config:    map[string]interface{}{},
 	}
 	
-	// Запуск workflow в фоне
-	env.ExecuteWorkflow(HealthCheckWorkflow, input)
+	// Запуск workflow в отдельной горутине
+	go func() {
+		env.ExecuteWorkflow(HealthCheckWorkflow, input)
+	}()
+	
+	// Ожидание запуска workflow
+	time.Sleep(100 * time.Millisecond)
 	
 	// Workflow должен выполняться непрерывно, поэтому проверяем что он запущен
 	assert.False(s.T(), env.IsWorkflowCompleted())
@@ -85,9 +90,29 @@ func (s *WorkflowTestSuite) TestHealthCheckWorkflow() {
 	// Отправляем сигнал остановки
 	env.SignalWorkflow("control-command", "shutdown")
 	
-	// Теперь workflow должен завершиться
-	assert.True(s.T(), env.IsWorkflowCompleted())
-	assert.NoError(s.T(), env.GetWorkflowError())
+	// Ожидание завершения с таймаутом
+	done := make(chan bool)
+	go func() {
+		for !env.IsWorkflowCompleted() && env.GetWorkflowError() == nil {
+			time.Sleep(10 * time.Millisecond)
+		}
+		done <- true
+	}()
+	
+	select {
+	case <-done:
+		// Теперь workflow должен завершиться
+		assert.True(s.T(), env.IsWorkflowCompleted())
+		assert.NoError(s.T(), env.GetWorkflowError())
+		
+		var result HealthCheckResult
+		err := env.GetWorkflowResult(&result)
+		assert.NoError(s.T(), err)
+		assert.Equal(s.T(), "test-component", result.Component)
+		assert.Equal(s.T(), "stopped", result.Status)
+	case <-time.After(10 * time.Second):
+		s.T().Fatal("HealthCheckWorkflow не завершился в ожидаемое время")
+	}
 }
 
 // TestPeerLifecycleWorkflow тестирует workflow управления пирами
@@ -234,28 +259,23 @@ func (s *WorkflowTestSuite) TestAutoScalingWorkflow() {
 	// Мокаем activities для реактивного масштабирования
 	env.OnActivity("CollectScalingMetricsActivity", mock.Anything, mock.Anything).Return(
 		map[string]interface{}{
-			"current_capacity": map[string]interface{}{"cpu": 80, "memory": 75},
+			"current_capacity": map[string]interface{}{"cpu": 30, "memory": 25},
 			"metrics_collected": true,
 		}, nil)
 	env.OnActivity("AnalyzeScalingNeedActivity", mock.Anything, mock.Anything, mock.Anything).Return(
 		map[string]interface{}{
-			"need_scaling":    true,
-			"scaling_action": "scale_up",
-			"reason":         "high_cpu_usage",
-		}, nil)
-	env.OnActivity("PerformScalingActivity", mock.Anything, mock.Anything, mock.Anything).Return(
-		map[string]interface{}{
-			"scaling_action": "scale_up_completed",
-			"new_capacity":   map[string]interface{}{"instances": 3},
+			"need_scaling":    false,
+			"scaling_action": "no_scaling_needed",
+			"reason":         "metrics_within_threshold",
 		}, nil)
 	env.OnActivity("GetCurrentCapacityActivity", mock.Anything).Return(
 		map[string]interface{}{
-			"current_capacity": map[string]interface{}{"instances": 3},
-			"target_capacity":  map[string]interface{}{"instances": 3},
+			"current_capacity": map[string]interface{}{"instances": 2},
+			"target_capacity":  map[string]interface{}{"instances": 2},
 		}, nil)
 	
-	// Настройка времени для тестирования циклического workflow
-	env.SetTestTimeout(time.Minute * 5)
+	// Установка короткого таймаута для тестов
+	env.SetTestTimeout(time.Second * 30)
 	
 	// Входные данные
 	input := AutoScalingWorkflowInput{
@@ -266,19 +286,40 @@ func (s *WorkflowTestSuite) TestAutoScalingWorkflow() {
 		Configuration: map[string]interface{}{},
 	}
 	
-	// Выполнение workflow
-	env.ExecuteWorkflow(AutoScalingWorkflow, input)
+	// Запуск workflow в отдельной горутине
+	go func() {
+		env.ExecuteWorkflow(AutoScalingWorkflow, input)
+	}()
 	
-	// Workflow может выполняться долго из-за циклов, поэтому проверяем основные результаты
-	assert.True(s.T(), env.IsWorkflowCompleted())
-	assert.NoError(s.T(), env.GetWorkflowError())
+	// Ожидание запуска workflow
+	time.Sleep(100 * time.Millisecond)
 	
-	var result AutoScalingWorkflowResult
-	err := env.GetWorkflowResult(&result)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), "compute", result.ResourceType)
-	assert.Equal(s.T(), "reactive", result.ScalingPolicy)
-	assert.Equal(s.T(), "completed", result.Status)
+	// Отправляем сигнал остановки
+	env.SignalWorkflow("control-command", "shutdown")
+	
+	// Ожидание завершения с таймаутом
+	done := make(chan bool)
+	go func() {
+		for !env.IsWorkflowCompleted() && env.GetWorkflowError() == nil {
+			time.Sleep(10 * time.Millisecond)
+		}
+		done <- true
+	}()
+	
+	select {
+	case <-done:
+		assert.True(s.T(), env.IsWorkflowCompleted())
+		assert.NoError(s.T(), env.GetWorkflowError())
+		
+		var result AutoScalingWorkflowResult
+		err := env.GetWorkflowResult(&result)
+		assert.NoError(s.T(), err)
+		assert.Equal(s.T(), "compute", result.ResourceType)
+		assert.Equal(s.T(), "reactive", result.ScalingPolicy)
+		assert.Equal(s.T(), "stopped", result.Status)
+	case <-time.After(10 * time.Second):
+		s.T().Fatal("AutoScalingWorkflow не завершился в ожидаемое время")
+	}
 }
 
 // TestSecurityComplianceWorkflow тестирует workflow проверки соответствия

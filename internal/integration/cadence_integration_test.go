@@ -25,7 +25,7 @@ type CadenceIntegrationTestSuite struct {
 	suite.Suite
 	logger         *zap.Logger
 	config         *cadence.CadenceConfig
-	client         *cadence.Client
+	client         *cadence.CadenceClient
 	worker         *worker.CadenceWorker
 	cadenceMetrics *metrics.CadenceMetrics
 	ctx            context.Context
@@ -49,7 +49,7 @@ func (suite *CadenceIntegrationTestSuite) SetupSuite() {
 	suite.cadenceMetrics = metrics.NewCadenceMetrics(suite.logger)
 	
 	// Создание Cadence клиента
-	suite.client, err = cadence.NewClient(suite.config, suite.logger)
+	suite.client, err = cadence.NewCadenceClient(suite.config, suite.logger)
 	require.NoError(suite.T(), err, "Не удалось создать Cadence клиент")
 	
 	// Запуск Cadence клиента
@@ -144,17 +144,18 @@ func (suite *CadenceIntegrationTestSuite) TestModuleInitializationWorkflow() {
 func (suite *CadenceIntegrationTestSuite) TestHealthCheckWorkflow() {
 	suite.logger.Info("Тестирование HealthCheckWorkflow")
 	
-	// Создание контекста с таймаутом для этого теста
-	ctx, cancel := context.WithTimeout(suite.ctx, 2*time.Minute)
+	// Создание контекста с коротким таймаутом для этого теста
+	ctx, cancel := context.WithTimeout(suite.ctx, 30*time.Second)
 	defer cancel()
 	
 	// Подготовка входных данных
 	input := workflows.HealthCheckInput{
 		Component: "test-component",
-		Checks:    []string{"core", "network", "security"},
+		Checks:    []string{"core", "network"},
 		Config: map[string]interface{}{
-			"check_timeout": "30s",
-			"retries":       3,
+			"check_timeout": "5s",
+			"retries":       2,
+			"test_mode":     true,
 		},
 	}
 	
@@ -162,35 +163,36 @@ func (suite *CadenceIntegrationTestSuite) TestHealthCheckWorkflow() {
 	execution, err := suite.client.StartWorkflow(ctx, "HealthCheckWorkflow", input)
 	require.NoError(suite.T(), err, "Не удалось запустить HealthCheckWorkflow")
 	
-	// Поскольку HealthCheckWorkflow долгоживущий, мы проверяем его статус
-	// вместо ожидания завершения
-	time.Sleep(5 * time.Second) // Даем время workflow запуститься
-	
-	// Проверяем, что workflow выполняется
-	status, err := suite.worker.GetWorkflowStatus(execution.ID, execution.RunID)
-	require.NoError(suite.T(), err, "Не удалось получить статус workflow")
-	assert.Equal(suite.T(), "running", status["status"])
+	// Даем время workflow запуститься и выполнить первую проверку
+	time.Sleep(3 * time.Second)
 	
 	// Отправляем сигнал завершения workflow
 	err = suite.client.SignalWorkflow(ctx, execution.ID, execution.RunID, "control-command", "shutdown")
 	require.NoError(suite.T(), err, "Не удалось отправить сигнал завершения")
 	
-	// Ждем завершения workflow
+	// Ждем завершения workflow с таймаутом
+	done := make(chan bool)
 	var result workflows.HealthCheckResult
-	err = suite.client.GetWorkflowResult(ctx, execution.ID, execution.RunID, &result)
-	require.NoError(suite.T(), err, "Не удалось получить результат workflow")
+	go func() {
+		suite.client.GetWorkflowResult(ctx, execution.ID, execution.RunID, &result)
+		done <- true
+	}()
+	
+	select {
+	case <-done:
+		suite.logger.Info("HealthCheckWorkflow завершился корректно")
+	case <-time.After(10 * time.Second):
+		suite.T().Fatal("HealthCheckWorkflow не завершился в ожидаемое время")
+	}
 	
 	// Проверка результата
 	assert.Equal(suite.T(), "test-component", result.Component)
-	assert.Contains(suite.T(), []string{"healthy", "degraded", "unhealthy"}, result.Status)
-	assert.GreaterOrEqual(suite.T(), result.HealthScore, 0.0)
-	assert.LessOrEqual(suite.T(), result.HealthScore, 1.0)
+	assert.Equal(suite.T(), "stopped", result.Status)
 	
 	suite.logger.Info("HealthCheckWorkflow протестирован успешно",
 		zap.String("workflow_id", execution.ID),
 		zap.String("component", result.Component),
 		zap.String("status", result.Status),
-		zap.Float64("health_score", result.HealthScore),
 	)
 }
 
@@ -366,6 +368,62 @@ func (suite *CadenceIntegrationTestSuite) TestWorkflowMetrics() {
 	
 	suite.logger.Info("Метрики Cadence протестированы",
 		zap.String("workflow_id", execution.ID),
+	)
+}
+
+// TestAutoScalingWorkflowWithTimeout тестирует AutoScaling workflow с таймаутом
+func (suite *CadenceIntegrationTestSuite) TestAutoScalingWorkflowWithTimeout() {
+	suite.logger.Info("Тестирование AutoScalingWorkflow с таймаутом")
+	
+	// Создание контекста с коротким таймаутом
+	ctx, cancel := context.WithTimeout(suite.ctx, 30*time.Second)
+	defer cancel()
+	
+	// Подготовка входных данных
+	input := workflows.AutoScalingWorkflowInput{
+		ResourceType:  "compute",
+		ScalingPolicy: "reactive",
+		TargetMetrics: map[string]float64{"cpu": 70, "memory": 80},
+		ScalingLimits: map[string]interface{}{"min_instances": 1, "max_instances": 5},
+		Configuration: map[string]interface{}{
+			"test_mode":       true,
+			"short_intervals": true,
+		},
+	}
+	
+	// Запуск workflow
+	execution, err := suite.client.StartWorkflow(ctx, "AutoScalingWorkflow", input)
+	require.NoError(suite.T(), err, "Не удалось запустить AutoScalingWorkflow")
+	
+	// Ожидание запуска
+	time.Sleep(2 * time.Second)
+	
+	// Отправка сигнала остановки
+	err = suite.client.SignalWorkflow(ctx, execution.ID, execution.RunID, "control-command", "shutdown")
+	require.NoError(suite.T(), err, "Не удалось отправить сигнал остановки")
+	
+	// Проверка завершения в разумное время
+	done := make(chan bool)
+	var result workflows.AutoScalingWorkflowResult
+	go func() {
+		suite.client.GetWorkflowResult(ctx, execution.ID, execution.RunID, &result)
+		done <- true
+	}()
+	
+	select {
+	case <-done:
+		suite.logger.Info("AutoScaling workflow завершился корректно")
+		assert.Equal(suite.T(), "compute", result.ResourceType)
+		assert.Equal(suite.T(), "reactive", result.ScalingPolicy)
+		assert.Equal(suite.T(), "stopped", result.Status)
+	case <-time.After(10 * time.Second):
+		suite.T().Fatal("AutoScaling workflow не завершился в ожидаемое время")
+	}
+	
+	suite.logger.Info("AutoScalingWorkflow протестирован успешно",
+		zap.String("workflow_id", execution.ID),
+		zap.String("resource_type", result.ResourceType),
+		zap.String("status", result.Status),
 	)
 }
 

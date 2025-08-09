@@ -21,11 +21,7 @@ type Client struct {
 	running bool
 }
 
-// WorkflowExecution представляет заглушку для выполнения workflow
-type WorkflowExecution struct {
-	ID    string
-	RunID string
-}
+
 
 // NewClient создает новый заглушечный Cadence клиент
 func NewClient(config *CadenceConfig, logger *zap.Logger) (*Client, error) {
