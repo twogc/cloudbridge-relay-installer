@@ -9,7 +9,7 @@ echo ""
 
 echo "📋 Необходимые секреты:"
 echo ""
-echo "1. GITHUB_TOKEN - Personal Access Token с правами:"
+echo "1. GH_TOKEN - Personal Access Token с правами:"
 echo "   ✅ repo (Full control)"
 echo "   ✅ workflow (Update workflows)"
 echo "   ✅ write:packages (Upload packages)"
@@ -42,6 +42,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     if [ -z "$GITHUB_TOKEN" ]; then
         echo "❌ GITHUB_TOKEN не установлен в переменных окружения"
         echo "💡 Установите: export GITHUB_TOKEN=your_token"
+        echo "💡 В GitHub Secrets используйте имя: GH_TOKEN"
     else
         echo "✅ GITHUB_TOKEN найден в переменных окружения"
         
