@@ -22,8 +22,8 @@ func NewSwitchMetrics() *SwitchMetrics {
 		),
 		duration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Name: "protocol_switch_duration_seconds",
-				Help: "Duration of protocol switches",
+				Name:    "protocol_switch_duration_seconds",
+				Help:    "Duration of protocol switches",
 				Buckets: prometheus.DefBuckets,
 			},
 			[]string{"from", "to"},

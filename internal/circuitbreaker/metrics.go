@@ -12,27 +12,27 @@ type CircuitBreakerMetrics struct {
 	// State metrics
 	StateChanges *prometheus.CounterVec
 	CurrentState *prometheus.GaugeVec
-	
+
 	// Request metrics
-	TotalRequests *prometheus.CounterVec
-	TotalFailures *prometheus.CounterVec
+	TotalRequests  *prometheus.CounterVec
+	TotalFailures  *prometheus.CounterVec
 	TotalSuccesses *prometheus.CounterVec
-	TotalTimeouts *prometheus.CounterVec
-	
+	TotalTimeouts  *prometheus.CounterVec
+
 	// Performance metrics
-	SuccessRate *prometheus.GaugeVec
-	FailureRate *prometheus.GaugeVec
+	SuccessRate  *prometheus.GaugeVec
+	FailureRate  *prometheus.GaugeVec
 	ResponseTime *prometheus.HistogramVec
-	
+
 	// Recovery metrics
 	RecoveryAttempts *prometheus.CounterVec
-	RecoveryTime *prometheus.HistogramVec
+	RecoveryTime     *prometheus.HistogramVec
 	RecoveryProgress *prometheus.GaugeVec
-	
+
 	// Configuration metrics
 	FailureThreshold *prometheus.GaugeVec
 	SuccessThreshold *prometheus.GaugeVec
-	Timeout *prometheus.GaugeVec
+	Timeout          *prometheus.GaugeVec
 }
 
 // NewCircuitBreakerMetrics creates new circuit breaker metrics
@@ -45,7 +45,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name", "from_state", "to_state"},
 		),
-		
+
 		CurrentState: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "circuit_breaker_current_state",
@@ -53,7 +53,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		TotalRequests: promauto.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "circuit_breaker_requests_total",
@@ -61,7 +61,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		TotalFailures: promauto.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "circuit_breaker_failures_total",
@@ -69,7 +69,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		TotalSuccesses: promauto.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "circuit_breaker_successes_total",
@@ -77,7 +77,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		TotalTimeouts: promauto.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "circuit_breaker_timeouts_total",
@@ -85,7 +85,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		SuccessRate: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "circuit_breaker_success_rate",
@@ -93,7 +93,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		FailureRate: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "circuit_breaker_failure_rate",
@@ -101,7 +101,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		ResponseTime: promauto.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Name:    "circuit_breaker_response_time_seconds",
@@ -110,7 +110,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name", "state"},
 		),
-		
+
 		RecoveryAttempts: promauto.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "circuit_breaker_recovery_attempts_total",
@@ -118,7 +118,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		RecoveryTime: promauto.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Name:    "circuit_breaker_recovery_time_seconds",
@@ -127,7 +127,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		RecoveryProgress: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "circuit_breaker_recovery_progress",
@@ -135,7 +135,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		FailureThreshold: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "circuit_breaker_failure_threshold",
@@ -143,7 +143,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		SuccessThreshold: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "circuit_breaker_success_threshold",
@@ -151,7 +151,7 @@ func NewCircuitBreakerMetrics() *CircuitBreakerMetrics {
 			},
 			[]string{"name"},
 		),
-		
+
 		Timeout: promauto.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "circuit_breaker_timeout_seconds",
@@ -253,58 +253,58 @@ func (mm *MetricsManager) SetTimeout(name string, timeout float64) {
 func (mm *MetricsManager) UpdateAllMetrics(cb *CircuitBreaker) {
 	metrics := cb.GetMetrics()
 	name := cb.GetName()
-	
+
 	// Update state
 	state := cb.GetState()
 	mm.SetCurrentState(name, state)
-	
+
 	// Update request counts
 	if totalRequests, ok := metrics["total_requests"].(int64); ok {
 		for i := int64(0); i < totalRequests; i++ {
 			mm.RecordRequest(name)
 		}
 	}
-	
+
 	if totalFailures, ok := metrics["total_failures"].(int64); ok {
 		for i := int64(0); i < totalFailures; i++ {
 			mm.RecordFailure(name)
 		}
 	}
-	
+
 	if totalSuccesses, ok := metrics["total_successes"].(int64); ok {
 		for i := int64(0); i < totalSuccesses; i++ {
 			mm.RecordSuccess(name)
 		}
 	}
-	
+
 	if totalTimeouts, ok := metrics["total_timeouts"].(int64); ok {
 		for i := int64(0); i < totalTimeouts; i++ {
 			mm.RecordTimeout(name)
 		}
 	}
-	
+
 	// Update rates
 	if successRate, ok := metrics["success_rate"].(float64); ok {
 		mm.SetSuccessRate(name, successRate)
 		mm.SetFailureRate(name, 1.0-successRate)
 	}
-	
+
 	// Update recovery metrics
 	if recoveryProgress, ok := metrics["recovery_progress"].(float64); ok {
 		mm.SetRecoveryProgress(name, recoveryProgress)
 	}
-	
+
 	// Update configuration
 	config := cb.GetStats()
 	if failureThreshold, ok := config["failure_threshold"].(int64); ok {
 		mm.SetFailureThreshold(name, float64(failureThreshold))
 	}
-	
+
 	if successThreshold, ok := config["success_threshold"].(int64); ok {
 		mm.SetSuccessThreshold(name, float64(successThreshold))
 	}
-	
+
 	if timeout, ok := config["timeout"].(time.Duration); ok {
 		mm.SetTimeout(name, timeout.Seconds())
 	}
-} 
+}

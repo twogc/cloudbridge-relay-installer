@@ -23,17 +23,17 @@ import (
 
 // QUICServer представляет QUIC сервер для CloudBridge Relay
 type QUICServer struct {
-	listener       *quic.Listener
-	logger         *zap.Logger
-	metrics        *metrics.EnhancedMetrics
-	config         *QUICServerConfig
-	connections    map[uuid.UUID]*QUICConnection
-	mu             sync.RWMutex
-	ctx            context.Context
-	cancel         context.CancelFunc
-	startTime      time.Time
-	activeConns    int32
-	totalConns     int64
+	listener    *quic.Listener
+	logger      *zap.Logger
+	metrics     *metrics.EnhancedMetrics
+	config      *QUICServerConfig
+	connections map[uuid.UUID]*QUICConnection
+	mu          sync.RWMutex
+	ctx         context.Context
+	cancel      context.CancelFunc
+	startTime   time.Time
+	activeConns int32
+	totalConns  int64
 }
 
 // QUICServerConfig конфигурация для QUIC сервера
@@ -383,14 +383,14 @@ func (qs *QUICServer) GetStats() map[string]interface{} {
 	defer qs.mu.RUnlock()
 
 	return map[string]interface{}{
-		"address":           fmt.Sprintf("%s:%d", qs.config.Address, qs.config.Port),
+		"address":            fmt.Sprintf("%s:%d", qs.config.Address, qs.config.Port),
 		"active_connections": qs.activeConns,
 		"total_connections":  qs.totalConns,
 		"max_connections":    qs.config.MaxConnections,
-		"uptime":            time.Since(qs.startTime).String(),
-		"tls_enabled":       qs.config.EnableTLS,
-		"enable_metrics":    qs.config.EnableMetrics,
-		"enable_tracing":    qs.config.EnableTracing,
+		"uptime":             time.Since(qs.startTime).String(),
+		"tls_enabled":        qs.config.EnableTLS,
+		"enable_metrics":     qs.config.EnableMetrics,
+		"enable_tracing":     qs.config.EnableTracing,
 	}
 }
 
@@ -430,4 +430,4 @@ func (qs *QUICServer) IsRunning() bool {
 // GetAddress возвращает адрес сервера
 func (qs *QUICServer) GetAddress() string {
 	return fmt.Sprintf("%s:%d", qs.config.Address, qs.config.Port)
-} 
+}

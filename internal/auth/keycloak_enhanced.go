@@ -23,7 +23,7 @@ type EnhancedKeycloakAuth struct {
 	// Существующие поля
 	config *KeycloakConfig
 	logger *zap.Logger
-	
+
 	// Новое поле для Enhanced QUIC
 	enhancedKeycloakAuth *quic.KeycloakAuth
 	enhancedEnabled      bool
@@ -34,7 +34,7 @@ func NewEnhancedKeycloakAuth(config *KeycloakConfig, logger *zap.Logger) *Enhanc
 	if config == nil {
 		config = &KeycloakConfig{}
 	}
-	
+
 	enhancedConfig := &quic.KeycloakConfig{
 		ServerURL:     config.ServerURL,
 		Realm:         config.Realm,
@@ -43,7 +43,7 @@ func NewEnhancedKeycloakAuth(config *KeycloakConfig, logger *zap.Logger) *Enhanc
 		AdminUsername: config.AdminUsername,
 		AdminPassword: config.AdminPassword,
 	}
-	
+
 	return &EnhancedKeycloakAuth{
 		config:               config,
 		logger:               logger,
@@ -66,20 +66,20 @@ func (eka *EnhancedKeycloakAuth) AuthenticateEnhanced(ctx context.Context, token
 	if eka.enhancedEnabled && eka.enhancedKeycloakAuth != nil {
 		isValid, err := eka.enhancedKeycloakAuth.AuthenticateUser(token)
 		if err != nil {
-			eka.logger.Error("Enhanced Keycloak authentication failed", 
+			eka.logger.Error("Enhanced Keycloak authentication failed",
 				zap.Error(err),
 				zap.String("token_prefix", token[:min(len(token), 10)]+"..."),
 			)
 			return false, err
 		}
-		
+
 		eka.logger.Info("Enhanced Keycloak authentication successful",
 			zap.Bool("is_valid", isValid),
 		)
-		
+
 		return isValid, nil
 	}
-	
+
 	// Fallback к обычной аутентификации
 	return eka.AuthenticateBasic(ctx, token)
 }
@@ -90,12 +90,12 @@ func (eka *EnhancedKeycloakAuth) AuthenticateBasic(ctx context.Context, token st
 	if token == "" {
 		return false, fmt.Errorf("empty token")
 	}
-	
+
 	// В реальной реализации здесь будет полноценная аутентификация
 	eka.logger.Debug("Basic authentication (fallback)",
 		zap.String("token_prefix", token[:min(len(token), 10)]+"..."),
 	)
-	
+
 	return len(token) > 10, nil // Простая проверка для примера
 }
 
@@ -104,7 +104,7 @@ func (eka *EnhancedKeycloakAuth) ValidateTokenEnhanced(token string) (bool, erro
 	if eka.enhancedEnabled && eka.enhancedKeycloakAuth != nil {
 		return eka.enhancedKeycloakAuth.ValidateToken(token)
 	}
-	
+
 	// Fallback к базовой валидации
 	return eka.validateTokenBasic(token)
 }
@@ -114,12 +114,12 @@ func (eka *EnhancedKeycloakAuth) validateTokenBasic(token string) (bool, error) 
 	if token == "" {
 		return false, fmt.Errorf("empty token")
 	}
-	
+
 	// Простая проверка формата JWT токена
 	if len(token) < 20 {
 		return false, fmt.Errorf("token too short")
 	}
-	
+
 	// Проверяем наличие точек (характерно для JWT)
 	dotCount := 0
 	for _, char := range token {
@@ -127,11 +127,11 @@ func (eka *EnhancedKeycloakAuth) validateTokenBasic(token string) (bool, error) 
 			dotCount++
 		}
 	}
-	
+
 	if dotCount < 2 {
 		return false, fmt.Errorf("invalid token format")
 	}
-	
+
 	return true, nil
 }
 
@@ -140,11 +140,11 @@ func (eka *EnhancedKeycloakAuth) EnableEnhanced(config *KeycloakConfig) error {
 	if eka.enhancedEnabled {
 		return nil // Уже включен
 	}
-	
+
 	if config == nil {
 		config = eka.config
 	}
-	
+
 	enhancedConfig := &quic.KeycloakConfig{
 		ServerURL:     config.ServerURL,
 		Realm:         config.Realm,
@@ -153,10 +153,10 @@ func (eka *EnhancedKeycloakAuth) EnableEnhanced(config *KeycloakConfig) error {
 		AdminUsername: config.AdminUsername,
 		AdminPassword: config.AdminPassword,
 	}
-	
+
 	eka.enhancedKeycloakAuth = quic.NewKeycloakAuth(enhancedConfig)
 	eka.enhancedEnabled = true
-	
+
 	eka.logger.Info("Enhanced Keycloak Auth enabled")
 	return nil
 }
@@ -165,7 +165,7 @@ func (eka *EnhancedKeycloakAuth) EnableEnhanced(config *KeycloakConfig) error {
 func (eka *EnhancedKeycloakAuth) DisableEnhanced() {
 	eka.enhancedEnabled = false
 	eka.enhancedKeycloakAuth = nil
-	
+
 	eka.logger.Info("Enhanced Keycloak Auth disabled")
 }
 
@@ -192,14 +192,14 @@ func (eka *EnhancedKeycloakAuth) UpdateConfig(config *KeycloakConfig) error {
 	if config == nil {
 		return fmt.Errorf("config cannot be nil")
 	}
-	
+
 	eka.config = config
-	
+
 	// Обновляем Enhanced конфигурацию, если включена
 	if eka.enhancedEnabled {
 		return eka.EnableEnhanced(config)
 	}
-	
+
 	return nil
 }
 

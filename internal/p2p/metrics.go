@@ -26,8 +26,8 @@ func NewP2PMetrics() *P2PMetrics {
 		),
 		latency: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Name: "p2p_latency_seconds",
-				Help: "P2P connection latency",
+				Name:    "p2p_latency_seconds",
+				Help:    "P2P connection latency",
 				Buckets: prometheus.DefBuckets,
 			},
 			[]string{"route_type", "tenant_id"},

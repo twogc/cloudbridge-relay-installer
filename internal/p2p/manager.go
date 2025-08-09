@@ -12,13 +12,13 @@ import (
 
 // P2PManager управляет P2P соединениями
 type P2PManager struct {
-	wireGuardMesh      *wireguard.MeshTopology
-	peerDiscovery      *wireguard.PeerDiscovery
-	hybridRouter       *wireguard.HybridRouter
-	siteToSiteManager  *wireguard.SiteToSiteManager
-	metrics            *P2PMetrics
-	logger             *zap.Logger
-	isInitialized      bool
+	wireGuardMesh     *wireguard.MeshTopology
+	peerDiscovery     *wireguard.PeerDiscovery
+	hybridRouter      *wireguard.HybridRouter
+	siteToSiteManager *wireguard.SiteToSiteManager
+	metrics           *P2PMetrics
+	logger            *zap.Logger
+	isInitialized     bool
 }
 
 // NewP2PManager создает новый P2P менеджер
@@ -92,7 +92,7 @@ func (pm *P2PManager) processDiscoveredPeers(ctx context.Context) {
 
 				// Добавляем в mesh topology
 				if err := pm.wireGuardMesh.AddPeer(peer.PeerID, wgPeer); err != nil {
-					pm.logger.Error("Failed to add peer to mesh", 
+					pm.logger.Error("Failed to add peer to mesh",
 						zap.String("peer_id", peer.PeerID),
 						zap.Error(err))
 					continue
@@ -209,11 +209,11 @@ func (pm *P2PManager) HandleConnection(ctx context.Context, conn net.Conn, tenan
 
 // RouteInfo представляет информацию о маршруте
 type RouteInfo struct {
-	Type        string
-	PeerID      string
-	Endpoint    string
-	Latency     time.Duration
-	TrustLevel  wireguard.TrustLevel
+	Type       string
+	PeerID     string
+	Endpoint   string
+	Latency    time.Duration
+	TrustLevel wireguard.TrustLevel
 }
 
 // determineOptimalRoute определяет оптимальный маршрут для соединения

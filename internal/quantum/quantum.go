@@ -7,24 +7,24 @@ import (
 
 // PQCConfig конфигурация Post-Quantum Cryptography
 type PQCConfig struct {
-	Enabled           bool
-	Algorithm         PQCAlgorithm
-	HybridMode        bool
-	KeySize           PQCKeySize
-	SignatureScheme   PQCSignatureScheme
-	FallbackEnabled   bool
-	KeyRotationDays   int
+	Enabled         bool
+	Algorithm       PQCAlgorithm
+	HybridMode      bool
+	KeySize         PQCKeySize
+	SignatureScheme PQCSignatureScheme
+	FallbackEnabled bool
+	KeyRotationDays int
 }
 
 // PQCAlgorithm тип алгоритма PQC
 type PQCAlgorithm string
 
 const (
-	PQCKyber        PQCAlgorithm = "kyber"
-	PQCDilithium    PQCAlgorithm = "dilithium"
-	PQCFalcon       PQCAlgorithm = "falcon"
-	PQCSphincsPlus  PQCAlgorithm = "sphincs_plus"
-	PQCHybrid       PQCAlgorithm = "hybrid"
+	PQCKyber       PQCAlgorithm = "kyber"
+	PQCDilithium   PQCAlgorithm = "dilithium"
+	PQCFalcon      PQCAlgorithm = "falcon"
+	PQCSphincsPlus PQCAlgorithm = "sphincs_plus"
+	PQCHybrid      PQCAlgorithm = "hybrid"
 )
 
 // PQCKeySize размер ключа PQC
@@ -47,62 +47,62 @@ const (
 
 // PQCKeyPair квантово-устойчивая пара ключей
 type PQCKeyPair struct {
-	PublicKey     []byte
-	PrivateKey    []byte
-	Algorithm     PQCAlgorithm
-	KeySize       PQCKeySize
-	CreatedAt     time.Time
-	ExpiresAt     time.Time
-	HybridMode    bool
+	PublicKey  []byte
+	PrivateKey []byte
+	Algorithm  PQCAlgorithm
+	KeySize    PQCKeySize
+	CreatedAt  time.Time
+	ExpiresAt  time.Time
+	HybridMode bool
 }
 
 // HybridKeyPair гибридная пара ключей (Classical + Quantum)
 type HybridKeyPair struct {
-	Classical     *ClassicalKeyPair
-	Quantum       *PQCKeyPair
-	Combined      []byte
+	Classical *ClassicalKeyPair
+	Quantum   *PQCKeyPair
+	Combined  []byte
 }
 
 // ClassicalKeyPair классическая пара ключей
 type ClassicalKeyPair struct {
-	PublicKey     []byte
-	PrivateKey    []byte
-	Algorithm     string
+	PublicKey  []byte
+	PrivateKey []byte
+	Algorithm  string
 }
 
 // QuantumWireGuardInterface квантово-устойчивый WireGuard интерфейс
 type QuantumWireGuardInterface struct {
-	WgInterface     interface{} // *wireguard.WireGuardInterface
-	PQCConfig       *PQCConfig
-	HybridKeyPair   *HybridKeyPair
-	PeerKeys        map[string]*HybridKeyPair
-	KeyExchange     *QuantumKeyExchange
+	WgInterface   interface{} // *wireguard.WireGuardInterface
+	PQCConfig     *PQCConfig
+	HybridKeyPair *HybridKeyPair
+	PeerKeys      map[string]*HybridKeyPair
+	KeyExchange   *QuantumKeyExchange
 }
 
 // QuantumKeyExchange квантово-устойчивый обмен ключами
 type QuantumKeyExchange struct {
-	LocalHybridKey  *HybridKeyPair
-	PeerHybridKeys  map[string]*HybridKeyPair
-	SessionKeys     map[string]*QuantumSessionKey
+	LocalHybridKey *HybridKeyPair
+	PeerHybridKeys map[string]*HybridKeyPair
+	SessionKeys    map[string]*QuantumSessionKey
 }
 
 // QuantumSessionKey квантово-устойчивый сессионный ключ
 type QuantumSessionKey struct {
-	ClassicalKey    []byte
-	QuantumKey      []byte
-	CombinedKey     []byte
-	PeerID          string
-	CreatedAt       time.Time
-	ExpiresAt       time.Time
-	Algorithm       PQCAlgorithm
+	ClassicalKey []byte
+	QuantumKey   []byte
+	CombinedKey  []byte
+	PeerID       string
+	CreatedAt    time.Time
+	ExpiresAt    time.Time
+	Algorithm    PQCAlgorithm
 }
 
 // QuantumEnhancedQUIC квантово-устойчивый Enhanced QUIC
 type QuantumEnhancedQUIC struct {
-	EnhancedQUIC    interface{} // *quic.EnhancedConnection
-	PQCConfig       *PQCConfig
-	TLSConfig       *QuantumTLSConfig
-	Certificate     *QuantumCertificate
+	EnhancedQUIC interface{} // *quic.EnhancedConnection
+	PQCConfig    *PQCConfig
+	TLSConfig    *QuantumTLSConfig
+	Certificate  *QuantumCertificate
 }
 
 // QuantumTLSConfig квантово-устойчивая TLS конфигурация
@@ -115,9 +115,9 @@ type QuantumTLSConfig struct {
 
 // QuantumCertificate квантово-устойчивый сертификат
 type QuantumCertificate struct {
-	PQCAlgorithm    PQCAlgorithm
-	PQCKeyPair      *PQCKeyPair
-	HybridKeyPair   *HybridKeyPair
+	PQCAlgorithm     PQCAlgorithm
+	PQCKeyPair       *PQCKeyPair
+	HybridKeyPair    *HybridKeyPair
 	QuantumSignature []byte
 }
 
@@ -137,10 +137,10 @@ func NewPQCConfig() *PQCConfig {
 // NewQuantumWireGuardInterface создает новый квантово-устойчивый WireGuard интерфейс
 func NewQuantumWireGuardInterface(wgInterface interface{}, pqcConfig *PQCConfig) *QuantumWireGuardInterface {
 	return &QuantumWireGuardInterface{
-		WgInterface:   wgInterface,
-		PQCConfig:     pqcConfig,
-		PeerKeys:      make(map[string]*HybridKeyPair),
-		KeyExchange:   &QuantumKeyExchange{
+		WgInterface: wgInterface,
+		PQCConfig:   pqcConfig,
+		PeerKeys:    make(map[string]*HybridKeyPair),
+		KeyExchange: &QuantumKeyExchange{
 			PeerHybridKeys: make(map[string]*HybridKeyPair),
 			SessionKeys:    make(map[string]*QuantumSessionKey),
 		},
@@ -166,15 +166,15 @@ func (pqc *PQCConfig) Validate() error {
 	if !pqc.Enabled {
 		return nil
 	}
-	
+
 	if pqc.KeySize != PQCLevel1 && pqc.KeySize != PQCLevel3 && pqc.KeySize != PQCLevel5 {
 		return fmt.Errorf("invalid key size: %d", pqc.KeySize)
 	}
-	
+
 	if pqc.KeyRotationDays <= 0 {
 		return fmt.Errorf("key rotation days must be positive")
 	}
-	
+
 	return nil
 }
 
@@ -220,16 +220,16 @@ func (hkp *HybridKeyPair) Generate() error {
 		PrivateKey: []byte("classical-private-key"),
 		Algorithm:  "X25519",
 	}
-	
+
 	hkp.Quantum = &PQCKeyPair{
 		Algorithm: PQCKyber,
 		KeySize:   PQCLevel3,
 	}
-	
+
 	if err := hkp.Quantum.Generate(); err != nil {
 		return err
 	}
-	
+
 	return hkp.Combine()
 }
 
@@ -253,7 +253,7 @@ func (qwg *QuantumWireGuardInterface) Start() error {
 	if err := qwg.PQCConfig.Validate(); err != nil {
 		return err
 	}
-	
+
 	qwg.HybridKeyPair = &HybridKeyPair{}
 	return qwg.HybridKeyPair.Generate()
 }
@@ -269,7 +269,7 @@ func (qwg *QuantumWireGuardInterface) ExchangeKeys(peerID string) error {
 	if err := peerKey.Generate(); err != nil {
 		return err
 	}
-	
+
 	qwg.PeerKeys[peerID] = peerKey
 	return nil
 }
@@ -288,12 +288,12 @@ func (qeq *QuantumEnhancedQUIC) Start() error {
 	if err := qeq.PQCConfig.Validate(); err != nil {
 		return err
 	}
-	
+
 	qeq.Certificate = &QuantumCertificate{
 		PQCAlgorithm: PQCKyber,
 		PQCKeyPair:   &PQCKeyPair{},
 	}
-	
+
 	return qeq.GenerateCertificate()
 }
 
@@ -307,7 +307,7 @@ func (qeq *QuantumEnhancedQUIC) GenerateCertificate() error {
 	if err := qeq.Certificate.PQCKeyPair.Generate(); err != nil {
 		return err
 	}
-	
+
 	qeq.Certificate.QuantumSignature = []byte("quantum-signature")
 	return nil
 }

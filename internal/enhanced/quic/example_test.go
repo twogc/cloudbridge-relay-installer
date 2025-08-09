@@ -65,7 +65,7 @@ func ExampleQUICServer() {
 func ExampleQUICConfig() {
 	// Конфигурация по умолчанию
 	defaultConfig := DefaultQUICConfig()
-	fmt.Printf("Default config: MaxStreams=%d, KeepAlive=%v\n", 
+	fmt.Printf("Default config: MaxStreams=%d, KeepAlive=%v\n",
 		defaultConfig.MaxStreams, defaultConfig.KeepAliveInterval)
 
 	// Пользовательская конфигурация для высоконагруженного сервера
@@ -77,7 +77,7 @@ func ExampleQUICConfig() {
 		EnableMetrics:     true,
 		EnableTracing:     true,
 	}
-	fmt.Printf("High load config: MaxStreams=%d, KeepAlive=%v\n", 
+	fmt.Printf("High load config: MaxStreams=%d, KeepAlive=%v\n",
 		highLoadConfig.MaxStreams, highLoadConfig.KeepAliveInterval)
 
 	// Конфигурация для тестирования
@@ -89,7 +89,7 @@ func ExampleQUICConfig() {
 		EnableMetrics:     false,
 		EnableTracing:     false,
 	}
-	fmt.Printf("Test config: MaxStreams=%d, KeepAlive=%v\n", 
+	fmt.Printf("Test config: MaxStreams=%d, KeepAlive=%v\n",
 		testConfig.MaxStreams, testConfig.KeepAliveInterval)
 }
 
@@ -182,10 +182,10 @@ func ExampleQUICServer_WithGracefulShutdown() {
 
 	// Graceful shutdown
 	logger.Info("Starting graceful shutdown...")
-	
+
 	// Даем время на завершение активных соединений
 	time.Sleep(2 * time.Second)
-	
+
 	// Останавливаем сервер
 	if err := server.Stop(); err != nil {
 		logger.Error("Failed to stop server gracefully", zap.Error(err))
@@ -203,7 +203,7 @@ func ExampleQUICServer_WithMetrics() {
 	// Создаем сервер с включенными метриками
 	config := DefaultQUICServerConfig()
 	config.EnableMetrics = true
-	
+
 	server := NewQUICServer(config, logger, enhancedMetrics)
 
 	// Запускаем сервер
@@ -218,7 +218,7 @@ func ExampleQUICServer_WithMetrics() {
 	go func() {
 		for range ticker.C {
 			stats := server.GetStats()
-			logger.Info("Server metrics", 
+			logger.Info("Server metrics",
 				zap.Int32("active_connections", stats["active_connections"].(int32)),
 				zap.Int64("total_connections", stats["total_connections"].(int64)),
 				zap.String("uptime", stats["uptime"].(string)),
@@ -248,8 +248,8 @@ func ExampleQUICServer_WithTLS() {
 		ConnectionTimeout: 60 * time.Second,
 		EnableTLS:         true,
 		// CertFile и KeyFile оставляем пустыми для использования самоподписанного сертификата
-		EnableMetrics:     true,
-		EnableTracing:     false,
+		EnableMetrics: true,
+		EnableTracing: false,
 	}
 
 	server := NewQUICServer(config, logger, enhancedMetrics)
@@ -267,4 +267,4 @@ func ExampleQUICServer_WithTLS() {
 	// Останавливаем сервер
 	server.Stop()
 	logger.Info("TLS QUIC server stopped")
-} 
+}

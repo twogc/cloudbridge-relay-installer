@@ -45,17 +45,17 @@ type BackoffHandler struct {
 	retries       uint
 	resetDeadline time.Time
 
-	Clock Clock
+	Clock  Clock
 	logger *logger.Logger
 }
 
 // RetryConfig holds configuration for retry behavior
 type RetryConfig struct {
-	MaxRetries   uint          `json:"max_retries"`
-	BaseTime     time.Duration `json:"base_time"`
-	MaxDelay     time.Duration `json:"max_delay"`
-	Jitter       float64       `json:"jitter"`
-	RetryForever bool          `json:"retry_forever"`
+	MaxRetries   uint           `json:"max_retries"`
+	BaseTime     time.Duration  `json:"base_time"`
+	MaxDelay     time.Duration  `json:"max_delay"`
+	Jitter       float64        `json:"jitter"`
+	RetryForever bool           `json:"retry_forever"`
 	Logger       *logger.Logger `json:"-"`
 }
 
@@ -75,7 +75,7 @@ func NewBackoffHandler(config *RetryConfig) *BackoffHandler {
 	if config == nil {
 		config = DefaultRetryConfig()
 	}
-	
+
 	if config.Logger == nil {
 		// Logger will be handled by the caller
 		config.Logger = nil
@@ -97,11 +97,11 @@ func (b *BackoffHandler) ShouldRetry(err error, attempt int) bool {
 	if !b.IsRetryableError(err) {
 		return false
 	}
-	
+
 	if b.retryForever {
 		return true
 	}
-	
+
 	return uint(attempt) < b.maxRetries
 }
 
@@ -173,7 +173,7 @@ func (b *BackoffHandler) SetGracePeriod() time.Duration {
 	if maxTimeToWait > b.maxDelay {
 		maxTimeToWait = b.maxDelay
 	}
-	
+
 	// Ensure maxTimeToWait is at least 1 nanosecond to avoid panic
 	if maxTimeToWait <= 0 {
 		maxTimeToWait = time.Nanosecond
@@ -196,20 +196,20 @@ func (b *BackoffHandler) Backoff(ctx context.Context) bool {
 		b.retries = 0
 		b.resetDeadline = time.Time{}
 	}
-	
+
 	if b.retries >= b.maxRetries && !b.retryForever {
 		return false
 	}
-	
+
 	b.retries++
 	maxTimeToWait := b.GetBackoffDuration(int(b.retries))
-	
+
 	// Ensure maxTimeToWait is at least 1 nanosecond to avoid panic
 	if maxTimeToWait <= 0 {
 		maxTimeToWait = time.Nanosecond
 	}
 	timeToWait := time.Duration(rand.Int63n(maxTimeToWait.Nanoseconds()))
-	
+
 	if b.logger != nil {
 		b.logger.Debug("Backoff delay",
 			zap.Duration("delay", timeToWait),
@@ -278,21 +278,21 @@ func (b *BackoffHandler) BackoffTimer() <-chan time.Time {
 // GetStats returns backoff statistics
 func (b *BackoffHandler) GetStats() map[string]interface{} {
 	return map[string]interface{}{
-		"retries":           b.retries,
-		"max_retries":       b.maxRetries,
-		"retry_forever":     b.retryForever,
-		"base_time":         b.baseTime.String(),
-		"max_delay":         b.maxDelay.String(),
-		"jitter":            b.jitter,
-		"reached_max":       b.ReachedMaxRetries(),
-		"reset_deadline":    b.resetDeadline,
+		"retries":            b.retries,
+		"max_retries":        b.maxRetries,
+		"retry_forever":      b.retryForever,
+		"base_time":          b.baseTime.String(),
+		"max_delay":          b.maxDelay.String(),
+		"jitter":             b.jitter,
+		"reached_max":        b.ReachedMaxRetries(),
+		"reset_deadline":     b.resetDeadline,
 		"has_reset_deadline": !b.resetDeadline.IsZero(),
 	}
 }
 
 // Custom error types for better error handling
 type ConnectionError struct {
-	Message  string
+	Message   string
 	Retryable bool
 }
 
@@ -314,4 +314,4 @@ type NetworkError struct {
 
 func (e *NetworkError) Error() string {
 	return e.Message
-} 
+}

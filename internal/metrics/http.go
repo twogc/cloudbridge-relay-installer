@@ -27,13 +27,13 @@ func NewServer(port, path string) *Server {
 // Start starts the metrics server
 func (s *Server) Start() error {
 	mux := http.NewServeMux()
-	
+
 	// Prometheus metrics endpoint
 	mux.Handle(s.path, promhttp.Handler())
-	
+
 	// Health check endpoint
 	mux.HandleFunc("/health", s.handleHealth)
-	
+
 	// Create server with timeouts for security
 	server := &http.Server{
 		Addr:         s.port,
@@ -42,7 +42,7 @@ func (s *Server) Start() error {
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-	
+
 	return server.ListenAndServe()
 }
 
@@ -61,4 +61,4 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(status); err != nil {
 		http.Error(w, "Failed to encode health status", http.StatusInternalServerError)
 	}
-} 
+}

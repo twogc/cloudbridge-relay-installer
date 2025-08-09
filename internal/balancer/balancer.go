@@ -21,7 +21,7 @@ type Balancer struct {
 	servers    []*Server
 	mu         sync.RWMutex
 	nextServer int
-	
+
 	// Enhanced QUIC Geographic Router
 	enhancedGeoRouter *quic.GeographicRouter
 	enhancedEnabled   bool
@@ -30,7 +30,7 @@ type Balancer struct {
 // NewBalancer creates a new balancer
 func NewBalancer() *Balancer {
 	return &Balancer{
-		servers: make([]*Server, 0),
+		servers:         make([]*Server, 0),
 		enhancedEnabled: false, // По умолчанию отключено
 	}
 }
@@ -38,9 +38,9 @@ func NewBalancer() *Balancer {
 // NewBalancerWithEnhanced создает balancer с Enhanced Geographic Router
 func NewBalancerWithEnhanced() *Balancer {
 	return &Balancer{
-		servers: make([]*Server, 0),
+		servers:           make([]*Server, 0),
 		enhancedGeoRouter: quic.NewGeographicRouter(),
-		enhancedEnabled: true,
+		enhancedEnabled:   true,
 	}
 }
 
@@ -107,7 +107,7 @@ func (b *Balancer) GetServerByGeo(clientIP string) *Server {
 			}
 		}
 	}
-	
+
 	// Fallback к обычной балансировке
 	return b.GetNextServer()
 }
@@ -168,7 +168,7 @@ func (b *Balancer) GetServers() []*Server {
 func (b *Balancer) InitEnhancedGeoRouter() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	
+
 	b.enhancedGeoRouter = quic.NewGeographicRouter()
 	b.enhancedEnabled = true
 }
@@ -184,7 +184,7 @@ func (b *Balancer) EnableEnhanced() {
 func (b *Balancer) DisableEnhanced() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	
+
 	b.enhancedEnabled = false
 	b.enhancedGeoRouter = nil
 }
@@ -201,4 +201,4 @@ func (b *Balancer) GetEnhancedGeoRouter() *quic.GeographicRouter {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.enhancedGeoRouter
-} 
+}

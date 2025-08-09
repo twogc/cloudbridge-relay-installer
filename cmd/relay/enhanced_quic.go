@@ -14,20 +14,20 @@ import (
 
 // EnhancedQUICManager управляет Enhanced QUIC функциональностью
 type EnhancedQUICManager struct {
-	config                 *quic.EnhancedConfig
-	tenantManager         *quic.TenantManager
-	ddosProtection        *quic.DDoSProtection
-	geoRouter             *quic.GeographicRouter
-	keycloakAuth          *quic.KeycloakAuth
-	logger                *zap.Logger
-	
+	config         *quic.EnhancedConfig
+	tenantManager  *quic.TenantManager
+	ddosProtection *quic.DDoSProtection
+	geoRouter      *quic.GeographicRouter
+	keycloakAuth   *quic.KeycloakAuth
+	logger         *zap.Logger
+
 	// Интеграции с существующими компонентами
-	relayTenantManager    *tenant.Manager
-	relayBalancer         *balancer.Balancer
-	relayRateLimit        *ratelimit.IPLimiter
-	relayKeycloakAuth     *auth.EnhancedKeycloakAuth
-	
-	enabled               bool
+	relayTenantManager *tenant.Manager
+	relayBalancer      *balancer.Balancer
+	relayRateLimit     *ratelimit.IPLimiter
+	relayKeycloakAuth  *auth.EnhancedKeycloakAuth
+
+	enabled bool
 }
 
 // NewEnhancedQUICManager создает новый Enhanced QUIC Manager
@@ -39,53 +39,53 @@ func NewEnhancedQUICManager(logger *zap.Logger) *EnhancedQUICManager {
 		HandshakeTimeout:               10 * time.Second,
 		MaxIncomingStreams:             100,
 		MaxIncomingUniStreams:          100,
-		InitialStreamReceiveWindow:     512 * 1024,    // 512KB
+		InitialStreamReceiveWindow:     512 * 1024,      // 512KB
 		MaxStreamReceiveWindow:         2 * 1024 * 1024, // 2MB
-		InitialConnectionReceiveWindow: 1024 * 1024,   // 1MB
+		InitialConnectionReceiveWindow: 1024 * 1024,     // 1MB
 		MaxConnectionReceiveWindow:     5 * 1024 * 1024, // 5MB
 		CongestionControlAlgorithm:     "cubic",
-		
+
 		// Enhanced features
 		EnableDDoSProtection:      true,
 		EnableGeographicRouting:   true,
 		EnableKeycloakIntegration: false, // По умолчанию отключено
 	}
-	
+
 	return &EnhancedQUICManager{
-		config:                config,
-		tenantManager:        quic.NewTenantManager(),
-		ddosProtection:       quic.NewDDoSProtection(),
-		geoRouter:            quic.NewGeographicRouter(),
-		logger:               logger,
-		enabled:              false, // По умолчанию отключено
+		config:         config,
+		tenantManager:  quic.NewTenantManager(),
+		ddosProtection: quic.NewDDoSProtection(),
+		geoRouter:      quic.NewGeographicRouter(),
+		logger:         logger,
+		enabled:        false, // По умолчанию отключено
 	}
 }
 
 // Initialize инициализирует Enhanced QUIC
 func (eqm *EnhancedQUICManager) Initialize() error {
 	eqm.logger.Info("Initializing Enhanced QUIC Manager")
-	
+
 	// Настраиваем тенантов
 	eqm.config.TenantManager = eqm.tenantManager
-	
+
 	// Добавляем тестовых тенантов
-	eqm.tenantManager.AddTenant("premium", 1024*1024*1024, 100)  // 1GB, 100 connections
-	eqm.tenantManager.AddTenant("standard", 100*1024*1024, 10)   // 100MB, 10 connections
-	eqm.tenantManager.AddTenant("basic", 10*1024*1024, 5)        // 10MB, 5 connections
-	
+	eqm.tenantManager.AddTenant("premium", 1024*1024*1024, 100) // 1GB, 100 connections
+	eqm.tenantManager.AddTenant("standard", 100*1024*1024, 10)  // 100MB, 10 connections
+	eqm.tenantManager.AddTenant("basic", 10*1024*1024, 5)       // 10MB, 5 connections
+
 	// Настраиваем Keycloak, если включен
 	if eqm.config.EnableKeycloakIntegration && eqm.config.KeycloakConfig != nil {
 		eqm.keycloakAuth = quic.NewKeycloakAuth(eqm.config.KeycloakConfig)
 		eqm.logger.Info("Keycloak integration enabled")
 	}
-	
+
 	eqm.enabled = true
 	eqm.logger.Info("Enhanced QUIC Manager initialized successfully",
 		zap.Bool("ddos_protection", eqm.config.EnableDDoSProtection),
 		zap.Bool("geographic_routing", eqm.config.EnableGeographicRouting),
 		zap.Bool("keycloak_integration", eqm.config.EnableKeycloakIntegration),
 	)
-	
+
 	return nil
 }
 
@@ -97,28 +97,28 @@ func (eqm *EnhancedQUICManager) SetupIntegrations(
 	keycloakAuth *auth.EnhancedKeycloakAuth,
 ) error {
 	eqm.logger.Info("Setting up Enhanced QUIC integrations")
-	
+
 	// Интеграция с Tenant Manager
 	if tenantMgr != nil {
 		eqm.relayTenantManager = tenantMgr
 		tenantMgr.EnableEnhanced()
 		eqm.logger.Info("Tenant Manager integration enabled")
 	}
-	
+
 	// Интеграция с Load Balancer
 	if balancer != nil {
 		eqm.relayBalancer = balancer
 		balancer.EnableEnhanced()
 		eqm.logger.Info("Load Balancer integration enabled")
 	}
-	
+
 	// Интеграция с Rate Limiting
 	if rateLimit != nil {
 		eqm.relayRateLimit = rateLimit
 		rateLimit.EnableEnhanced()
 		eqm.logger.Info("Rate Limiting integration enabled")
 	}
-	
+
 	// Интеграция с Keycloak Auth
 	if keycloakAuth != nil {
 		eqm.relayKeycloakAuth = keycloakAuth
@@ -131,7 +131,7 @@ func (eqm *EnhancedQUICManager) SetupIntegrations(
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -140,13 +140,13 @@ func (eqm *EnhancedQUICManager) CreateConnection(network, address, tenantID stri
 	if !eqm.enabled {
 		return nil, fmt.Errorf("Enhanced QUIC Manager is not enabled")
 	}
-	
+
 	eqm.logger.Debug("Creating Enhanced QUIC connection",
 		zap.String("network", network),
 		zap.String("address", address),
 		zap.String("tenant_id", tenantID),
 	)
-	
+
 	return quic.DialWithTenant(network, address, tenantID, eqm.config)
 }
 
@@ -155,7 +155,7 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 	if !eqm.enabled {
 		return fmt.Errorf("Enhanced QUIC Manager is not enabled")
 	}
-	
+
 	// Проверяем DDoS Protection
 	if eqm.config.EnableDDoSProtection && eqm.ddosProtection != nil {
 		if err := eqm.ddosProtection.CheckRateLimit(clientIP); err != nil {
@@ -166,7 +166,7 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 			return err
 		}
 	}
-	
+
 	// Проверяем лимиты тенанта через интегрированный Tenant Manager
 	if eqm.relayTenantManager != nil {
 		if err := eqm.relayTenantManager.CheckEnhancedTenantLimits(tenantID); err != nil {
@@ -177,7 +177,7 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 			return err
 		}
 	}
-	
+
 	// Проверяем через интегрированный Rate Limiter
 	if eqm.relayRateLimit != nil {
 		if !eqm.relayRateLimit.Allow(clientIP) {
@@ -187,7 +187,7 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 			return fmt.Errorf("rate limit exceeded for IP %s", clientIP)
 		}
 	}
-	
+
 	// Проверяем аутентификацию через интегрированный Keycloak
 	if eqm.config.EnableKeycloakIntegration && eqm.relayKeycloakAuth != nil && token != "" {
 		if isValid, err := eqm.relayKeycloakAuth.ValidateTokenEnhanced(token); err != nil || !isValid {
@@ -199,7 +199,7 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 			return fmt.Errorf("authentication failed: %v", err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -208,7 +208,7 @@ func (eqm *EnhancedQUICManager) GetServerByGeo(clientIP string) (string, error) 
 	if !eqm.enabled {
 		return "", fmt.Errorf("Enhanced QUIC Manager is not enabled")
 	}
-	
+
 	if eqm.config.EnableGeographicRouting && eqm.geoRouter != nil {
 		route := eqm.geoRouter.RouteByLocation(clientIP)
 		eqm.logger.Debug("Geographic routing",
@@ -217,33 +217,33 @@ func (eqm *EnhancedQUICManager) GetServerByGeo(clientIP string) (string, error) 
 		)
 		return route, nil
 	}
-	
+
 	// Fallback через интегрированный балансировщик
 	if eqm.relayBalancer != nil {
 		if server := eqm.relayBalancer.GetServerByGeo(clientIP); server != nil {
 			return server.Address, nil
 		}
 	}
-	
+
 	return "", fmt.Errorf("no server available for IP %s", clientIP)
 }
 
 // GetStats возвращает статистику Enhanced QUIC
 func (eqm *EnhancedQUICManager) GetStats() map[string]interface{} {
 	stats := map[string]interface{}{
-		"enabled":                    eqm.enabled,
-		"ddos_protection_enabled":    eqm.config.EnableDDoSProtection,
-		"geographic_routing_enabled": eqm.config.EnableGeographicRouting,
+		"enabled":                      eqm.enabled,
+		"ddos_protection_enabled":      eqm.config.EnableDDoSProtection,
+		"geographic_routing_enabled":   eqm.config.EnableGeographicRouting,
 		"keycloak_integration_enabled": eqm.config.EnableKeycloakIntegration,
 	}
-	
+
 	// Добавляем статистику тенантов
 	if eqm.tenantManager != nil {
 		tenantStats := make(map[string]interface{})
 		// Здесь можно добавить детальную статистику по тенантам
 		stats["tenants"] = tenantStats
 	}
-	
+
 	return stats
 }
 
@@ -252,7 +252,7 @@ func (eqm *EnhancedQUICManager) Enable() error {
 	if eqm.enabled {
 		return nil // Уже включен
 	}
-	
+
 	eqm.logger.Info("Enabling Enhanced QUIC Manager")
 	return eqm.Initialize()
 }
@@ -262,9 +262,9 @@ func (eqm *EnhancedQUICManager) Disable() {
 	if !eqm.enabled {
 		return // Уже отключен
 	}
-	
+
 	eqm.logger.Info("Disabling Enhanced QUIC Manager")
-	
+
 	// Отключаем интеграции
 	if eqm.relayTenantManager != nil {
 		eqm.relayTenantManager.DisableEnhanced()
@@ -278,7 +278,7 @@ func (eqm *EnhancedQUICManager) Disable() {
 	if eqm.relayKeycloakAuth != nil {
 		eqm.relayKeycloakAuth.DisableEnhanced()
 	}
-	
+
 	eqm.enabled = false
 	eqm.logger.Info("Enhanced QUIC Manager disabled")
 }
@@ -298,14 +298,14 @@ func (eqm *EnhancedQUICManager) UpdateConfig(config *quic.EnhancedConfig) error 
 	if config == nil {
 		return fmt.Errorf("config cannot be nil")
 	}
-	
+
 	eqm.config = config
 	eqm.logger.Info("Enhanced QUIC configuration updated")
-	
+
 	// Переинициализируем, если включен
 	if eqm.enabled {
 		return eqm.Initialize()
 	}
-	
+
 	return nil
 }

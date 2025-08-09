@@ -135,10 +135,10 @@ func demoHealthChecker(logger *zap.Logger) {
 	fmt.Println("\n--- Monitoring health checks ---")
 	for i := 0; i < 3; i++ {
 		time.Sleep(3 * time.Second)
-		
+
 		status := hc.GetStatus()
 		results := hc.GetResults()
-		
+
 		fmt.Printf("Cycle %d - Overall status: %s\n", i+1, status)
 		for name, result := range results {
 			fmt.Printf("  %s: %s (duration: %v)\n", name, result.Status, result.Duration)
@@ -159,4 +159,4 @@ func demoHealthChecker(logger *zap.Logger) {
 	for name, result := range results {
 		fmt.Printf("%s: %s\n", name, result.Status)
 	}
-} 
+}

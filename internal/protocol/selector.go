@@ -22,27 +22,27 @@ const (
 
 // ProtocolSelectorConfig holds configuration for protocol selection
 type ProtocolSelectorConfig struct {
-	Strategy        SelectorStrategy
-	PreferredOrder  []Protocol
-	SwitchThreshold float64
+	Strategy            SelectorStrategy
+	PreferredOrder      []Protocol
+	SwitchThreshold     float64
 	HealthCheckInterval time.Duration
-	MetricsWindow    time.Duration
-	Logger           *zap.Logger
+	MetricsWindow       time.Duration
+	Logger              *zap.Logger
 }
 
 // IntelligentProtocolSelector implements intelligent protocol selection
 type IntelligentProtocolSelector struct {
-	engine           *ProtocolEngine
-	strategy         SelectorStrategy
-	preferredOrder   []Protocol
-	currentIndex     int
-	lastSwitch       time.Time
-	switchCooldown   time.Duration
-	healthTicker     *time.Ticker
-	ctx              context.Context
-	cancel           context.CancelFunc
-	mu               sync.RWMutex
-	logger           *zap.Logger
+	engine         *ProtocolEngine
+	strategy       SelectorStrategy
+	preferredOrder []Protocol
+	currentIndex   int
+	lastSwitch     time.Time
+	switchCooldown time.Duration
+	healthTicker   *time.Ticker
+	ctx            context.Context
+	cancel         context.CancelFunc
+	mu             sync.RWMutex
+	logger         *zap.Logger
 }
 
 // NewIntelligentProtocolSelector creates a new protocol selector
@@ -271,4 +271,4 @@ func (s SelectorStrategy) String() string {
 	default:
 		return "unknown"
 	}
-} 
+}

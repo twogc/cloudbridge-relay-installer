@@ -22,7 +22,7 @@ var (
 	configFile = flag.String("config", "config/config.json", "Path to configuration file")
 	logLevel   = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	version    = flag.Bool("version", false, "Show version information")
-	
+
 	// Version information
 	Version   = "dev"
 	BuildTime = "unknown"
@@ -30,13 +30,13 @@ var (
 
 // Enhanced QUIC configuration
 type Config struct {
-	Host         string `json:"host"`
-	Port         int    `json:"port"`
-	MetricsPort  int    `json:"metrics_port"`
-	CertFile     string `json:"cert_file"`
-	KeyFile      string `json:"key_file"`
-	MaxStreams   int    `json:"max_streams"`
-	EnableHTTP3  bool   `json:"enable_http3"`
+	Host        string `json:"host"`
+	Port        int    `json:"port"`
+	MetricsPort int    `json:"metrics_port"`
+	CertFile    string `json:"cert_file"`
+	KeyFile     string `json:"key_file"`
+	MaxStreams  int    `json:"max_streams"`
+	EnableHTTP3 bool   `json:"enable_http3"`
 }
 
 // Enhanced QUIC metrics
@@ -48,7 +48,7 @@ var (
 		},
 		[]string{"status"},
 	)
-	
+
 	requestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "enhanced_quic_requests_total",
@@ -90,7 +90,7 @@ func main() {
 		Port:        8080,
 		MetricsPort: 8081,
 		CertFile:    "cert.pem",
-		KeyFile:     "key.pem", 
+		KeyFile:     "key.pem",
 		MaxStreams:  100,
 		EnableHTTP3: true,
 	}
@@ -123,7 +123,7 @@ func main() {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		connectionsTotal.WithLabelValues("success").Inc()
 		requestsTotal.WithLabelValues(r.Method, "200").Inc()
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		response := fmt.Sprintf(`{
 			"message": "Enhanced QUIC Demo Server",
@@ -132,9 +132,9 @@ func main() {
 			"timestamp": "%s",
 			"client_addr": "%s"
 		}`, Version, time.Now().Format(time.RFC3339), r.RemoteAddr)
-		
+
 		w.Write([]byte(response))
-		logger.Info("Request handled", 
+		logger.Info("Request handled",
 			zap.String("method", r.Method),
 			zap.String("path", r.URL.Path),
 			zap.String("client", r.RemoteAddr),
@@ -200,4 +200,4 @@ func generateSelfSignedCert(certFile, keyFile string) error {
 		return err
 	}
 	return nil
-} 
+}

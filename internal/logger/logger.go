@@ -20,12 +20,15 @@ const (
 	INFO    LogLevel = "INFO"
 	WARNING LogLevel = "WARNING"
 	ERROR   LogLevel = "ERROR"
+	
+	// Output types.
+	OutputBoth = OutputBoth
 )
 
 // Config represents logger configuration
 type Config struct {
 	Level      LogLevel `json:"level" yaml:"level"`
-	Output     string   `json:"output" yaml:"output"` // "stdout", "file", "both"
+	Output     string   `json:"output" yaml:"output"` // "stdout", "file", OutputBoth
 	FilePath   string   `json:"file_path" yaml:"file_path"`
 	MaxSize    int      `json:"max_size" yaml:"max_size"`       // MB
 	MaxBackups int      `json:"max_backups" yaml:"max_backups"` // number of backup files
@@ -65,7 +68,7 @@ func New(config Config) (*Logger, error) {
 	}
 
 	// Console output
-	if config.Output == "stdout" || config.Output == "both" {
+	if config.Output == "stdout" || config.Output == OutputBoth {
 		consoleCore := zapcore.NewCore(
 			encoder,
 			zapcore.AddSync(os.Stdout),
@@ -75,14 +78,14 @@ func New(config Config) (*Logger, error) {
 	}
 
 	// File output
-	if config.Output == "file" || config.Output == "both" {
+	if config.Output == "file" || config.Output == OutputBoth {
 		if config.FilePath == "" {
 			config.FilePath = "logs/relay.log"
 		}
 
 		// Ensure directory exists with secure permissions
 		dir := filepath.Dir(config.FilePath)
-		if err := os.MkdirAll(dir, 0750); err != nil {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
 			return nil, fmt.Errorf("failed to create log directory: %w", err)
 		}
 
@@ -373,14 +376,14 @@ type AuditLogger struct {
 func NewAuditLogger(config Config) (*AuditLogger, error) {
 	// Override config for audit logging
 	auditConfig := config
-	auditConfig.JSON = true // Always use JSON for audit logs
+	auditConfig.JSON = true  // Always use JSON for audit logs
 	auditConfig.Level = INFO // Audit logs should be at least INFO level
-	
+
 	// Set default audit file path if not specified
 	if auditConfig.FilePath == "" {
 		auditConfig.FilePath = "logs/audit.log"
 	}
-	
+
 	// Ensure audit logs are kept longer
 	if auditConfig.MaxAge == 0 {
 		auditConfig.MaxAge = 365 // Keep audit logs for 1 year by default
@@ -410,7 +413,7 @@ func NewAuditLogger(config Config) (*AuditLogger, error) {
 	if auditConfig.FilePath != "" {
 		// Ensure directory exists with secure permissions
 		dir := filepath.Dir(auditConfig.FilePath)
-		if err := os.MkdirAll(dir, 0750); err != nil {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
 			return nil, fmt.Errorf("failed to create audit log directory: %w", err)
 		}
 
@@ -432,7 +435,7 @@ func NewAuditLogger(config Config) (*AuditLogger, error) {
 	}
 
 	// Also log to stdout for audit events (optional)
-	if auditConfig.Output == "stdout" || auditConfig.Output == "both" {
+	if auditConfig.Output == "stdout" || auditConfig.Output == OutputBoth {
 		consoleCore := zapcore.NewCore(
 			encoder,
 			zapcore.AddSync(os.Stdout),
@@ -466,12 +469,12 @@ func (al *AuditLogger) AuditEvent(event string, userID, remoteAddr string, detai
 		zap.String("remote_addr", remoteAddr),
 		zap.Time("timestamp", time.Now()),
 	}
-	
+
 	// Add additional details
 	for k, v := range details {
 		fields = append(fields, zap.Any(k, v))
 	}
-	
+
 	al.zapLogger.Info("AUDIT_EVENT", fields...)
 }
 
@@ -481,7 +484,7 @@ func (al *AuditLogger) AuditAuthentication(userID, method, remoteAddr string, su
 	if !success {
 		event = "authentication_failure"
 	}
-	
+
 	fields := []zap.Field{
 		zap.String("event_type", "audit"),
 		zap.String("event", event),
@@ -492,12 +495,12 @@ func (al *AuditLogger) AuditAuthentication(userID, method, remoteAddr string, su
 		zap.Duration("duration", duration),
 		zap.Time("timestamp", time.Now()),
 	}
-	
+
 	// Add additional details
 	for k, v := range details {
 		fields = append(fields, zap.Any(k, v))
 	}
-	
+
 	al.zapLogger.Info("AUDIT_AUTHENTICATION", fields...)
 }
 
@@ -507,7 +510,7 @@ func (al *AuditLogger) AuditAuthorization(userID, resource, action, remoteAddr s
 	if !granted {
 		event = "authorization_denied"
 	}
-	
+
 	fields := []zap.Field{
 		zap.String("event_type", "audit"),
 		zap.String("event", event),
@@ -519,12 +522,12 @@ func (al *AuditLogger) AuditAuthorization(userID, resource, action, remoteAddr s
 		zap.Duration("duration", duration),
 		zap.Time("timestamp", time.Now()),
 	}
-	
+
 	// Add additional details
 	for k, v := range details {
 		fields = append(fields, zap.Any(k, v))
 	}
-	
+
 	al.zapLogger.Info("AUDIT_AUTHORIZATION", fields...)
 }
 
@@ -538,17 +541,17 @@ func (al *AuditLogger) AuditTunnelCreation(userID, tunnelID, remoteAddr string, 
 		zap.String("remote_addr", remoteAddr),
 		zap.Time("timestamp", time.Now()),
 	}
-	
+
 	// Add tunnel info
 	for k, v := range tunnelInfo {
 		fields = append(fields, zap.Any("tunnel_"+k, v))
 	}
-	
+
 	// Add additional details
 	for k, v := range details {
 		fields = append(fields, zap.Any(k, v))
 	}
-	
+
 	al.zapLogger.Info("AUDIT_TUNNEL_CREATION", fields...)
 }
 
@@ -563,12 +566,12 @@ func (al *AuditLogger) AuditTunnelDeletion(userID, tunnelID, remoteAddr string, 
 		zap.String("reason", reason),
 		zap.Time("timestamp", time.Now()),
 	}
-	
+
 	// Add additional details
 	for k, v := range details {
 		fields = append(fields, zap.Any(k, v))
 	}
-	
+
 	al.zapLogger.Info("AUDIT_TUNNEL_DELETION", fields...)
 }
 
@@ -582,12 +585,12 @@ func (al *AuditLogger) AuditRateLimit(userID, remoteAddr, limitType string, deta
 		zap.String("limit_type", limitType),
 		zap.Time("timestamp", time.Now()),
 	}
-	
+
 	// Add additional details
 	for k, v := range details {
 		fields = append(fields, zap.Any(k, v))
 	}
-	
+
 	al.zapLogger.Warn("AUDIT_RATE_LIMIT", fields...)
 }
 
@@ -601,16 +604,16 @@ func (al *AuditLogger) AuditSecurity(event, userID, remoteAddr string, severity 
 		zap.String("severity", severity),
 		zap.Time("timestamp", time.Now()),
 	}
-	
+
 	// Add additional details
 	for k, v := range details {
 		fields = append(fields, zap.Any(k, v))
 	}
-	
+
 	al.zapLogger.Warn("AUDIT_SECURITY", fields...)
 }
 
 // Sync flushes any buffered audit log entries
 func (al *AuditLogger) Sync() error {
 	return al.zapLogger.Sync()
-} 
+}

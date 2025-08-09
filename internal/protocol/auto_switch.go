@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2c"
+	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"go.uber.org/zap"
 )
 
 // AutoSwitchManager управляет автоматическим переключением протоколов
 type AutoSwitchManager struct {
-	selector    *IntelligentProtocolSelector
-	p2pManager  *p2p.P2PManager
-	p2cManager  *p2c.P2CManager
-	metrics     *SwitchMetrics
-	logger      *zap.Logger
+	selector   *IntelligentProtocolSelector
+	p2pManager *p2p.P2PManager
+	p2cManager *p2c.P2CManager
+	metrics    *SwitchMetrics
+	logger     *zap.Logger
 
 	switchCooldown time.Duration
 	lastSwitch     time.Time

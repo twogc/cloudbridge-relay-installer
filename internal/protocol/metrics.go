@@ -12,21 +12,21 @@ import (
 // ProtocolMetricsCollector collects and manages protocol-specific metrics
 type ProtocolMetricsCollector struct {
 	// Prometheus metrics
-	latencyHistogram    *prometheus.HistogramVec
-	throughputGauge     *prometheus.GaugeVec
-	errorRateCounter    *prometheus.CounterVec
-	successRateGauge    *prometheus.GaugeVec
-	switchCounter       *prometheus.CounterVec
-	connectionGauge     *prometheus.GaugeVec
-	bandwidthGauge      *prometheus.GaugeVec
-	packetLossGauge     *prometheus.GaugeVec
-	rttGauge            *prometheus.GaugeVec
+	latencyHistogram *prometheus.HistogramVec
+	throughputGauge  *prometheus.GaugeVec
+	errorRateCounter *prometheus.CounterVec
+	successRateGauge *prometheus.GaugeVec
+	switchCounter    *prometheus.CounterVec
+	connectionGauge  *prometheus.GaugeVec
+	bandwidthGauge   *prometheus.GaugeVec
+	packetLossGauge  *prometheus.GaugeVec
+	rttGauge         *prometheus.GaugeVec
 
 	// Internal metrics storage
-	metrics     map[Protocol]*DetailedMetrics
-	mu          sync.RWMutex
-	logger      *zap.Logger
-	windowSize  time.Duration
+	metrics    map[Protocol]*DetailedMetrics
+	mu         sync.RWMutex
+	logger     *zap.Logger
+	windowSize time.Duration
 }
 
 // DetailedMetrics holds detailed metrics for a protocol
@@ -44,11 +44,11 @@ type DetailedMetrics struct {
 
 // RollingWindow implements a rolling window for metrics
 type RollingWindow struct {
-	values    []float64
-	times     []time.Time
-	window    time.Duration
-	maxSize   int
-	mu        sync.RWMutex
+	values  []float64
+	times   []time.Time
+	window  time.Duration
+	maxSize int
+	mu      sync.RWMutex
 }
 
 // NewRollingWindow creates a new rolling window
@@ -77,7 +77,7 @@ func (rw *RollingWindow) Add(value float64) {
 // cleanup removes values outside the time window
 func (rw *RollingWindow) cleanup(now time.Time) {
 	cutoff := now.Add(-rw.window)
-	
+
 	// Find the first index that's within the window
 	start := 0
 	for i, t := range rw.times {
@@ -125,21 +125,21 @@ func (rw *RollingWindow) Count() int {
 
 var (
 	// Prometheus metrics
-	latencyHistogram    *prometheus.HistogramVec
-	throughputGauge     *prometheus.GaugeVec
-	errorRateCounter    *prometheus.CounterVec
-	successRateGauge    *prometheus.GaugeVec
-	switchCounter       *prometheus.CounterVec
-	connectionGauge     *prometheus.GaugeVec
-	bandwidthGauge      *prometheus.GaugeVec
-	packetLossGauge     *prometheus.GaugeVec
-	rttGauge            *prometheus.GaugeVec
+	latencyHistogram *prometheus.HistogramVec
+	throughputGauge  *prometheus.GaugeVec
+	errorRateCounter *prometheus.CounterVec
+	successRateGauge *prometheus.GaugeVec
+	switchCounter    *prometheus.CounterVec
+	connectionGauge  *prometheus.GaugeVec
+	bandwidthGauge   *prometheus.GaugeVec
+	packetLossGauge  *prometheus.GaugeVec
+	rttGauge         *prometheus.GaugeVec
 
 	// Internal metrics storage
-	metrics     map[Protocol]*DetailedMetrics
-	mu          sync.RWMutex
-	logger      *zap.Logger
-	windowSize  time.Duration
+	metrics    map[Protocol]*DetailedMetrics
+	mu         sync.RWMutex
+	logger     *zap.Logger
+	windowSize time.Duration
 
 	AuthFailures = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -168,8 +168,8 @@ func init() {
 	// Prometheus metrics
 	latencyHistogram = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "protocol_latency_seconds",
-			Help: "Protocol latency in seconds",
+			Name:    "protocol_latency_seconds",
+			Help:    "Protocol latency in seconds",
 			Buckets: []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0},
 		},
 		[]string{"protocol"},
@@ -233,7 +233,7 @@ func init() {
 
 	// Internal metrics storage
 	metrics = make(map[Protocol]*DetailedMetrics)
-	logger = zap.NewNop() // Placeholder, replace with actual logger
+	logger = zap.NewNop()         // Placeholder, replace with actual logger
 	windowSize = 30 * time.Second // Default window size
 
 	// Register Prometheus metrics
@@ -258,8 +258,8 @@ func NewProtocolMetricsCollector(windowSize time.Duration, logger *zap.Logger) *
 	collector := &ProtocolMetricsCollector{
 		latencyHistogram: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Name: "protocol_latency_seconds",
-				Help: "Protocol latency in seconds",
+				Name:    "protocol_latency_seconds",
+				Help:    "Protocol latency in seconds",
 				Buckets: []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0},
 			},
 			[]string{"protocol"},
@@ -337,7 +337,7 @@ func NewProtocolMetricsCollector(windowSize time.Duration, logger *zap.Logger) *
 		collector.packetLossGauge,
 		collector.rttGauge,
 	}
-	
+
 	for _, metric := range collectors {
 		if err := prometheus.Register(metric); err != nil {
 			// Ignore already registered errors
@@ -516,22 +516,22 @@ func (pmc *ProtocolMetricsCollector) GetProtocolPerformance() map[string]interfa
 	defer pmc.mu.RUnlock()
 
 	performance := make(map[string]interface{})
-	
+
 	for protocol, metrics := range pmc.metrics {
 		performance[protocol.String()] = map[string]interface{}{
-			"latency_ms":      metrics.Latency.Average(),
-			"throughput_bps":  metrics.Throughput.Average(),
-			"error_rate":      metrics.ErrorRate.Average(),
-			"success_rate":    metrics.SuccessRate.Average(),
-			"connections":     metrics.Connections,
-			"bandwidth":       metrics.Bandwidth,
-			"packet_loss":     metrics.PacketLoss,
-			"rtt_ms":          metrics.RTT.Milliseconds(),
-			"last_update":     metrics.LastUpdate,
+			"latency_ms":     metrics.Latency.Average(),
+			"throughput_bps": metrics.Throughput.Average(),
+			"error_rate":     metrics.ErrorRate.Average(),
+			"success_rate":   metrics.SuccessRate.Average(),
+			"connections":    metrics.Connections,
+			"bandwidth":      metrics.Bandwidth,
+			"packet_loss":    metrics.PacketLoss,
+			"rtt_ms":         metrics.RTT.Milliseconds(),
+			"last_update":    metrics.LastUpdate,
 			"sample_count": map[string]int{
-				"latency":     metrics.Latency.Count(),
-				"throughput":  metrics.Throughput.Count(),
-				"error_rate":  metrics.ErrorRate.Count(),
+				"latency":      metrics.Latency.Count(),
+				"throughput":   metrics.Throughput.Count(),
+				"error_rate":   metrics.ErrorRate.Count(),
 				"success_rate": metrics.SuccessRate.Count(),
 			},
 		}
@@ -554,7 +554,7 @@ func (pmc *ProtocolMetricsCollector) Cleanup() {
 			)
 		}
 	}
-} 
+}
 
 // Утилиты для обновления метрик
 func IncAuthFailure(reason string) {
@@ -565,4 +565,4 @@ func IncRateLimitExceeded(clientID string) {
 }
 func SetCircuitBreakerState(breakerName string, state int) {
 	CircuitBreakerState.WithLabelValues(breakerName).Set(float64(state))
-} 
+}

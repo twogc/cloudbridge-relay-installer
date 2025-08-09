@@ -15,15 +15,15 @@ import (
 
 // Handler диагностический handler с расширенными возможностями
 type Handler struct {
-	logger       *zap.Logger
-	timeout      time.Duration
-	tunnelID     uuid.UUID
-	connectorID  uuid.UUID
-	version      string
-	buildTime    string
-	buildType    string
-	cliFlags     map[string]string
-	metrics      interface{} // EnhancedMetrics interface
+	logger      *zap.Logger
+	timeout     time.Duration
+	tunnelID    uuid.UUID
+	connectorID uuid.UUID
+	version     string
+	buildTime   string
+	buildType   string
+	cliFlags    map[string]string
+	metrics     interface{} // EnhancedMetrics interface
 }
 
 // NewHandler создает новый диагностический handler
@@ -116,7 +116,7 @@ func (h *Handler) ConfigurationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := ConfigurationResponse{
-		CLIFlags: h.cliFlags,
+		CLIFlags:    h.cliFlags,
 		Environment: env,
 		BuildInfo: BuildInfo{
 			Version:   h.version,
@@ -170,9 +170,9 @@ func (h *Handler) TunnelStateHandler(w http.ResponseWriter, r *http.Request) {
 
 // SystemInfo информация о системе
 type SystemInfo struct {
-	Memory     MemoryInfo `json:"memory"`
-	CPU        CPUInfo    `json:"cpu"`
-	Goroutines int        `json:"goroutines"`
+	Memory     MemoryInfo  `json:"memory"`
+	CPU        CPUInfo     `json:"cpu"`
+	Goroutines int         `json:"goroutines"`
 	Process    ProcessInfo `json:"process"`
 }
 
@@ -337,14 +337,16 @@ func (h *Handler) PProfHandler(w http.ResponseWriter, r *http.Request) {
 // writeJSONResponse записывает JSON ответ
 func (h *Handler) writeJSONResponse(w http.ResponseWriter, data interface{}, logger *zap.Logger) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
-	
+
 	if err := encoder.Encode(data); err != nil {
 		logger.Error("Failed to encode response", zap.Error(err))
 		if h.metrics != nil {
-			if em, ok := h.metrics.(interface{ IncDiagnosticErrors(endpoint, errorType string) }); ok {
+			if em, ok := h.metrics.(interface {
+				IncDiagnosticErrors(endpoint, errorType string)
+			}); ok {
 				em.IncDiagnosticErrors("json_encode", "encode_error")
 			}
 		}
@@ -360,7 +362,7 @@ func isSensitiveEnvVar(envVar string) bool {
 		"PASSWORD", "SECRET", "KEY", "TOKEN", "AUTH", "CREDENTIAL",
 		"DB_PASSWORD", "REDIS_PASSWORD", "JWT_SECRET",
 	}
-	
+
 	for _, s := range sensitive {
 		if contains(envVar, s) {
 			return true
@@ -371,7 +373,7 @@ func isSensitiveEnvVar(envVar string) bool {
 
 // contains проверяет, содержит ли строка подстроку (без учета регистра)
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		   (s[:len(substr)] == substr || 
-		    len(s) > len(substr) && s[len(substr)] == '=')
-} 
+	return len(s) >= len(substr) &&
+		(s[:len(substr)] == substr ||
+			len(s) > len(substr) && s[len(substr)] == '=')
+}

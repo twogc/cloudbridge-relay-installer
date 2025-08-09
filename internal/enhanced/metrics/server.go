@@ -95,7 +95,7 @@ func (s *EnhancedServer) newMetricsHandler() *http.ServeMux {
 			s.enhancedMetrics.IncDiagnosticRequests("version", r.Method)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"version":"%s","build_time":"%s","build_type":"%s"}`, 
+		fmt.Fprintf(w, `{"version":"%s","build_time":"%s","build_type":"%s"}`,
 			s.version, s.buildTime, s.buildType)
 	})
 
@@ -105,7 +105,7 @@ func (s *EnhancedServer) newMetricsHandler() *http.ServeMux {
 			s.enhancedMetrics.IncDiagnosticRequests("buildinfo", r.Method)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"goversion":"%s","type":"%s","revision":"%s","version":"%s"}`, 
+		fmt.Fprintf(w, `{"goversion":"%s","type":"%s","revision":"%s","version":"%s"}`,
 			"go1.23.0", s.buildType, s.buildTime, s.version)
 	})
 
@@ -149,17 +149,17 @@ func (s *EnhancedServer) Start(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		s.logger.Info("Starting enhanced metrics server", 
+		s.logger.Info("Starting enhanced metrics server",
 			zap.String("port", s.port),
 			zap.String("path", s.path))
-		
+
 		err = s.server.ListenAndServe()
 	}()
 
 	// Небольшая задержка для запуска сервера
 	time.Sleep(500 * time.Millisecond)
 
-	s.logger.Info("Enhanced metrics server started", 
+	s.logger.Info("Enhanced metrics server started",
 		zap.String("address", fmt.Sprintf("http://%s%s", s.port, s.path)))
 
 	// Ждем завершения контекста
@@ -220,10 +220,10 @@ func (s *EnhancedServer) GetVersion() string {
 // GetBuildInfo возвращает информацию о сборке
 func (s *EnhancedServer) GetBuildInfo() map[string]string {
 	return map[string]string{
-		"version":    s.version,
-		"build_time": s.buildTime,
-		"build_type": s.buildType,
-		"tunnel_id":  s.tunnelID.String(),
+		"version":      s.version,
+		"build_time":   s.buildTime,
+		"build_type":   s.buildType,
+		"tunnel_id":    s.tunnelID.String(),
 		"connector_id": s.connectorID.String(),
 	}
-} 
+}

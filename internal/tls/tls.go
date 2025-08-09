@@ -21,10 +21,10 @@ type Config struct {
 
 // MTLSConfig represents mTLS configuration
 type MTLSConfig struct {
-	Enabled     bool
-	CACert      string
-	ClientCert  string
-	ClientKey   string
+	Enabled    bool
+	CACert     string
+	ClientCert string
+	ClientKey  string
 }
 
 // NewTLSConfig creates a new TLS configuration
@@ -110,9 +110,9 @@ func getCipherSuites(cipherSuites []string) []uint16 {
 		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305":    tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305":  tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 		// TLS 1.3 cipher suites
-		"TLS_AES_256_GCM_SHA384":                  tls.TLS_AES_256_GCM_SHA384,
-		"TLS_CHACHA20_POLY1305_SHA256":            tls.TLS_CHACHA20_POLY1305_SHA256,
-		"TLS_AES_128_GCM_SHA256":                  tls.TLS_AES_128_GCM_SHA256,
+		"TLS_AES_256_GCM_SHA384":       tls.TLS_AES_256_GCM_SHA384,
+		"TLS_CHACHA20_POLY1305_SHA256": tls.TLS_CHACHA20_POLY1305_SHA256,
+		"TLS_AES_128_GCM_SHA256":       tls.TLS_AES_128_GCM_SHA256,
 	}
 
 	for _, cipher := range cipherSuites {
@@ -178,7 +178,7 @@ func GetCertificateInfo(certFile string) (map[string]interface{}, error) {
 	if !isValidCertPath(certFile) {
 		return nil, fmt.Errorf("invalid certificate file path")
 	}
-	
+
 	// #nosec G304 -- path validated by isValidCertPath
 	certPEM, err := os.ReadFile(certFile)
 	if err != nil {
@@ -196,13 +196,13 @@ func GetCertificateInfo(certFile string) (map[string]interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		"subject":      cert.Subject.String(),
-		"issuer":       cert.Issuer.String(),
-		"not_before":   cert.NotBefore,
-		"not_after":    cert.NotAfter,
+		"subject":       cert.Subject.String(),
+		"issuer":        cert.Issuer.String(),
+		"not_before":    cert.NotBefore,
+		"not_after":     cert.NotAfter,
 		"serial_number": cert.SerialNumber.String(),
-		"dns_names":    cert.DNSNames,
-		"ip_addresses": cert.IPAddresses,
+		"dns_names":     cert.DNSNames,
+		"ip_addresses":  cert.IPAddresses,
 	}, nil
 }
 
@@ -212,7 +212,7 @@ func isValidCertPath(path string) bool {
 	if strings.Contains(path, "..") || strings.Contains(path, "~") || strings.Contains(path, "//") {
 		return false
 	}
-	
+
 	// Only allow absolute paths or paths starting with allowed directories
 	allowedPrefixes := []string{
 		"./certs/",
@@ -220,18 +220,18 @@ func isValidCertPath(path string) bool {
 		"/etc/pki/tls/certs/",
 		"certs/",
 	}
-	
+
 	// Normalize path
 	path = strings.TrimSpace(path)
 	if path == "" {
 		return false
 	}
-	
+
 	for _, prefix := range allowedPrefixes {
 		if strings.HasPrefix(path, prefix) {
 			return true
 		}
 	}
-	
+
 	return false
-} 
+}

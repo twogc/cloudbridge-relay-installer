@@ -97,7 +97,7 @@ type IPLimiter struct {
 	rate     float64
 	burst    int
 	mu       sync.RWMutex
-	
+
 	// Enhanced QUIC DDoS Protection
 	enhancedDDoSProtection *quic.DDoSProtection
 	enhancedEnabled        bool
@@ -106,9 +106,9 @@ type IPLimiter struct {
 // NewIPLimiter creates a new IP-based rate limiter
 func NewIPLimiter(rate float64, burst int) *IPLimiter {
 	return &IPLimiter{
-		limiters: make(map[string]*Limiter),
-		rate:     rate,
-		burst:    burst,
+		limiters:        make(map[string]*Limiter),
+		rate:            rate,
+		burst:           burst,
 		enhancedEnabled: false, // По умолчанию отключено
 	}
 }
@@ -116,11 +116,11 @@ func NewIPLimiter(rate float64, burst int) *IPLimiter {
 // NewIPLimiterWithEnhanced создает IP rate limiter с Enhanced DDoS Protection
 func NewIPLimiterWithEnhanced(rate float64, burst int) *IPLimiter {
 	return &IPLimiter{
-		limiters: make(map[string]*Limiter),
-		rate:     rate,
-		burst:    burst,
+		limiters:               make(map[string]*Limiter),
+		rate:                   rate,
+		burst:                  burst,
 		enhancedDDoSProtection: quic.NewDDoSProtection(),
-		enhancedEnabled: true,
+		enhancedEnabled:        true,
 	}
 }
 
@@ -132,7 +132,7 @@ func (l *IPLimiter) Allow(ip string) bool {
 			return false // Enhanced DDoS Protection заблокировала IP
 		}
 	}
-	
+
 	// Обычная проверка rate limiting
 	l.mu.RLock()
 	limiter, ok := l.limiters[ip]
@@ -204,7 +204,7 @@ func (l *UserLimiter) Cleanup() {
 func (l *IPLimiter) EnableEnhanced() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	
+
 	if !l.enhancedEnabled {
 		l.enhancedDDoSProtection = quic.NewDDoSProtection()
 		l.enhancedEnabled = true
@@ -215,7 +215,7 @@ func (l *IPLimiter) EnableEnhanced() {
 func (l *IPLimiter) DisableEnhanced() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	
+
 	l.enhancedEnabled = false
 	l.enhancedDDoSProtection = nil
 }
@@ -231,7 +231,7 @@ func (l *IPLimiter) IsEnhancedEnabled() bool {
 func (l *IPLimiter) CheckEnhancedDDoSProtection(clientIP string) error {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	if l.enhancedEnabled && l.enhancedDDoSProtection != nil {
 		return l.enhancedDDoSProtection.CheckRateLimit(clientIP)
 	}
@@ -250,4 +250,4 @@ func min(a, b float64) float64 {
 		return a
 	}
 	return b
-} 
+}

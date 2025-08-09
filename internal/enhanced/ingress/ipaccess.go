@@ -28,7 +28,7 @@ type IPAccessRule struct {
 // NewIPAccessPolicy создает новую политику IP access control
 func NewIPAccessPolicy(config IPAccessConfig, logger *logger.Logger) (*IPAccessPolicy, error) {
 	rules := make([]IPAccessRule, len(config.Rules))
-	
+
 	for i, rule := range config.Rules {
 		ipRule, err := NewIPAccessRule(rule.Prefix, rule.Ports, rule.Allow)
 		if err != nil {
@@ -36,18 +36,18 @@ func NewIPAccessPolicy(config IPAccessConfig, logger *logger.Logger) (*IPAccessP
 		}
 		rules[i] = ipRule
 	}
-	
+
 	policy := &IPAccessPolicy{
 		defaultAllow: config.DefaultAllow,
 		rules:        rules,
 		logger:       logger,
 	}
-	
+
 	logger.Info("IP access policy created",
 		zap.Bool("default_allow", config.DefaultAllow),
 		zap.Int("rules_count", len(rules)),
 	)
-	
+
 	return policy, nil
 }
 
@@ -56,29 +56,29 @@ func NewIPAccessRule(prefix string, ports []int, allow bool) (IPAccessRule, erro
 	if prefix == "" {
 		return IPAccessRule{}, fmt.Errorf("prefix cannot be empty")
 	}
-	
+
 	_, ipNet, err := net.ParseCIDR(prefix)
 	if err != nil {
 		return IPAccessRule{}, fmt.Errorf("invalid CIDR prefix: %s", prefix)
 	}
-	
+
 	rule := IPAccessRule{
 		ipNet: ipNet,
 		ports: make([]int, len(ports)),
 		allow: allow,
 	}
-	
+
 	// Копируем и сортируем порты
 	copy(rule.ports, ports)
 	sort.Ints(rule.ports)
-	
+
 	// Валидация портов
 	for _, port := range rule.ports {
 		if port < 1 || port > 65535 {
 			return IPAccessRule{}, fmt.Errorf("invalid port %d, must be between 1 and 65535", port)
 		}
 	}
-	
+
 	return rule, nil
 }
 
@@ -86,25 +86,25 @@ func NewIPAccessRule(prefix string, ports []int, allow bool) (IPAccessRule, erro
 func (p *IPAccessPolicy) Allowed(ip net.IP, port int) (bool, *IPAccessRule) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	if len(p.rules) == 0 {
 		return p.defaultAllow, nil
 	}
-	
+
 	for _, rule := range p.rules {
 		if rule.ipNet.Contains(ip) {
 			// Если порты не указаны, применяем правило ко всем портам
 			if len(rule.ports) == 0 {
 				return rule.allow, &rule
 			}
-			
+
 			// Проверяем, есть ли порт в списке разрешенных/запрещенных
 			if pos := sort.SearchInts(rule.ports, port); pos < len(rule.ports) && rule.ports[pos] == port {
 				return rule.allow, &rule
 			}
 		}
 	}
-	
+
 	return p.defaultAllow, nil
 }
 
@@ -114,18 +114,18 @@ func (p *IPAccessPolicy) AddRule(prefix string, ports []int, allow bool) error {
 	if err != nil {
 		return err
 	}
-	
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	p.rules = append(p.rules, rule)
-	
+
 	p.logger.Info("IP access rule added",
 		zap.String("prefix", prefix),
 		zap.Ints("ports", ports),
 		zap.Bool("allow", allow),
 	)
-	
+
 	return nil
 }
 
@@ -133,20 +133,20 @@ func (p *IPAccessPolicy) AddRule(prefix string, ports []int, allow bool) error {
 func (p *IPAccessPolicy) RemoveRule(index int) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	if index < 0 || index >= len(p.rules) {
 		return fmt.Errorf("invalid rule index: %d", index)
 	}
-	
+
 	rule := p.rules[index]
 	p.rules = append(p.rules[:index], p.rules[index+1:]...)
-	
+
 	p.logger.Info("IP access rule removed",
 		zap.String("prefix", rule.ipNet.String()),
 		zap.Ints("ports", rule.ports),
 		zap.Bool("allow", rule.allow),
 	)
-	
+
 	return nil
 }
 
@@ -154,10 +154,10 @@ func (p *IPAccessPolicy) RemoveRule(index int) error {
 func (p *IPAccessPolicy) GetRules() []IPAccessRule {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	rules := make([]IPAccessRule, len(p.rules))
 	copy(rules, p.rules)
-	
+
 	return rules
 }
 
@@ -165,7 +165,7 @@ func (p *IPAccessPolicy) GetRules() []IPAccessRule {
 func (p *IPAccessPolicy) GetRuleCount() int {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	return len(p.rules)
 }
 
@@ -180,13 +180,13 @@ func (p *IPAccessPolicy) Allow(addr string) bool {
 	if err != nil {
 		host = addr
 	}
-	
+
 	ip := net.ParseIP(host)
 	if ip == nil {
 		p.logger.Warn("Invalid IP address", zap.String("addr", addr))
 		return p.defaultAllow
 	}
-	
+
 	allowed, _ := p.Allowed(ip, 0) // 0 означает любой порт
 	return allowed
 }
@@ -195,9 +195,9 @@ func (p *IPAccessPolicy) Allow(addr string) bool {
 func (p *IPAccessPolicy) SetDefaultAllow(allow bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	p.defaultAllow = allow
-	
+
 	p.logger.Info("IP access default policy changed",
 		zap.Bool("default_allow", allow),
 	)
@@ -243,7 +243,7 @@ func (r *IPAccessRule) ContainsPort(port int) bool {
 	if len(r.ports) == 0 {
 		return true // Все порты
 	}
-	
+
 	pos := sort.SearchInts(r.ports, port)
 	return pos < len(r.ports) && r.ports[pos] == port
 }
@@ -296,7 +296,7 @@ func NewIPAccessPolicyWithStats(config IPAccessConfig, logger *logger.Logger) (*
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &IPAccessPolicyWithStats{
 		IPAccessPolicy: policy,
 		stats:          IPAccessStats{},
@@ -308,9 +308,9 @@ func (p *IPAccessPolicyWithStats) AllowedWithStats(ip net.IP, port int) (bool, *
 	p.mu.Lock()
 	p.stats.TotalRequests++
 	p.mu.Unlock()
-	
+
 	allowed, rule := p.IPAccessPolicy.Allowed(ip, port)
-	
+
 	p.mu.Lock()
 	if allowed {
 		p.stats.AllowedRequests++
@@ -318,7 +318,7 @@ func (p *IPAccessPolicyWithStats) AllowedWithStats(ip net.IP, port int) (bool, *
 		p.stats.DeniedRequests++
 	}
 	p.mu.Unlock()
-	
+
 	return allowed, rule
 }
 
@@ -326,7 +326,7 @@ func (p *IPAccessPolicyWithStats) AllowedWithStats(ip net.IP, port int) (bool, *
 func (p *IPAccessPolicyWithStats) GetStats() IPAccessStats {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	return p.stats
 }
 
@@ -334,6 +334,6 @@ func (p *IPAccessPolicyWithStats) GetStats() IPAccessStats {
 func (p *IPAccessPolicyWithStats) ResetStats() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	p.stats = IPAccessStats{}
-} 
+}

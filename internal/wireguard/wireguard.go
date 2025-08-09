@@ -15,18 +15,18 @@ import (
 
 // WireGuardInterface представляет WireGuard интерфейс
 type WireGuardInterface struct {
-	Name        string
-	PrivateKey  string
-	PublicKey   string
-	ListenPort  int
-	Address     string
-	Peers       map[string]*WireGuardPeer
-	mu          sync.RWMutex
-	logger      *zap.Logger
-	isRunning   bool
-	
+	Name       string
+	PrivateKey string
+	PublicKey  string
+	ListenPort int
+	Address    string
+	Peers      map[string]*WireGuardPeer
+	mu         sync.RWMutex
+	logger     *zap.Logger
+	isRunning  bool
+
 	// Интеграция с реальным WireGuard
-	realAdapter *RealWireGuardAdapter
+	realAdapter      *RealWireGuardAdapter
 	useRealWireGuard bool
 }
 
@@ -51,50 +51,50 @@ const (
 
 // MeshTopology представляет WireGuard mesh topology
 type MeshTopology struct {
-	LocalPeerID     string
-	ConnectedPeers  map[string]*WireGuardPeer
-	RoutingTable    *RoutingTable
-	mu              sync.RWMutex
-	logger          *zap.Logger
+	LocalPeerID    string
+	ConnectedPeers map[string]*WireGuardPeer
+	RoutingTable   *RoutingTable
+	mu             sync.RWMutex
+	logger         *zap.Logger
 }
 
 // RoutingTable представляет routing table для WireGuard mesh
 type RoutingTable struct {
-	DirectRoutes   map[string]string
-	MeshRoutes     map[string][]string
-	HubFallback    map[string]string
-	mu             sync.RWMutex
+	DirectRoutes map[string]string
+	MeshRoutes   map[string][]string
+	HubFallback  map[string]string
+	mu           sync.RWMutex
 }
 
 // PeerDiscovery представляет автоматическое обнаружение peers
 type PeerDiscovery struct {
-	Config         *DiscoveryConfig
-	LocalInterface *WireGuardInterface
+	Config          *DiscoveryConfig
+	LocalInterface  *WireGuardInterface
 	DiscoveredPeers map[string]*DiscoveredPeer
-	mu             sync.RWMutex
-	logger         *zap.Logger
-	ctx            context.Context
-	cancel         context.CancelFunc
-	isRunning      bool
+	mu              sync.RWMutex
+	logger          *zap.Logger
+	ctx             context.Context
+	cancel          context.CancelFunc
+	isRunning       bool
 }
 
 // DiscoveryConfig конфигурация для peer discovery
 type DiscoveryConfig struct {
-	RegistryURL        string
-	HeartbeatInterval  time.Duration
-	MaxPeers           int
+	RegistryURL       string
+	HeartbeatInterval time.Duration
+	MaxPeers          int
 }
 
 // DiscoveredPeer представляет обнаруженный peer
 type DiscoveredPeer struct {
-	PeerID         string
-	PublicKey      string
-	Endpoint       string
-	Region         string
-	Capabilities   []string
-	LastSeen       time.Time
-	TrustLevel     TrustLevel
-	Latency        time.Duration
+	PeerID       string
+	PublicKey    string
+	Endpoint     string
+	Region       string
+	Capabilities []string
+	LastSeen     time.Time
+	TrustLevel   TrustLevel
+	Latency      time.Duration
 }
 
 type TrustLevel int
@@ -107,12 +107,12 @@ const (
 
 // QUICOverWireGuard представляет Enhanced QUIC поверх WireGuard
 type QUICOverWireGuard struct {
-	WgInterface     *WireGuardInterface
-	MeshTopology    *MeshTopology
-	EnhancedConfig  interface{} // *quic.EnhancedConfig
-	connections     map[string]interface{}
-	mu              sync.RWMutex
-	logger          *zap.Logger
+	WgInterface    *WireGuardInterface
+	MeshTopology   *MeshTopology
+	EnhancedConfig interface{} // *quic.EnhancedConfig
+	connections    map[string]interface{}
+	mu             sync.RWMutex
+	logger         *zap.Logger
 }
 
 // HybridRouter представляет hybrid routing (WireGuard + Enhanced QUIC)
@@ -126,10 +126,10 @@ type HybridRouter struct {
 }
 
 type RoutingStats struct {
-	TotalRequests    int64
-	WireGuardRoutes  int64
+	TotalRequests      int64
+	WireGuardRoutes    int64
 	EnhancedQUICRoutes int64
-	LastReset        time.Time
+	LastReset          time.Time
 }
 
 // RoutingStrategy тип стратегии маршрутизации
@@ -144,21 +144,21 @@ const (
 
 // SiteToSiteManager управляет site-to-site connectivity
 type SiteToSiteManager struct {
-	WireGuardMesh       *MeshTopology
-	CorporateNetworks   map[string]*CorporateNetwork
-	SiteRoutes          map[string]*SiteRoute
-	mu                  sync.RWMutex
-	logger              *zap.Logger
+	WireGuardMesh     *MeshTopology
+	CorporateNetworks map[string]*CorporateNetwork
+	SiteRoutes        map[string]*SiteRoute
+	mu                sync.RWMutex
+	logger            *zap.Logger
 }
 
 // CorporateNetwork представляет корпоративную сеть
 type CorporateNetwork struct {
-	NetworkID     string
-	CIDR          string
-	TenantID      string
-	ConnectedVia  string
+	NetworkID      string
+	CIDR           string
+	TenantID       string
+	ConnectedVia   string
 	VPNReplacement bool
-	Status        NetworkStatus
+	Status         NetworkStatus
 }
 
 type NetworkStatus int
@@ -172,12 +172,12 @@ const (
 
 // SiteRoute представляет маршрут между сайтами
 type SiteRoute struct {
-	FromNetwork   string
-	ToNetwork     string
-	ViaWireGuard  string
-	BackupRoute   string
-	Status        RouteStatus
-	Latency       time.Duration
+	FromNetwork  string
+	ToNetwork    string
+	ViaWireGuard string
+	BackupRoute  string
+	Status       RouteStatus
+	Latency      time.Duration
 }
 
 type RouteStatus int
@@ -192,23 +192,23 @@ const (
 func NewWireGuardInterface(name string, port int) *WireGuardInterface {
 	// Генерируем ключи
 	privateKey, publicKey := generateKeyPair()
-	
+
 	// Проверяем доступность реального WireGuard
 	useRealWireGuard := checkRealWireGuardAvailability()
-	
+
 	var realAdapter *RealWireGuardAdapter
 	if useRealWireGuard {
 		realAdapter = NewRealWireGuardAdapter(name, zap.NewNop())
 	}
-	
+
 	return &WireGuardInterface{
-		Name:       name,
-		ListenPort: port,
-		PrivateKey: privateKey,
-		PublicKey:  publicKey,
-		Peers:      make(map[string]*WireGuardPeer),
-		logger:     zap.NewNop(),
-		realAdapter: realAdapter,
+		Name:             name,
+		ListenPort:       port,
+		PrivateKey:       privateKey,
+		PublicKey:        publicKey,
+		Peers:            make(map[string]*WireGuardPeer),
+		logger:           zap.NewNop(),
+		realAdapter:      realAdapter,
 		useRealWireGuard: useRealWireGuard,
 	}
 }
@@ -219,11 +219,11 @@ func generateKeyPair() (string, string) {
 	// Пока используем простую симуляцию
 	privateKeyBytes := make([]byte, 32)
 	rand.Read(privateKeyBytes)
-	
+
 	publicKeyBytes := sha256.Sum256(privateKeyBytes)
-	
+
 	return base64.StdEncoding.EncodeToString(privateKeyBytes),
-		   base64.StdEncoding.EncodeToString(publicKeyBytes[:])
+		base64.StdEncoding.EncodeToString(publicKeyBytes[:])
 }
 
 // checkRealWireGuardAvailability проверяет доступность реального WireGuard
@@ -232,17 +232,17 @@ func checkRealWireGuardAvailability() bool {
 	if _, err := exec.LookPath("wireguard-go"); err != nil {
 		return false
 	}
-	
+
 	// Проверяем наличие wg команды
 	if _, err := exec.LookPath("wg"); err != nil {
 		return false
 	}
-	
+
 	// Проверяем наличие ip команды
 	if _, err := exec.LookPath("ip"); err != nil {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -275,7 +275,7 @@ func generatePeerID() string {
 // NewPeerDiscovery создает новый peer discovery
 func NewPeerDiscovery(config *DiscoveryConfig, wgInterface *WireGuardInterface) *PeerDiscovery {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &PeerDiscovery{
 		Config:          config,
 		LocalInterface:  wgInterface,
@@ -323,11 +323,11 @@ func NewSiteToSiteManager(wireGuardMesh *MeshTopology) *SiteToSiteManager {
 func (wgi *WireGuardInterface) Start() error {
 	wgi.mu.Lock()
 	defer wgi.mu.Unlock()
-	
+
 	if wgi.isRunning {
 		return fmt.Errorf("WireGuard interface already running")
 	}
-	
+
 	if wgi.useRealWireGuard && wgi.realAdapter != nil {
 		// Используем реальный WireGuard
 		config := &WireGuardConfig{
@@ -346,7 +346,7 @@ func (wgi *WireGuardInterface) Start() error {
 			},
 			Peers: []WireGuardPeerConfig{},
 		}
-		
+
 		// Добавляем существующих пиров
 		for _, peer := range wgi.Peers {
 			config.Peers = append(config.Peers, WireGuardPeerConfig{
@@ -355,7 +355,7 @@ func (wgi *WireGuardInterface) Start() error {
 				Endpoint:   peer.Endpoint,
 			})
 		}
-		
+
 		if err := wgi.realAdapter.Start(config); err != nil {
 			wgi.logger.Error("Failed to start real WireGuard, falling back to simulation", zap.Error(err))
 			wgi.useRealWireGuard = false
@@ -368,44 +368,44 @@ func (wgi *WireGuardInterface) Start() error {
 			return nil
 		}
 	}
-	
+
 	// Fallback на симуляцию
 	wgi.isRunning = true
 	wgi.logger.Info("Simulated WireGuard interface started",
 		zap.String("name", wgi.Name),
 		zap.Int("port", wgi.ListenPort),
 	)
-	
+
 	return nil
 }
 
 func (wgi *WireGuardInterface) Stop() error {
 	wgi.mu.Lock()
 	defer wgi.mu.Unlock()
-	
+
 	if !wgi.isRunning {
 		return fmt.Errorf("WireGuard interface not running")
 	}
-	
+
 	if wgi.useRealWireGuard && wgi.realAdapter != nil {
 		// Останавливаем реальный WireGuard
 		if err := wgi.realAdapter.Stop(); err != nil {
 			wgi.logger.Error("Failed to stop real WireGuard", zap.Error(err))
 		}
 	}
-	
+
 	wgi.isRunning = false
 	wgi.logger.Info("WireGuard interface stopped",
 		zap.String("name", wgi.Name),
 	)
-	
+
 	return nil
 }
 
 func (wgi *WireGuardInterface) AddPeer(peer *WireGuardPeer) error {
 	wgi.mu.Lock()
 	defer wgi.mu.Unlock()
-	
+
 	if wgi.useRealWireGuard && wgi.realAdapter != nil && wgi.isRunning {
 		// Добавляем пира в реальный WireGuard
 		realPeer := &WireGuardPeerConfig{
@@ -413,7 +413,7 @@ func (wgi *WireGuardInterface) AddPeer(peer *WireGuardPeer) error {
 			AllowedIPs: peer.AllowedIPs,
 			Endpoint:   peer.Endpoint,
 		}
-		
+
 		if err := wgi.realAdapter.AddPeer(realPeer); err != nil {
 			wgi.logger.Error("Failed to add peer to real WireGuard", zap.Error(err))
 			// Fallback на симуляцию
@@ -433,34 +433,34 @@ func (wgi *WireGuardInterface) AddPeer(peer *WireGuardPeer) error {
 			zap.String("endpoint", peer.Endpoint),
 		)
 	}
-	
+
 	return nil
 }
 
 func (wgi *WireGuardInterface) RemovePeer(publicKey string) error {
 	wgi.mu.Lock()
 	defer wgi.mu.Unlock()
-	
+
 	if wgi.useRealWireGuard && wgi.realAdapter != nil && wgi.isRunning {
 		// Удаляем пира из реального WireGuard
 		if err := wgi.realAdapter.RemovePeer(publicKey); err != nil {
 			wgi.logger.Error("Failed to remove peer from real WireGuard", zap.Error(err))
 		}
 	}
-	
+
 	// Удаляем из симуляции
 	delete(wgi.Peers, publicKey)
 	wgi.logger.Info("WireGuard peer removed",
 		zap.String("public_key", publicKey),
 	)
-	
+
 	return nil
 }
 
 func (wgi *WireGuardInterface) GetStatus() map[string]interface{} {
 	wgi.mu.RLock()
 	defer wgi.mu.RUnlock()
-	
+
 	if wgi.useRealWireGuard && wgi.realAdapter != nil && wgi.isRunning {
 		// Получаем статус реального WireGuard
 		status, err := wgi.realAdapter.GetStatus()
@@ -471,7 +471,7 @@ func (wgi *WireGuardInterface) GetStatus() map[string]interface{} {
 			return status
 		}
 	}
-	
+
 	// Fallback на симуляцию
 	peers := make([]map[string]interface{}, 0)
 	for _, peer := range wgi.Peers {
@@ -483,16 +483,16 @@ func (wgi *WireGuardInterface) GetStatus() map[string]interface{} {
 			"latency":        peer.Latency,
 		})
 	}
-	
+
 	return map[string]interface{}{
-		"name":        wgi.Name,
-		"listen_port": wgi.ListenPort,
-		"address":     wgi.Address,
-		"peers_count": len(wgi.Peers),
-		"status":      "running",
-		"is_running":  wgi.isRunning,
-		"peers":       peers,
-		"mode":        "simulated",
+		"name":                     wgi.Name,
+		"listen_port":              wgi.ListenPort,
+		"address":                  wgi.Address,
+		"peers_count":              len(wgi.Peers),
+		"status":                   "running",
+		"is_running":               wgi.isRunning,
+		"peers":                    peers,
+		"mode":                     "simulated",
 		"real_wireguard_available": wgi.useRealWireGuard,
 	}
 }
@@ -501,13 +501,13 @@ func (wgi *WireGuardInterface) GetStatus() map[string]interface{} {
 func (mt *MeshTopology) AddPeer(peerID string, peer *WireGuardPeer) error {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
-	
+
 	mt.ConnectedPeers[peerID] = peer
 	mt.logger.Info("Peer added to mesh topology",
 		zap.String("peer_id", peerID),
 		zap.String("public_key", peer.PublicKey),
 	)
-	
+
 	// Обновляем routing table
 	return mt.updateRoutingTable()
 }
@@ -515,12 +515,12 @@ func (mt *MeshTopology) AddPeer(peerID string, peer *WireGuardPeer) error {
 func (mt *MeshTopology) RemovePeer(peerID string) error {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
-	
+
 	delete(mt.ConnectedPeers, peerID)
 	mt.logger.Info("Peer removed from mesh topology",
 		zap.String("peer_id", peerID),
 	)
-	
+
 	// Обновляем routing table
 	return mt.updateRoutingTable()
 }
@@ -528,22 +528,22 @@ func (mt *MeshTopology) RemovePeer(peerID string) error {
 func (mt *MeshTopology) GetOptimalRoute(destination string) ([]string, error) {
 	mt.mu.RLock()
 	defer mt.mu.RUnlock()
-	
+
 	// Проверяем прямые маршруты
 	if route, exists := mt.RoutingTable.DirectRoutes[destination]; exists {
 		return []string{route}, nil
 	}
-	
+
 	// Проверяем mesh маршруты
 	if routes, exists := mt.RoutingTable.MeshRoutes[destination]; exists {
 		return routes, nil
 	}
-	
+
 	// Fallback маршрут
 	if fallback, exists := mt.RoutingTable.HubFallback[destination]; exists {
 		return []string{fallback}, nil
 	}
-	
+
 	// Дефолтный маршрут
 	return []string{"default"}, nil
 }
@@ -551,7 +551,7 @@ func (mt *MeshTopology) GetOptimalRoute(destination string) ([]string, error) {
 func (mt *MeshTopology) UpdateRoutingTable() error {
 	mt.mu.Lock()
 	defer mt.mu.Unlock()
-	
+
 	return mt.updateRoutingTable()
 }
 
@@ -559,11 +559,11 @@ func (mt *MeshTopology) updateRoutingTable() error {
 	// Очищаем старые маршруты
 	mt.RoutingTable.mu.Lock()
 	defer mt.RoutingTable.mu.Unlock()
-	
+
 	mt.RoutingTable.DirectRoutes = make(map[string]string)
 	mt.RoutingTable.MeshRoutes = make(map[string][]string)
 	mt.RoutingTable.HubFallback = make(map[string]string)
-	
+
 	// Строим новые маршруты на основе подключенных пиров
 	for peerID, peer := range mt.ConnectedPeers {
 		if peer.Status == PeerStatusConnected {
@@ -573,12 +573,12 @@ func (mt *MeshTopology) updateRoutingTable() error {
 			}
 		}
 	}
-	
+
 	mt.logger.Info("Mesh routing table updated",
 		zap.Int("direct_routes", len(mt.RoutingTable.DirectRoutes)),
 		zap.Int("mesh_routes", len(mt.RoutingTable.MeshRoutes)),
 	)
-	
+
 	return nil
 }
 
@@ -586,44 +586,44 @@ func (mt *MeshTopology) updateRoutingTable() error {
 func (pd *PeerDiscovery) Start() error {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
-	
+
 	if pd.isRunning {
 		return fmt.Errorf("Peer discovery already running")
 	}
-	
+
 	pd.isRunning = true
-	
+
 	// Запускаем goroutine для peer discovery
 	go pd.discoveryLoop()
-	
+
 	pd.logger.Info("Peer discovery started",
 		zap.String("registry_url", pd.Config.RegistryURL),
 		zap.Duration("heartbeat_interval", pd.Config.HeartbeatInterval),
 	)
-	
+
 	return nil
 }
 
 func (pd *PeerDiscovery) Stop() error {
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
-	
+
 	if !pd.isRunning {
 		return fmt.Errorf("Peer discovery not running")
 	}
-	
+
 	pd.cancel()
 	pd.isRunning = false
-	
+
 	pd.logger.Info("Peer discovery stopped")
-	
+
 	return nil
 }
 
 func (pd *PeerDiscovery) discoveryLoop() {
 	ticker := time.NewTicker(pd.Config.HeartbeatInterval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-pd.ctx.Done():
@@ -638,10 +638,10 @@ func (pd *PeerDiscovery) discoveryLoop() {
 func (pd *PeerDiscovery) discoverPeers() {
 	// В реальной реализации здесь будет HTTP запрос к registry
 	// для получения списка доступных пиров
-	
+
 	pd.mu.Lock()
 	defer pd.mu.Unlock()
-	
+
 	// Симуляция обнаружения пиров
 	discoveredPeers := []*DiscoveredPeer{
 		{
@@ -655,7 +655,7 @@ func (pd *PeerDiscovery) discoverPeers() {
 			Latency:      50 * time.Millisecond,
 		},
 		{
-			PeerID:       "peer-remote-2", 
+			PeerID:       "peer-remote-2",
 			PublicKey:    "remote-public-key-2",
 			Endpoint:     "192.168.1.101:51820",
 			Region:       "eu-central",
@@ -665,11 +665,11 @@ func (pd *PeerDiscovery) discoverPeers() {
 			Latency:      75 * time.Millisecond,
 		},
 	}
-	
+
 	for _, peer := range discoveredPeers {
 		pd.DiscoveredPeers[peer.PeerID] = peer
 	}
-	
+
 	pd.logger.Debug("Discovered peers",
 		zap.Int("count", len(discoveredPeers)),
 	)
@@ -683,12 +683,12 @@ func (pd *PeerDiscovery) registerLocalPeer() {
 func (pd *PeerDiscovery) DiscoverPeers() ([]*DiscoveredPeer, error) {
 	pd.mu.RLock()
 	defer pd.mu.RUnlock()
-	
+
 	peers := make([]*DiscoveredPeer, 0, len(pd.DiscoveredPeers))
 	for _, peer := range pd.DiscoveredPeers {
 		peers = append(peers, peer)
 	}
-	
+
 	return peers, nil
 }
 
@@ -711,15 +711,15 @@ func (qowg *QUICOverWireGuard) Stop() error {
 func (qowg *QUICOverWireGuard) CreateConnection(peerID string) (interface{}, error) {
 	qowg.mu.Lock()
 	defer qowg.mu.Unlock()
-	
+
 	// В реальной реализации здесь будет создание QUIC соединения поверх WireGuard
 	connection := fmt.Sprintf("quic-wg-connection-%s", peerID)
 	qowg.connections[peerID] = connection
-	
+
 	qowg.logger.Info("QUIC over WireGuard connection created",
 		zap.String("peer_id", peerID),
 	)
-	
+
 	return connection, nil
 }
 
@@ -727,9 +727,9 @@ func (qowg *QUICOverWireGuard) CreateConnection(peerID string) (interface{}, err
 func (hr *HybridRouter) RouteRequest(clientIP, destination string) (string, error) {
 	hr.mu.Lock()
 	defer hr.mu.Unlock()
-	
+
 	hr.stats.TotalRequests++
-	
+
 	// Проверяем доступность WireGuard маршрута
 	if hr.WireGuardMesh != nil {
 		routes, err := hr.WireGuardMesh.GetOptimalRoute(destination)
@@ -738,7 +738,7 @@ func (hr *HybridRouter) RouteRequest(clientIP, destination string) (string, erro
 			return "wireguard", nil
 		}
 	}
-	
+
 	// Fallback на Enhanced QUIC
 	hr.stats.EnhancedQUICRoutes++
 	return "enhanced_quic", nil
@@ -747,25 +747,25 @@ func (hr *HybridRouter) RouteRequest(clientIP, destination string) (string, erro
 func (hr *HybridRouter) SetRoutingStrategy(strategy RoutingStrategy) error {
 	hr.mu.Lock()
 	defer hr.mu.Unlock()
-	
+
 	hr.RoutingStrategy = strategy
 	hr.logger.Info("Routing strategy updated",
 		zap.Int("strategy", int(strategy)),
 	)
-	
+
 	return nil
 }
 
 func (hr *HybridRouter) GetRoutingStats() map[string]interface{} {
 	hr.mu.RLock()
 	defer hr.mu.RUnlock()
-	
+
 	return map[string]interface{}{
-		"strategy":           hr.RoutingStrategy,
-		"wireguard_routes":   hr.stats.WireGuardRoutes,
+		"strategy":             hr.RoutingStrategy,
+		"wireguard_routes":     hr.stats.WireGuardRoutes,
 		"enhanced_quic_routes": hr.stats.EnhancedQUICRoutes,
-		"total_requests":     hr.stats.TotalRequests,
-		"last_reset":         hr.stats.LastReset,
+		"total_requests":       hr.stats.TotalRequests,
+		"last_reset":           hr.stats.LastReset,
 	}
 }
 
@@ -773,21 +773,21 @@ func (hr *HybridRouter) GetRoutingStats() map[string]interface{} {
 func (ssm *SiteToSiteManager) AddCorporateNetwork(network *CorporateNetwork) error {
 	ssm.mu.Lock()
 	defer ssm.mu.Unlock()
-	
+
 	ssm.CorporateNetworks[network.NetworkID] = network
 	ssm.logger.Info("Corporate network added",
 		zap.String("network_id", network.NetworkID),
 		zap.String("cidr", network.CIDR),
 		zap.String("tenant_id", network.TenantID),
 	)
-	
+
 	return nil
 }
 
 func (ssm *SiteToSiteManager) CreateSiteRoute(from, to string) (*SiteRoute, error) {
 	ssm.mu.Lock()
 	defer ssm.mu.Unlock()
-	
+
 	route := &SiteRoute{
 		FromNetwork:  from,
 		ToNetwork:    to,
@@ -796,27 +796,27 @@ func (ssm *SiteToSiteManager) CreateSiteRoute(from, to string) (*SiteRoute, erro
 		Status:       RouteStatusActive,
 		Latency:      25 * time.Millisecond,
 	}
-	
+
 	routeKey := fmt.Sprintf("%s-%s", from, to)
 	ssm.SiteRoutes[routeKey] = route
-	
+
 	ssm.logger.Info("Site-to-site route created",
 		zap.String("from", from),
 		zap.String("to", to),
 		zap.String("via", route.ViaWireGuard),
 	)
-	
+
 	return route, nil
 }
 
 func (ssm *SiteToSiteManager) GetVPNReplacementStatus() map[string]bool {
 	ssm.mu.RLock()
 	defer ssm.mu.RUnlock()
-	
+
 	status := make(map[string]bool)
 	for _, network := range ssm.CorporateNetworks {
 		status[network.NetworkID] = network.VPNReplacement
 	}
-	
+
 	return status
 }

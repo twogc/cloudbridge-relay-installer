@@ -14,7 +14,7 @@ var (
 		},
 		[]string{"tenant_id", "status", "region"},
 	)
-	
+
 	enhancedQuicConnectionDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "enhanced_quic_connection_duration_seconds",
@@ -23,7 +23,7 @@ var (
 		},
 		[]string{"tenant_id", "region"},
 	)
-	
+
 	// Data Transfer Metrics
 	enhancedQuicBytesSent = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -32,7 +32,7 @@ var (
 		},
 		[]string{"tenant_id", "region"},
 	)
-	
+
 	enhancedQuicBytesReceived = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "enhanced_quic_bytes_received_total",
@@ -40,7 +40,7 @@ var (
 		},
 		[]string{"tenant_id", "region"},
 	)
-	
+
 	enhancedQuicThroughput = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "enhanced_quic_throughput_bytes_per_second",
@@ -48,7 +48,7 @@ var (
 		},
 		[]string{"tenant_id", "direction", "region"},
 	)
-	
+
 	// Stream Metrics
 	enhancedQuicStreams = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -57,7 +57,7 @@ var (
 		},
 		[]string{"tenant_id", "stream_type", "region"},
 	)
-	
+
 	enhancedQuicStreamsCreated = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "enhanced_quic_streams_created_total",
@@ -65,7 +65,7 @@ var (
 		},
 		[]string{"tenant_id", "stream_type", "region"},
 	)
-	
+
 	// DDoS Protection Metrics
 	enhancedQuicDDoSBlocked = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -74,7 +74,7 @@ var (
 		},
 		[]string{"client_ip", "reason", "region"},
 	)
-	
+
 	enhancedQuicDDoSDetected = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "enhanced_quic_ddos_detected_total",
@@ -82,7 +82,7 @@ var (
 		},
 		[]string{"attack_type", "severity", "region"},
 	)
-	
+
 	enhancedQuicRateLimitHits = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "enhanced_quic_rate_limit_hits_total",
@@ -90,7 +90,7 @@ var (
 		},
 		[]string{"tenant_id", "limit_type", "region"},
 	)
-	
+
 	// Geographic Routing Metrics
 	enhancedQuicGeoRoutes = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -99,7 +99,7 @@ var (
 		},
 		[]string{"source_region", "target_region", "route_type"},
 	)
-	
+
 	enhancedQuicGeoLatency = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "enhanced_quic_geo_routing_latency_seconds",
@@ -108,7 +108,7 @@ var (
 		},
 		[]string{"source_region", "target_region"},
 	)
-	
+
 	// Tenant Management Metrics
 	enhancedQuicTenantBandwidthUsage = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -117,7 +117,7 @@ var (
 		},
 		[]string{"tenant_id", "direction", "region"},
 	)
-	
+
 	enhancedQuicTenantConnectionsActive = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "enhanced_quic_tenant_connections_active",
@@ -125,7 +125,7 @@ var (
 		},
 		[]string{"tenant_id", "region"},
 	)
-	
+
 	enhancedQuicTenantLimitExceeded = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "enhanced_quic_tenant_limit_exceeded_total",
@@ -133,7 +133,7 @@ var (
 		},
 		[]string{"tenant_id", "limit_type", "region"},
 	)
-	
+
 	// Authentication Metrics
 	enhancedQuicAuthenticationAttempts = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -142,7 +142,7 @@ var (
 		},
 		[]string{"tenant_id", "auth_method", "status", "region"},
 	)
-	
+
 	enhancedQuicKeycloakRequests = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "enhanced_quic_keycloak_requests_total",
@@ -150,7 +150,7 @@ var (
 		},
 		[]string{"operation", "status", "region"},
 	)
-	
+
 	enhancedQuicKeycloakLatency = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "enhanced_quic_keycloak_latency_seconds",
@@ -159,7 +159,7 @@ var (
 		},
 		[]string{"operation", "region"},
 	)
-	
+
 	// Load Balancing Metrics
 	enhancedQuicLoadBalancerRequests = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -168,7 +168,7 @@ var (
 		},
 		[]string{"server", "algorithm", "status", "region"},
 	)
-	
+
 	enhancedQuicServerHealth = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "enhanced_quic_server_health",
@@ -176,7 +176,7 @@ var (
 		},
 		[]string{"server", "region"},
 	)
-	
+
 	// Performance Metrics
 	enhancedQuicLatency = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -186,7 +186,7 @@ var (
 		},
 		[]string{"operation", "tenant_id", "region"},
 	)
-	
+
 	enhancedQuicCpuUsage = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "enhanced_quic_cpu_usage_percent",
@@ -194,7 +194,7 @@ var (
 		},
 		[]string{"component", "region"},
 	)
-	
+
 	enhancedQuicMemoryUsage = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "enhanced_quic_memory_usage_bytes",
@@ -202,7 +202,7 @@ var (
 		},
 		[]string{"component", "region"},
 	)
-	
+
 	// Error Metrics
 	enhancedQuicErrors = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -211,7 +211,7 @@ var (
 		},
 		[]string{"error_type", "component", "tenant_id", "region"},
 	)
-	
+
 	enhancedQuicTimeout = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "enhanced_quic_timeouts_total",

@@ -20,9 +20,9 @@ func TestConnectionManagementIntegration(t *testing.T) {
 
 	// Создаем connection pool с расширенными возможностями
 	pool := NewConnectionPool(
-		10,                    // maxConnections
-		30*time.Second,        // maxIdleTime
-		60*time.Second,        // cleanupInterval
+		10,             // maxConnections
+		30*time.Second, // maxIdleTime
+		60*time.Second, // cleanupInterval
 		logger,
 	)
 	require.NotNil(t, pool)
@@ -145,9 +145,9 @@ func TestConnectionManagementStress(t *testing.T) {
 	logger := &logger.Logger{}
 
 	pool := NewConnectionPool(
-		5,                     // maxConnections
-		10*time.Second,        // maxIdleTime
-		5*time.Second,         // cleanupInterval
+		5,              // maxConnections
+		10*time.Second, // maxIdleTime
+		5*time.Second,  // cleanupInterval
 		logger,
 	)
 
@@ -190,9 +190,9 @@ func TestConnectionManagementErrorHandling(t *testing.T) {
 	logger := &logger.Logger{}
 
 	pool := NewConnectionPool(
-		3,                     // maxConnections
-		5*time.Second,         // maxIdleTime
-		2*time.Second,         // cleanupInterval
+		3,             // maxConnections
+		5*time.Second, // maxIdleTime
+		2*time.Second, // cleanupInterval
 		logger,
 	)
 
@@ -221,4 +221,4 @@ func TestConnectionManagementErrorHandling(t *testing.T) {
 	t.Cleanup(func() {
 		pool.Close()
 	})
-} 
+}

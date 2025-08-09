@@ -16,14 +16,14 @@ import (
 
 // Server represents the API server
 type Server struct {
-	port           string
-	tunnelManager  *tunnel.Manager
-	metrics        *metrics.Metrics
-	logger         *logger.Logger
-	server         *http.Server
-	startTime      time.Time
-	version        string
-	mu             sync.RWMutex
+	port          string
+	tunnelManager *tunnel.Manager
+	metrics       *metrics.Metrics
+	logger        *logger.Logger
+	server        *http.Server
+	startTime     time.Time
+	version       string
+	mu            sync.RWMutex
 }
 
 // Config represents API server configuration
@@ -159,7 +159,7 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 		// In a real implementation, this would use promhttp.Handler()
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		
+
 		metrics := fmt.Sprintf(`# HELP relay_active_connections Number of active connections
 # TYPE relay_active_connections gauge
 relay_active_connections %d
@@ -176,7 +176,7 @@ relay_active_tunnels %d
 			s.metrics.GetActiveConnections(), // This should be total connections
 			s.metrics.GetActiveTunnels(),
 		)
-		
+
 		w.Write([]byte(metrics))
 		return
 	}
@@ -195,17 +195,17 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 		"connections": map[string]interface{}{
 			"active":   s.metrics.GetActiveConnections(),
 			"total":    s.metrics.GetActiveConnections(), // This should be total
-			"rejected": 0, // This should be from metrics
+			"rejected": 0,                                // This should be from metrics
 		},
 		"tunnels": map[string]interface{}{
 			"active": s.metrics.GetActiveTunnels(),
 			"total":  s.metrics.GetActiveTunnels(), // This should be total
-			"failed": 0, // This should be from metrics
+			"failed": 0,                            // This should be from metrics
 		},
 		"performance": map[string]interface{}{
-			"avg_response_time": 0.15,
+			"avg_response_time":   0.15,
 			"requests_per_second": 45.2,
-			"error_rate": 0.02,
+			"error_rate":          0.02,
 		},
 		"system": map[string]interface{}{
 			"cpu_usage":    23.5,
@@ -230,16 +230,16 @@ func (s *Server) handleTunnels(w http.ResponseWriter, r *http.Request) {
 
 	// Get tunnel stats from tunnel manager
 	var tunnels []map[string]interface{}
-	
+
 	if s.tunnelManager != nil {
 		tunnelStats := s.tunnelManager.GetTunnelStats()
 		for tunnelID, stats := range tunnelStats {
 			tunnel := map[string]interface{}{
 				"id":             tunnelID,
 				"client_id":      "client-001", // This should be from tunnel data
-				"local_port":     0, // This should be from tunnel data
-				"remote_host":    "", // This should be from tunnel data
-				"remote_port":    0, // This should be from tunnel data
+				"local_port":     0,            // This should be from tunnel data
+				"remote_host":    "",           // This should be from tunnel data
+				"remote_port":    0,            // This should be from tunnel data
 				"status":         "active",
 				"created_at":     stats.StartTime.Format(time.RFC3339),
 				"last_activity":  stats.LastActivity.Format(time.RFC3339),
@@ -308,9 +308,9 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	info := map[string]interface{}{
-		"service":   "CloudBridge Relay API",
-		"version":   s.version,
-		"uptime":    time.Since(s.startTime).String(),
+		"service": "CloudBridge Relay API",
+		"version": s.version,
+		"uptime":  time.Since(s.startTime).String(),
 		"endpoints": []string{
 			"GET /health - Health check",
 			"GET /api/v1/health - Health check (v1)",
@@ -329,4 +329,4 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode root info", http.StatusInternalServerError)
 		return
 	}
-} 
+}

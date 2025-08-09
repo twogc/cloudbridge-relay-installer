@@ -15,16 +15,16 @@ import (
 
 // QUICConnection представляет QUIC соединение для CloudBridge Relay
 type QUICConnection struct {
-	conn           *quic.Conn
-	logger         *zap.Logger
-	metrics        *metrics.EnhancedMetrics
-	connectionID   uuid.UUID
-	streams        map[quic.StreamID]*quic.Stream
-	mu             sync.RWMutex
-	config         *QUICConfig
-	startTime      time.Time
-	activeStreams  int32
-	totalStreams   int64
+	conn          *quic.Conn
+	logger        *zap.Logger
+	metrics       *metrics.EnhancedMetrics
+	connectionID  uuid.UUID
+	streams       map[quic.StreamID]*quic.Stream
+	mu            sync.RWMutex
+	config        *QUICConfig
+	startTime     time.Time
+	activeStreams int32
+	totalStreams  int64
 }
 
 // QUICConfig конфигурация для QUIC соединения
@@ -338,16 +338,16 @@ func (qc *QUICConnection) GetStats() map[string]interface{} {
 	defer qc.mu.RUnlock()
 
 	return map[string]interface{}{
-		"connection_id":   qc.connectionID.String(),
-		"remote_addr":     qc.conn.RemoteAddr().String(),
-		"active_streams":  qc.activeStreams,
-		"total_streams":   qc.totalStreams,
-		"uptime":          time.Since(qc.startTime).String(),
-		"max_streams":     qc.config.MaxStreams,
-		"keep_alive":      qc.config.KeepAliveInterval.String(),
-		"idle_timeout":    qc.config.IdleTimeout.String(),
-		"enable_metrics":  qc.config.EnableMetrics,
-		"enable_tracing":  qc.config.EnableTracing,
+		"connection_id":  qc.connectionID.String(),
+		"remote_addr":    qc.conn.RemoteAddr().String(),
+		"active_streams": qc.activeStreams,
+		"total_streams":  qc.totalStreams,
+		"uptime":         time.Since(qc.startTime).String(),
+		"max_streams":    qc.config.MaxStreams,
+		"keep_alive":     qc.config.KeepAliveInterval.String(),
+		"idle_timeout":   qc.config.IdleTimeout.String(),
+		"enable_metrics": qc.config.EnableMetrics,
+		"enable_tracing": qc.config.EnableTracing,
 	}
 }
 
@@ -375,4 +375,4 @@ func (qc *QUICConnection) GetTotalStreams() int64 {
 	qc.mu.RLock()
 	defer qc.mu.RUnlock()
 	return qc.totalStreams
-} 
+}

@@ -222,4 +222,4 @@ func TestQUICConnection_ConfigValidation_EdgeCases(t *testing.T) {
 			// Дополнительные проверки можно добавить здесь
 		})
 	}
-} 
+}
