@@ -25,10 +25,10 @@ type TokenInfo struct {
 
 // Validator implements token validation
 type Validator struct {
-	config     Config
-	cache      map[string]TokenInfo
-	mu         sync.RWMutex
-	jwtKey     []byte
+	config Config
+	cache  map[string]TokenInfo
+	mu     sync.RWMutex
+	jwtKey []byte
 }
 
 // NewValidator creates a new token validator
@@ -37,7 +37,7 @@ func NewValidator(config Config) *Validator {
 	if config.CacheTTL == 0 {
 		config.CacheTTL = 5 * time.Minute
 	}
-	
+
 	return &Validator{
 		config: config,
 		cache:  make(map[string]TokenInfo),
@@ -132,4 +132,4 @@ func (v *Validator) Cleanup() {
 			delete(v.cache, token)
 		}
 	}
-} 
+}

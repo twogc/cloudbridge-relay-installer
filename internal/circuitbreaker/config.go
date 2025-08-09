@@ -9,8 +9,8 @@ import (
 
 // CircuitBreakerConfig holds configuration for multiple circuit breakers
 type CircuitBreakerConfig struct {
-	DefaultConfig *Config                    `json:"default_config"`
-	Breakers      map[string]*Config         `json:"breakers"`
+	DefaultConfig *Config                     `json:"default_config"`
+	Breakers      map[string]*Config          `json:"breakers"`
 	GlobalConfig  *GlobalCircuitBreakerConfig `json:"global_config"`
 }
 
@@ -223,4 +223,4 @@ func CreateDefaultConfig() *CircuitBreakerConfig {
 			},
 		},
 	}
-} 
+}

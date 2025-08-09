@@ -9,12 +9,12 @@ import (
 func GenerateKyberKeyPair(level PQCKeySize) (*PQCKeyPair, error) {
 	// Заглушка для CRYSTALS-Kyber
 	return &PQCKeyPair{
-		Algorithm: PQCKyber,
-		KeySize:   level,
-		PublicKey: []byte("kyber-public-key"),
+		Algorithm:  PQCKyber,
+		KeySize:    level,
+		PublicKey:  []byte("kyber-public-key"),
 		PrivateKey: []byte("kyber-private-key"),
-		CreatedAt: time.Now(),
-		ExpiresAt: time.Now().AddDate(0, 0, 30),
+		CreatedAt:  time.Now(),
+		ExpiresAt:  time.Now().AddDate(0, 0, 30),
 	}, nil
 }
 
@@ -22,12 +22,12 @@ func GenerateKyberKeyPair(level PQCKeySize) (*PQCKeyPair, error) {
 func GenerateDilithiumKeyPair(level PQCKeySize) (*PQCKeyPair, error) {
 	// Заглушка для CRYSTALS-Dilithium
 	return &PQCKeyPair{
-		Algorithm: PQCDilithium,
-		KeySize:   level,
-		PublicKey: []byte("dilithium-public-key"),
+		Algorithm:  PQCDilithium,
+		KeySize:    level,
+		PublicKey:  []byte("dilithium-public-key"),
 		PrivateKey: []byte("dilithium-private-key"),
-		CreatedAt: time.Now(),
-		ExpiresAt: time.Now().AddDate(0, 0, 30),
+		CreatedAt:  time.Now(),
+		ExpiresAt:  time.Now().AddDate(0, 0, 30),
 	}, nil
 }
 
@@ -35,12 +35,12 @@ func GenerateDilithiumKeyPair(level PQCKeySize) (*PQCKeyPair, error) {
 func GenerateFalconKeyPair(level PQCKeySize) (*PQCKeyPair, error) {
 	// Заглушка для Falcon
 	return &PQCKeyPair{
-		Algorithm: PQCFalcon,
-		KeySize:   level,
-		PublicKey: []byte("falcon-public-key"),
+		Algorithm:  PQCFalcon,
+		KeySize:    level,
+		PublicKey:  []byte("falcon-public-key"),
 		PrivateKey: []byte("falcon-private-key"),
-		CreatedAt: time.Now(),
-		ExpiresAt: time.Now().AddDate(0, 0, 30),
+		CreatedAt:  time.Now(),
+		ExpiresAt:  time.Now().AddDate(0, 0, 30),
 	}, nil
 }
 
@@ -48,12 +48,12 @@ func GenerateFalconKeyPair(level PQCKeySize) (*PQCKeyPair, error) {
 func GenerateSphincsPlusKeyPair(level PQCKeySize) (*PQCKeyPair, error) {
 	// Заглушка для SPHINCS+
 	return &PQCKeyPair{
-		Algorithm: PQCSphincsPlus,
-		KeySize:   level,
-		PublicKey: []byte("sphincs-plus-public-key"),
+		Algorithm:  PQCSphincsPlus,
+		KeySize:    level,
+		PublicKey:  []byte("sphincs-plus-public-key"),
 		PrivateKey: []byte("sphincs-plus-private-key"),
-		CreatedAt: time.Now(),
-		ExpiresAt: time.Now().AddDate(0, 0, 30),
+		CreatedAt:  time.Now(),
+		ExpiresAt:  time.Now().AddDate(0, 0, 30),
 	}, nil
 }
 
@@ -66,7 +66,7 @@ func PerformHybridKeyExchange(classical, quantum *PQCKeyPair) (*HybridKeyPair, e
 			PrivateKey: []byte("classical-private-key"),
 			Algorithm:  "X25519",
 		},
-		Quantum: quantum,
+		Quantum:  quantum,
 		Combined: []byte("hybrid-key"),
 	}, nil
 }

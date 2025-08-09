@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
-	"golang.org/x/net/http2"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
 )
 
 // HTTP2ConnectionReuse управляет переиспользованием HTTP/2 соединений
@@ -19,12 +19,12 @@ type HTTP2ConnectionReuse struct {
 	connections map[string]*HTTP2ReusedConnection
 	mu          sync.RWMutex
 	logger      *logger.Logger
-	
+
 	// Конфигурация
-	maxConnections int
-	maxIdleTime    time.Duration
+	maxConnections  int
+	maxIdleTime     time.Duration
 	cleanupInterval time.Duration
-	
+
 	// Контекст для cleanup
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -32,20 +32,20 @@ type HTTP2ConnectionReuse struct {
 
 // HTTP2ReusedConnection представляет переиспользуемое HTTP/2 соединение
 type HTTP2ReusedConnection struct {
-	conn        net.Conn
-	client      *http.Client
-	lastUsed    time.Time
-	useCount    int64
-	healthy     bool
-	mu          sync.RWMutex
-	closed      bool
+	conn     net.Conn
+	client   *http.Client
+	lastUsed time.Time
+	useCount int64
+	healthy  bool
+	mu       sync.RWMutex
+	closed   bool
 }
 
 // HTTP2ReuseConfig конфигурация для HTTP/2 connection reuse
 type HTTP2ReuseConfig struct {
-	MaxConnections  int           `json:"max_connections"`
-	MaxIdleTime     time.Duration `json:"max_idle_time"`
-	CleanupInterval time.Duration `json:"cleanup_interval"`
+	MaxConnections  int            `json:"max_connections"`
+	MaxIdleTime     time.Duration  `json:"max_idle_time"`
+	CleanupInterval time.Duration  `json:"cleanup_interval"`
 	Logger          *logger.Logger `json:"-"`
 }
 
@@ -65,7 +65,7 @@ func NewHTTP2ConnectionReuse(config *HTTP2ReuseConfig) *HTTP2ConnectionReuse {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	reuse := &HTTP2ConnectionReuse{
 		connections:     make(map[string]*HTTP2ReusedConnection),
 		logger:          config.Logger,
@@ -230,7 +230,7 @@ func (h *HTTP2ConnectionReuse) cleanup() {
 // Close закрывает все соединения
 func (h *HTTP2ConnectionReuse) Close() error {
 	h.cancel()
-	
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -261,12 +261,12 @@ func (h *HTTP2ConnectionReuse) GetStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total_connections":     len(h.connections),
-		"healthy_connections":   healthyConnections,
-		"total_use_count":       totalUseCount,
-		"max_connections":       h.maxConnections,
-		"max_idle_time":         h.maxIdleTime.String(),
-		"cleanup_interval":      h.cleanupInterval.String(),
+		"total_connections":   len(h.connections),
+		"healthy_connections": healthyConnections,
+		"total_use_count":     totalUseCount,
+		"max_connections":     h.maxConnections,
+		"max_idle_time":       h.maxIdleTime.String(),
+		"cleanup_interval":    h.cleanupInterval.String(),
 	}
 }
 
@@ -334,4 +334,4 @@ func (hcr *HTTP2ReusedConnection) Close() error {
 	}
 
 	return nil
-} 
+}

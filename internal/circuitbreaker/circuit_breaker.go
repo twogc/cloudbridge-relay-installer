@@ -33,20 +33,20 @@ func (s State) String() string {
 
 // CircuitBreaker implements the circuit breaker pattern
 type CircuitBreaker struct {
-	name           string
-	state          State
-	failureCount   int64
-	successCount   int64
-	lastFailure    time.Time
-	lastSuccess    time.Time
-	
+	name         string
+	state        State
+	failureCount int64
+	successCount int64
+	lastFailure  time.Time
+	lastSuccess  time.Time
+
 	// Configuration
 	failureThreshold int64
 	successThreshold int64
 	timeout          time.Duration
 	windowSize       time.Duration
 	autoRecovery     bool
-	
+
 	// Metrics
 	totalRequests    int64
 	totalFailures    int64
@@ -54,24 +54,24 @@ type CircuitBreaker struct {
 	totalTimeouts    int64
 	stateChanges     int64
 	recoveryAttempts int64
-	
+
 	// Auto recovery
 	recoveryStartTime time.Time
 	isRecovering      bool
-	
-	mu               sync.RWMutex
-	logger           *zap.Logger
+
+	mu     sync.RWMutex
+	logger *zap.Logger
 }
 
 // Config holds circuit breaker configuration
 type Config struct {
-	Name              string        `json:"name"`
-	FailureThreshold  int64         `json:"failure_threshold"`
-	SuccessThreshold  int64         `json:"success_threshold"`
-	Timeout           time.Duration `json:"timeout"`
-	WindowSize        time.Duration `json:"window_size"`
-	AutoRecovery      bool          `json:"auto_recovery"`
-	Logger            *zap.Logger   `json:"-"`
+	Name             string        `json:"name"`
+	FailureThreshold int64         `json:"failure_threshold"`
+	SuccessThreshold int64         `json:"success_threshold"`
+	Timeout          time.Duration `json:"timeout"`
+	WindowSize       time.Duration `json:"window_size"`
+	AutoRecovery     bool          `json:"auto_recovery"`
+	Logger           *zap.Logger   `json:"-"`
 }
 
 // DefaultConfig returns default circuit breaker configuration
@@ -91,11 +91,11 @@ func NewCircuitBreaker(config *Config) *CircuitBreaker {
 	if config == nil {
 		config = DefaultConfig("default")
 	}
-	
+
 	if config.Logger == nil {
 		config.Logger = zap.NewNop()
 	}
-	
+
 	return &CircuitBreaker{
 		name:             config.Name,
 		state:            Closed,
@@ -113,17 +113,17 @@ func (cb *CircuitBreaker) Execute(ctx context.Context, fn func() error) error {
 	if !cb.Ready() {
 		return errors.New("circuit breaker is open")
 	}
-	
+
 	cb.mu.Lock()
 	cb.totalRequests++
 	cb.mu.Unlock()
-	
+
 	// Execute with timeout
 	done := make(chan error, 1)
 	go func() {
 		done <- fn()
 	}()
-	
+
 	select {
 	case err := <-done:
 		cb.recordResult(err)
@@ -140,21 +140,21 @@ func (cb *CircuitBreaker) Execute(ctx context.Context, fn func() error) error {
 // ExecuteWithResult runs a function that returns a result with circuit breaker protection
 func ExecuteWithResult[T any](cb *CircuitBreaker, ctx context.Context, fn func() (T, error)) (T, error) {
 	var zero T
-	
+
 	if !cb.Ready() {
 		return zero, errors.New("circuit breaker is open")
 	}
-	
+
 	cb.mu.Lock()
 	cb.totalRequests++
 	cb.mu.Unlock()
-	
+
 	// Execute with timeout
 	done := make(chan struct {
 		result T
 		err    error
 	}, 1)
-	
+
 	go func() {
 		result, err := fn()
 		done <- struct {
@@ -162,7 +162,7 @@ func ExecuteWithResult[T any](cb *CircuitBreaker, ctx context.Context, fn func()
 			err    error
 		}{result, err}
 	}()
-	
+
 	select {
 	case res := <-done:
 		cb.recordResult(res.err)
@@ -180,7 +180,7 @@ func ExecuteWithResult[T any](cb *CircuitBreaker, ctx context.Context, fn func()
 func (cb *CircuitBreaker) Ready() bool {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
-	
+
 	switch cb.state {
 	case Closed:
 		return true
@@ -208,17 +208,17 @@ func (cb *CircuitBreaker) Ready() bool {
 func (cb *CircuitBreaker) recordResult(err error) {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	if err != nil {
 		cb.failureCount++
 		cb.totalFailures++
 		cb.lastFailure = time.Now()
-		
+
 		cb.logger.Debug("Circuit breaker recorded failure",
 			zap.String("name", cb.name),
 			zap.Error(err),
 			zap.Int64("failure_count", cb.failureCount))
-		
+
 		// Check if we should open the circuit
 		if cb.state == Closed && cb.failureCount >= cb.failureThreshold {
 			cb.state = Open
@@ -236,14 +236,14 @@ func (cb *CircuitBreaker) recordResult(err error) {
 		cb.successCount++
 		cb.totalSuccesses++
 		cb.lastSuccess = time.Now()
-		
+
 		cb.logger.Debug("Circuit breaker recorded success",
 			zap.String("name", cb.name),
 			zap.Int64("success_count", cb.successCount))
-		
+
 		// Reset failure count on success
 		cb.failureCount = 0
-		
+
 		// If half-open and we get enough successes, close the circuit
 		if cb.state == HalfOpen && cb.successCount >= cb.successThreshold {
 			cb.state = Closed
@@ -258,16 +258,16 @@ func (cb *CircuitBreaker) recordResult(err error) {
 func (cb *CircuitBreaker) recordTimeout() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	cb.totalTimeouts++
 	cb.failureCount++
 	cb.totalFailures++
 	cb.lastFailure = time.Now()
-	
+
 	cb.logger.Debug("Circuit breaker recorded timeout",
 		zap.String("name", cb.name),
 		zap.Int64("timeout_count", cb.totalTimeouts))
-	
+
 	// Check if we should open the circuit
 	if cb.state == Closed && cb.failureCount >= cb.failureThreshold {
 		cb.state = Open
@@ -292,7 +292,7 @@ func (cb *CircuitBreaker) GetState() State {
 func (cb *CircuitBreaker) GetStats() map[string]interface{} {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
-	
+
 	return map[string]interface{}{
 		"name":              cb.name,
 		"state":             cb.state.String(),
@@ -324,11 +324,11 @@ func (cb *CircuitBreaker) calculateSuccessRate() float64 {
 func (cb *CircuitBreaker) ForceOpen() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	oldState := cb.state
 	cb.state = Open
 	cb.lastFailure = time.Now()
-	
+
 	cb.logger.Info("Circuit breaker forced open",
 		zap.String("name", cb.name),
 		zap.String("old_state", oldState.String()))
@@ -338,12 +338,12 @@ func (cb *CircuitBreaker) ForceOpen() {
 func (cb *CircuitBreaker) ForceClose() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	oldState := cb.state
 	cb.state = Closed
 	cb.failureCount = 0
 	cb.successCount = 0
-	
+
 	cb.logger.Info("Circuit breaker forced closed",
 		zap.String("name", cb.name),
 		zap.String("old_state", oldState.String()))
@@ -353,7 +353,7 @@ func (cb *CircuitBreaker) ForceClose() {
 func (cb *CircuitBreaker) Reset() {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	cb.state = Closed
 	cb.failureCount = 0
 	cb.successCount = 0
@@ -363,7 +363,7 @@ func (cb *CircuitBreaker) Reset() {
 	cb.totalTimeouts = 0
 	cb.lastFailure = time.Time{}
 	cb.lastSuccess = time.Time{}
-	
+
 	cb.logger.Info("Circuit breaker reset",
 		zap.String("name", cb.name))
 }
@@ -372,17 +372,17 @@ func (cb *CircuitBreaker) Reset() {
 func (cb *CircuitBreaker) IsHealthy() bool {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
-	
+
 	// Consider healthy if closed or half-open with recent success
 	if cb.state == Closed {
 		return true
 	}
-	
+
 	if cb.state == HalfOpen {
 		// Consider healthy if we have recent success
 		return cb.successCount > 0 && time.Since(cb.lastSuccess) < cb.windowSize
 	}
-	
+
 	return false
 }
 
@@ -395,26 +395,26 @@ func (cb *CircuitBreaker) GetName() string {
 func (cb *CircuitBreaker) StartRecovery(ctx context.Context) error {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
-	
+
 	if !cb.autoRecovery {
 		return errors.New("auto recovery is disabled")
 	}
-	
+
 	if cb.isRecovering {
 		return errors.New("recovery already in progress")
 	}
-	
+
 	cb.isRecovering = true
 	cb.recoveryStartTime = time.Now()
 	cb.recoveryAttempts++
-	
+
 	cb.logger.Info("Starting automatic recovery",
 		zap.String("name", cb.name),
 		zap.Int64("recovery_attempts", cb.recoveryAttempts))
-	
+
 	// Start recovery goroutine
 	go cb.recoveryLoop(ctx)
-	
+
 	return nil
 }
 
@@ -429,18 +429,18 @@ func (cb *CircuitBreaker) IsRecovering() bool {
 func (cb *CircuitBreaker) GetRecoveryProgress() float64 {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
-	
+
 	if !cb.isRecovering {
 		return 0.0
 	}
-	
+
 	elapsed := time.Since(cb.recoveryStartTime)
 	progress := float64(elapsed) / float64(cb.timeout)
-	
+
 	if progress > 1.0 {
 		return 1.0
 	}
-	
+
 	return progress
 }
 
@@ -448,7 +448,7 @@ func (cb *CircuitBreaker) GetRecoveryProgress() float64 {
 func (cb *CircuitBreaker) recoveryLoop(ctx context.Context) {
 	ticker := time.NewTicker(cb.timeout / 10) // Check every 10% of timeout
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -474,25 +474,25 @@ func (cb *CircuitBreaker) recoveryLoop(ctx context.Context) {
 func (cb *CircuitBreaker) GetMetrics() map[string]interface{} {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
-	
+
 	successRate := cb.calculateSuccessRate()
-	
+
 	return map[string]interface{}{
-		"name":               cb.name,
-		"state":              cb.state.String(),
-		"total_requests":     cb.totalRequests,
-		"total_failures":     cb.totalFailures,
-		"total_successes":    cb.totalSuccesses,
-		"total_timeouts":     cb.totalTimeouts,
-		"state_changes":      cb.stateChanges,
-		"recovery_attempts":  cb.recoveryAttempts,
-		"success_rate":       successRate,
-		"is_recovering":      cb.isRecovering,
-		"recovery_progress":  cb.GetRecoveryProgress(),
-		"failure_count":      cb.failureCount,
-		"success_count":      cb.successCount,
-		"last_failure":       cb.lastFailure,
-		"last_success":       cb.lastSuccess,
+		"name":              cb.name,
+		"state":             cb.state.String(),
+		"total_requests":    cb.totalRequests,
+		"total_failures":    cb.totalFailures,
+		"total_successes":   cb.totalSuccesses,
+		"total_timeouts":    cb.totalTimeouts,
+		"state_changes":     cb.stateChanges,
+		"recovery_attempts": cb.recoveryAttempts,
+		"success_rate":      successRate,
+		"is_recovering":     cb.isRecovering,
+		"recovery_progress": cb.GetRecoveryProgress(),
+		"failure_count":     cb.failureCount,
+		"success_count":     cb.successCount,
+		"last_failure":      cb.lastFailure,
+		"last_success":      cb.lastSuccess,
 	}
 }
 
@@ -502,15 +502,15 @@ func (cb *CircuitBreaker) GetPrometheusMetrics() map[string]float64 {
 	defer cb.mu.RUnlock()
 
 	return map[string]float64{
-		"circuit_breaker_state":           float64(cb.state),
-		"circuit_breaker_failure_count":   float64(cb.failureCount),
-		"circuit_breaker_success_count":   float64(cb.successCount),
-		"circuit_breaker_total_requests":  float64(cb.totalRequests),
-		"circuit_breaker_total_failures":  float64(cb.totalFailures),
-		"circuit_breaker_total_successes": float64(cb.totalSuccesses),
-		"circuit_breaker_total_timeouts":  float64(cb.totalTimeouts),
-		"circuit_breaker_state_changes":   float64(cb.stateChanges),
-		"circuit_breaker_success_rate":    cb.calculateSuccessRate(),
+		"circuit_breaker_state":             float64(cb.state),
+		"circuit_breaker_failure_count":     float64(cb.failureCount),
+		"circuit_breaker_success_count":     float64(cb.successCount),
+		"circuit_breaker_total_requests":    float64(cb.totalRequests),
+		"circuit_breaker_total_failures":    float64(cb.totalFailures),
+		"circuit_breaker_total_successes":   float64(cb.totalSuccesses),
+		"circuit_breaker_total_timeouts":    float64(cb.totalTimeouts),
+		"circuit_breaker_state_changes":     float64(cb.stateChanges),
+		"circuit_breaker_success_rate":      cb.calculateSuccessRate(),
 		"circuit_breaker_recovery_progress": cb.GetRecoveryProgress(),
 	}
-} 
+}

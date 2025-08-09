@@ -175,4 +175,4 @@ func TestHTTP2ConnectionReuse_RemoveConnection(t *testing.T) {
 
 	// Cleanup
 	reuse.Close()
-} 
+}

@@ -32,7 +32,7 @@ func TestMultiprotocolIntegration(t *testing.T) {
 		// Проверка выбора протокола
 		selectedProtocol := server.protocolSelector.SelectBest()
 		assert.NotEqual(t, protocol.Protocol(999), selectedProtocol, "Should select a valid protocol")
-		
+
 		t.Logf("Selected protocol: %s", selectedProtocol.String())
 	})
 
@@ -83,52 +83,52 @@ func createTestConfig() *config.Config {
 	return &config.Config{
 		Server: struct {
 			Address         string        `json:"address"`
-			Port           int           `json:"port"`
-			Timeout        time.Duration `json:"timeout"`
-			MaxTunnels     int           `json:"max_tunnels"`
-			PingInterval   time.Duration `json:"ping_interval"`
+			Port            int           `json:"port"`
+			Timeout         time.Duration `json:"timeout"`
+			MaxTunnels      int           `json:"max_tunnels"`
+			PingInterval    time.Duration `json:"ping_interval"`
 			CleanupInterval time.Duration `json:"cleanup_interval"`
 		}{
-			Port: 8080,
+			Port:    8080,
 			Address: "localhost",
 		},
 		Protocol: struct {
-			AutoSelect      bool     `json:"auto_select"`
-			Preferred       string   `json:"preferred"`
-			Fallback        string   `json:"fallback"`
-			SwitchThreshold float64  `json:"switch_threshold"`
+			AutoSelect          bool          `json:"auto_select"`
+			Preferred           string        `json:"preferred"`
+			Fallback            string        `json:"fallback"`
+			SwitchThreshold     float64       `json:"switch_threshold"`
 			HealthCheckInterval time.Duration `json:"health_check_interval"`
 		}{
-			AutoSelect:      true,
-			Preferred:       "quic",
-			Fallback:        "http2",
-			SwitchThreshold: 0.8,
+			AutoSelect:          true,
+			Preferred:           "quic",
+			Fallback:            "http2",
+			SwitchThreshold:     0.8,
 			HealthCheckInterval: 30 * time.Second,
 		},
 		WireGuard: struct {
-			Enabled     bool   `json:"enabled"`
-			Interface   struct {
+			Enabled   bool `json:"enabled"`
+			Interface struct {
 				Name       string `json:"name"`
 				ListenPort int    `json:"listen_port"`
 				Address    string `json:"address"`
 			} `json:"interface"`
-			Discovery   struct {
+			Discovery struct {
 				RegistryURL       string        `json:"registry_url"`
 				HeartbeatInterval time.Duration `json:"heartbeat_interval"`
 				MaxPeers          int           `json:"max_peers"`
 			} `json:"discovery"`
-			Mesh       struct {
-				Enabled           bool   `json:"enabled"`
-				AutoDiscovery     bool   `json:"auto_discovery"`
-				MaxConnections    int    `json:"max_connections"`
-				RoutingStrategy   string `json:"routing_strategy"`
+			Mesh struct {
+				Enabled         bool   `json:"enabled"`
+				AutoDiscovery   bool   `json:"auto_discovery"`
+				MaxConnections  int    `json:"max_connections"`
+				RoutingStrategy string `json:"routing_strategy"`
 			} `json:"mesh"`
 			SiteToSite struct {
-				Enabled           bool   `json:"enabled"`
+				Enabled           bool `json:"enabled"`
 				CorporateNetworks []struct {
-					NetworkID     string `json:"network_id"`
-					CIDR          string `json:"cidr"`
-					TenantID      string `json:"tenant_id"`
+					NetworkID string `json:"network_id"`
+					CIDR      string `json:"cidr"`
+					TenantID  string `json:"tenant_id"`
 				} `json:"corporate_networks"`
 			} `json:"site_to_site"`
 		}{
@@ -143,64 +143,64 @@ func createTestConfig() *config.Config {
 				Address:    "10.100.1.1/24",
 			},
 			Mesh: struct {
-				Enabled           bool   `json:"enabled"`
-				AutoDiscovery     bool   `json:"auto_discovery"`
-				MaxConnections    int    `json:"max_connections"`
-				RoutingStrategy   string `json:"routing_strategy"`
+				Enabled         bool   `json:"enabled"`
+				AutoDiscovery   bool   `json:"auto_discovery"`
+				MaxConnections  int    `json:"max_connections"`
+				RoutingStrategy string `json:"routing_strategy"`
 			}{
-				Enabled:        true,
-				AutoDiscovery:  true,
-				MaxConnections: 10,
+				Enabled:         true,
+				AutoDiscovery:   true,
+				MaxConnections:  10,
 				RoutingStrategy: "hybrid",
 			},
 		},
 		EnhancedQUIC: struct {
-			Enabled         bool          `json:"enabled"`
-			MaxStreams      int           `json:"max_streams"`
-			KeepAlive       bool          `json:"keep_alive"`
-			IdleTimeout     time.Duration `json:"idle_timeout"`
-			HandshakeTimeout time.Duration `json:"handshake_timeout"`
-			DDoSProtection  bool          `json:"ddos_protection"`
-			GeographicRouting bool        `json:"geographic_routing"`
-			KeycloakIntegration bool      `json:"keycloak_integration"`
+			Enabled             bool          `json:"enabled"`
+			MaxStreams          int           `json:"max_streams"`
+			KeepAlive           bool          `json:"keep_alive"`
+			IdleTimeout         time.Duration `json:"idle_timeout"`
+			HandshakeTimeout    time.Duration `json:"handshake_timeout"`
+			DDoSProtection      bool          `json:"ddos_protection"`
+			GeographicRouting   bool          `json:"geographic_routing"`
+			KeycloakIntegration bool          `json:"keycloak_integration"`
 		}{
-			Enabled: true,
-			MaxStreams: 100,
-			KeepAlive: true,
-			IdleTimeout: 30 * time.Second,
-			HandshakeTimeout: 10 * time.Second,
-			DDoSProtection: true,
-			GeographicRouting: true,
+			Enabled:             true,
+			MaxStreams:          100,
+			KeepAlive:           true,
+			IdleTimeout:         30 * time.Second,
+			HandshakeTimeout:    10 * time.Second,
+			DDoSProtection:      true,
+			GeographicRouting:   true,
 			KeycloakIntegration: true,
 		},
 		// Добавляем минимальные настройки для других компонентов
 		ZeroTrust: struct {
-			Enabled         bool `json:"enabled"`
-			ClientDaemon    bool `json:"client_daemon"`
+			Enabled          bool `json:"enabled"`
+			ClientDaemon     bool `json:"client_daemon"`
 			ServiceDiscovery bool `json:"service_discovery"`
-			AutoReconnect   bool `json:"auto_reconnect"`
-			
+			AutoReconnect    bool `json:"auto_reconnect"`
+
 			CircuitBreaker struct {
-				Enabled           bool
-				FailureThreshold  int64
-				SuccessThreshold  int64
-				Timeout           time.Duration
-				WindowSize        time.Duration
+				Enabled          bool
+				FailureThreshold int64
+				SuccessThreshold int64
+				Timeout          time.Duration
+				WindowSize       time.Duration
 			}
-			
+
 			HealthCheck struct {
 				Enabled  bool
 				Interval time.Duration
 				Timeout  time.Duration
 				Checks   []config.HealthCheckConfig
 			}
-			
+
 			RateLimit struct {
 				Enabled     bool
 				RequestsPer int64
 				WindowSize  int64
 			}
-			
+
 			Authentication struct {
 				Enabled     bool
 				Type        string
@@ -218,24 +218,24 @@ func createTestConfig() *config.Config {
 			Enabled: false,
 		},
 		Security: struct {
-			TLSEnabled   bool     `json:"tls_enabled"`
-			CertFile     string   `json:"cert_file"`
-			KeyFile      string   `json:"key_file"`
-			AllowedIPs   []string `json:"allowed_ips"`
-			RateLimit    struct {
+			TLSEnabled bool     `json:"tls_enabled"`
+			CertFile   string   `json:"cert_file"`
+			KeyFile    string   `json:"key_file"`
+			AllowedIPs []string `json:"allowed_ips"`
+			RateLimit  struct {
 				Enabled           bool    `json:"enabled"`
 				RequestsPerSecond float64 `json:"requests_per_second"`
 				Burst             int     `json:"burst"`
 			} `json:"rate_limit"`
 			MTLS struct {
-				Enabled     bool   `json:"enabled"`
-				CACert      string `json:"ca_file"`
+				Enabled bool   `json:"enabled"`
+				CACert  string `json:"ca_file"`
 			} `json:"mtls"`
-			CipherSuites   []string `json:"cipher_suites"`
-			MinTLSVersion  string   `json:"min_tls_version"`
-			Audit          struct {
-				Enabled    bool   `json:"enabled"`
-				LogFile    string `json:"log_file"`
+			CipherSuites  []string `json:"cipher_suites"`
+			MinTLSVersion string   `json:"min_tls_version"`
+			Audit         struct {
+				Enabled bool   `json:"enabled"`
+				LogFile string `json:"log_file"`
 			} `json:"audit"`
 		}{
 			TLSEnabled: false,

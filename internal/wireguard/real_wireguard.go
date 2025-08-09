@@ -41,17 +41,17 @@ type WireGuardConfig struct {
 
 // WireGuardPeerConfig конфигурация пира для реального WireGuard
 type WireGuardPeerConfig struct {
-	PublicKey    string   `json:"public_key"`
-	AllowedIPs   []string `json:"allowed_ips"`
-	Endpoint     string   `json:"endpoint"`
-	PresharedKey string   `json:"preshared_key,omitempty"`
-	PersistentKeepalive int `json:"persistent_keepalive,omitempty"`
+	PublicKey           string   `json:"public_key"`
+	AllowedIPs          []string `json:"allowed_ips"`
+	Endpoint            string   `json:"endpoint"`
+	PresharedKey        string   `json:"preshared_key,omitempty"`
+	PersistentKeepalive int      `json:"persistent_keepalive,omitempty"`
 }
 
 // NewRealWireGuardAdapter создает новый адаптер для реального WireGuard
 func NewRealWireGuardAdapter(interfaceName string, logger *zap.Logger) *RealWireGuardAdapter {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &RealWireGuardAdapter{
 		interfaceName: interfaceName,
 		configPath:    fmt.Sprintf("/etc/wireguard/%s.conf", interfaceName),
@@ -143,19 +143,19 @@ func (rwa *RealWireGuardAdapter) AddPeer(peer *WireGuardPeerConfig) error {
 
 	// Используем wg команду для добавления пира
 	cmd := exec.Command("wg", "set", rwa.interfaceName, "peer", peer.PublicKey)
-	
+
 	if len(peer.AllowedIPs) > 0 {
 		cmd.Args = append(cmd.Args, "allowed-ips", strings.Join(peer.AllowedIPs, ","))
 	}
-	
+
 	if peer.Endpoint != "" {
 		cmd.Args = append(cmd.Args, "endpoint", peer.Endpoint)
 	}
-	
+
 	if peer.PresharedKey != "" {
 		cmd.Args = append(cmd.Args, "preshared-key", peer.PresharedKey)
 	}
-	
+
 	if peer.PersistentKeepalive > 0 {
 		cmd.Args = append(cmd.Args, "persistent-keepalive", strconv.Itoa(peer.PersistentKeepalive))
 	}

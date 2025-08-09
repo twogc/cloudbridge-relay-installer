@@ -14,15 +14,15 @@ import (
 
 // PooledConnection represents a connection in the pool
 type PooledConnection struct {
-	conn        net.Conn
-	id          string
-	remoteAddr  string
-	created     time.Time
-	lastUsed    time.Time
-	useCount    int64
-	healthy     bool
-	mu          sync.RWMutex
-	closed      bool
+	conn       net.Conn
+	id         string
+	remoteAddr string
+	created    time.Time
+	lastUsed   time.Time
+	useCount   int64
+	healthy    bool
+	mu         sync.RWMutex
+	closed     bool
 }
 
 // ConnectionPool manages a pool of connections
@@ -33,22 +33,22 @@ type ConnectionPool struct {
 	metrics     *PoolMetrics
 	logger      *logger.Logger
 	mu          sync.RWMutex
-	
+
 	// Configuration
-	maxConnections int
-	maxIdleTime    time.Duration
+	maxConnections  int
+	maxIdleTime     time.Duration
 	cleanupInterval time.Duration
-	
+
 	// Context for cleanup
 	ctx    context.Context
 	cancel context.CancelFunc
-	
+
 	// New components for enhanced connection management
-	retryStrategy        RetryStrategy
-	gracefulShutdown     *GracefulShutdownManager
-	lifecycleManager     *ConnectionLifecycleManager
-	waitGroupManager     *WaitGroupManager
-	
+	retryStrategy    RetryStrategy
+	gracefulShutdown *GracefulShutdownManager
+	lifecycleManager *ConnectionLifecycleManager
+	waitGroupManager *WaitGroupManager
+
 	// HTTP/2 connection reuse
 	http2Reuse *HTTP2ConnectionReuse
 }
@@ -67,11 +67,11 @@ type HealthChecker interface {
 
 // PoolMetrics holds pool-specific metrics
 type PoolMetrics struct {
-	TotalConnections   int64
-	ActiveConnections  int64
-	IdleConnections    int64
-	FailedConnections  int64
-	ConnectionErrors   int64
+	TotalConnections    int64
+	ActiveConnections   int64
+	IdleConnections     int64
+	FailedConnections   int64
+	ConnectionErrors    int64
 	HealthCheckFailures int64
 }
 
@@ -91,10 +91,10 @@ func (rrb *RoundRobinBalancer) Select(connections []*PooledConnection) *PooledCo
 	if len(connections) == 0 {
 		return nil
 	}
-	
+
 	rrb.mu.Lock()
 	defer rrb.mu.Unlock()
-	
+
 	// Filter healthy connections
 	healthy := make([]*PooledConnection, 0)
 	for _, conn := range connections {
@@ -102,14 +102,14 @@ func (rrb *RoundRobinBalancer) Select(connections []*PooledConnection) *PooledCo
 			healthy = append(healthy, conn)
 		}
 	}
-	
+
 	if len(healthy) == 0 {
 		return nil
 	}
-	
+
 	selected := healthy[rrb.current%len(healthy)]
 	rrb.current++
-	
+
 	return selected
 }
 
@@ -135,12 +135,12 @@ func (bhc *BasicHealthChecker) Check(conn *PooledConnection) bool {
 	if conn == nil || conn.IsClosed() {
 		return false
 	}
-	
+
 	// Try to set a deadline and read a byte
 	if err := conn.conn.SetReadDeadline(time.Now().Add(bhc.timeout)); err != nil {
 		return false
 	}
-	
+
 	// For TCP connections, we can't easily check health without sending data
 	// So we'll just check if the connection is not closed
 	return !conn.IsClosed()
@@ -151,13 +151,13 @@ func (bhc *BasicHealthChecker) GetHealthScore(conn *PooledConnection) float64 {
 	if conn == nil || conn.IsClosed() {
 		return 0.0
 	}
-	
+
 	// Simple health score based on last usage and use count
 	age := time.Since(conn.created)
 	if age > 24*time.Hour {
 		return 0.5 // Older connections get lower score
 	}
-	
+
 	// Higher use count indicates more reliable connection
 	score := 1.0
 	if conn.useCount > 100 {
@@ -167,7 +167,7 @@ func (bhc *BasicHealthChecker) GetHealthScore(conn *PooledConnection) float64 {
 	} else {
 		score = 0.6
 	}
-	
+
 	return score
 }
 
@@ -179,49 +179,49 @@ func NewConnectionPool(
 	logger *logger.Logger,
 ) *ConnectionPool {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Create retry strategy
 	retryConfig := DefaultRetryConfig()
 	retryConfig.Logger = logger
 	retryStrategy := NewBackoffHandler(retryConfig)
-	
+
 	// Create graceful shutdown manager
 	gracefulConfig := DefaultGracefulShutdownConfig()
 	gracefulConfig.Logger = logger
 	gracefulShutdown := NewGracefulShutdownManager(gracefulConfig)
-	
+
 	// Create lifecycle manager
 	lifecycleManager := NewConnectionLifecycleManager(logger)
-	
+
 	// Create wait group manager
 	waitGroupManager := NewWaitGroupManager(logger)
-	
+
 	// Create HTTP/2 connection reuse
 	http2Config := DefaultHTTP2ReuseConfig()
 	http2Config.Logger = logger
 	http2Reuse := NewHTTP2ConnectionReuse(http2Config)
-	
+
 	pool := &ConnectionPool{
-		connections:     make(map[string]*PooledConnection),
-		balancer:        NewRoundRobinBalancer(),
-		healthCheck:     NewBasicHealthChecker(5 * time.Second),
-		metrics:         &PoolMetrics{},
-		logger:          logger,
-		maxConnections:  maxConnections,
-		maxIdleTime:     maxIdleTime,
-		cleanupInterval: cleanupInterval,
-		ctx:             ctx,
-		cancel:          cancel,
-		retryStrategy:   retryStrategy,
+		connections:      make(map[string]*PooledConnection),
+		balancer:         NewRoundRobinBalancer(),
+		healthCheck:      NewBasicHealthChecker(5 * time.Second),
+		metrics:          &PoolMetrics{},
+		logger:           logger,
+		maxConnections:   maxConnections,
+		maxIdleTime:      maxIdleTime,
+		cleanupInterval:  cleanupInterval,
+		ctx:              ctx,
+		cancel:           cancel,
+		retryStrategy:    retryStrategy,
 		gracefulShutdown: gracefulShutdown,
 		lifecycleManager: lifecycleManager,
 		waitGroupManager: waitGroupManager,
-		http2Reuse:      http2Reuse,
+		http2Reuse:       http2Reuse,
 	}
-	
+
 	// Start cleanup goroutine
 	go pool.cleanupLoop()
-	
+
 	return pool
 }
 
@@ -229,12 +229,12 @@ func NewConnectionPool(
 func (cp *ConnectionPool) GetConnection(remoteAddr string) (*PooledConnection, error) {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
-	
+
 	// Check if shutdown is in progress
 	if cp.gracefulShutdown.IsShuttingDown() {
 		return nil, &ConnectionError{Message: "Connection pool is shutting down", Retryable: false}
 	}
-	
+
 	// Check if we have an existing connection
 	if conn, exists := cp.connections[remoteAddr]; exists && conn.IsHealthy() {
 		conn.UpdateLastUsed()
@@ -242,7 +242,7 @@ func (cp *ConnectionPool) GetConnection(remoteAddr string) (*PooledConnection, e
 		cp.metrics.ActiveConnections++
 		return conn, nil
 	}
-	
+
 	// Create new connection if we haven't reached the limit
 	if len(cp.connections) >= cp.maxConnections {
 		// Try to find a connection using load balancer
@@ -253,26 +253,26 @@ func (cp *ConnectionPool) GetConnection(remoteAddr string) (*PooledConnection, e
 			cp.metrics.ActiveConnections++
 			return selected, nil
 		}
-		
+
 		return nil, fmt.Errorf("connection pool is full")
 	}
-	
+
 	// Create new connection
 	conn, err := cp.createConnection(remoteAddr)
 	if err != nil {
 		cp.metrics.ConnectionErrors++
 		return nil, err
 	}
-	
+
 	cp.connections[remoteAddr] = conn
 	cp.metrics.TotalConnections++
 	cp.metrics.ActiveConnections++
-	
+
 	cp.logger.Info("Created new connection",
 		zap.String("remote_addr", remoteAddr),
 		zap.String("connection_id", conn.id),
 	)
-	
+
 	return conn, nil
 }
 
@@ -282,7 +282,7 @@ func (cp *ConnectionPool) createConnection(remoteAddr string) (*PooledConnection
 	if err != nil {
 		return nil, fmt.Errorf("failed to create connection: %v", err)
 	}
-	
+
 	pooledConn := &PooledConnection{
 		conn:       conn,
 		id:         fmt.Sprintf("%s-%d", remoteAddr, time.Now().UnixNano()),
@@ -292,7 +292,7 @@ func (cp *ConnectionPool) createConnection(remoteAddr string) (*PooledConnection
 		useCount:   0,
 		healthy:    true,
 	}
-	
+
 	return pooledConn, nil
 }
 
@@ -301,17 +301,17 @@ func (cp *ConnectionPool) ReturnConnection(conn *PooledConnection) {
 	if conn == nil {
 		return
 	}
-	
+
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
-	
+
 	// Update metrics
 	cp.metrics.ActiveConnections--
 	cp.metrics.IdleConnections++
-	
+
 	// Update last used time
 	conn.UpdateLastUsed()
-	
+
 	cp.logger.Debug("Returned connection to pool",
 		zap.String("connection_id", conn.id),
 		zap.String("remote_addr", conn.remoteAddr),
@@ -323,18 +323,18 @@ func (cp *ConnectionPool) RemoveConnection(conn *PooledConnection) {
 	if conn == nil {
 		return
 	}
-	
+
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
-	
+
 	// Close the connection
 	if err := conn.Close(); err != nil {
 		cp.logger.Error("Error closing connection during removal", zap.Error(err))
 	}
-	
+
 	// Remove from pool
 	delete(cp.connections, conn.remoteAddr)
-	
+
 	// Update metrics
 	cp.metrics.TotalConnections--
 	if conn.IsHealthy() {
@@ -342,7 +342,7 @@ func (cp *ConnectionPool) RemoveConnection(conn *PooledConnection) {
 	} else {
 		cp.metrics.FailedConnections++
 	}
-	
+
 	cp.logger.Info("Removed connection from pool",
 		zap.String("connection_id", conn.id),
 		zap.String("remote_addr", conn.remoteAddr),
@@ -364,7 +364,7 @@ func (cp *ConnectionPool) getHealthyConnections() []*PooledConnection {
 func (cp *ConnectionPool) cleanupLoop() {
 	ticker := time.NewTicker(cp.cleanupInterval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-cp.ctx.Done():
@@ -379,10 +379,10 @@ func (cp *ConnectionPool) cleanupLoop() {
 func (cp *ConnectionPool) cleanup() {
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
-	
+
 	cutoff := time.Now().Add(-cp.maxIdleTime)
 	removed := 0
-	
+
 	for _, conn := range cp.connections {
 		// Remove connections that are too old or unhealthy
 		if conn.lastUsed.Before(cutoff) || !cp.healthCheck.Check(conn) {
@@ -390,7 +390,7 @@ func (cp *ConnectionPool) cleanup() {
 			removed++
 		}
 	}
-	
+
 	if removed > 0 {
 		cp.logger.Info("Cleaned up connections",
 			zap.Int("removed", removed),
@@ -403,42 +403,42 @@ func (cp *ConnectionPool) cleanup() {
 func (cp *ConnectionPool) GetStats() map[string]interface{} {
 	cp.mu.RLock()
 	defer cp.mu.RUnlock()
-	
+
 	return map[string]interface{}{
-		"total_connections":    cp.metrics.TotalConnections,
-		"active_connections":   cp.metrics.ActiveConnections,
-		"idle_connections":     cp.metrics.IdleConnections,
-		"failed_connections":   cp.metrics.FailedConnections,
-		"connection_errors":    cp.metrics.ConnectionErrors,
+		"total_connections":     cp.metrics.TotalConnections,
+		"active_connections":    cp.metrics.ActiveConnections,
+		"idle_connections":      cp.metrics.IdleConnections,
+		"failed_connections":    cp.metrics.FailedConnections,
+		"connection_errors":     cp.metrics.ConnectionErrors,
 		"health_check_failures": cp.metrics.HealthCheckFailures,
-		"pool_size":            len(cp.connections),
-		"max_connections":      cp.maxConnections,
+		"pool_size":             len(cp.connections),
+		"max_connections":       cp.maxConnections,
 	}
 }
 
 // Close closes the connection pool
 func (cp *ConnectionPool) Close() error {
 	cp.cancel()
-	
+
 	cp.mu.Lock()
 	defer cp.mu.Unlock()
-	
+
 	// Close all connections
 	for _, conn := range cp.connections {
 		if err := conn.Close(); err != nil {
 			cp.logger.Error("Error closing connection in pool", zap.Error(err))
 		}
 	}
-	
+
 	cp.connections = make(map[string]*PooledConnection)
-	
+
 	// Close HTTP/2 connection reuse
 	if cp.http2Reuse != nil {
 		if err := cp.http2Reuse.Close(); err != nil {
 			cp.logger.Error("Error closing HTTP/2 connection reuse", zap.Error(err))
 		}
 	}
-	
+
 	cp.logger.Info("Connection pool closed")
 	return nil
 }
@@ -477,18 +477,18 @@ func (pc *PooledConnection) IncrementUseCount() {
 func (pc *PooledConnection) Close() error {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
-	
+
 	if pc.closed {
 		return nil
 	}
-	
+
 	pc.closed = true
 	pc.healthy = false
-	
+
 	if pc.conn != nil {
 		return pc.conn.Close()
 	}
-	
+
 	return nil
 }
 
@@ -512,7 +512,7 @@ func (cp *ConnectionPool) GracefulShutdown(ctx context.Context, gracePeriod time
 	cp.logger.Info("Starting graceful shutdown of connection pool",
 		zap.Duration("grace_period", gracePeriod),
 		zap.Int("connection_count", len(cp.connections)))
-	
+
 	return cp.lifecycleManager.Shutdown(ctx, gracePeriod)
 }
 
@@ -524,32 +524,32 @@ func (cp *ConnectionPool) IsShuttingDown() bool {
 // GetConnectionWithRetry gets a connection with retry logic
 func (cp *ConnectionPool) GetConnectionWithRetry(remoteAddr string, maxAttempts int) (*PooledConnection, error) {
 	var lastErr error
-	
+
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		conn, err := cp.GetConnection(remoteAddr)
 		if err == nil {
 			return conn, nil
 		}
-		
+
 		lastErr = err
-		
+
 		// Check if we should retry
 		if !cp.retryStrategy.ShouldRetry(err, attempt) {
 			break
 		}
-		
+
 		// Get backoff duration
 		backoffDuration := cp.retryStrategy.GetBackoffDuration(attempt)
 		if backoffDuration == 0 {
 			break
 		}
-		
+
 		cp.logger.Debug("Retrying connection",
 			zap.String("remote_addr", remoteAddr),
 			zap.Int("attempt", attempt+1),
 			zap.Duration("backoff", backoffDuration),
 			zap.Error(err))
-		
+
 		// Wait before retry
 		select {
 		case <-time.After(backoffDuration):
@@ -558,7 +558,7 @@ func (cp *ConnectionPool) GetConnectionWithRetry(remoteAddr string, maxAttempts 
 			return nil, cp.ctx.Err()
 		}
 	}
-	
+
 	return nil, lastErr
 }
 
@@ -583,9 +583,9 @@ func (cp *ConnectionPool) WaitForActiveRequests(timeout time.Duration) error {
 func (cp *ConnectionPool) GetRetryStats() map[string]interface{} {
 	if backoffHandler, ok := cp.retryStrategy.(*BackoffHandler); ok {
 		return map[string]interface{}{
-			"retries":           backoffHandler.Retries(),
-			"max_retries":       backoffHandler.GetMaxAttempts(),
-			"reached_max":       backoffHandler.ReachedMaxRetries(),
+			"retries":     backoffHandler.Retries(),
+			"max_retries": backoffHandler.GetMaxAttempts(),
+			"reached_max": backoffHandler.ReachedMaxRetries(),
 		}
 	}
 	return map[string]interface{}{}
@@ -604,4 +604,4 @@ func (cp *ConnectionPool) ReturnHTTP2Connection(addr string, client *http.Client
 // GetHTTP2Stats returns HTTP/2 connection reuse statistics
 func (cp *ConnectionPool) GetHTTP2Stats() map[string]interface{} {
 	return cp.http2Reuse.GetStats()
-} 
+}

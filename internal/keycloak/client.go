@@ -21,15 +21,15 @@ import (
 
 // Config represents Keycloak configuration
 type Config struct {
-	ServerURL    string        `json:"server_url"`
-	Realm        string        `json:"realm"`
-	ClientID     string        `json:"client_id"`
-	ClientSecret string        `json:"client_secret"`
-	PublicKey    string        `json:"public_key"`
+	ServerURL       string `json:"server_url"`
+	Realm           string `json:"realm"`
+	ClientID        string `json:"client_id"`
+	ClientSecret    string `json:"client_secret"`
+	PublicKey       string `json:"public_key"`
 	TokenValidation struct {
-		Issuer     string        `json:"issuer"`
-		Audience   string        `json:"audience"`
-		ClockSkew  time.Duration `json:"clock_skew"`
+		Issuer    string        `json:"issuer"`
+		Audience  string        `json:"audience"`
+		ClockSkew time.Duration `json:"clock_skew"`
 	} `json:"token_validation"`
 	HTTPClient *http.Client
 	Logger     *logger.Logger
@@ -50,20 +50,20 @@ type Client struct {
 
 // TokenInfo represents validated token information
 type TokenInfo struct {
-	Subject    string            `json:"sub"`
-	Issuer     string            `json:"iss"`
-	Audience   []string          `json:"aud"`
-	ExpiresAt  time.Time         `json:"exp"`
-	IssuedAt   time.Time         `json:"iat"`
-	NotBefore  time.Time         `json:"nbf"`
-	Username   string            `json:"preferred_username"`
-	Email      string            `json:"email"`
-	FullName   string            `json:"name"`
-	Groups     []string          `json:"groups"`
-	Roles      []string          `json:"roles"`
-	RealmRoles map[string]string `json:"realm_access"`
-	ClientRoles map[string]string `json:"resource_access"`
-	Claims     map[string]interface{} `json:"-"`
+	Subject     string                 `json:"sub"`
+	Issuer      string                 `json:"iss"`
+	Audience    []string               `json:"aud"`
+	ExpiresAt   time.Time              `json:"exp"`
+	IssuedAt    time.Time              `json:"iat"`
+	NotBefore   time.Time              `json:"nbf"`
+	Username    string                 `json:"preferred_username"`
+	Email       string                 `json:"email"`
+	FullName    string                 `json:"name"`
+	Groups      []string               `json:"groups"`
+	Roles       []string               `json:"roles"`
+	RealmRoles  map[string]string      `json:"realm_access"`
+	ClientRoles map[string]string      `json:"resource_access"`
+	Claims      map[string]interface{} `json:"-"`
 }
 
 // JWKS represents JSON Web Key Set
@@ -209,7 +209,7 @@ func (c *Client) getPublicKey(ctx context.Context, kid string) (*rsa.PublicKey, 
 
 // fetchJWKS fetches JSON Web Key Set from Keycloak
 func (c *Client) fetchJWKS(ctx context.Context) (*JWKS, error) {
-	url := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs", 
+	url := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs",
 		c.config.ServerURL, c.config.Realm)
 
 	if c.logger != nil {
@@ -260,7 +260,7 @@ func (c *Client) validateClaims(claims jwt.MapClaims) error {
 	// Validate issuer
 	if issuer, ok := claims["iss"].(string); ok {
 		if issuer != c.config.TokenValidation.Issuer {
-			return fmt.Errorf("invalid issuer: expected %s, got %s", 
+			return fmt.Errorf("invalid issuer: expected %s, got %s",
 				c.config.TokenValidation.Issuer, issuer)
 		}
 	}
@@ -270,7 +270,7 @@ func (c *Client) validateClaims(claims jwt.MapClaims) error {
 		switch aud := audience.(type) {
 		case string:
 			if aud != c.config.TokenValidation.Audience {
-				return fmt.Errorf("invalid audience: expected %s, got %s", 
+				return fmt.Errorf("invalid audience: expected %s, got %s",
 					c.config.TokenValidation.Audience, aud)
 			}
 		case []interface{}:
@@ -282,7 +282,7 @@ func (c *Client) validateClaims(claims jwt.MapClaims) error {
 				}
 			}
 			if !found {
-				return fmt.Errorf("invalid audience: %s not found in %v", 
+				return fmt.Errorf("invalid audience: %s not found in %v",
 					c.config.TokenValidation.Audience, aud)
 			}
 		}
@@ -442,4 +442,4 @@ func jwkToRSAPublicKey(jwk JWK) (*rsa.PublicKey, error) {
 		N: new(big.Int).SetBytes(nBytes),
 		E: e,
 	}, nil
-} 
+}

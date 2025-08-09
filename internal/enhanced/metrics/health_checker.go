@@ -22,12 +22,12 @@ type HealthCheck interface {
 // HealthStatus статус health check
 type HealthStatus struct {
 	Status      string                 `json:"status"`
-	Timestamp   time.Time             `json:"timestamp"`
-	Uptime      string                `json:"uptime"`
-	Version     string                `json:"version"`
+	Timestamp   time.Time              `json:"timestamp"`
+	Uptime      string                 `json:"uptime"`
+	Version     string                 `json:"version"`
 	Checks      map[string]CheckResult `json:"checks"`
-	Ready       bool                  `json:"ready"`
-	ReadyReason string                `json:"ready_reason,omitempty"`
+	Ready       bool                   `json:"ready"`
+	ReadyReason string                 `json:"ready_reason,omitempty"`
 }
 
 // CheckResult результат отдельного health check
@@ -41,17 +41,17 @@ type CheckResult struct {
 
 // EnhancedHealthChecker расширенный health checker с дополнительными возможностями
 type EnhancedHealthChecker struct {
-	mu           sync.RWMutex
-	startTime    time.Time
-	version      string
-	checks       map[string]HealthCheck
-	status       HealthStatus
-	ready        bool
-	readyReason  string
-	logger       *zap.Logger
-	metrics      *EnhancedMetrics
-	connectorID  uuid.UUID
-	readyChecks  map[string]bool
+	mu          sync.RWMutex
+	startTime   time.Time
+	version     string
+	checks      map[string]HealthCheck
+	status      HealthStatus
+	ready       bool
+	readyReason string
+	logger      *zap.Logger
+	metrics     *EnhancedMetrics
+	connectorID uuid.UUID
+	readyChecks map[string]bool
 }
 
 // NewEnhancedHealthChecker создает новый расширенный health checker
@@ -212,7 +212,7 @@ func (hc *EnhancedHealthChecker) GetConnectorID() uuid.UUID {
 func (hc *EnhancedHealthChecker) CountReadyChecks() int {
 	hc.mu.RLock()
 	defer hc.mu.RUnlock()
-	
+
 	count := 0
 	for _, ready := range hc.readyChecks {
 		if ready {
@@ -225,7 +225,7 @@ func (hc *EnhancedHealthChecker) CountReadyChecks() int {
 // ServeHTTP реализует http.Handler для health check endpoints
 func (hc *EnhancedHealthChecker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	
+
 	// Обновляем метрики
 	if hc.metrics != nil {
 		hc.metrics.IncDiagnosticRequests("healthcheck", r.Method)
@@ -371,4 +371,4 @@ func (s *SystemHealthCheck) Name() string {
 
 func (s *SystemHealthCheck) Description() string {
 	return "System resources check"
-} 
+}

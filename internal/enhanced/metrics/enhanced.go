@@ -18,18 +18,18 @@ type EnhancedMetrics struct {
 	buildInfo *prometheus.GaugeVec
 
 	// Protocol Performance метрики
-	protocolLatency    *prometheus.HistogramVec
-	protocolErrors     *prometheus.CounterVec
-	protocolSwitches   *prometheus.CounterVec
-	protocolSuccess    *prometheus.CounterVec
+	protocolLatency  *prometheus.HistogramVec
+	protocolErrors   *prometheus.CounterVec
+	protocolSwitches *prometheus.CounterVec
+	protocolSuccess  *prometheus.CounterVec
 
 	// Health Check метрики
-	healthCheckStatus *prometheus.GaugeVec
+	healthCheckStatus   *prometheus.GaugeVec
 	healthCheckDuration *prometheus.HistogramVec
 
 	// Connection Pool метрики
-	connectionPoolSize *prometheus.GaugeVec
-	connectionPoolIdle *prometheus.GaugeVec
+	connectionPoolSize   *prometheus.GaugeVec
+	connectionPoolIdle   *prometheus.GaugeVec
 	connectionPoolActive *prometheus.GaugeVec
 
 	// QUIC специфичные метрики
@@ -45,11 +45,11 @@ type EnhancedMetrics struct {
 	ingressBandwidth       *prometheus.CounterVec
 
 	// System метрики
-	systemMemoryUsage    prometheus.Gauge
-	systemCPUUsage       prometheus.Gauge
-	systemGoroutines     prometheus.Gauge
-	systemHeapAlloc      prometheus.Gauge
-	systemHeapSys        prometheus.Gauge
+	systemMemoryUsage prometheus.Gauge
+	systemCPUUsage    prometheus.Gauge
+	systemGoroutines  prometheus.Gauge
+	systemHeapAlloc   prometheus.Gauge
+	systemHeapSys     prometheus.Gauge
 
 	// Diagnostic метрики
 	diagnosticRequestsTotal *prometheus.CounterVec
@@ -424,4 +424,4 @@ func (em *EnhancedMetrics) StartSystemMetricsCollector(ctx context.Context, inte
 			em.UpdateSystemMetrics()
 		}
 	}
-} 
+}

@@ -38,34 +38,34 @@ type ConnectionMultiplexerImpl struct {
 
 // MultiplexerConfig holds configuration for connection multiplexing
 type MultiplexerConfig struct {
-	MaxConnections    int           `json:"max_connections"`
-	MaxIdleTime       time.Duration `json:"max_idle_time"`
-	CleanupInterval   time.Duration `json:"cleanup_interval"`
-	EnableCompression bool          `json:"enable_compression"`
-	MaxConcurrentStreams int        `json:"max_concurrent_streams"`
+	MaxConnections       int           `json:"max_connections"`
+	MaxIdleTime          time.Duration `json:"max_idle_time"`
+	CleanupInterval      time.Duration `json:"cleanup_interval"`
+	EnableCompression    bool          `json:"enable_compression"`
+	MaxConcurrentStreams int           `json:"max_concurrent_streams"`
 }
 
 // DefaultMultiplexerConfig returns default multiplexer configuration
 func DefaultMultiplexerConfig() *MultiplexerConfig {
 	return &MultiplexerConfig{
-		MaxConnections:      100,
-		MaxIdleTime:         30 * time.Second,
-		CleanupInterval:     60 * time.Second,
-		EnableCompression:   true,
+		MaxConnections:       100,
+		MaxIdleTime:          30 * time.Second,
+		CleanupInterval:      60 * time.Second,
+		EnableCompression:    true,
 		MaxConcurrentStreams: 100,
 	}
 }
 
 // MultiplexedConnection represents a multiplexed connection
 type MultiplexedConnection struct {
-	conn           net.Conn
-	key            string
-	created        time.Time
-	lastUsed       time.Time
-	useCount       int64
-	activeStreams  int64
-	compressed     bool
-	mu             sync.RWMutex
+	conn          net.Conn
+	key           string
+	created       time.Time
+	lastUsed      time.Time
+	useCount      int64
+	activeStreams int64
+	compressed    bool
+	mu            sync.RWMutex
 }
 
 // NewConnectionMultiplexer creates a new connection multiplexer
@@ -106,13 +106,13 @@ func (cm *ConnectionMultiplexerImpl) GetConnection(key string) (net.Conn, error)
 	}
 
 	multiplexedConn := &MultiplexedConnection{
-		conn:      conn,
-		key:       key,
-		created:   time.Now(),
-		lastUsed:  time.Now(),
-		useCount:  1,
+		conn:          conn,
+		key:           key,
+		created:       time.Now(),
+		lastUsed:      time.Now(),
+		useCount:      1,
 		activeStreams: 1,
-		compressed: cm.config.EnableCompression,
+		compressed:    cm.config.EnableCompression,
 	}
 
 	cm.connections[key] = multiplexedConn
@@ -173,12 +173,12 @@ func (cm *ConnectionMultiplexerImpl) GetStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total_connections":     totalConnections,
-		"total_active_streams":  totalStreams,
-		"total_use_count":       totalUseCount,
-		"max_connections":       cm.config.MaxConnections,
+		"total_connections":      totalConnections,
+		"total_active_streams":   totalStreams,
+		"total_use_count":        totalUseCount,
+		"max_connections":        cm.config.MaxConnections,
 		"max_concurrent_streams": cm.config.MaxConcurrentStreams,
-		"enable_compression":    cm.config.EnableCompression,
+		"enable_compression":     cm.config.EnableCompression,
 	}
 }
 
@@ -261,20 +261,20 @@ func (mc *MultiplexedConnection) close() {
 
 // PerformanceMonitorImpl implements performance monitoring
 type PerformanceMonitorImpl struct {
-	logger     *logger.Logger
-	startTime  time.Time
-	stopChan   chan struct{}
-	stats      *PerformanceStats
-	mu         sync.RWMutex
+	logger    *logger.Logger
+	startTime time.Time
+	stopChan  chan struct{}
+	stats     *PerformanceStats
+	mu        sync.RWMutex
 }
 
 // PerformanceStats holds performance statistics
 type PerformanceStats struct {
-	MemoryUsage    map[string]uint64
-	CPUUsage       float64
+	MemoryUsage     map[string]uint64
+	CPUUsage        float64
 	ConnectionCount int
 	ActiveRequests  int
-	LastUpdate     time.Time
+	LastUpdate      time.Time
 }
 
 // NewPerformanceMonitor creates a new performance monitor
@@ -296,14 +296,14 @@ func (pm *PerformanceMonitorImpl) GetMemoryUsage() map[string]uint64 {
 	runtime.ReadMemStats(&m)
 
 	return map[string]uint64{
-		"alloc":      m.Alloc,
+		"alloc":       m.Alloc,
 		"total_alloc": m.TotalAlloc,
-		"sys":        m.Sys,
-		"num_gc":     uint64(m.NumGC),
-		"heap_alloc": m.HeapAlloc,
-		"heap_sys":   m.HeapSys,
-		"heap_idle":  m.HeapIdle,
-		"heap_inuse": m.HeapInuse,
+		"sys":         m.Sys,
+		"num_gc":      uint64(m.NumGC),
+		"heap_alloc":  m.HeapAlloc,
+		"heap_sys":    m.HeapSys,
+		"heap_idle":   m.HeapIdle,
+		"heap_inuse":  m.HeapInuse,
 	}
 }
 
@@ -322,8 +322,8 @@ func (pm *PerformanceMonitorImpl) GetConnectionStats() map[string]interface{} {
 	return map[string]interface{}{
 		"connection_count": pm.stats.ConnectionCount,
 		"active_requests":  pm.stats.ActiveRequests,
-		"uptime":          time.Since(pm.startTime).String(),
-		"last_update":     pm.stats.LastUpdate,
+		"uptime":           time.Since(pm.startTime).String(),
+		"last_update":      pm.stats.LastUpdate,
 	}
 }
 
@@ -394,4 +394,4 @@ func (pm *PerformanceMonitorImpl) getConnectionCount() int {
 func (pm *PerformanceMonitorImpl) getActiveRequests() int {
 	// This is a placeholder - in a real implementation, you would get this from your request tracking
 	return 0
-} 
+}

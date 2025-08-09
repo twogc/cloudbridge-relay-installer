@@ -101,4 +101,4 @@ func TestBalancer_HealthCheck(t *testing.T) {
 	if !servers[0].Healthy {
 		t.Error("Expected server to be healthy")
 	}
-} 
+}

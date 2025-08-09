@@ -418,7 +418,7 @@ func TestManagerShutdown(t *testing.T) {
 
 	// Test shutdown
 	manager.Shutdown()
-	
+
 	// Verify context is cancelled
 	select {
 	case <-manager.ctx.Done():
@@ -460,4 +460,4 @@ func TestGetTenantCount(t *testing.T) {
 
 	// Test count after creating tenants
 	assert.Equal(t, 2, manager.GetTenantCount())
-} 
+}

@@ -37,14 +37,14 @@ type HealthCheckerFunc func(ctx context.Context) (*HealthCheck, error)
 
 // HealthChecker manages health checks
 type HealthChecker struct {
-	checks       map[string]HealthCheckerFunc
-	interval     time.Duration
-	timeout      time.Duration
-	logger       *zap.Logger
-	mu           sync.RWMutex
-	lastResults  map[string]*HealthCheck
-	stopChan     chan struct{}
-	isRunning    bool
+	checks      map[string]HealthCheckerFunc
+	interval    time.Duration
+	timeout     time.Duration
+	logger      *zap.Logger
+	mu          sync.RWMutex
+	lastResults map[string]*HealthCheck
+	stopChan    chan struct{}
+	isRunning   bool
 }
 
 // Config holds health checker configuration
@@ -67,11 +67,11 @@ func NewHealthChecker(config *Config) *HealthChecker {
 	if config == nil {
 		config = DefaultConfig()
 	}
-	
+
 	if config.Logger == nil {
 		config.Logger = zap.NewNop()
 	}
-	
+
 	return &HealthChecker{
 		checks:      make(map[string]HealthCheckerFunc),
 		interval:    config.Interval,
@@ -86,7 +86,7 @@ func NewHealthChecker(config *Config) *HealthChecker {
 func (hc *HealthChecker) AddCheck(name string, checker HealthCheckerFunc) {
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
-	
+
 	hc.checks[name] = checker
 	hc.logger.Info("Health check added",
 		zap.String("name", name))
@@ -96,7 +96,7 @@ func (hc *HealthChecker) AddCheck(name string, checker HealthCheckerFunc) {
 func (hc *HealthChecker) RemoveCheck(name string) {
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
-	
+
 	delete(hc.checks, name)
 	delete(hc.lastResults, name)
 	hc.logger.Info("Health check removed",
@@ -107,15 +107,15 @@ func (hc *HealthChecker) RemoveCheck(name string) {
 func (hc *HealthChecker) Start() {
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
-	
+
 	if hc.isRunning {
 		hc.logger.Warn("Health checker already running")
 		return
 	}
-	
+
 	hc.isRunning = true
 	hc.stopChan = make(chan struct{})
-	
+
 	go hc.run()
 	hc.logger.Info("Health checker started",
 		zap.Duration("interval", hc.interval),
@@ -126,11 +126,11 @@ func (hc *HealthChecker) Start() {
 func (hc *HealthChecker) Stop() {
 	hc.mu.Lock()
 	defer hc.mu.Unlock()
-	
+
 	if !hc.isRunning {
 		return
 	}
-	
+
 	close(hc.stopChan)
 	hc.isRunning = false
 	hc.logger.Info("Health checker stopped")
@@ -140,10 +140,10 @@ func (hc *HealthChecker) Stop() {
 func (hc *HealthChecker) run() {
 	ticker := time.NewTicker(hc.interval)
 	defer ticker.Stop()
-	
+
 	// Run initial check
 	hc.runChecks()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -162,26 +162,26 @@ func (hc *HealthChecker) runChecks() {
 		checks[k] = v
 	}
 	hc.mu.RUnlock()
-	
+
 	var wg sync.WaitGroup
 	results := make(chan struct {
 		name   string
 		result *HealthCheck
 		err    error
 	}, len(checks))
-	
+
 	for name, checker := range checks {
 		wg.Add(1)
 		go func(name string, checker HealthCheckerFunc) {
 			defer wg.Done()
-			
+
 			ctx, cancel := context.WithTimeout(context.Background(), hc.timeout)
 			defer cancel()
-			
+
 			start := time.Now()
 			result, err := checker(ctx)
 			duration := time.Since(start)
-			
+
 			if result == nil {
 				result = &HealthCheck{
 					Name:      name,
@@ -190,15 +190,15 @@ func (hc *HealthChecker) runChecks() {
 					Duration:  duration,
 				}
 			}
-			
+
 			if err != nil {
 				result.Status = Unhealthy
 				result.LastError = err
 			}
-			
+
 			result.LastCheck = time.Now()
 			result.Duration = duration
-			
+
 			results <- struct {
 				name   string
 				result *HealthCheck
@@ -206,16 +206,16 @@ func (hc *HealthChecker) runChecks() {
 			}{name, result, err}
 		}(name, checker)
 	}
-	
+
 	go func() {
 		wg.Wait()
 		close(results)
 	}()
-	
+
 	hc.mu.Lock()
 	for result := range results {
 		hc.lastResults[result.name] = result.result
-		
+
 		if result.err != nil {
 			hc.logger.Warn("Health check failed",
 				zap.String("name", result.name),
@@ -235,14 +235,14 @@ func (hc *HealthChecker) runChecks() {
 func (hc *HealthChecker) GetStatus() HealthStatus {
 	hc.mu.RLock()
 	defer hc.mu.RUnlock()
-	
+
 	if len(hc.lastResults) == 0 {
 		return Unknown
 	}
-	
+
 	unhealthyCount := 0
 	degradedCount := 0
-	
+
 	for _, result := range hc.lastResults {
 		switch result.Status {
 		case Unhealthy:
@@ -251,15 +251,15 @@ func (hc *HealthChecker) GetStatus() HealthStatus {
 			degradedCount++
 		}
 	}
-	
+
 	if unhealthyCount > 0 {
 		return Unhealthy
 	}
-	
+
 	if degradedCount > 0 {
 		return Degraded
 	}
-	
+
 	return Healthy
 }
 
@@ -267,12 +267,12 @@ func (hc *HealthChecker) GetStatus() HealthStatus {
 func (hc *HealthChecker) GetResults() map[string]*HealthCheck {
 	hc.mu.RLock()
 	defer hc.mu.RUnlock()
-	
+
 	results := make(map[string]*HealthCheck)
 	for k, v := range hc.lastResults {
 		results[k] = v
 	}
-	
+
 	return results
 }
 
@@ -280,7 +280,7 @@ func (hc *HealthChecker) GetResults() map[string]*HealthCheck {
 func (hc *HealthChecker) GetResult(name string) (*HealthCheck, bool) {
 	hc.mu.RLock()
 	defer hc.mu.RUnlock()
-	
+
 	result, exists := hc.lastResults[name]
 	return result, exists
 }
@@ -295,18 +295,18 @@ func (hc *HealthChecker) RunCheck(name string) (*HealthCheck, error) {
 	hc.mu.RLock()
 	checker, exists := hc.checks[name]
 	hc.mu.RUnlock()
-	
+
 	if !exists {
 		return nil, fmt.Errorf("health check '%s' not found", name)
 	}
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), hc.timeout)
 	defer cancel()
-	
+
 	start := time.Now()
 	result, err := checker(ctx)
 	duration := time.Since(start)
-	
+
 	if result == nil {
 		result = &HealthCheck{
 			Name:      name,
@@ -315,19 +315,19 @@ func (hc *HealthChecker) RunCheck(name string) (*HealthCheck, error) {
 			Duration:  duration,
 		}
 	}
-	
+
 	if err != nil {
 		result.Status = Unhealthy
 		result.LastError = err
 	}
-	
+
 	result.LastCheck = time.Now()
 	result.Duration = duration
-	
+
 	hc.mu.Lock()
 	hc.lastResults[name] = result
 	hc.mu.Unlock()
-	
+
 	return result, err
 }
 
@@ -343,7 +343,7 @@ func HTTPHealthCheck(name, url string) HealthCheckerFunc {
 				LastError:   err,
 			}, err
 		}
-		
+
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
@@ -355,7 +355,7 @@ func HTTPHealthCheck(name, url string) HealthCheckerFunc {
 			}, err
 		}
 		defer resp.Body.Close()
-		
+
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			return &HealthCheck{
 				Name:        name,
@@ -367,7 +367,7 @@ func HTTPHealthCheck(name, url string) HealthCheckerFunc {
 				},
 			}, nil
 		}
-		
+
 		return &HealthCheck{
 			Name:        name,
 			Description: fmt.Sprintf("HTTP health check for %s", url),
@@ -395,7 +395,7 @@ func PingHealthCheck(name, host string) HealthCheckerFunc {
 			}, err
 		}
 		defer conn.Close()
-		
+
 		return &HealthCheck{
 			Name:        name,
 			Description: fmt.Sprintf("Ping health check for %s", host),
@@ -419,11 +419,11 @@ func CustomHealthCheck(name, description string, fn func(ctx context.Context) er
 				LastError:   err,
 			}, err
 		}
-		
+
 		return &HealthCheck{
 			Name:        name,
 			Description: description,
 			Status:      Healthy,
 		}, nil
 	}
-} 
+}

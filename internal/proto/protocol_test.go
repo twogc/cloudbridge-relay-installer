@@ -53,8 +53,8 @@ func TestMessageSerialization(t *testing.T) {
 			msg: &Message{
 				Type: MessageTypeTunnelInfo,
 				TunnelInfo: &TunnelInfo{
-					TunnelID: "id1",
-					LocalPort: 1234,
+					TunnelID:   "id1",
+					LocalPort:  1234,
 					RemoteHost: "host",
 					RemotePort: 5678,
 				},
@@ -234,12 +234,14 @@ func TestWriteError(t *testing.T) {
 }
 
 // slowReader is a reader that introduces a delay
+//nolint:unused // Used in tests
 type slowReader struct {
 	delay time.Duration
 	data  []byte
 	pos   int
 }
 
+//nolint:unused // Used in tests
 func (r *slowReader) Read(p []byte) (n int, err error) {
 	if r.pos >= len(r.data) {
 		return 0, io.EOF
@@ -249,4 +251,4 @@ func (r *slowReader) Read(p []byte) (n int, err error) {
 	n = copy(p, r.data[r.pos:])
 	r.pos += n
 	return n, nil
-} 
+}

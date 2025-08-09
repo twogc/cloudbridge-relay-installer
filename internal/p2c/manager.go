@@ -6,9 +6,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	"github.com/twogc/cloudbridge-relay-installer/internal/balancer"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
+	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	"go.uber.org/zap"
 )
 

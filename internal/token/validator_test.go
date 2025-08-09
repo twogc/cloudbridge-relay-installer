@@ -12,6 +12,7 @@ import (
 )
 
 // mockHTTPClient is a mock implementation of HTTPDoer
+//nolint:unused // Used in tests
 type mockHTTPClient struct {
 	statusCode int
 	err        error
@@ -121,7 +122,7 @@ func TestValidator_JWT(t *testing.T) {
 		t.Error("Expected expired token to be rejected")
 	}
 
-	if _, err := validator.ValidateToken(tokenString+"invalid"); err == nil {
+	if _, err := validator.ValidateToken(tokenString + "invalid"); err == nil {
 		t.Error("Expected token with invalid signature to be rejected")
 	}
 
@@ -166,4 +167,4 @@ func TestValidator_Cleanup(t *testing.T) {
 		t.Error("Expected expired token to be removed from cache")
 	}
 	validator.mu.RUnlock()
-} 
+}

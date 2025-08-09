@@ -26,8 +26,8 @@ func NewP2CMetrics() *P2CMetrics {
 		),
 		latency: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Name: "p2c_latency_seconds",
-				Help: "P2C connection latency",
+				Name:    "p2c_latency_seconds",
+				Help:    "P2C connection latency",
 				Buckets: prometheus.DefBuckets,
 			},
 			[]string{"server", "tenant_id"},

@@ -30,8 +30,8 @@ type GracefulShutdownManager struct {
 
 // GracefulShutdownConfig holds configuration for graceful shutdown
 type GracefulShutdownConfig struct {
-	GracePeriod time.Duration `json:"grace_period"`
-	MaxWaitTime time.Duration `json:"max_wait_time"`
+	GracePeriod time.Duration  `json:"grace_period"`
+	MaxWaitTime time.Duration  `json:"max_wait_time"`
 	Logger      *logger.Logger `json:"-"`
 }
 
@@ -243,4 +243,4 @@ func (wgm *WaitGroupManager) WaitWithTimeout(timeout time.Duration) error {
 	case <-time.After(timeout):
 		return &TimeoutError{Message: "WaitGroup timeout exceeded"}
 	}
-} 
+}

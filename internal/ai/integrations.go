@@ -8,7 +8,7 @@ import (
 func (ba *BehaviorAnalyzer) AnalyzeWireGuardBehavior(peerID string, event interface{}) error {
 	// Анализ поведения WireGuard peers
 	userID := "wireguard-peer-" + peerID
-	
+
 	// Создаем событие для анализа
 	wireguardEvent := map[string]interface{}{
 		"peer_id":     peerID,
@@ -17,7 +17,7 @@ func (ba *BehaviorAnalyzer) AnalyzeWireGuardBehavior(peerID string, event interf
 		"data_volume": 0,
 		"protocol":    "wireguard",
 	}
-	
+
 	return ba.AnalyzeUserBehavior(userID, wireguardEvent)
 }
 
@@ -25,7 +25,7 @@ func (ba *BehaviorAnalyzer) AnalyzeWireGuardBehavior(peerID string, event interf
 func (ba *BehaviorAnalyzer) AnalyzeQUICBehavior(connectionID string, event interface{}) error {
 	// Анализ поведения QUIC соединений
 	userID := "quic-connection-" + connectionID
-	
+
 	// Создаем событие для анализа
 	quicEvent := map[string]interface{}{
 		"connection_id": connectionID,
@@ -34,14 +34,14 @@ func (ba *BehaviorAnalyzer) AnalyzeQUICBehavior(connectionID string, event inter
 		"data_volume":   0,
 		"protocol":      "quic",
 	}
-	
+
 	return ba.AnalyzeUserBehavior(userID, quicEvent)
 }
 
 // Интеграция с Post-Quantum
 func (ps *PredictiveSecurity) PredictQuantumThreats() error {
 	// Предикция угроз для квантовой криптографии
-	
+
 	// Создаем индикаторы угроз для квантовой криптографии
 	indicators := []ThreatIndicator{
 		{
@@ -63,13 +63,13 @@ func (ps *PredictiveSecurity) PredictQuantumThreats() error {
 			Threshold: 0.1,
 		},
 	}
-	
+
 	// Предсказываем угрозу
 	prediction, err := ps.PredictThreat(indicators)
 	if err != nil {
 		return err
 	}
-	
+
 	// Добавляем специфичные для квантовой криптографии стратегии митигации
 	prediction.Mitigation = append(prediction.Mitigation, MitigationStrategy{
 		Name:          "quantum_key_rotation",
@@ -77,21 +77,21 @@ func (ps *PredictiveSecurity) PredictQuantumThreats() error {
 		Priority:      1,
 		Effectiveness: 0.9,
 	})
-	
+
 	prediction.Mitigation = append(prediction.Mitigation, MitigationStrategy{
 		Name:          "hybrid_encryption",
 		Action:        "enable_hybrid_mode",
 		Priority:      2,
 		Effectiveness: 0.8,
 	})
-	
+
 	return nil
 }
 
 // Интеграция с автоматическим реагированием
 func (ar *AutomatedResponse) RespondToWireGuardThreat(threat *ThreatPrediction) error {
 	// Автоматическое реагирование на угрозы WireGuard
-	
+
 	// Создаем правило реагирования для WireGuard
 	rule := &ResponseRule{
 		RuleID:   "wireguard-threat-response",
@@ -112,21 +112,21 @@ func (ar *AutomatedResponse) RespondToWireGuardThreat(threat *ThreatPrediction) 
 			"notify_admin",
 		},
 	}
-	
+
 	// Добавляем правило
 	if err := ar.AddResponseRule(rule); err != nil {
 		return err
 	}
-	
+
 	// Создаем событие для срабатывания
 	threatEvent := map[string]interface{}{
-		"threat_id":    threat.ThreatID,
-		"probability":  threat.Probability,
-		"confidence":   threat.Confidence,
-		"module":       "wireguard",
-		"timestamp":    time.Now(),
+		"threat_id":   threat.ThreatID,
+		"probability": threat.Probability,
+		"confidence":  threat.Confidence,
+		"module":      "wireguard",
+		"timestamp":   time.Now(),
 	}
-	
+
 	// Срабатываем реагирование
 	return ar.TriggerResponse(threatEvent)
 }
@@ -134,7 +134,7 @@ func (ar *AutomatedResponse) RespondToWireGuardThreat(threat *ThreatPrediction) 
 // Интеграция с мониторингом
 func (aim *AIMonitoring) MonitorWireGuardMetrics() error {
 	// Мониторинг метрик WireGuard
-	
+
 	// Создаем метрики для WireGuard
 	wireguardMetrics := []*AIMetric{
 		{
@@ -162,14 +162,14 @@ func (aim *AIMonitoring) MonitorWireGuardMetrics() error {
 			LastUpdated: time.Now(),
 		},
 	}
-	
+
 	// Добавляем метрики
 	for _, metric := range wireguardMetrics {
 		if err := aim.AddMetric(metric); err != nil {
 			return err
 		}
 	}
-	
+
 	// Создаем алерт если аномалия превышает порог
 	if wireguardMetrics[2].Value > wireguardMetrics[2].Threshold {
 		alert := &AIAlert{
@@ -181,19 +181,19 @@ func (aim *AIMonitoring) MonitorWireGuardMetrics() error {
 			Acknowledged: false,
 			Resolved:     false,
 		}
-		
+
 		if err := aim.CreateAlert(alert); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
 // Интеграция с QUIC мониторингом
 func (aim *AIMonitoring) MonitorQUICMetrics() error {
 	// Мониторинг метрик QUIC
-	
+
 	// Создаем метрики для QUIC
 	quicMetrics := []*AIMetric{
 		{
@@ -221,21 +221,21 @@ func (aim *AIMonitoring) MonitorQUICMetrics() error {
 			LastUpdated: time.Now(),
 		},
 	}
-	
+
 	// Добавляем метрики
 	for _, metric := range quicMetrics {
 		if err := aim.AddMetric(metric); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
 // Интеграция с квантовой криптографией
 func (aim *AIMonitoring) MonitorQuantumMetrics() error {
 	// Мониторинг метрик квантовой криптографии
-	
+
 	// Создаем метрики для квантовой криптографии
 	quantumMetrics := []*AIMetric{
 		{
@@ -263,13 +263,13 @@ func (aim *AIMonitoring) MonitorQuantumMetrics() error {
 			LastUpdated: time.Now(),
 		},
 	}
-	
+
 	// Добавляем метрики
 	for _, metric := range quantumMetrics {
 		if err := aim.AddMetric(metric); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }

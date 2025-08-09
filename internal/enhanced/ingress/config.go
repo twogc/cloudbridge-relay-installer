@@ -13,31 +13,31 @@ import (
 type IngressConfig struct {
 	// Основные настройки
 	Enabled bool `json:"enabled" yaml:"enabled"`
-	
+
 	// Bastion mode для безопасного доступа
 	BastionMode bool `json:"bastion_mode" yaml:"bastion_mode"`
-	
+
 	// IP-based access control
 	IPAccessControl IPAccessConfig `json:"ip_access_control" yaml:"ip_access_control"`
-	
+
 	// TLS настройки
 	TLS TLSConfig `json:"tls" yaml:"tls"`
-	
+
 	// Connection pooling
 	ConnectionPool ConnectionPoolConfig `json:"connection_pool" yaml:"connection_pool"`
-	
+
 	// Правила маршрутизации
 	Rules []IngressRule `json:"rules" yaml:"rules"`
-	
+
 	// Глобальные настройки для origin requests
 	OriginRequest OriginRequestConfig `json:"origin_request" yaml:"origin_request"`
 }
 
 // IPAccessConfig представляет конфигурацию IP-based access control
 type IPAccessConfig struct {
-	Enabled      bool        `json:"enabled" yaml:"enabled"`
-	DefaultAllow bool        `json:"default_allow" yaml:"default_allow"`
-	Rules        []IPRule    `json:"rules" yaml:"rules"`
+	Enabled      bool     `json:"enabled" yaml:"enabled"`
+	DefaultAllow bool     `json:"default_allow" yaml:"default_allow"`
+	Rules        []IPRule `json:"rules" yaml:"rules"`
 }
 
 // IPRule представляет правило IP access control
@@ -71,16 +71,16 @@ type ConnectionPoolConfig struct {
 type IngressRule struct {
 	// Hostname для сопоставления (пустой = все hostnames)
 	Hostname string `json:"hostname" yaml:"hostname"`
-	
+
 	// Path regex для сопоставления (пустой = все paths)
 	Path string `json:"path" yaml:"path"`
-	
+
 	// Сервис для проксирования
 	Service string `json:"service" yaml:"service"`
-	
+
 	// Конфигурация для origin request (переопределяет глобальную)
 	OriginRequest *OriginRequestConfig `json:"origin_request,omitempty" yaml:"origin_request,omitempty"`
-	
+
 	// Скомпилированный regex для path
 	pathRegex *regexp.Regexp
 }
@@ -90,32 +90,32 @@ type OriginRequestConfig struct {
 	// Таймауты
 	ConnectTimeout time.Duration `json:"connect_timeout" yaml:"connect_timeout"`
 	TLSTimeout     time.Duration `json:"tls_timeout" yaml:"tls_timeout"`
-	
+
 	// Keep-alive настройки
 	TCPKeepAlive         time.Duration `json:"tcp_keep_alive" yaml:"tcp_keep_alive"`
 	KeepAliveConnections int           `json:"keep_alive_connections" yaml:"keep_alive_connections"`
 	KeepAliveTimeout     time.Duration `json:"keep_alive_timeout" yaml:"keep_alive_timeout"`
-	
+
 	// HTTP настройки
 	HTTPHostHeader   string `json:"http_host_header" yaml:"http_host_header"`
 	OriginServerName string `json:"origin_server_name" yaml:"origin_server_name"`
-	
+
 	// TLS настройки
-	NoTLSVerify           bool   `json:"no_tls_verify" yaml:"no_tls_verify"`
-	CAPool                string `json:"ca_pool" yaml:"ca_pool"`
+	NoTLSVerify            bool   `json:"no_tls_verify" yaml:"no_tls_verify"`
+	CAPool                 string `json:"ca_pool" yaml:"ca_pool"`
 	DisableChunkedEncoding bool   `json:"disable_chunked_encoding" yaml:"disable_chunked_encoding"`
-	
+
 	// Bastion mode
 	BastionMode bool `json:"bastion_mode" yaml:"bastion_mode"`
-	
+
 	// Proxy настройки
 	ProxyAddress string `json:"proxy_address" yaml:"proxy_address"`
 	ProxyPort    uint   `json:"proxy_port" yaml:"proxy_port"`
 	ProxyType    string `json:"proxy_type" yaml:"proxy_type"`
-	
+
 	// HTTP/2 настройки
 	HTTP2Origin bool `json:"http2_origin" yaml:"http2_origin"`
-	
+
 	// IP правила для этого origin
 	IPRules []IPRule `json:"ip_rules" yaml:"ip_rules"`
 }
@@ -145,16 +145,16 @@ func DefaultIngressConfig() *IngressConfig {
 		},
 		Rules: []IngressRule{},
 		OriginRequest: OriginRequestConfig{
-			ConnectTimeout:       30 * time.Second,
-			TLSTimeout:          10 * time.Second,
-			TCPKeepAlive:        30 * time.Second,
-			KeepAliveConnections: 100,
-			KeepAliveTimeout:     90 * time.Second,
-			NoTLSVerify:          false,
+			ConnectTimeout:         30 * time.Second,
+			TLSTimeout:             10 * time.Second,
+			TCPKeepAlive:           30 * time.Second,
+			KeepAliveConnections:   100,
+			KeepAliveTimeout:       90 * time.Second,
+			NoTLSVerify:            false,
 			DisableChunkedEncoding: false,
-			BastionMode:          false,
-			ProxyAddress:         "127.0.0.1",
-			HTTP2Origin:          true,
+			BastionMode:            false,
+			ProxyAddress:           "127.0.0.1",
+			HTTP2Origin:            true,
 		},
 	}
 }
@@ -167,26 +167,26 @@ func (ic *IngressConfig) Validate() error {
 			return fmt.Errorf("TLS enabled but cert_file or key_file not specified")
 		}
 	}
-	
+
 	// Проверка IP правил
 	for i, rule := range ic.IPAccessControl.Rules {
 		if err := validateIPRule(rule); err != nil {
 			return fmt.Errorf("invalid IP rule %d: %v", i, err)
 		}
 	}
-	
+
 	// Проверка правил маршрутизации
 	for i, rule := range ic.Rules {
 		if err := validateIngressRule(rule, i, len(ic.Rules)); err != nil {
 			return fmt.Errorf("invalid ingress rule %d: %v", i, err)
 		}
 	}
-	
+
 	// Проверка connection pool
 	if ic.ConnectionPool.MaxSize <= 0 {
 		return fmt.Errorf("connection pool max_size must be positive")
 	}
-	
+
 	return nil
 }
 
@@ -195,18 +195,18 @@ func validateIPRule(rule IPRule) error {
 	if rule.Prefix == "" {
 		return fmt.Errorf("IP rule prefix cannot be empty")
 	}
-	
+
 	_, _, err := net.ParseCIDR(rule.Prefix)
 	if err != nil {
 		return fmt.Errorf("invalid CIDR prefix: %s", rule.Prefix)
 	}
-	
+
 	for _, port := range rule.Ports {
 		if port < 1 || port > 65535 {
 			return fmt.Errorf("invalid port %d, must be between 1 and 65535", port)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -217,17 +217,17 @@ func validateIngressRule(rule IngressRule, index, totalRules int) error {
 		if strings.Contains(rule.Hostname, ":") {
 			return fmt.Errorf("hostname cannot contain port")
 		}
-		
+
 		// Проверка wildcard
 		if strings.Count(rule.Hostname, "*") > 1 {
 			return fmt.Errorf("hostname can have at most one wildcard character")
 		}
-		
+
 		if strings.Contains(rule.Hostname, "*") && !strings.HasPrefix(rule.Hostname, "*.") {
 			return fmt.Errorf("wildcard can only be used for subdomains (e.g., *.example.com)")
 		}
 	}
-	
+
 	// Проверка path regex
 	if rule.Path != "" {
 		regex, err := regexp.Compile(rule.Path)
@@ -236,24 +236,24 @@ func validateIngressRule(rule IngressRule, index, totalRules int) error {
 		}
 		rule.pathRegex = regex
 	}
-	
+
 	// Проверка service
 	if rule.Service == "" {
 		return fmt.Errorf("service cannot be empty")
 	}
-	
+
 	// Проверка catch-all правила (должно быть последним)
 	isCatchAll := (rule.Hostname == "" || rule.Hostname == "*") && rule.Path == ""
 	isLastRule := index == totalRules-1
-	
+
 	if isLastRule && !isCatchAll {
 		return fmt.Errorf("last rule must be a catch-all rule (no hostname or path filter)")
 	}
-	
+
 	if !isLastRule && isCatchAll {
 		return fmt.Errorf("catch-all rule can only be the last rule")
 	}
-	
+
 	return nil
 }
 
@@ -262,11 +262,11 @@ func (ic *IngressConfig) GetTLSConfig() (*tls.Config, error) {
 	if !ic.TLS.Enabled {
 		return nil, nil
 	}
-	
+
 	config := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 	}
-	
+
 	// Загрузка сертификата
 	if ic.TLS.CertFile != "" && ic.TLS.KeyFile != "" {
 		cert, err := tls.LoadX509KeyPair(ic.TLS.CertFile, ic.TLS.KeyFile)
@@ -275,7 +275,7 @@ func (ic *IngressConfig) GetTLSConfig() (*tls.Config, error) {
 		}
 		config.Certificates = []tls.Certificate{cert}
 	}
-	
+
 	// Настройка минимальной версии TLS
 	switch ic.TLS.MinVersion {
 	case "1.2":
@@ -285,12 +285,12 @@ func (ic *IngressConfig) GetTLSConfig() (*tls.Config, error) {
 	default:
 		config.MinVersion = tls.VersionTLS12
 	}
-	
+
 	// Настройка cipher suites
 	if len(ic.TLS.CipherSuites) > 0 {
 		config.CipherSuites = getCipherSuites(ic.TLS.CipherSuites)
 	}
-	
+
 	// Настройка client certificate verification
 	if ic.TLS.VerifyClientCert {
 		config.ClientAuth = tls.RequireAndVerifyClientCert
@@ -299,19 +299,19 @@ func (ic *IngressConfig) GetTLSConfig() (*tls.Config, error) {
 			// TODO: Реализовать загрузку CA
 		}
 	}
-	
+
 	// InsecureSkipVerify (только для разработки)
 	if ic.TLS.InsecureSkipVerify {
 		config.InsecureSkipVerify = true
 	}
-	
+
 	return config, nil
 }
 
 // getCipherSuites возвращает список cipher suites
 func getCipherSuites(names []string) []uint16 {
 	var suites []uint16
-	
+
 	cipherMap := map[string]uint16{
 		"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256":   tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384":   tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
@@ -320,13 +320,13 @@ func getCipherSuites(names []string) []uint16 {
 		"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305":    tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 		"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305":  tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 	}
-	
+
 	for _, name := range names {
 		if suite, exists := cipherMap[name]; exists {
 			suites = append(suites, suite)
 		}
 	}
-	
+
 	return suites
 }
 
@@ -337,19 +337,19 @@ func (ic *IngressConfig) FindMatchingRule(hostname, path string) (*IngressRule, 
 	if err == nil {
 		hostname = host
 	}
-	
+
 	for i, rule := range ic.Rules {
 		if rule.Matches(hostname, path) {
 			return &rule, i
 		}
 	}
-	
+
 	// Возвращаем последнее правило (catch-all)
 	if len(ic.Rules) > 0 {
 		lastRule := ic.Rules[len(ic.Rules)-1]
 		return &lastRule, len(ic.Rules) - 1
 	}
-	
+
 	return nil, -1
 }
 
@@ -362,13 +362,13 @@ func (ir *IngressRule) Matches(hostname, path string) bool {
 	} else {
 		hostMatch = matchHost(ir.Hostname, hostname)
 	}
-	
+
 	// Проверка path
 	pathMatch := true
 	if ir.Path != "" && ir.pathRegex != nil {
 		pathMatch = ir.pathRegex.MatchString(path)
 	}
-	
+
 	return hostMatch && pathMatch
 }
 
@@ -377,13 +377,13 @@ func matchHost(ruleHost, reqHost string) bool {
 	if ruleHost == reqHost {
 		return true
 	}
-	
+
 	// Проверка wildcard в начале
 	if strings.HasPrefix(ruleHost, "*.") {
 		toMatch := strings.TrimPrefix(ruleHost, "*")
 		return strings.HasSuffix(reqHost, toMatch)
 	}
-	
+
 	return false
 }
 
@@ -414,4 +414,4 @@ func (ic *IngressConfig) GetConnectionPoolConfig() ConnectionPoolConfig {
 // GetIPAccessConfig возвращает конфигурацию IP access control
 func (ic *IngressConfig) GetIPAccessConfig() IPAccessConfig {
 	return ic.IPAccessControl
-} 
+}

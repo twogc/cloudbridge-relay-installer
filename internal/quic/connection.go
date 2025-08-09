@@ -15,22 +15,22 @@ import (
 
 // QUICConnection represents a QUIC connection
 type QUICConnection struct {
-	conn        *quic.Conn
-	streams     map[uint64]*Stream
-	config      *Config
-	tlsConfig   *tls.Config
-	logger      *zap.Logger
-	mu          sync.RWMutex
-	closed      bool
-	ctx         context.Context
-	cancel      context.CancelFunc
+	conn      *quic.Conn
+	streams   map[uint64]*Stream
+	config    *Config
+	tlsConfig *tls.Config
+	logger    *zap.Logger
+	mu        sync.RWMutex
+	closed    bool
+	ctx       context.Context
+	cancel    context.CancelFunc
 
 	// Metrics
 	bytesReceived int64
 	bytesSent     int64
 	streamCount   int32
 	lastActivity  time.Time
-	
+
 	// Enhanced QUIC поддержка
 	enhancedConn   *EnhancedConnection
 	tenantID       string
@@ -40,11 +40,11 @@ type QUICConnection struct {
 
 // Stream represents a QUIC stream
 type Stream struct {
-	stream      *quic.Stream
-	id          uint64
-	conn        *QUICConnection
-	closed      bool
-	mu          sync.RWMutex
+	stream       *quic.Stream
+	id           uint64
+	conn         *QUICConnection
+	closed       bool
+	mu           sync.RWMutex
 	lastActivity time.Time
 }
 
@@ -57,12 +57,12 @@ func NewQUICConnection(config *Config, logger *zap.Logger) *QUICConnection {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &QUICConnection{
-		streams:    make(map[uint64]*Stream),
-		config:     config,
-		tlsConfig:  config.GetTLSConfig(),
-		logger:     logger,
-		ctx:        ctx,
-		cancel:     cancel,
+		streams:      make(map[uint64]*Stream),
+		config:       config,
+		tlsConfig:    config.GetTLSConfig(),
+		logger:       logger,
+		ctx:          ctx,
+		cancel:       cancel,
 		lastActivity: time.Now(),
 		enhancedMode: false, // По умолчанию обычный режим
 	}
@@ -73,7 +73,7 @@ func NewEnhancedQUICConnection(config *Config, enhancedConfig *EnhancedConfig, t
 	if config == nil {
 		config = DefaultConfig()
 	}
-	
+
 	if enhancedConfig == nil {
 		enhancedConfig = DefaultEnhancedConfig()
 	}
@@ -122,10 +122,10 @@ func (qc *QUICConnection) dialRegular(ctx context.Context, addr string) error {
 
 	// Create QUIC config
 	quicConfig := &quic.Config{
-		MaxIncomingStreams:    int64(qc.config.MaxIncomingStreams),
-		MaxIncomingUniStreams: int64(qc.config.MaxIncomingUniStreams),
-		HandshakeIdleTimeout:  qc.config.HandshakeTimeout,
-		MaxIdleTimeout:        qc.config.IdleTimeout,
+		MaxIncomingStreams:             int64(qc.config.MaxIncomingStreams),
+		MaxIncomingUniStreams:          int64(qc.config.MaxIncomingUniStreams),
+		HandshakeIdleTimeout:           qc.config.HandshakeTimeout,
+		MaxIdleTimeout:                 qc.config.IdleTimeout,
 		InitialStreamReceiveWindow:     qc.config.InitialStreamReceiveWindow,
 		MaxStreamReceiveWindow:         qc.config.MaxStreamReceiveWindow,
 		InitialConnectionReceiveWindow: qc.config.InitialConnectionReceiveWindow,
@@ -153,7 +153,7 @@ func (qc *QUICConnection) dialRegular(ctx context.Context, addr string) error {
 
 // dialEnhanced устанавливает Enhanced QUIC соединение
 func (qc *QUICConnection) dialEnhanced(ctx context.Context, addr string) error {
-	qc.logger.Info("Dialing Enhanced QUIC connection", 
+	qc.logger.Info("Dialing Enhanced QUIC connection",
 		zap.String("addr", addr),
 		zap.String("tenant_id", qc.tenantID),
 	)
@@ -346,13 +346,13 @@ func (qc *QUICConnection) GetStats() map[string]interface{} {
 	defer qc.mu.RUnlock()
 
 	stats := map[string]interface{}{
-		"bytes_received":   qc.bytesReceived,
-		"bytes_sent":       qc.bytesSent,
-		"stream_count":     qc.streamCount,
-		"last_activity":    qc.lastActivity,
-		"closed":           qc.closed,
-		"enhanced_mode":    qc.enhancedMode,
-		"tenant_id":        qc.tenantID,
+		"bytes_received": qc.bytesReceived,
+		"bytes_sent":     qc.bytesSent,
+		"stream_count":   qc.streamCount,
+		"last_activity":  qc.lastActivity,
+		"closed":         qc.closed,
+		"enhanced_mode":  qc.enhancedMode,
+		"tenant_id":      qc.tenantID,
 	}
 
 	// Добавляем Enhanced статистику, если доступна
@@ -378,7 +378,7 @@ func (s *Stream) Read(p []byte) (n int, err error) {
 	} else {
 		n, err = (*s.stream).Read(p)
 	}
-	
+
 	if err != nil {
 		if err == io.EOF {
 			if closeErr := s.Close(); closeErr != nil {
@@ -409,7 +409,7 @@ func (s *Stream) Write(p []byte) (n int, err error) {
 	} else {
 		n, err = (*s.stream).Write(p)
 	}
-	
+
 	if err != nil {
 		return n, err
 	}
@@ -506,4 +506,4 @@ func (qc *QUICConnection) GetTenantID() string {
 	qc.mu.RLock()
 	defer qc.mu.RUnlock()
 	return qc.tenantID
-} 
+}

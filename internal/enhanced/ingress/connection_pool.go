@@ -17,64 +17,64 @@ type ConnectionPool struct {
 	config  ConnectionPoolConfig
 	logger  *logger.Logger
 	metrics *metrics.Metrics
-	
+
 	// Соединения по адресу
 	connections map[string]*PooledConnection
 	mu          sync.RWMutex
-	
+
 	// Контекст для graceful shutdown
 	ctx    context.Context
 	cancel context.CancelFunc
-	
+
 	// Статистика
 	stats *PoolStats
 }
 
 // PooledConnection представляет соединение в пуле
 type PooledConnection struct {
-	conn       net.Conn
-	addr       string
-	created    time.Time
-	lastUsed   time.Time
-	useCount   int64
-	healthy    bool
-	mu         sync.RWMutex
-	closed     bool
+	conn     net.Conn
+	addr     string
+	created  time.Time
+	lastUsed time.Time
+	useCount int64
+	healthy  bool
+	mu       sync.RWMutex
+	closed   bool
 }
 
 // PoolStats представляет статистику пула
 type PoolStats struct {
-	TotalConnections   int64
-	ActiveConnections  int64
-	IdleConnections    int64
-	FailedConnections  int64
-	ConnectionErrors   int64
-	mu                 sync.RWMutex
+	TotalConnections  int64
+	ActiveConnections int64
+	IdleConnections   int64
+	FailedConnections int64
+	ConnectionErrors  int64
+	mu                sync.RWMutex
 }
 
 // NewConnectionPool создает новый пул соединений
 func NewConnectionPool(config ConnectionPoolConfig, logger *logger.Logger, metrics *metrics.Metrics) *ConnectionPool {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	pool := &ConnectionPool{
-		config:     config,
-		logger:     logger,
-		metrics:    metrics,
+		config:      config,
+		logger:      logger,
+		metrics:     metrics,
 		connections: make(map[string]*PooledConnection),
-		ctx:        ctx,
-		cancel:     cancel,
-		stats:      &PoolStats{},
+		ctx:         ctx,
+		cancel:      cancel,
+		stats:       &PoolStats{},
 	}
-	
+
 	// Запускаем cleanup goroutine
 	go pool.cleanupLoop()
-	
+
 	logger.Info("Connection pool created",
 		zap.Int("max_size", config.MaxSize),
 		zap.Duration("idle_timeout", config.IdleTimeout),
 		zap.Int("max_idle", config.MaxIdle),
 	)
-	
+
 	return pool
 }
 
@@ -82,7 +82,7 @@ func NewConnectionPool(config ConnectionPoolConfig, logger *logger.Logger, metri
 func (p *ConnectionPool) GetConnection(addr string) (net.Conn, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	// Проверяем существующее соединение
 	if conn, exists := p.connections[addr]; exists && conn.IsHealthy() {
 		conn.UpdateLastUsed()
@@ -90,29 +90,29 @@ func (p *ConnectionPool) GetConnection(addr string) (net.Conn, error) {
 		p.stats.IncActiveConnections()
 		return conn.GetConn(), nil
 	}
-	
+
 	// Проверяем лимит соединений
 	if len(p.connections) >= p.config.MaxSize {
 		// Удаляем самое старое неиспользуемое соединение
 		p.removeOldestConnection()
 	}
-	
+
 	// Создаем новое соединение
 	conn, err := p.createConnection(addr)
 	if err != nil {
 		p.stats.IncConnectionErrors()
 		return nil, fmt.Errorf("failed to create connection: %v", err)
 	}
-	
+
 	p.connections[addr] = conn
 	p.stats.IncTotalConnections()
 	p.stats.IncActiveConnections()
-	
+
 	p.logger.Debug("Created new connection",
 		zap.String("addr", addr),
 		zap.String("connection_id", conn.GetID()),
 	)
-	
+
 	return conn.GetConn(), nil
 }
 
@@ -121,13 +121,13 @@ func (p *ConnectionPool) ReturnConnection(conn net.Conn) {
 	// Ищем соединение в пуле по адресу
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	for addr, pooledConn := range p.connections {
 		if pooledConn.GetConn() == conn {
 			pooledConn.UpdateLastUsed()
 			p.stats.DecActiveConnections()
 			p.stats.IncIdleConnections()
-			
+
 			p.logger.Debug("Connection returned to pool",
 				zap.String("addr", addr),
 				zap.String("connection_id", pooledConn.GetID()),
@@ -143,12 +143,12 @@ func (p *ConnectionPool) createConnection(addr string) (*PooledConnection, error
 	dialer := &net.Dialer{
 		Timeout: 30 * time.Second,
 	}
-	
+
 	conn, err := dialer.Dial("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	pooledConn := &PooledConnection{
 		conn:     conn,
 		addr:     addr,
@@ -157,7 +157,7 @@ func (p *ConnectionPool) createConnection(addr string) (*PooledConnection, error
 		useCount: 0,
 		healthy:  true,
 	}
-	
+
 	return pooledConn, nil
 }
 
@@ -166,7 +166,7 @@ func (p *ConnectionPool) removeOldestConnection() {
 	var oldestConn *PooledConnection
 	var oldestAddr string
 	var oldestTime time.Time
-	
+
 	for addr, conn := range p.connections {
 		if !conn.IsHealthy() {
 			// Удаляем нездоровое соединение
@@ -175,7 +175,7 @@ func (p *ConnectionPool) removeOldestConnection() {
 			p.stats.DecTotalConnections()
 			return
 		}
-		
+
 		lastUsed := conn.GetLastUsed()
 		if oldestConn == nil || lastUsed.Before(oldestTime) {
 			oldestConn = conn
@@ -183,12 +183,12 @@ func (p *ConnectionPool) removeOldestConnection() {
 			oldestTime = lastUsed
 		}
 	}
-	
+
 	if oldestConn != nil {
 		delete(p.connections, oldestAddr)
 		oldestConn.Close()
 		p.stats.DecTotalConnections()
-		
+
 		p.logger.Debug("Removed oldest connection",
 			zap.String("addr", oldestAddr),
 			zap.String("connection_id", oldestConn.GetID()),
@@ -200,7 +200,7 @@ func (p *ConnectionPool) removeOldestConnection() {
 func (p *ConnectionPool) cleanupLoop() {
 	ticker := time.NewTicker(p.config.IdleTimeout / 2)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-p.ctx.Done():
@@ -215,10 +215,10 @@ func (p *ConnectionPool) cleanupLoop() {
 func (p *ConnectionPool) cleanup() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	now := time.Now()
 	removed := 0
-	
+
 	for addr, conn := range p.connections {
 		// Удаляем соединения, которые не использовались дольше idle_timeout
 		if now.Sub(conn.GetLastUsed()) > p.config.IdleTimeout {
@@ -228,7 +228,7 @@ func (p *ConnectionPool) cleanup() {
 			removed++
 		}
 	}
-	
+
 	if removed > 0 {
 		p.logger.Info("Cleaned up idle connections",
 			zap.Int("removed", removed),
@@ -240,23 +240,23 @@ func (p *ConnectionPool) cleanup() {
 // Shutdown корректно завершает работу пула
 func (p *ConnectionPool) Shutdown(ctx context.Context) error {
 	p.logger.Info("Shutting down connection pool")
-	
+
 	// Отменяем контекст
 	p.cancel()
-	
+
 	// Закрываем все соединения
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	for addr, conn := range p.connections {
 		conn.Close()
 		delete(p.connections, addr)
 	}
-	
+
 	p.logger.Info("Connection pool shutdown completed",
 		zap.Int("closed_connections", len(p.connections)),
 	)
-	
+
 	return nil
 }
 
@@ -264,7 +264,7 @@ func (p *ConnectionPool) Shutdown(ctx context.Context) error {
 func (p *ConnectionPool) GetStats() map[string]interface{} {
 	p.stats.mu.RLock()
 	defer p.stats.mu.RUnlock()
-	
+
 	return map[string]interface{}{
 		"total_connections":   p.stats.TotalConnections,
 		"active_connections":  p.stats.ActiveConnections,
@@ -272,7 +272,7 @@ func (p *ConnectionPool) GetStats() map[string]interface{} {
 		"failed_connections":  p.stats.FailedConnections,
 		"connection_errors":   p.stats.ConnectionErrors,
 		"current_connections": len(p.connections),
-		"max_size":           p.config.MaxSize,
+		"max_size":            p.config.MaxSize,
 	}
 }
 
@@ -318,22 +318,22 @@ func (pc *PooledConnection) IncrementUseCount() {
 func (pc *PooledConnection) IsHealthy() bool {
 	pc.mu.RLock()
 	defer pc.mu.RUnlock()
-	
+
 	if pc.closed {
 		return false
 	}
-	
+
 	// Простая проверка здоровья - пытаемся записать пустой байт
 	if pc.conn != nil {
 		if err := pc.conn.SetWriteDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
 			return false
 		}
-		
+
 		if _, err := pc.conn.Write([]byte{}); err != nil {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -341,18 +341,18 @@ func (pc *PooledConnection) IsHealthy() bool {
 func (pc *PooledConnection) Close() error {
 	pc.mu.Lock()
 	defer pc.mu.Unlock()
-	
+
 	if pc.closed {
 		return nil
 	}
-	
+
 	pc.closed = true
 	pc.healthy = false
-	
+
 	if pc.conn != nil {
 		return pc.conn.Close()
 	}
-	
+
 	return nil
 }
 
@@ -409,4 +409,4 @@ func (ps *PoolStats) IncConnectionErrors() {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 	ps.ConnectionErrors++
-} 
+}

@@ -20,32 +20,32 @@ type Provider interface {
 
 // TokenInfo represents unified token information
 type TokenInfo struct {
-	Subject    string            `json:"sub"`
-	Issuer     string            `json:"iss"`
-	Audience   []string          `json:"aud"`
-	ExpiresAt  time.Time         `json:"exp"`
-	IssuedAt   time.Time         `json:"iat"`
-	NotBefore  time.Time         `json:"nbf"`
-	Username   string            `json:"username"`
-	Email      string            `json:"email"`
-	FullName   string            `json:"full_name"`
-	Groups     []string          `json:"groups"`
-	Roles      []string          `json:"roles"`
-	Claims     map[string]interface{} `json:"claims"`
-	Provider   string            `json:"provider"`
+	Subject   string                 `json:"sub"`
+	Issuer    string                 `json:"iss"`
+	Audience  []string               `json:"aud"`
+	ExpiresAt time.Time              `json:"exp"`
+	IssuedAt  time.Time              `json:"iat"`
+	NotBefore time.Time              `json:"nbf"`
+	Username  string                 `json:"username"`
+	Email     string                 `json:"email"`
+	FullName  string                 `json:"full_name"`
+	Groups    []string               `json:"groups"`
+	Roles     []string               `json:"roles"`
+	Claims    map[string]interface{} `json:"claims"`
+	Provider  string                 `json:"provider"`
 }
 
 // UserInfo represents unified user information
 type UserInfo struct {
-	ID       string            `json:"id"`
-	Username string            `json:"username"`
-	Email    string            `json:"email"`
-	FullName string            `json:"full_name"`
-	Groups   []string          `json:"groups"`
-	Roles    []string          `json:"roles"`
-	Active   bool              `json:"active"`
+	ID       string                 `json:"id"`
+	Username string                 `json:"username"`
+	Email    string                 `json:"email"`
+	FullName string                 `json:"full_name"`
+	Groups   []string               `json:"groups"`
+	Roles    []string               `json:"roles"`
+	Active   bool                   `json:"active"`
 	Claims   map[string]interface{} `json:"claims"`
-	Provider string            `json:"provider"`
+	Provider string                 `json:"provider"`
 }
 
 // Adapter represents authentication adapter
@@ -144,19 +144,19 @@ func (p *KeycloakProvider) ValidateToken(ctx context.Context, token string) (*To
 	}
 
 	return &TokenInfo{
-		Subject:    tokenInfo.Subject,
-		Issuer:     tokenInfo.Issuer,
-		Audience:   tokenInfo.Audience,
-		ExpiresAt:  tokenInfo.ExpiresAt,
-		IssuedAt:   tokenInfo.IssuedAt,
-		NotBefore:  tokenInfo.NotBefore,
-		Username:   tokenInfo.Username,
-		Email:      tokenInfo.Email,
-		FullName:   tokenInfo.FullName,
-		Groups:     tokenInfo.Groups,
-		Roles:      tokenInfo.Roles,
-		Claims:     tokenInfo.Claims,
-		Provider:   "keycloak",
+		Subject:   tokenInfo.Subject,
+		Issuer:    tokenInfo.Issuer,
+		Audience:  tokenInfo.Audience,
+		ExpiresAt: tokenInfo.ExpiresAt,
+		IssuedAt:  tokenInfo.IssuedAt,
+		NotBefore: tokenInfo.NotBefore,
+		Username:  tokenInfo.Username,
+		Email:     tokenInfo.Email,
+		FullName:  tokenInfo.FullName,
+		Groups:    tokenInfo.Groups,
+		Roles:     tokenInfo.Roles,
+		Claims:    tokenInfo.Claims,
+		Provider:  "keycloak",
 	}, nil
 }
 
@@ -188,18 +188,18 @@ func (p *KeycloakProvider) CheckPermission(ctx context.Context, token string, re
 	}
 
 	kt := &keycloak.TokenInfo{
-		Subject:    tokenInfo.Subject,
-		Issuer:     tokenInfo.Issuer,
-		Audience:   tokenInfo.Audience,
-		ExpiresAt:  tokenInfo.ExpiresAt,
-		IssuedAt:   tokenInfo.IssuedAt,
-		NotBefore:  tokenInfo.NotBefore,
-		Username:   tokenInfo.Username,
-		Email:      tokenInfo.Email,
-		FullName:   tokenInfo.FullName,
-		Groups:     tokenInfo.Groups,
-		Roles:      tokenInfo.Roles,
-		Claims:     tokenInfo.Claims,
+		Subject:   tokenInfo.Subject,
+		Issuer:    tokenInfo.Issuer,
+		Audience:  tokenInfo.Audience,
+		ExpiresAt: tokenInfo.ExpiresAt,
+		IssuedAt:  tokenInfo.IssuedAt,
+		NotBefore: tokenInfo.NotBefore,
+		Username:  tokenInfo.Username,
+		Email:     tokenInfo.Email,
+		FullName:  tokenInfo.FullName,
+		Groups:    tokenInfo.Groups,
+		Roles:     tokenInfo.Roles,
+		Claims:    tokenInfo.Claims,
 	}
 	return p.client.CheckPermission(kt, resource, action), nil
 }
@@ -228,4 +228,4 @@ func (p *DjangoProvider) CheckPermission(ctx context.Context, token string, reso
 	// This would need to be implemented based on your Django permission system
 	// For now, returning a placeholder implementation
 	return false, fmt.Errorf("Django permission check not implemented")
-} 
+}

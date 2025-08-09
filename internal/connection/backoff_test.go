@@ -11,31 +11,31 @@ import (
 
 func TestBackoffHandler(t *testing.T) {
 	tests := []struct {
-		name           string
-		maxRetries     uint
-		baseTime       time.Duration
-		retryForever   bool
+		name            string
+		maxRetries      uint
+		baseTime        time.Duration
+		retryForever    bool
 		expectedRetries int
 	}{
 		{
-			name:           "Default configuration",
-			maxRetries:     5,
-			baseTime:       time.Second,
-			retryForever:   false,
+			name:            "Default configuration",
+			maxRetries:      5,
+			baseTime:        time.Second,
+			retryForever:    false,
 			expectedRetries: 5,
 		},
 		{
-			name:           "Retry forever",
-			maxRetries:     3,
-			baseTime:       time.Second,
-			retryForever:   true,
+			name:            "Retry forever",
+			maxRetries:      3,
+			baseTime:        time.Second,
+			retryForever:    true,
 			expectedRetries: 10, // Test more than maxRetries
 		},
 		{
-			name:           "Zero max retries",
-			maxRetries:     0,
-			baseTime:       time.Second,
-			retryForever:   false,
+			name:            "Zero max retries",
+			maxRetries:      0,
+			baseTime:        time.Second,
+			retryForever:    false,
 			expectedRetries: 0,
 		},
 	}
@@ -64,11 +64,11 @@ func TestBackoffHandler(t *testing.T) {
 			for i := 0; i < tt.expectedRetries; i++ {
 				if handler.ShouldRetry(&ConnectionError{Message: "test", Retryable: true}, i) {
 					retryCount++
-					
+
 					// Test backoff duration
 					duration := handler.GetBackoffDuration(i)
 					assert.Greater(t, duration, time.Duration(0))
-					
+
 					// Test that duration increases exponentially (without jitter)
 					if i > 0 {
 						// Calculate expected duration without jitter
@@ -98,7 +98,7 @@ func TestBackoffHandler_Backoff(t *testing.T) {
 	config := DefaultRetryConfig()
 	config.MaxRetries = 3
 	config.BaseTime = 10 * time.Millisecond // Short for testing
-	config.Logger = nil // Avoid nil pointer dereference
+	config.Logger = nil                     // Avoid nil pointer dereference
 
 	handler := NewBackoffHandler(config)
 
@@ -162,33 +162,33 @@ func TestBackoffHandler_ErrorTypes(t *testing.T) {
 	handler := NewBackoffHandler(config)
 
 	tests := []struct {
-		name     string
-		err      error
+		name      string
+		err       error
 		retryable bool
 	}{
 		{
-			name:     "ConnectionError retryable",
-			err:      &ConnectionError{Message: "test", Retryable: true},
+			name:      "ConnectionError retryable",
+			err:       &ConnectionError{Message: "test", Retryable: true},
 			retryable: true,
 		},
 		{
-			name:     "ConnectionError not retryable",
-			err:      &ConnectionError{Message: "test", Retryable: false},
+			name:      "ConnectionError not retryable",
+			err:       &ConnectionError{Message: "test", Retryable: false},
 			retryable: false,
 		},
 		{
-			name:     "TimeoutError",
-			err:      &TimeoutError{Message: "timeout"},
+			name:      "TimeoutError",
+			err:       &TimeoutError{Message: "timeout"},
 			retryable: true,
 		},
 		{
-			name:     "NetworkError",
-			err:      &NetworkError{Message: "network"},
+			name:      "NetworkError",
+			err:       &NetworkError{Message: "network"},
 			retryable: true,
 		},
 		{
-			name:     "Nil error",
-			err:      nil,
+			name:      "Nil error",
+			err:       nil,
 			retryable: false,
 		},
 	}
@@ -199,4 +199,4 @@ func TestBackoffHandler_ErrorTypes(t *testing.T) {
 			assert.Equal(t, tt.retryable, result)
 		})
 	}
-} 
+}

@@ -35,11 +35,11 @@ func (p Protocol) String() string {
 
 // ProtocolMetrics represents metrics for protocol performance
 type ProtocolMetrics struct {
-	Latency    time.Duration
-	Throughput float64 // bytes per second
-	ErrorRate  float64 // errors per second
+	Latency     time.Duration
+	Throughput  float64 // bytes per second
+	ErrorRate   float64 // errors per second
 	SuccessRate float64 // success rate percentage
-	LastUpdate time.Time
+	LastUpdate  time.Time
 }
 
 // ProtocolSelector interface for protocol selection
@@ -54,22 +54,22 @@ type ProtocolSelector interface {
 
 // ProtocolEngine implements the protocol selection logic
 type ProtocolEngine struct {
-	currentProtocol Protocol
-	preferredOrder  []Protocol
-	metrics         map[Protocol]*ProtocolMetrics
-	fallbackEnabled bool
-	switchThreshold float64
-	mu              sync.RWMutex
-	logger          *zap.Logger
+	currentProtocol   Protocol
+	preferredOrder    []Protocol
+	metrics           map[Protocol]*ProtocolMetrics
+	fallbackEnabled   bool
+	switchThreshold   float64
+	mu                sync.RWMutex
+	logger            *zap.Logger
 	prometheusMetrics *PrometheusMetrics
 }
 
 // PrometheusMetrics holds Prometheus metrics
 type PrometheusMetrics struct {
-	protocolLatency    *prometheus.HistogramVec
-	protocolErrors     *prometheus.CounterVec
-	protocolSwitches   *prometheus.CounterVec
-	protocolSuccess    *prometheus.CounterVec
+	protocolLatency  *prometheus.HistogramVec
+	protocolErrors   *prometheus.CounterVec
+	protocolSwitches *prometheus.CounterVec
+	protocolSuccess  *prometheus.CounterVec
 }
 
 // NewProtocolEngine creates a new protocol engine
@@ -88,8 +88,8 @@ func NewProtocolEngine(preferredOrder []Protocol, switchThreshold float64, logge
 		prometheusMetrics: &PrometheusMetrics{
 			protocolLatency: prometheus.NewHistogramVec(
 				prometheus.HistogramOpts{
-					Name: "protocol_latency_seconds",
-					Help: "Protocol latency in seconds",
+					Name:    "protocol_latency_seconds",
+					Help:    "Protocol latency in seconds",
 					Buckets: prometheus.DefBuckets,
 				},
 				[]string{"protocol"},
@@ -132,7 +132,7 @@ func NewProtocolEngine(preferredOrder []Protocol, switchThreshold float64, logge
 		engine.prometheusMetrics.protocolSwitches,
 		engine.prometheusMetrics.protocolSuccess,
 	}
-	
+
 	for _, collector := range collectors {
 		if err := prometheus.Register(collector); err != nil {
 			// Ignore already registered errors
@@ -209,7 +209,7 @@ func (pe *ProtocolEngine) ShouldSwitch() bool {
 func (pe *ProtocolEngine) GetMetrics() *ProtocolMetrics {
 	pe.mu.RLock()
 	defer pe.mu.RUnlock()
-	
+
 	if metrics, exists := pe.metrics[pe.currentProtocol]; exists {
 		return metrics
 	}
@@ -279,7 +279,7 @@ func (pe *ProtocolEngine) selectBestInternal() Protocol {
 		// Calculate score based on latency and success rate
 		latencyScore := 1.0 / (1.0 + float64(metrics.Latency.Milliseconds()))
 		successScore := metrics.SuccessRate
-		
+
 		// Combined score (weighted average)
 		score := 0.7*successScore + 0.3*latencyScore
 
@@ -342,20 +342,20 @@ func (pe *ProtocolEngine) GetProtocolInfo() map[string]interface{} {
 // HealthCheck performs a health check on the current protocol
 func (pe *ProtocolEngine) HealthCheck(ctx context.Context) error {
 	protocol := pe.Current()
-	
+
 	pe.logger.Debug("Performing protocol health check",
 		zap.String("protocol", protocol.String()),
 	)
 
 	// Simulate a health check (this would be implemented by the actual protocol)
 	start := time.Now()
-	
+
 	// TODO: Implement actual health check for each protocol
 	// For now, we'll just simulate a successful check
 	time.Sleep(10 * time.Millisecond)
-	
+
 	latency := time.Since(start)
 	pe.UpdateMetrics(protocol, latency, true)
 
 	return nil
-} 
+}

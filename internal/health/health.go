@@ -11,7 +11,7 @@ import (
 
 // Status represents the health check status
 type Status struct {
-	Status    string            `json:"status"`
+	Status    string           `json:"status"`
 	Version   string           `json:"version"`
 	Uptime    string           `json:"uptime"`
 	Metrics   map[string]int64 `json:"metrics"`
@@ -61,7 +61,7 @@ type Checker struct {
 	version   string
 	mu        sync.RWMutex
 	status    Status
-	
+
 	// Module health check functions
 	enhancedQUICHealth func() EnhancedQUICStatus
 	wireGuardHealth    func() WireGuardStatus
@@ -92,10 +92,10 @@ func NewChecker(version string) *Checker {
 
 // Handler handles health check requests
 type Handler struct {
-	metrics *metrics.Metrics
+	metrics   *metrics.Metrics
 	startTime time.Time
-	version string
-	
+	version   string
+
 	// Module health check functions
 	enhancedQUICHealth func() EnhancedQUICStatus
 	wireGuardHealth    func() WireGuardStatus
@@ -106,9 +106,9 @@ type Handler struct {
 // NewHandler creates a new health check handler
 func NewHandler(metrics *metrics.Metrics, version string) *Handler {
 	return &Handler{
-		metrics: metrics,
+		metrics:   metrics,
 		startTime: time.Now(),
-		version: version,
+		version:   version,
 	}
 }
 
@@ -135,10 +135,10 @@ func (h *Handler) SetAIHealthCheck(healthFunc func() AIStatus) {
 // ServeHTTP implements http.Handler
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	status := Status{
-		Status:    "ok",
-		Version:   h.version,
-		Uptime:    time.Since(h.startTime).String(),
-		Metrics:   make(map[string]int64),
+		Status:  "ok",
+		Version: h.version,
+		Uptime:  time.Since(h.startTime).String(),
+		Metrics: make(map[string]int64),
 		Modules: ModuleStatus{
 			EnhancedQUIC: EnhancedQUICStatus{Enabled: false, Status: "unknown"},
 			WireGuard:    WireGuardStatus{Enabled: false, Status: "unknown"},
@@ -252,27 +252,27 @@ func (c *Checker) SetStatus(status string) {
 func (c *Checker) UpdateModuleStatus() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// Update Enhanced QUIC status
 	if c.enhancedQUICHealth != nil {
 		c.status.Modules.EnhancedQUIC = c.enhancedQUICHealth()
 	}
-	
+
 	// Update WireGuard status
 	if c.wireGuardHealth != nil {
 		c.status.Modules.WireGuard = c.wireGuardHealth()
 	}
-	
+
 	// Update Quantum status
 	if c.quantumHealth != nil {
 		c.status.Modules.Quantum = c.quantumHealth()
 	}
-	
+
 	// Update AI status
 	if c.aiHealth != nil {
 		c.status.Modules.AI = c.aiHealth()
 	}
-	
+
 	// Update overall status based on module statuses
 	c.updateOverallStatus()
 }
@@ -280,7 +280,7 @@ func (c *Checker) UpdateModuleStatus() {
 // updateOverallStatus updates the overall health status based on module statuses
 func (c *Checker) updateOverallStatus() {
 	overallStatus := "ok"
-	
+
 	// Check if any enabled module has a non-ok status
 	if c.status.Modules.EnhancedQUIC.Enabled && c.status.Modules.EnhancedQUIC.Status != "ok" {
 		overallStatus = "degraded"
@@ -294,6 +294,6 @@ func (c *Checker) updateOverallStatus() {
 	if c.status.Modules.AI.Enabled && c.status.Modules.AI.Status != "ok" {
 		overallStatus = "degraded"
 	}
-	
+
 	c.status.Status = overallStatus
-} 
+}

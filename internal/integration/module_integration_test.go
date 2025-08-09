@@ -74,10 +74,10 @@ func TestAIWireGuardIntegration(t *testing.T) {
 	// Симулируем подозрительную активность
 	userID := "test-user"
 	behaviorData := map[string]interface{}{
-		"action":    "connection_attempt",
+		"action":     "connection_attempt",
 		"ip_address": "192.168.1.100",
-		"port":      51820,
-		"protocol":  "wireguard",
+		"port":       51820,
+		"protocol":   "wireguard",
 	}
 
 	// Анализируем поведение
@@ -145,7 +145,7 @@ func TestFullModuleIntegration(t *testing.T) {
 
 	// Запускаем все компоненты
 	components := []struct {
-		name string
+		name  string
 		start func() error
 		stop  func() error
 	}{

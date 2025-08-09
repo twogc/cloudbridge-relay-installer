@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
-	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
+	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 )
 
 func TestNewProxy(t *testing.T) {
@@ -206,7 +206,7 @@ func TestManagerShutdown(t *testing.T) {
 
 	// Test shutdown
 	manager.Shutdown()
-	
+
 	// Verify context is cancelled
 	select {
 	case <-manager.ctx.Done():
@@ -241,4 +241,4 @@ func TestManagerStats(t *testing.T) {
 	// Test getting active tunnels
 	active := manager.GetActiveTunnels()
 	assert.Equal(t, 0, active)
-} 
+}

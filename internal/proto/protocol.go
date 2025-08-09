@@ -16,34 +16,34 @@ type MessageType string
 
 const (
 	// Типы сообщений
-	MessageTypeHello           MessageType = "hello"
-	MessageTypeAuth            MessageType = "auth"
-	MessageTypeAuthResponse    MessageType = "auth_response"
-	MessageTypeTunnelInfo      MessageType = "tunnel_info"
-	MessageTypeHeartbeat       MessageType = "heartbeat"
+	MessageTypeHello             MessageType = "hello"
+	MessageTypeAuth              MessageType = "auth"
+	MessageTypeAuthResponse      MessageType = "auth_response"
+	MessageTypeTunnelInfo        MessageType = "tunnel_info"
+	MessageTypeHeartbeat         MessageType = "heartbeat"
 	MessageTypeHeartbeatResponse MessageType = "heartbeat_response"
-	MessageTypeError           MessageType = "error"
+	MessageTypeError             MessageType = "error"
 )
 
 // Message represents a protocol message
 type Message struct {
-	Type    MessageType     `json:"type"`
-	Token   string         `json:"token,omitempty"`
-	Version string         `json:"version,omitempty"`
-	Features []string      `json:"features,omitempty"`
-	Status  string         `json:"status,omitempty"`
-	ClientID string        `json:"client_id,omitempty"`
-	TunnelInfo *TunnelInfo `json:"tunnel_info,omitempty"`
-	Error   *ErrorMessage  `json:"error,omitempty"`
+	Type       MessageType   `json:"type"`
+	Token      string        `json:"token,omitempty"`
+	Version    string        `json:"version,omitempty"`
+	Features   []string      `json:"features,omitempty"`
+	Status     string        `json:"status,omitempty"`
+	ClientID   string        `json:"client_id,omitempty"`
+	TunnelInfo *TunnelInfo   `json:"tunnel_info,omitempty"`
+	Error      *ErrorMessage `json:"error,omitempty"`
 }
 
 // TunnelInfo represents tunnel configuration
 type TunnelInfo struct {
-	TunnelID    string            `json:"tunnel_id"`
-	LocalPort   int               `json:"local_port"`
-	RemoteHost  string            `json:"remote_host"`
-	RemotePort  int               `json:"remote_port"`
-	Options     map[string]string `json:"options,omitempty"`
+	TunnelID   string            `json:"tunnel_id"`
+	LocalPort  int               `json:"local_port"`
+	RemoteHost string            `json:"remote_host"`
+	RemotePort int               `json:"remote_port"`
+	Options    map[string]string `json:"options,omitempty"`
 }
 
 // ErrorMessage represents an error message
@@ -146,4 +146,4 @@ func WriteTunnelInfo(writer *bufio.Writer, tunnelInfo *TunnelInfo) error {
 		Type:       MessageTypeTunnelInfo,
 		TunnelInfo: tunnelInfo,
 	})
-} 
+}

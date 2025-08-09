@@ -17,22 +17,22 @@ var (
 	// Security settings
 	AuthToken = flag.String("auth-token", "", "Authentication token for initial connection")
 	AllowIPs  = flag.String("allow-ips", "", "Comma-separated list of allowed IP addresses (empty for all)")
-	
+
 	// TLS settings
-	UseTLS     = flag.Bool("tls", true, "Enable TLS encryption")
-	CertFile   = flag.String("cert", "/etc/relay/certs/fullchain.pem", "TLS certificate file")
-	KeyFile    = flag.String("key", "/etc/relay/certs/privkey.pem", "TLS key file")
-	Domain     = flag.String("domain", "", "Domain name for Let's Encrypt certificate")
+	UseTLS   = flag.Bool("tls", true, "Enable TLS encryption")
+	CertFile = flag.String("cert", "/etc/relay/certs/fullchain.pem", "TLS certificate file")
+	KeyFile  = flag.String("key", "/etc/relay/certs/privkey.pem", "TLS key file")
+	Domain   = flag.String("domain", "", "Domain name for Let's Encrypt certificate")
 )
 
 // Промежуточные структуры для парсинга time.Duration из строк
 type configRaw struct {
 	Server struct {
 		Address         string `json:"address"`
-		Port           int    `json:"port"`
-		Timeout        string `json:"timeout"`
-		MaxTunnels     int    `json:"max_tunnels"`
-		PingInterval   string `json:"ping_interval"`
+		Port            int    `json:"port"`
+		Timeout         string `json:"timeout"`
+		MaxTunnels      int    `json:"max_tunnels"`
+		PingInterval    string `json:"ping_interval"`
 		CleanupInterval string `json:"cleanup_interval"`
 	} `json:"server"`
 
@@ -47,40 +47,40 @@ type configRaw struct {
 	} `json:"django"`
 
 	Keycloak struct {
-		Enabled        bool   `json:"enabled"`
-		ServerURL      string `json:"server_url"`
-		Realm          string `json:"realm"`
-		ClientID       string `json:"client_id"`
-		ClientSecret   string `json:"client_secret"`
-		PublicKey      string `json:"public_key"`
+		Enabled         bool   `json:"enabled"`
+		ServerURL       string `json:"server_url"`
+		Realm           string `json:"realm"`
+		ClientID        string `json:"client_id"`
+		ClientSecret    string `json:"client_secret"`
+		PublicKey       string `json:"public_key"`
 		TokenValidation struct {
-			Issuer     string `json:"issuer"`
-			Audience   string `json:"audience"`
-			ClockSkew  string `json:"clock_skew"`
+			Issuer    string `json:"issuer"`
+			Audience  string `json:"audience"`
+			ClockSkew string `json:"clock_skew"`
 		} `json:"token_validation"`
-		JWKSCacheTTL   string `json:"jwks_cache_ttl"`
-		HTTPTimeout    string `json:"http_timeout"`
+		JWKSCacheTTL string `json:"jwks_cache_ttl"`
+		HTTPTimeout  string `json:"http_timeout"`
 	} `json:"keycloak"`
 
 	Security struct {
-		TLSEnabled   bool     `json:"tls_enabled"`
-		CertFile     string   `json:"cert_file"`
-		KeyFile      string   `json:"key_file"`
-		AllowedIPs   []string `json:"allowed_ips"`
-		RateLimit    struct {
+		TLSEnabled bool     `json:"tls_enabled"`
+		CertFile   string   `json:"cert_file"`
+		KeyFile    string   `json:"key_file"`
+		AllowedIPs []string `json:"allowed_ips"`
+		RateLimit  struct {
 			Enabled           bool    `json:"enabled"`
 			RequestsPerSecond float64 `json:"requests_per_second"`
 			Burst             int     `json:"burst"`
 		} `json:"rate_limit"`
 		MTLS struct {
-			Enabled     bool   `json:"enabled"`
-			CACert      string `json:"ca_file"`
+			Enabled bool   `json:"enabled"`
+			CACert  string `json:"ca_file"`
 		} `json:"mtls"`
-		CipherSuites   []string `json:"cipher_suites"`
-		MinTLSVersion  string   `json:"min_tls_version"`
-		Audit          struct {
-			Enabled    bool   `json:"enabled"`
-			LogFile    string `json:"log_file"`
+		CipherSuites  []string `json:"cipher_suites"`
+		MinTLSVersion string   `json:"min_tls_version"`
+		Audit         struct {
+			Enabled bool   `json:"enabled"`
+			LogFile string `json:"log_file"`
 		} `json:"audit"`
 	} `json:"security"`
 
@@ -107,40 +107,40 @@ type configRaw struct {
 	} `json:"logging"`
 
 	Protocol struct {
-		AutoSelect      bool   `json:"auto_select"`
-		Preferred       string `json:"preferred"`
-		Fallback        string `json:"fallback"`
-		SwitchThreshold float64 `json:"switch_threshold"`
-		HealthCheckInterval string `json:"health_check_interval"`
+		AutoSelect          bool    `json:"auto_select"`
+		Preferred           string  `json:"preferred"`
+		Fallback            string  `json:"fallback"`
+		SwitchThreshold     float64 `json:"switch_threshold"`
+		HealthCheckInterval string  `json:"health_check_interval"`
 	} `json:"protocol"`
 
 	QUIC struct {
-		Enabled         bool   `json:"enabled"`
-		MaxStreams      int    `json:"max_streams"`
-		KeepAlive       bool   `json:"keep_alive"`
-		IdleTimeout     string `json:"idle_timeout"`
+		Enabled          bool   `json:"enabled"`
+		MaxStreams       int    `json:"max_streams"`
+		KeepAlive        bool   `json:"keep_alive"`
+		IdleTimeout      string `json:"idle_timeout"`
 		HandshakeTimeout string `json:"handshake_timeout"`
 	} `json:"quic"`
 
 	ZeroTrust struct {
-		Enabled         bool   `json:"enabled"`
-		ClientDaemon    bool   `json:"client_daemon"`
-		ServiceDiscovery bool  `json:"service_discovery"`
-		AutoReconnect   bool   `json:"auto_reconnect"`
-		
+		Enabled          bool `json:"enabled"`
+		ClientDaemon     bool `json:"client_daemon"`
+		ServiceDiscovery bool `json:"service_discovery"`
+		AutoReconnect    bool `json:"auto_reconnect"`
+
 		CircuitBreaker struct {
-			Enabled           bool   `json:"enabled"`
-			FailureThreshold  int64  `json:"failure_threshold"`
-			SuccessThreshold  int64  `json:"success_threshold"`
-			Timeout           string `json:"timeout"`
-			WindowSize        string `json:"window_size"`
+			Enabled          bool   `json:"enabled"`
+			FailureThreshold int64  `json:"failure_threshold"`
+			SuccessThreshold int64  `json:"success_threshold"`
+			Timeout          string `json:"timeout"`
+			WindowSize       string `json:"window_size"`
 		} `json:"circuit_breaker"`
-		
+
 		HealthCheck struct {
 			Enabled  bool   `json:"enabled"`
 			Interval string `json:"interval"`
 			Timeout  string `json:"timeout"`
-			
+
 			Checks []struct {
 				Name        string `json:"name"`
 				Type        string `json:"type"`
@@ -149,13 +149,13 @@ type configRaw struct {
 				Description string `json:"description,omitempty"`
 			} `json:"checks"`
 		} `json:"health_check"`
-		
+
 		RateLimit struct {
 			Enabled     bool  `json:"enabled"`
 			RequestsPer int64 `json:"requests_per"`
 			WindowSize  int64 `json:"window_size"`
 		} `json:"rate_limit"`
-		
+
 		Authentication struct {
 			Enabled     bool   `json:"enabled"`
 			Type        string `json:"type"`
@@ -166,41 +166,41 @@ type configRaw struct {
 
 	// Enhanced QUIC Configuration
 	EnhancedQUIC struct {
-		Enabled         bool   `json:"enabled"`
-		MaxStreams      int    `json:"max_streams"`
-		KeepAlive       bool   `json:"keep_alive"`
-		IdleTimeout     string `json:"idle_timeout"`
-		HandshakeTimeout string `json:"handshake_timeout"`
-		DDoSProtection  bool   `json:"ddos_protection"`
-		GeographicRouting bool `json:"geographic_routing"`
-		KeycloakIntegration bool `json:"keycloak_integration"`
+		Enabled             bool   `json:"enabled"`
+		MaxStreams          int    `json:"max_streams"`
+		KeepAlive           bool   `json:"keep_alive"`
+		IdleTimeout         string `json:"idle_timeout"`
+		HandshakeTimeout    string `json:"handshake_timeout"`
+		DDoSProtection      bool   `json:"ddos_protection"`
+		GeographicRouting   bool   `json:"geographic_routing"`
+		KeycloakIntegration bool   `json:"keycloak_integration"`
 	} `json:"enhanced_quic"`
 
 	// WireGuard P2P Mesh Configuration
 	WireGuard struct {
-		Enabled     bool   `json:"enabled"`
-		Interface   struct {
+		Enabled   bool `json:"enabled"`
+		Interface struct {
 			Name       string `json:"name"`
 			ListenPort int    `json:"listen_port"`
 			Address    string `json:"address"`
 		} `json:"interface"`
-		Discovery   struct {
+		Discovery struct {
 			RegistryURL       string `json:"registry_url"`
 			HeartbeatInterval string `json:"heartbeat_interval"`
 			MaxPeers          int    `json:"max_peers"`
 		} `json:"discovery"`
-		Mesh       struct {
-			Enabled           bool   `json:"enabled"`
-			AutoDiscovery     bool   `json:"auto_discovery"`
-			MaxConnections    int    `json:"max_connections"`
-			RoutingStrategy   string `json:"routing_strategy"`
+		Mesh struct {
+			Enabled         bool   `json:"enabled"`
+			AutoDiscovery   bool   `json:"auto_discovery"`
+			MaxConnections  int    `json:"max_connections"`
+			RoutingStrategy string `json:"routing_strategy"`
 		} `json:"mesh"`
 		SiteToSite struct {
-			Enabled           bool   `json:"enabled"`
+			Enabled           bool `json:"enabled"`
 			CorporateNetworks []struct {
-				NetworkID     string `json:"network_id"`
-				CIDR          string `json:"cidr"`
-				TenantID      string `json:"tenant_id"`
+				NetworkID string `json:"network_id"`
+				CIDR      string `json:"cidr"`
+				TenantID  string `json:"tenant_id"`
 			} `json:"corporate_networks"`
 		} `json:"site_to_site"`
 	} `json:"wireguard"`
@@ -217,19 +217,19 @@ type configRaw struct {
 		WireGuard       struct {
 			Enabled bool `json:"enabled"`
 		} `json:"wireguard"`
-		EnhancedQUIC    struct {
+		EnhancedQUIC struct {
 			Enabled bool `json:"enabled"`
 		} `json:"enhanced_quic"`
 	} `json:"quantum"`
 
 	// AI Analytics Configuration
 	AI struct {
-		Enabled           bool   `json:"enabled"`
-		BehaviorAnalysis  struct {
-			Enabled       bool    `json:"enabled"`
-			ModelPath     string  `json:"model_path"`
-			Threshold     float64 `json:"threshold"`
-			LearningRate  float64 `json:"learning_rate"`
+		Enabled          bool `json:"enabled"`
+		BehaviorAnalysis struct {
+			Enabled      bool    `json:"enabled"`
+			ModelPath    string  `json:"model_path"`
+			Threshold    float64 `json:"threshold"`
+			LearningRate float64 `json:"learning_rate"`
 		} `json:"behavior_analysis"`
 		PredictiveSecurity struct {
 			Enabled    bool    `json:"enabled"`
@@ -250,10 +250,10 @@ type configRaw struct {
 type Config struct {
 	Server struct {
 		Address         string        `json:"address"`
-		Port           int           `json:"port"`
-		Timeout        time.Duration `json:"timeout"`
-		MaxTunnels     int           `json:"max_tunnels"`
-		PingInterval   time.Duration `json:"ping_interval"`
+		Port            int           `json:"port"`
+		Timeout         time.Duration `json:"timeout"`
+		MaxTunnels      int           `json:"max_tunnels"`
+		PingInterval    time.Duration `json:"ping_interval"`
 		CleanupInterval time.Duration `json:"cleanup_interval"`
 	} `json:"server"`
 
@@ -269,40 +269,40 @@ type Config struct {
 
 	// Новый блок конфигурации для Keycloak
 	Keycloak struct {
-		Enabled        bool   `json:"enabled"`
-		ServerURL      string `json:"server_url"`
-		Realm          string `json:"realm"`
-		ClientID       string `json:"client_id"`
-		ClientSecret   string `json:"client_secret"`
-		PublicKey      string `json:"public_key"`
+		Enabled         bool   `json:"enabled"`
+		ServerURL       string `json:"server_url"`
+		Realm           string `json:"realm"`
+		ClientID        string `json:"client_id"`
+		ClientSecret    string `json:"client_secret"`
+		PublicKey       string `json:"public_key"`
 		TokenValidation struct {
-			Issuer     string        `json:"issuer"`
-			Audience   string        `json:"audience"`
-			ClockSkew  time.Duration `json:"clock_skew"`
+			Issuer    string        `json:"issuer"`
+			Audience  string        `json:"audience"`
+			ClockSkew time.Duration `json:"clock_skew"`
 		} `json:"token_validation"`
-		JWKSCacheTTL   time.Duration `json:"jwks_cache_ttl"`
-		HTTPTimeout    time.Duration `json:"http_timeout"`
+		JWKSCacheTTL time.Duration `json:"jwks_cache_ttl"`
+		HTTPTimeout  time.Duration `json:"http_timeout"`
 	} `json:"keycloak"`
 
 	Security struct {
-		TLSEnabled   bool     `json:"tls_enabled"`
-		CertFile     string   `json:"cert_file"`
-		KeyFile      string   `json:"key_file"`
-		AllowedIPs   []string `json:"allowed_ips"`
-		RateLimit    struct {
+		TLSEnabled bool     `json:"tls_enabled"`
+		CertFile   string   `json:"cert_file"`
+		KeyFile    string   `json:"key_file"`
+		AllowedIPs []string `json:"allowed_ips"`
+		RateLimit  struct {
 			Enabled           bool    `json:"enabled"`
 			RequestsPerSecond float64 `json:"requests_per_second"`
 			Burst             int     `json:"burst"`
 		} `json:"rate_limit"`
 		MTLS struct {
-			Enabled     bool   `json:"enabled"`
-			CACert      string `json:"ca_file"`
+			Enabled bool   `json:"enabled"`
+			CACert  string `json:"ca_file"`
 		} `json:"mtls"`
-		CipherSuites   []string `json:"cipher_suites"`
-		MinTLSVersion  string   `json:"min_tls_version"`
-		Audit          struct {
-			Enabled    bool   `json:"enabled"`
-			LogFile    string `json:"log_file"`
+		CipherSuites  []string `json:"cipher_suites"`
+		MinTLSVersion string   `json:"min_tls_version"`
+		Audit         struct {
+			Enabled bool   `json:"enabled"`
+			LogFile string `json:"log_file"`
 		} `json:"audit"`
 	} `json:"security"`
 
@@ -329,48 +329,48 @@ type Config struct {
 	} `json:"logging"`
 
 	Protocol struct {
-		AutoSelect      bool     `json:"auto_select"`
-		Preferred       string   `json:"preferred"`
-		Fallback        string   `json:"fallback"`
-		SwitchThreshold float64  `json:"switch_threshold"`
+		AutoSelect          bool          `json:"auto_select"`
+		Preferred           string        `json:"preferred"`
+		Fallback            string        `json:"fallback"`
+		SwitchThreshold     float64       `json:"switch_threshold"`
 		HealthCheckInterval time.Duration `json:"health_check_interval"`
 	} `json:"protocol"`
 
 	QUIC struct {
-		Enabled         bool          `json:"enabled"`
-		MaxStreams      int           `json:"max_streams"`
-		KeepAlive       bool          `json:"keep_alive"`
-		IdleTimeout     time.Duration `json:"idle_timeout"`
+		Enabled          bool          `json:"enabled"`
+		MaxStreams       int           `json:"max_streams"`
+		KeepAlive        bool          `json:"keep_alive"`
+		IdleTimeout      time.Duration `json:"idle_timeout"`
 		HandshakeTimeout time.Duration `json:"handshake_timeout"`
 	} `json:"quic"`
 
 	ZeroTrust struct {
-		Enabled         bool `json:"enabled"`
-		ClientDaemon    bool `json:"client_daemon"`
+		Enabled          bool `json:"enabled"`
+		ClientDaemon     bool `json:"client_daemon"`
 		ServiceDiscovery bool `json:"service_discovery"`
-		AutoReconnect   bool `json:"auto_reconnect"`
-		
+		AutoReconnect    bool `json:"auto_reconnect"`
+
 		CircuitBreaker struct {
-			Enabled           bool
-			FailureThreshold  int64
-			SuccessThreshold  int64
-			Timeout           time.Duration
-			WindowSize        time.Duration
+			Enabled          bool
+			FailureThreshold int64
+			SuccessThreshold int64
+			Timeout          time.Duration
+			WindowSize       time.Duration
 		}
-		
+
 		HealthCheck struct {
 			Enabled  bool
 			Interval time.Duration
 			Timeout  time.Duration
 			Checks   []HealthCheckConfig
 		}
-		
+
 		RateLimit struct {
 			Enabled     bool
 			RequestsPer int64
 			WindowSize  int64
 		}
-		
+
 		Authentication struct {
 			Enabled     bool
 			Type        string
@@ -383,17 +383,17 @@ type Config struct {
 	Ingress struct {
 		Enabled     bool `json:"enabled"`
 		BastionMode bool `json:"bastion_mode"`
-		
+
 		IPAccessControl struct {
-			Enabled      bool     `json:"enabled"`
-			DefaultAllow bool     `json:"default_allow"`
+			Enabled      bool `json:"enabled"`
+			DefaultAllow bool `json:"default_allow"`
 			Rules        []struct {
 				Prefix string `json:"prefix"`
 				Ports  []int  `json:"ports"`
 				Allow  bool   `json:"allow"`
 			} `json:"rules"`
 		} `json:"ip_access_control"`
-		
+
 		TLS struct {
 			Enabled            bool     `json:"enabled"`
 			CertFile           string   `json:"cert_file"`
@@ -404,112 +404,112 @@ type Config struct {
 			ClientCAFile       string   `json:"client_ca_file"`
 			InsecureSkipVerify bool     `json:"insecure_skip_verify"`
 		} `json:"tls"`
-		
-			ConnectionPool struct {
-		MaxSize     int           `json:"max_size"`
-		IdleTimeout time.Duration `json:"idle_timeout"`
-		MaxIdle     int           `json:"max_idle"`
-		MaxLifetime time.Duration `json:"max_lifetime"`
-		
-		// Enhanced connection management
-		Retry struct {
-			MaxRetries   uint          `json:"max_retries"`
-			BaseTime     time.Duration `json:"base_time"`
-			MaxDelay     time.Duration `json:"max_delay"`
-			Jitter       float64       `json:"jitter"`
-			RetryForever bool          `json:"retry_forever"`
-		} `json:"retry"`
-		
-		GracefulShutdown struct {
-			GracePeriod time.Duration `json:"grace_period"`
-			MaxWaitTime time.Duration `json:"max_wait_time"`
-		} `json:"graceful_shutdown"`
-		
-		HTTP2Reuse struct {
-			MaxConnections  int           `json:"max_connections"`
-			MaxIdleTime     time.Duration `json:"max_idle_time"`
-			CleanupInterval time.Duration `json:"cleanup_interval"`
-		} `json:"http2_reuse"`
-	} `json:"connection_pool"`
-		
+
+		ConnectionPool struct {
+			MaxSize     int           `json:"max_size"`
+			IdleTimeout time.Duration `json:"idle_timeout"`
+			MaxIdle     int           `json:"max_idle"`
+			MaxLifetime time.Duration `json:"max_lifetime"`
+
+			// Enhanced connection management
+			Retry struct {
+				MaxRetries   uint          `json:"max_retries"`
+				BaseTime     time.Duration `json:"base_time"`
+				MaxDelay     time.Duration `json:"max_delay"`
+				Jitter       float64       `json:"jitter"`
+				RetryForever bool          `json:"retry_forever"`
+			} `json:"retry"`
+
+			GracefulShutdown struct {
+				GracePeriod time.Duration `json:"grace_period"`
+				MaxWaitTime time.Duration `json:"max_wait_time"`
+			} `json:"graceful_shutdown"`
+
+			HTTP2Reuse struct {
+				MaxConnections  int           `json:"max_connections"`
+				MaxIdleTime     time.Duration `json:"max_idle_time"`
+				CleanupInterval time.Duration `json:"cleanup_interval"`
+			} `json:"http2_reuse"`
+		} `json:"connection_pool"`
+
 		Rules []struct {
-			Hostname string `json:"hostname"`
-			Path     string `json:"path"`
-			Service  string `json:"service"`
+			Hostname      string `json:"hostname"`
+			Path          string `json:"path"`
+			Service       string `json:"service"`
 			OriginRequest *struct {
 				ConnectTimeout         time.Duration `json:"connect_timeout"`
-				TLSTimeout            time.Duration `json:"tls_timeout"`
-				TCPKeepAlive          time.Duration `json:"tcp_keep_alive"`
-				KeepAliveConnections  int           `json:"keep_alive_connections"`
-				HTTPHostHeader        string        `json:"http_host_header"`
-				OriginServerName      string        `json:"origin_server_name"`
-				NoTLSVerify           bool          `json:"no_tls_verify"`
-				CAPool                string        `json:"ca_pool"`
+				TLSTimeout             time.Duration `json:"tls_timeout"`
+				TCPKeepAlive           time.Duration `json:"tcp_keep_alive"`
+				KeepAliveConnections   int           `json:"keep_alive_connections"`
+				HTTPHostHeader         string        `json:"http_host_header"`
+				OriginServerName       string        `json:"origin_server_name"`
+				NoTLSVerify            bool          `json:"no_tls_verify"`
+				CAPool                 string        `json:"ca_pool"`
 				DisableChunkedEncoding bool          `json:"disable_chunked_encoding"`
-				BastionMode           bool          `json:"bastion_mode"`
-				ProxyAddress          string        `json:"proxy_address"`
-				ProxyPort             uint          `json:"proxy_port"`
-				ProxyType             string        `json:"proxy_type"`
-				HTTP2Origin           bool          `json:"http2_origin"`
+				BastionMode            bool          `json:"bastion_mode"`
+				ProxyAddress           string        `json:"proxy_address"`
+				ProxyPort              uint          `json:"proxy_port"`
+				ProxyType              string        `json:"proxy_type"`
+				HTTP2Origin            bool          `json:"http2_origin"`
 			} `json:"origin_request,omitempty"`
 		} `json:"rules"`
-		
+
 		OriginRequest struct {
 			ConnectTimeout         time.Duration `json:"connect_timeout"`
-			TLSTimeout            time.Duration `json:"tls_timeout"`
-			TCPKeepAlive          time.Duration `json:"tcp_keep_alive"`
-			KeepAliveConnections  int           `json:"keep_alive_connections"`
-			KeepAliveTimeout      time.Duration `json:"keep_alive_timeout"`
-			HTTPHostHeader        string        `json:"http_host_header"`
-			OriginServerName      string        `json:"origin_server_name"`
-			NoTLSVerify           bool          `json:"no_tls_verify"`
-			CAPool                string        `json:"ca_pool"`
+			TLSTimeout             time.Duration `json:"tls_timeout"`
+			TCPKeepAlive           time.Duration `json:"tcp_keep_alive"`
+			KeepAliveConnections   int           `json:"keep_alive_connections"`
+			KeepAliveTimeout       time.Duration `json:"keep_alive_timeout"`
+			HTTPHostHeader         string        `json:"http_host_header"`
+			OriginServerName       string        `json:"origin_server_name"`
+			NoTLSVerify            bool          `json:"no_tls_verify"`
+			CAPool                 string        `json:"ca_pool"`
 			DisableChunkedEncoding bool          `json:"disable_chunked_encoding"`
-			BastionMode           bool          `json:"bastion_mode"`
-			ProxyAddress          string        `json:"proxy_address"`
-			ProxyPort             uint          `json:"proxy_port"`
-			ProxyType             string        `json:"proxy_type"`
-			HTTP2Origin           bool          `json:"http2_origin"`
+			BastionMode            bool          `json:"bastion_mode"`
+			ProxyAddress           string        `json:"proxy_address"`
+			ProxyPort              uint          `json:"proxy_port"`
+			ProxyType              string        `json:"proxy_type"`
+			HTTP2Origin            bool          `json:"http2_origin"`
 		} `json:"origin_request"`
 	} `json:"ingress"`
 
 	// Enhanced QUIC Configuration
 	EnhancedQUIC struct {
-		Enabled         bool          `json:"enabled"`
-		MaxStreams      int           `json:"max_streams"`
-		KeepAlive       bool          `json:"keep_alive"`
-		IdleTimeout     time.Duration `json:"idle_timeout"`
-		HandshakeTimeout time.Duration `json:"handshake_timeout"`
-		DDoSProtection  bool          `json:"ddos_protection"`
-		GeographicRouting bool        `json:"geographic_routing"`
-		KeycloakIntegration bool      `json:"keycloak_integration"`
+		Enabled             bool          `json:"enabled"`
+		MaxStreams          int           `json:"max_streams"`
+		KeepAlive           bool          `json:"keep_alive"`
+		IdleTimeout         time.Duration `json:"idle_timeout"`
+		HandshakeTimeout    time.Duration `json:"handshake_timeout"`
+		DDoSProtection      bool          `json:"ddos_protection"`
+		GeographicRouting   bool          `json:"geographic_routing"`
+		KeycloakIntegration bool          `json:"keycloak_integration"`
 	} `json:"enhanced_quic"`
 
 	// WireGuard P2P Mesh Configuration
 	WireGuard struct {
-		Enabled     bool   `json:"enabled"`
-		Interface   struct {
+		Enabled   bool `json:"enabled"`
+		Interface struct {
 			Name       string `json:"name"`
 			ListenPort int    `json:"listen_port"`
 			Address    string `json:"address"`
 		} `json:"interface"`
-		Discovery   struct {
+		Discovery struct {
 			RegistryURL       string        `json:"registry_url"`
 			HeartbeatInterval time.Duration `json:"heartbeat_interval"`
 			MaxPeers          int           `json:"max_peers"`
 		} `json:"discovery"`
-		Mesh       struct {
-			Enabled           bool   `json:"enabled"`
-			AutoDiscovery     bool   `json:"auto_discovery"`
-			MaxConnections    int    `json:"max_connections"`
-			RoutingStrategy   string `json:"routing_strategy"`
+		Mesh struct {
+			Enabled         bool   `json:"enabled"`
+			AutoDiscovery   bool   `json:"auto_discovery"`
+			MaxConnections  int    `json:"max_connections"`
+			RoutingStrategy string `json:"routing_strategy"`
 		} `json:"mesh"`
 		SiteToSite struct {
-			Enabled           bool   `json:"enabled"`
+			Enabled           bool `json:"enabled"`
 			CorporateNetworks []struct {
-				NetworkID     string `json:"network_id"`
-				CIDR          string `json:"cidr"`
-				TenantID      string `json:"tenant_id"`
+				NetworkID string `json:"network_id"`
+				CIDR      string `json:"cidr"`
+				TenantID  string `json:"tenant_id"`
 			} `json:"corporate_networks"`
 		} `json:"site_to_site"`
 	} `json:"wireguard"`
@@ -526,19 +526,19 @@ type Config struct {
 		WireGuard       struct {
 			Enabled bool `json:"enabled"`
 		} `json:"wireguard"`
-		EnhancedQUIC    struct {
+		EnhancedQUIC struct {
 			Enabled bool `json:"enabled"`
 		} `json:"enhanced_quic"`
 	} `json:"quantum"`
 
 	// AI Analytics Configuration
 	AI struct {
-		Enabled           bool   `json:"enabled"`
-		BehaviorAnalysis  struct {
-			Enabled       bool    `json:"enabled"`
-			ModelPath     string  `json:"model_path"`
-			Threshold     float64 `json:"threshold"`
-			LearningRate  float64 `json:"learning_rate"`
+		Enabled          bool `json:"enabled"`
+		BehaviorAnalysis struct {
+			Enabled      bool    `json:"enabled"`
+			ModelPath    string  `json:"model_path"`
+			Threshold    float64 `json:"threshold"`
+			LearningRate float64 `json:"learning_rate"`
 		} `json:"behavior_analysis"`
 		PredictiveSecurity struct {
 			Enabled    bool    `json:"enabled"`
@@ -581,19 +581,19 @@ func replaceEnvVars(s string) string {
 	if s == "" {
 		return s
 	}
-	
+
 	// Регулярное выражение для поиска ${VAR_NAME}
 	re := regexp.MustCompile(`\$\{([^}]+)\}`)
-	
+
 	return re.ReplaceAllStringFunc(s, func(match string) string {
 		// Извлекаем имя переменной из ${VAR_NAME}
 		varName := match[2 : len(match)-1]
-		
+
 		// Получаем значение из переменной окружения
 		if value := os.Getenv(varName); value != "" {
 			return value
 		}
-		
+
 		// Если переменная не найдена, возвращаем оригинальную строку
 		return match
 	})
@@ -605,7 +605,7 @@ func Load(path string) (*Config, error) {
 	if !isValidConfigPath(path) {
 		return nil, fmt.Errorf("invalid config file path")
 	}
-	
+
 	// #nosec G304 - path validated by isValidConfigPath
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -615,7 +615,7 @@ func Load(path string) (*Config, error) {
 	// Заменяем переменные окружения в JSON
 	configStr := string(data)
 	configStr = replaceEnvVars(configStr)
-	
+
 	var raw configRaw
 	if err := json.Unmarshal([]byte(configStr), &raw); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %v", err)
@@ -692,19 +692,19 @@ func Load(path string) (*Config, error) {
 	config.ZeroTrust.ClientDaemon = raw.ZeroTrust.ClientDaemon
 	config.ZeroTrust.ServiceDiscovery = raw.ZeroTrust.ServiceDiscovery
 	config.ZeroTrust.AutoReconnect = raw.ZeroTrust.AutoReconnect
-	
+
 	// ZeroTrust CircuitBreaker
 	config.ZeroTrust.CircuitBreaker.Enabled = raw.ZeroTrust.CircuitBreaker.Enabled
 	config.ZeroTrust.CircuitBreaker.FailureThreshold = raw.ZeroTrust.CircuitBreaker.FailureThreshold
 	config.ZeroTrust.CircuitBreaker.SuccessThreshold = raw.ZeroTrust.CircuitBreaker.SuccessThreshold
 	config.ZeroTrust.CircuitBreaker.Timeout = parseDuration(raw.ZeroTrust.CircuitBreaker.Timeout, 30*time.Second)
 	config.ZeroTrust.CircuitBreaker.WindowSize = parseDuration(raw.ZeroTrust.CircuitBreaker.WindowSize, 60*time.Second)
-	
+
 	// ZeroTrust HealthCheck
 	config.ZeroTrust.HealthCheck.Enabled = raw.ZeroTrust.HealthCheck.Enabled
 	config.ZeroTrust.HealthCheck.Interval = parseDuration(raw.ZeroTrust.HealthCheck.Interval, 30*time.Second)
 	config.ZeroTrust.HealthCheck.Timeout = parseDuration(raw.ZeroTrust.HealthCheck.Timeout, 10*time.Second)
-	
+
 	// Convert health check configurations
 	for _, check := range raw.ZeroTrust.HealthCheck.Checks {
 		config.ZeroTrust.HealthCheck.Checks = append(config.ZeroTrust.HealthCheck.Checks, HealthCheckConfig{
@@ -715,12 +715,12 @@ func Load(path string) (*Config, error) {
 			Description: check.Description,
 		})
 	}
-	
+
 	// ZeroTrust RateLimit
 	config.ZeroTrust.RateLimit.Enabled = raw.ZeroTrust.RateLimit.Enabled
 	config.ZeroTrust.RateLimit.RequestsPer = raw.ZeroTrust.RateLimit.RequestsPer
 	config.ZeroTrust.RateLimit.WindowSize = raw.ZeroTrust.RateLimit.WindowSize
-	
+
 	// ZeroTrust Authentication
 	config.ZeroTrust.Authentication.Enabled = raw.ZeroTrust.Authentication.Enabled
 	config.ZeroTrust.Authentication.Type = raw.ZeroTrust.Authentication.Type
@@ -927,8 +927,8 @@ func (c *Config) Validate() error {
 		MinVersion:   c.Security.MinTLSVersion,
 		CipherSuites: c.Security.CipherSuites,
 		MTLS: tls.MTLSConfig{
-			Enabled:    c.Security.MTLS.Enabled,
-			CACert:     c.Security.MTLS.CACert,
+			Enabled: c.Security.MTLS.Enabled,
+			CACert:  c.Security.MTLS.CACert,
 		},
 	}); err != nil {
 		return fmt.Errorf("invalid TLS configuration: %v", err)
@@ -966,4 +966,4 @@ func isValidConfigPath(path string) bool {
 		}
 	}
 	return false
-} 
+}

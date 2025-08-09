@@ -94,7 +94,7 @@ func main() {
 	}()
 
 	// Start API server
-	loggerInstance.Info("Starting API server", 
+	loggerInstance.Info("Starting API server",
 		zap.String("port", fmt.Sprintf(":%d", cfg.API.Port)),
 		zap.String("version", cfg.API.Version),
 	)
@@ -103,4 +103,4 @@ func main() {
 		loggerInstance.Error("Failed to start API server", zap.Error(err))
 		os.Exit(1)
 	}
-} 
+}

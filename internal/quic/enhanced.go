@@ -14,29 +14,29 @@ import (
 // EnhancedConfig конфигурация Enhanced QUIC
 type EnhancedConfig struct {
 	// Базовые настройки
-	MaxStreams        int           
-	KeepAlive         bool          
-	IdleTimeout       time.Duration 
-	HandshakeTimeout  time.Duration 
-	MaxIncomingStreams int           
-	MaxIncomingUniStreams int        
-	TLSConfig         *tls.Config   
-	
+	MaxStreams            int
+	KeepAlive             bool
+	IdleTimeout           time.Duration
+	HandshakeTimeout      time.Duration
+	MaxIncomingStreams    int
+	MaxIncomingUniStreams int
+	TLSConfig             *tls.Config
+
 	// Flow control
-	InitialStreamReceiveWindow     uint64 
-	MaxStreamReceiveWindow         uint64 
-	InitialConnectionReceiveWindow uint64 
-	MaxConnectionReceiveWindow     uint64 
-	
+	InitialStreamReceiveWindow     uint64
+	MaxStreamReceiveWindow         uint64
+	InitialConnectionReceiveWindow uint64
+	MaxConnectionReceiveWindow     uint64
+
 	// Congestion control
-	CongestionControlAlgorithm string 
-	
+	CongestionControlAlgorithm string
+
 	// Enhanced features
-	TenantManager    *TenantManager
-	EnableDDoSProtection bool
-	EnableGeographicRouting bool
+	TenantManager             *TenantManager
+	EnableDDoSProtection      bool
+	EnableGeographicRouting   bool
 	EnableKeycloakIntegration bool
-	KeycloakConfig   *KeycloakConfig
+	KeycloakConfig            *KeycloakConfig
 }
 
 // TenantManager управляет мультиарендностью
@@ -47,22 +47,22 @@ type TenantManager struct {
 
 // TenantInfo информация о тенанте
 type TenantInfo struct {
-	ID              string
-	BandwidthLimit  int64
-	ConnectionLimit int
+	ID                string
+	BandwidthLimit    int64
+	ConnectionLimit   int
 	ActiveConnections int32
-	BytesReceived   int64
-	BytesSent       int64
-	StartTime       time.Time
-	LastActivity    time.Time
+	BytesReceived     int64
+	BytesSent         int64
+	StartTime         time.Time
+	LastActivity      time.Time
 }
 
 // KeycloakConfig конфигурация Keycloak
 type KeycloakConfig struct {
-	ServerURL    string
-	Realm        string
-	ClientID     string
-	ClientSecret string
+	ServerURL     string
+	Realm         string
+	ClientID      string
+	ClientSecret  string
 	AdminUsername string
 	AdminPassword string
 }
@@ -94,10 +94,10 @@ type DDoSProtection struct {
 
 // RateLimiter ограничитель скорости
 type RateLimiter struct {
-	requests    int
-	window      time.Duration
-	lastReset   time.Time
-	mu          sync.Mutex
+	requests  int
+	window    time.Duration
+	lastReset time.Time
+	mu        sync.Mutex
 }
 
 // AnomalyDetector детектор аномалий
@@ -129,7 +129,7 @@ func NewTenantManager() *TenantManager {
 func (tm *TenantManager) AddTenant(id string, bandwidthLimit int64, connectionLimit int) {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
-	
+
 	tm.tenants[id] = &TenantInfo{
 		ID:              id,
 		BandwidthLimit:  bandwidthLimit,
@@ -143,7 +143,7 @@ func (tm *TenantManager) AddTenant(id string, bandwidthLimit int64, connectionLi
 func (tm *TenantManager) GetTenant(id string) (*TenantInfo, bool) {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
-	
+
 	tenant, exists := tm.tenants[id]
 	return tenant, exists
 }
@@ -154,11 +154,11 @@ func (tm *TenantManager) CheckTenantLimits(tenantID string) error {
 	if !exists {
 		return fmt.Errorf("tenant %s not found", tenantID)
 	}
-	
+
 	if atomic.LoadInt32(&tenant.ActiveConnections) >= int32(tenant.ConnectionLimit) {
 		return fmt.Errorf("connection limit exceeded for tenant %s", tenantID)
 	}
-	
+
 	return nil
 }
 
@@ -170,13 +170,13 @@ func DialWithTenant(network, address, tenantID string, config *EnhancedConfig) (
 			return nil, err
 		}
 	}
-	
+
 	// Создаем базовое соединение
 	conn, err := net.Dial(network, address)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	enhancedConn := &EnhancedConnection{
 		conn:         conn,
 		tenantID:     tenantID,
@@ -184,20 +184,20 @@ func DialWithTenant(network, address, tenantID string, config *EnhancedConfig) (
 		lastActivity: time.Now(),
 		config:       config,
 	}
-	
+
 	// Инициализируем компоненты
 	if config.EnableDDoSProtection {
 		enhancedConn.ddosProtection = NewDDoSProtection()
 	}
-	
+
 	if config.EnableGeographicRouting {
 		enhancedConn.geoRouter = NewGeographicRouter()
 	}
-	
+
 	if config.EnableKeycloakIntegration && config.KeycloakConfig != nil {
 		enhancedConn.keycloakAuth = NewKeycloakAuth(config.KeycloakConfig)
 	}
-	
+
 	// Получаем информацию о тенанте
 	if config.TenantManager != nil {
 		if tenant, exists := config.TenantManager.GetTenant(tenantID); exists {
@@ -206,7 +206,7 @@ func DialWithTenant(network, address, tenantID string, config *EnhancedConfig) (
 			atomic.AddInt32(&tenant.ActiveConnections, 1)
 		}
 	}
-	
+
 	return enhancedConn, nil
 }
 
@@ -218,21 +218,21 @@ func (ec *EnhancedConnection) Read(b []byte) (n int, err error) {
 			return 0, err
 		}
 	}
-	
+
 	n, err = ec.conn.Read(b)
 	if err != nil {
 		return n, err
 	}
-	
+
 	atomic.AddInt64(&ec.bytesReceived, int64(n))
 	ec.lastActivity = time.Now()
-	
+
 	// Обновляем статистику тенанта
 	if ec.tenantInfo != nil {
 		atomic.AddInt64(&ec.tenantInfo.BytesReceived, int64(n))
 		ec.tenantInfo.LastActivity = time.Now()
 	}
-	
+
 	return n, nil
 }
 
@@ -244,21 +244,21 @@ func (ec *EnhancedConnection) Write(b []byte) (n int, err error) {
 			return 0, fmt.Errorf("bandwidth limit exceeded")
 		}
 	}
-	
+
 	n, err = ec.conn.Write(b)
 	if err != nil {
 		return n, err
 	}
-	
+
 	atomic.AddInt64(&ec.bytesSent, int64(len(b)))
 	ec.lastActivity = time.Now()
-	
+
 	// Обновляем статистику тенанта
 	if ec.tenantInfo != nil {
 		atomic.AddInt64(&ec.tenantInfo.BytesSent, int64(len(b)))
 		ec.tenantInfo.LastActivity = time.Now()
 	}
-	
+
 	return len(b), nil
 }
 
@@ -268,7 +268,7 @@ func (ec *EnhancedConnection) Close() error {
 	if ec.tenantInfo != nil {
 		atomic.AddInt32(&ec.tenantInfo.ActiveConnections, -1)
 	}
-	
+
 	return ec.conn.Close()
 }
 
@@ -297,7 +297,7 @@ func NewDDoSProtection() *DDoSProtection {
 func (ddp *DDoSProtection) CheckRateLimit(clientIP string) error {
 	ddp.mu.Lock()
 	defer ddp.mu.Unlock()
-	
+
 	// Проверяем черный список
 	if blacklistTime, exists := ddp.blacklist[clientIP]; exists {
 		if time.Since(blacklistTime) < 5*time.Minute {
@@ -305,7 +305,7 @@ func (ddp *DDoSProtection) CheckRateLimit(clientIP string) error {
 		}
 		delete(ddp.blacklist, clientIP)
 	}
-	
+
 	// Получаем или создаем rate limiter
 	limiter, exists := ddp.rateLimiters[clientIP]
 	if !exists {
@@ -316,13 +316,13 @@ func (ddp *DDoSProtection) CheckRateLimit(clientIP string) error {
 		}
 		ddp.rateLimiters[clientIP] = limiter
 	}
-	
+
 	// Проверяем лимит
 	if !limiter.Allow() {
 		ddp.blacklist[clientIP] = time.Now()
 		return fmt.Errorf("rate limit exceeded for IP %s", clientIP)
 	}
-	
+
 	return nil
 }
 
@@ -330,18 +330,18 @@ func (ddp *DDoSProtection) CheckRateLimit(clientIP string) error {
 func (rl *RateLimiter) Allow() bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
-	
+
 	now := time.Now()
 	if now.Sub(rl.lastReset) >= rl.window {
 		rl.requests = 100
 		rl.lastReset = now
 	}
-	
+
 	if rl.requests > 0 {
 		rl.requests--
 		return true
 	}
-	
+
 	return false
 }
 
@@ -409,6 +409,4 @@ func (ka *KeycloakAuth) AuthenticateUser(token string) (bool, error) {
 func (ka *KeycloakAuth) ValidateToken(token string) (bool, error) {
 	// Здесь будет реальная валидация токена через Keycloak
 	return token != "", nil
-} 
-
-
+}
