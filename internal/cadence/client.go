@@ -14,6 +14,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// WorkflowExecution представляет выполнение workflow
+type WorkflowExecution struct {
+	ID    string
+	RunID string
+}
+
 // CadenceClient представляет Cadence клиент для CloudBridge Relay
 type CadenceClient struct {
 	// Конфигурация

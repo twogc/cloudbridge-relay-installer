@@ -30,6 +30,13 @@
 - **Гибридные схемы** для обратной совместимости
 - **Готовность к квантовым угрозам** на десятилетия вперед
 
+### 🔄 **Cadence Workflow Orchestration**
+- **Полная автоматизация** всех критических операций
+- **Отказоустойчивое выполнение** долгоживущих процессов
+- **Оркестрация модулей** через надежные workflows
+- **Graceful recovery** при сбоях любых компонентов
+- **Визуализация и мониторинг** всех бизнес-процессов
+
 ### 🤖 **AI/ML Мониторинг**
 - **Автоматическое масштабирование** под нагрузку
 - **Предсказание проблем** и автоматическое их устранение
@@ -71,6 +78,7 @@ cloudbridge-relay-installer/
 │   ├── relay/                 # Relay сервер
 │   └── api/                   # API сервер
 ├── 📁 internal/               # Внутренние модули
+│   ├── cadence/              # Cadence Workflow оркестрация
 │   ├── p2p/                   # P2P Mesh управление
 │   ├── wireguard/            # WireGuard интеграция
 │   ├── quic/                 # Enhanced QUIC
@@ -100,6 +108,18 @@ cd tests/p2p/
 ./test_p2p_mesh.sh
 ```
 
+### Cadence Workflow тестирование
+```bash
+# Запуск всех Cadence тестов
+./scripts/run_cadence_tests.sh
+
+# Unit тесты workflows
+go test -v ./internal/cadence/workflows/
+
+# Интеграционные тесты
+go test -v ./internal/integration/
+```
+
 ### QUIC-to-P2P интеграция
 ```bash
 cd tests/quic/
@@ -125,6 +145,7 @@ cd examples/basic/
 | Сервис | URL | Описание |
 |--------|-----|----------|
 | **Relay API** | http://localhost:8082 | API управления |
+| **Cadence Web UI** | http://localhost:8088 | Workflow мониторинг |
 | **Prometheus** | http://localhost:9090 | Метрики |
 | **Grafana** | http://localhost:3000 | Дашборды (admin/admin) |
 | **P2P Mesh** | UDP 51820 | WireGuard P2P |
@@ -178,12 +199,22 @@ CloudBridge Relay построен как **глобальная сотовая 
 
 ## 📚 Документация
 
+### 🏗️ Архитектура и концепции
 - [🏗️ Архитектура](docs/EDGE_ARCHITECTURE.md)
 - [🔮 Видение проекта](docs/VISION_AND_FUTURE_CAPABILITIES.md)
-- [🔐 WireGuard интеграция](docs/wireguard_integration_guide.md)
-- [⚡ Enhanced QUIC](docs/multiprotocol_integration.md)
 - [🛡️ Zero Trust](docs/zero_trust_architecture.md)
 - [📊 Инвестиционная презентация](docs/INVESTOR_PRESENTATION.md)
+
+### 🔄 Cadence Workflow документация
+- [📋 Руководство по Workflows](docs/cadence/WORKFLOW_GUIDE.md)
+- [⚙️ Руководство по Activities](docs/cadence/ACTIVITIES_GUIDE.md)
+- [🚀 Руководство по развертыванию](docs/cadence/DEPLOYMENT_GUIDE.md)
+- [✅ Лучшие практики](docs/cadence/CADENCE_BEST_PRACTICES.md)
+- [🔧 Исправления тестов](docs/cadence/WORKFLOW_TESTING_FIXES_REPORT.md)
+
+### 🔧 Технические интеграции
+- [🔐 WireGuard интеграция](docs/wireguard_integration_guide.md)
+- [⚡ Enhanced QUIC](docs/multiprotocol_integration.md)
 
 ## 🤝 Сообщество
 
@@ -199,6 +230,7 @@ CloudBridge Relay построен как **глобальная сотовая 
 | **Производительность** | 100 Gbps | 10 Gbps |
 | **P2P Mesh** | ✅ Реальный WireGuard | ❌ Отсутствует |
 | **Post-Quantum** | ✅ Полная поддержка | ❌ Отсутствует |
+| **Workflow Engine** | ✅ Cadence Integration | ❌ Отсутствует |
 | **AI Мониторинг** | ✅ Продвинутый | ❌ Базовый |
 | **Zero Trust** | ✅ Встроенный | ❌ Дополнительный |
 
