@@ -431,7 +431,28 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 		},
 
 		// Метрики мультитенантности - инициализация
-		tenantMetrics: tenantMetrics{
+		tenantMetrics: struct {
+			activeCount                prometheus.Gauge
+			activeTunnels              *prometheus.GaugeVec
+			activeConnections          *prometheus.GaugeVec
+			bandwidthBytesTotal        *prometheus.CounterVec
+			dataTransferGB             *prometheus.GaugeVec
+			responseTimeSeconds        *prometheus.HistogramVec
+			errorsTotal                *prometheus.CounterVec
+			slaCompliancePercent       *prometheus.GaugeVec
+			uptimePercent              *prometheus.GaugeVec
+			securityIncidentsTotal     *prometheus.CounterVec
+			authFailuresTotal          *prometheus.CounterVec
+			riskScore                  *prometheus.GaugeVec
+			isolationViolationsTotal   *prometheus.CounterVec
+			accessPatternsTotal        *prometheus.CounterVec
+			revenueTotal               *prometheus.CounterVec
+			customerSatisfaction       *prometheus.GaugeVec
+			dailyActiveUsers           *prometheus.GaugeVec
+			usageHeatmap               *prometheus.GaugeVec
+			comparisonMetrics          *prometheus.GaugeVec
+			resourceUtilizationPercent prometheus.Gauge
+		}{
 			activeCount: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "relay_tenant_active_count",
 				Help: "Number of active tenants",

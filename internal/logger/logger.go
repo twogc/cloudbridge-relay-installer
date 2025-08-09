@@ -22,7 +22,7 @@ const (
 	ERROR   LogLevel = "ERROR"
 	
 	// Output types.
-	OutputBoth = OutputBoth
+	OutputBoth = "both"
 )
 
 // Config represents logger configuration
