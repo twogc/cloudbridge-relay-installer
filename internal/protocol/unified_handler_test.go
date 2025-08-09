@@ -13,32 +13,32 @@ import (
 	"go.uber.org/zap"
 )
 
-// MockIntelligentProtocolSelector мок для IntelligentProtocolSelector
-type MockIntelligentProtocolSelector struct {
+// MockUnifiedProtocolSelector мок для UnifiedProtocolSelector
+type MockUnifiedProtocolSelector struct {
 	mock.Mock
 }
 
-func (m *MockIntelligentProtocolSelector) Current() Protocol {
+func (m *MockUnifiedProtocolSelector) Current() Protocol {
 	args := m.Called()
 	return args.Get(0).(Protocol)
 }
 
-func (m *MockIntelligentProtocolSelector) SelectBest() Protocol {
+func (m *MockUnifiedProtocolSelector) SelectBest() Protocol {
 	args := m.Called()
 	return args.Get(0).(Protocol)
 }
 
-func (m *MockIntelligentProtocolSelector) ShouldSwitch() bool {
+func (m *MockUnifiedProtocolSelector) ShouldSwitch() bool {
 	args := m.Called()
 	return args.Bool(0)
 }
 
-func (m *MockIntelligentProtocolSelector) GetMetrics() *ProtocolMetrics {
+func (m *MockUnifiedProtocolSelector) GetMetrics() *ProtocolMetrics {
 	args := m.Called()
 	return args.Get(0).(*ProtocolMetrics)
 }
 
-func (m *MockIntelligentProtocolSelector) UpdateMetrics(protocol Protocol, latency time.Duration, success bool) {
+func (m *MockUnifiedProtocolSelector) UpdateMetrics(protocol Protocol, latency time.Duration, success bool) {
 	m.Called(protocol, latency, success)
 }
 
@@ -142,7 +142,7 @@ func (m *MockAddr) String() string {
 
 func TestUnifiedConnectionHandler(t *testing.T) {
 	// Создание моков
-	mockSelector := &MockIntelligentProtocolSelector{}
+	mockSelector := &MockUnifiedProtocolSelector{}
 	mockP2PManager := &MockP2PManager{}
 	mockP2CManager := &MockP2CManager{}
 
@@ -245,7 +245,7 @@ func TestUnifiedConnectionHandler(t *testing.T) {
 
 func TestUnifiedConnectionHandlerMetrics(t *testing.T) {
 	// Создание моков
-	mockSelector := &MockIntelligentProtocolSelector{}
+	mockSelector := &MockUnifiedProtocolSelector{}
 	mockP2PManager := &MockP2PManager{}
 	mockP2CManager := &MockP2CManager{}
 
@@ -264,7 +264,7 @@ func TestUnifiedConnectionHandlerMetrics(t *testing.T) {
 
 func TestUnifiedConnectionHandlerFallback(t *testing.T) {
 	// Создание моков
-	mockSelector := &MockIntelligentProtocolSelector{}
+	mockSelector := &MockUnifiedProtocolSelector{}
 	mockP2PManager := &MockP2PManager{}
 	mockP2CManager := &MockP2CManager{}
 

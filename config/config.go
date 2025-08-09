@@ -950,10 +950,15 @@ func isValidConfigPath(path string) bool {
 		"./config/",
 		"/etc/cloudbridge/",
 		"config/",
+		"configs/",
 		"./",
 	}
 	if path == "" {
 		return false
+	}
+	// Allow absolute paths
+	if filepath.IsAbs(path) {
+		return true
 	}
 	for _, prefix := range allowedPrefixes {
 		if strings.HasPrefix(path, prefix) {

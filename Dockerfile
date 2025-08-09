@@ -1,93 +1,96 @@
-# CloudBridge Relay v2.0 Dockerfile
-# Enterprise-grade высокопроизводительный relay сервер
-
-# Multi-stage build для оптимизации размера образа
+# Multi-stage build для CloudBridge Relay WireGuard
 FROM golang:1.23-alpine AS builder
 
-# Установка необходимых пакетов для сборки
-RUN apk add --no-cache git ca-certificates tzdata
+# Установка зависимостей для сборки
+RUN apk add --no-cache \
+    git \
+    build-base \
+    linux-headers \
+    wireguard-tools
 
 # Установка рабочей директории
 WORKDIR /app
 
-# Копирование файлов зависимостей
+# Копирование go mod файлов
 COPY go.mod go.sum ./
 
-# Загрузка зависимостей
+# Скачивание зависимостей
 RUN go mod download
 
 # Копирование исходного кода
 COPY . .
 
-# Сборка relay сервера с оптимизациями
-RUN CGO_ENABLED=0 GOOS=linux go build \
-    -a -installsuffix cgo \
-    -ldflags "-w -s -X main.Version=2.0.0 -X main.BuildTime=$(date -u '+%Y-%m-%d_%H:%M:%S')" \
-    -o relay ./cmd/relay
+# Сборка приложения
+ARG VERSION=dev
+ARG BUILD_TIME
+ARG GIT_COMMIT
 
-# Сборка API сервера
-RUN CGO_ENABLED=0 GOOS=linux go build \
-    -a -installsuffix cgo \
-    -ldflags "-w -s -X main.Version=2.0.0 -X main.BuildTime=$(date -u '+%Y-%m-%d_%H:%M:%S')" \
-    -o api ./cmd/api
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}" \
+    -o cloudbridge-relay ./cmd/relay
+
+# Сборка WireGuard-go
+RUN git clone https://git.zx2c4.com/wireguard-go.git /tmp/wireguard-go && \
+    cd /tmp/wireguard-go && \
+    make && \
+    cp wireguard-go /app/
 
 # Финальный образ
-FROM alpine:latest
+FROM alpine:3.18
 
 # Установка необходимых пакетов
-RUN apk --no-cache add ca-certificates tzdata curl
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    iproute2 \
+    wireguard-tools \
+    iptables \
+    bash \
+    curl \
+    && rm -rf /var/cache/apk/*
 
-# Создание пользователя для безопасности
-RUN addgroup -g 1001 -S cloudbridge && \
-    adduser -u 1001 -S cloudbridge -G cloudbridge
+# Создание пользователя
+RUN addgroup -g 1000 cloudbridge && \
+    adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge
 
-# Установка рабочей директории
-WORKDIR /app
+# Создание необходимых директорий
+RUN mkdir -p \
+    /app/configs \
+    /app/logs \
+    /etc/wireguard \
+    /var/run/wireguard \
+    /var/log/cloudbridge-relay
 
-# Копирование бинарных файлов из builder stage
-COPY --from=builder /app/relay .
-COPY --from=builder /app/api .
-RUN chmod +x /app/relay /app/api
+# Копирование бинарных файлов
+COPY --from=builder /app/cloudbridge-relay /usr/local/bin/
+COPY --from=builder /app/wireguard-go /usr/local/bin/
 
-# Копирование конфигурационных файлов
-COPY --from=builder /app/config ./config
+# Установка прав
+RUN chmod +x /usr/local/bin/cloudbridge-relay && \
+    chmod +x /usr/local/bin/wireguard-go && \
+    chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay
 
-# Создание директорий для логов и данных
-RUN mkdir -p /app/logs /app/data && \
-    chown -R cloudbridge:cloudbridge /app
+# Копирование конфигурации по умолчанию
+COPY configs/config.json /app/configs/config.json
 
-# Установка supervisor для Alpine
-RUN apk add --no-cache supervisor
-
-# Копирование конфигурации supervisor
-COPY supervisord.conf /etc/supervisord.conf
-
-# Переключение на непривилегированного пользователя
+# Переключение на пользователя
 USER cloudbridge
 
-# Проверка здоровья
+# Рабочая директория
+WORKDIR /app
+
+# Открытие портов
+EXPOSE 8080 8081 8082 80 443 9090 51820/udp
+
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
-
-# Экспорт портов
-EXPOSE 8080 8081 8082
-
-# Метаданные
-LABEL maintainer="CloudBridge Team <dev@cloudbridge.com>"
-LABEL version="2.0.0"
-LABEL description="Enterprise-grade высокопроизводительный relay сервер"
-LABEL org.opencontainers.image.title="CloudBridge Relay"
-LABEL org.opencontainers.image.description="Enterprise-grade высокопроизводительный relay сервер с интеграцией лучших практик Cloudflare"
-LABEL org.opencontainers.image.version="2.0.0"
-LABEL org.opencontainers.image.vendor="CloudBridge"
-LABEL org.opencontainers.image.source="https://github.com/cloudbridge/relay"
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Переменные окружения
-ENV RELAY_CONFIG_PATH=/app/config/config.json
-ENV RELAY_LOG_LEVEL=info
-ENV RELAY_METRICS_PORT=8081
-ENV RELAY_SERVER_PORT=8080
-ENV API_PORT=8082
+ENV CONFIG_PATH=/app/configs/config.json
+ENV LOG_LEVEL=info
+ENV WIREGUARD_ENABLED=true
 
-# Запуск через supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"] 
+# Команда запуска
+ENTRYPOINT ["/usr/local/bin/cloudbridge-relay"]
+CMD ["--config", "/app/configs/config.json"] 
