@@ -5,25 +5,48 @@ import (
 	"net"
 	"time"
 
-	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2c"
+	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"go.uber.org/zap"
 )
 
+// UnifiedProtocolSelector интерфейс для выбора протокола в unified handler
+type UnifiedProtocolSelector interface {
+	SelectBest() Protocol
+	Current() Protocol
+	ShouldSwitch() bool
+	GetMetrics() *ProtocolMetrics
+	UpdateMetrics(protocol Protocol, latency time.Duration, success bool)
+}
+
+// P2PManagerInterface интерфейс для P2P менеджера
+type P2PManagerInterface interface {
+	IsAvailable(ctx context.Context, clientIP string, tenantID string) bool
+	HandleConnection(ctx context.Context, conn net.Conn, tenantID string) error
+	GetMetrics() *p2p.P2PMetrics
+	UpdatePeerCount(count int)
+}
+
+// P2CManagerInterface интерфейс для P2C менеджера
+type P2CManagerInterface interface {
+	HandleConnection(ctx context.Context, conn net.Conn, tenantID string) error
+	GetMetrics() *p2c.P2CMetrics
+}
+
 // UnifiedConnectionHandler унифицированный обработчик соединений
 type UnifiedConnectionHandler struct {
-	protocolSelector *IntelligentProtocolSelector
-	p2pManager       *p2p.P2PManager
-	p2cManager       *p2c.P2CManager
+	protocolSelector UnifiedProtocolSelector
+	p2pManager       P2PManagerInterface
+	p2cManager       P2CManagerInterface
 	metrics          *ProtocolMetricsCollector
 	logger           *zap.Logger
 }
 
 // NewUnifiedConnectionHandler создает новый унифицированный обработчик соединений
 func NewUnifiedConnectionHandler(
-	selector *IntelligentProtocolSelector,
-	p2pManager *p2p.P2PManager,
-	p2cManager *p2c.P2CManager,
+	selector UnifiedProtocolSelector,
+	p2pManager P2PManagerInterface,
+	p2cManager P2CManagerInterface,
 	logger *zap.Logger,
 ) *UnifiedConnectionHandler {
 	return &UnifiedConnectionHandler{

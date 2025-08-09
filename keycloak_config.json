@@ -1,15 +1,15 @@
 {
   "keycloak": {
     "enabled": true,
-    "server_url": "http://localhost:8080",
+    "server_url": "https://edge.2gc.ru",
     "realm": "cloudbridge",
     "client_id": "relay-client",
-    "client_secret": "JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM",
+    "client_secret": "pvp7Rd0vovKcdhSV38gTMeBgg2u9PTvy",
     "public_key": "-----BEGIN PUBLIC KEY-----
-MIICpTCCAY0CBgGXx2p1VTANBgkqhkiG9w0BAQsFADAWMRQwEgYDVQQDDAtjbG91ZGJyaWRnZTAeFw0yNTA3MDExOTEzNTJaFw0zNTA3MDExOTE1MzJaMBYxFDASBgNVBAMMC2Nsb3VkYnJpZGdlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4gYpWaHsl+K0l8GG1IILwgw9Rx3CMtN7Xe0otQJxDjh8QGGk6Lsve11miF78bJ0WjlzaS3yo9oPIkG2N2H9vR//p0vt72ZkMHq9Yn47b+vBxqfONl2I7Ndy7YXxOKLO0IU4j1taMdAEs5iQAVaMyRxsG3Im0ea2kgkPiMwTOUNFXk8BIJaEDyOJgBkmPsSbfGNtGQ+EpdXIupuSFzYwaPA8DvEV2pOnUmMqai8tV1wOux39SCnx+PMEn9CmWfFUE+xQd/y/ph3cPa/sGcwXxgh+7RgxAt0hu7yOT2UKwOKauzUQvrXuQVYcjeYee459NLPG2x57xhc6Ic1EdFaNBTQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQA+DKZqsCHpfJCNtonPyxQ0GTMtrMCJCWC34XCF7lsiLuC63+xntza7kAi59F0kbG5Cz4r/Y02OqFYFmYEu4eS12ZH/QeMmaRtIPoN0iWJI8jFKgf7ZAq5iJ0Efxr+JIccJrez8yeh/MWqtHIMHKgIDgewvc4aB6XFA0afKMmtaf7nHckhskLM9Z/9V+UDHqNVaqb5O3cmu8SjPdEMR16IZguG43XyuGg5fy79lvEkrpZy7DD9I92EkDApCL7ccIZ2YJPgxnKFF8m7szmj1IsMeY7YMPo6uArs/ajVniXrLB9xEmTDRgSHhn4/XfRZFA4+EokTckkWCnbBPv3iT/EnO
+MIICpTCCAY0CBgGYiuKLiDANBgkqhkiG9w0BAQsFADAWMRQwEgYDVQQDDAtjbG91ZGJyaWRnZTAeFw0yNTA4MDgxODEwNTlaFw0zNTA4MDgxODEyMzlaMBYxFDASBgNVBAMMC2Nsb3VkYnJpZGdlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA+oXwh5MaprIE6J8NZiKsQMR3tCpo+rR8THYJZGJbaQ+AHIpSVqB/Ue3twrgu/hCkO009gGzHab1HLjl0OwL1hUWp5Ne4LZ9q96ELJVv3sPyRRFwtQTmLnwmsjviUuGywtWI0RHO6fRnrj21YclqkWbQLIefY+RJVd4uqEG4xBrYVthEifkOIEoKxocjEifOP6HqrnHzAwe1ZGufK82Ah+QzQWeK0NHoL8YQ4yMr4UgBRbXKjLq29YtxJUyrH5nDOAs7nQluu74Guqm/zuAj2ULFCa1iSJZ6qBNEJOormY8NTeuh6+HHyJZjRzBFOrA+Fdoy8KHTaaPavhXiU3fec3wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQCeqobS2XRYxjyZ1ouDjYRF/3Ek+3nJopfoBet4WLnwTW7GUSNySCy2rJHzkXK2NbSupMZIJBw1uWDUIr5jFjrqVLoEIEIXNee9WS7Pl9eKm1rBBhPdRYEKE6tSu1GM/XwmPF4o2SggqEqdjBs3GhflXIoWJvXpDjJkwK6vI6tpzWmvbCu8RaaKGdxiZzJ+nuOc0hsNOxb1/WSBGKn3yt4wmt7ecReNC9ojijJSnHkk3U6gLAxzXxr1PgfO7RXKJsBHHJaXqOCF6J0YW7Cm6pwteBnADMsvyNXTMxW9tw2Crh24ZxP+y9lHE/1c8C1kIvZGWxPQopndC/u2+eOpRWmt
 -----END PUBLIC KEY-----",
     "token_validation": {
-      "issuer": "http://localhost:8080/realms/cloudbridge",
+      "issuer": "https://edge.2gc.ru/realms/cloudbridge",
       "audience": "relay-client",
       "clock_skew": "30s"
     },

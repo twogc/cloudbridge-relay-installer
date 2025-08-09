@@ -37,7 +37,7 @@ import (
 )
 
 var (
-	configFile = flag.String("config", "config/config.json", "Path to configuration file")
+	configFile = flag.String("config", "configs/config.json", "Path to configuration file")
 	logLevel   = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	logFile    = flag.String("log-file", "", "Log file path")
 	

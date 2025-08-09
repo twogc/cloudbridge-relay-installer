@@ -119,6 +119,14 @@ quick_lynis_test() {
         local security_issues=$(grep -c "Security issue:" "$log_file" || echo "0")
         local score=$(grep "Hardening index" "$log_file" | tail -1 | grep -o '[0-9]\+' | head -1 || echo "0")
         
+        # Проверка WireGuard порта
+        local wireguard_port_status=""
+        if sudo ufw status | grep -q "51820/udp.*ALLOW"; then
+            wireguard_port_status="✅ WireGuard порт 51820/udp открыт"
+        else
+            wireguard_port_status="❌ WireGuard порт 51820/udp НЕ открыт"
+        fi
+        
         # Формируем сообщение
         local message="Быстрый тест Lynis завершен
 
@@ -127,6 +135,7 @@ quick_lynis_test() {
 • Предупреждений: ${warnings}
 • Рекомендаций: ${suggestions}
 • Проблем безопасности: ${security_issues}
+• $wireguard_port_status
 
 Лог файл: $log_file
 Время выполнения: ${duration} секунд

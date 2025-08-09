@@ -85,6 +85,9 @@ setup_external_services() {
     ufw allow 8082/tcp comment "Relay Server API 2 (external/internal)"
     ufw allow 3456/tcp comment "Relay Server Custom (external/internal)"
     
+    # WireGuard P2P Mesh
+    ufw allow 51820/udp comment "WireGuard P2P Mesh"
+    
     # Не открываем 8081 и 8082 наружу
     # ufw allow 8081/tcp comment "Relay Metrics (открыт для всех)"
     # ufw allow 8082/tcp comment "Relay API (открыт для всех)"
@@ -174,6 +177,7 @@ verify_configuration() {
     # Проверка внешних сервисов
     local services=(
         "8083:Relay API"
+        "51820:WireGuard P2P Mesh"
     )
     
     for service in "${services[@]}"; do

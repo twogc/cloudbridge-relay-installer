@@ -149,6 +149,16 @@ check_critical_services() {
     # Проверяем критически важные сервисы
     local critical_services=("fail2ban" "sshd" "rsyslog")
     
+    # Проверяем Docker контейнеры
+    if command -v docker &> /dev/null; then
+        if ! docker ps --format "table {{.Names}}\t{{.Status}}" | grep -q "cloudbridge-relay.*Up"; then
+            failed_services+=("cloudbridge-relay")
+        fi
+        if ! docker ps --format "table {{.Names}}\t{{.Status}}" | grep -q "cloudbridge-keycloak.*Up"; then
+            failed_services+=("cloudbridge-keycloak")
+        fi
+    fi
+    
     for service in "${critical_services[@]}"; do
         if ! systemctl is-active --quiet "$service"; then
             failed_services+=("$service")
@@ -158,6 +168,11 @@ check_critical_services() {
     # Специальная проверка UFW
     if ! sudo ufw status | grep -q "Status: active"; then
         failed_services+=("ufw")
+    fi
+    
+    # Проверка WireGuard порта
+    if ! sudo ufw status | grep -q "51820/udp.*ALLOW"; then
+        failed_services+=("wireguard-port")
     fi
     
     if [[ ${#failed_services[@]} -gt 0 ]]; then
@@ -372,6 +387,7 @@ check_firewall_logs() {
                         443) service_info=" (HTTPS)" ;;
                         5432) service_info=" (PostgreSQL)" ;;
                         8081|8082) service_info=" (Relay Server)" ;;
+                        51820) service_info=" (WireGuard P2P)" ;;
                     esac
                     message+="$service_info"
                 fi

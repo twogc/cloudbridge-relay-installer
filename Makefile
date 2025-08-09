@@ -1,257 +1,209 @@
-# CloudBridge Relay v2.0 Makefile
-# Enterprise-grade высокопроизводительный relay сервер
+# Makefile для CloudBridge Relay WireGuard
+# Управление сборкой, тестированием, релизом и развертыванием
 
 # Переменные
 BINARY_NAME=cloudbridge-relay
-VERSION=2.0.0
+VERSION=$(shell git describe --tags --always --dirty)
 BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
 GIT_COMMIT=$(shell git rev-parse --short HEAD)
 LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}"
+
+# Платформы для кросс-компиляции
+PLATFORMS=linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
+
+# Docker
+DOCKER_IMAGE=twogc/cloudbridge-relay
+DOCKER_TAG=${VERSION}
 
 # Цвета для вывода
 GREEN=\033[0;32m
 YELLOW=\033[1;33m
 RED=\033[0;31m
-BLUE=\033[0;34m
 NC=\033[0m # No Color
 
-# Цели по умолчанию
-.PHONY: help build test clean install dev watch docker-build docker-run deploy-staging deploy-production
+.PHONY: help build test clean install docker-build docker-push release
 
-# Помощь
-help: ## Показать справку по командам
-	@echo "$(BLUE)CloudBridge Relay v2.0 - Makefile$(NC)"
+# Основная цель
+help: ## Показать справку
+	@echo "$(GREEN)CloudBridge Relay WireGuard - Инструменты управления$(NC)"
 	@echo ""
-	@echo "$(GREEN)Доступные команды:$(NC)"
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo "$(YELLOW)Доступные команды:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
 
 # Сборка
 build: ## Собрать бинарный файл
-	@echo "$(BLUE)Сборка CloudBridge Relay v${VERSION}...$(NC)"
-	@go build ${LDFLAGS} -o bin/${BINARY_NAME} ./cmd/relay
-	@echo "$(GREEN)✓ Сборка завершена: bin/${BINARY_NAME}$(NC)"
+	@echo "$(GREEN)Сборка CloudBridge Relay...$(NC)"
+	go build ${LDFLAGS} -o bin/${BINARY_NAME} ./cmd/relay
+	@echo "$(GREEN)Бинарный файл создан: bin/${BINARY_NAME}$(NC)"
 
-build-linux: ## Собрать для Linux
-	@echo "$(BLUE)Сборка для Linux...$(NC)"
-	@GOOS=linux GOARCH=amd64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-linux-amd64 ./cmd/relay
-	@echo "$(GREEN)✓ Сборка для Linux завершена$(NC)"
-
-build-windows: ## Собрать для Windows
-	@echo "$(BLUE)Сборка для Windows...$(NC)"
-	@GOOS=windows GOARCH=amd64 go build ${LDFLAGS} -o bin/${BINARY_NAME}-windows-amd64.exe ./cmd/relay
-	@echo "$(GREEN)✓ Сборка для Windows завершена$(NC)"
-
-build-all: build build-linux build-windows ## Собрать для всех платформ
-	@echo "$(GREEN)✓ Сборка для всех платформ завершена$(NC)"
+build-all: ## Собрать для всех платформ
+	@echo "$(GREEN)Кросс-компиляция для всех платформ...$(NC)"
+	@mkdir -p bin
+	@for platform in ${PLATFORMS}; do \
+		IFS='/' read -r GOOS GOARCH <<< "$$platform"; \
+		BINARY_NAME_EXT=$${BINARY_NAME}; \
+		if [ "$$GOOS" = "windows" ]; then \
+			BINARY_NAME_EXT=$${BINARY_NAME}.exe; \
+		fi; \
+		echo "Сборка для $$GOOS/$$GOARCH..."; \
+		GOOS=$$GOOS GOARCH=$$GOARCH go build ${LDFLAGS} -o bin/$${BINARY_NAME}-$$GOOS-$$GOARCH$${BINARY_NAME_EXT} ./cmd/relay; \
+	done
+	@echo "$(GREEN)Сборка завершена!$(NC)"
 
 # Тестирование
-test: ## Запустить unit тесты
-	@echo "$(BLUE)Запуск unit тестов...$(NC)"
-	@go test -v ./...
-	@echo "$(GREEN)✓ Unit тесты завершены$(NC)"
+test: ## Запустить все тесты
+	@echo "$(GREEN)Запуск тестов...$(NC)"
+	go test -v ./...
+	@echo "$(GREEN)Тесты завершены!$(NC)"
+
+test-wireguard: ## Запустить тесты WireGuard
+	@echo "$(GREEN)Запуск тестов WireGuard...$(NC)"
+	go test -v -run TestWireGuard ./cmd/relay
+	@echo "$(GREEN)Тесты WireGuard завершены!$(NC)"
+
+test-real-wireguard: ## Запустить тесты реального WireGuard
+	@echo "$(GREEN)Запуск тестов реального WireGuard...$(NC)"
+	sudo go test -v -run TestRealWireGuard ./cmd/relay
+	@echo "$(GREEN)Тесты реального WireGuard завершены!$(NC)"
 
 test-coverage: ## Запустить тесты с покрытием
-	@echo "$(BLUE)Запуск тестов с покрытием...$(NC)"
-	@go test -v -coverprofile=coverage.out ./...
-	@go tool cover -html=coverage.out -o coverage.html
-	@echo "$(GREEN)✓ Отчет о покрытии создан: coverage.html$(NC)"
+	@echo "$(GREEN)Запуск тестов с покрытием...$(NC)"
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "$(GREEN)Отчет о покрытии создан: coverage.html$(NC)"
 
-test-integration: ## Запустить integration тесты
-	@echo "$(BLUE)Запуск integration тестов...$(NC)"
-	@go test -v -tags=integration ./tests/
-	@echo "$(GREEN)✓ Integration тесты завершены$(NC)"
+# Установка
+install: ## Установить в систему
+	@echo "$(GREEN)Установка CloudBridge Relay...$(NC)"
+	go install ${LDFLAGS} ./cmd/relay
+	@echo "$(GREEN)CloudBridge Relay установлен!$(NC)"
 
-test-performance: ## Запустить performance тесты
-	@echo "$(BLUE)Запуск performance тестов...$(NC)"
-	@go test -v -tags=performance ./tests/
-	@echo "$(GREEN)✓ Performance тесты завершены$(NC)"
-
-test-all: test test-coverage test-integration test-performance ## Запустить все тесты
-
-# Линтинг и форматирование
-lint: ## Запустить линтер
-	@echo "$(BLUE)Проверка кода линтером...$(NC)"
-	@golangci-lint run
-	@echo "$(GREEN)✓ Линтинг завершен$(NC)"
-
-fmt: ## Форматировать код
-	@echo "$(BLUE)Форматирование кода...$(NC)"
-	@go fmt ./...
-	@echo "$(GREEN)✓ Форматирование завершено$(NC)"
-
-vet: ## Проверить код с go vet
-	@echo "$(BLUE)Проверка кода с go vet...$(NC)"
-	@go vet ./...
-	@echo "$(GREEN)✓ Проверка завершена$(NC)"
-
-# Разработка
-dev: ## Запустить в режиме разработки
-	@echo "$(BLUE)Запуск в режиме разработки...$(NC)"
-	@go run ${LDFLAGS} ./cmd/relay -config config/config.json
-
-watch: ## Запустить с hot reload
-	@echo "$(BLUE)Запуск с hot reload...$(NC)"
-	@air -c .air.toml
-
-install: ## Установить зависимости
-	@echo "$(BLUE)Установка зависимостей...$(NC)"
-	@go mod download
-	@go mod tidy
-	@echo "$(GREEN)✓ Зависимости установлены$(NC)"
+install-wireguard: ## Установить WireGuard зависимости
+	@echo "$(GREEN)Установка WireGuard зависимостей...$(NC)"
+	sudo ./scripts/install_wireguard_go.sh
+	@echo "$(GREEN)WireGuard зависимости установлены!$(NC)"
 
 # Docker
 docker-build: ## Собрать Docker образ
-	@echo "$(BLUE)Сборка Docker образа...$(NC)"
-	@docker build -t ${BINARY_NAME}:${VERSION} .
-	@docker tag ${BINARY_NAME}:${VERSION} ${BINARY_NAME}:latest
-	@echo "$(GREEN)✓ Docker образ создан: ${BINARY_NAME}:${VERSION}$(NC)"
+	@echo "$(GREEN)Сборка Docker образа...$(NC)"
+	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+	docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+	@echo "$(GREEN)Docker образ создан: ${DOCKER_IMAGE}:${DOCKER_TAG}$(NC)"
 
-docker-run: ## Запустить Docker контейнер
-	@echo "$(BLUE)Запуск Docker контейнера...$(NC)"
-	@docker run -d \
-		--name ${BINARY_NAME} \
+docker-push: ## Отправить Docker образ в registry
+	@echo "$(GREEN)Отправка Docker образа...$(NC)"
+	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+	docker push ${DOCKER_IMAGE}:latest
+	@echo "$(GREEN)Docker образ отправлен!$(NC)"
+
+docker-run: ## Запустить в Docker
+	@echo "$(GREEN)Запуск в Docker...$(NC)"
+	docker run -d --name cloudbridge-relay \
 		-p 8080:8080 \
-		-p 8081:8081 \
-		-v $(PWD)/config:/app/config \
-		${BINARY_NAME}:${VERSION}
-	@echo "$(GREEN)✓ Контейнер запущен$(NC)"
+		-p 9090:9090 \
+		-v $(PWD)/configs:/app/configs \
+		${DOCKER_IMAGE}:latest
 
-docker-stop: ## Остановить Docker контейнер
-	@echo "$(BLUE)Остановка Docker контейнера...$(NC)"
-	@docker stop ${BINARY_NAME} || true
-	@docker rm ${BINARY_NAME} || true
-	@echo "$(GREEN)✓ Контейнер остановлен$(NC)"
+# Релиз
+release: ## Создать релиз
+	@echo "$(GREEN)Создание релиза...$(NC)"
+	@if [ -z "$(VERSION)" ]; then \
+		echo "$(RED)Ошибка: VERSION не установлен$(NC)"; \
+		exit 1; \
+	fi
+	@echo "Создание релиза версии $(VERSION)..."
+	@mkdir -p releases/$(VERSION)
+	@cp bin/* releases/$(VERSION)/
+	@cp configs/*.yaml releases/$(VERSION)/
+	@cp scripts/install.sh releases/$(VERSION)/
+	@cp README.md releases/$(VERSION)/
+	@cd releases && tar -czf $(VERSION).tar.gz $(VERSION)
+	@echo "$(GREEN)Релиз создан: releases/$(VERSION).tar.gz$(NC)"
 
-# Развертывание
-deploy-staging: ## Развернуть в staging
-	@echo "$(BLUE)Развертывание в staging...$(NC)"
-	@kubectl apply -f k8s/staging/
-	@echo "$(GREEN)✓ Развертывание в staging завершено$(NC)"
-
-deploy-production: ## Развернуть в production
-	@echo "$(BLUE)Развертывание в production...$(NC)"
-	@kubectl apply -f k8s/production/
-	@echo "$(GREEN)✓ Развертывание в production завершено$(NC)"
-
-# Мониторинг
-monitor-staging: ## Мониторинг staging
-	@echo "$(BLUE)Мониторинг staging...$(NC)"
-	@kubectl get pods -n staging
-	@kubectl logs -f deployment/${BINARY_NAME} -n staging
-
-monitor-production: ## Мониторинг production
-	@echo "$(BLUE)Мониторинг production...$(NC)"
-	@kubectl get pods -n production
-	@kubectl logs -f deployment/${BINARY_NAME} -n production
+release-github: ## Создать GitHub релиз
+	@echo "$(GREEN)Создание GitHub релиза...$(NC)"
+	@if [ -z "$(VERSION)" ]; then \
+		echo "$(RED)Ошибка: VERSION не установлен$(NC)"; \
+		exit 1; \
+	fi
+	@gh release create $(VERSION) \
+		--title "CloudBridge Relay $(VERSION)" \
+		--notes "Релиз CloudBridge Relay с WireGuard интеграцией" \
+		releases/$(VERSION).tar.gz
 
 # Очистка
 clean: ## Очистить артефакты сборки
-	@echo "$(BLUE)Очистка артефактов...$(NC)"
-	@rm -rf bin/
-	@rm -f coverage.out coverage.html
-	@go clean
-	@echo "$(GREEN)✓ Очистка завершена$(NC)"
+	@echo "$(GREEN)Очистка...$(NC)"
+	rm -rf bin/
+	rm -rf releases/
+	rm -f coverage.out coverage.html
+	go clean
+	@echo "$(GREEN)Очистка завершена!$(NC)"
 
-# Проверка качества
-quality: lint vet test-coverage ## Проверить качество кода
-	@echo "$(GREEN)✓ Проверка качества завершена$(NC)"
+# Проверки
+lint: ## Запустить линтер
+	@echo "$(GREEN)Запуск линтера...$(NC)"
+	golangci-lint run
+	@echo "$(GREEN)Линтер завершен!$(NC)"
 
-# Бенчмарки
-bench: ## Запустить бенчмарки
-	@echo "$(BLUE)Запуск бенчмарков...$(NC)"
-	@go test -bench=. -benchmem ./...
-	@echo "$(GREEN)✓ Бенчмарки завершены$(NC)"
+fmt: ## Форматировать код
+	@echo "$(GREEN)Форматирование кода...$(NC)"
+	go fmt ./...
+	@echo "$(GREEN)Форматирование завершено!$(NC)"
 
-# Генерация документации
-docs: ## Генерировать документацию
-	@echo "$(BLUE)Генерация документации...$(NC)"
-	@swag init -g cmd/relay/main.go
-	@echo "$(GREEN)✓ Документация сгенерирована$(NC)"
+vet: ## Проверить код
+	@echo "$(GREEN)Проверка кода...$(NC)"
+	go vet ./...
+	@echo "$(GREEN)Проверка завершена!$(NC)"
 
-# Проверка безопасности
-security: ## Проверить безопасность
-	@echo "$(BLUE)Проверка безопасности...$(NC)"
-	@gosec ./...
-	@echo "$(GREEN)✓ Проверка безопасности завершена$(NC)"
+# Документация
+docs: ## Сгенерировать документацию
+	@echo "$(GREEN)Генерация документации...$(NC)"
+	@mkdir -p docs/generated
+	godoc -http=:6060 &
+	@echo "$(GREEN)Документация доступна на http://localhost:6060$(NC)"
 
-# Создание релиза
-release: build-all test-all quality ## Создать релиз
-	@echo "$(BLUE)Создание релиза v${VERSION}...$(NC)"
-	@mkdir -p releases
-	@cp bin/${BINARY_NAME}* releases/
-	@cp config/config.json releases/
-	@cp README.md releases/
-	@cp CHANGELOG.md releases/
-	@tar -czf releases/${BINARY_NAME}-${VERSION}.tar.gz -C releases .
-	@echo "$(GREEN)✓ Релиз создан: releases/${BINARY_NAME}-${VERSION}.tar.gz$(NC)"
+# Мониторинг
+monitor: ## Запустить мониторинг
+	@echo "$(GREEN)Запуск мониторинга...$(NC)"
+	@if [ -f bin/${BINARY_NAME} ]; then \
+		./bin/${BINARY_NAME} --config configs/config.yaml; \
+	else \
+		echo "$(RED)Бинарный файл не найден. Запустите 'make build'$(NC)"; \
+	fi
 
-# Проверка версии
+# Развертывание
+deploy-local: ## Развернуть локально
+	@echo "$(GREEN)Локальное развертывание...$(NC)"
+	@make install-wireguard
+	@make build
+	@make monitor
+
+deploy-docker: ## Развернуть через Docker
+	@echo "$(GREEN)Развертывание через Docker...$(NC)"
+	@make docker-build
+	@make docker-run
+
+# Утилиты
 version: ## Показать версию
-	@echo "$(BLUE)CloudBridge Relay v${VERSION}$(NC)"
-	@echo "Build Time: ${BUILD_TIME}"
-	@echo "Git Commit: ${GIT_COMMIT}"
+	@echo "$(GREEN)Версия: $(VERSION)$(NC)"
+	@echo "$(GREEN)Время сборки: $(BUILD_TIME)$(NC)"
+	@echo "$(GREEN)Git commit: $(GIT_COMMIT)$(NC)"
 
-# Проверка зависимостей
-deps-check: ## Проверить зависимости
-	@echo "$(BLUE)Проверка зависимостей...$(NC)"
-	@go list -u -m all
-	@echo "$(GREEN)✓ Проверка зависимостей завершена$(NC)"
+deps: ## Установить зависимости
+	@echo "$(GREEN)Установка зависимостей...$(NC)"
+	go mod download
+	go mod tidy
+	@echo "$(GREEN)Зависимости установлены!$(NC)"
 
-# Обновление зависимостей
-deps-update: ## Обновить зависимости
-	@echo "$(BLUE)Обновление зависимостей...$(NC)"
-	@go get -u ./...
-	@go mod tidy
-	@echo "$(GREEN)✓ Зависимости обновлены$(NC)"
+# Проверка окружения
+check-env: ## Проверить окружение
+	@echo "$(GREEN)Проверка окружения...$(NC)"
+	@command -v go >/dev/null 2>&1 || { echo "$(RED)Go не установлен$(NC)"; exit 1; }
+	@command -v git >/dev/null 2>&1 || { echo "$(RED)Git не установлен$(NC)"; exit 1; }
+	@command -v docker >/dev/null 2>&1 || { echo "$(YELLOW)Docker не установлен (некоторые команды недоступны)$(NC)"; }
+	@echo "$(GREEN)Окружение готово!$(NC)"
 
-# Проверка готовности к production
-production-ready: build test-all quality security ## Проверить готовность к production
-	@echo "$(GREEN)✓ Проект готов к production!$(NC)"
-
-# Информация о системе
-info: ## Показать информацию о системе
-	@echo "$(BLUE)Информация о системе:$(NC)"
-	@echo "Go Version: $(shell go version)"
-	@echo "OS: $(shell uname -s)"
-	@echo "Architecture: $(shell uname -m)"
-	@echo "Project Version: ${VERSION}"
-	@echo "Build Time: ${BUILD_TIME}"
-	@echo "Git Commit: ${GIT_COMMIT}"
-
-# Создание .gitignore
-gitignore: ## Создать .gitignore
-	@echo "$(BLUE)Создание .gitignore...$(NC)"
-	@echo "# Binaries for programs and plugins" > .gitignore
-	@echo "*.exe" >> .gitignore
-	@echo "*.exe~" >> .gitignore
-	@echo "*.dll" >> .gitignore
-	@echo "*.so" >> .gitignore
-	@echo "*.dylib" >> .gitignore
-	@echo "" >> .gitignore
-	@echo "# Test binary, built with 'go test -c'" >> .gitignore
-	@echo "*.test" >> .gitignore
-	@echo "" >> .gitignore
-	@echo "# Output of the go coverage tool" >> .gitignore
-	@echo "*.out" >> .gitignore
-	@echo "coverage.html" >> .gitignore
-	@echo "" >> .gitignore
-	@echo "# Build artifacts" >> .gitignore
-	@echo "bin/" >> .gitignore
-	@echo "releases/" >> .gitignore
-	@echo "" >> .gitignore
-	@echo "# IDE files" >> .gitignore
-	@echo ".vscode/" >> .gitignore
-	@echo ".idea/" >> .gitignore
-	@echo "" >> .gitignore
-	@echo "# OS files" >> .gitignore
-	@echo ".DS_Store" >> .gitignore
-	@echo "Thumbs.db" >> .gitignore
-	@echo "$(GREEN)✓ .gitignore создан$(NC)"
-
-# Инициализация проекта
-init: gitignore install ## Инициализировать проект
-	@echo "$(GREEN)✓ Проект инициализирован$(NC)"
-
-# Полная проверка перед коммитом
-pre-commit: fmt lint vet test quality ## Полная проверка перед коммитом
-	@echo "$(GREEN)✓ Код готов к коммиту!$(NC)" 
+# Полная сборка
+all: check-env deps fmt vet lint test build ## Полная сборка проекта
+	@echo "$(GREEN)Полная сборка завершена!$(NC)" 
