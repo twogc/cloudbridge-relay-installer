@@ -4,8 +4,8 @@ set -e
 # Генерируем .env файл если его нет
 if [ ! -f ".env" ]; then
     echo -e "\033[1;34m[INFO]\033[0m Генерация .env файла..."
-    if [ -f "scripts/setup/generate_secrets.sh" ]; then
-    bash scripts/setup/generate_secrets.sh --env .env
+    if [ -f "./generate_secrets.sh" ]; then
+    bash ./generate_secrets.sh --env .env
     else
         echo -e "\033[1;33m[WARNING]\033[0m Скрипт generate_secrets.sh не найден"
     fi
@@ -21,3 +21,8 @@ if [ -f ".env" ]; then
     fi
     echo -e "\033[0;32m[SUCCESS]\033[0m Файл .env проверен"
 fi 
+
+# Cloudflare Agent Telegram/Relay Monitoring
+export TELEGRAM_BOT_TOKEN="8188460753:AAF31IbAFk1Z6Sc9hfjxvI9ZweQdHXoW0ug"
+export TELEGRAM_ADMIN_CHAT_ID="-1002403555405"
+export RELAY_METRICS_URL="http://localhost:9090/metrics" 

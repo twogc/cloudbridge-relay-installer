@@ -1,0 +1,281 @@
+# MITRE ATT&CK Framework Mapping для CloudBridge Relay Security
+# Маппинг правил детекции на тактики и техники MITRE ATT&CK
+
+mitre_attack_mapping:
+  # Initial Access (TA0001)
+  initial_access:
+    valid_accounts:
+      - technique_id: "T1078"
+      - technique_name: "Valid Accounts"
+      - detection_rules:
+          - "SSH Brute Force Attack"
+          - "API Rate Limiting Violation"
+      - sigma_rule_id: "1001"
+      - yara_rule: "Suspicious_Scripts"
+      
+    external_remote_services:
+      - technique_id: "T1133"
+      - technique_name: "External Remote Services"
+      - detection_rules:
+          - "PostgreSQL Connection Attempt"
+      - sigma_rule_id: "1002"
+      
+  # Execution (TA0002)
+  execution:
+    command_and_scripting_interpreter:
+      - technique_id: "T1059"
+      - technique_name: "Command and Scripting Interpreter"
+      - detection_rules:
+          - "Suspicious Process Creation"
+      - sigma_rule_id: "1006"
+      - yara_rule: "Suspicious_Scripts"
+      
+    user_execution:
+      - technique_id: "T1204"
+      - technique_name: "User Execution"
+      - detection_rules:
+          - "Suspicious Process Creation"
+      - sigma_rule_id: "1006"
+      
+  # Persistence (TA0003)
+  persistence:
+    scheduled_task_job:
+      - technique_id: "T1053"
+      - technique_name: "Scheduled Task/Job"
+      - detection_rules:
+          - "Persistence Detection"
+      - yara_rule: "Persistence_Detection"
+      
+    create_modify_system_process:
+      - technique_id: "T1543"
+      - technique_name: "Create or Modify System Process"
+      - detection_rules:
+          - "Suspicious Process Creation"
+      - sigma_rule_id: "1006"
+      
+  # Privilege Escalation (TA0004)
+  privilege_escalation:
+    process_injection:
+      - technique_id: "T1055"
+      - technique_name: "Process Injection"
+      - detection_rules:
+          - "Privilege Escalation"
+      - sigma_rule_id: "1005"
+      
+    access_token_manipulation:
+      - technique_id: "T1134"
+      - technique_name: "Access Token Manipulation"
+      - detection_rules:
+          - "Privilege Escalation"
+      - sigma_rule_id: "1005"
+      
+  # Defense Evasion (TA0005)
+  defense_evasion:
+    obfuscated_files_or_information:
+      - technique_id: "T1027"
+      - technique_name: "Obfuscated Files or Information"
+      - detection_rules:
+          - "Obfuscated Code Detection"
+      - yara_rule: "Obfuscated_Code"
+      
+    process_hollowing:
+      - technique_id: "T1055.012"
+      - technique_name: "Process Hollowing"
+      - detection_rules:
+          - "Suspicious Process Creation"
+      - sigma_rule_id: "1006"
+      
+  # Credential Access (TA0006)
+  credential_access:
+    brute_force:
+      - technique_id: "T1110"
+      - technique_name: "Brute Force"
+      - detection_rules:
+          - "SSH Brute Force Attack"
+      - sigma_rule_id: "1001"
+      
+    input_capture:
+      - technique_id: "T1056"
+      - technique_name: "Input Capture"
+      - detection_rules:
+          - "Keylogger Detection"
+      - yara_rule: "Keylogger_Detection"
+      
+  # Discovery (TA0007)
+  discovery:
+    system_information_discovery:
+      - technique_id: "T1082"
+      - technique_name: "System Information Discovery"
+      - detection_rules:
+          - "Network Scanner"
+      - yara_rule: "Network_Scanner"
+      
+    network_service_discovery:
+      - technique_id: "T1046"
+      - technique_name: "Network Service Discovery"
+      - detection_rules:
+          - "Relay Server Port Scan"
+      - sigma_rule_id: "1003"
+      
+  # Lateral Movement (TA0008)
+  lateral_movement:
+    remote_services:
+      - technique_id: "T1021"
+      - technique_name: "Remote Services"
+      - detection_rules:
+          - "Network Anomaly Detection"
+      - sigma_rule_id: "1007"
+      
+    internal_spearphishing:
+      - technique_id: "T1534"
+      - technique_name: "Internal Spearphishing"
+      - detection_rules:
+          - "Suspicious Process Creation"
+      - sigma_rule_id: "1006"
+      
+  # Collection (TA0009)
+  collection:
+    data_from_local_system:
+      - technique_id: "T1005"
+      - technique_name: "Data from Local System"
+      - detection_rules:
+          - "File Integrity Monitoring"
+      - sigma_rule_id: "1008"
+      
+    screen_capture:
+      - technique_id: "T1113"
+      - technique_name: "Screen Capture"
+      - detection_rules:
+          - "RAT Detection"
+      - yara_rule: "RAT_Detection"
+      
+  # Command and Control (TA0011)
+  command_and_control:
+    application_layer_protocol:
+      - technique_id: "T1071"
+      - technique_name: "Application Layer Protocol"
+      - detection_rules:
+          - "Network Anomaly Detection"
+      - sigma_rule_id: "1007"
+      
+    web_service:
+      - technique_id: "T1102"
+      - technique_name: "Web Service"
+      - detection_rules:
+          - "Network Anomaly Detection"
+      - sigma_rule_id: "1007"
+      
+  # Exfiltration (TA0010)
+  exfiltration:
+    automated_exfiltration:
+      - technique_id: "T1020"
+      - technique_name: "Automated Exfiltration"
+      - detection_rules:
+          - "Data Exfiltration Detection"
+      - sigma_rule_id: "1004"
+      - yara_rule: "Data_Exfiltration"
+      
+    data_compressed:
+      - technique_id: "T1002"
+      - technique_name: "Data Compressed"
+      - detection_rules:
+          - "Data Exfiltration Detection"
+      - sigma_rule_id: "1004"
+      - yara_rule: "Data_Exfiltration"
+      
+  # Impact (TA0040)
+  impact:
+    data_encrypted_for_impact:
+      - technique_id: "T1486"
+      - technique_name: "Data Encrypted for Impact"
+      - detection_rules:
+          - "Ransomware Detection"
+      - yara_rule: "RAT_Detection"
+      
+    service_stop:
+      - technique_id: "T1489"
+      - technique_name: "Service Stop"
+      - detection_rules:
+          - "Critical Service Monitoring"
+      - sigma_rule_id: "1005"
+
+# Корреляционные правила на основе MITRE ATT&CK
+correlation_rules:
+  attack_chain_1:
+    name: "Initial Access → Execution → Persistence"
+    description: "Цепочка атаки: получение доступа → выполнение → закрепление"
+    tactics:
+      - "Initial Access"
+      - "Execution"
+      - "Persistence"
+    techniques:
+      - "T1078"  # Valid Accounts
+      - "T1059"  # Command and Scripting Interpreter
+      - "T1053"  # Scheduled Task/Job
+    time_window: "30 minutes"
+    severity: "high"
+    
+  attack_chain_2:
+    name: "Privilege Escalation → Discovery → Lateral Movement"
+    description: "Цепочка атаки: повышение привилегий → разведка → горизонтальное перемещение"
+    tactics:
+      - "Privilege Escalation"
+      - "Discovery"
+      - "Lateral Movement"
+    techniques:
+      - "T1055"  # Process Injection
+      - "T1082"  # System Information Discovery
+      - "T1021"  # Remote Services
+    time_window: "1 hour"
+    severity: "critical"
+    
+  attack_chain_3:
+    name: "Collection → Exfiltration → Impact"
+    description: "Цепочка атаки: сбор данных → утечка → воздействие"
+    tactics:
+      - "Collection"
+      - "Exfiltration"
+      - "Impact"
+    techniques:
+      - "T1005"  # Data from Local System
+      - "T1020"  # Automated Exfiltration
+      - "T1486"  # Data Encrypted for Impact
+    time_window: "2 hours"
+    severity: "critical"
+
+# Настройки уведомлений по MITRE ATT&CK
+notification_settings:
+  initial_access:
+    telegram_template: |
+      🚨 [INITIAL ACCESS] Обнаружена попытка получения доступа
+      
+      Техника: {technique_name} ({technique_id})
+      Источник: {source_ip}
+      Время: {timestamp}
+      Уровень угрозы: {severity}
+      
+      Немедленно проверьте систему!
+      
+  privilege_escalation:
+    telegram_template: |
+      🚨 [PRIVILEGE ESCALATION] Обнаружено повышение привилегий
+      
+      Техника: {technique_name} ({technique_id})
+      Пользователь: {user}
+      Процесс: {process}
+      Время: {timestamp}
+      Уровень угрозы: {severity}
+      
+      КРИТИЧЕСКАЯ УГРОЗА!
+      
+  data_exfiltration:
+    telegram_template: |
+      🚨 [DATA EXFILTRATION] Обнаружена утечка данных
+      
+      Техника: {technique_name} ({technique_id})
+      Объем данных: {data_size}
+      Назначение: {destination}
+      Время: {timestamp}
+      Уровень угрозы: {severity}
+      
+      НЕМЕДЛЕННО БЛОКИРУЙТЕ СИСТЕМУ! 

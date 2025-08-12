@@ -1,14 +1,14 @@
 {
   "server": {
-    "address": ":8080",
-    "port": 8080,
+    "address": ":3456",
+    "port": 3456,
     "timeout": "30s",
     "max_tunnels": 1000,
     "ping_interval": "30s",
     "cleanup_interval": "1m"
   },
   "django": {
-    "api_endpoint": "http://localhost:8000/api",
+    "api_endpoint": "http://localhost:8000/api/",
     "jwt_secret": "${RELAY_JWT_SECRET}",
     "jwt_expiry": "24h",
     "rest_timeout": "5s",
@@ -17,27 +17,25 @@
     "rest_retry_delay": "100ms"
   },
   "keycloak": {
-    "enabled": true,
-    "server_url": "http://keycloak:8080",
-    "realm": "cloudbridge",
-    "client_id": "relay-client",
-    "client_secret": "JLowpQ24MDLYkHM7auMYzJSTbp9eCjfM",
-    "public_key": "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4gYpWaHsl+K0l8GG1IIL\\nwgw9Rx3CMtN7Xe0otQJxDjh8QGGk6Lsve11miF78bJ0WjlzaS3yo9oPIkG2N2H9v\\nR//p0vt72ZkMHq9Yn47b+vBxqfONl2I7Ndy7YXxOKLO0IU4j1taMdAEs5iQAVaMy\\nRxsG3Im0ea2kgkPiMwTOUNFXk8BIJaEDyOJgBkmPsSbfGNtGQ+EpdXIupuSFzYw\\naPA8DvEV2pOnUmMqai8tV1wOux39SCnx+PMEn9CmWfFUE+xQd/y/ph3cPa/sGcwX\\nxgh+7RgxAt0hu7yOT2UKwOKauzUQvrXuQVYcjeYee459NLPG2x57xhc6Ic1EdFaN\\nBTQIDAQAB\\n-----END PUBLIC KEY-----",
+    "enabled": false,
+    "server_url": "${KEYCLOAK_SERVER_URL}",
+    "realm": "${KEYCLOAK_REALM}",
+    "client_id": "${KEYCLOAK_CLIENT_ID}",
+    "client_secret": "${KEYCLOAK_CLIENT_SECRET}",
+    "public_key": "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwYizA49h313kUlnaCD8u\\n3oWgVV0o3mEPpuyhfpp+o/PQNvg6oolodiUhum9uHROvXWT/OPlPLy6fsC3hpprl\\nVII7DiFuRYxtWU24O1Nd66sLt8lNxfTHKH/fwlS4opPHaHZkFzIXrKNeJvTf+kO/h\\nHial8Dut+Z/tIBcwBrPWVll6P/4wpruZlK6dWoNtpac/m6RYyrEMnX+nQ9DZ3S/bS\\nA1SUvRASCWxk/qQQpz/Zp3sgqLNa12h/JztEUuHm1RyshKFvHsTwJuuvmXzzJyAMP\\nPTHr0M0jcdYH64VJFoDSp6xWgqFpuCn3WqevXCVSMfeI1g4TzLDUEBZdesI4PawID\\nAQAB\\n-----END PUBLIC KEY-----",
     "token_validation": {
-      "issuer": "https://edge.2gc.ru/realms/cloudbridge",
-      "audience": "relay-client",
+      "issuer": "${KEYCLOAK_ISSUER}",
+      "audience": "${KEYCLOAK_AUDIENCE}",
       "clock_skew": "30s"
     },
     "jwks_cache_ttl": "1h",
     "http_timeout": "30s"
   },
   "security": {
-    "tls_enabled": true,
+    "tls_enabled": false,
     "cert_file": "${RELAY_TLS_CERT_FILE}",
     "key_file": "${RELAY_TLS_KEY_FILE}",
-    "allowed_ips": [
-      "0.0.0.0/0"
-    ],
+    "allowed_ips": [],
     "rate_limit": {
       "enabled": true,
       "requests_per_second": 100,
@@ -47,15 +45,11 @@
       "enabled": false,
       "ca_file": "${RELAY_MTLS_CA_FILE}"
     },
-    "cipher_suites": [
-      "TLS_AES_256_GCM_SHA384",
-      "TLS_CHACHA20_POLY1305_SHA256",
-      "TLS_AES_128_GCM_SHA256"
-    ],
-    "min_tls_version": "1.3",
+    "cipher_suites": [],
+    "min_tls_version": "1.2",
     "audit": {
       "enabled": true,
-      "log_file": "/var/log/relay/audit.log"
+      "log_file": "logs/audit.log"
     }
   },
   "metrics": {
@@ -63,13 +57,174 @@
     "port": 8081,
     "path": "/metrics"
   },
+  "api": {
+    "enabled": true,
+    "port": 8082,
+    "version": "1.0.0"
+  },
   "logging": {
-    "level": "INFO",
+    "level": "info",
     "format": "json",
-    "output": "file",
-    "file": "/var/log/relay/relay.log",
+    "output": "stdout",
+    "file": "",
     "max_size": "100MB",
     "max_age": "30d",
     "max_backups": 10
+  },
+  "protocol": {
+    "auto_select": true,
+    "preferred": "quic",
+    "fallback": "http2",
+    "switch_threshold": 0.8,
+    "health_check_interval": "30s"
+  },
+  "quic": {
+    "enabled": true,
+    "max_streams": 100,
+    "keep_alive": true,
+    "idle_timeout": "30s",
+    "handshake_timeout": "10s"
+  },
+  "zero_trust": {
+    "enabled": true,
+    "client_daemon": false,
+    "service_discovery": false,
+    "auto_reconnect": true,
+    "circuit_breaker": {
+      "enabled": false,
+      "failure_threshold": 5,
+      "success_threshold": 3,
+      "timeout": "30s",
+      "window_size": "60s"
+    },
+    "health_check": {
+      "enabled": true,
+      "interval": "30s",
+      "timeout": "10s",
+      "checks": [
+        {
+          "name": "server_health",
+          "type": "http",
+          "url": "http://localhost:3456/health",
+          "description": "Server health check"
+        },
+        {
+          "name": "database_ping",
+          "type": "ping",
+          "host": "localhost",
+          "description": "Database connectivity check"
+        },
+        {
+          "name": "custom_check",
+          "type": "custom",
+          "description": "Custom health check"
+        }
+      ]
+    },
+    "rate_limit": {
+      "enabled": true,
+      "requests_per": 100,
+      "window_size": 60
+    },
+    "authentication": {
+      "enabled": true,
+      "type": "jwt",
+      "jwt_secret": "${RELAY_JWT_SECRET}",
+      "keycloak_url": "${KEYCLOAK_SERVER_URL}"
+    }
+  },
+  "ingress": {
+    "enabled": true,
+    "bastion_mode": false,
+    "ip_access_control": {
+      "enabled": false,
+      "default_allow": true,
+      "rules": []
+    },
+    "tls": {
+      "automation": {
+        "enabled": true,
+        "provider": "letsencrypt",
+        "domains": [
+          "edge.2gc.ru",
+          "*.tenant.edge.2gc.ru"
+        ],
+        "cert_dir": "./certs"
+      }
+    },
+    "edge_routing": {
+      "routes": [
+        {
+          "sni": "edge.2gc.ru",
+          "backend": "127.0.0.1:8443"
+        },
+        {
+          "sni": "tenant1.tenant.edge.2gc.ru",
+          "backend": "10.0.0.2:8443"
+        },
+        {
+          "sni": "tenant2.tenant.edge.2gc.ru",
+          "backend": "10.0.0.3:8443"
+        },
+        {
+          "sni": "*.tenant.edge.2gc.ru",
+          "backend": "10.0.0.100:8443"
+        }
+      ]
+    },
+    "connection_pool": {
+      "max_size": 100,
+      "idle_timeout": "90s",
+      "max_idle": 10,
+      "max_lifetime": "1h",
+      "retry": {
+        "max_retries": 5,
+        "base_time": "1s",
+        "max_delay": "30s",
+        "jitter": 0.1,
+        "retry_forever": false
+      },
+      "graceful_shutdown": {
+        "grace_period": "30s",
+        "max_wait_time": "60s"
+      },
+      "http2_reuse": {
+        "max_connections": 100,
+        "max_idle_time": "90s",
+        "cleanup_interval": "60s"
+      }
+    },
+    "rules": [
+      {
+        "hostname": "api.example.com",
+        "path": "/api/.*",
+        "service": "https://localhost:8000"
+      },
+      {
+        "hostname": "ssh.example.com",
+        "service": "ssh://localhost:22"
+      },
+      {
+        "hostname": "*",
+        "service": "https://localhost:8080"
+      }
+    ],
+    "origin_request": {
+      "connect_timeout": "30s",
+      "tls_timeout": "10s",
+      "tcp_keep_alive": "30s",
+      "keep_alive_connections": 100,
+      "keep_alive_timeout": "90s",
+      "http_host_header": "",
+      "origin_server_name": "",
+      "no_tls_verify": false,
+      "ca_pool": "",
+      "disable_chunked_encoding": false,
+      "bastion_mode": false,
+      "proxy_address": "127.0.0.1",
+      "proxy_port": 0,
+      "proxy_type": "",
+      "http2_origin": true
+    }
   }
 }

@@ -11,11 +11,48 @@ import (
 
 // Status represents the health check status
 type Status struct {
-	Status    string            `json:"status"`
+	Status    string           `json:"status"`
 	Version   string           `json:"version"`
 	Uptime    string           `json:"uptime"`
 	Metrics   map[string]int64 `json:"metrics"`
+	Modules   ModuleStatus     `json:"modules"`
 	Timestamp time.Time        `json:"timestamp"`
+}
+
+// ModuleStatus represents the status of individual modules
+type ModuleStatus struct {
+	EnhancedQUIC EnhancedQUICStatus `json:"enhanced_quic"`
+	WireGuard    WireGuardStatus    `json:"wireguard"`
+	Quantum      QuantumStatus      `json:"quantum"`
+	AI           AIStatus           `json:"ai"`
+}
+
+// EnhancedQUICStatus represents Enhanced QUIC module status
+type EnhancedQUICStatus struct {
+	Enabled bool   `json:"enabled"`
+	Status  string `json:"status"`
+	Details string `json:"details,omitempty"`
+}
+
+// WireGuardStatus represents WireGuard module status
+type WireGuardStatus struct {
+	Enabled bool   `json:"enabled"`
+	Status  string `json:"status"`
+	Details string `json:"details,omitempty"`
+}
+
+// QuantumStatus represents Post-Quantum Cryptography module status
+type QuantumStatus struct {
+	Enabled bool   `json:"enabled"`
+	Status  string `json:"status"`
+	Details string `json:"details,omitempty"`
+}
+
+// AIStatus represents AI Analytics module status
+type AIStatus struct {
+	Enabled bool   `json:"enabled"`
+	Status  string `json:"status"`
+	Details string `json:"details,omitempty"`
 }
 
 // Checker handles health checks
@@ -24,6 +61,12 @@ type Checker struct {
 	version   string
 	mu        sync.RWMutex
 	status    Status
+
+	// Module health check functions
+	enhancedQUICHealth func() EnhancedQUICStatus
+	wireGuardHealth    func() WireGuardStatus
+	quantumHealth      func() QuantumStatus
+	aiHealth           func() AIStatus
 }
 
 // NewChecker creates a new health checker
@@ -37,39 +80,107 @@ func NewChecker(version string) *Checker {
 			Timestamp: now,
 			Uptime:    "0s",
 			Version:   version,
+			Modules: ModuleStatus{
+				EnhancedQUIC: EnhancedQUICStatus{Enabled: false, Status: "unknown"},
+				WireGuard:    WireGuardStatus{Enabled: false, Status: "unknown"},
+				Quantum:      QuantumStatus{Enabled: false, Status: "unknown"},
+				AI:           AIStatus{Enabled: false, Status: "unknown"},
+			},
 		},
 	}
 }
 
 // Handler handles health check requests
 type Handler struct {
-	metrics *metrics.Metrics
+	metrics   *metrics.Metrics
 	startTime time.Time
-	version string
+	version   string
+
+	// Module health check functions
+	enhancedQUICHealth func() EnhancedQUICStatus
+	wireGuardHealth    func() WireGuardStatus
+	quantumHealth      func() QuantumStatus
+	aiHealth           func() AIStatus
 }
 
 // NewHandler creates a new health check handler
 func NewHandler(metrics *metrics.Metrics, version string) *Handler {
 	return &Handler{
-		metrics: metrics,
+		metrics:   metrics,
 		startTime: time.Now(),
-		version: version,
+		version:   version,
 	}
+}
+
+// SetEnhancedQUICHealthCheck sets the Enhanced QUIC health check function
+func (h *Handler) SetEnhancedQUICHealthCheck(healthFunc func() EnhancedQUICStatus) {
+	h.enhancedQUICHealth = healthFunc
+}
+
+// SetWireGuardHealthCheck sets the WireGuard health check function
+func (h *Handler) SetWireGuardHealthCheck(healthFunc func() WireGuardStatus) {
+	h.wireGuardHealth = healthFunc
+}
+
+// SetQuantumHealthCheck sets the Post-Quantum Cryptography health check function
+func (h *Handler) SetQuantumHealthCheck(healthFunc func() QuantumStatus) {
+	h.quantumHealth = healthFunc
+}
+
+// SetAIHealthCheck sets the AI Analytics health check function
+func (h *Handler) SetAIHealthCheck(healthFunc func() AIStatus) {
+	h.aiHealth = healthFunc
 }
 
 // ServeHTTP implements http.Handler
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	status := Status{
-		Status:    "ok",
-		Version:   h.version,
-		Uptime:    time.Since(h.startTime).String(),
-		Metrics:   make(map[string]int64),
+		Status:  "ok",
+		Version: h.version,
+		Uptime:  time.Since(h.startTime).String(),
+		Metrics: make(map[string]int64),
+		Modules: ModuleStatus{
+			EnhancedQUIC: EnhancedQUICStatus{Enabled: false, Status: "unknown"},
+			WireGuard:    WireGuardStatus{Enabled: false, Status: "unknown"},
+			Quantum:      QuantumStatus{Enabled: false, Status: "unknown"},
+			AI:           AIStatus{Enabled: false, Status: "unknown"},
+		},
 		Timestamp: time.Now(),
 	}
 
 	// Add metrics
 	status.Metrics["active_connections"] = h.metrics.GetActiveConnections()
 	status.Metrics["active_tunnels"] = h.metrics.GetActiveTunnels()
+
+	// Update module statuses
+	if h.enhancedQUICHealth != nil {
+		status.Modules.EnhancedQUIC = h.enhancedQUICHealth()
+	}
+	if h.wireGuardHealth != nil {
+		status.Modules.WireGuard = h.wireGuardHealth()
+	}
+	if h.quantumHealth != nil {
+		status.Modules.Quantum = h.quantumHealth()
+	}
+	if h.aiHealth != nil {
+		status.Modules.AI = h.aiHealth()
+	}
+
+	// Update overall status based on module statuses
+	overallStatus := "ok"
+	if status.Modules.EnhancedQUIC.Enabled && status.Modules.EnhancedQUIC.Status != "ok" {
+		overallStatus = "degraded"
+	}
+	if status.Modules.WireGuard.Enabled && status.Modules.WireGuard.Status != "ok" {
+		overallStatus = "degraded"
+	}
+	if status.Modules.Quantum.Enabled && status.Modules.Quantum.Status != "ok" {
+		overallStatus = "degraded"
+	}
+	if status.Modules.AI.Enabled && status.Modules.AI.Status != "ok" {
+		overallStatus = "degraded"
+	}
+	status.Status = overallStatus
 
 	// Set response headers
 	w.Header().Set("Content-Type", "application/json")
@@ -102,8 +213,87 @@ func (c *Checker) Handler() http.Handler {
 }
 
 // SetStatus updates the health status
+// SetEnhancedQUICHealthCheck sets the Enhanced QUIC health check function
+func (c *Checker) SetEnhancedQUICHealthCheck(healthFunc func() EnhancedQUICStatus) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.enhancedQUICHealth = healthFunc
+}
+
+// SetWireGuardHealthCheck sets the WireGuard health check function
+func (c *Checker) SetWireGuardHealthCheck(healthFunc func() WireGuardStatus) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.wireGuardHealth = healthFunc
+}
+
+// SetQuantumHealthCheck sets the Post-Quantum Cryptography health check function
+func (c *Checker) SetQuantumHealthCheck(healthFunc func() QuantumStatus) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.quantumHealth = healthFunc
+}
+
+// SetAIHealthCheck sets the AI Analytics health check function
+func (c *Checker) SetAIHealthCheck(healthFunc func() AIStatus) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.aiHealth = healthFunc
+}
+
+// SetStatus sets the overall health status
 func (c *Checker) SetStatus(status string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.status.Status = status
-} 
+}
+
+// UpdateModuleStatus updates the status of all modules
+func (c *Checker) UpdateModuleStatus() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Update Enhanced QUIC status
+	if c.enhancedQUICHealth != nil {
+		c.status.Modules.EnhancedQUIC = c.enhancedQUICHealth()
+	}
+
+	// Update WireGuard status
+	if c.wireGuardHealth != nil {
+		c.status.Modules.WireGuard = c.wireGuardHealth()
+	}
+
+	// Update Quantum status
+	if c.quantumHealth != nil {
+		c.status.Modules.Quantum = c.quantumHealth()
+	}
+
+	// Update AI status
+	if c.aiHealth != nil {
+		c.status.Modules.AI = c.aiHealth()
+	}
+
+	// Update overall status based on module statuses
+	c.updateOverallStatus()
+}
+
+// updateOverallStatus updates the overall health status based on module statuses
+func (c *Checker) updateOverallStatus() {
+	overallStatus := "ok"
+
+	// Check if any enabled module has a non-ok status
+	if c.status.Modules.EnhancedQUIC.Enabled && c.status.Modules.EnhancedQUIC.Status != "ok" {
+		overallStatus = "degraded"
+	}
+	if c.status.Modules.WireGuard.Enabled && c.status.Modules.WireGuard.Status != "ok" {
+		overallStatus = "degraded"
+	}
+	if c.status.Modules.Quantum.Enabled && c.status.Modules.Quantum.Status != "ok" {
+		overallStatus = "degraded"
+	}
+	if c.status.Modules.AI.Enabled && c.status.Modules.AI.Status != "ok" {
+		overallStatus = "degraded"
+	}
+
+	c.status.Status = overallStatus
+}

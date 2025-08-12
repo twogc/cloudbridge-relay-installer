@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  anomaly-ml:
+    build: .
+    container_name: anomaly-ml
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=models.joblib
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+    # Если есть .env файл, можно подключить так:
+    # env_file:
+    #   - .env
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+    volumes:
+      - ./models.joblib:/app/models.joblib:ro
+      # - ./ml/.env:/app/.env:ro 

@@ -1,0 +1,24 @@
+wireguard:
+  enabled: true
+  interface:
+    name: "wg0"
+    listen_port: 51820
+    address: "10.100.1.1/24"
+  discovery:
+    registry_url: "https://registry.cloudbridge.com"
+    heartbeat_interval: "30s"
+    max_peers: 50
+  mesh:
+    enabled: true
+    auto_discovery: true
+    max_connections: 100
+    routing_strategy: "hybrid"
+  site_to_site:
+    enabled: true
+    corporate_networks:
+      - network_id: "office-moscow"
+        cidr: "192.168.1.0/24"
+        tenant_id: "moscow-tenant"
+      - network_id: "office-spb"
+        cidr: "192.168.2.0/24"
+        tenant_id: "spb-tenant"

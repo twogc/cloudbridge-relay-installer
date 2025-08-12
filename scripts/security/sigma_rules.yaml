@@ -1,0 +1,241 @@
+# Sigma Rules для CloudBridge Relay Security
+# Стандартизированные правила детекции угроз
+
+---
+title: SSH Brute Force Attack
+id: 1001
+status: experimental
+description: Обнаружение атак перебором на SSH
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.initial_access
+  - attack.t1078
+logsource:
+  product: linux
+  service: ssh
+detection:
+  selection:
+    event_type: "authentication_failure"
+    service: "ssh"
+  timeframe: 5m
+  condition: selection | count() > 5
+falsepositives:
+  - Legitimate user with forgotten password
+level: high
+
+---
+title: PostgreSQL Connection Attempt
+id: 1002
+status: experimental
+description: Попытки подключения к PostgreSQL
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.persistence
+  - attack.t1078
+logsource:
+  product: linux
+  service: postgresql
+detection:
+  selection:
+    event_type: "connection_attempt"
+    dest_port: 5432
+  condition: selection
+falsepositives:
+  - Legitimate database connections
+level: medium
+
+---
+title: Relay Server Port Scan
+id: 1003
+status: experimental
+description: Сканирование портов Relay сервера
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.reconnaissance
+  - attack.t1046
+logsource:
+  product: linux
+  service: relay
+detection:
+  selection:
+    event_type: "port_scan"
+    dest_port: [8081, 8082]
+  timeframe: 1m
+  condition: selection | count() > 10
+falsepositives:
+  - Legitimate load balancer health checks
+level: medium
+
+---
+title: Data Exfiltration Detection
+id: 1004
+status: experimental
+description: Обнаружение утечки данных
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.exfiltration
+  - attack.t1041
+logsource:
+  product: linux
+  service: relay
+detection:
+  selection:
+    event_type: "data_transfer"
+    data_size: "> 100MB"
+    destination: "external"
+  timeframe: 1h
+  condition: selection | count() > 3
+falsepositives:
+  - Legitimate backup operations
+level: critical
+
+---
+title: Privilege Escalation
+id: 1005
+status: experimental
+description: Обнаружение повышения привилегий
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.privilege_escalation
+  - attack.t1068
+logsource:
+  product: linux
+  service: system
+detection:
+  selection:
+    event_type: "privilege_change"
+    new_privileges: "root"
+    change_type: "escalation"
+  condition: selection
+falsepositives:
+  - Legitimate administrative tasks
+level: high
+
+---
+title: Suspicious Process Creation
+id: 1006
+status: experimental
+description: Создание подозрительных процессов
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.execution
+  - attack.t1059
+logsource:
+  product: linux
+  service: system
+detection:
+  selection:
+    event_type: "process_creation"
+    process_name:
+      - "nc"
+      - "netcat"
+      - "wget"
+      - "curl"
+      - "bash"
+    parent_process: "unknown"
+  condition: selection
+falsepositives:
+  - Legitimate system administration
+level: medium
+
+---
+title: Network Anomaly Detection
+id: 1007
+status: experimental
+description: Обнаружение сетевых аномалий
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.command_and_control
+  - attack.t1071
+logsource:
+  product: linux
+  service: network
+detection:
+  selection:
+    event_type: "network_connection"
+    dest_ip: "external"
+    dest_port: "> 1024"
+  timeframe: 5m
+  condition: selection | count() > 50
+falsepositives:
+  - High legitimate traffic
+level: medium
+
+---
+title: File Integrity Monitoring
+id: 1008
+status: experimental
+description: Мониторинг целостности файлов
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.persistence
+  - attack.t1005
+logsource:
+  product: linux
+  service: file_system
+detection:
+  selection:
+    event_type: "file_modification"
+    file_path:
+      - "/etc/passwd"
+      - "/etc/shadow"
+      - "/etc/sudoers"
+      - "/etc/crontab"
+  condition: selection
+falsepositives:
+  - Legitimate system updates
+level: high
+
+---
+title: Docker Container Escape
+id: 1009
+status: experimental
+description: Обнаружение попыток выхода из Docker контейнера
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.privilege_escalation
+  - attack.t1610
+logsource:
+  product: linux
+  service: docker
+detection:
+  selection:
+    event_type: "container_escape"
+    container_id: "*"
+    host_access: true
+  condition: selection
+falsepositives:
+  - Legitimate container debugging
+level: critical
+
+---
+title: API Rate Limiting Violation
+id: 1010
+status: experimental
+description: Нарушение лимитов API
+author: CloudBridge Security Team
+date: 2024-01-01
+tags:
+  - attack.initial_access
+  - attack.t1078
+logsource:
+  product: linux
+  service: api
+detection:
+  selection:
+    event_type: "rate_limit_exceeded"
+    api_endpoint: "*"
+  timeframe: 1m
+  condition: selection | count() > 100
+falsepositives:
+  - Legitimate high-traffic applications
+level: medium 

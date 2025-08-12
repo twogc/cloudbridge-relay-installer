@@ -183,8 +183,8 @@ func TestKeycloakMetrics(t *testing.T) {
 	metrics.ObserveKeycloakJWKSFetchDuration(200 * time.Millisecond)
 
 	// Test token validation duration
-	metrics.ObserveKeycloakTokenValidationDuration("jwt", 50 * time.Millisecond)
-	metrics.ObserveKeycloakTokenValidationDuration("jwks", 30 * time.Millisecond)
+	metrics.ObserveKeycloakTokenValidationDuration("jwt", 50*time.Millisecond)
+	metrics.ObserveKeycloakTokenValidationDuration("jwks", 30*time.Millisecond)
 
 	// Test user info duration
 	metrics.ObserveKeycloakUserInfoDuration(20 * time.Millisecond)
@@ -400,4 +400,4 @@ func TestMetricsValidation(t *testing.T) {
 	reg2 := prometheus.NewRegistry()
 	metrics2 := NewMetrics(reg2)
 	assert.Equal(t, int64(0), metrics2.GetActiveConnections())
-} 
+}

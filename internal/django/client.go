@@ -94,4 +94,4 @@ func (c *Client) ValidateToken(ctx context.Context, token string) (string, error
 	}
 
 	return response.ClientID, nil
-} 
+}

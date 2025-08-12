@@ -26,7 +26,7 @@ type Manager struct {
 // NewManager creates a new tunnel manager
 func NewManager(maxTunnels int, logger *logger.Logger, metrics *metrics.Metrics) *Manager {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &Manager{
 		tunnels:    make(map[string]*Proxy),
 		logger:     logger,
@@ -248,4 +248,4 @@ func (m *Manager) IsTunnelActive(tunnelID string) bool {
 	}
 
 	return tunnel.IsActive()
-} 
+}

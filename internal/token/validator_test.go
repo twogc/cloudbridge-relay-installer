@@ -1,6 +1,7 @@
 package token
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +12,7 @@ import (
 )
 
 // mockHTTPClient is a mock implementation of HTTPDoer
+//nolint:unused // Used in tests
 type mockHTTPClient struct {
 	statusCode int
 	err        error
@@ -42,11 +44,31 @@ func TestValidator_Validate_NoValidation(t *testing.T) {
 
 func TestValidator_REST(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("Authorization")
-		if token == "Bearer valid-token" {
-			w.WriteHeader(http.StatusOK)
+		// Parse JSON request body
+		var req struct {
+			Token string `json:"token"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Check token
+		if req.Token == "valid-token" {
+			response := map[string]interface{}{
+				"valid":     true,
+				"client_id": "test-client",
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(response)
 		} else {
+			response := map[string]interface{}{
+				"valid": false,
+				"error": "invalid token",
+			}
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(response)
 		}
 	}))
 	defer server.Close()
@@ -76,7 +98,8 @@ func TestValidator_JWT(t *testing.T) {
 	})
 
 	claims := jwt.MapClaims{
-		"exp": time.Now().Add(time.Hour).Unix(),
+		"exp":       time.Now().Add(time.Hour).Unix(),
+		"client_id": "test-client",
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(secret)
@@ -89,6 +112,7 @@ func TestValidator_JWT(t *testing.T) {
 	}
 
 	claims["exp"] = time.Now().Add(-time.Hour).Unix()
+	claims["client_id"] = "test-client"
 	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err = token.SignedString(secret)
 	if err != nil {
@@ -98,11 +122,12 @@ func TestValidator_JWT(t *testing.T) {
 		t.Error("Expected expired token to be rejected")
 	}
 
-	if _, err := validator.ValidateToken(tokenString+"invalid"); err == nil {
+	if _, err := validator.ValidateToken(tokenString + "invalid"); err == nil {
 		t.Error("Expected token with invalid signature to be rejected")
 	}
 
 	claims["exp"] = time.Now().Add(time.Hour).Unix()
+	claims["client_id"] = "test-client"
 	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err = token.SignedString(secret)
 	if err != nil {
@@ -142,4 +167,4 @@ func TestValidator_Cleanup(t *testing.T) {
 		t.Error("Expected expired token to be removed from cache")
 	}
 	validator.mu.RUnlock()
-} 
+}

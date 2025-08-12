@@ -48,7 +48,7 @@ func NewProxy(
 	metrics *metrics.Metrics,
 ) *Proxy {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &Proxy{
 		clientConn: clientConn,
 		remoteHost: remoteHost,
@@ -280,4 +280,4 @@ func (p *Proxy) GetLastActivity() time.Time {
 	p.stats.mu.RLock()
 	defer p.stats.mu.RUnlock()
 	return p.stats.LastActivity
-} 
+}

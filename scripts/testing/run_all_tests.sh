@@ -141,7 +141,7 @@ run_dashboard_demo() {
     log_header "ДЕМОНСТРАЦИЯ ДАШБОРДОВ"
     
     log_info "Запуск демонстрации дашбордов..."
-    ./scripts/demo_dashboards.sh
+    ../../tests/demo/demo_monitor.sh
     
     return 0
 }

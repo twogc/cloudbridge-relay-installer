@@ -1,0 +1,44 @@
+name = "cloudbridge-ai-monitoring-agent"
+main = "src/index.ts"
+compatibility_date = "2024-12-19"
+
+# Cloudflare AI binding
+[ai]
+binding = "AI"
+
+# Общие переменные для локальной разработки
+[vars]
+RELAY_METRICS_URL = "http://localhost:9090/metrics"
+ML_API_URL = "http://localhost:8000/detect"
+SIEM_API_URL = "http://localhost:8081/api/v1/alerts"
+SIEM_WEBHOOK_URL = "http://localhost:8081/api/v1/webhook"
+CHECK_INTERVAL = "30000"
+ANOMALY_THRESHOLD = "0.7"
+AI_MODEL = "@cf/meta/llama-2-7b-chat-int8"
+
+# Секреты (устанавливаются через wrangler secret put)
+# CLOUDFLARE_API_TOKEN - для Cloudflare AI
+# OPENAI_API_KEY - опционально, для OpenAI
+# SIEM_API_KEY
+
+# Staging окружение
+[env.staging]
+name = "cloudbridge-ai-monitoring-agent-staging"
+
+[env.staging.vars]
+RELAY_METRICS_URL = "https://staging-relay.example.com/metrics"
+ML_API_URL = "https://staging-ml.example.com/detect"
+SIEM_API_URL = "https://staging-siem.example.com/api/v1/alerts"
+SIEM_WEBHOOK_URL = "https://staging-siem.example.com/api/v1/webhook"
+
+# Production окружение
+[env.production]
+name = "cloudbridge-ai-monitoring-agent-prod"
+
+[env.production.vars]
+RELAY_METRICS_URL = "https://edge.2gc.ru:8081/metrics"
+ML_API_URL = "https://edge.2gc.ru:8000/detect"
+SIEM_API_URL = "https://edge.2gc.ru:8081/api/v1/alerts"
+SIEM_WEBHOOK_URL = "https://edge.2gc.ru:8081/api/v1/webhook"
+RELAY_SERVER_URL = "https://edge.2gc.ru:3456"
+API_SERVER_URL = "https://edge.2gc.ru:8082" 

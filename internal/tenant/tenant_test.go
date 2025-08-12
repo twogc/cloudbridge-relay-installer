@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
-	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
+	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 )
 
 func TestNewManager(t *testing.T) {
@@ -383,11 +383,14 @@ func TestCleanupInactiveTenants(t *testing.T) {
 	err = manager.CreateTenant("inactive-tenant", "Inactive Company", limits)
 	require.NoError(t, err)
 
-	// Update activity for active tenant
+	// Wait a bit to ensure time difference
+	time.Sleep(50 * time.Millisecond)
+
+	// Update activity for active tenant (this should make it recent)
 	manager.UpdateTenantActivity("active-tenant")
 
-	// Cleanup with short timeout (should remove inactive tenant)
-	removed := manager.CleanupInactiveTenants(1 * time.Millisecond)
+	// Cleanup with timeout that should only remove the inactive tenant
+	removed := manager.CleanupInactiveTenants(25 * time.Millisecond)
 	assert.Equal(t, 1, removed)
 
 	// Verify active tenant still exists
@@ -415,7 +418,7 @@ func TestManagerShutdown(t *testing.T) {
 
 	// Test shutdown
 	manager.Shutdown()
-	
+
 	// Verify context is cancelled
 	select {
 	case <-manager.ctx.Done():
@@ -457,4 +460,4 @@ func TestGetTenantCount(t *testing.T) {
 
 	// Test count after creating tenants
 	assert.Equal(t, 2, manager.GetTenantCount())
-} 
+}

@@ -1,0 +1,303 @@
+# Enhanced QUIC Configuration for CloudBridge Relay
+# Конфигурация Enhanced QUIC для CloudBridge Relay
+
+enhanced_quic:
+  # Основные настройки Enhanced QUIC
+  enabled: true
+  
+  # Базовые параметры QUIC
+  max_streams: 100
+  keep_alive: true
+  idle_timeout: 30s
+  handshake_timeout: 10s
+  
+  # Enhanced функции
+  ddos_protection: true
+  geographic_routing: true
+  keycloak_integration: false
+  
+  # Управление потоком данных
+  initial_stream_receive_window: 524288      # 512KB
+  max_stream_receive_window: 2097152         # 2MB
+  initial_connection_receive_window: 1048576 # 1MB
+  max_connection_receive_window: 5242880     # 5MB
+  
+  # Алгоритм контроля перегрузки
+  congestion_control_algorithm: "cubic"
+  
+  # TLS настройки
+  tls:
+    insecure_skip_verify: false # Только для разработки/тестирования
+    next_protocols: ["h3", "h3-29", "h3-28", "h3-27"]
+  
+  # Enhanced функции
+  features:
+    # DDoS защита
+    ddos_protection:
+      enabled: true
+      rate_limit: 1000          # Запросов в минуту
+      burst: 100                # Burst размер
+      blacklist_duration: 5m    # Время блокировки
+      anomaly_detection:
+        enabled: true
+        connection_rate_threshold: 1000.0
+        bandwidth_usage_threshold: 1000000.0  # 1MB/s
+    
+    # Географическая маршрутизация
+    geographic_routing:
+      enabled: true
+      regions:
+        us: "us-east.relay.cloudbridge.io"
+        eu: "eu-west.relay.cloudbridge.io"
+        as: "asia.relay.cloudbridge.io"
+        default: "global.relay.cloudbridge.io"
+      
+      # GeoIP настройки
+      geoip:
+        enabled: true
+        database_path: "/opt/cloudbridge/geoip.db"
+        update_interval: 24h
+    
+    # Интеграция с Keycloak
+    keycloak_integration:
+      enabled: false  # По умолчанию отключено
+      server_url: "https://edge.2gc.ru"
+      realm: "cloudbridge"
+      client_id: "quic-client"
+      client_secret: "${KEYCLOAK_CLIENT_SECRET}"
+      admin_username: "${KEYCLOAK_ADMIN_USER}"
+      admin_password: "${KEYCLOAK_ADMIN_PASSWORD}"
+      
+      # Настройки валидации токенов
+      token_validation:
+        enabled: true
+        cache_ttl: 5m
+        verify_signature: true
+        verify_expiration: true
+
+# Конфигурация тенантов (мультиарендность)
+tenants:
+  # Премиум тенант
+  premium:
+    bandwidth_limit: 1073741824  # 1GB
+    connection_limit: 100
+    allowed_ips: []              # Пустой массив = все IP разрешены
+    allowed_ports: []            # Пустой массив = все порты разрешены
+    rate_limit: 10000            # Запросов в минуту
+    burst: 1000
+    
+  # Стандартный тенант
+  standard:
+    bandwidth_limit: 104857600   # 100MB
+    connection_limit: 10
+    allowed_ips: []
+    allowed_ports: [80, 443, 8080, 8443]
+    rate_limit: 1000
+    burst: 100
+    
+  # Базовый тенант
+  basic:
+    bandwidth_limit: 10485760    # 10MB
+    connection_limit: 5
+    allowed_ips: []
+    allowed_ports: [80, 443]
+    rate_limit: 100
+    burst: 10
+    
+  # Тенант по умолчанию
+  default:
+    bandwidth_limit: 1048576     # 1MB
+    connection_limit: 2
+    allowed_ips: []
+    allowed_ports: [80, 443]
+    rate_limit: 50
+    burst: 5
+
+# Конфигурация балансировщика нагрузки
+load_balancer:
+  enhanced_mode: true
+  algorithm: "geographic"  # round_robin, geographic, least_connections
+  health_check:
+    enabled: true
+    interval: 30s
+    timeout: 5s
+    path: "/health"
+  
+  # Серверы
+  servers:
+    - address: "relay1.cloudbridge.io:8080"
+      region: "us"
+      weight: 100
+      max_connections: 1000
+    - address: "relay2.cloudbridge.io:8080"
+      region: "eu"
+      weight: 100
+      max_connections: 1000
+    - address: "relay3.cloudbridge.io:8080"
+      region: "as"
+      weight: 100
+      max_connections: 1000
+
+# Конфигурация ограничения скорости
+rate_limiting:
+  enhanced_mode: true
+  
+  # Глобальные лимиты
+  global:
+    requests_per_second: 1000
+    burst: 2000
+    
+  # Лимиты по IP
+  per_ip:
+    requests_per_second: 100
+    burst: 200
+    cleanup_interval: 1h
+    
+  # Лимиты по пользователю
+  per_user:
+    requests_per_second: 50
+    burst: 100
+    cleanup_interval: 1h
+
+# Мониторинг и метрики
+monitoring:
+  # Prometheus метрики
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+    
+    # Enhanced QUIC метрики
+    enhanced_metrics:
+      - "enhanced_quic_connections_total"
+      - "enhanced_quic_bytes_sent_total"
+      - "enhanced_quic_bytes_received_total"
+      - "enhanced_quic_ddos_blocked_total"
+      - "enhanced_quic_geo_routes_total"
+      - "enhanced_quic_tenant_bandwidth_usage"
+      - "enhanced_quic_authentication_attempts_total"
+  
+  # Логирование
+  logging:
+    level: "info"        # debug, info, warn, error
+    format: "json"       # json, text
+    enhanced_logs: true  # Включить Enhanced QUIC логи
+    
+    # Фильтры логов
+    filters:
+      - "enhanced_quic.*"
+      - "tenant.*"
+      - "ddos_protection.*"
+      - "geographic_routing.*"
+
+# Безопасность
+security:
+  # Шифрование
+  encryption:
+    enabled: true
+    key_rotation_interval: 24h
+    
+  # Аудит
+  audit:
+    enabled: true
+    log_file: "/var/log/cloudbridge/enhanced_quic_audit.log"
+    log_level: "info"
+    
+    # События для аудита
+    events:
+      - "connection_established"
+      - "connection_failed"
+      - "authentication_success"
+      - "authentication_failure"
+      - "ddos_attack_detected"
+      - "rate_limit_exceeded"
+      - "tenant_limit_exceeded"
+
+# Производительность
+performance:
+  # Настройки пулов соединений
+  connection_pools:
+    max_idle_connections: 100
+    max_connections_per_host: 10
+    idle_connection_timeout: 90s
+    
+  # Кэширование
+  caching:
+    enabled: true
+    ttl: 5m
+    max_entries: 10000
+    
+    # Что кэшировать
+    cache_items:
+      - "geoip_lookups"
+      - "tenant_info"
+      - "authentication_tokens"
+  
+  # Оптимизации
+  optimizations:
+    enable_compression: true
+    enable_multiplexing: true
+    enable_0rtt: false  # 0-RTT может быть небезопасным
+    enable_early_data: false
+
+# Разработка и отладка
+development:
+  # Режим разработки
+  debug_mode: false
+  
+  # Профилирование
+  profiling:
+    enabled: false
+    port: 6060
+    path: "/debug/pprof/"
+  
+  # Тестовые данные
+  test_data:
+    generate_fake_tenants: false
+    simulate_traffic: false
+    mock_authentication: false
+
+# Интеграции
+integrations:
+  # SIEM системы
+  siem:
+    enabled: false
+    endpoint: "https://siem.cloudbridge.io/api/events"
+    auth_token: "${SIEM_AUTH_TOKEN}"
+    
+  # Внешние API
+  external_apis:
+    geoip_service:
+      enabled: false
+      url: "https://api.geoip.com/lookup"
+      api_key: "${GEOIP_API_KEY}"
+    
+    threat_intelligence:
+      enabled: false
+      url: "https://api.threatintel.com/check"
+      api_key: "${THREAT_INTEL_API_KEY}"
+
+# Резервное копирование и восстановление
+backup:
+  # Конфигурация резервного копирования
+  enabled: false
+  interval: 6h
+  retention: 7d
+  
+  # Что сохранять
+  items:
+    - "tenant_configurations"
+    - "security_policies"
+    - "performance_metrics"
+  
+  # Место хранения
+  storage:
+    type: "local"  # local, s3, gcs
+    path: "/opt/cloudbridge/backups/"
+
+# Версионирование
+version:
+  config_version: "1.0.0"
+  enhanced_quic_version: "1.0.0"
+  last_updated: "2024-01-01T00:00:00Z"
+  updated_by: "CloudBridge Enhanced QUIC Integration"

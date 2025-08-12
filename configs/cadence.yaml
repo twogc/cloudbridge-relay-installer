@@ -1,0 +1,188 @@
+# Cadence Workflow конфигурация для CloudBridge Relay
+cadence:
+  # Базовые настройки домена
+  domain: "cloudbridge-relay"
+  serviceName: "cloudbridge-cadence"
+  
+  # Настройки клиента
+  client:
+    hostPort: "localhost:7933"
+    domain: "cloudbridge-relay"
+    dataConverter: "json"
+    # Настройки для production
+    enableTLS: false
+    tlsCertPath: ""
+    tlsKeyPath: ""
+    tlsCAPath: ""
+    
+  # Настройки worker
+  worker:
+    maxConcurrentActivityExecutionSize: 1000
+    maxConcurrentWorkflowTaskExecutionSize: 1000
+    maxConcurrentLocalActivityExecutionSize: 1000
+    maxTaskListActivitiesPerSecond: 100000
+    workerActivitiesPerSecond: 10000
+    taskListName: "cloudbridge-task-list"
+    identity: "cloudbridge-worker"
+    
+  # Настройки workflows
+  workflows:
+    # Общие timeout настройки
+    executionTimeout: "1h"          # Максимальное время выполнения workflow
+    decisionTimeout: "10s"          # Timeout для принятия решений
+    activityStartToCloseTimeout: "5m"  # Timeout для activities
+    workflowStartToCloseTimeout: "1h"  # Timeout для запуска workflow
+    workflowTaskTimeout: "10s"      # Timeout для workflow task
+    
+    # Специфичные настройки для разных типов workflows
+    main:
+      executionTimeout: "24h"       # Основной workflow работает круглосуточно
+      workflowStartToCloseTimeout: "24h"
+      
+    health:
+      executionTimeout: "30m"       # Health check каждые 30 минут
+      activityStartToCloseTimeout: "2m"
+      
+    wireguard:
+      executionTimeout: "2h"        # WireGuard операции
+      activityStartToCloseTimeout: "10m"
+      
+    quantum:
+      executionTimeout: "1h"        # Quantum криптография
+      activityStartToCloseTimeout: "5m"
+      
+    ai:
+      executionTimeout: "30m"       # AI анализ
+      activityStartToCloseTimeout: "5m"
+      
+    scaling:
+      executionTimeout: "15m"       # Автомасштабирование
+      activityStartToCloseTimeout: "3m"
+      
+    security:
+      executionTimeout: "10m"       # Безопасность
+      activityStartToCloseTimeout: "2m"
+    
+  # Настройки retry политик
+  retry:
+    initialInterval: "1s"           # Начальный интервал повтора
+    maximumInterval: "10s"          # Максимальный интервал повтора
+    backoffCoefficient: 2.0         # Коэффициент экспоненциального отката
+    maximumAttempts: 3              # Максимальное количество попыток
+    
+    # Специфичные retry настройки для критических операций
+    critical:
+      maximumAttempts: 5
+      maximumInterval: "30s"
+      
+    # Retry настройки для внешних сервисов
+    external:
+      initialInterval: "2s"
+      maximumInterval: "30s"
+      maximumAttempts: 5
+      backoffCoefficient: 1.5
+    
+  # Настройки логирования
+  logging:
+    level: "info"                   # Уровень логирования
+    enableStructuredLogging: true   # Структурированное логирование
+    logWorkflowHistory: true        # Логировать историю workflow
+    logActivityDetails: true        # Логировать детали activity
+    
+  # Настройки метрик
+  metrics:
+    enabled: true                   # Включить метрики
+    scope: "cloudbridge"           # Scope для метрик
+    reportingInterval: "30s"        # Интервал отправки метрик
+    enablePrometheus: true          # Prometheus интеграция
+    prometheusPort: 9091           # Порт для Prometheus метрик
+    
+  # Настройки архивирования
+  archival:
+    enabled: true                   # Включить архивирование
+    retentionDays: 30              # Количество дней хранения
+    archiveAfterDays: 7            # Архивировать после 7 дней
+    
+  # Настройки безопасности
+  security:
+    enableAuthorization: true       # Включить авторизацию
+    authorizationProvider: "keycloak"  # Провайдер авторизации
+    enableAuditLogging: true        # Включить аудит логирование
+    enableEncryption: true          # Включить шифрование данных
+    
+  # Настройки для разных сред
+  environments:
+    development:
+      client:
+        hostPort: "localhost:7933"
+      logging:
+        level: "debug"
+      metrics:
+        reportingInterval: "10s"
+        
+    staging:
+      client:
+        hostPort: "cadence-staging:7933"
+      logging:
+        level: "info"
+      archival:
+        retentionDays: 7
+        
+    production:
+      client:
+        hostPort: "cadence-prod:7933"
+        enableTLS: true
+      logging:
+        level: "warn"
+      security:
+        enableAuthorization: true
+        enableEncryption: true
+      archival:
+        retentionDays: 90
+        
+  # Настройки уведомлений
+  notifications:
+    enabled: true                   # Включить уведомления
+    channels:
+      - type: "slack"              # Slack уведомления
+        webhook: "${SLACK_WEBHOOK_URL}"
+        enabled: true
+      - type: "email"              # Email уведомления
+        smtp:
+          host: "${SMTP_HOST}"
+          port: 587
+          username: "${SMTP_USERNAME}"
+          password: "${SMTP_PASSWORD}"
+        enabled: false
+        
+  # Настройки мониторинга
+  monitoring:
+    healthCheckInterval: "30s"      # Интервал health check
+    alertThresholds:
+      workflowFailureRate: 0.05     # 5% failure rate
+      activityLatency: "30s"        # Максимальная задержка activity
+      queueDepth: 1000              # Максимальная глубина очереди
+      
+  # Настройки профилирования и отладки
+  profiling:
+    enabled: true                   # Включить профилирование
+    port: ":6060"                  # Порт для pprof сервера
+    enableMemoryProfiling: true     # Профилирование памяти
+    enableCPUProfiling: true        # Профилирование CPU
+    enableGoroutineProfiling: true  # Профилирование горутин
+    
+  # Настройки health endpoints
+  health:
+    enabled: true                   # Включить health endpoints
+    port: ":8080"                  # Порт для health checks
+    readinessTimeout: "10s"        # Timeout для readiness probe
+    livenessTimeout: "5s"          # Timeout для liveness probe
+    enableDetailedHealth: true      # Детальные health checks
+    
+  # Настройки debug endpoints
+  debug:
+    enabled: true                   # Включить debug endpoints
+    enableWorkflowDebug: true       # Debug информация о workflows
+    enableActivityDebug: true       # Debug информация о activities
+    enableMetricsDebug: true        # Debug информация о метриках
+    enableConfigDebug: false        # Debug конфигурации (может содержать секреты)

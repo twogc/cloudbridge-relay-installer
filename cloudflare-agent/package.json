@@ -1,0 +1,54 @@
+{
+  "name": "cloudbridge-ai-monitoring-agent",
+  "version": "1.0.0",
+  "description": "AI Monitoring Agent for CloudBridge Relay using Vercel AI SDK",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "test": "vitest",
+    "test:agent": "node test/test-agent.js",
+    "test:integration": "npm run test:agent -- --url http://localhost:8787",
+    "test:performance": "curl -s http://localhost:8787/performance | jq .",
+    "type-check": "tsc --noEmit",
+    "type-check:workers": "tsc --noEmit -p tsconfig.workers.json",
+    "build": "tsc",
+    "build:workers": "tsc -p tsconfig.workers.json",
+    "start": "wrangler dev",
+    "lint": "eslint src/**/*.ts src/**/*.tsx",
+    "format": "prettier --write src/**/*.ts src/**/*.tsx",
+    "clean": "rm -rf dist node_modules/.cache",
+    "setup": "./setup.sh"
+  },
+  "dependencies": {
+    "ai": "^4.3.17",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250709.0",
+    "@types/estree": "^1.0.8",
+    "@types/node": "^24.0.12",
+    "@types/prop-types": "^15.7.15",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.24.0",
+    "ws": "^8.18.3"
+  },
+  "keywords": [
+    "cloudflare",
+    "ai",
+    "agents",
+    "monitoring",
+    "security",
+    "relay",
+    "vercel-ai-sdk"
+  ],
+  "author": "CloudBridge Team",
+  "license": "MIT"
+}

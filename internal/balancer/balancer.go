@@ -3,6 +3,8 @@ package balancer
 import (
 	"sync"
 	"time"
+
+	"github.com/twogc/cloudbridge-relay-installer/internal/quic"
 )
 
 // Server represents a relay server in the cluster
@@ -19,12 +21,26 @@ type Balancer struct {
 	servers    []*Server
 	mu         sync.RWMutex
 	nextServer int
+
+	// Enhanced QUIC Geographic Router
+	enhancedGeoRouter *quic.GeographicRouter
+	enhancedEnabled   bool
 }
 
 // NewBalancer creates a new balancer
 func NewBalancer() *Balancer {
 	return &Balancer{
-		servers: make([]*Server, 0),
+		servers:         make([]*Server, 0),
+		enhancedEnabled: false, // По умолчанию отключено
+	}
+}
+
+// NewBalancerWithEnhanced создает balancer с Enhanced Geographic Router
+func NewBalancerWithEnhanced() *Balancer {
+	return &Balancer{
+		servers:           make([]*Server, 0),
+		enhancedGeoRouter: quic.NewGeographicRouter(),
+		enhancedEnabled:   true,
 	}
 }
 
@@ -74,6 +90,26 @@ func (b *Balancer) GetNextServer() *Server {
 	}
 
 	return nil
+}
+
+// GetServerByGeo возвращает сервер на основе географического маршрута
+func (b *Balancer) GetServerByGeo(clientIP string) *Server {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	// Используем Enhanced Geographic Router, если доступен
+	if b.enhancedEnabled && b.enhancedGeoRouter != nil {
+		route := b.enhancedGeoRouter.RouteByLocation(clientIP)
+		// Находим сервер по маршруту
+		for _, server := range b.servers {
+			if server.Address == route && server.Healthy {
+				return server
+			}
+		}
+	}
+
+	// Fallback к обычной балансировке
+	return b.GetNextServer()
 }
 
 // UpdateServerStats updates server statistics
@@ -126,4 +162,43 @@ func (b *Balancer) GetServers() []*Server {
 	servers := make([]*Server, len(b.servers))
 	copy(servers, b.servers)
 	return servers
-} 
+}
+
+// InitEnhancedGeoRouter инициализирует Enhanced Geographic Router
+func (b *Balancer) InitEnhancedGeoRouter() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.enhancedGeoRouter = quic.NewGeographicRouter()
+	b.enhancedEnabled = true
+}
+
+// EnableEnhanced включает Enhanced Geographic Router
+func (b *Balancer) EnableEnhanced() {
+	if !b.enhancedEnabled {
+		b.InitEnhancedGeoRouter()
+	}
+}
+
+// DisableEnhanced отключает Enhanced Geographic Router
+func (b *Balancer) DisableEnhanced() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.enhancedEnabled = false
+	b.enhancedGeoRouter = nil
+}
+
+// IsEnhancedEnabled проверяет, включен ли Enhanced режим
+func (b *Balancer) IsEnhancedEnabled() bool {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.enhancedEnabled
+}
+
+// GetEnhancedGeoRouter возвращает Enhanced Geographic Router
+func (b *Balancer) GetEnhancedGeoRouter() *quic.GeographicRouter {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.enhancedGeoRouter
+}
