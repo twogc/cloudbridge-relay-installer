@@ -317,3 +317,140 @@ echo "security_monitor_events_total{type=\"fail2ban\"} $block_count" >> /tmp/sec
 - Интеграции с антивирусными решениями
 - Мониторинга Docker контейнеров
 - Отслеживания изменений в файловой системе 
+
+# Интеграция Suricata с Telegram-оповещениями
+
+## Описание
+
+Данная инструкция описывает, как настроить автоматическую отправку алертов Suricata в Telegram-чат в реальном времени с помощью bash-скрипта и systemd-сервиса.
+
+---
+
+## 1. Установка Suricata
+
+```bash
+sudo apt update
+sudo apt install -y suricata jq
+```
+
+---
+
+## 2. Настройка правил Suricata
+
+- Все правила должны быть подключены в секции:
+  ```yaml
+  default-rule-path: /etc/suricata/rules
+  rule-files:
+    - suricata.rules
+    - test.rules
+  ```
+- Пример тестового правила (ICMP):
+  ```
+  alert icmp any any -> any any (msg:"ICMP test alert"; sid:1000001; rev:1;)
+  ```
+  Сохранить в `/etc/suricata/rules/test.rules`.
+
+---
+
+## 3. Скрипт для отправки алертов в Telegram
+
+**scripts/security/snort_suricata_alert.sh**
+```bash
+#!/bin/bash
+EVE_FILE="/var/log/suricata/eve.json"
+tail -F "$EVE_FILE" | \
+while read -r line; do
+    if echo "$line" | grep -q '"event_type":"alert"'; then
+        TS=$(echo "$line" | jq -r '.timestamp // empty')
+        SRC=$(echo "$line" | jq -r '.src_ip // empty')
+        DST=$(echo "$line" | jq -r '.dest_ip // empty')
+        PROTO=$(echo "$line" | jq -r '.proto // empty')
+        SIG=$(echo "$line" | jq -r '.alert.signature // empty')
+        SEV=$(echo "$line" | jq -r '.alert.severity // empty')
+        MSG="[Suricata] $TS\n$SIG\n$SRC → $DST ($PROTO)\nSeverity: $SEV"
+        $(dirname "$0")/telegram_notify.sh "$MSG"
+    fi
+done
+```
+
+**scripts/security/telegram_notify.sh**
+```bash
+#!/bin/bash
+TOKEN="<ваш_токен>"
+CHAT_ID="<ваш_chat_id>"
+MESSAGE="$1"
+curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
+    -d chat_id="$CHAT_ID" \
+    -d text="$MESSAGE"
+```
+
+---
+
+## 4. Systemd-сервис для автозапуска демона
+
+**scripts/security/suricata-alert-telegram.service**
+```ini
+[Unit]
+Description=Suricata alert to Telegram daemon
+After=network.target suricata.service
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /home/ubuntu/cloudbridge-relay-installer/scripts/security/snort_suricata_alert.sh
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Установить сервис:
+```bash
+sudo cp scripts/security/suricata-alert-telegram.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now suricata-alert-telegram.service
+```
+
+---
+
+## 5. Тестирование
+
+1. Сгенерируйте трафик (например, ping):
+   ```bash
+   ping -c 1 1.1.1.1
+   ```
+2. Проверьте, что в `/var/log/suricata/eve.json` появились алерты с вашим тестовым сообщением.
+3. Убедитесь, что в Telegram-чат пришло уведомление с краткой информацией об инциденте.
+
+---
+
+## 6. Управление сервисом
+
+- Проверить статус:
+  ```bash
+  sudo systemctl status suricata-alert-telegram.service
+  ```
+- Остановить:
+  ```bash
+  sudo systemctl stop suricata-alert-telegram.service
+  ```
+- Запустить:
+  ```bash
+  sudo systemctl start suricata-alert-telegram.service
+  ```
+- Логи:
+  ```bash
+  journalctl -u suricata-alert-telegram.service -f
+  ```
+
+---
+
+## 7. Примечания
+
+- Для работы требуется установленный jq.
+- Можно доработать фильтрацию, форматирование сообщений, интеграцию с другими системами.
+- Все скрипты должны быть исполняемыми (`chmod +x ...`).
+
+---
+
+**Интеграция Suricata + Telegram полностью автоматизирована и готова к эксплуатации!** 

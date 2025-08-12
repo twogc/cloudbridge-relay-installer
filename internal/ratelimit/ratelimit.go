@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"github.com/twogc/cloudbridge-relay-installer/internal/quic"
 )
 
 // Limiter implements rate limiting
@@ -95,19 +97,43 @@ type IPLimiter struct {
 	rate     float64
 	burst    int
 	mu       sync.RWMutex
+
+	// Enhanced QUIC DDoS Protection
+	enhancedDDoSProtection *quic.DDoSProtection
+	enhancedEnabled        bool
 }
 
 // NewIPLimiter creates a new IP-based rate limiter
 func NewIPLimiter(rate float64, burst int) *IPLimiter {
 	return &IPLimiter{
-		limiters: make(map[string]*Limiter),
-		rate:     rate,
-		burst:    burst,
+		limiters:        make(map[string]*Limiter),
+		rate:            rate,
+		burst:           burst,
+		enhancedEnabled: false, // По умолчанию отключено
+	}
+}
+
+// NewIPLimiterWithEnhanced создает IP rate limiter с Enhanced DDoS Protection
+func NewIPLimiterWithEnhanced(rate float64, burst int) *IPLimiter {
+	return &IPLimiter{
+		limiters:               make(map[string]*Limiter),
+		rate:                   rate,
+		burst:                  burst,
+		enhancedDDoSProtection: quic.NewDDoSProtection(),
+		enhancedEnabled:        true,
 	}
 }
 
 // Allow checks if a request from an IP is allowed
 func (l *IPLimiter) Allow(ip string) bool {
+	// Сначала проверяем Enhanced DDoS Protection, если включен
+	if l.enhancedEnabled && l.enhancedDDoSProtection != nil {
+		if err := l.enhancedDDoSProtection.CheckRateLimit(ip); err != nil {
+			return false // Enhanced DDoS Protection заблокировала IP
+		}
+	}
+
+	// Обычная проверка rate limiting
 	l.mu.RLock()
 	limiter, ok := l.limiters[ip]
 	l.mu.RUnlock()
@@ -174,9 +200,54 @@ func (l *UserLimiter) Cleanup() {
 	// TODO: Implement cleanup logic if needed
 }
 
+// EnableEnhanced включает Enhanced DDoS Protection для IPLimiter
+func (l *IPLimiter) EnableEnhanced() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if !l.enhancedEnabled {
+		l.enhancedDDoSProtection = quic.NewDDoSProtection()
+		l.enhancedEnabled = true
+	}
+}
+
+// DisableEnhanced отключает Enhanced DDoS Protection
+func (l *IPLimiter) DisableEnhanced() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.enhancedEnabled = false
+	l.enhancedDDoSProtection = nil
+}
+
+// IsEnhancedEnabled проверяет, включен ли Enhanced режим
+func (l *IPLimiter) IsEnhancedEnabled() bool {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.enhancedEnabled
+}
+
+// CheckEnhancedDDoSProtection проверяет Enhanced DDoS защиту
+func (l *IPLimiter) CheckEnhancedDDoSProtection(clientIP string) error {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	if l.enhancedEnabled && l.enhancedDDoSProtection != nil {
+		return l.enhancedDDoSProtection.CheckRateLimit(clientIP)
+	}
+	return nil
+}
+
+// GetEnhancedDDoSProtection возвращает Enhanced DDoS Protection
+func (l *IPLimiter) GetEnhancedDDoSProtection() *quic.DDoSProtection {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.enhancedDDoSProtection
+}
+
 func min(a, b float64) float64 {
 	if a < b {
 		return a
 	}
 	return b
-} 
+}

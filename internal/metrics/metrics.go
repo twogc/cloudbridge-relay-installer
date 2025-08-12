@@ -16,11 +16,11 @@ type Metrics struct {
 	mu sync.RWMutex
 
 	// Счетчики
-	connectionsTotal      prometheus.Counter
-	rejectedConnections   prometheus.Counter
-	errorsTotal           *prometheus.CounterVec
-	heartbeatsTotal       prometheus.Counter
-	heartbeatErrorsTotal  prometheus.Counter
+	connectionsTotal     prometheus.Counter
+	rejectedConnections  prometheus.Counter
+	errorsTotal          *prometheus.CounterVec
+	heartbeatsTotal      prometheus.Counter
+	heartbeatErrorsTotal prometheus.Counter
 
 	// Гейджи
 	activeConnections prometheus.Gauge
@@ -46,89 +46,89 @@ type Metrics struct {
 	activeTunnelsCount     int64
 
 	// Новые метрики для Keycloak
-	keycloakTokenValidations *prometheus.CounterVec
-	keycloakJWKSCacheHits    prometheus.Counter
-	keycloakJWKSCacheMisses  prometheus.Counter
-	keycloakJWKSCacheSize    prometheus.Gauge
-	keycloakJWKSFetchDuration prometheus.Histogram
+	keycloakTokenValidations        *prometheus.CounterVec
+	keycloakJWKSCacheHits           prometheus.Counter
+	keycloakJWKSCacheMisses         prometheus.Counter
+	keycloakJWKSCacheSize           prometheus.Gauge
+	keycloakJWKSFetchDuration       prometheus.Histogram
 	keycloakTokenValidationDuration *prometheus.HistogramVec
-	keycloakUserInfoDuration prometheus.Histogram
-	keycloakPermissionChecks *prometheus.CounterVec
+	keycloakUserInfoDuration        prometheus.Histogram
+	keycloakPermissionChecks        *prometheus.CounterVec
 
 	// Бизнес-метрики
 	businessMetrics struct {
-		activeUsers       prometheus.Gauge
-		revenuePerHour    prometheus.Counter
+		activeUsers          prometheus.Gauge
+		revenuePerHour       prometheus.Counter
 		customerSatisfaction prometheus.Gauge
-		totalRevenue      prometheus.Gauge
+		totalRevenue         prometheus.Gauge
 	}
 
 	// Технические метрики
 	technicalMetrics struct {
-		memoryUsage       prometheus.Gauge
-		gcPauseDuration   prometheus.Histogram
-		networkLatency    prometheus.Histogram
-		diskIO            prometheus.Counter
+		memoryUsage     prometheus.Gauge
+		gcPauseDuration prometheus.Histogram
+		networkLatency  prometheus.Histogram
+		diskIO          prometheus.Counter
 	}
 
 	// Новые метрики для туннелей
 	tunnelMetrics struct {
-		creationsTotal           prometheus.Counter
-		closuresTotal            prometheus.Counter
-		durationSeconds          prometheus.Histogram
-		bytesFromClientTotal     *prometheus.CounterVec
-		bytesToClientTotal       *prometheus.CounterVec
-		bandwidthUtilization     *prometheus.GaugeVec
-		errorsTotal              *prometheus.CounterVec
-		status                   *prometheus.GaugeVec
-		activityHeatmap          *prometheus.GaugeVec
-		latencySeconds           *prometheus.HistogramVec
-		operationsTotal          *prometheus.CounterVec
-		cleanupOperationsTotal   *prometheus.CounterVec
-		memoryUsageBytes         *prometheus.GaugeVec
-		cpuUsageSecondsTotal     *prometheus.CounterVec
+		creationsTotal         prometheus.Counter
+		closuresTotal          prometheus.Counter
+		durationSeconds        prometheus.Histogram
+		bytesFromClientTotal   *prometheus.CounterVec
+		bytesToClientTotal     *prometheus.CounterVec
+		bandwidthUtilization   *prometheus.GaugeVec
+		errorsTotal            *prometheus.CounterVec
+		status                 *prometheus.GaugeVec
+		activityHeatmap        *prometheus.GaugeVec
+		latencySeconds         *prometheus.HistogramVec
+		operationsTotal        *prometheus.CounterVec
+		cleanupOperationsTotal *prometheus.CounterVec
+		memoryUsageBytes       *prometheus.GaugeVec
+		cpuUsageSecondsTotal   *prometheus.CounterVec
 	}
 
 	// Метрики безопасности
 	securityMetrics struct {
-		suspiciousActivitiesTotal     prometheus.Counter
-		rateLimitViolationsTotal      *prometheus.CounterVec
-		ddosAttemptsTotal             *prometheus.CounterVec
-		securityEventsTotal           *prometheus.CounterVec
-		failedLoginsByIP              *prometheus.GaugeVec
-		tlsCertificateStatus          *prometheus.GaugeVec
-		tlsHandshakeFailuresTotal     *prometheus.CounterVec
-		tlsCertificateExpirationDays  *prometheus.GaugeVec
+		suspiciousActivitiesTotal    prometheus.Counter
+		rateLimitViolationsTotal     *prometheus.CounterVec
+		ddosAttemptsTotal            *prometheus.CounterVec
+		securityEventsTotal          *prometheus.CounterVec
+		failedLoginsByIP             *prometheus.GaugeVec
+		tlsCertificateStatus         *prometheus.GaugeVec
+		tlsHandshakeFailuresTotal    *prometheus.CounterVec
+		tlsCertificateExpirationDays *prometheus.GaugeVec
 	}
 
 	// ML метрики
 	mlMetrics struct {
-		anomalyScore              *prometheus.GaugeVec
-		threatPredictionsTotal    *prometheus.CounterVec
+		anomalyScore           *prometheus.GaugeVec
+		threatPredictionsTotal *prometheus.CounterVec
 	}
 
 	// Метрики мультитенантности
 	tenantMetrics struct {
-		activeCount                   prometheus.Gauge
-		activeTunnels                 *prometheus.GaugeVec
-		activeConnections             *prometheus.GaugeVec
-		bandwidthBytesTotal           *prometheus.CounterVec
-		dataTransferGB                *prometheus.GaugeVec
-		responseTimeSeconds           *prometheus.HistogramVec
-		errorsTotal                   *prometheus.CounterVec
-		slaCompliancePercent          *prometheus.GaugeVec
-		uptimePercent                 *prometheus.GaugeVec
-		securityIncidentsTotal        *prometheus.CounterVec
-		authFailuresTotal             *prometheus.CounterVec
-		riskScore                     *prometheus.GaugeVec
-		isolationViolationsTotal      *prometheus.CounterVec
-		accessPatternsTotal           *prometheus.CounterVec
-		revenueTotal                  *prometheus.CounterVec
-		customerSatisfaction          *prometheus.GaugeVec
-		dailyActiveUsers              *prometheus.GaugeVec
-		usageHeatmap                  *prometheus.GaugeVec
-		comparisonMetrics             *prometheus.GaugeVec
-		resourceUtilizationPercent    prometheus.Gauge
+		activeCount                prometheus.Gauge
+		activeTunnels              *prometheus.GaugeVec
+		activeConnections          *prometheus.GaugeVec
+		bandwidthBytesTotal        *prometheus.CounterVec
+		dataTransferGB             *prometheus.GaugeVec
+		responseTimeSeconds        *prometheus.HistogramVec
+		errorsTotal                *prometheus.CounterVec
+		slaCompliancePercent       *prometheus.GaugeVec
+		uptimePercent              *prometheus.GaugeVec
+		securityIncidentsTotal     *prometheus.CounterVec
+		authFailuresTotal          *prometheus.CounterVec
+		riskScore                  *prometheus.GaugeVec
+		isolationViolationsTotal   *prometheus.CounterVec
+		accessPatternsTotal        *prometheus.CounterVec
+		revenueTotal               *prometheus.CounterVec
+		customerSatisfaction       *prometheus.GaugeVec
+		dailyActiveUsers           *prometheus.GaugeVec
+		usageHeatmap               *prometheus.GaugeVec
+		comparisonMetrics          *prometheus.GaugeVec
+		resourceUtilizationPercent prometheus.Gauge
 	}
 }
 
@@ -243,10 +243,10 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 
 		// Бизнес-метрики
 		businessMetrics: struct {
-			activeUsers       prometheus.Gauge
-			revenuePerHour    prometheus.Counter
+			activeUsers          prometheus.Gauge
+			revenuePerHour       prometheus.Counter
 			customerSatisfaction prometheus.Gauge
-			totalRevenue      prometheus.Gauge
+			totalRevenue         prometheus.Gauge
 		}{
 			activeUsers: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "relay_business_active_users",
@@ -268,10 +268,10 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 
 		// Технические метрики
 		technicalMetrics: struct {
-			memoryUsage       prometheus.Gauge
-			gcPauseDuration   prometheus.Histogram
-			networkLatency    prometheus.Histogram
-			diskIO            prometheus.Counter
+			memoryUsage     prometheus.Gauge
+			gcPauseDuration prometheus.Histogram
+			networkLatency  prometheus.Histogram
+			diskIO          prometheus.Counter
 		}{
 			memoryUsage: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "relay_technical_memory_usage_bytes",
@@ -295,20 +295,20 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 
 		// Метрики туннелей
 		tunnelMetrics: struct {
-			creationsTotal           prometheus.Counter
-			closuresTotal            prometheus.Counter
-			durationSeconds          prometheus.Histogram
-			bytesFromClientTotal     *prometheus.CounterVec
-			bytesToClientTotal       *prometheus.CounterVec
-			bandwidthUtilization     *prometheus.GaugeVec
-			errorsTotal              *prometheus.CounterVec
-			status                   *prometheus.GaugeVec
-			activityHeatmap          *prometheus.GaugeVec
-			latencySeconds           *prometheus.HistogramVec
-			operationsTotal          *prometheus.CounterVec
-			cleanupOperationsTotal   *prometheus.CounterVec
-			memoryUsageBytes         *prometheus.GaugeVec
-			cpuUsageSecondsTotal     *prometheus.CounterVec
+			creationsTotal         prometheus.Counter
+			closuresTotal          prometheus.Counter
+			durationSeconds        prometheus.Histogram
+			bytesFromClientTotal   *prometheus.CounterVec
+			bytesToClientTotal     *prometheus.CounterVec
+			bandwidthUtilization   *prometheus.GaugeVec
+			errorsTotal            *prometheus.CounterVec
+			status                 *prometheus.GaugeVec
+			activityHeatmap        *prometheus.GaugeVec
+			latencySeconds         *prometheus.HistogramVec
+			operationsTotal        *prometheus.CounterVec
+			cleanupOperationsTotal *prometheus.CounterVec
+			memoryUsageBytes       *prometheus.GaugeVec
+			cpuUsageSecondsTotal   *prometheus.CounterVec
 		}{
 			creationsTotal: prometheus.NewCounter(prometheus.CounterOpts{
 				Name: "relay_tunnel_creations_total",
@@ -372,14 +372,14 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 
 		// Метрики безопасности
 		securityMetrics: struct {
-			suspiciousActivitiesTotal     prometheus.Counter
-			rateLimitViolationsTotal      *prometheus.CounterVec
-			ddosAttemptsTotal             *prometheus.CounterVec
-			securityEventsTotal           *prometheus.CounterVec
-			failedLoginsByIP              *prometheus.GaugeVec
-			tlsCertificateStatus          *prometheus.GaugeVec
-			tlsHandshakeFailuresTotal     *prometheus.CounterVec
-			tlsCertificateExpirationDays  *prometheus.GaugeVec
+			suspiciousActivitiesTotal    prometheus.Counter
+			rateLimitViolationsTotal     *prometheus.CounterVec
+			ddosAttemptsTotal            *prometheus.CounterVec
+			securityEventsTotal          *prometheus.CounterVec
+			failedLoginsByIP             *prometheus.GaugeVec
+			tlsCertificateStatus         *prometheus.GaugeVec
+			tlsHandshakeFailuresTotal    *prometheus.CounterVec
+			tlsCertificateExpirationDays *prometheus.GaugeVec
 		}{
 			suspiciousActivitiesTotal: prometheus.NewCounter(prometheus.CounterOpts{
 				Name: "relay_security_suspicious_activities_total",
@@ -417,8 +417,8 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 
 		// ML метрики
 		mlMetrics: struct {
-			anomalyScore              *prometheus.GaugeVec
-			threatPredictionsTotal    *prometheus.CounterVec
+			anomalyScore           *prometheus.GaugeVec
+			threatPredictionsTotal *prometheus.CounterVec
 		}{
 			anomalyScore: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "relay_ml_anomaly_score",
@@ -430,28 +430,28 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			}, []string{"prediction_type"}),
 		},
 
-		// Метрики мультитенантности
+		// Метрики мультитенантности - инициализация
 		tenantMetrics: struct {
-			activeCount                   prometheus.Gauge
-			activeTunnels                 *prometheus.GaugeVec
-			activeConnections             *prometheus.GaugeVec
-			bandwidthBytesTotal           *prometheus.CounterVec
-			dataTransferGB                *prometheus.GaugeVec
-			responseTimeSeconds           *prometheus.HistogramVec
-			errorsTotal                   *prometheus.CounterVec
-			slaCompliancePercent          *prometheus.GaugeVec
-			uptimePercent                 *prometheus.GaugeVec
-			securityIncidentsTotal        *prometheus.CounterVec
-			authFailuresTotal             *prometheus.CounterVec
-			riskScore                     *prometheus.GaugeVec
-			isolationViolationsTotal      *prometheus.CounterVec
-			accessPatternsTotal           *prometheus.CounterVec
-			revenueTotal                  *prometheus.CounterVec
-			customerSatisfaction          *prometheus.GaugeVec
-			dailyActiveUsers              *prometheus.GaugeVec
-			usageHeatmap                  *prometheus.GaugeVec
-			comparisonMetrics             *prometheus.GaugeVec
-			resourceUtilizationPercent    prometheus.Gauge
+			activeCount                prometheus.Gauge
+			activeTunnels              *prometheus.GaugeVec
+			activeConnections          *prometheus.GaugeVec
+			bandwidthBytesTotal        *prometheus.CounterVec
+			dataTransferGB             *prometheus.GaugeVec
+			responseTimeSeconds        *prometheus.HistogramVec
+			errorsTotal                *prometheus.CounterVec
+			slaCompliancePercent       *prometheus.GaugeVec
+			uptimePercent              *prometheus.GaugeVec
+			securityIncidentsTotal     *prometheus.CounterVec
+			authFailuresTotal          *prometheus.CounterVec
+			riskScore                  *prometheus.GaugeVec
+			isolationViolationsTotal   *prometheus.CounterVec
+			accessPatternsTotal        *prometheus.CounterVec
+			revenueTotal               *prometheus.CounterVec
+			customerSatisfaction       *prometheus.GaugeVec
+			dailyActiveUsers           *prometheus.GaugeVec
+			usageHeatmap               *prometheus.GaugeVec
+			comparisonMetrics          *prometheus.GaugeVec
+			resourceUtilizationPercent prometheus.Gauge
 		}{
 			activeCount: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "relay_tenant_active_count",
@@ -970,4 +970,4 @@ func (m *Metrics) SetTenantResourceUtilization(utilization float64) {
 // Business Metrics Methods
 func (m *Metrics) SetTotalRevenue(revenue float64) {
 	m.businessMetrics.totalRevenue.Set(revenue)
-} 
+}

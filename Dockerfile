@@ -1,48 +1,96 @@
-# Build stage
+# Multi-stage build для CloudBridge Relay WireGuard
 FROM golang:1.23-alpine AS builder
 
-# Install build dependencies
-RUN apk add --no-cache git
+# Установка зависимостей для сборки
+RUN apk add --no-cache \
+    git \
+    build-base \
+    linux-headers \
+    wireguard-tools
 
-# Set working directory
+# Установка рабочей директории
 WORKDIR /app
 
-# Copy go mod and sum files
+# Копирование go mod файлов
 COPY go.mod go.sum ./
 
-# Download dependencies
+# Скачивание зависимостей
 RUN go mod download
 
-# Copy source code
+# Копирование исходного кода
 COPY . .
 
-# Build the application with optimizations
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o relay ./cmd/relay
+# Сборка приложения
+ARG VERSION=dev
+ARG BUILD_TIME
+ARG GIT_COMMIT
 
-# Final stage
-FROM alpine:latest
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}" \
+    -o cloudbridge-relay ./cmd/relay
 
-# Install runtime dependencies
-RUN apk add --no-cache ca-certificates tzdata
+# Сборка WireGuard-go
+RUN git clone https://git.zx2c4.com/wireguard-go.git /tmp/wireguard-go && \
+    cd /tmp/wireguard-go && \
+    make && \
+    cp wireguard-go /app/
 
-# Set working directory
+# Финальный образ
+FROM alpine:3.18
+
+# Установка необходимых пакетов
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    iproute2 \
+    wireguard-tools \
+    iptables \
+    bash \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Создание пользователя
+RUN addgroup -g 1000 cloudbridge && \
+    adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge
+
+# Создание необходимых директорий
+RUN mkdir -p \
+    /app/configs \
+    /app/logs \
+    /etc/wireguard \
+    /var/run/wireguard \
+    /var/log/cloudbridge-relay
+
+# Копирование бинарных файлов
+COPY --from=builder /app/cloudbridge-relay /usr/local/bin/
+COPY --from=builder /app/wireguard-go /usr/local/bin/
+
+# Установка прав
+RUN chmod +x /usr/local/bin/cloudbridge-relay && \
+    chmod +x /usr/local/bin/wireguard-go && \
+    chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay
+
+# Копирование конфигурации по умолчанию
+COPY configs/config.json /app/configs/config.json
+
+# Переключение на пользователя
+USER cloudbridge
+
+# Рабочая директория
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder /app/relay .
+# Открытие портов
+EXPOSE 8080 8081 8082 80 443 9090 51820/udp
 
-# Copy configuration
-COPY config/config.json ./config/
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
-# Create directory for logs and set permissions
-RUN mkdir -p /var/log/relay && \
-    chmod 777 /var/log/relay
+# Переменные окружения
+ENV CONFIG_PATH=/app/configs/config.json
+ENV LOG_LEVEL=info
+ENV WIREGUARD_ENABLED=true
 
-# Set environment variables
-ENV TZ=UTC
-
-# Expose port
-EXPOSE 8080
-
-# Run the application
-CMD ["./relay"] 
+# Команда запуска
+ENTRYPOINT ["/usr/local/bin/cloudbridge-relay"]
+CMD ["--config", "/app/configs/config.json"] 

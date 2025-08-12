@@ -6,6 +6,7 @@
 
 ### 🔐 Аутентификация и авторизация
 - **[Keycloak Integration](keycloak_integration.md)** - Интеграция с Keycloak для аутентификации
+- **[Keycloak Multi-Tenancy: внедрение 2025](../reports/tech_task_keycloak_multitenancy.md)** - Практические шаги и API Multi-Tenancy
 - **[Keycloak Technical Specification](keycloak_specialist_technical_specification.md)** - Техническая спецификация интеграции с Keycloak
 - **[Keycloak Technical Specification Improved](keycloak_specialist_technical_specification_improved.md)** - Улучшенная техническая спецификация Keycloak
 - **[LDAP/AD Integration](ldap_ad_integration_technical_specification.md)** - Интеграция с LDAP/Active Directory

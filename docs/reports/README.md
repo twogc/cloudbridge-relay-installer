@@ -4,8 +4,8 @@
 
 ## 📋 Содержание
 
-### 📊 Технические задания
-- **[Tech Task Monitoring Security](tech_task_monitoring_security.md)** - Техническое задание по мониторингу безопасности
+### 📊 Статусные отчеты разработки
+- **[Stage 4 Completion Report](STAGE4_COMPLETION_REPORT.md)** - Отчет о завершении 4-го этапа разработки
 
 ### 🔄 Миграции
 - **[Migration Guide v2](migration_guide_v2.md)** - Руководство по миграции на версию 2
@@ -26,8 +26,8 @@
 2. [Firewall Ports Report](FIREWALL_PORTS_REPORT.md) - Проблемы с файрволом
 3. [Alertmanager Status Report](ALERTMANAGER_STATUS_REPORT.md) - Проблемы с уведомлениями
 
-### Для планирования мониторинга:
-1. [Tech Task Monitoring Security](tech_task_monitoring_security.md) - Техническое задание
+### Для изучения прогресса разработки:
+1. [Stage 4 Completion Report](STAGE4_COMPLETION_REPORT.md) - Завершение этапа Enhanced QUIC
 
 ## 🔗 Связанные разделы
 

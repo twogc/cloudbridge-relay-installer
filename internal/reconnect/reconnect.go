@@ -13,11 +13,11 @@ import (
 
 // Config represents the reconnection configuration
 type Config struct {
-	MaxRetries      int
-	RetryDelay      time.Duration
-	MaxRetryDelay   time.Duration
-	BackoffFactor   float64
-	Logger          *logger.Logger
+	MaxRetries    int
+	RetryDelay    time.Duration
+	MaxRetryDelay time.Duration
+	BackoffFactor float64
+	Logger        *logger.Logger
 }
 
 // DefaultConfig returns the default configuration
@@ -45,10 +45,10 @@ func DefaultConfig() *Config {
 
 // Connection represents a reconnecting connection
 type Connection struct {
-	config     *Config
-	addr       string
-	conn       net.Conn
-	onConnect  func(net.Conn) error
+	config       *Config
+	addr         string
+	conn         net.Conn
+	onConnect    func(net.Conn) error
 	onDisconnect func(error)
 }
 
@@ -189,4 +189,4 @@ func (c *Connection) Read(data []byte) (int, error) {
 		return 0, fmt.Errorf("not connected")
 	}
 	return c.conn.Read(data)
-} 
+}

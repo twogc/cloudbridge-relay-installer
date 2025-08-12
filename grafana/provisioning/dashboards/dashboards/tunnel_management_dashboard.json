@@ -1,0 +1,322 @@
+{
+  "title": "Tunnel Management Dashboard",
+  "dashboard": {
+    "id": null,
+    "title": "Tunnel Management Dashboard",
+    "tags": ["relay", "tunnel", "management", "analytics"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Tunnel Overview",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Active Tunnels",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_active_tunnels",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 50},
+                {"color": "red", "value": 80}
+              ]
+            },
+            "unit": "short"
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 1}
+      },
+      {
+        "id": 3,
+        "title": "Tunnel Creation Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tunnel_creations_total[5m])",
+            "legendFormat": "tunnels/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 1}
+      },
+      {
+        "id": 4,
+        "title": "Tunnel Closure Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tunnel_closures_total[5m])",
+            "legendFormat": "closures/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 1}
+      },
+      {
+        "id": 5,
+        "title": "Tunnel Duration Distribution",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "rate(relay_tunnel_duration_seconds_bucket[5m])",
+            "format": "heatmap"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 9}
+      },
+      {
+        "id": 6,
+        "title": "Tunnel Traffic Analysis",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 17}
+      },
+      {
+        "id": 7,
+        "title": "Bytes Transferred (Client → Server)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tunnel_bytes_from_client_total[5m])",
+            "legendFormat": "{{tunnel_id}} - {{remote_host}}:{{remote_port}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 18}
+      },
+      {
+        "id": 8,
+        "title": "Bytes Transferred (Server → Client)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tunnel_bytes_to_client_total[5m])",
+            "legendFormat": "{{tunnel_id}} - {{remote_host}}:{{remote_port}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 18}
+      },
+      {
+        "id": 9,
+        "title": "Tunnel Bandwidth Utilization",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "relay_tunnel_bandwidth_utilization_percent",
+            "legendFormat": "{{tunnel_id}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 26}
+      },
+      {
+        "id": 10,
+        "title": "Tunnel Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tunnel_errors_total[5m])",
+            "legendFormat": "{{tunnel_id}} - {{error_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 16, "x": 8, "y": 26}
+      },
+      {
+        "id": 11,
+        "title": "Tunnel Health Status",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 34}
+      },
+      {
+        "id": 12,
+        "title": "Tunnel Status by Remote Host",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "relay_tunnel_status",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "job": true,
+                "instance": true
+              },
+              "renameByName": {
+                "tunnel_id": "Tunnel ID",
+                "remote_host": "Remote Host",
+                "remote_port": "Remote Port",
+                "status": "Status",
+                "duration_seconds": "Duration (s)",
+                "bytes_transferred": "Bytes Transferred",
+                "last_activity": "Last Activity"
+              }
+            }
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 35}
+      },
+      {
+        "id": 13,
+        "title": "Tunnel Activity Heatmap",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "relay_tunnel_activity_heatmap",
+            "format": "heatmap"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 43}
+      },
+      {
+        "id": 14,
+        "title": "Tunnel Connection Quality",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(relay_tunnel_latency_seconds_bucket[5m]))",
+            "legendFormat": "{{tunnel_id}} - 95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(relay_tunnel_latency_seconds_bucket[5m]))",
+            "legendFormat": "{{tunnel_id}} - 50th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 43}
+      },
+      {
+        "id": 15,
+        "title": "Tunnel Management Actions",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 51}
+      },
+      {
+        "id": 16,
+        "title": "Tunnel Operations",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "relay_tunnel_operations_total",
+            "legendFormat": "{{operation}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 52}
+      },
+      {
+        "id": 17,
+        "title": "Tunnel Cleanup Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tunnel_cleanup_operations_total[5m])",
+            "legendFormat": "{{reason}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 16, "x": 8, "y": 52}
+      },
+      {
+        "id": 18,
+        "title": "Tunnel Resource Usage",
+        "type": "row",
+        "collapsed": false,
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 60}
+      },
+      {
+        "id": 19,
+        "title": "Memory Usage per Tunnel",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "relay_tunnel_memory_usage_bytes / 1024 / 1024",
+            "legendFormat": "{{tunnel_id}} - MB"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 61}
+      },
+      {
+        "id": 20,
+        "title": "CPU Usage per Tunnel",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(relay_tunnel_cpu_usage_seconds_total[5m]) * 100",
+            "legendFormat": "{{tunnel_id}} - %"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 61}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": [],
+    "annotations": {
+      "list": []
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "tunnel_id",
+          "type": "query",
+          "query": "label_values(relay_tunnel_status, tunnel_id)",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        },
+        {
+          "name": "remote_host",
+          "type": "query",
+          "query": "label_values(relay_tunnel_status, remote_host)",
+          "refresh": 2,
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    }
+  }
+} 

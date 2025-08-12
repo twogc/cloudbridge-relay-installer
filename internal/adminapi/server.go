@@ -20,33 +20,33 @@ func AuthMiddleware(keycloakClient *keycloak.Client, logger *logger.Logger) gin.
 	return func(c *gin.Context) {
 		// Отладочная информация
 		logger.Info("AuthMiddleware called", zap.String("path", c.Request.URL.Path))
-		
+
 		// Проверяем, что Keycloak клиент инициализирован
 		if keycloakClient == nil {
 			logger.Error("Keycloak client is nil - middleware disabled")
 			c.AbortWithStatusJSON(500, gin.H{"error": "authentication service unavailable"})
 			return
 		}
-		
+
 		header := c.GetHeader("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {
 			logger.Warn("Missing or invalid Authorization header", zap.String("header", header))
 			c.AbortWithStatusJSON(401, gin.H{"error": "missing or invalid Authorization header"})
 			return
 		}
-		
+
 		token := strings.TrimPrefix(header, "Bearer ")
 		logger.Info("Validating token", zap.String("token_prefix", token[:10]+"..."))
-		
+
 		tokenInfo, err := keycloakClient.ValidateToken(context.Background(), token)
 		if err != nil {
 			logger.Warn("Token validation failed", zap.Error(err))
 			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
 			return
 		}
-		
+
 		logger.Info("Token validated successfully", zap.String("username", tokenInfo.Username), zap.Strings("roles", tokenInfo.Roles))
-		
+
 		isAdmin := false
 		for _, role := range tokenInfo.Roles {
 			if role == "admin-ui" {
@@ -54,13 +54,13 @@ func AuthMiddleware(keycloakClient *keycloak.Client, logger *logger.Logger) gin.
 				break
 			}
 		}
-		
+
 		if !isAdmin {
 			logger.Warn("Access denied: missing admin-ui role", zap.Strings("user_roles", tokenInfo.Roles))
 			c.AbortWithStatusJSON(403, gin.H{"error": "forbidden: admin-ui role required"})
 			return
 		}
-		
+
 		logger.Info("Access granted", zap.String("username", tokenInfo.Username))
 		// Можно добавить user info в context
 		c.Set("user", tokenInfo)
@@ -86,7 +86,7 @@ func RunServer(addr string, keycloakClient *keycloak.Client, logger *logger.Logg
 
 	r.GET("/api/status", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
+			"status":  "ok",
 			"message": "Admin API is running",
 		})
 	})
@@ -134,14 +134,14 @@ func RunServer(addr string, keycloakClient *keycloak.Client, logger *logger.Logg
 	// Проверяем наличие TLS сертификатов
 	certFile := "/etc/relay/certs/fullchain.pem"
 	keyFile := "/etc/relay/certs/privkey.pem"
-	
+
 	if _, err := os.Stat(certFile); err == nil {
 		if _, err := os.Stat(keyFile); err == nil {
 			logger.Info("Starting Admin API with HTTPS", zap.String("addr", addr))
 			return r.RunTLS(addr, certFile, keyFile)
 		}
 	}
-	
+
 	logger.Info("Starting Admin API with HTTP", zap.String("addr", addr))
 	return r.Run(addr)
-} 
+}

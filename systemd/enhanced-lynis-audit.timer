@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Enhanced Lynis Security Audit weekly
+Documentation=https://github.com/twogc/cloudbridge-relay-installer
+Requires=enhanced-lynis-audit.service
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+RandomizedDelaySec=3600
+
+[Install]
+WantedBy=timers.target 

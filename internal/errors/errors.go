@@ -11,8 +11,8 @@ type ErrorType string
 
 const (
 	// Connection errors
-	ErrConnectionFailed ErrorType = "CONNECTION_FAILED"
-	ErrConnectionClosed ErrorType = "CONNECTION_CLOSED"
+	ErrConnectionFailed  ErrorType = "CONNECTION_FAILED"
+	ErrConnectionClosed  ErrorType = "CONNECTION_CLOSED"
 	ErrConnectionTimeout ErrorType = "CONNECTION_TIMEOUT"
 
 	// Protocol errors
@@ -131,4 +131,4 @@ func NewSystemError(message string, err error) *RelayError {
 		Message: message,
 		Err:     err,
 	}
-} 
+}

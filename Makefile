@@ -1,388 +1,209 @@
-# CloudBridge Relay Makefile
+# Makefile для CloudBridge Relay WireGuard
+# Управление сборкой, тестированием, релизом и развертыванием
 
-# Variables
-BINARY_NAME=relay
-BUILD_DIR=build
-DOCKER_IMAGE=cloudbridge-relay
-DOCKER_TAG=latest
-GO_VERSION=1.21
-LDFLAGS=-ldflags "-X main.Version=$(shell git describe --tags --always --dirty) -X main.BuildTime=$(shell date -u '+%Y-%m-%d_%H:%M:%S')"
+# Переменные
+BINARY_NAME=cloudbridge-relay
+VERSION=$(shell git describe --tags --always --dirty)
+BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
+GIT_COMMIT=$(shell git rev-parse --short HEAD)
+LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}"
 
-# Default target
-.PHONY: all
-all: clean build
+# Платформы для кросс-компиляции
+PLATFORMS=linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
 
-# Build the application
-.PHONY: build
-build:
-	@echo "Building $(BINARY_NAME)..."
-	@mkdir -p $(BUILD_DIR)
-	go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/relay
+# Docker
+DOCKER_IMAGE=twogc/cloudbridge-relay
+DOCKER_TAG=${VERSION}
 
-# Build for multiple platforms
-.PHONY: build-all
-build-all: clean
-	@echo "Building for multiple platforms..."
-	@mkdir -p $(BUILD_DIR)
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/relay
-	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/relay
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/relay
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/relay
+# Цвета для вывода
+GREEN=\033[0;32m
+YELLOW=\033[1;33m
+RED=\033[0;31m
+NC=\033[0m # No Color
 
-# Run the application
-.PHONY: run
-run:
-	@echo "Running $(BINARY_NAME)..."
-	go run ./cmd/relay
+.PHONY: help build test clean install docker-build docker-push release
 
-# Run with development configuration
-.PHONY: run-dev
-run-dev:
-	@echo "Running $(BINARY_NAME) in development mode..."
-	go run ./cmd/relay --config config/config.json --log-level debug
+# Основная цель
+help: ## Показать справку
+	@echo "$(GREEN)CloudBridge Relay WireGuard - Инструменты управления$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Доступные команды:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
 
-# Test the application
-.PHONY: test
-test:
-	@echo "Running tests..."
+# Сборка
+build: ## Собрать бинарный файл
+	@echo "$(GREEN)Сборка CloudBridge Relay...$(NC)"
+	go build ${LDFLAGS} -o bin/${BINARY_NAME} ./cmd/relay
+	@echo "$(GREEN)Бинарный файл создан: bin/${BINARY_NAME}$(NC)"
+
+build-all: ## Собрать для всех платформ
+	@echo "$(GREEN)Кросс-компиляция для всех платформ...$(NC)"
+	@mkdir -p bin
+	@for platform in ${PLATFORMS}; do \
+		IFS='/' read -r GOOS GOARCH <<< "$$platform"; \
+		BINARY_NAME_EXT=$${BINARY_NAME}; \
+		if [ "$$GOOS" = "windows" ]; then \
+			BINARY_NAME_EXT=$${BINARY_NAME}.exe; \
+		fi; \
+		echo "Сборка для $$GOOS/$$GOARCH..."; \
+		GOOS=$$GOOS GOARCH=$$GOARCH go build ${LDFLAGS} -o bin/$${BINARY_NAME}-$$GOOS-$$GOARCH$${BINARY_NAME_EXT} ./cmd/relay; \
+	done
+	@echo "$(GREEN)Сборка завершена!$(NC)"
+
+# Тестирование
+test: ## Запустить все тесты
+	@echo "$(GREEN)Запуск тестов...$(NC)"
 	go test -v ./...
+	@echo "$(GREEN)Тесты завершены!$(NC)"
 
-# Run tests with coverage
-.PHONY: test-coverage
-test-coverage:
-	@echo "Running tests with coverage..."
+test-wireguard: ## Запустить тесты WireGuard
+	@echo "$(GREEN)Запуск тестов WireGuard...$(NC)"
+	go test -v -run TestWireGuard ./cmd/relay
+	@echo "$(GREEN)Тесты WireGuard завершены!$(NC)"
+
+test-real-wireguard: ## Запустить тесты реального WireGuard
+	@echo "$(GREEN)Запуск тестов реального WireGuard...$(NC)"
+	sudo go test -v -run TestRealWireGuard ./cmd/relay
+	@echo "$(GREEN)Тесты реального WireGuard завершены!$(NC)"
+
+test-coverage: ## Запустить тесты с покрытием
+	@echo "$(GREEN)Запуск тестов с покрытием...$(NC)"
 	go test -v -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: coverage.html"
+	@echo "$(GREEN)Отчет о покрытии создан: coverage.html$(NC)"
 
-# Run integration tests
-.PHONY: test-integration
-test-integration:
-	@echo "Running integration tests..."
-	go test -v ./tests/integration/...
+# Установка
+install: ## Установить в систему
+	@echo "$(GREEN)Установка CloudBridge Relay...$(NC)"
+	go install ${LDFLAGS} ./cmd/relay
+	@echo "$(GREEN)CloudBridge Relay установлен!$(NC)"
 
-# Run E2E tests
-.PHONY: test-e2e
-test-e2e:
-	@echo "Running E2E tests..."
-	go test -v ./tests/e2e/...
+install-wireguard: ## Установить WireGuard зависимости
+	@echo "$(GREEN)Установка WireGuard зависимостей...$(NC)"
+	sudo ./scripts/install_wireguard_go.sh
+	@echo "$(GREEN)WireGuard зависимости установлены!$(NC)"
 
-# Run all tests
-.PHONY: test-all
-test-all: test test-integration test-e2e
+# Docker
+docker-build: ## Собрать Docker образ
+	@echo "$(GREEN)Сборка Docker образа...$(NC)"
+	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+	docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+	@echo "$(GREEN)Docker образ создан: ${DOCKER_IMAGE}:${DOCKER_TAG}$(NC)"
 
-# Test new metrics
-.PHONY: test-metrics
-test-metrics:
-	@echo "Testing new metrics functionality..."
-	go test -v ./internal/metrics/...
+docker-push: ## Отправить Docker образ в registry
+	@echo "$(GREEN)Отправка Docker образа...$(NC)"
+	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+	docker push ${DOCKER_IMAGE}:latest
+	@echo "$(GREEN)Docker образ отправлен!$(NC)"
 
-# Test Keycloak integration
-.PHONY: test-keycloak
-test-keycloak:
-	@echo "Testing Keycloak integration..."
-	go test -v ./tests/integration/keycloak_integration_test.go
+docker-run: ## Запустить в Docker
+	@echo "$(GREEN)Запуск в Docker...$(NC)"
+	docker run -d --name cloudbridge-relay \
+		-p 8080:8080 \
+		-p 9090:9090 \
+		-v $(PWD)/configs:/app/configs \
+		${DOCKER_IMAGE}:latest
 
-# Lint the code
-.PHONY: lint
-lint:
-	@echo "Linting code..."
-	golangci-lint run
+# Релиз
+release: ## Создать релиз
+	@echo "$(GREEN)Создание релиза...$(NC)"
+	@if [ -z "$(VERSION)" ]; then \
+		echo "$(RED)Ошибка: VERSION не установлен$(NC)"; \
+		exit 1; \
+	fi
+	@echo "Создание релиза версии $(VERSION)..."
+	@mkdir -p releases/$(VERSION)
+	@cp bin/* releases/$(VERSION)/
+	@cp configs/*.yaml releases/$(VERSION)/
+	@cp scripts/install.sh releases/$(VERSION)/
+	@cp README.md releases/$(VERSION)/
+	@cd releases && tar -czf $(VERSION).tar.gz $(VERSION)
+	@echo "$(GREEN)Релиз создан: releases/$(VERSION).tar.gz$(NC)"
 
-# Format the code
-.PHONY: fmt
-fmt:
-	@echo "Formatting code..."
-	go fmt ./...
+release-github: ## Создать GitHub релиз
+	@echo "$(GREEN)Создание GitHub релиза...$(NC)"
+	@if [ -z "$(VERSION)" ]; then \
+		echo "$(RED)Ошибка: VERSION не установлен$(NC)"; \
+		exit 1; \
+	fi
+	@gh release create $(VERSION) \
+		--title "CloudBridge Relay $(VERSION)" \
+		--notes "Релиз CloudBridge Relay с WireGuard интеграцией" \
+		releases/$(VERSION).tar.gz
 
-# Vet the code
-.PHONY: vet
-vet:
-	@echo "Vetting code..."
-	go vet ./...
-
-# Clean build artifacts
-.PHONY: clean
-clean:
-	@echo "Cleaning build artifacts..."
-	rm -rf $(BUILD_DIR)
+# Очистка
+clean: ## Очистить артефакты сборки
+	@echo "$(GREEN)Очистка...$(NC)"
+	rm -rf bin/
+	rm -rf releases/
 	rm -f coverage.out coverage.html
+	go clean
+	@echo "$(GREEN)Очистка завершена!$(NC)"
 
-# Install dependencies
-.PHONY: deps
-deps:
-	@echo "Installing dependencies..."
+# Проверки
+lint: ## Запустить линтер
+	@echo "$(GREEN)Запуск линтера...$(NC)"
+	golangci-lint run
+	@echo "$(GREEN)Линтер завершен!$(NC)"
+
+fmt: ## Форматировать код
+	@echo "$(GREEN)Форматирование кода...$(NC)"
+	go fmt ./...
+	@echo "$(GREEN)Форматирование завершено!$(NC)"
+
+vet: ## Проверить код
+	@echo "$(GREEN)Проверка кода...$(NC)"
+	go vet ./...
+	@echo "$(GREEN)Проверка завершена!$(NC)"
+
+# Документация
+docs: ## Сгенерировать документацию
+	@echo "$(GREEN)Генерация документации...$(NC)"
+	@mkdir -p docs/generated
+	godoc -http=:6060 &
+	@echo "$(GREEN)Документация доступна на http://localhost:6060$(NC)"
+
+# Мониторинг
+monitor: ## Запустить мониторинг
+	@echo "$(GREEN)Запуск мониторинга...$(NC)"
+	@if [ -f bin/${BINARY_NAME} ]; then \
+		./bin/${BINARY_NAME} --config configs/config.yaml; \
+	else \
+		echo "$(RED)Бинарный файл не найден. Запустите 'make build'$(NC)"; \
+	fi
+
+# Развертывание
+deploy-local: ## Развернуть локально
+	@echo "$(GREEN)Локальное развертывание...$(NC)"
+	@make install-wireguard
+	@make build
+	@make monitor
+
+deploy-docker: ## Развернуть через Docker
+	@echo "$(GREEN)Развертывание через Docker...$(NC)"
+	@make docker-build
+	@make docker-run
+
+# Утилиты
+version: ## Показать версию
+	@echo "$(GREEN)Версия: $(VERSION)$(NC)"
+	@echo "$(GREEN)Время сборки: $(BUILD_TIME)$(NC)"
+	@echo "$(GREEN)Git commit: $(GIT_COMMIT)$(NC)"
+
+deps: ## Установить зависимости
+	@echo "$(GREEN)Установка зависимостей...$(NC)"
 	go mod download
 	go mod tidy
+	@echo "$(GREEN)Зависимости установлены!$(NC)"
 
-# Update dependencies
-.PHONY: deps-update
-deps-update:
-	@echo "Updating dependencies..."
-	go get -u ./...
-	go mod tidy
+# Проверка окружения
+check-env: ## Проверить окружение
+	@echo "$(GREEN)Проверка окружения...$(NC)"
+	@command -v go >/dev/null 2>&1 || { echo "$(RED)Go не установлен$(NC)"; exit 1; }
+	@command -v git >/dev/null 2>&1 || { echo "$(RED)Git не установлен$(NC)"; exit 1; }
+	@command -v docker >/dev/null 2>&1 || { echo "$(YELLOW)Docker не установлен (некоторые команды недоступны)$(NC)"; }
+	@echo "$(GREEN)Окружение готово!$(NC)"
 
-# Docker build
-.PHONY: docker-build
-docker-build:
-	@echo "Building Docker image..."
-	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
-
-# Docker run
-.PHONY: docker-run
-docker-run:
-	@echo "Running Docker container..."
-	docker run -d \
-		--name relay \
-		-p 8080:8080 \
-		-p 8081:8081 \
-		-v $(PWD)/certs:/etc/relay/certs \
-		-v $(PWD)/logs:/var/log/relay \
-		-e RELAY_JWT_SECRET=test-secret \
-		$(DOCKER_IMAGE):$(DOCKER_TAG)
-
-# Docker stop
-.PHONY: docker-stop
-docker-stop:
-	@echo "Stopping Docker container..."
-	docker stop relay || true
-	docker rm relay || true
-
-# Docker Compose up
-.PHONY: compose-up
-compose-up:
-	@echo "Starting services with Docker Compose..."
-	docker-compose up -d
-
-# Docker Compose down
-.PHONY: compose-down
-compose-down:
-	@echo "Stopping services with Docker Compose..."
-	docker-compose down
-
-# Docker Compose logs
-.PHONY: compose-logs
-compose-logs:
-	@echo "Showing Docker Compose logs..."
-	docker-compose logs -f
-
-# Keycloak integration
-.PHONY: keycloak-up
-keycloak-up:
-	@echo "Starting Keycloak with Docker Compose..."
-	docker-compose -f docker-compose.keycloak.yml up -d
-
-.PHONY: keycloak-down
-keycloak-down:
-	@echo "Stopping Keycloak services..."
-	docker-compose -f docker-compose.keycloak.yml down
-
-.PHONY: keycloak-logs
-keycloak-logs:
-	@echo "Showing Keycloak logs..."
-	docker-compose -f docker-compose.keycloak.yml logs -f
-
-.PHONY: keycloak-setup
-keycloak-setup:
-	@echo "Setting up Keycloak for CloudBridge Relay..."
-	@chmod +x scripts/setup_keycloak.sh
-	./scripts/setup_keycloak.sh
-
-.PHONY: keycloak-test
-keycloak-test:
-	@echo "Testing Keycloak integration..."
-	@echo "Getting access token..."
-	@curl -s -X POST http://localhost:8080/realms/cloudbridge/protocol/openid-connect/token \
-		-H "Content-Type: application/x-www-form-urlencoded" \
-		-d "grant_type=password" \
-		-d "client_id=relay-client" \
-		-d "client_secret=relay-client-secret" \
-		-d "username=admin" \
-		-d "password=admin123" | jq -r '.access_token' > /tmp/keycloak_token
-	@echo "Token obtained and saved to /tmp/keycloak_token"
-	@echo "Testing relay health endpoint..."
-	@curl -s -H "Authorization: Bearer $(cat /tmp/keycloak_token)" \
-		http://localhost:8081/health | jq .
-
-# Log management
-.PHONY: logs-rotate
-logs-rotate:
-	@echo "Rotating log files..."
-	@chmod +x scripts/manage_logs.sh
-	./scripts/manage_logs.sh rotate
-
-.PHONY: logs-clean
-logs-clean:
-	@echo "Cleaning old log files..."
-	@chmod +x scripts/manage_logs.sh
-	./scripts/manage_logs.sh clean
-
-.PHONY: logs-analyze
-logs-analyze:
-	@echo "Analyzing log files..."
-	@chmod +x scripts/manage_logs.sh
-	./scripts/manage_logs.sh analyze
-
-.PHONY: logs-tail
-logs-tail:
-	@echo "Tailing log files..."
-	@chmod +x scripts/manage_logs.sh
-	./scripts/manage_logs.sh tail --follow
-
-.PHONY: logs-search
-logs-search:
-	@echo "Searching logs for pattern: $(PATTERN)"
-	@chmod +x scripts/manage_logs.sh
-	./scripts/manage_logs.sh search "$(PATTERN)"
-
-.PHONY: logs-stats
-logs-stats:
-	@echo "Showing log statistics..."
-	@chmod +x scripts/manage_logs.sh
-	./scripts/manage_logs.sh stats
-
-.PHONY: logs-compress
-logs-compress:
-	@echo "Compressing old log files..."
-	@chmod +x scripts/manage_logs.sh
-	./scripts/manage_logs.sh compress
-
-.PHONY: logs-setup
-logs-setup:
-	@echo "Setting up log rotation..."
-	@chmod +x scripts/manage_logs.sh
-	./scripts/manage_logs.sh setup
-
-# Monitoring and metrics
-.PHONY: metrics-check
-metrics-check:
-	@echo "Checking Prometheus metrics..."
-	@curl -s http://localhost:8081/metrics | grep -E "(relay_|keycloak_)" | head -20
-
-.PHONY: metrics-keycloak
-metrics-keycloak:
-	@echo "Checking Keycloak-specific metrics..."
-	@curl -s http://localhost:8081/metrics | grep "relay_keycloak_" | head -10
-
-.PHONY: metrics-business
-metrics-business:
-	@echo "Checking business metrics..."
-	@curl -s http://localhost:8081/metrics | grep "relay_business_" | head -10
-
-.PHONY: metrics-technical
-metrics-technical:
-	@echo "Checking technical metrics..."
-	@curl -s http://localhost:8081/metrics | grep "relay_technical_" | head -10
-
-.PHONY: grafana-check
-grafana-check:
-	@echo "Checking Grafana availability..."
-	@curl -s http://localhost:3000/api/health | jq .
-
-.PHONY: prometheus-check
-prometheus-check:
-	@echo "Checking Prometheus availability..."
-	@curl -s http://localhost:9090/-/healthy
-
-.PHONY: alertmanager-check
-alertmanager-check:
-	@echo "Checking AlertManager availability..."
-	@curl -s http://localhost:9093/-/healthy
-
-# Health checks
-.PHONY: health-check
-health-check:
-	@echo "Performing comprehensive health check..."
-	@echo "1. Relay service..."
-	@curl -s http://localhost:8081/health | jq . || echo "Relay service not responding"
-	@echo "2. Prometheus..."
-	@curl -s http://localhost:9090/-/healthy || echo "Prometheus not responding"
-	@echo "3. Grafana..."
-	@curl -s http://localhost:3000/api/health | jq . || echo "Grafana not responding"
-	@echo "4. Keycloak..."
-	@curl -s http://localhost:8080/realms/cloudbridge | jq . || echo "Keycloak not responding"
-
-# Performance testing
-.PHONY: perf-test
-perf-test:
-	@echo "Running performance tests..."
-	@echo "Testing connection throughput..."
-	@for i in {1..10}; do \
-		curl -s -w "%{time_total}\n" -o /dev/null http://localhost:8081/health; \
-	done | awk '{sum+=$1} END {print "Average response time:", sum/NR "s"}'
-
-.PHONY: load-test
-load-test:
-	@echo "Running load test..."
-	@echo "Simulating 100 concurrent requests..."
-	@for i in {1..100}; do \
-		curl -s -w "%{http_code}\n" -o /dev/null http://localhost:8081/health & \
-	done; wait
-
-# Security testing
-.PHONY: security-test
-security-test:
-	@echo "Running security tests..."
-	@echo "1. Testing invalid token..."
-	@curl -s -H "Authorization: Bearer invalid-token" \
-		http://localhost:8081/health | jq . || echo "Expected error for invalid token"
-	@echo "2. Testing missing token..."
-	@curl -s http://localhost:8081/health | jq . || echo "Expected error for missing token"
-
-# Development utilities
-.PHONY: dev-setup
-dev-setup: deps logs-setup
-	@echo "Setting up development environment..."
-	@mkdir -p logs certs config
-	@echo "Development environment ready"
-
-.PHONY: dev-reset
-dev-reset: compose-down keycloak-down clean
-	@echo "Resetting development environment..."
-	@rm -rf logs/* certs/* config/*
-	@echo "Development environment reset"
-
-.PHONY: dev-logs
-dev-logs:
-	@echo "Showing all development logs..."
-	@docker-compose logs -f relay &
-	@docker-compose -f docker-compose.keycloak.yml logs -f keycloak &
-	@wait
-
-# Documentation
-.PHONY: docs-build
-docs-build:
-	@echo "Building documentation..."
-	@mkdir -p docs/build
-	@cp docs/*.md docs/build/
-	@echo "Documentation built in docs/build/"
-
-.PHONY: docs-serve
-docs-serve:
-	@echo "Serving documentation on http://localhost:8000"
-	@cd docs && python3 -m http.server 8000
-
-# Install as system service
-.PHONY: install
-install:
-	@echo "Installing as system service..."
-	sudo ./install.sh
-
-# Help
-.PHONY: help
-help:
-	@echo "CloudBridge Relay Makefile"
-	@echo ""
-	@echo "Available targets:"
-	@echo "  build          - Build the application"
-	@echo "  run            - Run the application"
-	@echo "  test           - Run tests"
-	@echo "  docker-build   - Build Docker image"
-	@echo "  compose-up     - Start all services"
-	@echo "  keycloak-up    - Start Keycloak services"
-	@echo "  logs-rotate    - Rotate log files"
-	@echo "  logs-analyze   - Analyze log files"
-	@echo "  metrics-check  - Check Prometheus metrics"
-	@echo "  health-check   - Comprehensive health check"
-	@echo "  dev-setup      - Setup development environment"
-	@echo "  help           - Show this help" 
+# Полная сборка
+all: check-env deps fmt vet lint test build ## Полная сборка проекта
+	@echo "$(GREEN)Полная сборка завершена!$(NC)" 

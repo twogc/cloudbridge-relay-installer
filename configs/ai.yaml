@@ -1,0 +1,16 @@
+ai:
+  enabled: true
+  behavior_analysis:
+    enabled: true
+    model_path: "/opt/cloudbridge/ai/models/behavior"
+    threshold: 0.8
+    learning_rate: 0.001
+  predictive_security:
+    enabled: true
+    confidence: 0.85
+  automated_response:
+    enabled: true
+  monitoring:
+    enabled: true
+    dashboard_url: "https://ai-dashboard.cloudbridge.com"
+    refresh_rate: "30s"
