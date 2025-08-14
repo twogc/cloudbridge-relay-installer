@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cloudbridge-ingress
+  namespace: cloudbridge-relay
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: api.cloudbridge.local
+    http:
+      paths:
+      - path: /wireguard
+        pathType: Prefix
+        backend:
+          service:
+            name: wireguard-service
+            port:
+              number: 8080
+      - path: /quic
+        pathType: Prefix
+        backend:
+          service:
+            name: quic-service
+            port:
+              number: 8081
+      - path: /cadence
+        pathType: Prefix
+        backend:
+          service:
+            name: cadence-service
+            port:
+              number: 8082

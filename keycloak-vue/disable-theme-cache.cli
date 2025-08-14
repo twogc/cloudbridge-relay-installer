@@ -1,3 +1,0 @@
-/subsystem=undertow/servlet-container=default/setting=session-cookie:write-attribute(name=http-only,value=false)
-/subsystem=undertow/servlet-container=default/setting=session-cookie:write-attribute(name=secure,value=false)
-/subsystem=undertow/servlet-container=default/setting=session-cookie:write-attribute(name=same-site,value=None)
