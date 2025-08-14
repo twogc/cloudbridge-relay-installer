@@ -1,32 +1,37 @@
-# Deployment - Развертывание
+# 🚀 Развертывание и миграция
 
-Документация по развертыванию CloudBridge Relay в различных средах.
+Эта папка содержит документацию по развертыванию и миграции CloudBridge Relay в микросервисную архитектуру.
 
 ## 📋 Содержание
 
-### 🚀 Основные руководства
-- **[Deployment Guide](deployment_guide.md)** - Полное руководство по развертыванию CloudBridge Relay
-- **[Moscow Region Quickstart](moscow_region_quickstart.md)** - Быстрый старт для московского региона
+### 📊 Отчеты о миграции
+- **MIGRATION_STATUS_REPORT.md** - Текущий статус миграции
+- **MIGRATION_FINAL_STEPS.md** - Финальные шаги миграции
+- **MIGRATION_PHASE1_REPORT.md** - Отчет по фазе 1
+- **MIGRATION_PHASE2_REPORT.md** - Отчет по фазе 2
+- **MIGRATION_PHASE2_PLAN.md** - План фазы 2
+- **MIGRATION_NEXT_PHASES_PLAN.md** - План следующих фаз
 
-### 🔧 SIEM Развертывание
-- **[SIEM Quick Deployment](siem_quick_deployment.md)** - Быстрое развертывание SIEM системы
-- **[SIEM Separate Server Deployment](siem_separate_server_deployment.md)** - Развертывание SIEM на отдельном сервере
-- **[SIEM Deployment Complete Guide](SIEM_DEPLOYMENT_COMPLETE_GUIDE.md)** - Полное руководство по развертыванию SIEM
+### 🏗️ Kubernetes развертывание
+- **KUBERNETES_DEPLOYMENT_REPORT.md** - Отчет о развертывании в K8s
+- **KUBERNETES_SUCCESS_REPORT.md** - Отчет об успешном развертывании
+- **MICROSERVICES_DEPLOYMENT_SUCCESS.md** - Успешное развертывание микросервисов
 
-## 🎯 Рекомендуемый порядок изучения
+## 🎯 Цели миграции
 
-### Для первого развертывания:
-1. [Deployment Guide](deployment_guide.md) - Основное руководство
-2. [Moscow Region Quickstart](moscow_region_quickstart.md) - Если в московском регионе
+1. **Монолит → Микросервисы**: Разделение на Auth Service и Metrics Service
+2. **Kubernetes**: Развертывание в контейнеризованной среде
+3. **Мониторинг**: Интеграция с Prometheus и Grafana
+4. **Масштабируемость**: Горизонтальное масштабирование
 
-### Для развертывания SIEM:
-1. [SIEM Quick Deployment](siem_quick_deployment.md) - Быстрый старт
-2. [SIEM Deployment Complete Guide](SIEM_DEPLOYMENT_COMPLETE_GUIDE.md) - Полная настройка
-3. [SIEM Separate Server Deployment](siem_separate_server_deployment.md) - Если нужен отдельный сервер
+## 📈 Прогресс
 
-## 🔗 Связанные разделы
+- ✅ **Фаза 1**: Анализ и планирование (100%)
+- ✅ **Фаза 2**: Инфраструктура и базовые сервисы (95%)
+- ⏳ **Фаза 3**: Полное развертывание (в процессе)
 
-- **[Guides](../guides/)** - Общие руководства по использованию
-- **[Security](../security/)** - Настройка безопасности после развертывания
-- **[Integration](../integration/)** - Интеграции с внешними системами
-- **[Troubleshooting](../troubleshooting/)** - Устранение проблем развертывания 
+## 🚀 Быстрый старт
+
+1. Проверить статус: `MIGRATION_STATUS_REPORT.md`
+2. Выполнить финальные шаги: `MIGRATION_FINAL_STEPS.md`
+3. Развернуть микросервисы: `MICROSERVICES_DEPLOYMENT_SUCCESS.md` 
