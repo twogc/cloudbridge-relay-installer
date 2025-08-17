@@ -143,8 +143,8 @@ func ExampleKeycloakIntegration() {
 
 	auth := NewKeycloakAuth(keycloakConfig)
 
-			// Тестируем аутентификацию
-		token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..." //nosec G101 - тестовый токен
+	// Тестируем аутентификацию
+	token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..." //nosec G101 - тестовый токен
 	authenticated, err := auth.AuthenticateUser(token)
 	if err != nil {
 		fmt.Printf("Authentication error: %v\n", err)
