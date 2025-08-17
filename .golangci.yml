@@ -19,7 +19,7 @@ linters:
     - stylecheck
     - unused
   disable:
-    - golint  # Deprecated
+    # golint deprecated - removed
 
 linters-settings:
   gocyclo:
