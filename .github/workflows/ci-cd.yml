@@ -35,28 +35,29 @@ jobs:
         version: latest
         args: --timeout=5m
 
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        severity: 'CRITICAL,HIGH'
+    # Trivy and CodeQL are disabled due to repository settings
+    # - name: Run Trivy vulnerability scanner
+    #   uses: aquasecurity/trivy-action@master
+    #   with:
+    #     scan-type: 'fs'
+    #     scan-ref: '.'
+    #     format: 'sarif'
+    #     output: 'trivy-results.sarif'
+    #     severity: 'CRITICAL,HIGH'
 
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
+    # - name: Upload Trivy scan results
+    #   uses: github/codeql-action/upload-sarif@v3
+    #   if: always()
+    #   with:
+    #     sarif_file: 'trivy-results.sarif'
 
-    - name: Run CodeQL analysis
-      uses: github/codeql-action/init@v3
-      with:
-        languages: go
+    # - name: Run CodeQL analysis
+    #   uses: github/codeql-action/init@v3
+    #   with:
+    #     languages: go
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+    # - name: Perform CodeQL Analysis
+    #   uses: github/codeql-action/analyze@v3
 
     - name: Run tests
       run: go test -v -race -coverprofile=coverage.out ./...
@@ -173,20 +174,20 @@ jobs:
           nancy-results.json
           security_reports/
 
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        severity: 'CRITICAL,HIGH'
+    # - name: Run Trivy vulnerability scanner
+    #   uses: aquasecurity/trivy-action@master
+    #   with:
+    #     scan-type: 'fs'
+    #     scan-ref: '.'
+    #     format: 'sarif'
+    #     output: 'trivy-results.sarif'
+    #     severity: 'CRITICAL,HIGH'
 
-    - name: Upload SARIF results
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
+    # - name: Upload SARIF results
+    #   uses: github/codeql-action/upload-sarif@v3
+    #   if: always()
+    #   with:
+    #     sarif_file: 'trivy-results.sarif'
 
     - name: Security summary
       run: |
