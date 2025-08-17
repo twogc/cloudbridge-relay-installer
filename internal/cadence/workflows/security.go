@@ -31,72 +31,72 @@ type SecurityComplianceWorkflowResult struct {
 
 // AuditLoggingWorkflowInput входные параметры для аудита логирования
 type AuditLoggingWorkflowInput struct {
-	LogSources        []string               `json:"log_sources"`        // system, application, security, network
-	RetentionPeriod   string                 `json:"retention_period"`   // 1y, 7y, permanent
-	AuditLevel        string                 `json:"audit_level"`        // minimal, standard, comprehensive
-	AnalysisType      string                 `json:"analysis_type"`      // realtime, batch, forensic
-	Configuration     map[string]interface{} `json:"configuration"`
+	LogSources      []string               `json:"log_sources"`      // system, application, security, network
+	RetentionPeriod string                 `json:"retention_period"` // 1y, 7y, permanent
+	AuditLevel      string                 `json:"audit_level"`      // minimal, standard, comprehensive
+	AnalysisType    string                 `json:"analysis_type"`    // realtime, batch, forensic
+	Configuration   map[string]interface{} `json:"configuration"`
 }
 
 // AuditLoggingWorkflowResult результат аудита логирования
 type AuditLoggingWorkflowResult struct {
-	LogSources         []string               `json:"log_sources"`
-	ProcessedLogs      int64                  `json:"processed_logs"`
-	AuditFindings      []string               `json:"audit_findings"`
-	SecurityEvents     []string               `json:"security_events"`
-	ComplianceStatus   string                 `json:"compliance_status"`
-	LoggingResults     map[string]interface{} `json:"logging_results"`
-	Status             string                 `json:"status"`
-	StartedAt          time.Time              `json:"started_at"`
-	CompletedAt        time.Time              `json:"completed_at"`
-	Message            string                 `json:"message"`
+	LogSources       []string               `json:"log_sources"`
+	ProcessedLogs    int64                  `json:"processed_logs"`
+	AuditFindings    []string               `json:"audit_findings"`
+	SecurityEvents   []string               `json:"security_events"`
+	ComplianceStatus string                 `json:"compliance_status"`
+	LoggingResults   map[string]interface{} `json:"logging_results"`
+	Status           string                 `json:"status"`
+	StartedAt        time.Time              `json:"started_at"`
+	CompletedAt      time.Time              `json:"completed_at"`
+	Message          string                 `json:"message"`
 }
 
 // IncidentResponseWorkflowInput входные параметры для реагирования на инциденты
 type IncidentResponseWorkflowInput struct {
-	IncidentType      string                 `json:"incident_type"`      // security_breach, data_leak, ddos, malware
-	Severity          string                 `json:"severity"`           // low, medium, high, critical
-	ResponsePlan      string                 `json:"response_plan"`      // automated, manual, hybrid
-	AffectedSystems   []string               `json:"affected_systems"`
-	Configuration     map[string]interface{} `json:"configuration"`
+	IncidentType    string                 `json:"incident_type"` // security_breach, data_leak, ddos, malware
+	Severity        string                 `json:"severity"`      // low, medium, high, critical
+	ResponsePlan    string                 `json:"response_plan"` // automated, manual, hybrid
+	AffectedSystems []string               `json:"affected_systems"`
+	Configuration   map[string]interface{} `json:"configuration"`
 }
 
 // IncidentResponseWorkflowResult результат реагирования на инциденты
 type IncidentResponseWorkflowResult struct {
-	IncidentType       string                 `json:"incident_type"`
-	Severity           string                 `json:"severity"`
-	ResponseActions    []string               `json:"response_actions"`
-	ContainmentStatus  string                 `json:"containment_status"`
-	RecoveryStatus     string                 `json:"recovery_status"`
-	IncidentResults    map[string]interface{} `json:"incident_results"`
-	LessonsLearned     []string               `json:"lessons_learned"`
-	Status             string                 `json:"status"`
-	StartedAt          time.Time              `json:"started_at"`
-	CompletedAt        time.Time              `json:"completed_at"`
-	Message            string                 `json:"message"`
-}
-
-// BackupRecoveryWorkflowInput входные параметры для резервного копирования и восстановления
-type BackupRecoveryWorkflowInput struct {
-	BackupType        string                 `json:"backup_type"`        // full, incremental, differential, snapshot
-	BackupScope       []string               `json:"backup_scope"`       // databases, files, configurations, keys
-	ScheduleType      string                 `json:"schedule_type"`      // immediate, scheduled, continuous
-	RetentionPolicy   string                 `json:"retention_policy"`   // 30d, 1y, 7y, permanent
-	Configuration     map[string]interface{} `json:"configuration"`
-}
-
-// BackupRecoveryWorkflowResult результат резервного копирования и восстановления
-type BackupRecoveryWorkflowResult struct {
-	BackupType        string                 `json:"backup_type"`
-	BackupSize        int64                  `json:"backup_size"`
-	BackupLocation    string                 `json:"backup_location"`
-	BackupStatus      string                 `json:"backup_status"`
-	RecoveryTestStatus string                `json:"recovery_test_status"`
-	BackupResults     map[string]interface{} `json:"backup_results"`
+	IncidentType      string                 `json:"incident_type"`
+	Severity          string                 `json:"severity"`
+	ResponseActions   []string               `json:"response_actions"`
+	ContainmentStatus string                 `json:"containment_status"`
+	RecoveryStatus    string                 `json:"recovery_status"`
+	IncidentResults   map[string]interface{} `json:"incident_results"`
+	LessonsLearned    []string               `json:"lessons_learned"`
 	Status            string                 `json:"status"`
 	StartedAt         time.Time              `json:"started_at"`
 	CompletedAt       time.Time              `json:"completed_at"`
 	Message           string                 `json:"message"`
+}
+
+// BackupRecoveryWorkflowInput входные параметры для резервного копирования и восстановления
+type BackupRecoveryWorkflowInput struct {
+	BackupType      string                 `json:"backup_type"`      // full, incremental, differential, snapshot
+	BackupScope     []string               `json:"backup_scope"`     // databases, files, configurations, keys
+	ScheduleType    string                 `json:"schedule_type"`    // immediate, scheduled, continuous
+	RetentionPolicy string                 `json:"retention_policy"` // 30d, 1y, 7y, permanent
+	Configuration   map[string]interface{} `json:"configuration"`
+}
+
+// BackupRecoveryWorkflowResult результат резервного копирования и восстановления
+type BackupRecoveryWorkflowResult struct {
+	BackupType         string                 `json:"backup_type"`
+	BackupSize         int64                  `json:"backup_size"`
+	BackupLocation     string                 `json:"backup_location"`
+	BackupStatus       string                 `json:"backup_status"`
+	RecoveryTestStatus string                 `json:"recovery_test_status"`
+	BackupResults      map[string]interface{} `json:"backup_results"`
+	Status             string                 `json:"status"`
+	StartedAt          time.Time              `json:"started_at"`
+	CompletedAt        time.Time              `json:"completed_at"`
+	Message            string                 `json:"message"`
 }
 
 // SecurityComplianceWorkflow workflow для проверки соответствия требованиям безопасности
@@ -132,7 +132,7 @@ func SecurityComplianceWorkflow(ctx workflow.Context, input SecurityComplianceWo
 
 	// 1. Получение требований соответствия для выбранного фреймворка
 	logger.Info("Получение требований соответствия")
-	
+
 	var frameworkRequirements map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -155,7 +155,7 @@ func SecurityComplianceWorkflow(ctx workflow.Context, input SecurityComplianceWo
 	// 2. Аудит каждой области безопасности
 	for _, auditArea := range input.AuditScope {
 		logger.Info("Аудит области безопасности", zap.String("area", auditArea))
-		
+
 		var areaAuditResult map[string]interface{}
 		err := workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -174,7 +174,7 @@ func SecurityComplianceWorkflow(ctx workflow.Context, input SecurityComplianceWo
 			// Продолжаем аудит других областей
 		} else {
 			result.ComplianceResults[auditArea] = areaAuditResult
-			
+
 			// Извлекаем пройденные и непройденные контроли
 			if passedControls, ok := areaAuditResult["passed_controls"].([]interface{}); ok {
 				for _, control := range passedControls {
@@ -183,7 +183,7 @@ func SecurityComplianceWorkflow(ctx workflow.Context, input SecurityComplianceWo
 					}
 				}
 			}
-			
+
 			if failedControls, ok := areaAuditResult["failed_controls"].([]interface{}); ok {
 				for _, control := range failedControls {
 					if controlStr, ok := control.(string); ok {
@@ -191,7 +191,7 @@ func SecurityComplianceWorkflow(ctx workflow.Context, input SecurityComplianceWo
 					}
 				}
 			}
-			
+
 			logger.Info("Аудит области завершен",
 				zap.String("area", auditArea),
 				zap.Any("result", areaAuditResult),
@@ -201,7 +201,7 @@ func SecurityComplianceWorkflow(ctx workflow.Context, input SecurityComplianceWo
 
 	// 3. Расчет общего индекса соответствия
 	logger.Info("Расчет индекса соответствия")
-	
+
 	var complianceScoreResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -224,7 +224,7 @@ func SecurityComplianceWorkflow(ctx workflow.Context, input SecurityComplianceWo
 
 	// 4. Генерация рекомендаций по улучшению соответствия
 	logger.Info("Генерация рекомендаций")
-	
+
 	var recommendationsResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -250,7 +250,7 @@ func SecurityComplianceWorkflow(ctx workflow.Context, input SecurityComplianceWo
 
 	// 5. Создание отчета о соответствии
 	logger.Info("Создание отчета о соответствии")
-	
+
 	var reportResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -309,12 +309,12 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 	)
 
 	result := &AuditLoggingWorkflowResult{
-		LogSources:       input.LogSources,
-		Status:           "auditing",
-		StartedAt:        workflow.Now(ctx),
-		AuditFindings:    make([]string, 0),
-		SecurityEvents:   make([]string, 0),
-		LoggingResults:   make(map[string]interface{}),
+		LogSources:     input.LogSources,
+		Status:         "auditing",
+		StartedAt:      workflow.Now(ctx),
+		AuditFindings:  make([]string, 0),
+		SecurityEvents: make([]string, 0),
+		LoggingResults: make(map[string]interface{}),
 	}
 
 	// Настройки для activities
@@ -331,7 +331,7 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 
 	// 1. Сбор логов из всех источников
 	logger.Info("Сбор логов из источников")
-	
+
 	var logCollectionResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -359,7 +359,7 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 	case "realtime":
 		// Реалтайм анализ логов
 		logger.Info("Реалтайм анализ логов")
-		
+
 		var realtimeResult map[string]interface{}
 		err = workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -377,7 +377,7 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 	case "batch":
 		// Пакетный анализ логов
 		logger.Info("Пакетный анализ логов")
-		
+
 		var batchResult map[string]interface{}
 		err = workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -395,7 +395,7 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 	case "forensic":
 		// Форензический анализ логов
 		logger.Info("Форензический анализ логов")
-		
+
 		var forensicResult map[string]interface{}
 		err = workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -413,7 +413,7 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 
 	// 3. Извлечение событий безопасности
 	logger.Info("Извлечение событий безопасности")
-	
+
 	var securityEventsResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -437,7 +437,7 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 
 	// 4. Аудит соответствия требованиям логирования
 	logger.Info("Аудит соответствия требованиям логирования")
-	
+
 	var complianceAuditResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -454,7 +454,7 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 		if status, ok := complianceAuditResult["compliance_status"].(string); ok {
 			result.ComplianceStatus = status
 		}
-		
+
 		if findings, ok := complianceAuditResult["audit_findings"].([]interface{}); ok {
 			for _, finding := range findings {
 				if findingStr, ok := finding.(string); ok {
@@ -462,13 +462,13 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 				}
 			}
 		}
-		
+
 		result.LoggingResults["compliance_audit"] = complianceAuditResult
 	}
 
 	// 5. Генерация отчета аудита
 	logger.Info("Генерация отчета аудита логирования")
-	
+
 	var reportResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -536,7 +536,7 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 
 	// 1. Анализ инцидента и определение плана реагирования
 	logger.Info("Анализ инцидента")
-	
+
 	var incidentAnalysisResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -559,7 +559,7 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 
 	// 2. Фаза сдерживания (Containment)
 	logger.Info("Фаза сдерживания инцидента")
-	
+
 	var containmentResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -577,7 +577,7 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 		if status, ok := containmentResult["containment_status"].(string); ok {
 			result.ContainmentStatus = status
 		}
-		
+
 		if actions, ok := containmentResult["containment_actions"].([]interface{}); ok {
 			for _, action := range actions {
 				if actionStr, ok := action.(string); ok {
@@ -585,9 +585,9 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 				}
 			}
 		}
-		
+
 		result.IncidentResults["containment"] = containmentResult
-		
+
 		logger.Info("Сдерживание инцидента завершено",
 			zap.String("status", result.ContainmentStatus),
 		)
@@ -596,7 +596,7 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 	// 3. Фаза искоренения (Eradication)
 	if result.ContainmentStatus == "successful" || result.ContainmentStatus == "partial" {
 		logger.Info("Фаза искоренения инцидента")
-		
+
 		var eradicationResult map[string]interface{}
 		err = workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -616,9 +616,9 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 					}
 				}
 			}
-			
+
 			result.IncidentResults["eradication"] = eradicationResult
-			
+
 			logger.Info("Искоренение инцидента завершено")
 		}
 	}
@@ -626,7 +626,7 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 	// 4. Фаза восстановления (Recovery)
 	if result.ContainmentStatus != "failed" {
 		logger.Info("Фаза восстановления после инцидента")
-		
+
 		var recoveryResult map[string]interface{}
 		err = workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -643,7 +643,7 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 			if status, ok := recoveryResult["recovery_status"].(string); ok {
 				result.RecoveryStatus = status
 			}
-			
+
 			if actions, ok := recoveryResult["recovery_actions"].([]interface{}); ok {
 				for _, action := range actions {
 					if actionStr, ok := action.(string); ok {
@@ -651,9 +651,9 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 					}
 				}
 			}
-			
+
 			result.IncidentResults["recovery"] = recoveryResult
-			
+
 			logger.Info("Восстановление после инцидента завершено",
 				zap.String("status", result.RecoveryStatus),
 			)
@@ -662,7 +662,7 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 
 	// 5. Фаза извлечения уроков (Lessons Learned)
 	logger.Info("Анализ уроков и создание рекомендаций")
-	
+
 	var lessonsLearnedResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -683,13 +683,13 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 				}
 			}
 		}
-		
+
 		result.IncidentResults["lessons_learned"] = lessonsLearnedResult
 	}
 
 	// 6. Создание отчета об инциденте
 	logger.Info("Создание отчета об инциденте")
-	
+
 	var reportResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -769,7 +769,7 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 	case "immediate":
 		// Немедленное выполнение резервного копирования
 		logger.Info("Немедленное выполнение резервного копирования")
-		
+
 		// 1. Подготовка к резервному копированию
 		var preparationResult map[string]interface{}
 		err := workflow.ExecuteActivity(
@@ -812,11 +812,11 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 		if backupSize, ok := backupResult["backup_size"].(float64); ok {
 			result.BackupSize = int64(backupSize)
 		}
-		
+
 		if backupLocation, ok := backupResult["backup_location"].(string); ok {
 			result.BackupLocation = backupLocation
 		}
-		
+
 		if backupStatus, ok := backupResult["backup_status"].(string); ok {
 			result.BackupStatus = backupStatus
 		}
@@ -826,7 +826,7 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 	case "scheduled":
 		// Запланированное резервное копирование
 		logger.Info("Запланированное резервное копирование")
-		
+
 		// Получаем расписание резервного копирования
 		var scheduleResult map[string]interface{}
 		err := workflow.ExecuteActivity(
@@ -847,7 +847,7 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 		if scheduleTime, ok := scheduleResult["next_backup_time"].(string); ok {
 			scheduledTime, _ := time.Parse(time.RFC3339, scheduleTime)
 			waitDuration := scheduledTime.Sub(workflow.Now(ctx))
-			
+
 			if waitDuration > 0 {
 				logger.Info("Ожидание времени выполнения резервного копирования",
 					zap.Duration("wait_duration", waitDuration),
@@ -862,7 +862,7 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 	case "continuous":
 		// Непрерывное резервное копирование
 		logger.Info("Непрерывное резервное копирование")
-		
+
 		for {
 			// Выполняем инкрементальное резервное копирование
 			var incrementalResult map[string]interface{}
@@ -880,9 +880,9 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 				if backupSize, ok := incrementalResult["backup_size"].(float64); ok {
 					result.BackupSize += int64(backupSize)
 				}
-				
+
 				result.BackupResults["latest_incremental"] = incrementalResult
-				
+
 				logger.Debug("Инкрементальное резервное копирование выполнено",
 					zap.Any("result", incrementalResult),
 				)
@@ -901,7 +901,7 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 	// 3. Проверка целостности резервной копии
 	if result.BackupStatus == "successful" || result.BackupStatus == "completed" {
 		logger.Info("Проверка целостности резервной копии")
-		
+
 		var integrityResult map[string]interface{}
 		err := workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -920,7 +920,7 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 	// 4. Тест восстановления
 	if result.BackupStatus == "successful" || result.BackupStatus == "completed" {
 		logger.Info("Тест восстановления из резервной копии")
-		
+
 		var recoveryTestResult map[string]interface{}
 		err := workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -943,7 +943,7 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 
 	// 5. Применение политики хранения
 	logger.Info("Применение политики хранения")
-	
+
 	var retentionResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),

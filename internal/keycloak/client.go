@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Config represents Keycloak configuration
+// Config represents Keycloak configuration.
 type Config struct {
 	ServerURL       string `json:"server_url"`
 	Realm           string `json:"realm"`
@@ -35,7 +35,7 @@ type Config struct {
 	Logger     *logger.Logger
 }
 
-// Client represents Keycloak client
+// Client represents Keycloak client.
 type Client struct {
 	config     *Config
 	publicKey  *rsa.PublicKey
@@ -48,7 +48,7 @@ type Client struct {
 	lastFetch time.Time
 }
 
-// TokenInfo represents validated token information
+// TokenInfo represents validated token information.
 type TokenInfo struct {
 	Subject     string                 `json:"sub"`
 	Issuer      string                 `json:"iss"`
@@ -266,7 +266,7 @@ func (c *Client) validateClaims(claims jwt.MapClaims) error {
 	}
 
 	// Validate audience
-	if audience, ok := claims["aud"].(interface{}); ok {
+	if audience, ok := claims["aud"]; ok {
 		switch aud := audience.(type) {
 		case string:
 			if aud != c.config.TokenValidation.Audience {

@@ -21,20 +21,20 @@ import (
 
 // CadenceWorker представляет Cadence worker для CloudBridge Relay
 type CadenceWorker struct {
-	client          *cadence.CadenceClient
-	worker          worker.Worker
-	config          *cadence.CadenceConfig
-	logger          *zap.Logger
-	cadenceMetrics  *metrics.CadenceMetrics
-	
+	client         *cadence.CadenceClient
+	worker         worker.Worker
+	config         *cadence.CadenceConfig
+	logger         *zap.Logger
+	cadenceMetrics *metrics.CadenceMetrics
+
 	// Activities
 	commonActivities    *activities.CommonActivityContext
 	wireguardActivities *activities.WireGuardActivities
-	
+
 	// Управление жизненным циклом
 	ctx    context.Context
 	cancel context.CancelFunc
-	
+
 	// Статус
 	isRunning bool
 }
@@ -44,31 +44,31 @@ func NewCadenceWorker(client *cadence.CadenceClient, config *cadence.CadenceConf
 	if client == nil {
 		return nil, fmt.Errorf("cadence клиент не может быть nil")
 	}
-	
+
 	if config == nil {
 		return nil, fmt.Errorf("конфигурация не может быть nil")
 	}
-	
+
 	if logger == nil {
 		logger = zap.NewNop()
 	}
-	
+
 	if cadenceMetrics == nil {
 		cadenceMetrics = metrics.NewCadenceMetrics(logger)
 	}
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Создаем activities
 	activityConfig := map[string]interface{}{
-		"domain":        config.Domain,
-		"service_name":  config.ServiceName,
-		"environment":   "production", // Должно браться из конфигурации
+		"domain":       config.Domain,
+		"service_name": config.ServiceName,
+		"environment":  "production", // Должно браться из конфигурации
 	}
-	
+
 	commonActivities := activities.NewCommonActivityContext(logger, activityConfig)
 	wireguardActivities := activities.NewWireGuardActivities(logger, activityConfig)
-	
+
 	return &CadenceWorker{
 		client:              client,
 		config:              config,
@@ -88,28 +88,28 @@ func (cw *CadenceWorker) Start() error {
 		zap.String("task_list", cw.config.Worker.TaskListName),
 		zap.String("identity", cw.config.Worker.Identity),
 	)
-	
+
 	// Получаем worker от клиента
 	cw.worker = cw.client.GetWorker()
 	if cw.worker == nil {
 		return fmt.Errorf("не удалось получить Cadence worker от клиента")
 	}
-	
+
 	// Регистрируем workflows
 	if err := cw.registerWorkflows(); err != nil {
 		return fmt.Errorf("не удалось зарегистрировать workflows: %w", err)
 	}
-	
+
 	// Регистрируем activities
 	if err := cw.registerActivities(); err != nil {
 		return fmt.Errorf("не удалось зарегистрировать activities: %w", err)
 	}
-	
+
 	// Запускаем профилирование в debug режиме
 	if err := cw.enableProfiling(); err != nil {
 		cw.logger.Warn("Не удалось запустить профилирование", zap.Error(err))
 	}
-	
+
 	// Запускаем health check endpoint
 	if err := cw.enableHealthEndpoint(); err != nil {
 		cw.logger.Warn("Не удалось запустить health endpoint", zap.Error(err))
@@ -122,10 +122,10 @@ func (cw *CadenceWorker) Start() error {
 			cw.logger.Error("Ошибка при запуске Cadence worker", zap.Error(err))
 		}
 	}()
-	
+
 	cw.isRunning = true
 	cw.logger.Info("Cadence worker успешно запущен")
-	
+
 	return nil
 }
 
@@ -134,21 +134,21 @@ func (cw *CadenceWorker) Stop() error {
 	if !cw.isRunning {
 		return nil
 	}
-	
+
 	cw.logger.Info("Остановка Cadence worker")
-	
+
 	// Останавливаем worker
 	if cw.worker != nil {
 		cw.worker.Stop()
 		cw.logger.Info("Cadence worker остановлен")
 	}
-	
+
 	// Отменяем контекст
 	cw.cancel()
-	
+
 	cw.isRunning = false
 	cw.logger.Info("Cadence worker успешно остановлен")
-	
+
 	return nil
 }
 
@@ -160,53 +160,53 @@ func (cw *CadenceWorker) IsRunning() bool {
 // registerWorkflows регистрирует все workflows
 func (cw *CadenceWorker) registerWorkflows() error {
 	cw.logger.Info("Регистрация Cadence workflows")
-	
+
 	// Основные workflows
 	workflow.Register(workflows.CloudBridgeMainWorkflow)
 	workflow.Register(workflows.ModuleInitializationWorkflow)
 	workflow.Register(workflows.HealthCheckWorkflow)
-	
+
 	// WireGuard workflows
 	workflow.Register(workflows.PeerLifecycleWorkflow)
 	workflow.Register(workflows.MeshTopologyWorkflow)
 	workflow.Register(workflows.ConnectionRecoveryWorkflow)
 	workflow.Register(workflows.LoadBalancingWorkflow)
-	
+
 	// Quantum workflows
 	workflow.Register(workflows.QuantumKeyRotationWorkflow)
 	workflow.Register(workflows.KeyValidationWorkflow)
 	workflow.Register(workflows.AlgorithmMigrationWorkflow)
 	workflow.Register(workflows.SecurityAuditWorkflow)
-	
+
 	// AI workflows
 	workflow.Register(workflows.ThreatAnalysisWorkflow)
 	workflow.Register(workflows.BehaviorMonitoringWorkflow)
 	workflow.Register(workflows.AutomatedResponseWorkflow)
 	workflow.Register(workflows.ModelTrainingWorkflow)
-	
+
 	// Scaling workflows
 	workflow.Register(workflows.AutoScalingWorkflow)
 	workflow.Register(workflows.ResourceOptimizationWorkflow)
 	workflow.Register(workflows.PerformanceMonitoringWorkflow)
 	workflow.Register(workflows.CapacityPlanningWorkflow)
-	
+
 	// Security workflows
 	workflow.Register(workflows.SecurityComplianceWorkflow)
 	workflow.Register(workflows.AuditLoggingWorkflow)
 	workflow.Register(workflows.IncidentResponseWorkflow)
 	workflow.Register(workflows.BackupRecoveryWorkflow)
-	
+
 	cw.logger.Info("Все workflows зарегистрированы",
 		zap.Int("workflow_count", 20), // Обновить при добавлении новых workflows
 	)
-	
+
 	return nil
 }
 
 // registerActivities регистрирует все activities
 func (cw *CadenceWorker) registerActivities() error {
 	cw.logger.Info("Регистрация Cadence activities")
-	
+
 	// Common activities
 	activity.Register(cw.commonActivities.CheckDependenciesActivity)
 	activity.Register(cw.commonActivities.InitializeModuleActivity)
@@ -218,7 +218,7 @@ func (cw *CadenceWorker) registerActivities() error {
 	activity.Register(cw.commonActivities.GetSystemMetricsActivity)
 	activity.Register(cw.commonActivities.ExecuteCommandActivity)
 	activity.Register(cw.commonActivities.WaitForConditionActivity)
-	
+
 	// WireGuard activities
 	activity.Register(cw.wireguardActivities.ValidatePeerConfigActivity)
 	activity.Register(cw.wireguardActivities.CreateWireGuardInterfaceActivity)
@@ -232,14 +232,14 @@ func (cw *CadenceWorker) registerActivities() error {
 	activity.Register(cw.wireguardActivities.PlanMeshTopologyActivity)
 	activity.Register(cw.wireguardActivities.BuildMeshTopologyActivity)
 	activity.Register(cw.wireguardActivities.ValidateMeshTopologyActivity)
-	
+
 	// Здесь должны быть зарегистрированы activities для:
 	// - Quantum криптографии
 	// - AI/ML операций
 	// - Автомасштабирования
 	// - Безопасности
 	// Пока регистрируем placeholder activities
-	
+
 	// Quantum activities (placeholder)
 	activity.RegisterWithOptions(cw.createQuantumActivity("CheckKeyRotationNeedActivity"), activity.RegisterOptions{Name: "CheckKeyRotationNeedActivity"})
 	activity.RegisterWithOptions(cw.createQuantumActivity("GenerateQuantumKeyActivity"), activity.RegisterOptions{Name: "GenerateQuantumKeyActivity"})
@@ -247,27 +247,27 @@ func (cw *CadenceWorker) registerActivities() error {
 	activity.RegisterWithOptions(cw.createQuantumActivity("ReplaceQuantumKeyActivity"), activity.RegisterOptions{Name: "ReplaceQuantumKeyActivity"})
 	activity.RegisterWithOptions(cw.createQuantumActivity("SecureDeleteQuantumKeyActivity"), activity.RegisterOptions{Name: "SecureDeleteQuantumKeyActivity"})
 	activity.RegisterWithOptions(cw.createQuantumActivity("UpdateKeyReferencesActivity"), activity.RegisterOptions{Name: "UpdateKeyReferencesActivity"})
-	
+
 	// AI activities (placeholder)
 	activity.RegisterWithOptions(cw.createAIActivity("CollectThreatDataActivity"), activity.RegisterOptions{Name: "CollectThreatDataActivity"})
 	activity.RegisterWithOptions(cw.createAIActivity("PreprocessThreatDataActivity"), activity.RegisterOptions{Name: "PreprocessThreatDataActivity"})
 	activity.RegisterWithOptions(cw.createAIActivity("PerformRealtimeThreatAnalysisActivity"), activity.RegisterOptions{Name: "PerformRealtimeThreatAnalysisActivity"})
 	activity.RegisterWithOptions(cw.createAIActivity("AnalyzeUserBehaviorActivity"), activity.RegisterOptions{Name: "AnalyzeUserBehaviorActivity"})
-	
+
 	// Scaling activities (placeholder)
 	activity.RegisterWithOptions(cw.createScalingActivity("CollectScalingMetricsActivity"), activity.RegisterOptions{Name: "CollectScalingMetricsActivity"})
 	activity.RegisterWithOptions(cw.createScalingActivity("AnalyzeScalingNeedActivity"), activity.RegisterOptions{Name: "AnalyzeScalingNeedActivity"})
 	activity.RegisterWithOptions(cw.createScalingActivity("PerformScalingActivity"), activity.RegisterOptions{Name: "PerformScalingActivity"})
-	
+
 	// Security activities (placeholder)
 	activity.RegisterWithOptions(cw.createSecurityActivity("GetComplianceRequirementsActivity"), activity.RegisterOptions{Name: "GetComplianceRequirementsActivity"})
 	activity.RegisterWithOptions(cw.createSecurityActivity("AuditSecurityAreaActivity"), activity.RegisterOptions{Name: "AuditSecurityAreaActivity"})
 	activity.RegisterWithOptions(cw.createSecurityActivity("CalculateComplianceScoreActivity"), activity.RegisterOptions{Name: "CalculateComplianceScoreActivity"})
-	
+
 	cw.logger.Info("Все activities зарегистрированы",
 		zap.Int("activity_count", 35), // Примерное количество
 	)
-	
+
 	return nil
 }
 
@@ -278,21 +278,21 @@ func (cw *CadenceWorker) createQuantumActivity(activityName string) interface{} 
 			zap.String("activity", activityName),
 			zap.Int("args_count", len(args)),
 		)
-		
+
 		// Записываем метрику
 		cw.cadenceMetrics.RecordActivityStarted(activityName, cw.config.Domain)
-		
+
 		// Симуляция выполнения quantum операции
 		result := map[string]interface{}{
 			"activity_name": activityName,
-			"status":       "completed",
-			"timestamp":    "2024-01-01T00:00:00Z", // Placeholder
-			"quantum_safe": true,
+			"status":        "completed",
+			"timestamp":     "2024-01-01T00:00:00Z", // Placeholder
+			"quantum_safe":  true,
 		}
-		
+
 		// Записываем завершение
 		cw.cadenceMetrics.RecordActivityCompleted(activityName, cw.config.Domain, 0) // duration будет вычислен в реальной реализации
-		
+
 		return result, nil
 	}
 }
@@ -304,22 +304,22 @@ func (cw *CadenceWorker) createAIActivity(activityName string) interface{} {
 			zap.String("activity", activityName),
 			zap.Int("args_count", len(args)),
 		)
-		
+
 		// Записываем метрику
 		cw.cadenceMetrics.RecordActivityStarted(activityName, cw.config.Domain)
-		
+
 		// Симуляция выполнения AI операции
 		result := map[string]interface{}{
 			"activity_name":    activityName,
-			"status":          "completed",
-			"timestamp":       "2024-01-01T00:00:00Z", // Placeholder
-			"ai_model_used":   "cloudbridge-ai-v1.0",
+			"status":           "completed",
+			"timestamp":        "2024-01-01T00:00:00Z", // Placeholder
+			"ai_model_used":    "cloudbridge-ai-v1.0",
 			"confidence_score": 0.95,
 		}
-		
+
 		// Записываем завершение
 		cw.cadenceMetrics.RecordActivityCompleted(activityName, cw.config.Domain, 0)
-		
+
 		return result, nil
 	}
 }
@@ -331,22 +331,22 @@ func (cw *CadenceWorker) createScalingActivity(activityName string) interface{} 
 			zap.String("activity", activityName),
 			zap.Int("args_count", len(args)),
 		)
-		
+
 		// Записываем метрику
 		cw.cadenceMetrics.RecordActivityStarted(activityName, cw.config.Domain)
-		
+
 		// Симуляция выполнения scaling операции
 		result := map[string]interface{}{
-			"activity_name":      activityName,
-			"status":            "completed",
-			"timestamp":         "2024-01-01T00:00:00Z", // Placeholder
-			"scaling_decision":  "scale_up",
-			"resource_delta":    "+2",
+			"activity_name":    activityName,
+			"status":           "completed",
+			"timestamp":        "2024-01-01T00:00:00Z", // Placeholder
+			"scaling_decision": "scale_up",
+			"resource_delta":   "+2",
 		}
-		
+
 		// Записываем завершение
 		cw.cadenceMetrics.RecordActivityCompleted(activityName, cw.config.Domain, 0)
-		
+
 		return result, nil
 	}
 }
@@ -358,22 +358,22 @@ func (cw *CadenceWorker) createSecurityActivity(activityName string) interface{}
 			zap.String("activity", activityName),
 			zap.Int("args_count", len(args)),
 		)
-		
+
 		// Записываем метрику
 		cw.cadenceMetrics.RecordActivityStarted(activityName, cw.config.Domain)
-		
+
 		// Симуляция выполнения security операции
 		result := map[string]interface{}{
-			"activity_name":    activityName,
-			"status":          "completed",
-			"timestamp":       "2024-01-01T00:00:00Z", // Placeholder
-			"security_level":  "high",
-			"compliance_met":  true,
+			"activity_name":  activityName,
+			"status":         "completed",
+			"timestamp":      "2024-01-01T00:00:00Z", // Placeholder
+			"security_level": "high",
+			"compliance_met": true,
 		}
-		
+
 		// Записываем завершение
 		cw.cadenceMetrics.RecordActivityCompleted(activityName, cw.config.Domain, 0)
-		
+
 		return result, nil
 	}
 }
@@ -383,35 +383,35 @@ func (cw *CadenceWorker) StartMainWorkflow() error {
 	if !cw.isRunning {
 		return fmt.Errorf("cadence worker не запущен")
 	}
-	
+
 	cw.logger.Info("Запуск основного CloudBridge workflow")
-	
+
 	// Подготавливаем входные данные для основного workflow
 	input := workflows.CloudBridgeMainWorkflowInput{
 		Domain:    cw.config.Domain,
 		StartTime: time.Now(),
 		Configuration: map[string]interface{}{
-			"service_name": cw.config.ServiceName,
+			"service_name":    cw.config.ServiceName,
 			"worker_identity": cw.config.Worker.Identity,
-			"task_list": cw.config.Worker.TaskListName,
+			"task_list":       cw.config.Worker.TaskListName,
 		},
 	}
-	
+
 	// Запускаем workflow
 	execution, err := cw.client.StartWorkflow(cw.ctx, "CloudBridgeMainWorkflow", input)
 	if err != nil {
 		cw.logger.Error("Не удалось запустить основной workflow", zap.Error(err))
 		return err
 	}
-	
+
 	cw.logger.Info("Основной CloudBridge workflow запущен",
 		zap.String("workflow_id", execution.ID),
 		zap.String("run_id", execution.RunID),
 	)
-	
+
 	// Записываем метрику
 	cw.cadenceMetrics.RecordWorkflowStarted("CloudBridgeMainWorkflow", cw.config.Domain, execution.ID)
-	
+
 	return nil
 }
 
@@ -420,31 +420,31 @@ func (cw *CadenceWorker) GetWorkflowStatus(workflowID, runID string) (map[string
 	if !cw.isRunning {
 		return nil, fmt.Errorf("cadence worker не запущен")
 	}
-	
+
 	// Здесь должна быть логика получения статуса workflow
 	// Пока возвращаем placeholder
 	status := map[string]interface{}{
 		"workflow_id": workflowID,
-		"run_id":     runID,
-		"status":     "running",
-		"started_at": time.Now().Format(time.RFC3339),
+		"run_id":      runID,
+		"status":      "running",
+		"started_at":  time.Now().Format(time.RFC3339),
 	}
-	
+
 	return status, nil
 }
 
 // GetWorkerStats получает статистику worker'а
 func (cw *CadenceWorker) GetWorkerStats() map[string]interface{} {
 	stats := map[string]interface{}{
-		"is_running":     cw.isRunning,
-		"domain":        cw.config.Domain,
-		"task_list":     cw.config.Worker.TaskListName,
-		"identity":      cw.config.Worker.Identity,
-		"uptime":        time.Since(time.Now()).String(), // Placeholder
-		"processed_workflows": 0,  // Будет вычисляться в реальной реализации
-		"processed_activities": 0, // Будет вычисляться в реальной реализации
+		"is_running":           cw.isRunning,
+		"domain":               cw.config.Domain,
+		"task_list":            cw.config.Worker.TaskListName,
+		"identity":             cw.config.Worker.Identity,
+		"uptime":               time.Since(time.Now()).String(), // Placeholder
+		"processed_workflows":  0,                               // Будет вычисляться в реальной реализации
+		"processed_activities": 0,                               // Будет вычисляться в реальной реализации
 	}
-	
+
 	return stats
 }
 
@@ -465,7 +465,7 @@ func (cw *CadenceWorker) enableProfiling() error {
 	go func() {
 		// Создаем отдельный HTTP сервер для профилирования
 		mux := http.NewServeMux()
-		
+
 		// pprof endpoints уже автоматически регистрируются через import _ "net/http/pprof"
 		// но мы можем добавить кастомные endpoints
 		mux.HandleFunc("/debug/cadence/stats", cw.handleCadenceStats)
@@ -544,14 +544,14 @@ func (cw *CadenceWorker) shouldEnableHealth() bool {
 // handleCadenceStats обрабатывает запрос статистики Cadence
 func (cw *CadenceWorker) handleCadenceStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	stats := cw.GetWorkerStats()
-	
+
 	// Добавляем дополнительную информацию о Cadence
-	stats["cadence_version"] = "1.2.9" // Версия из go.mod
+	stats["cadence_version"] = "1.2.9"  // Версия из go.mod
 	stats["registered_workflows"] = 20  // Количество зарегистрированных workflows
 	stats["registered_activities"] = 35 // Количество зарегистрированных activities
-	
+
 	if err := json.NewEncoder(w).Encode(stats); err != nil {
 		cw.logger.Error("Ошибка при кодировании статистики", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -561,11 +561,11 @@ func (cw *CadenceWorker) handleCadenceStats(w http.ResponseWriter, r *http.Reque
 // handleWorkflowsDebug обрабатывает debug информацию о workflows
 func (cw *CadenceWorker) handleWorkflowsDebug(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	workflows := map[string]interface{}{
 		"main_workflows": []string{
 			"CloudBridgeMainWorkflow",
-			"ModuleInitializationWorkflow", 
+			"ModuleInitializationWorkflow",
 			"HealthCheckWorkflow",
 		},
 		"wireguard_workflows": []string{
@@ -599,7 +599,7 @@ func (cw *CadenceWorker) handleWorkflowsDebug(w http.ResponseWriter, r *http.Req
 			"BackupRecoveryWorkflow",
 		},
 	}
-	
+
 	if err := json.NewEncoder(w).Encode(workflows); err != nil {
 		cw.logger.Error("Ошибка при кодировании workflows debug", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -609,7 +609,7 @@ func (cw *CadenceWorker) handleWorkflowsDebug(w http.ResponseWriter, r *http.Req
 // handleActivitiesDebug обрабатывает debug информацию о activities
 func (cw *CadenceWorker) handleActivitiesDebug(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	activities := map[string]interface{}{
 		"common_activities": []string{
 			"CheckDependenciesActivity",
@@ -636,7 +636,7 @@ func (cw *CadenceWorker) handleActivitiesDebug(w http.ResponseWriter, r *http.Re
 			"AnalyzeUserBehaviorActivity",
 		},
 	}
-	
+
 	if err := json.NewEncoder(w).Encode(activities); err != nil {
 		cw.logger.Error("Ошибка при кодировании activities debug", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -646,12 +646,12 @@ func (cw *CadenceWorker) handleActivitiesDebug(w http.ResponseWriter, r *http.Re
 // handleHealthCheck обрабатывает общий health check
 func (cw *CadenceWorker) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	health := map[string]interface{}{
 		"status":         "healthy",
 		"worker_running": cw.isRunning,
-		"domain":        cw.config.Domain,
-		"timestamp":     time.Now().Format(time.RFC3339),
+		"domain":         cw.config.Domain,
+		"timestamp":      time.Now().Format(time.RFC3339),
 		"checks": map[string]string{
 			"cadence_worker": func() string {
 				if cw.isRunning {
@@ -662,13 +662,13 @@ func (cw *CadenceWorker) handleHealthCheck(w http.ResponseWriter, r *http.Reques
 			"cadence_client": "healthy", // В реальной реализации нужна проверка соединения
 		},
 	}
-	
+
 	status := http.StatusOK
 	if !cw.isRunning {
 		status = http.StatusServiceUnavailable
 		health["status"] = "unhealthy"
 	}
-	
+
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(health); err != nil {
 		cw.logger.Error("Ошибка при кодировании health check", zap.Error(err))

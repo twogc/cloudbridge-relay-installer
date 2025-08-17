@@ -12,40 +12,40 @@ import (
 // CadenceMetrics содержит все метрики для Cadence Workflow
 type CadenceMetrics struct {
 	// Workflow метрики
-	WorkflowExecutions    *prometheus.CounterVec
-	WorkflowDuration      *prometheus.HistogramVec
-	WorkflowErrors        *prometheus.CounterVec
-	WorkflowStatus        *prometheus.GaugeVec
-	ActiveWorkflows       *prometheus.GaugeVec
+	WorkflowExecutions *prometheus.CounterVec
+	WorkflowDuration   *prometheus.HistogramVec
+	WorkflowErrors     *prometheus.CounterVec
+	WorkflowStatus     *prometheus.GaugeVec
+	ActiveWorkflows    *prometheus.GaugeVec
 
 	// Activity метрики
-	ActivityExecutions    *prometheus.CounterVec
-	ActivityDuration      *prometheus.HistogramVec
-	ActivityErrors        *prometheus.CounterVec
-	ActivityRetries       *prometheus.CounterVec
+	ActivityExecutions *prometheus.CounterVec
+	ActivityDuration   *prometheus.HistogramVec
+	ActivityErrors     *prometheus.CounterVec
+	ActivityRetries    *prometheus.CounterVec
 
 	// Worker метрики
-	WorkerConnections     *prometheus.GaugeVec
-	WorkerPollers         *prometheus.GaugeVec
-	WorkerLatency         *prometheus.HistogramVec
-	WorkerQueueDepth      *prometheus.GaugeVec
+	WorkerConnections *prometheus.GaugeVec
+	WorkerPollers     *prometheus.GaugeVec
+	WorkerLatency     *prometheus.HistogramVec
+	WorkerQueueDepth  *prometheus.GaugeVec
 
 	// Клиент метрики
-	ClientRequests        *prometheus.CounterVec
-	ClientLatency         *prometheus.HistogramVec
-	ClientErrors          *prometheus.CounterVec
+	ClientRequests *prometheus.CounterVec
+	ClientLatency  *prometheus.HistogramVec
+	ClientErrors   *prometheus.CounterVec
 
 	// Специфичные метрики для CloudBridge
-	WireGuardWorkflows    *prometheus.CounterVec
-	QuantumWorkflows      *prometheus.CounterVec
-	AIWorkflows           *prometheus.CounterVec
-	ScalingWorkflows      *prometheus.CounterVec
-	SecurityWorkflows     *prometheus.CounterVec
+	WireGuardWorkflows *prometheus.CounterVec
+	QuantumWorkflows   *prometheus.CounterVec
+	AIWorkflows        *prometheus.CounterVec
+	ScalingWorkflows   *prometheus.CounterVec
+	SecurityWorkflows  *prometheus.CounterVec
 
 	// Здоровье системы
-	HealthChecks          *prometheus.CounterVec
-	SystemUptime          *prometheus.GaugeVec
-	ResourceUtilization   *prometheus.GaugeVec
+	HealthChecks        *prometheus.CounterVec
+	SystemUptime        *prometheus.GaugeVec
+	ResourceUtilization *prometheus.GaugeVec
 
 	logger *zap.Logger
 }
@@ -318,7 +318,7 @@ func (cm *CadenceMetrics) RecordWorkflowStarted(workflowType, domain, workflowID
 	cm.WorkflowExecutions.WithLabelValues(workflowType, "started", domain).Inc()
 	cm.WorkflowStatus.WithLabelValues(workflowType, workflowID, domain).Set(1)
 	cm.ActiveWorkflows.WithLabelValues(workflowType, domain).Inc()
-	
+
 	cm.logger.Debug("Зафиксирован запуск workflow",
 		zap.String("workflow_type", workflowType),
 		zap.String("domain", domain),
@@ -332,7 +332,7 @@ func (cm *CadenceMetrics) RecordWorkflowCompleted(workflowType, domain, workflow
 	cm.WorkflowDuration.WithLabelValues(workflowType, domain).Observe(duration.Seconds())
 	cm.WorkflowStatus.WithLabelValues(workflowType, workflowID, domain).Set(0)
 	cm.ActiveWorkflows.WithLabelValues(workflowType, domain).Dec()
-	
+
 	cm.logger.Debug("Зафиксировано завершение workflow",
 		zap.String("workflow_type", workflowType),
 		zap.String("domain", domain),
@@ -348,7 +348,7 @@ func (cm *CadenceMetrics) RecordWorkflowFailed(workflowType, domain, workflowID,
 	cm.WorkflowDuration.WithLabelValues(workflowType, domain).Observe(duration.Seconds())
 	cm.WorkflowStatus.WithLabelValues(workflowType, workflowID, domain).Set(0)
 	cm.ActiveWorkflows.WithLabelValues(workflowType, domain).Dec()
-	
+
 	cm.logger.Warn("Зафиксирована ошибка workflow",
 		zap.String("workflow_type", workflowType),
 		zap.String("domain", domain),
@@ -363,7 +363,7 @@ func (cm *CadenceMetrics) RecordWorkflowFailed(workflowType, domain, workflowID,
 // RecordActivityStarted записывает метрику запуска activity
 func (cm *CadenceMetrics) RecordActivityStarted(activityType, domain string) {
 	cm.ActivityExecutions.WithLabelValues(activityType, "started", domain).Inc()
-	
+
 	cm.logger.Debug("Зафиксирован запуск activity",
 		zap.String("activity_type", activityType),
 		zap.String("domain", domain),
@@ -374,7 +374,7 @@ func (cm *CadenceMetrics) RecordActivityStarted(activityType, domain string) {
 func (cm *CadenceMetrics) RecordActivityCompleted(activityType, domain string, duration time.Duration) {
 	cm.ActivityExecutions.WithLabelValues(activityType, "completed", domain).Inc()
 	cm.ActivityDuration.WithLabelValues(activityType, domain).Observe(duration.Seconds())
-	
+
 	cm.logger.Debug("Зафиксировано завершение activity",
 		zap.String("activity_type", activityType),
 		zap.String("domain", domain),
@@ -387,7 +387,7 @@ func (cm *CadenceMetrics) RecordActivityFailed(activityType, domain, errorType s
 	cm.ActivityExecutions.WithLabelValues(activityType, "failed", domain).Inc()
 	cm.ActivityErrors.WithLabelValues(activityType, errorType, domain).Inc()
 	cm.ActivityDuration.WithLabelValues(activityType, domain).Observe(duration.Seconds())
-	
+
 	cm.logger.Warn("Зафиксирована ошибка activity",
 		zap.String("activity_type", activityType),
 		zap.String("domain", domain),
@@ -399,7 +399,7 @@ func (cm *CadenceMetrics) RecordActivityFailed(activityType, domain, errorType s
 // RecordActivityRetry записывает метрику повтора activity
 func (cm *CadenceMetrics) RecordActivityRetry(activityType, domain string, attempt int) {
 	cm.ActivityRetries.WithLabelValues(activityType, string(rune(attempt)), domain).Inc()
-	
+
 	cm.logger.Debug("Зафиксирован повтор activity",
 		zap.String("activity_type", activityType),
 		zap.String("domain", domain),
@@ -508,6 +508,6 @@ func (cm *CadenceMetrics) StartMetricsCollection(ctx context.Context, interval t
 func (cm *CadenceMetrics) collectSystemMetrics() {
 	// Здесь можно добавить сбор дополнительных системных метрик
 	// Например, использование памяти, CPU, количество горутин и т.д.
-	
+
 	cm.logger.Debug("Сбор системных метрик")
 }

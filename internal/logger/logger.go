@@ -20,7 +20,7 @@ const (
 	INFO    LogLevel = "INFO"
 	WARNING LogLevel = "WARNING"
 	ERROR   LogLevel = "ERROR"
-	
+
 	// Output types.
 	OutputBoth = "both"
 )

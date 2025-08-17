@@ -49,12 +49,12 @@ type HealthCheckInput struct {
 
 // HealthCheckResult результат проверки здоровья
 type HealthCheckResult struct {
-	Component      string                 `json:"component"`
-	Status         string                 `json:"status"`
-	CheckResults   map[string]interface{} `json:"check_results"`
-	LastChecked    time.Time              `json:"last_checked"`
-	NextCheck      time.Time              `json:"next_check"`
-	HealthScore    float64                `json:"health_score"`
+	Component    string                 `json:"component"`
+	Status       string                 `json:"status"`
+	CheckResults map[string]interface{} `json:"check_results"`
+	LastChecked  time.Time              `json:"last_checked"`
+	NextCheck    time.Time              `json:"next_check"`
+	HealthScore  float64                `json:"health_score"`
 }
 
 // CloudBridgeMainWorkflow основной workflow для CloudBridge Relay
@@ -81,7 +81,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 
 	// 1. Инициализация модулей
 	logger.Info("Начало инициализации модулей")
-	
+
 	moduleInput := ModuleInitializationInput{
 		ModuleName:    "core",
 		Configuration: input.Configuration,
@@ -111,7 +111,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 
 	// 2. Запуск мониторинга здоровья в фоновом режиме
 	logger.Info("Запуск мониторинга здоровья")
-	
+
 	healthCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
 		ExecutionStartToCloseTimeout: 24 * time.Hour, // Долгоживущий workflow
 		TaskStartToCloseTimeout:      30 * time.Second,
@@ -128,7 +128,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 
 	// 3. Запуск WireGuard workflows в фоновом режиме
 	logger.Info("Запуск WireGuard workflows")
-	
+
 	wireguardCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
 		ExecutionStartToCloseTimeout: 24 * time.Hour,
 		TaskStartToCloseTimeout:      30 * time.Second,
@@ -156,7 +156,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 
 	// 4. Запуск Quantum workflows в фоновом режиме
 	logger.Info("Запуск Quantum workflows")
-	
+
 	quantumCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
 		ExecutionStartToCloseTimeout: 24 * time.Hour,
 		TaskStartToCloseTimeout:      30 * time.Second,
@@ -184,7 +184,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 
 	// 5. Запуск AI workflows в фоновом режиме
 	logger.Info("Запуск AI workflows")
-	
+
 	aiCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
 		ExecutionStartToCloseTimeout: 24 * time.Hour,
 		TaskStartToCloseTimeout:      30 * time.Second,
@@ -212,7 +212,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 
 	// 6. Запуск продвинутых workflows
 	logger.Info("Запуск продвинутых workflows")
-	
+
 	advancedCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
 		ExecutionStartToCloseTimeout: 24 * time.Hour,
 		TaskStartToCloseTimeout:      30 * time.Second,
@@ -240,7 +240,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 
 	// 7. Основной цикл мониторинга
 	logger.Info("Вход в основной цикл мониторинга")
-	
+
 	// Создаем selector для обработки сигналов и таймеров
 	selector := workflow.NewSelector(ctx)
 
@@ -248,7 +248,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 	timer := workflow.NewTimer(ctx, 5*time.Minute)
 	selector.AddFuture(timer, func(f workflow.Future) {
 		logger.Debug("Периодическая проверка системы")
-		
+
 		// Перезапускаем timer
 		timer = workflow.NewTimer(ctx, 5*time.Minute)
 		selector.AddFuture(timer, func(f workflow.Future) {
@@ -261,9 +261,9 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 	selector.AddReceive(commandChannel, func(c workflow.Channel, more bool) {
 		var command string
 		c.Receive(ctx, &command)
-		
+
 		logger.Info("Получена команда управления", zap.String("command", command))
-		
+
 		switch command {
 		case "shutdown":
 			logger.Info("Получена команда остановки")
@@ -298,12 +298,12 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 	// Основной цикл выполнения (работает 24 часа)
 	for {
 		selector.Select(ctx)
-		
+
 		// Проверяем, не нужно ли завершить workflow
 		if result.Status == "shutdown" {
 			break
 		}
-		
+
 		// Проверяем timeout (24 часа)
 		if workflow.Now(ctx).Sub(result.StartedAt) > 24*time.Hour {
 			logger.Info("Достигнут лимит времени выполнения, перезапуск")
@@ -314,7 +314,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 	}
 
 	result.CompletedAt = workflow.Now(ctx)
-	
+
 	if result.Status == "running" {
 		result.Status = "completed"
 		result.Message = "Основной workflow завершен успешно"
@@ -358,7 +358,7 @@ func ModuleInitializationWorkflow(ctx workflow.Context, input ModuleInitializati
 	// 1. Проверка зависимостей
 	if len(input.Dependencies) > 0 {
 		logger.Info("Проверка зависимостей", zap.Strings("dependencies", input.Dependencies))
-		
+
 		var dependencyResult string
 		err := workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -379,7 +379,7 @@ func ModuleInitializationWorkflow(ctx workflow.Context, input ModuleInitializati
 
 	// 2. Инициализация модуля
 	logger.Info("Инициализация модуля", zap.String("module", input.ModuleName))
-	
+
 	var initResult string
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -398,7 +398,7 @@ func ModuleInitializationWorkflow(ctx workflow.Context, input ModuleInitializati
 
 	// 3. Проверка здоровья модуля
 	logger.Info("Проверка здоровья модуля", zap.String("module", input.ModuleName))
-	
+
 	var healthResult string
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -458,18 +458,18 @@ func HealthCheckWorkflow(ctx workflow.Context, input HealthCheckInput) (*HealthC
 
 	// Настройка канала для получения команд управления
 	controlSignal := workflow.GetSignalChannel(ctx, "control-command")
-	
+
 	// Основной цикл health check с signal handling
 	for {
 		selector := workflow.NewSelector(ctx)
-		
+
 		// Обработка команд управления
 		selector.AddReceive(controlSignal, func(c workflow.Channel, more bool) {
 			var command string
 			c.Receive(ctx, &command)
-			
+
 			logger.Info("Получена команда управления HealthCheck", zap.String("command", command))
-			
+
 			switch command {
 			case "shutdown", "stop":
 				logger.Info("Остановка HealthCheck workflow")
@@ -496,12 +496,12 @@ func HealthCheckWorkflow(ctx workflow.Context, input HealthCheckInput) (*HealthC
 				}
 			}
 		})
-		
+
 		// Периодическая проверка здоровья
 		timer := workflow.NewTimer(ctx, getHealthCheckInterval(ctx))
 		selector.AddFuture(timer, func(f workflow.Future) {
 			logger.Info("Выполнение проверок здоровья")
-			
+
 			totalScore := 0.0
 			successfulChecks := 0
 
@@ -566,9 +566,9 @@ func HealthCheckWorkflow(ctx workflow.Context, input HealthCheckInput) (*HealthC
 				zap.Int("total_checks", len(input.Checks)),
 			)
 		})
-		
+
 		selector.Select(ctx)
-		
+
 		// Проверяем, не нужно ли завершить workflow
 		if result.Status == "stopped" {
 			break

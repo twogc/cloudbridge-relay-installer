@@ -10,25 +10,25 @@ import (
 
 // ThreatAnalysisWorkflowInput входные параметры для анализа угроз
 type ThreatAnalysisWorkflowInput struct {
-	AnalysisType   string                 `json:"analysis_type"`   // realtime, batch, deep, predictive
-	DataSources    []string               `json:"data_sources"`    // logs, network, behavior, external
-	TimeWindow     string                 `json:"time_window"`     // 1h, 24h, 7d, 30d
-	ThreatModels   []string               `json:"threat_models"`   // ddos, intrusion, malware, anomaly
-	Configuration  map[string]interface{} `json:"configuration"`
+	AnalysisType  string                 `json:"analysis_type"` // realtime, batch, deep, predictive
+	DataSources   []string               `json:"data_sources"`  // logs, network, behavior, external
+	TimeWindow    string                 `json:"time_window"`   // 1h, 24h, 7d, 30d
+	ThreatModels  []string               `json:"threat_models"` // ddos, intrusion, malware, anomaly
+	Configuration map[string]interface{} `json:"configuration"`
 }
 
 // ThreatAnalysisWorkflowResult результат анализа угроз
 type ThreatAnalysisWorkflowResult struct {
-	AnalysisType     string                 `json:"analysis_type"`
-	DetectedThreats  []string               `json:"detected_threats"`
-	ThreatScores     map[string]float64     `json:"threat_scores"`
-	RiskLevel        string                 `json:"risk_level"`      // low, medium, high, critical
-	AnalysisResults  map[string]interface{} `json:"analysis_results"`
-	Recommendations  []string               `json:"recommendations"`
-	Status           string                 `json:"status"`
-	StartedAt        time.Time              `json:"started_at"`
-	CompletedAt      time.Time              `json:"completed_at"`
-	Message          string                 `json:"message"`
+	AnalysisType    string                 `json:"analysis_type"`
+	DetectedThreats []string               `json:"detected_threats"`
+	ThreatScores    map[string]float64     `json:"threat_scores"`
+	RiskLevel       string                 `json:"risk_level"` // low, medium, high, critical
+	AnalysisResults map[string]interface{} `json:"analysis_results"`
+	Recommendations []string               `json:"recommendations"`
+	Status          string                 `json:"status"`
+	StartedAt       time.Time              `json:"started_at"`
+	CompletedAt     time.Time              `json:"completed_at"`
+	Message         string                 `json:"message"`
 }
 
 // BehaviorMonitoringWorkflowInput входные параметры для мониторинга поведения
@@ -42,25 +42,25 @@ type BehaviorMonitoringWorkflowInput struct {
 
 // BehaviorMonitoringWorkflowResult результат мониторинга поведения
 type BehaviorMonitoringWorkflowResult struct {
-	MonitoringScope    string                 `json:"monitoring_scope"`
-	MonitoredUsers     []string               `json:"monitored_users"`
-	AnomalousUsers     []string               `json:"anomalous_users"`
-	BehaviorProfiles   map[string]interface{} `json:"behavior_profiles"`
-	AnomalyScores      map[string]float64     `json:"anomaly_scores"`
-	TriggeredAlerts    []string               `json:"triggered_alerts"`
-	Status             string                 `json:"status"`
-	StartedAt          time.Time              `json:"started_at"`
-	CompletedAt        time.Time              `json:"completed_at"`
-	Message            string                 `json:"message"`
+	MonitoringScope  string                 `json:"monitoring_scope"`
+	MonitoredUsers   []string               `json:"monitored_users"`
+	AnomalousUsers   []string               `json:"anomalous_users"`
+	BehaviorProfiles map[string]interface{} `json:"behavior_profiles"`
+	AnomalyScores    map[string]float64     `json:"anomaly_scores"`
+	TriggeredAlerts  []string               `json:"triggered_alerts"`
+	Status           string                 `json:"status"`
+	StartedAt        time.Time              `json:"started_at"`
+	CompletedAt      time.Time              `json:"completed_at"`
+	Message          string                 `json:"message"`
 }
 
 // AutomatedResponseWorkflowInput входные параметры для автоматического реагирования
 type AutomatedResponseWorkflowInput struct {
-	TriggerEvent     string                 `json:"trigger_event"`
-	EventData        map[string]interface{} `json:"event_data"`
-	ResponsePolicy   string                 `json:"response_policy"`   // immediate, escalated, manual_approval
-	ResponseActions  []string               `json:"response_actions"`  // block, quarantine, alert, log
-	Configuration    map[string]interface{} `json:"configuration"`
+	TriggerEvent    string                 `json:"trigger_event"`
+	EventData       map[string]interface{} `json:"event_data"`
+	ResponsePolicy  string                 `json:"response_policy"`  // immediate, escalated, manual_approval
+	ResponseActions []string               `json:"response_actions"` // block, quarantine, alert, log
+	Configuration   map[string]interface{} `json:"configuration"`
 }
 
 // AutomatedResponseWorkflowResult результат автоматического реагирования
@@ -79,27 +79,27 @@ type AutomatedResponseWorkflowResult struct {
 
 // ModelTrainingWorkflowInput входные параметры для обучения AI моделей
 type ModelTrainingWorkflowInput struct {
-	ModelType        string                 `json:"model_type"`       // anomaly_detection, threat_classification, behavior_analysis
-	TrainingData     string                 `json:"training_data"`    // data source or path
-	ModelVersion     string                 `json:"model_version"`
-	TrainingMode     string                 `json:"training_mode"`    // full, incremental, transfer
-	HyperParameters  map[string]interface{} `json:"hyperparameters"`
-	Configuration    map[string]interface{} `json:"configuration"`
+	ModelType       string                 `json:"model_type"`    // anomaly_detection, threat_classification, behavior_analysis
+	TrainingData    string                 `json:"training_data"` // data source or path
+	ModelVersion    string                 `json:"model_version"`
+	TrainingMode    string                 `json:"training_mode"` // full, incremental, transfer
+	HyperParameters map[string]interface{} `json:"hyperparameters"`
+	Configuration   map[string]interface{} `json:"configuration"`
 }
 
 // ModelTrainingWorkflowResult результат обучения AI моделей
 type ModelTrainingWorkflowResult struct {
-	ModelType          string                 `json:"model_type"`
-	ModelVersion       string                 `json:"model_version"`
-	TrainingMode       string                 `json:"training_mode"`
-	TrainingMetrics    map[string]float64     `json:"training_metrics"`
-	ValidationMetrics  map[string]float64     `json:"validation_metrics"`
-	ModelPath          string                 `json:"model_path"`
-	PerformanceScore   float64                `json:"performance_score"`
-	Status             string                 `json:"status"`
-	StartedAt          time.Time              `json:"started_at"`
-	CompletedAt        time.Time              `json:"completed_at"`
-	Message            string                 `json:"message"`
+	ModelType         string             `json:"model_type"`
+	ModelVersion      string             `json:"model_version"`
+	TrainingMode      string             `json:"training_mode"`
+	TrainingMetrics   map[string]float64 `json:"training_metrics"`
+	ValidationMetrics map[string]float64 `json:"validation_metrics"`
+	ModelPath         string             `json:"model_path"`
+	PerformanceScore  float64            `json:"performance_score"`
+	Status            string             `json:"status"`
+	StartedAt         time.Time          `json:"started_at"`
+	CompletedAt       time.Time          `json:"completed_at"`
+	Message           string             `json:"message"`
 }
 
 // ThreatAnalysisWorkflow workflow для анализа угроз с использованием AI
@@ -136,7 +136,7 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 
 	// 1. Сбор данных из источников
 	logger.Info("Сбор данных для анализа угроз")
-	
+
 	var dataCollection map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -158,7 +158,7 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 
 	// 2. Предобработка данных
 	logger.Info("Предобработка данных")
-	
+
 	var preprocessingResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -182,7 +182,7 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 	case "realtime":
 		// Реалтайм анализ
 		logger.Info("Реалтайм анализ угроз")
-		
+
 		var realtimeResult map[string]interface{}
 		err = workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -200,7 +200,7 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 	case "batch":
 		// Пакетный анализ
 		logger.Info("Пакетный анализ угроз")
-		
+
 		var batchResult map[string]interface{}
 		err = workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -218,7 +218,7 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 	case "deep":
 		// Глубокий анализ
 		logger.Info("Глубокий анализ угроз")
-		
+
 		var deepResult map[string]interface{}
 		err = workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -236,7 +236,7 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 	case "predictive":
 		// Предиктивный анализ
 		logger.Info("Предиктивный анализ угроз")
-		
+
 		var predictiveResult map[string]interface{}
 		err = workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -254,7 +254,7 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 
 	// 4. Агрегация результатов анализа
 	logger.Info("Агрегация результатов анализа")
-	
+
 	var aggregationResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -289,7 +289,7 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 
 	// 5. Оценка уровня риска
 	logger.Info("Оценка уровня риска")
-	
+
 	var riskAssessmentResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -310,7 +310,7 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 
 	// 6. Генерация рекомендаций
 	logger.Info("Генерация рекомендаций")
-	
+
 	var recommendationResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -392,7 +392,7 @@ func BehaviorMonitoringWorkflow(ctx workflow.Context, input BehaviorMonitoringWo
 	case "continuous":
 		// Непрерывный мониторинг
 		logger.Info("Запуск непрерывного мониторинга поведения")
-		
+
 		// Основной цикл мониторинга (работает до отмены)
 		for {
 			// Анализ поведения пользователей
@@ -479,7 +479,7 @@ func BehaviorMonitoringWorkflow(ctx workflow.Context, input BehaviorMonitoringWo
 	case "scheduled":
 		// Запланированный мониторинг
 		logger.Info("Запуск запланированного мониторинга поведения")
-		
+
 		// Получаем расписание мониторинга
 		var scheduleResult map[string]interface{}
 		err := workflow.ExecuteActivity(
@@ -501,10 +501,10 @@ func BehaviorMonitoringWorkflow(ctx workflow.Context, input BehaviorMonitoringWo
 			for _, interval := range intervals {
 				if intervalStr, ok := interval.(string); ok {
 					intervalDuration, _ := time.ParseDuration(intervalStr)
-					
+
 					// Ждем до времени мониторинга
 					workflow.Sleep(ctx, intervalDuration)
-					
+
 					// Выполняем мониторинг
 					var behaviorResult map[string]interface{}
 					err := workflow.ExecuteActivity(
@@ -517,10 +517,9 @@ func BehaviorMonitoringWorkflow(ctx workflow.Context, input BehaviorMonitoringWo
 
 					if err != nil {
 						logger.Warn("Ошибка анализа поведения", zap.Error(err))
-					} else {
-						// Обновляем результаты (аналогично непрерывному мониторингу)
-						// ... (код аналогичен блоку выше)
 					}
+					// Обновляем результаты (аналогично непрерывному мониторингу)
+					// ... (код аналогичен блоку выше)
 				}
 			}
 		}
@@ -528,19 +527,19 @@ func BehaviorMonitoringWorkflow(ctx workflow.Context, input BehaviorMonitoringWo
 	case "triggered":
 		// Мониторинг по триггерам
 		logger.Info("Запуск мониторинга по триггерам")
-		
+
 		// Настраиваем слушатель триггеров
 		triggerChannel := workflow.GetSignalChannel(ctx, "behavior-trigger")
 		selector := workflow.NewSelector(ctx)
-		
+
 		selector.AddReceive(triggerChannel, func(c workflow.Channel, more bool) {
 			var triggerData map[string]interface{}
 			c.Receive(ctx, &triggerData)
-			
+
 			logger.Info("Получен триггер для мониторинга поведения",
 				zap.Any("trigger_data", triggerData),
 			)
-			
+
 			// Выполняем мониторинг в ответ на триггер
 			var behaviorResult map[string]interface{}
 			err := workflow.ExecuteActivity(
@@ -553,10 +552,9 @@ func BehaviorMonitoringWorkflow(ctx workflow.Context, input BehaviorMonitoringWo
 
 			if err != nil {
 				logger.Warn("Ошибка анализа поведения по триггеру", zap.Error(err))
-			} else {
-				// Обновляем результаты
-				// ... (код аналогичен блоку выше)
 			}
+			// Обновляем результаты
+			// ... (код аналогичен блоку выше)
 		})
 
 		// Ждем триггеры в течение определенного времени
@@ -618,7 +616,7 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 
 	// 1. Анализ события и определение стратегии реагирования
 	logger.Info("Анализ события и планирование реагирования")
-	
+
 	var analysisResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -642,7 +640,7 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 	case "immediate":
 		// Немедленное реагирование
 		logger.Info("Немедленное выполнение действий реагирования")
-		
+
 		futures := make([]workflow.Future, len(input.ResponseActions))
 		for i, action := range input.ResponseActions {
 			futures[i] = workflow.ExecuteActivity(
@@ -658,10 +656,10 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 		// Собираем результаты
 		for i, future := range futures {
 			action := input.ResponseActions[i]
-			
+
 			var actionResult map[string]interface{}
 			err := future.Get(ctx, &actionResult)
-			
+
 			if err != nil {
 				logger.Warn("Ошибка выполнения действия",
 					zap.String("action", action),
@@ -672,14 +670,14 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 				result.ExecutedActions = append(result.ExecutedActions, action)
 				logger.Info("Действие выполнено успешно", zap.String("action", action))
 			}
-			
+
 			result.ResponseResults[action] = actionResult
 		}
 
 	case "escalated":
 		// Эскалированное реагирование
 		logger.Info("Эскалированное выполнение действий реагирования")
-		
+
 		for i, action := range input.ResponseActions {
 			var actionResult map[string]interface{}
 			err := workflow.ExecuteActivity(
@@ -690,14 +688,14 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 				"escalated",
 				input.Configuration,
 			).Get(ctx, &actionResult)
-			
+
 			if err != nil {
 				logger.Warn("Ошибка выполнения действия",
 					zap.String("action", action),
 					zap.Error(err),
 				)
 				result.FailedActions = append(result.FailedActions, action)
-				
+
 				// При эскалации, если критическое действие не удалось, прерываем
 				if isCriticalAction(action) {
 					logger.Error("Критическое действие не удалось, прерываем эскалацию")
@@ -707,7 +705,7 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 				result.ExecutedActions = append(result.ExecutedActions, action)
 				logger.Info("Действие выполнено успешно", zap.String("action", action))
 			}
-			
+
 			result.ResponseResults[action] = actionResult
 
 			// Задержка между действиями при эскалации
@@ -719,7 +717,7 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 	case "manual_approval":
 		// Реагирование с ручным подтверждением
 		logger.Info("Ожидание ручного подтверждения для реагирования")
-		
+
 		// Отправляем запрос на подтверждение
 		var approvalRequest map[string]interface{}
 		err = workflow.ExecuteActivity(
@@ -741,16 +739,16 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 		// Ждем подтверждения (максимум 30 минут)
 		approvalChannel := workflow.GetSignalChannel(ctx, "manual-approval")
 		selector := workflow.NewSelector(ctx)
-		
+
 		var approved bool
 		selector.AddReceive(approvalChannel, func(c workflow.Channel, more bool) {
 			var approvalData map[string]interface{}
 			c.Receive(ctx, &approvalData)
-			
+
 			if approvalResult, ok := approvalData["approved"].(bool); ok {
 				approved = approvalResult
 			}
-			
+
 			logger.Info("Получено решение по подтверждению",
 				zap.Bool("approved", approved),
 			)
@@ -767,7 +765,7 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 		if approved {
 			// Выполняем действия после подтверждения
 			logger.Info("Выполнение действий после подтверждения")
-			
+
 			for _, action := range input.ResponseActions {
 				var actionResult map[string]interface{}
 				err := workflow.ExecuteActivity(
@@ -778,7 +776,7 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 					"manual_approved",
 					input.Configuration,
 				).Get(ctx, &actionResult)
-				
+
 				if err != nil {
 					logger.Warn("Ошибка выполнения действия",
 						zap.String("action", action),
@@ -789,7 +787,7 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 					result.ExecutedActions = append(result.ExecutedActions, action)
 					logger.Info("Действие выполнено успешно", zap.String("action", action))
 				}
-				
+
 				result.ResponseResults[action] = actionResult
 			}
 		} else {
@@ -803,7 +801,7 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 
 	// 2. Оценка эффективности реагирования
 	logger.Info("Оценка эффективности реагирования")
-	
+
 	var effectivenessResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -884,7 +882,7 @@ func ModelTrainingWorkflow(ctx workflow.Context, input ModelTrainingWorkflowInpu
 
 	// 1. Подготовка данных для обучения
 	logger.Info("Подготовка данных для обучения")
-	
+
 	var dataPreparationResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -905,7 +903,7 @@ func ModelTrainingWorkflow(ctx workflow.Context, input ModelTrainingWorkflowInpu
 
 	// 2. Инициализация модели
 	logger.Info("Инициализация модели")
-	
+
 	var modelInitResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -925,7 +923,7 @@ func ModelTrainingWorkflow(ctx workflow.Context, input ModelTrainingWorkflowInpu
 
 	// 3. Обучение модели
 	logger.Info("Запуск обучения модели")
-	
+
 	var trainingResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -956,7 +954,7 @@ func ModelTrainingWorkflow(ctx workflow.Context, input ModelTrainingWorkflowInpu
 
 	// 4. Валидация модели
 	logger.Info("Валидация обученной модели")
-	
+
 	var validationResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -981,7 +979,7 @@ func ModelTrainingWorkflow(ctx workflow.Context, input ModelTrainingWorkflowInpu
 
 	// 5. Сохранение модели
 	logger.Info("Сохранение обученной модели")
-	
+
 	var saveResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -1006,7 +1004,7 @@ func ModelTrainingWorkflow(ctx workflow.Context, input ModelTrainingWorkflowInpu
 
 	// 6. Оценка производительности модели
 	logger.Info("Оценка производительности модели")
-	
+
 	var performanceResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),

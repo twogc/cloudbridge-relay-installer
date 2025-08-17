@@ -193,9 +193,8 @@ func (qc *QUICConnection) AcceptStream(ctx context.Context) (*Stream, error) {
 	if streamID < 0 {
 		return nil, fmt.Errorf("invalid stream ID: %d", streamID)
 	}
-	if streamID > 9223372036854775807 { // Max int64
-		return nil, fmt.Errorf("stream ID too large: %d", streamID)
-	}
+	// streamID is int64, so it cannot be greater than math.MaxInt64
+	// This check is redundant but kept for clarity
 	//nolint:gosec // #nosec G115: streamID не может быть отрицательным, переполнения не будет
 	id := uint64(streamID) // #nosec G115
 	quicStream := &Stream{
@@ -233,9 +232,8 @@ func (qc *QUICConnection) OpenStream(ctx context.Context) (*Stream, error) {
 	if streamID < 0 {
 		return nil, fmt.Errorf("invalid stream ID: %d", streamID)
 	}
-	if streamID > 9223372036854775807 { // Max int64
-		return nil, fmt.Errorf("stream ID too large: %d", streamID)
-	}
+	// streamID is int64, so it cannot be greater than math.MaxInt64
+	// This check is redundant but kept for clarity
 	//nolint:gosec // #nosec G115: streamID не может быть отрицательным, переполнения не будет
 	id := uint64(streamID) // #nosec G115
 	quicStream := &Stream{

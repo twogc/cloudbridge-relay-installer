@@ -234,6 +234,7 @@ func TestWriteError(t *testing.T) {
 }
 
 // slowReader is a reader that introduces a delay
+//
 //nolint:unused // Used in tests
 type slowReader struct {
 	delay time.Duration

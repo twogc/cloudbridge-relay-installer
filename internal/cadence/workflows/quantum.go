@@ -10,23 +10,23 @@ import (
 
 // QuantumKeyRotationWorkflowInput входные параметры для ротации квантовых ключей
 type QuantumKeyRotationWorkflowInput struct {
-	KeyID           string                 `json:"key_id"`
-	Algorithm       string                 `json:"algorithm"`       // kyber, dilithium, falcon, sphincs_plus
-	RotationPolicy  string                 `json:"rotation_policy"` // time_based, usage_based, event_based
-	Configuration   map[string]interface{} `json:"configuration"`
-	ForceRotation   bool                   `json:"force_rotation"`
+	KeyID          string                 `json:"key_id"`
+	Algorithm      string                 `json:"algorithm"`       // kyber, dilithium, falcon, sphincs_plus
+	RotationPolicy string                 `json:"rotation_policy"` // time_based, usage_based, event_based
+	Configuration  map[string]interface{} `json:"configuration"`
+	ForceRotation  bool                   `json:"force_rotation"`
 }
 
 // QuantumKeyRotationWorkflowResult результат ротации квантовых ключей
 type QuantumKeyRotationWorkflowResult struct {
-	OldKeyID      string                 `json:"old_key_id"`
-	NewKeyID      string                 `json:"new_key_id"`
-	Algorithm     string                 `json:"algorithm"`
-	Status        string                 `json:"status"`
-	RotationInfo  map[string]interface{} `json:"rotation_info"`
-	StartedAt     time.Time              `json:"started_at"`
-	CompletedAt   time.Time              `json:"completed_at"`
-	Message       string                 `json:"message"`
+	OldKeyID     string                 `json:"old_key_id"`
+	NewKeyID     string                 `json:"new_key_id"`
+	Algorithm    string                 `json:"algorithm"`
+	Status       string                 `json:"status"`
+	RotationInfo map[string]interface{} `json:"rotation_info"`
+	StartedAt    time.Time              `json:"started_at"`
+	CompletedAt  time.Time              `json:"completed_at"`
+	Message      string                 `json:"message"`
 }
 
 // KeyValidationWorkflowInput входные параметры для валидации квантовых ключей
@@ -38,22 +38,22 @@ type KeyValidationWorkflowInput struct {
 
 // KeyValidationWorkflowResult результат валидации квантовых ключей
 type KeyValidationWorkflowResult struct {
-	ValidatedKeys   []string               `json:"validated_keys"`
-	InvalidKeys     []string               `json:"invalid_keys"`
+	ValidatedKeys     []string               `json:"validated_keys"`
+	InvalidKeys       []string               `json:"invalid_keys"`
 	ValidationResults map[string]interface{} `json:"validation_results"`
-	Status          string                 `json:"status"`
-	StartedAt       time.Time              `json:"started_at"`
-	CompletedAt     time.Time              `json:"completed_at"`
-	Message         string                 `json:"message"`
+	Status            string                 `json:"status"`
+	StartedAt         time.Time              `json:"started_at"`
+	CompletedAt       time.Time              `json:"completed_at"`
+	Message           string                 `json:"message"`
 }
 
 // AlgorithmMigrationWorkflowInput входные параметры для миграции алгоритмов
 type AlgorithmMigrationWorkflowInput struct {
-	FromAlgorithm  string                 `json:"from_algorithm"`
-	ToAlgorithm    string                 `json:"to_algorithm"`
-	MigrationMode  string                 `json:"migration_mode"` // gradual, immediate, scheduled
-	AffectedKeys   []string               `json:"affected_keys"`
-	Configuration  map[string]interface{} `json:"configuration"`
+	FromAlgorithm string                 `json:"from_algorithm"`
+	ToAlgorithm   string                 `json:"to_algorithm"`
+	MigrationMode string                 `json:"migration_mode"` // gradual, immediate, scheduled
+	AffectedKeys  []string               `json:"affected_keys"`
+	Configuration map[string]interface{} `json:"configuration"`
 }
 
 // AlgorithmMigrationWorkflowResult результат миграции алгоритмов
@@ -71,24 +71,24 @@ type AlgorithmMigrationWorkflowResult struct {
 
 // SecurityAuditWorkflowInput входные параметры для аудита безопасности
 type SecurityAuditWorkflowInput struct {
-	AuditScope    string                 `json:"audit_scope"`    // keys, algorithms, protocols, compliance
-	AuditLevel    string                 `json:"audit_level"`    // basic, comprehensive, deep
+	AuditScope    string                 `json:"audit_scope"` // keys, algorithms, protocols, compliance
+	AuditLevel    string                 `json:"audit_level"` // basic, comprehensive, deep
 	Components    []string               `json:"components"`
 	Configuration map[string]interface{} `json:"configuration"`
 }
 
 // SecurityAuditWorkflowResult результат аудита безопасности
 type SecurityAuditWorkflowResult struct {
-	AuditScope       string                 `json:"audit_scope"`
-	AuditLevel       string                 `json:"audit_level"`
-	AuditResults     map[string]interface{} `json:"audit_results"`
-	SecurityScore    float64                `json:"security_score"`
-	Vulnerabilities  []string               `json:"vulnerabilities"`
-	Recommendations  []string               `json:"recommendations"`
-	Status           string                 `json:"status"`
-	StartedAt        time.Time              `json:"started_at"`
-	CompletedAt      time.Time              `json:"completed_at"`
-	Message          string                 `json:"message"`
+	AuditScope      string                 `json:"audit_scope"`
+	AuditLevel      string                 `json:"audit_level"`
+	AuditResults    map[string]interface{} `json:"audit_results"`
+	SecurityScore   float64                `json:"security_score"`
+	Vulnerabilities []string               `json:"vulnerabilities"`
+	Recommendations []string               `json:"recommendations"`
+	Status          string                 `json:"status"`
+	StartedAt       time.Time              `json:"started_at"`
+	CompletedAt     time.Time              `json:"completed_at"`
+	Message         string                 `json:"message"`
 }
 
 // QuantumKeyRotationWorkflow workflow для ротации квантовых ключей
@@ -124,7 +124,7 @@ func QuantumKeyRotationWorkflow(ctx workflow.Context, input QuantumKeyRotationWo
 	// 1. Проверка необходимости ротации (если не принудительная)
 	if !input.ForceRotation {
 		logger.Info("Проверка необходимости ротации ключа")
-		
+
 		var rotationCheck map[string]interface{}
 		err := workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -156,7 +156,7 @@ func QuantumKeyRotationWorkflow(ctx workflow.Context, input QuantumKeyRotationWo
 
 	// 2. Генерация нового квантового ключа
 	logger.Info("Генерация нового квантового ключа", zap.String("algorithm", input.Algorithm))
-	
+
 	var newKeyResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -180,7 +180,7 @@ func QuantumKeyRotationWorkflow(ctx workflow.Context, input QuantumKeyRotationWo
 
 	// 3. Валидация нового ключа
 	logger.Info("Валидация нового ключа", zap.String("new_key_id", result.NewKeyID))
-	
+
 	var validationResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -201,7 +201,7 @@ func QuantumKeyRotationWorkflow(ctx workflow.Context, input QuantumKeyRotationWo
 
 	// 4. Постепенная замена старого ключа новым
 	logger.Info("Замена старого ключа новым")
-	
+
 	var replacementResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -224,7 +224,7 @@ func QuantumKeyRotationWorkflow(ctx workflow.Context, input QuantumKeyRotationWo
 
 	// 5. Безопасное удаление старого ключа
 	logger.Info("Безопасное удаление старого ключа", zap.String("old_key_id", input.KeyID))
-	
+
 	var deletionResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -241,7 +241,7 @@ func QuantumKeyRotationWorkflow(ctx workflow.Context, input QuantumKeyRotationWo
 
 	// 6. Обновление ссылок на ключ в системе
 	logger.Info("Обновление ссылок на ключ в системе")
-	
+
 	var updateResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -319,10 +319,10 @@ func KeyValidationWorkflow(ctx workflow.Context, input KeyValidationWorkflowInpu
 	// Собираем результаты валидации
 	for i, future := range futures {
 		keyID := input.KeyIDs[i]
-		
+
 		var validationResult map[string]interface{}
 		err := future.Get(ctx, &validationResult)
-		
+
 		if err != nil {
 			logger.Warn("Ошибка валидации ключа",
 				zap.String("key_id", keyID),
@@ -341,14 +341,14 @@ func KeyValidationWorkflow(ctx workflow.Context, input KeyValidationWorkflowInpu
 				result.InvalidKeys = append(result.InvalidKeys, keyID)
 				logger.Warn("Ключ не прошел валидацию", zap.String("key_id", keyID))
 			}
-			
+
 			result.ValidationResults[keyID] = validationResult
 		}
 	}
 
 	// Генерация общего отчета о валидации
 	logger.Info("Генерация отчета о валидации")
-	
+
 	var reportResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -424,7 +424,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 
 	// 1. Проверка совместимости алгоритмов
 	logger.Info("Проверка совместимости алгоритмов")
-	
+
 	var compatibilityResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -446,7 +446,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 
 	// 2. Планирование миграции
 	logger.Info("Планирование миграции", zap.String("mode", input.MigrationMode))
-	
+
 	var migrationPlan map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -473,7 +473,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 	case "immediate":
 		// Немедленная миграция всех ключей параллельно
 		logger.Info("Немедленная миграция ключей")
-		
+
 		futures := make([]workflow.Future, len(input.AffectedKeys))
 		for i, keyID := range input.AffectedKeys {
 			futures[i] = workflow.ExecuteActivity(
@@ -490,10 +490,10 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 		// Собираем результаты
 		for i, future := range futures {
 			keyID := input.AffectedKeys[i]
-			
+
 			var migrationResult map[string]interface{}
 			err := future.Get(ctx, &migrationResult)
-			
+
 			if err != nil {
 				logger.Warn("Ошибка миграции ключа",
 					zap.String("key_id", keyID),
@@ -504,14 +504,14 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 				result.MigratedKeys = append(result.MigratedKeys, keyID)
 				logger.Info("Ключ успешно мигрирован", zap.String("key_id", keyID))
 			}
-			
+
 			result.MigrationResults[keyID] = migrationResult
 		}
 
 	case "gradual":
 		// Постепенная миграция с задержками
 		logger.Info("Постепенная миграция ключей")
-		
+
 		for _, keyID := range input.AffectedKeys {
 			var migrationResult map[string]interface{}
 			err := workflow.ExecuteActivity(
@@ -523,7 +523,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 				"gradual",
 				input.Configuration,
 			).Get(ctx, &migrationResult)
-			
+
 			if err != nil {
 				logger.Warn("Ошибка миграции ключа",
 					zap.String("key_id", keyID),
@@ -534,7 +534,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 				result.MigratedKeys = append(result.MigratedKeys, keyID)
 				logger.Info("Ключ успешно мигрирован", zap.String("key_id", keyID))
 			}
-			
+
 			result.MigrationResults[keyID] = migrationResult
 
 			// Задержка между миграциями
@@ -546,7 +546,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 	case "scheduled":
 		// Запланированная миграция
 		logger.Info("Запланированная миграция ключей")
-		
+
 		// Ждем оптимального времени для миграции
 		var scheduleResult map[string]interface{}
 		err = workflow.ExecuteActivity(
@@ -588,7 +588,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 				"scheduled",
 				input.Configuration,
 			).Get(ctx, &migrationResult)
-			
+
 			if err != nil {
 				logger.Warn("Ошибка миграции ключа",
 					zap.String("key_id", keyID),
@@ -599,7 +599,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 				result.MigratedKeys = append(result.MigratedKeys, keyID)
 				logger.Info("Ключ успешно мигрирован", zap.String("key_id", keyID))
 			}
-			
+
 			result.MigrationResults[keyID] = migrationResult
 		}
 
@@ -613,7 +613,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 
 	// 4. Постмиграционная валидация
 	logger.Info("Постмиграционная валидация")
-	
+
 	if len(result.MigratedKeys) > 0 {
 		var validationResult map[string]interface{}
 		err = workflow.ExecuteActivity(
@@ -691,7 +691,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 	// 1. Аудит ключей (если в scope)
 	if input.AuditScope == "keys" || input.AuditScope == "comprehensive" {
 		logger.Info("Аудит квантовых ключей")
-		
+
 		var keyAuditResult map[string]interface{}
 		err := workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -711,7 +711,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 	// 2. Аудит алгоритмов (если в scope)
 	if input.AuditScope == "algorithms" || input.AuditScope == "comprehensive" {
 		logger.Info("Аудит квантовых алгоритмов")
-		
+
 		var algorithmAuditResult map[string]interface{}
 		err := workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -731,7 +731,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 	// 3. Аудит протоколов (если в scope)
 	if input.AuditScope == "protocols" || input.AuditScope == "comprehensive" {
 		logger.Info("Аудит квантовых протоколов")
-		
+
 		var protocolAuditResult map[string]interface{}
 		err := workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -751,7 +751,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 	// 4. Аудит соответствия стандартам (если в scope)
 	if input.AuditScope == "compliance" || input.AuditScope == "comprehensive" {
 		logger.Info("Аудит соответствия стандартам")
-		
+
 		var complianceAuditResult map[string]interface{}
 		err := workflow.ExecuteActivity(
 			workflow.WithActivityOptions(ctx, activityOptions),
@@ -770,7 +770,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 
 	// 5. Анализ уязвимостей
 	logger.Info("Анализ уязвимостей")
-	
+
 	var vulnerabilityResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -783,7 +783,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 		logger.Warn("Ошибка анализа уязвимостей", zap.Error(err))
 	} else {
 		result.AuditResults["vulnerabilities"] = vulnerabilityResult
-		
+
 		if vulns, ok := vulnerabilityResult["vulnerabilities"].([]interface{}); ok {
 			for _, vuln := range vulns {
 				if vulnStr, ok := vuln.(string); ok {
@@ -795,7 +795,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 
 	// 6. Генерация рекомендаций
 	logger.Info("Генерация рекомендаций по безопасности")
-	
+
 	var recommendationResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -808,7 +808,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 		logger.Warn("Ошибка генерации рекомендаций", zap.Error(err))
 	} else {
 		result.AuditResults["recommendations"] = recommendationResult
-		
+
 		if recs, ok := recommendationResult["recommendations"].([]interface{}); ok {
 			for _, rec := range recs {
 				if recStr, ok := rec.(string); ok {
@@ -820,7 +820,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 
 	// 7. Расчет общего security score
 	logger.Info("Расчет общего security score")
-	
+
 	var scoreResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),

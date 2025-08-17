@@ -101,6 +101,6 @@ func main() {
 
 	if err := apiServer.Start(ctx); err != nil {
 		loggerInstance.Error("Failed to start API server", zap.Error(err))
-		os.Exit(1)
+		return
 	}
 }

@@ -17,8 +17,6 @@ func CloudBridgeMainWorkflowCorrected(ctx workflow.Context, input CloudBridgeMai
 		zap.String("start_time", input.StartTime.Format(time.RFC3339)),
 	)
 
-
-
 	// Этап 1: Инициализация модулей
 	logger.Info("Executing ModuleInitializationWorkflow...")
 	err := workflow.ExecuteChildWorkflow(ctx, ModuleInitializationWorkflow, ModuleInitializationInput{
@@ -117,9 +115,9 @@ func CloudBridgeMainWorkflowCorrected(ctx workflow.Context, input CloudBridgeMai
 		selector.AddReceive(shutdownChannel, func(c workflow.Channel, more bool) {
 			var command string
 			c.Receive(ctx, &command)
-			
+
 			logger.Info("Received control command", zap.String("command", command))
-			
+
 			switch command {
 			case "shutdown", "stop":
 				logger.Info("Graceful shutdown initiated")
@@ -132,7 +130,9 @@ func CloudBridgeMainWorkflowCorrected(ctx workflow.Context, input CloudBridgeMai
 				logger.Info("Health check requested")
 				// Запускаем health check activity
 				workflow.Go(ctx, func(ctx workflow.Context) {
-					performHealthCheckTask(ctx)
+					if err := performHealthCheckTask(ctx); err != nil {
+						logger.Error("Health check task failed", zap.Error(err))
+					}
 				})
 			default:
 				logger.Warn("Unknown control command", zap.String("command", command))
@@ -143,9 +143,9 @@ func CloudBridgeMainWorkflowCorrected(ctx workflow.Context, input CloudBridgeMai
 		selector.AddReceive(configUpdateChannel, func(c workflow.Channel, more bool) {
 			var newConfig map[string]interface{}
 			c.Receive(ctx, &newConfig)
-			
+
 			logger.Info("Configuration update received")
-			
+
 			// Обновляем конфигурацию (детерминированно)
 			workflow.Go(ctx, func(ctx workflow.Context) {
 				err := applyConfigurationUpdate(ctx, newConfig)
@@ -193,14 +193,14 @@ func performMaintenanceTasks(ctx workflow.Context, config map[string]interface{}
 	// Список maintenance задач (детерминированный порядок)
 	maintenanceTasks := []string{
 		"CleanupLogsActivity",
-		"UpdateMetricsActivity", 
+		"UpdateMetricsActivity",
 		"CheckDiskSpaceActivity",
 		"ValidateConfigurationActivity",
 	}
 
 	for _, task := range maintenanceTasks {
 		logger.Info("Executing maintenance task", zap.String("task", task))
-		
+
 		err := workflow.ExecuteActivity(ctx, task, config).Get(ctx, nil)
 		if err != nil {
 			logger.Error("Maintenance task failed",
@@ -240,7 +240,7 @@ func performHealthCheckTask(ctx workflow.Context) error {
 	for _, component := range components {
 		var healthStatus map[string]interface{}
 		err := workflow.ExecuteActivity(ctx, "CheckComponentHealthActivity", component).Get(ctx, &healthStatus)
-		
+
 		if err != nil {
 			logger.Error("Health check failed",
 				zap.String("component", component),
@@ -251,7 +251,7 @@ func performHealthCheckTask(ctx workflow.Context) error {
 			if s, ok := healthStatus["status"].(string); ok {
 				status = s
 			}
-			
+
 			logger.Info("Component health check completed",
 				zap.String("component", component),
 				zap.String("status", status),
@@ -312,19 +312,19 @@ func applyConfigurationUpdate(ctx workflow.Context, newConfig map[string]interfa
 // для предотвращения роста истории workflow
 func CloudBridgeMainWorkflowWithContinueAsNew(ctx workflow.Context, input CloudBridgeMainWorkflowInput) error {
 	logger := workflow.GetLogger(ctx)
-	
+
 	// Проверяем, не пора ли сделать Continue-As-New
 	// (например, каждые 30 дней или при достижении определенного размера истории)
 	if shouldContinueAsNew(ctx, input) {
 		logger.Info("Performing Continue-As-New to prevent history growth")
-		
+
 		// Подготавливаем новый input с обновленным временем
 		newInput := input
 		newInput.StartTime = workflow.Now(ctx)
-		
+
 		return workflow.NewContinueAsNewError(ctx, CloudBridgeMainWorkflowWithContinueAsNew, newInput)
 	}
-	
+
 	// Основная логика workflow (аналогично CloudBridgeMainWorkflowCorrected)
 	return CloudBridgeMainWorkflowCorrected(ctx, input)
 }
@@ -333,16 +333,16 @@ func CloudBridgeMainWorkflowWithContinueAsNew(ctx workflow.Context, input CloudB
 func shouldContinueAsNew(ctx workflow.Context, input CloudBridgeMainWorkflowInput) bool {
 	// Проверяем время работы workflow
 	uptime := workflow.Now(ctx).Sub(input.StartTime)
-	
+
 	// Continue-As-New каждые 30 дней
 	if uptime > 30*24*time.Hour {
 		return true
 	}
-	
+
 	// Можно добавить другие условия:
 	// - размер истории workflow
 	// - количество событий
 	// - наличие специального signal
-	
+
 	return false
 }

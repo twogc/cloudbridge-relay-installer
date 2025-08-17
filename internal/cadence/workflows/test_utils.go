@@ -26,10 +26,10 @@ func NewTestUtils() *TestUtils {
 func (tu *TestUtils) CreateTestEnvironment() *testsuite.TestWorkflowEnvironment {
 	suite := &testsuite.WorkflowTestSuite{}
 	env := suite.NewTestWorkflowEnvironment()
-	
+
 	// Установка короткого таймаута для тестов
 	env.SetTestTimeout(time.Second * 30)
-	
+
 	return env
 }
 
@@ -37,13 +37,13 @@ func (tu *TestUtils) CreateTestEnvironment() *testsuite.TestWorkflowEnvironment 
 func (tu *TestUtils) MockCommonActivities(env *testsuite.TestWorkflowEnvironment) {
 	// Мок для проверки зависимостей
 	env.OnActivity("CheckDependenciesActivity", mock.Anything).Return("all_dependencies_available", nil)
-	
+
 	// Мок для инициализации модуля
 	env.OnActivity("InitializeModuleActivity", mock.Anything, mock.Anything).Return("module_initialized", nil)
-	
+
 	// Мок для проверки здоровья модуля
 	env.OnActivity("CheckModuleHealthActivity", mock.Anything).Return("healthy", nil)
-	
+
 	// Мок для проверки здоровья
 	env.OnActivity("PerformHealthCheckActivity", mock.Anything, mock.Anything, mock.Anything).Return(
 		map[string]interface{}{
@@ -57,18 +57,18 @@ func (tu *TestUtils) MockScalingActivities(env *testsuite.TestWorkflowEnvironmen
 	// Мок для сбора метрик (низкая нагрузка, не требует масштабирования)
 	env.OnActivity("CollectScalingMetricsActivity", mock.Anything, mock.Anything).Return(
 		map[string]interface{}{
-			"current_capacity": map[string]interface{}{"cpu": 30, "memory": 25},
+			"current_capacity":  map[string]interface{}{"cpu": 30, "memory": 25},
 			"metrics_collected": true,
 		}, nil)
-	
+
 	// Мок для анализа необходимости масштабирования (не требуется)
 	env.OnActivity("AnalyzeScalingNeedActivity", mock.Anything, mock.Anything, mock.Anything).Return(
 		map[string]interface{}{
-			"need_scaling":    false,
+			"need_scaling":   false,
 			"scaling_action": "no_scaling_needed",
 			"reason":         "metrics_within_threshold",
 		}, nil)
-	
+
 	// Мок для получения текущей емкости
 	env.OnActivity("GetCurrentCapacityActivity", mock.Anything).Return(
 		map[string]interface{}{
@@ -88,13 +88,13 @@ func (tu *TestUtils) RunWorkflowWithTimeout(
 	go func() {
 		env.ExecuteWorkflow(workflowFunc, input)
 	}()
-	
+
 	// Ожидание запуска workflow
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Отправляем сигнал остановки
 	env.SignalWorkflow("control-command", "shutdown")
-	
+
 	// Ожидание завершения с таймаутом
 	done := make(chan bool)
 	go func() {
@@ -103,7 +103,7 @@ func (tu *TestUtils) RunWorkflowWithTimeout(
 		}
 		done <- true
 	}()
-	
+
 	select {
 	case <-done:
 		return env.GetWorkflowError()
@@ -126,7 +126,7 @@ func (tu *TestUtils) WaitForWorkflowCompletion(env *testsuite.TestWorkflowEnviro
 		}
 		done <- true
 	}()
-	
+
 	select {
 	case <-done:
 		return env.GetWorkflowError()
