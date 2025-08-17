@@ -458,7 +458,7 @@ func TestActivityErrorHandling(t *testing.T) {
 	assert.NotEmpty(t, result)
 
 	// Тест с некорректными данными
-	_, err = ctx.InitializeModuleActivity(activityCtx, "", nil)
+	_, _ = ctx.InitializeModuleActivity(activityCtx, "", nil)
 	// В реальной реализации это может вернуть ошибку
 	// Пока проверяем, что функция не паникует
 	assert.NotPanics(t, func() {
