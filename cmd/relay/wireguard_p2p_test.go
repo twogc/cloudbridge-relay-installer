@@ -238,6 +238,7 @@ func TestWireGuardP2PMeshNetwork(t *testing.T) {
 
 		if route == nil {
 			t.Error("No route created")
+			return
 		}
 
 		if route.FromNetwork != "corp-a" {

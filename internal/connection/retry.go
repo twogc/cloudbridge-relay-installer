@@ -154,9 +154,9 @@ func (b *BackoffHandler) IsRetryableError(err error) bool {
 	}
 
 	// Check for specific retryable error types
-	switch err.(type) {
+	switch e := err.(type) {
 	case *ConnectionError:
-		return err.(*ConnectionError).Retryable
+		return e.Retryable
 	case *TimeoutError:
 		return true
 	case *NetworkError:
