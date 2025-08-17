@@ -62,9 +62,20 @@ jobs:
     
     - name: 🔐 Login to VK Cloud Registry
       run: |
+        # Проверяем наличие секретов
+        if [[ -z "${{ secrets.REGISTRY_IP }}" ]] || [[ -z "${{ secrets.REGISTRY_USERNAME }}" ]] || [[ -z "${{ secrets.REGISTRY_PASSWORD }}" ]]; then
+          echo "❌ Missing required secrets: REGISTRY_IP, REGISTRY_USERNAME, or REGISTRY_PASSWORD"
+          exit 1
+        fi
+        
+        echo "🔐 Logging in to registry: ${{ secrets.REGISTRY_IP }}:5000"
         echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "${{ secrets.REGISTRY_IP }}:5000" \
           --username "${{ secrets.REGISTRY_USERNAME }}" \
-          --password-stdin
+          --password-stdin || {
+          echo "❌ Failed to login to registry"
+          exit 1
+        }
+        echo "✅ Successfully logged in to registry"
     
     - name: 🔍 Check registry connection
       run: |
