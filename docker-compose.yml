@@ -11,9 +11,11 @@ services:
     
     # Сетевые порты
     ports:
-      - "8081:8081"    # Relay Metrics (метрики)
-      - "8082:8082"    # Relay API (API)
-      - "9090:9090"    # Prometheus метрики
+      - "80:80"          # HTTP Health Checks
+      - "8080:8080"      # Main TCP API
+      - "8081:8081"      # Relay Metrics (метрики)
+      - "8082:8082"      # Relay API (API)
+      - "9090:9090/udp"  # QUIC Protocol
       - "51820:51820/udp"  # WireGuard P2P Mesh
     
     # Тома для конфигурации и данных
@@ -26,14 +28,14 @@ services:
     
     # Переменные окружения
     environment:
-      - CONFIG_PATH=/app/configs/config.yaml
+      - CONFIG_PATH=/app/configs/config.json
       - LOG_LEVEL=info
       - WIREGUARD_ENABLED=true
       - TZ=UTC
     
     # Health check
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -100,8 +102,8 @@ services:
     
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
     
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
@@ -109,9 +111,6 @@ services:
     
     networks:
       - cloudbridge-network
-    
-    depends_on:
-      - prometheus
 
   # PostgreSQL для Keycloak
   postgres:
@@ -242,6 +241,3 @@ volumes:
 networks:
   cloudbridge-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16

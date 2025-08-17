@@ -47,6 +47,7 @@ RUN apk add --no-cache \
     iptables \
     bash \
     curl \
+    netcat-openbsd \
     && rm -rf /var/cache/apk/*
 
 # Создание пользователя
@@ -80,11 +81,11 @@ USER cloudbridge
 WORKDIR /app
 
 # Открытие портов
-EXPOSE 8080 8081 8082 80 443 9090 51820/udp
+EXPOSE 80 8080 8081 8082 9090 51820/udp
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:80/health || exit 1
 
 # Переменные окружения
 ENV CONFIG_PATH=/app/configs/config.json

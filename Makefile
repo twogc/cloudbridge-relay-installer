@@ -1,209 +1,205 @@
-# Makefile для CloudBridge Relay WireGuard
-# Управление сборкой, тестированием, релизом и развертыванием
+# CloudBridge Relay Installer Makefile
 
 # Переменные
-BINARY_NAME=cloudbridge-relay
-VERSION=$(shell git describe --tags --always --dirty)
-BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
-GIT_COMMIT=$(shell git rev-parse --short HEAD)
-LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}"
+VERSION ?= $(shell git describe --tags --always --dirty)
+BUILD_TIME ?= $(shell date -u '+%Y-%m-%d_%H:%M:%S')
+GIT_COMMIT ?= $(shell git rev-parse HEAD)
+REGISTRY ?= twogc
+IMAGE_NAME ?= cloudbridge-relay
+FULL_IMAGE_NAME = $(REGISTRY)/$(IMAGE_NAME):$(VERSION)
+LATEST_IMAGE_NAME = $(REGISTRY)/$(IMAGE_NAME):latest
 
-# Платформы для кросс-компиляции
-PLATFORMS=linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
+# Go параметры
+GOOS ?= linux
+GOARCH ?= amd64
+CGO_ENABLED = 1
 
-# Docker
-DOCKER_IMAGE=twogc/cloudbridge-relay
-DOCKER_TAG=${VERSION}
+# Директории
+BIN_DIR = bin
+DIST_DIR = dist
+SCRIPTS_DIR = scripts
 
-# Цвета для вывода
-GREEN=\033[0;32m
-YELLOW=\033[1;33m
-RED=\033[0;31m
-NC=\033[0m # No Color
+.PHONY: help build clean test docker-build docker-push docker-run docker-stop install-wireguard test-ports deploy-k8s test-k8s
 
-.PHONY: help build test clean install docker-build docker-push release
-
-# Основная цель
 help: ## Показать справку
-	@echo "$(GREEN)CloudBridge Relay WireGuard - Инструменты управления$(NC)"
-	@echo ""
-	@echo "$(YELLOW)Доступные команды:$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
+	@echo "CloudBridge Relay Installer"
+	@echo "=========================="
+	@echo "Доступные команды:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-# Сборка
 build: ## Собрать бинарный файл
-	@echo "$(GREEN)Сборка CloudBridge Relay...$(NC)"
-	go build ${LDFLAGS} -o bin/${BINARY_NAME} ./cmd/relay
-	@echo "$(GREEN)Бинарный файл создан: bin/${BINARY_NAME}$(NC)"
+	@echo "Сборка CloudBridge Relay..."
+	@mkdir -p $(BIN_DIR)
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
+		-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT)" \
+		-o $(BIN_DIR)/cloudbridge-relay ./cmd/relay
+	@echo "✅ Сборка завершена: $(BIN_DIR)/cloudbridge-relay"
 
-build-all: ## Собрать для всех платформ
-	@echo "$(GREEN)Кросс-компиляция для всех платформ...$(NC)"
-	@mkdir -p bin
-	@for platform in ${PLATFORMS}; do \
-		IFS='/' read -r GOOS GOARCH <<< "$$platform"; \
-		BINARY_NAME_EXT=$${BINARY_NAME}; \
-		if [ "$$GOOS" = "windows" ]; then \
-			BINARY_NAME_EXT=$${BINARY_NAME}.exe; \
-		fi; \
-		echo "Сборка для $$GOOS/$$GOARCH..."; \
-		GOOS=$$GOOS GOARCH=$$GOARCH go build ${LDFLAGS} -o bin/$${BINARY_NAME}-$$GOOS-$$GOARCH$${BINARY_NAME_EXT} ./cmd/relay; \
-	done
-	@echo "$(GREEN)Сборка завершена!$(NC)"
+clean: ## Очистить артефакты сборки
+	@echo "Очистка артефактов..."
+	@rm -rf $(BIN_DIR) $(DIST_DIR)
+	@echo "✅ Очистка завершена"
 
-# Тестирование
-test: ## Запустить все тесты
-	@echo "$(GREEN)Запуск тестов...$(NC)"
+test: ## Запустить тесты
+	@echo "Запуск тестов..."
 	go test -v ./...
-	@echo "$(GREEN)Тесты завершены!$(NC)"
+	@echo "✅ Тесты завершены"
 
-test-wireguard: ## Запустить тесты WireGuard
-	@echo "$(GREEN)Запуск тестов WireGuard...$(NC)"
-	go test -v -run TestWireGuard ./cmd/relay
-	@echo "$(GREEN)Тесты WireGuard завершены!$(NC)"
-
-test-real-wireguard: ## Запустить тесты реального WireGuard
-	@echo "$(GREEN)Запуск тестов реального WireGuard...$(NC)"
-	sudo go test -v -run TestRealWireGuard ./cmd/relay
-	@echo "$(GREEN)Тесты реального WireGuard завершены!$(NC)"
-
-test-coverage: ## Запустить тесты с покрытием
-	@echo "$(GREEN)Запуск тестов с покрытием...$(NC)"
-	go test -v -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "$(GREEN)Отчет о покрытии создан: coverage.html$(NC)"
-
-# Установка
-install: ## Установить в систему
-	@echo "$(GREEN)Установка CloudBridge Relay...$(NC)"
-	go install ${LDFLAGS} ./cmd/relay
-	@echo "$(GREEN)CloudBridge Relay установлен!$(NC)"
-
-install-wireguard: ## Установить WireGuard зависимости
-	@echo "$(GREEN)Установка WireGuard зависимостей...$(NC)"
-	sudo ./scripts/install_wireguard_go.sh
-	@echo "$(GREEN)WireGuard зависимости установлены!$(NC)"
-
-# Docker
 docker-build: ## Собрать Docker образ
-	@echo "$(GREEN)Сборка Docker образа...$(NC)"
-	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-	docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-	@echo "$(GREEN)Docker образ создан: ${DOCKER_IMAGE}:${DOCKER_TAG}$(NC)"
+	@echo "Сборка Docker образа: $(FULL_IMAGE_NAME)"
+	docker build \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg BUILD_TIME=$(BUILD_TIME) \
+		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
+		-t $(FULL_IMAGE_NAME) \
+		-t $(LATEST_IMAGE_NAME) .
+	@echo "✅ Docker образ собран"
 
 docker-push: ## Отправить Docker образ в registry
-	@echo "$(GREEN)Отправка Docker образа...$(NC)"
-	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-	docker push ${DOCKER_IMAGE}:latest
-	@echo "$(GREEN)Docker образ отправлен!$(NC)"
+	@echo "Отправка Docker образа в registry..."
+	docker push $(FULL_IMAGE_NAME)
+	docker push $(LATEST_IMAGE_NAME)
+	@echo "✅ Docker образ отправлен"
 
-docker-run: ## Запустить в Docker
-	@echo "$(GREEN)Запуск в Docker...$(NC)"
-	docker run -d --name cloudbridge-relay \
-		-p 8080:8080 \
-		-p 9090:9090 \
-		-v $(PWD)/configs:/app/configs \
-		${DOCKER_IMAGE}:latest
+docker-run: ## Запустить Docker контейнер
+	@echo "Запуск Docker контейнера..."
+	docker-compose up -d
+	@echo "✅ Docker контейнер запущен"
 
-# Релиз
-release: ## Создать релиз
-	@echo "$(GREEN)Создание релиза...$(NC)"
-	@if [ -z "$(VERSION)" ]; then \
-		echo "$(RED)Ошибка: VERSION не установлен$(NC)"; \
-		exit 1; \
-	fi
-	@echo "Создание релиза версии $(VERSION)..."
-	@mkdir -p releases/$(VERSION)
-	@cp bin/* releases/$(VERSION)/
-	@cp configs/*.yaml releases/$(VERSION)/
-	@cp scripts/install.sh releases/$(VERSION)/
-	@cp README.md releases/$(VERSION)/
-	@cd releases && tar -czf $(VERSION).tar.gz $(VERSION)
-	@echo "$(GREEN)Релиз создан: releases/$(VERSION).tar.gz$(NC)"
+docker-stop: ## Остановить Docker контейнер
+	@echo "Остановка Docker контейнера..."
+	docker-compose down
+	@echo "✅ Docker контейнер остановлен"
 
-release-github: ## Создать GitHub релиз
-	@echo "$(GREEN)Создание GitHub релиза...$(NC)"
-	@if [ -z "$(VERSION)" ]; then \
-		echo "$(RED)Ошибка: VERSION не установлен$(NC)"; \
-		exit 1; \
-	fi
-	@gh release create $(VERSION) \
-		--title "CloudBridge Relay $(VERSION)" \
-		--notes "Релиз CloudBridge Relay с WireGuard интеграцией" \
-		releases/$(VERSION).tar.gz
+install-wireguard: ## Установить WireGuard зависимости
+	@echo "Установка WireGuard зависимостей..."
+	@chmod +x $(SCRIPTS_DIR)/install-wireguard.sh
+	@$(SCRIPTS_DIR)/install-wireguard.sh
+	@echo "✅ WireGuard зависимости установлены"
 
-# Очистка
-clean: ## Очистить артефакты сборки
-	@echo "$(GREEN)Очистка...$(NC)"
-	rm -rf bin/
-	rm -rf releases/
-	rm -f coverage.out coverage.html
-	go clean
-	@echo "$(GREEN)Очистка завершена!$(NC)"
+test-ports: ## Тестировать порты relay сервера
+	@echo "Тестирование портов relay сервера..."
+	@chmod +x ../terraform-relay/scripts/test-relay-ports.sh
+	@../terraform-relay/scripts/test-relay-ports.sh localhost 80
+	@echo "✅ Тестирование портов завершено"
 
-# Проверки
-lint: ## Запустить линтер
-	@echo "$(GREEN)Запуск линтера...$(NC)"
-	golangci-lint run
-	@echo "$(GREEN)Линтер завершен!$(NC)"
+test-ports-remote: ## Тестировать порты удаленного relay сервера
+	@echo "Тестирование портов удаленного relay сервера..."
+	@chmod +x ../terraform-relay/scripts/test-relay-ports.sh
+	@../terraform-relay/scripts/test-relay-ports.sh 109.120.191.126 80
+	@echo "✅ Тестирование удаленных портов завершено"
 
-fmt: ## Форматировать код
-	@echo "$(GREEN)Форматирование кода...$(NC)"
-	go fmt ./...
-	@echo "$(GREEN)Форматирование завершено!$(NC)"
+test-anycast: ## Тестировать Anycast IP
+	@echo "Тестирование Anycast IP..."
+	@chmod +x ../terraform-relay/scripts/test-relay-ports.sh
+	@../terraform-relay/scripts/test-relay-ports.sh 83.166.235.45 80
+	@echo "✅ Тестирование Anycast IP завершено"
 
-vet: ## Проверить код
-	@echo "$(GREEN)Проверка кода...$(NC)"
-	go vet ./...
-	@echo "$(GREEN)Проверка завершена!$(NC)"
+deploy-k8s: ## Развернуть в Kubernetes
+	@echo "Развертывание в Kubernetes..."
+	kubectl apply -f ../terraform-relay/k8s/manifests/cloudbridge-manifests.yaml
+	@echo "✅ Развертывание в Kubernetes завершено"
+
+deploy-k8s-anycast: ## Развернуть в Kubernetes с Anycast
+	@echo "Развертывание в Kubernetes с Anycast..."
+	kubectl apply -f ../terraform-relay/k8s/manifests/cloudbridge-anycast-manifests.yaml
+	@echo "✅ Развертывание в Kubernetes с Anycast завершено"
+
+test-k8s: ## Тестировать Kubernetes развертывание
+	@echo "Тестирование Kubernetes развертывания..."
+	@echo "Проверка подов:"
+	kubectl get pods -n cloudbridge-relay
+	@echo "Проверка сервисов:"
+	kubectl get services -n cloudbridge-relay
+	@echo "Проверка логов:"
+	kubectl logs -n cloudbridge-relay -l app=cloudbridge-relay --tail=20
+	@echo "✅ Тестирование Kubernetes завершено"
+
+build-and-deploy: docker-build docker-push deploy-k8s ## Полный цикл сборки и развертывания
+
+build-and-deploy-anycast: docker-build docker-push deploy-k8s-anycast ## Полный цикл сборки и развертывания с Anycast
+
+# Локальное тестирование
+test-local: build ## Локальное тестирование
+	@echo "Локальное тестирование..."
+	@echo "Запуск relay сервера..."
+	@$(BIN_DIR)/cloudbridge-relay --config configs/config.json &
+	@sleep 5
+	@echo "Тестирование портов..."
+	@make test-ports
+	@echo "Остановка relay сервера..."
+	@pkill -f cloudbridge-relay || true
+	@echo "✅ Локальное тестирование завершено"
+
+# Проверка статуса
+status: ## Проверить статус сервисов
+	@echo "Статус Docker контейнеров:"
+	docker-compose ps
+	@echo ""
+	@echo "Статус Kubernetes подов:"
+	kubectl get pods -n cloudbridge-relay 2>/dev/null || echo "Kubernetes namespace не найден"
+	@echo ""
+	@echo "Статус портов:"
+	@make test-ports
+
+# Очистка всего
+clean-all: clean docker-stop ## Полная очистка
+	@echo "Полная очистка..."
+	docker system prune -f
+	kubectl delete namespace cloudbridge-relay 2>/dev/null || true
+	@echo "✅ Полная очистка завершена"
 
 # Документация
-docs: ## Сгенерировать документацию
-	@echo "$(GREEN)Генерация документации...$(NC)"
-	@mkdir -p docs/generated
-	godoc -http=:6060 &
-	@echo "$(GREEN)Документация доступна на http://localhost:6060$(NC)"
+docs: ## Генерировать документацию
+	@echo "Генерация документации..."
+	@mkdir -p docs
+	@echo "# CloudBridge Relay" > docs/README.md
+	@echo "" >> docs/README.md
+	@echo "## Версия: $(VERSION)" >> docs/README.md
+	@echo "## Время сборки: $(BUILD_TIME)" >> docs/README.md
+	@echo "## Git commit: $(GIT_COMMIT)" >> docs/README.md
+	@echo "✅ Документация сгенерирована"
 
-# Мониторинг
-monitor: ## Запустить мониторинг
-	@echo "$(GREEN)Запуск мониторинга...$(NC)"
-	@if [ -f bin/${BINARY_NAME} ]; then \
-		./bin/${BINARY_NAME} --config configs/config.yaml; \
-	else \
-		echo "$(RED)Бинарный файл не найден. Запустите 'make build'$(NC)"; \
-	fi
+# Проверка безопасности
+security-check: ## Проверка безопасности
+	@echo "Проверка безопасности..."
+	gosec ./...
+	@echo "✅ Проверка безопасности завершена"
 
-# Развертывание
-deploy-local: ## Развернуть локально
-	@echo "$(GREEN)Локальное развертывание...$(NC)"
-	@make install-wireguard
-	@make build
-	@make monitor
+# Линтинг
+lint: ## Запустить линтер
+	@echo "Запуск линтера..."
+	golangci-lint run
+	@echo "✅ Линтинг завершен"
 
-deploy-docker: ## Развернуть через Docker
-	@echo "$(GREEN)Развертывание через Docker...$(NC)"
-	@make docker-build
-	@make docker-run
+# Форматирование
+fmt: ## Форматировать код
+	@echo "Форматирование кода..."
+	go fmt ./...
+	@echo "✅ Форматирование завершено"
 
-# Утилиты
-version: ## Показать версию
-	@echo "$(GREEN)Версия: $(VERSION)$(NC)"
-	@echo "$(GREEN)Время сборки: $(BUILD_TIME)$(NC)"
-	@echo "$(GREEN)Git commit: $(GIT_COMMIT)$(NC)"
-
-deps: ## Установить зависимости
-	@echo "$(GREEN)Установка зависимостей...$(NC)"
-	go mod download
+# Проверка зависимостей
+deps: ## Проверить зависимости
+	@echo "Проверка зависимостей..."
 	go mod tidy
-	@echo "$(GREEN)Зависимости установлены!$(NC)"
+	go mod verify
+	@echo "✅ Зависимости проверены"
 
-# Проверка окружения
-check-env: ## Проверить окружение
-	@echo "$(GREEN)Проверка окружения...$(NC)"
-	@command -v go >/dev/null 2>&1 || { echo "$(RED)Go не установлен$(NC)"; exit 1; }
-	@command -v git >/dev/null 2>&1 || { echo "$(RED)Git не установлен$(NC)"; exit 1; }
-	@command -v docker >/dev/null 2>&1 || { echo "$(YELLOW)Docker не установлен (некоторые команды недоступны)$(NC)"; }
-	@echo "$(GREEN)Окружение готово!$(NC)"
+# Полный цикл разработки
+dev: fmt lint test build ## Полный цикл разработки
 
-# Полная сборка
-all: check-env deps fmt vet lint test build ## Полная сборка проекта
-	@echo "$(GREEN)Полная сборка завершена!$(NC)" 
+# Продакшн сборка
+prod: clean deps security-check test build docker-build ## Продакшн сборка
+
+# Помощь по портам
+ports-help: ## Справка по портам
+	@echo "CloudBridge Relay порты:"
+	@echo "80     - HTTP Health Checks"
+	@echo "8080   - Main TCP API"
+	@echo "8081   - Metrics (Prometheus)"
+	@echo "8082   - API"
+	@echo "9090   - QUIC Protocol (UDP)"
+	@echo "51820  - WireGuard P2P Mesh (UDP)"
+	@echo ""
+	@echo "Anycast IP: 83.166.235.45"
+	@echo "LoadBalancer IP: 109.120.191.126" 
