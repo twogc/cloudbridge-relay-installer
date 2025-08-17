@@ -1,0 +1,256 @@
+name: 🐳 Build and Push Docker Images to VK Cloud Registry
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to build (relay, ai, cadence, quic, wireguard, all)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - relay
+        - ai
+        - cadence
+        - quic
+        - wireguard
+      version:
+        description: 'Version tag'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY_IP: ${{ secrets.REGISTRY_IP }}
+  REGISTRY_PORT: 5000
+  REGISTRY_URL: ${{ secrets.REGISTRY_IP }}:5000
+  REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+  REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+  REGISTRY_NAMESPACE: cloudbridge
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Получаем полную историю для git describe
+    
+    - name: 🔧 Setup environment
+      run: |
+        # Устанавливаем переменные окружения
+        echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        echo "BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')" >> $GITHUB_ENV
+        echo "GIT_COMMIT=${GITHUB_SHA}" >> $GITHUB_ENV
+        
+        # Если это не тег, используем SHA
+        if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+          echo "VERSION=${GITHUB_SHA::8}" >> $GITHUB_ENV
+        fi
+        
+        echo "Building version: $VERSION"
+    
+    - name: 🐳 Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: 🔐 Login to VK Cloud Registry
+      run: |
+        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "${{ secrets.REGISTRY_IP }}:5000" \
+          --username "${{ secrets.REGISTRY_USERNAME }}" \
+          --password-stdin
+    
+    - name: 🔍 Check registry connection
+      run: |
+        curl -s --connect-timeout 10 "http://${{ secrets.REGISTRY_IP }}:5000/v2/" || {
+          echo "❌ Cannot connect to registry"
+          exit 1
+        }
+        echo "✅ Registry is accessible"
+    
+    - name: 🏗️ Build and push images
+      run: |
+        # Определяем сервисы для сборки
+        if [[ "${{ github.event.inputs.service }}" == "all" ]] || [[ "${{ github.event.inputs.service }}" == "" ]]; then
+          SERVICES=("relay" "ai" "cadence" "quic" "wireguard")
+        else
+          SERVICES=("${{ github.event.inputs.service }}")
+        fi
+        
+        echo "Building services: ${SERVICES[*]}"
+        
+        for service in "${SERVICES[@]}"; do
+          echo "🔨 Building $service service..."
+          
+          # Проверяем существование Dockerfile
+          if [[ ! -f "Dockerfile.$service" ]]; then
+            echo "⚠️ Dockerfile.$service not found, skipping"
+            continue
+          fi
+          
+          # Собираем образ
+          docker build \
+            --build-arg VERSION="$VERSION" \
+            --build-arg BUILD_TIME="$BUILD_TIME" \
+            --build-arg GIT_COMMIT="$GIT_COMMIT" \
+            -f "Dockerfile.$service" \
+            -t "${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:$VERSION" \
+            -t "${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:latest" \
+            .
+          
+          # Отправляем образы
+          echo "📤 Pushing $service images..."
+          docker push "${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:$VERSION"
+          docker push "${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:latest"
+          
+          echo "✅ $service service completed"
+        done
+    
+    - name: 🔍 Verify pushed images
+      run: |
+        # Проверяем, что образы действительно загружены
+        for service in relay ai cadence quic wireguard; do
+          echo "🔍 Verifying $service image..."
+          
+          # Проверяем каталог
+          if curl -s -u "${{ secrets.REGISTRY_USERNAME }}:${{ secrets.REGISTRY_PASSWORD }}" \
+            "http://${{ secrets.REGISTRY_IP }}:5000/v2/cloudbridge/$service/tags/list" | \
+            jq -e '.tags' > /dev/null; then
+            echo "✅ $service image verified"
+          else
+            echo "❌ $service image not found in registry"
+            exit 1
+          fi
+        done
+    
+    - name: 📋 Generate deployment report
+      run: |
+        echo "## 🐳 Docker Build Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Registry:** ${{ secrets.REGISTRY_IP }}:5000" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "**Build Time:** $BUILD_TIME" >> $GITHUB_STEP_SUMMARY
+        echo "**Git Commit:** $GIT_COMMIT" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Built Images:" >> $GITHUB_STEP_SUMMARY
+        for service in relay ai cadence quic wireguard; do
+          echo "- \`${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:latest\`" >> $GITHUB_STEP_SUMMARY
+        done
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔧 Usage:" >> $GITHUB_STEP_SUMMARY
+        echo "```bash" >> $GITHUB_STEP_SUMMARY
+        echo "# Pull image" >> $GITHUB_STEP_SUMMARY
+        echo "docker pull ${{ secrets.REGISTRY_IP }}:5000/cloudbridge/relay:$VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Run container" >> $GITHUB_STEP_SUMMARY
+        echo "docker run -d ${{ secrets.REGISTRY_IP }}:5000/cloudbridge/relay:$VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+
+  deploy-to-k8s:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Setup environment
+      run: |
+        echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        if [[ "$GITHUB_REF" != refs/tags/* ]]; then
+          echo "VERSION=${GITHUB_SHA::8}" >> $GITHUB_ENV
+        fi
+    
+    - name: 🔐 Setup Kubernetes
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: 📋 Configure kubectl
+      run: |
+        # Настройка kubectl для VK Cloud
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+        
+        # Проверяем подключение
+        kubectl --insecure-skip-tls-verify cluster-info
+    
+    - name: 🔐 Create registry secret
+      run: |
+        # Создаем секрет для доступа к registry
+        kubectl --insecure-skip-tls-verify create secret docker-registry cloudbridge-registry-secret \
+          --docker-server="${{ secrets.REGISTRY_IP }}:5000" \
+          --docker-username="${{ secrets.REGISTRY_USERNAME }}" \
+          --docker-password="${{ secrets.REGISTRY_PASSWORD }}" \
+          --docker-email="info@2gc.ru" \
+          -n cloudbridge --dry-run=client -o yaml | kubectl apply -f -
+    
+    - name: 📦 Update deployment files
+      run: |
+        # Обновляем образы в deployment файлах
+        for service in relay ai cadence quic wireguard; do
+          deployment_file="k8s/${service}-deployment.yaml"
+          if [[ -f "$deployment_file" ]]; then
+            echo "Updating $deployment_file..."
+            
+            # Создаем временный файл
+            temp_file=$(mktemp)
+            
+            # Обновляем образ и добавляем imagePullSecrets
+            sed -e "s|image:.*${service}.*|image: ${{ secrets.REGISTRY_IP }}:5000/cloudbridge/${service}:$VERSION|g" \
+                -e "/imagePullSecrets:/,/name: cloudbridge-registry-secret/d" \
+                -e "/containers:/a\      imagePullSecrets:\n      - name: cloudbridge-registry-secret" \
+                "$deployment_file" > "$temp_file"
+            
+            # Заменяем оригинальный файл
+            mv "$temp_file" "$deployment_file"
+            
+            echo "✅ $deployment_file updated"
+          fi
+        done
+    
+    - name: 🚀 Deploy to Kubernetes
+      run: |
+        # Применяем deployment файлы
+        for service in relay ai cadence quic wireguard; do
+          deployment_file="k8s/${service}-deployment.yaml"
+          if [[ -f "$deployment_file" ]]; then
+            echo "Deploying $service..."
+            kubectl --insecure-skip-tls-verify apply -f "$deployment_file"
+          fi
+        done
+    
+    - name: 🔍 Check deployment status
+      run: |
+        # Ждем запуска подов
+        sleep 30
+        
+        # Проверяем статус
+        echo "Pod status:"
+        kubectl --insecure-skip-tls-verify get pods -n cloudbridge
+        
+        echo ""
+        echo "Service status:"
+        kubectl --insecure-skip-tls-verify get services -n cloudbridge
+    
+    - name: 📋 Generate deployment summary
+      run: |
+        echo "## 🚀 Kubernetes Deployment Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "**Namespace:** cloudbridge" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Deployment Status:" >> $GITHUB_STEP_SUMMARY
+        kubectl --insecure-skip-tls-verify get pods -n cloudbridge -o wide >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Services:" >> $GITHUB_STEP_SUMMARY
+        kubectl --insecure-skip-tls-verify get services -n cloudbridge >> $GITHUB_STEP_SUMMARY

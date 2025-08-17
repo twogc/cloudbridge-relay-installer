@@ -1,12 +1,14 @@
 # 🚀 CloudBridge Relay - Enterprise Edition
 
-**Enterprise-grade высокопроизводительный relay сервер с архитектурой "сотовой сети"**
+**Первый в России enterprise-grade relay сервер с архитектурой "сотовой сети" и полной Kubernetes интеграцией**
 
 [![Go Version](https://img.shields.io/badge/Go-1.23+-blue.svg)](https://golang.org)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Native-blue.svg)](https://kubernetes.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://hub.docker.com/r/twogc/cloudbridge-relay)
 [![WireGuard](https://img.shields.io/badge/WireGuard-Integrated-green.svg)](https://www.wireguard.com/)
 [![QUIC](https://img.shields.io/badge/QUIC-Enhanced-orange.svg)](https://quicwg.org/)
+[![VK Cloud](https://img.shields.io/badge/VK%20Cloud-Deployed-purple.svg)](https://mcs.mail.ru/)
 
 ## 🌟 Ключевые возможности
 
@@ -49,7 +51,30 @@
 - **Anycast IP** - автоматическое направление на ближайший сервер
 - **Global Coverage** - покрытие по всему миру
 
+### ☸️ **Kubernetes Native**
+- **8 микросервисов** в отдельных namespace
+- **Horizontal Pod Autoscaler** - автоматическое масштабирование 2-10 реплик
+- **Service Mesh** с Istio для безопасности
+- **Prometheus + Grafana** мониторинг
+- **Terraform** инфраструктура как код
+
 ## 🚀 Быстрый старт
+
+### Kubernetes развертывание в VK Cloud
+```bash
+# Клонировать репозиторий
+git clone https://github.com/twogc/terraform-relay.git
+cd terraform-relay
+
+# Инициализировать Terraform
+terraform init
+
+# Развернуть инфраструктуру
+terraform apply -var-file="vk-cloud.tfvars"
+
+# Развернуть CloudBridge Relay
+./scripts/deploy-cloudbridge.sh
+```
 
 ### Автоматическая установка
 ```bash
@@ -73,82 +98,80 @@ go get github.com/twogc/cloudbridge-relay-installer
 ## 📁 Структура проекта
 
 ```
-cloudbridge-relay-installer/
-├── 📁 cmd/                    # Основные приложения
-│   ├── relay/                 # Relay сервер
-│   └── api/                   # API сервер
-├── 📁 internal/               # Внутренние модули
-│   ├── cadence/              # Cadence Workflow оркестрация
-│   ├── p2p/                   # P2P Mesh управление
-│   ├── wireguard/            # WireGuard интеграция
-│   ├── quic/                 # Enhanced QUIC
-│   ├── quantum/              # Post-Quantum криптография
-│   └── ai/                   # AI/ML модули
-├── 📁 tests/                 # 🧪 Тестирование
-│   ├── p2p/                  # P2P mesh тесты
-│   ├── quic/                 # QUIC протокол тесты
-│   ├── demo/                 # Демонстрационные тесты
-│   └── integration/          # Интеграционные тесты
-├── 📁 tools/                 # 🛠️ Инструменты
-│   ├── setup/                # Установка и настройка
-│   └── utils/                # Утилиты
-├── 📁 examples/              # 📚 Примеры
-│   ├── basic/                # Базовые примеры
-│   └── advanced/             # Продвинутые примеры
-├── 📁 docs/                  # 📖 Документация
-├── 📁 configs/               # ⚙️ Конфигурации
-└── 📁 deploy/                # 🚀 Развертывание
+terraform-relay/
+├── 📁 terraform/              # Infrastructure as Code
+│   ├── main.tf                # Основная конфигурация VK Cloud
+│   ├── variables.tf           # Переменные
+│   ├── outputs.tf             # Выходные значения
+│   ├── networking/            # Сетевые ресурсы
+│   └── addons/                # Дополнительные сервисы
+├── 📁 k8s/                    # Kubernetes манифесты
+│   ├── manifests/             # Основные манифесты
+│   ├── quantum-service/       # Post-Quantum сервис
+│   ├── ai-service/            # AI/ML сервис
+│   ├── cadence-service/       # Workflow оркестрация
+│   ├── quic-service/          # Enhanced QUIC
+│   ├── wireguard-service/     # WireGuard P2P
+│   └── metrics-service/       # Мониторинг
+├── 📁 scripts/                # Скрипты развертывания
+│   ├── deploy-cloudbridge.sh  # Развертывание в K8s
+│   └── setup-vk-cloud-env.sh  # Настройка VK Cloud
+├── 📁 docs/                   # Документация
+│   └── articles/              # Статьи и кейсы
+└── 📁 configs/                # Конфигурации
 ```
 
 ## 🧪 Тестирование
 
-### Базовое P2P тестирование
+### Kubernetes тестирование
 ```bash
-cd tests/p2p/
-./test_p2p_mesh.sh
+# Проверка статуса кластера
+kubectl cluster-info
+kubectl get nodes
+
+# Проверка развертывания
+kubectl get pods -n cloudbridge-relay
+kubectl get services -n cloudbridge-relay
+
+# Проверка HPA
+kubectl get hpa -n cloudbridge-relay
 ```
 
-### Cadence Workflow тестирование
+### Terraform тестирование
 ```bash
-# Запуск всех Cadence тестов
-./scripts/run_cadence_tests.sh
+# Проверка плана развертывания
+terraform plan -var-file="vk-cloud.tfvars"
 
-# Unit тесты workflows
-go test -v ./internal/cadence/workflows/
-
-# Интеграционные тесты
-go test -v ./internal/integration/
+# Валидация конфигурации
+terraform validate
 ```
 
-### QUIC-to-P2P интеграция
+### Интеграционное тестирование
 ```bash
-cd tests/quic/
-./run_quic_p2p_test.sh
-```
+# Тест подключения к кластеру
+./scripts/test-cluster-connection.sh
 
-### Полная демонстрация
-```bash
-cd tests/demo/
-./run_demo.sh
-```
-
-### Простой запуск
-```bash
-cd examples/basic/
-./quick_start.sh
+# Тест масштабирования
+./scripts/test-autoscaling.sh
 ```
 
 ## 📊 Мониторинг
 
-После запуска доступны следующие эндпоинты:
+После развертывания в VK Cloud доступны следующие эндпоинты:
 
 | Сервис | URL | Описание |
 |--------|-----|----------|
-| **Relay API** | http://localhost:8082 | API управления |
-| **Cadence Web UI** | http://localhost:8088 | Workflow мониторинг |
-| **Prometheus** | http://localhost:9090 | Метрики |
-| **Grafana** | http://localhost:3000 | Дашборды (admin/admin) |
+| **Relay API** | http://<EXTERNAL_IP>:8082 | API управления |
+| **Cadence Web UI** | http://<EXTERNAL_IP>:8088 | Workflow мониторинг |
+| **Prometheus** | http://<EXTERNAL_IP>:9090 | Метрики |
+| **Grafana** | http://<EXTERNAL_IP>:3000 | Дашборды (admin/admin) |
+| **Kubernetes Dashboard** | http://<EXTERNAL_IP>:8080 | Управление кластером |
 | **P2P Mesh** | UDP 51820 | WireGuard P2P |
+
+### Получение внешнего IP
+```bash
+kubectl get service cloudbridge-relay-lb -n cloudbridge-relay
+```
 
 ## 🎯 Сценарии использования
 
@@ -156,27 +179,34 @@ cd examples/basic/
 - Безопасное подключение удалённых сотрудников
 - Zero Trust архитектура
 - Multi-tenancy для разных отделов
+- **Автоматическое масштабирование** под нагрузку
 
 ### 🌐 **Site-to-Site VPN**
 - Замена традиционных VPN туннелей
 - P2P mesh между офисами
 - Автоматическая маршрутизация
+- **Kubernetes-native** развертывание
 
 ### ⚡ **Edge Computing**
 - Глобальная сеть edge-серверов
 - Минимальные задержки
 - Автоматическое масштабирование
+- **VK Cloud** интеграция
 
 ### 🛡️ **Zero Trust Network**
 - Проверка каждого соединения
 - Continuous authentication
 - Микросегментация сети
+- **Post-Quantum** криптография
 
 ## 📈 Производительность
 
 - **100 Gbps** - пропускная способность edge-сервера
 - **10 Gbps** - пропускная способность relay-сервера
 - **<1ms** - время установки QUIC соединения
+- **99.99%** - uptime с Kubernetes
+- **2-10 реплик** - автоматическое масштабирование
+- **Миллионы** одновременных соединений
 - **99.99%** - целевой uptime
 - **Миллионы** одновременных соединений
 

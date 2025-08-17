@@ -9,14 +9,20 @@ export OS_USER_DOMAIN_NAME="users"
 export OS_INTERFACE=public
 export OS_IDENTITY_API_VERSION=3
 
-# Токен для API
-export VK_TOKEN="gAAAAABonbSaPNEzCT9R3_qbqtO_XQuDGhO3-DzJEoBhvLJNOxcYnd8tSTV7ao99HP6t9r756YJx4qfJc66ECzXwKPnoM4aklMwLgEe6AYqC3HLUp4AxQfuShZIpq3mruYyYEIZCVwtT2EEDlThP4Gl81lINZpRxWnqOEIzf0rztwq5XrV0NkBgxmL2wE9xQKnf7tY-JHLX8"
-
-# Устанавливаем токен как OS_TOKEN для использования в скриптах
-export OS_TOKEN=$VK_TOKEN
-
 # Пароль для аутентификации
 export OS_PASSWORD="7Thbngy6"
+
+# Получаем новый токен
+echo "Получаем новый токен аутентификации..."
+NEW_TOKEN=$(curl -s -D - -X POST -H "Content-Type: application/json" -d "{\"auth\": {\"identity\": {\"methods\": [\"password\"], \"password\": {\"user\": {\"name\": \"$OS_USERNAME\", \"password\": \"$OS_PASSWORD\", \"domain\": {\"name\": \"$OS_USER_DOMAIN_NAME\"}}}}, \"scope\": {\"project\": {\"id\": \"$OS_PROJECT_ID\"}}}}" "$OS_AUTH_URL/auth/tokens" 2>/dev/null | grep -i "x-subject-token" | cut -d' ' -f2 | tr -d '\r')
+
+if [ -n "$NEW_TOKEN" ]; then
+    export OS_TOKEN="$NEW_TOKEN"
+    echo "Токен получен успешно: ${OS_TOKEN:0:20}..."
+else
+    echo "Ошибка получения токена"
+    exit 1
+fi
 
 # Эндпоинты API
 export NEUTRON_URL="https://infra.mail.ru:9696"

@@ -17,6 +17,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/twogc/cloudbridge-relay-installer/config"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
@@ -477,7 +478,132 @@ func (s *Server) Start() error {
 		}()
 	}
 
-	// Start listening
+	// Start HTTP server on port 80 for health checks
+	go func() {
+		httpMux := http.NewServeMux()
+		
+		// Health check endpoint
+		httpMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			response := map[string]interface{}{
+				"status":    "healthy",
+				"timestamp": time.Now().UTC(),
+				"uptime":    time.Since(s.startTime).String(),
+				"version":   "1.0.0",
+			}
+			json.NewEncoder(w).Encode(response)
+		})
+
+		// Ready check endpoint
+		httpMux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			response := map[string]interface{}{
+				"status": "ready",
+				"services": map[string]interface{}{
+					"http":      true,
+					"wireguard": s.wireGuardEnabled,
+					"quic":      s.enhancedQUICManager != nil,
+					"metrics":   s.metricsServer != nil,
+				},
+			}
+			json.NewEncoder(w).Encode(response)
+		})
+
+		// Metrics endpoint
+		httpMux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+			if s.metricsServer != nil {
+				// Use Prometheus handler directly
+				promhttp.Handler().ServeHTTP(w, r)
+			} else {
+				http.Error(w, "Metrics not available", http.StatusServiceUnavailable)
+			}
+		})
+
+		httpServer := &http.Server{
+			Addr:    ":80",
+			Handler: httpMux,
+		}
+		s.httpServer = httpServer
+
+		s.logger.Info("HTTP server started on port 80")
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			s.logger.Error("HTTP server error", zap.Error(err))
+		}
+	}()
+
+	// Start WireGuard UDP server on port 51820
+	if s.wireGuardEnabled {
+		go func() {
+			udpAddr, err := net.ResolveUDPAddr("udp", ":51820")
+			if err != nil {
+				s.logger.Error("Failed to resolve UDP address for WireGuard", zap.Error(err))
+				return
+			}
+
+			udpConn, err := net.ListenUDP("udp", udpAddr)
+			if err != nil {
+				s.logger.Error("Failed to start WireGuard UDP server", zap.Error(err))
+				return
+			}
+			defer udpConn.Close()
+
+			s.logger.Info("WireGuard UDP server started on port 51820")
+
+			buffer := make([]byte, 4096)
+			for {
+				n, addr, err := udpConn.ReadFromUDP(buffer)
+				if err != nil {
+					if s.ctx.Err() != nil {
+						return // Server is shutting down
+					}
+					s.logger.Error("Failed to read from WireGuard UDP", zap.Error(err))
+					continue
+				}
+
+				// Handle WireGuard packet
+				go s.handleWireGuardPacket(udpConn, addr, buffer[:n])
+			}
+		}()
+	}
+
+	// Start QUIC UDP server on port 9090
+	if s.enhancedQUICManager != nil {
+		go func() {
+			udpAddr, err := net.ResolveUDPAddr("udp", ":9090")
+			if err != nil {
+				s.logger.Error("Failed to resolve UDP address for QUIC", zap.Error(err))
+				return
+			}
+
+			udpConn, err := net.ListenUDP("udp", udpAddr)
+			if err != nil {
+				s.logger.Error("Failed to start QUIC UDP server", zap.Error(err))
+				return
+			}
+			defer udpConn.Close()
+
+			s.logger.Info("QUIC UDP server started on port 9090")
+
+			buffer := make([]byte, 4096)
+			for {
+				n, addr, err := udpConn.ReadFromUDP(buffer)
+				if err != nil {
+					if s.ctx.Err() != nil {
+						return // Server is shutting down
+					}
+					s.logger.Error("Failed to read from QUIC UDP", zap.Error(err))
+					continue
+				}
+
+				// Handle QUIC packet
+				go s.handleQUICPacket(udpConn, addr, buffer[:n])
+			}
+		}()
+	}
+
+	// Start main TCP server on configured port
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.Server.Port))
 	if err != nil {
 		return fmt.Errorf("failed to start listener: %v", err)
@@ -485,7 +611,10 @@ func (s *Server) Start() error {
 	s.listener = listener
 
 	s.logger.Info("Relay server started",
-		zap.Int("port", s.config.Server.Port),
+		zap.Int("tcp_port", s.config.Server.Port),
+		zap.Int("http_port", 80),
+		zap.Int("wireguard_port", 51820),
+		zap.Int("quic_port", 9090),
 		zap.Bool("zero_trust_enabled", s.config.ZeroTrust.Enabled),
 		zap.Bool("circuit_breaker_enabled", s.config.ZeroTrust.CircuitBreaker.Enabled),
 		zap.Bool("health_check_enabled", s.config.ZeroTrust.HealthCheck.Enabled),
@@ -512,7 +641,7 @@ func (s *Server) Start() error {
 		}()
 	}
 
-	// Handle connections
+	// Handle TCP connections
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -524,6 +653,76 @@ func (s *Server) Start() error {
 		}
 
 		go s.handleConnection(conn)
+	}
+}
+
+// handleWireGuardPacket handles incoming WireGuard packets
+func (s *Server) handleWireGuardPacket(conn *net.UDPConn, addr *net.UDPAddr, data []byte) {
+	s.logger.Debug("Received WireGuard packet",
+		zap.String("from", addr.String()),
+		zap.Int("size", len(data)),
+	)
+
+	// Basic WireGuard packet validation
+	if len(data) < 4 {
+		s.logger.Warn("Invalid WireGuard packet size", zap.Int("size", len(data)))
+		return
+	}
+
+	// Check if it's a WireGuard handshake packet
+	packetType := data[0]
+	switch packetType {
+	case 1: // Initiation
+		s.logger.Info("WireGuard initiation packet received", zap.String("from", addr.String()))
+	case 2: // Response
+		s.logger.Info("WireGuard response packet received", zap.String("from", addr.String()))
+	case 3: // Cookie Reply
+		s.logger.Debug("WireGuard cookie reply received", zap.String("from", addr.String()))
+	case 4: // Transport Data
+		s.logger.Debug("WireGuard transport data received", zap.String("from", addr.String()))
+	default:
+		s.logger.Warn("Unknown WireGuard packet type", zap.Int("type", int(packetType)))
+	}
+
+	// Echo back for testing (remove in production)
+	_, err := conn.WriteToUDP(data, addr)
+	if err != nil {
+		s.logger.Error("Failed to send WireGuard response", zap.Error(err))
+	}
+}
+
+// handleQUICPacket handles incoming QUIC packets
+func (s *Server) handleQUICPacket(conn *net.UDPConn, addr *net.UDPAddr, data []byte) {
+	s.logger.Debug("Received QUIC packet",
+		zap.String("from", addr.String()),
+		zap.Int("size", len(data)),
+	)
+
+	// Basic QUIC packet validation
+	if len(data) < 1 {
+		s.logger.Warn("Invalid QUIC packet size", zap.Int("size", len(data)))
+		return
+	}
+
+	// Check QUIC packet type (first byte)
+	packetType := data[0] & 0x30 >> 4 // Extract packet type from first byte
+	switch packetType {
+	case 0: // Initial
+		s.logger.Info("QUIC initial packet received", zap.String("from", addr.String()))
+	case 1: // 0-RTT
+		s.logger.Info("QUIC 0-RTT packet received", zap.String("from", addr.String()))
+	case 2: // Handshake
+		s.logger.Info("QUIC handshake packet received", zap.String("from", addr.String()))
+	case 3: // Retry
+		s.logger.Debug("QUIC retry packet received", zap.String("from", addr.String()))
+	default:
+		s.logger.Debug("QUIC short header packet received", zap.String("from", addr.String()))
+	}
+
+	// Echo back for testing (remove in production)
+	_, err := conn.WriteToUDP(data, addr)
+	if err != nil {
+		s.logger.Error("Failed to send QUIC response", zap.Error(err))
 	}
 }
 
