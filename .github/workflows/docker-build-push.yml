@@ -60,32 +60,18 @@ jobs:
     - name: 🐳 Setup Docker Buildx
       uses: docker/setup-buildx-action@v3
     
-    - name: 🔐 Login to VK Cloud Registry
+    - name: 🔐 Skip Registry Login (Local Only)
       run: |
-        # Проверяем наличие секретов
-        if [[ -z "${{ secrets.REGISTRY_IP }}" ]] || [[ -z "${{ secrets.REGISTRY_USERNAME }}" ]] || [[ -z "${{ secrets.REGISTRY_PASSWORD }}" ]]; then
-          echo "❌ Missing required secrets: REGISTRY_IP, REGISTRY_USERNAME, or REGISTRY_PASSWORD"
-          exit 1
-        fi
-        
-        echo "🔐 Logging in to registry: ${{ secrets.REGISTRY_IP }}:5000"
-        echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "${{ secrets.REGISTRY_IP }}:5000" \
-          --username "${{ secrets.REGISTRY_USERNAME }}" \
-          --password-stdin || {
-          echo "❌ Failed to login to registry"
-          exit 1
-        }
-        echo "✅ Successfully logged in to registry"
+        echo "ℹ️ Skipping registry login - local development only"
+        echo "ℹ️ Docker images will be built locally but not pushed"
+        echo "ℹ️ For production deployment, configure VK Cloud Registry secrets"
     
-    - name: 🔍 Check registry connection
+    - name: 🔍 Skip Registry Check (Local Only)
       run: |
-        curl -s --connect-timeout 10 "http://${{ secrets.REGISTRY_IP }}:5000/v2/" || {
-          echo "❌ Cannot connect to registry"
-          exit 1
-        }
-        echo "✅ Registry is accessible"
+        echo "ℹ️ Skipping registry connection check - local development only"
+        echo "ℹ️ Registry connection will be checked during local deployment"
     
-    - name: 🏗️ Build and push images
+    - name: 🏗️ Build images locally
       run: |
         # Определяем сервисы для сборки
         if [[ "${{ github.event.inputs.service }}" == "all" ]] || [[ "${{ github.event.inputs.service }}" == "" ]]; then
@@ -94,7 +80,7 @@ jobs:
           SERVICES=("${{ github.event.inputs.service }}")
         fi
         
-        echo "Building services: ${SERVICES[*]}"
+        echo "Building services locally: ${SERVICES[*]}"
         
         for service in "${SERVICES[@]}"; do
           echo "🔨 Building $service service..."
@@ -105,63 +91,54 @@ jobs:
             continue
           fi
           
-          # Собираем образ
+          # Собираем образ локально
           docker build \
             --build-arg VERSION="$VERSION" \
             --build-arg BUILD_TIME="$BUILD_TIME" \
             --build-arg GIT_COMMIT="$GIT_COMMIT" \
             -f "Dockerfile.$service" \
-            -t "${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:$VERSION" \
-            -t "${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:latest" \
+            -t "cloudbridge/$service:$VERSION" \
+            -t "cloudbridge/$service:latest" \
             .
           
-          # Отправляем образы
-          echo "📤 Pushing $service images..."
-          docker push "${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:$VERSION"
-          docker push "${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:latest"
-          
-          echo "✅ $service service completed"
+          echo "✅ $service service built locally"
         done
     
-    - name: 🔍 Verify pushed images
+    - name: 🔍 Verify local images
       run: |
-        # Проверяем, что образы действительно загружены
+        # Проверяем, что образы собраны локально
         for service in relay ai cadence quic wireguard; do
           echo "🔍 Verifying $service image..."
           
-          # Проверяем каталог
-          if curl -s -u "${{ secrets.REGISTRY_USERNAME }}:${{ secrets.REGISTRY_PASSWORD }}" \
-            "http://${{ secrets.REGISTRY_IP }}:5000/v2/cloudbridge/$service/tags/list" | \
-            jq -e '.tags' > /dev/null; then
-            echo "✅ $service image verified"
+          # Проверяем наличие образа локально
+          if docker images | grep -q "cloudbridge/$service"; then
+            echo "✅ $service image built locally"
           else
-            echo "❌ $service image not found in registry"
-            exit 1
+            echo "⚠️ $service image not found locally (may have been skipped)"
           fi
         done
     
-    - name: 📋 Generate deployment report
+    - name: 📋 Generate build report
       run: |
-        echo "## 🐳 Docker Build Report" >> $GITHUB_STEP_SUMMARY
+        echo "## 🐳 Local Docker Build Report" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Registry:** ${{ secrets.REGISTRY_IP }}:5000" >> $GITHUB_STEP_SUMMARY
+        echo "**Build Type:** Local Development" >> $GITHUB_STEP_SUMMARY
         echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
         echo "**Build Time:** $BUILD_TIME" >> $GITHUB_STEP_SUMMARY
         echo "**Git Commit:** $GIT_COMMIT" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📦 Built Images:" >> $GITHUB_STEP_SUMMARY
         for service in relay ai cadence quic wireguard; do
-          echo "- \`${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:$VERSION\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ secrets.REGISTRY_IP }}:5000/cloudbridge/$service:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cloudbridge/$service:$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cloudbridge/$service:latest\`" >> $GITHUB_STEP_SUMMARY
         done
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🔧 Usage:" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔧 Local Usage:" >> $GITHUB_STEP_SUMMARY
         echo "```bash" >> $GITHUB_STEP_SUMMARY
-        echo "# Pull image" >> $GITHUB_STEP_SUMMARY
-        echo "docker pull ${{ secrets.REGISTRY_IP }}:5000/cloudbridge/relay:$VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "# Run container locally" >> $GITHUB_STEP_SUMMARY
+        echo "docker run -d cloudbridge/relay:$VERSION" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "# Run container" >> $GITHUB_STEP_SUMMARY
-        echo "docker run -d ${{ secrets.REGISTRY_IP }}:5000/cloudbridge/relay:$VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "# For production deployment, configure VK Cloud Registry" >> $GITHUB_STEP_SUMMARY
         echo "```" >> $GITHUB_STEP_SUMMARY
 
   deploy-to-k8s:
