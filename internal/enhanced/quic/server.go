@@ -244,7 +244,7 @@ func (qs *QUICServer) createTLSConfig() (*tls.Config, error) {
 	if !qs.config.EnableTLS {
 		// Для тестирования без TLS
 		return &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, //nosec G402 - только для тестирования
 		}, nil
 	}
 
@@ -258,6 +258,7 @@ func (qs *QUICServer) createTLSConfig() (*tls.Config, error) {
 		return &tls.Config{
 			Certificates: []tls.Certificate{cert},
 			NextProtos:   []string{"cloudbridge-quic"},
+			MinVersion:   tls.VersionTLS12, // Устанавливаем минимальную версию TLS
 		}, nil
 	}
 
@@ -314,6 +315,7 @@ func (qs *QUICServer) generateSelfSignedCert() (*tls.Config, error) {
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
 		NextProtos:   []string{"cloudbridge-quic"},
+		MinVersion:   tls.VersionTLS12, // Устанавливаем минимальную версию TLS
 	}, nil
 }
 

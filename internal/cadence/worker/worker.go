@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof" // Профилирование для производительности
+	_ "net/http/pprof" //nosec G108 - профилирование для производительности
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/cadence"
