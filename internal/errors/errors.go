@@ -6,16 +6,16 @@ import (
 	"strings"
 )
 
-// ErrorType represents the type of error
+// ErrorType represents the type of error.
 type ErrorType string
 
 const (
-	// Connection errors
+	// Connection errors.
 	ErrConnectionFailed  ErrorType = "CONNECTION_FAILED"
 	ErrConnectionClosed  ErrorType = "CONNECTION_CLOSED"
 	ErrConnectionTimeout ErrorType = "CONNECTION_TIMEOUT"
 
-	// Protocol errors
+	// Protocol errors.
 	ErrInvalidMessage ErrorType = "INVALID_MESSAGE"
 	ErrInvalidToken   ErrorType = "INVALID_TOKEN"
 	ErrRateLimit      ErrorType = "RATE_LIMIT"

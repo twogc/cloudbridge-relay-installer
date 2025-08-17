@@ -37,15 +37,15 @@ type MeshTopologyWorkflowInput struct {
 
 // MeshTopologyWorkflowResult результат управления mesh топологией
 type MeshTopologyWorkflowResult struct {
-	NetworkID     string                 `json:"network_id"`
-	Status        string                 `json:"status"`
-	TopologyType  string                 `json:"topology_type"`
-	ConnectedPeers int                   `json:"connected_peers"`
-	FailedPeers   []string               `json:"failed_peers"`
-	Topology      map[string]interface{} `json:"topology"`
-	StartedAt     time.Time              `json:"started_at"`
-	CompletedAt   time.Time              `json:"completed_at"`
-	Message       string                 `json:"message"`
+	NetworkID      string                 `json:"network_id"`
+	Status         string                 `json:"status"`
+	TopologyType   string                 `json:"topology_type"`
+	ConnectedPeers int                    `json:"connected_peers"`
+	FailedPeers    []string               `json:"failed_peers"`
+	Topology       map[string]interface{} `json:"topology"`
+	StartedAt      time.Time              `json:"started_at"`
+	CompletedAt    time.Time              `json:"completed_at"`
+	Message        string                 `json:"message"`
 }
 
 // ConnectionRecoveryWorkflowInput входные параметры для восстановления соединений
@@ -58,15 +58,15 @@ type ConnectionRecoveryWorkflowInput struct {
 
 // ConnectionRecoveryWorkflowResult результат восстановления соединений
 type ConnectionRecoveryWorkflowResult struct {
-	Status             string                 `json:"status"`
-	RecoveredConnections []string             `json:"recovered_connections"`
-	FailedConnections    []string             `json:"failed_connections"`
-	RecoveryStrategy     string               `json:"recovery_strategy"`
-	Attempts             int                  `json:"attempts"`
+	Status               string                 `json:"status"`
+	RecoveredConnections []string               `json:"recovered_connections"`
+	FailedConnections    []string               `json:"failed_connections"`
+	RecoveryStrategy     string                 `json:"recovery_strategy"`
+	Attempts             int                    `json:"attempts"`
 	Results              map[string]interface{} `json:"results"`
-	StartedAt            time.Time            `json:"started_at"`
-	CompletedAt          time.Time            `json:"completed_at"`
-	Message              string               `json:"message"`
+	StartedAt            time.Time              `json:"started_at"`
+	CompletedAt          time.Time              `json:"completed_at"`
+	Message              string                 `json:"message"`
 }
 
 // LoadBalancingWorkflowInput входные параметры для балансировки нагрузки
@@ -79,15 +79,15 @@ type LoadBalancingWorkflowInput struct {
 
 // LoadBalancingWorkflowResult результат балансировки нагрузки
 type LoadBalancingWorkflowResult struct {
-	LoadBalancerID string                 `json:"load_balancer_id"`
-	Status         string                 `json:"status"`
-	Strategy       string                 `json:"strategy"`
-	ActivePeers    []string               `json:"active_peers"`
-	LoadDistribution map[string]float64   `json:"load_distribution"`
-	Configuration  map[string]interface{} `json:"configuration"`
-	StartedAt      time.Time              `json:"started_at"`
-	CompletedAt    time.Time              `json:"completed_at"`
-	Message        string                 `json:"message"`
+	LoadBalancerID   string                 `json:"load_balancer_id"`
+	Status           string                 `json:"status"`
+	Strategy         string                 `json:"strategy"`
+	ActivePeers      []string               `json:"active_peers"`
+	LoadDistribution map[string]float64     `json:"load_distribution"`
+	Configuration    map[string]interface{} `json:"configuration"`
+	StartedAt        time.Time              `json:"started_at"`
+	CompletedAt      time.Time              `json:"completed_at"`
+	Message          string                 `json:"message"`
 }
 
 // PeerLifecycleWorkflow workflow для управления жизненным циклом WireGuard пиров
@@ -122,7 +122,7 @@ func PeerLifecycleWorkflow(ctx workflow.Context, input PeerLifecycleWorkflowInpu
 	case "add":
 		// Добавление нового пира
 		logger.Info("Добавление нового пира", zap.String("peer_id", input.PeerID))
-		
+
 		// 1. Валидация конфигурации пира
 		var validationResult map[string]interface{}
 		err := workflow.ExecuteActivity(
@@ -180,7 +180,7 @@ func PeerLifecycleWorkflow(ctx workflow.Context, input PeerLifecycleWorkflowInpu
 	case "remove":
 		// Удаление пира
 		logger.Info("Удаление пира", zap.String("peer_id", input.PeerID))
-		
+
 		// 1. Отключение пира от сети
 		var disconnectResult map[string]interface{}
 		err := workflow.ExecuteActivity(
@@ -233,7 +233,7 @@ func PeerLifecycleWorkflow(ctx workflow.Context, input PeerLifecycleWorkflowInpu
 	case "update":
 		// Обновление конфигурации пира
 		logger.Info("Обновление конфигурации пира", zap.String("peer_id", input.PeerID))
-		
+
 		// 1. Валидация новой конфигурации
 		var validationResult map[string]interface{}
 		err := workflow.ExecuteActivity(
@@ -274,7 +274,7 @@ func PeerLifecycleWorkflow(ctx workflow.Context, input PeerLifecycleWorkflowInpu
 	case "monitor":
 		// Мониторинг пира (долгоживущий workflow)
 		logger.Info("Запуск мониторинга пира", zap.String("peer_id", input.PeerID))
-		
+
 		// Основной цикл мониторинга
 		for {
 			// Проверка состояния пира
@@ -337,12 +337,12 @@ func MeshTopologyWorkflow(ctx workflow.Context, input MeshTopologyWorkflowInput)
 	)
 
 	result := &MeshTopologyWorkflowResult{
-		NetworkID:     input.NetworkID,
-		TopologyType:  input.TopologyType,
-		Status:        "building",
-		StartedAt:     workflow.Now(ctx),
-		FailedPeers:   make([]string, 0),
-		Topology:      make(map[string]interface{}),
+		NetworkID:    input.NetworkID,
+		TopologyType: input.TopologyType,
+		Status:       "building",
+		StartedAt:    workflow.Now(ctx),
+		FailedPeers:  make([]string, 0),
+		Topology:     make(map[string]interface{}),
 	}
 
 	// Настройки для activities
@@ -359,7 +359,7 @@ func MeshTopologyWorkflow(ctx workflow.Context, input MeshTopologyWorkflowInput)
 
 	// 1. Анализ существующей топологии
 	logger.Info("Анализ существующей топологии")
-	
+
 	var topologyAnalysis map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -378,7 +378,7 @@ func MeshTopologyWorkflow(ctx workflow.Context, input MeshTopologyWorkflowInput)
 
 	// 2. Планирование новой топологии
 	logger.Info("Планирование новой топологии", zap.String("type", input.TopologyType))
-	
+
 	var topologyPlan map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -399,7 +399,7 @@ func MeshTopologyWorkflow(ctx workflow.Context, input MeshTopologyWorkflowInput)
 
 	// 3. Построение топологии
 	logger.Info("Построение mesh топологии")
-	
+
 	var buildResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -418,7 +418,7 @@ func MeshTopologyWorkflow(ctx workflow.Context, input MeshTopologyWorkflowInput)
 
 	// 4. Валидация и тестирование топологии
 	logger.Info("Валидация новой топологии")
-	
+
 	var validationResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -496,7 +496,7 @@ func ConnectionRecoveryWorkflow(ctx workflow.Context, input ConnectionRecoveryWo
 	case "immediate":
 		// Немедленное восстановление всех соединений параллельно
 		logger.Info("Немедленное восстановление соединений")
-		
+
 		futures := make([]workflow.Future, len(input.FailedConnections))
 		for i, connectionID := range input.FailedConnections {
 			futures[i] = workflow.ExecuteActivity(
@@ -512,7 +512,7 @@ func ConnectionRecoveryWorkflow(ctx workflow.Context, input ConnectionRecoveryWo
 		for i, future := range futures {
 			var recoveryResult map[string]interface{}
 			err := future.Get(ctx, &recoveryResult)
-			
+
 			connectionID := input.FailedConnections[i]
 			if err != nil {
 				logger.Warn("Не удалось восстановить соединение",
@@ -526,14 +526,14 @@ func ConnectionRecoveryWorkflow(ctx workflow.Context, input ConnectionRecoveryWo
 				)
 				result.RecoveredConnections = append(result.RecoveredConnections, connectionID)
 			}
-			
+
 			result.Results[connectionID] = recoveryResult
 		}
 
 	case "gradual":
 		// Постепенное восстановление соединений с задержками
 		logger.Info("Постепенное восстановление соединений")
-		
+
 		for _, connectionID := range input.FailedConnections {
 			var recoveryResult map[string]interface{}
 			err := workflow.ExecuteActivity(
@@ -543,7 +543,7 @@ func ConnectionRecoveryWorkflow(ctx workflow.Context, input ConnectionRecoveryWo
 				"gradual",
 				input.Configuration,
 			).Get(ctx, &recoveryResult)
-			
+
 			if err != nil {
 				logger.Warn("Не удалось восстановить соединение",
 					zap.String("connection_id", connectionID),
@@ -556,7 +556,7 @@ func ConnectionRecoveryWorkflow(ctx workflow.Context, input ConnectionRecoveryWo
 				)
 				result.RecoveredConnections = append(result.RecoveredConnections, connectionID)
 			}
-			
+
 			result.Results[connectionID] = recoveryResult
 			result.Attempts++
 
@@ -569,7 +569,7 @@ func ConnectionRecoveryWorkflow(ctx workflow.Context, input ConnectionRecoveryWo
 	case "scheduled":
 		// Запланированное восстановление (например, в период низкой нагрузки)
 		logger.Info("Запланированное восстановление соединений")
-		
+
 		// Ждем оптимального времени для восстановления
 		var scheduleResult map[string]interface{}
 		err := workflow.ExecuteActivity(
@@ -609,7 +609,7 @@ func ConnectionRecoveryWorkflow(ctx workflow.Context, input ConnectionRecoveryWo
 				"scheduled",
 				input.Configuration,
 			).Get(ctx, &recoveryResult)
-			
+
 			if err != nil {
 				logger.Warn("Не удалось восстановить соединение",
 					zap.String("connection_id", connectionID),
@@ -622,7 +622,7 @@ func ConnectionRecoveryWorkflow(ctx workflow.Context, input ConnectionRecoveryWo
 				)
 				result.RecoveredConnections = append(result.RecoveredConnections, connectionID)
 			}
-			
+
 			result.Results[connectionID] = recoveryResult
 			result.Attempts++
 		}
@@ -694,7 +694,7 @@ func LoadBalancingWorkflow(ctx workflow.Context, input LoadBalancingWorkflowInpu
 
 	// 1. Анализ текущей нагрузки на пиры
 	logger.Info("Анализ текущей нагрузки")
-	
+
 	var loadAnalysis map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -713,7 +713,7 @@ func LoadBalancingWorkflow(ctx workflow.Context, input LoadBalancingWorkflowInpu
 
 	// 2. Планирование балансировки
 	logger.Info("Планирование балансировки", zap.String("strategy", input.Strategy))
-	
+
 	var balancingPlan map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -734,7 +734,7 @@ func LoadBalancingWorkflow(ctx workflow.Context, input LoadBalancingWorkflowInpu
 
 	// 3. Применение балансировки
 	logger.Info("Применение балансировки нагрузки")
-	
+
 	var applyResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -753,7 +753,7 @@ func LoadBalancingWorkflow(ctx workflow.Context, input LoadBalancingWorkflowInpu
 
 	// 4. Мониторинг балансировки (краткосрочный)
 	logger.Info("Мониторинг балансировки")
-	
+
 	for i := 0; i < 5; i++ { // 5 проверок с интервалом 30 секунд
 		var monitorResult map[string]interface{}
 		err = workflow.ExecuteActivity(

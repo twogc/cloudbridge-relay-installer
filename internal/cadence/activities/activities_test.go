@@ -44,27 +44,27 @@ func TestCheckDependenciesActivity(t *testing.T) {
 	activityCtx := context.Background()
 
 	tests := []struct {
-		name         string
-		dependencies []string
-		expectError  bool
+		name           string
+		dependencies   []string
+		expectError    bool
 		expectedResult string
 	}{
 		{
-			name:         "No dependencies",
-			dependencies: []string{},
-			expectError:  false,
+			name:           "No dependencies",
+			dependencies:   []string{},
+			expectError:    false,
 			expectedResult: "all_dependencies_available",
 		},
 		{
-			name:         "Single dependency",
-			dependencies: []string{"core"},
-			expectError:  false,
+			name:           "Single dependency",
+			dependencies:   []string{"core"},
+			expectError:    false,
 			expectedResult: "all_dependencies_available",
 		},
 		{
-			name:         "Multiple dependencies",
-			dependencies: []string{"core", "network", "storage"},
-			expectError:  false,
+			name:           "Multiple dependencies",
+			dependencies:   []string{"core", "network", "storage"},
+			expectError:    false,
 			expectedResult: "all_dependencies_available",
 		},
 	}
@@ -72,7 +72,7 @@ func TestCheckDependenciesActivity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := ctx.CheckDependenciesActivity(activityCtx, tt.dependencies)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -92,45 +92,45 @@ func TestInitializeModuleActivity(t *testing.T) {
 	activityCtx := context.Background()
 
 	tests := []struct {
-		name          string
-		moduleName    string
-		configuration map[string]interface{}
-		expectError   bool
+		name           string
+		moduleName     string
+		configuration  map[string]interface{}
+		expectError    bool
 		expectedPrefix string
 	}{
 		{
-			name:          "Core module",
-			moduleName:    "core",
-			configuration: map[string]interface{}{"setting": "value"},
-			expectError:   false,
+			name:           "Core module",
+			moduleName:     "core",
+			configuration:  map[string]interface{}{"setting": "value"},
+			expectError:    false,
 			expectedPrefix: "module_core_initialized",
 		},
 		{
-			name:          "WireGuard module",
-			moduleName:    "wireguard",
-			configuration: map[string]interface{}{"peers": 10},
-			expectError:   false,
+			name:           "WireGuard module",
+			moduleName:     "wireguard",
+			configuration:  map[string]interface{}{"peers": 10},
+			expectError:    false,
 			expectedPrefix: "module_wireguard_initialized",
 		},
 		{
-			name:          "Quantum module",
-			moduleName:    "quantum",
-			configuration: map[string]interface{}{"algorithm": "kyber"},
-			expectError:   false,
+			name:           "Quantum module",
+			moduleName:     "quantum",
+			configuration:  map[string]interface{}{"algorithm": "kyber"},
+			expectError:    false,
 			expectedPrefix: "module_quantum_initialized",
 		},
 		{
-			name:          "AI module",
-			moduleName:    "ai",
-			configuration: map[string]interface{}{"model": "threat-detection"},
-			expectError:   false,
+			name:           "AI module",
+			moduleName:     "ai",
+			configuration:  map[string]interface{}{"model": "threat-detection"},
+			expectError:    false,
 			expectedPrefix: "module_ai_initialized",
 		},
 		{
-			name:          "Unknown module",
-			moduleName:    "unknown",
-			configuration: map[string]interface{}{},
-			expectError:   false,
+			name:           "Unknown module",
+			moduleName:     "unknown",
+			configuration:  map[string]interface{}{},
+			expectError:    false,
 			expectedPrefix: "module_unknown_initialized",
 		},
 	}
@@ -138,7 +138,7 @@ func TestInitializeModuleActivity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := ctx.InitializeModuleActivity(activityCtx, tt.moduleName, tt.configuration)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -158,27 +158,27 @@ func TestCheckModuleHealthActivity(t *testing.T) {
 	activityCtx := context.Background()
 
 	tests := []struct {
-		name         string
-		moduleName   string
-		expectError  bool
+		name            string
+		moduleName      string
+		expectError     bool
 		possibleResults []string
 	}{
 		{
-			name:         "Core module health",
-			moduleName:   "core",
-			expectError:  false,
+			name:            "Core module health",
+			moduleName:      "core",
+			expectError:     false,
 			possibleResults: []string{"healthy", "degraded", "unhealthy"},
 		},
 		{
-			name:         "WireGuard module health",
-			moduleName:   "wireguard",
-			expectError:  false,
+			name:            "WireGuard module health",
+			moduleName:      "wireguard",
+			expectError:     false,
 			possibleResults: []string{"healthy", "degraded", "unhealthy"},
 		},
 		{
-			name:         "Empty module name",
-			moduleName:   "",
-			expectError:  false,
+			name:            "Empty module name",
+			moduleName:      "",
+			expectError:     false,
 			possibleResults: []string{"healthy", "degraded", "unhealthy"},
 		},
 	}
@@ -186,7 +186,7 @@ func TestCheckModuleHealthActivity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := ctx.CheckModuleHealthActivity(activityCtx, tt.moduleName)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -252,27 +252,27 @@ func TestPerformHealthCheckActivity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := ctx.PerformHealthCheckActivity(activityCtx, tt.checkType, tt.component, tt.config)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, result)
-				
+
 				// Проверяем, что результат содержит ожидаемые поля
 				assert.Contains(t, result, "status")
 				assert.Contains(t, result, "score")
 				assert.Contains(t, result, "check_type")
 				assert.Contains(t, result, "component")
 				assert.Contains(t, result, "timestamp")
-				
+
 				// Проверяем значения
 				assert.Equal(t, tt.checkType, result["check_type"])
 				assert.Equal(t, tt.component, result["component"])
-				
+
 				status := result["status"].(string)
 				assert.Contains(t, []string{"healthy", "degraded", "unhealthy", "secure", "optimal", "unknown"}, status)
-				
+
 				score := result["score"].(float64)
 				assert.GreaterOrEqual(t, score, 0.0)
 				assert.LessOrEqual(t, score, 1.0)
@@ -290,15 +290,15 @@ func TestValidateConfigurationActivity(t *testing.T) {
 	activityCtx := context.Background()
 
 	tests := []struct {
-		name         string
-		component    string
+		name          string
+		component     string
 		configuration map[string]interface{}
-		expectError  bool
+		expectError   bool
 		expectedValid bool
 	}{
 		{
-			name:         "Valid configuration",
-			component:    "test-component",
+			name:      "Valid configuration",
+			component: "test-component",
 			configuration: map[string]interface{}{
 				"timeout": 30,
 				"retries": 3,
@@ -308,15 +308,15 @@ func TestValidateConfigurationActivity(t *testing.T) {
 			expectedValid: true,
 		},
 		{
-			name:         "Empty configuration",
-			component:    "test-component",
+			name:          "Empty configuration",
+			component:     "test-component",
 			configuration: map[string]interface{}{},
 			expectError:   false,
 			expectedValid: true,
 		},
 		{
-			name:         "Configuration with invalid values",
-			component:    "test-component",
+			name:      "Configuration with invalid values",
+			component: "test-component",
 			configuration: map[string]interface{}{
 				"timeout": -1,
 				"retries": "invalid",
@@ -329,13 +329,13 @@ func TestValidateConfigurationActivity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := ctx.ValidateConfigurationActivity(activityCtx, tt.configuration)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, result)
-				
+
 				// Проверяем поля результата
 				assert.Contains(t, result, "valid")
 				assert.Contains(t, result, "status")
@@ -353,7 +353,7 @@ func TestActivityTimeout(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := NewCommonActivityContext(logger, map[string]interface{}{})
-	
+
 	// Создаем контекст с очень коротким timeout
 	activityCtx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
@@ -374,7 +374,7 @@ func TestActivityWithCanceledContext(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := NewCommonActivityContext(logger, map[string]interface{}{})
-	
+
 	// Создаем и сразу отменяем контекст
 	activityCtx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -404,10 +404,10 @@ func TestConcurrentActivities(t *testing.T) {
 		go func(index int) {
 			moduleName := "concurrent-module-" + string(rune('0'+index%10))
 			result, err := ctx.InitializeModuleActivity(activityCtx, moduleName, map[string]interface{}{
-				"index": index,
+				"index":      index,
 				"concurrent": true,
 			})
-			
+
 			if err != nil {
 				errors <- err
 			} else {
@@ -451,7 +451,7 @@ func TestActivityErrorHandling(t *testing.T) {
 
 	// В текущей реализации activities не возвращают ошибки,
 	// но в реальной системе они должны обрабатывать различные error cases
-	
+
 	// Тест с пустыми параметрами
 	result, err := ctx.CheckDependenciesActivity(activityCtx, nil)
 	assert.NoError(t, err)

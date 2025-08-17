@@ -154,8 +154,8 @@ func (c *CadenceClient) StartWorkflow(ctx context.Context, workflowType string, 
 	}
 
 	options := client.StartWorkflowOptions{
-		ID:                       fmt.Sprintf("%s-%d", workflowType, time.Now().Unix()),
-		TaskList:                 c.config.Worker.TaskListName,
+		ID:                           fmt.Sprintf("%s-%d", workflowType, time.Now().Unix()),
+		TaskList:                     c.config.Worker.TaskListName,
 		ExecutionStartToCloseTimeout: c.config.GetExecutionTimeout(workflowType),
 	}
 
@@ -297,7 +297,7 @@ func (c *CadenceClient) createDispatcher() error {
 func (c *CadenceClient) createWorkflowClient() error {
 	// Создаем service client
 	serviceClient := workflowserviceclient.New(c.dispatcher.ClientConfig("cadence-frontend"))
-	
+
 	workflowClient := client.NewClient(serviceClient, c.config.Client.Domain, &client.Options{})
 
 	c.workflowClient = workflowClient
@@ -308,7 +308,7 @@ func (c *CadenceClient) createWorkflowClient() error {
 func (c *CadenceClient) createWorker() error {
 	// Создаем service client для worker
 	serviceClient := workflowserviceclient.New(c.dispatcher.ClientConfig("cadence-frontend"))
-	
+
 	workerInstance := worker.New(
 		serviceClient,
 		c.config.Client.Domain,
@@ -318,7 +318,7 @@ func (c *CadenceClient) createWorker() error {
 			MaxConcurrentLocalActivityExecutionSize: c.config.Worker.MaxConcurrentLocalActivityExecutionSize,
 			MaxConcurrentActivityTaskPollers:        10,
 			MaxConcurrentDecisionTaskPollers:        10,
-			Identity:                                 c.config.Worker.Identity,
+			Identity:                                c.config.Worker.Identity,
 		},
 	)
 

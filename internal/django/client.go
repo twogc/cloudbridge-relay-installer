@@ -9,21 +9,21 @@ import (
 	"time"
 )
 
-// Client represents a Django API client
+// Client represents a Django API client.
 type Client struct {
 	client      *http.Client
 	apiEndpoint string
 	jwtSecret   string
 }
 
-// Config represents the Django client configuration
+// Config represents the Django client configuration.
 type Config struct {
 	APIEndpoint string
 	JWTSecret   string
 	Timeout     time.Duration
 }
 
-// NewClient creates a new Django API client
+// NewClient creates a new Django API client.
 func NewClient(config Config) *Client {
 	return &Client{
 		client: &http.Client{

@@ -481,7 +481,7 @@ func (s *Server) Start() error {
 	// Start HTTP server on port 80 for health checks
 	go func() {
 		httpMux := http.NewServeMux()
-		
+
 		// Health check endpoint
 		httpMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -782,7 +782,7 @@ func (s *Server) processConnection(conn net.Conn) error {
 	s.logger.Info("Received raw message", zap.String("data", line))
 
 	// Check if it's an HTTP request (healthcheck)
-	if len(line) > 0 && (strings.HasPrefix(line, "GET ") || strings.HasPrefix(line, "POST ") ||
+	if line != "" && (strings.HasPrefix(line, "GET ") || strings.HasPrefix(line, "POST ") ||
 		strings.HasPrefix(line, "PUT ") || strings.HasPrefix(line, "DELETE ") ||
 		strings.HasPrefix(line, "HEAD ") || strings.HasPrefix(line, "OPTIONS ") ||
 		strings.HasPrefix(line, "HTTP/")) {
@@ -791,7 +791,7 @@ func (s *Server) processConnection(conn net.Conn) error {
 	}
 
 	// Additional check for HTTP requests that might not start with method
-	if len(line) > 0 && (strings.Contains(line, "HTTP/") || strings.Contains(line, "Host:") ||
+	if line != "" && (strings.Contains(line, "HTTP/") || strings.Contains(line, "Host:") ||
 		strings.Contains(line, "User-Agent:")) {
 		s.logger.Debug("Detected HTTP request by content, handling as HTTP", zap.String("data", line))
 		return s.handleHTTPRequest(conn, line, reader)
@@ -846,7 +846,10 @@ func (s *Server) processConnection(conn net.Conn) error {
 			"status":  "error",
 			"message": "Token required",
 		}
-		writeJSON(writer, resp)
+		if err := writeJSON(writer, resp); err != nil {
+			s.logger.Error("Failed to send auth response", zap.Error(err))
+			return err
+		}
 		s.logger.Warn("Auth failed: token required")
 		return nil
 	}
@@ -891,7 +894,10 @@ func (s *Server) processConnection(conn net.Conn) error {
 				"status":  "error",
 				"message": "Enhanced authentication failed: " + err.Error(),
 			}
-			writeJSON(writer, resp)
+			if err := writeJSON(writer, resp); err != nil {
+				s.logger.Error("Failed to send auth response", zap.Error(err))
+				return err
+			}
 			s.logger.Warn("Enhanced auth failed", zap.Error(err), zap.Bool("is_valid", isValid))
 			authAttemptsTotal.WithLabelValues("failed", "enhanced").Inc()
 			return nil
@@ -956,7 +962,10 @@ func (s *Server) processConnection(conn net.Conn) error {
 						"status":  "error",
 						"message": "Multiprotocol processing failed: " + err.Error(),
 					}
-					writeJSON(writer, respTunnel)
+					if err := writeJSON(writer, respTunnel); err != nil {
+						s.logger.Error("Failed to send tunnel response", zap.Error(err))
+						return err
+					}
 					s.logger.Warn("Multiprotocol processing failed",
 						zap.String("tenant_id", tenantID),
 						zap.String("client_ip", clientIP),
@@ -979,7 +988,10 @@ func (s *Server) processConnection(conn net.Conn) error {
 							"status":  "error",
 							"message": "Enhanced validation failed: " + err.Error(),
 						}
-						writeJSON(writer, respTunnel)
+						if err := writeJSON(writer, respTunnel); err != nil {
+							s.logger.Error("Failed to send tunnel response", zap.Error(err))
+							return err
+						}
 						s.logger.Warn("Enhanced tunnel validation failed",
 							zap.String("tenant_id", tenantID),
 							zap.String("client_ip", clientIP),
@@ -1007,7 +1019,10 @@ func (s *Server) processConnection(conn net.Conn) error {
 						"status":  "error",
 						"message": "Tenant limits exceeded: " + err.Error(),
 					}
-					writeJSON(writer, respTunnel)
+					if err := writeJSON(writer, respTunnel); err != nil {
+						s.logger.Error("Failed to send tunnel response", zap.Error(err))
+						return err
+					}
 					s.logger.Warn("Tenant limits exceeded",
 						zap.String("tenant_id", tenantID),
 						zap.Error(err),

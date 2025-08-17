@@ -31,7 +31,7 @@ func BenchmarkModuleInitializationWorkflow(b *testing.B) {
 		}
 
 		env.ExecuteWorkflow(ModuleInitializationWorkflow, input)
-		
+
 		if env.GetWorkflowError() != nil {
 			b.Fatalf("Module initialization workflow failed: %v", env.GetWorkflowError())
 		}
@@ -46,7 +46,7 @@ func BenchmarkActivityExecution(b *testing.B) {
 		suite.SetLogger(logger)
 
 		env := suite.NewTestWorkflowEnvironment()
-		
+
 		// Мокаем простые activities
 		env.OnActivity("CheckDependenciesActivity", mock.Anything).Return("all_dependencies_available", nil)
 
@@ -55,14 +55,14 @@ func BenchmarkActivityExecution(b *testing.B) {
 			ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 				ScheduleToCloseTimeout: time.Minute,
 			})
-			
+
 			var result string
 			err := workflow.ExecuteActivity(ctx, "CheckDependenciesActivity", deps).Get(ctx, &result)
 			return result, err
 		}
 
 		env.ExecuteWorkflow(workflow, []string{"dep1", "dep2"})
-		
+
 		if env.GetWorkflowError() != nil {
 			b.Fatalf("Simple workflow failed: %v", env.GetWorkflowError())
 		}
@@ -82,16 +82,16 @@ func BenchmarkWorkflowWithConcurrency(b *testing.B) {
 			suite := &testsuite.WorkflowTestSuite{}
 			logger, _ := zap.NewDevelopment()
 			suite.SetLogger(logger)
-			
+
 			env := suite.NewTestWorkflowEnvironment()
-			
+
 			// Мокаем activities для каждого environment
 			env.OnActivity("CheckDependenciesActivity", mock.Anything).Return("all_dependencies_available", nil)
 			env.OnActivity("InitializeModuleActivity", mock.Anything, mock.Anything).Return("module_concurrent_initialized", nil)
 			env.OnActivity("CheckModuleHealthActivity", mock.Anything).Return("healthy", nil)
 
 			env.ExecuteWorkflow(ModuleInitializationWorkflow, input)
-			
+
 			if env.GetWorkflowError() != nil {
 				b.Fatalf("Concurrent workflow failed: %v", env.GetWorkflowError())
 			}
@@ -119,15 +119,15 @@ func BenchmarkMemoryUsage(b *testing.B) {
 		suite := &testsuite.WorkflowTestSuite{}
 		logger, _ := zap.NewDevelopment()
 		suite.SetLogger(logger)
-		
+
 		env := suite.NewTestWorkflowEnvironment()
-		
+
 		env.OnActivity("CheckDependenciesActivity", mock.Anything).Return("all_dependencies_available", nil)
 		env.OnActivity("InitializeModuleActivity", mock.Anything, mock.Anything).Return("module_memory_initialized", nil)
 		env.OnActivity("CheckModuleHealthActivity", mock.Anything).Return("healthy", nil)
 
 		env.ExecuteWorkflow(ModuleInitializationWorkflow, input)
-		
+
 		if env.GetWorkflowError() != nil {
 			b.Fatalf("Memory test workflow failed: %v", env.GetWorkflowError())
 		}
@@ -137,7 +137,7 @@ func BenchmarkMemoryUsage(b *testing.B) {
 // BenchmarkWorkflowScaling тестирует масштабируемость workflows
 func BenchmarkWorkflowScaling(b *testing.B) {
 	scales := []int{1, 10, 50}
-	
+
 	for _, scale := range scales {
 		b.Run("scale_"+string(rune('0'+scale/10))+string(rune('0'+scale%10)), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
@@ -146,9 +146,9 @@ func BenchmarkWorkflowScaling(b *testing.B) {
 					suite := &testsuite.WorkflowTestSuite{}
 					logger, _ := zap.NewDevelopment()
 					suite.SetLogger(logger)
-					
+
 					env := suite.NewTestWorkflowEnvironment()
-					
+
 					env.OnActivity("CheckDependenciesActivity", mock.Anything).Return("all_dependencies_available", nil)
 					env.OnActivity("InitializeModuleActivity", mock.Anything, mock.Anything).Return("module_scale_initialized", nil)
 					env.OnActivity("CheckModuleHealthActivity", mock.Anything).Return("healthy", nil)
@@ -160,7 +160,7 @@ func BenchmarkWorkflowScaling(b *testing.B) {
 					}
 
 					env.ExecuteWorkflow(ModuleInitializationWorkflow, input)
-					
+
 					if env.GetWorkflowError() != nil {
 						b.Fatalf("Scale test workflow %d failed: %v", j, env.GetWorkflowError())
 					}

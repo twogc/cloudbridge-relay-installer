@@ -43,13 +43,13 @@ type CadenceConfig struct {
 
 	// Настройки мониторинга
 	Monitoring MonitoringConfig `yaml:"monitoring"`
-	
+
 	// Настройки профилирования
 	Profiling ProfilingConfig `yaml:"profiling"`
-	
+
 	// Настройки health endpoints
 	Health HealthConfig `yaml:"health"`
-	
+
 	// Настройки debug endpoints
 	Debug DebugConfig `yaml:"debug"`
 }
@@ -79,11 +79,11 @@ type WorkerConfig struct {
 // WorkflowsConfig настройки workflows
 type WorkflowsConfig struct {
 	// Общие timeout настройки
-	ExecutionTimeout             string `yaml:"executionTimeout"`
-	DecisionTimeout              string `yaml:"decisionTimeout"`
-	ActivityStartToCloseTimeout  string `yaml:"activityStartToCloseTimeout"`
-	WorkflowStartToCloseTimeout  string `yaml:"workflowStartToCloseTimeout"`
-	WorkflowTaskTimeout          string `yaml:"workflowTaskTimeout"`
+	ExecutionTimeout            string `yaml:"executionTimeout"`
+	DecisionTimeout             string `yaml:"decisionTimeout"`
+	ActivityStartToCloseTimeout string `yaml:"activityStartToCloseTimeout"`
+	WorkflowStartToCloseTimeout string `yaml:"workflowStartToCloseTimeout"`
+	WorkflowTaskTimeout         string `yaml:"workflowTaskTimeout"`
 
 	// Специфичные настройки для разных типов workflows
 	Main      WorkflowTypeConfig `yaml:"main"`
@@ -97,35 +97,35 @@ type WorkflowsConfig struct {
 
 // WorkflowTypeConfig настройки для конкретного типа workflow
 type WorkflowTypeConfig struct {
-	ExecutionTimeout             string `yaml:"executionTimeout"`
-	WorkflowStartToCloseTimeout  string `yaml:"workflowStartToCloseTimeout"`
-	ActivityStartToCloseTimeout  string `yaml:"activityStartToCloseTimeout"`
+	ExecutionTimeout            string `yaml:"executionTimeout"`
+	WorkflowStartToCloseTimeout string `yaml:"workflowStartToCloseTimeout"`
+	ActivityStartToCloseTimeout string `yaml:"activityStartToCloseTimeout"`
 }
 
 // RetryConfig настройки retry политик
 type RetryConfig struct {
-	InitialInterval     string           `yaml:"initialInterval"`
-	MaximumInterval     string           `yaml:"maximumInterval"`
-	BackoffCoefficient  float64          `yaml:"backoffCoefficient"`
-	MaximumAttempts     int              `yaml:"maximumAttempts"`
-	Critical            RetryTypeConfig  `yaml:"critical"`
-	External            RetryTypeConfig  `yaml:"external"`
+	InitialInterval    string          `yaml:"initialInterval"`
+	MaximumInterval    string          `yaml:"maximumInterval"`
+	BackoffCoefficient float64         `yaml:"backoffCoefficient"`
+	MaximumAttempts    int             `yaml:"maximumAttempts"`
+	Critical           RetryTypeConfig `yaml:"critical"`
+	External           RetryTypeConfig `yaml:"external"`
 }
 
 // RetryTypeConfig настройки retry для конкретного типа операций
 type RetryTypeConfig struct {
-	InitialInterval     string  `yaml:"initialInterval"`
-	MaximumInterval     string  `yaml:"maximumInterval"`
-	BackoffCoefficient  float64 `yaml:"backoffCoefficient"`
-	MaximumAttempts     int     `yaml:"maximumAttempts"`
+	InitialInterval    string  `yaml:"initialInterval"`
+	MaximumInterval    string  `yaml:"maximumInterval"`
+	BackoffCoefficient float64 `yaml:"backoffCoefficient"`
+	MaximumAttempts    int     `yaml:"maximumAttempts"`
 }
 
 // LoggingConfig настройки логирования
 type LoggingConfig struct {
-	Level                    string `yaml:"level"`
-	EnableStructuredLogging  bool   `yaml:"enableStructuredLogging"`
-	LogWorkflowHistory       bool   `yaml:"logWorkflowHistory"`
-	LogActivityDetails       bool   `yaml:"logActivityDetails"`
+	Level                   string `yaml:"level"`
+	EnableStructuredLogging bool   `yaml:"enableStructuredLogging"`
+	LogWorkflowHistory      bool   `yaml:"logWorkflowHistory"`
+	LogActivityDetails      bool   `yaml:"logActivityDetails"`
 }
 
 // MetricsConfig настройки метрик
@@ -154,16 +154,16 @@ type SecurityConfig struct {
 
 // NotificationsConfig настройки уведомлений
 type NotificationsConfig struct {
-	Enabled  bool                      `yaml:"enabled"`
+	Enabled  bool                        `yaml:"enabled"`
 	Channels []NotificationChannelConfig `yaml:"channels"`
 }
 
 // NotificationChannelConfig настройки канала уведомлений
 type NotificationChannelConfig struct {
-	Type    string                 `yaml:"type"`
-	Webhook string                 `yaml:"webhook,omitempty"`
-	SMTP    *SMTPConfig            `yaml:"smtp,omitempty"`
-	Enabled bool                   `yaml:"enabled"`
+	Type    string      `yaml:"type"`
+	Webhook string      `yaml:"webhook,omitempty"`
+	SMTP    *SMTPConfig `yaml:"smtp,omitempty"`
+	Enabled bool        `yaml:"enabled"`
 }
 
 // SMTPConfig настройки SMTP для email уведомлений
@@ -176,8 +176,8 @@ type SMTPConfig struct {
 
 // MonitoringConfig настройки мониторинга
 type MonitoringConfig struct {
-	HealthCheckInterval string                    `yaml:"healthCheckInterval"`
-	AlertThresholds     AlertThresholdsConfig     `yaml:"alertThresholds"`
+	HealthCheckInterval string                `yaml:"healthCheckInterval"`
+	AlertThresholds     AlertThresholdsConfig `yaml:"alertThresholds"`
 }
 
 // AlertThresholdsConfig пороги для алертов
@@ -207,11 +207,11 @@ type HealthConfig struct {
 
 // DebugConfig настройки debug endpoints
 type DebugConfig struct {
-	Enabled              bool `yaml:"enabled"`
-	EnableWorkflowDebug  bool `yaml:"enableWorkflowDebug"`
-	EnableActivityDebug  bool `yaml:"enableActivityDebug"`
-	EnableMetricsDebug   bool `yaml:"enableMetricsDebug"`
-	EnableConfigDebug    bool `yaml:"enableConfigDebug"`
+	Enabled             bool `yaml:"enabled"`
+	EnableWorkflowDebug bool `yaml:"enableWorkflowDebug"`
+	EnableActivityDebug bool `yaml:"enableActivityDebug"`
+	EnableMetricsDebug  bool `yaml:"enableMetricsDebug"`
+	EnableConfigDebug   bool `yaml:"enableConfigDebug"`
 }
 
 // LoadConfig загружает конфигурацию из файла
@@ -271,8 +271,8 @@ func (c *CadenceConfig) Validate() error {
 
 	// Проверяем timeout значения
 	timeouts := map[string]string{
-		"workflows.executionTimeout":             c.Workflows.ExecutionTimeout,
-		"workflows.decisionTimeout":              c.Workflows.DecisionTimeout,
+		"workflows.executionTimeout":            c.Workflows.ExecutionTimeout,
+		"workflows.decisionTimeout":             c.Workflows.DecisionTimeout,
 		"workflows.activityStartToCloseTimeout": c.Workflows.ActivityStartToCloseTimeout,
 		"workflows.workflowStartToCloseTimeout": c.Workflows.WorkflowStartToCloseTimeout,
 	}
@@ -384,21 +384,21 @@ func (c *CadenceConfig) SetDefaults() {
 	if c.Monitoring.AlertThresholds.QueueDepth == 0 {
 		c.Monitoring.AlertThresholds.QueueDepth = 1000
 	}
-	
+
 	// Profiling значения по умолчанию
 	if c.Profiling.Port == "" {
 		c.Profiling.Port = ":6060"
 	}
-	
+
 	// Health значения по умолчанию
 	if c.Health.Port == "" {
 		c.Health.Port = ":8080"
 	}
-	
+
 	if c.Health.ReadinessTimeout == "" {
 		c.Health.ReadinessTimeout = "10s"
 	}
-	
+
 	if c.Health.LivenessTimeout == "" {
 		c.Health.LivenessTimeout = "5s"
 	}

@@ -12,6 +12,7 @@ import (
 )
 
 // mockHTTPClient is a mock implementation of HTTPDoer
+//
 //nolint:unused // Used in tests
 type mockHTTPClient struct {
 	statusCode int

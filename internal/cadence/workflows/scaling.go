@@ -10,25 +10,25 @@ import (
 
 // AutoScalingWorkflowInput входные параметры для автомасштабирования
 type AutoScalingWorkflowInput struct {
-	ResourceType    string                 `json:"resource_type"`    // compute, memory, network, storage
-	ScalingPolicy   string                 `json:"scaling_policy"`   // reactive, predictive, scheduled
-	TargetMetrics   map[string]float64     `json:"target_metrics"`   // cpu: 70, memory: 80, connections: 1000
-	ScalingLimits   map[string]interface{} `json:"scaling_limits"`   // min/max instances
-	Configuration   map[string]interface{} `json:"configuration"`
+	ResourceType  string                 `json:"resource_type"`  // compute, memory, network, storage
+	ScalingPolicy string                 `json:"scaling_policy"` // reactive, predictive, scheduled
+	TargetMetrics map[string]float64     `json:"target_metrics"` // cpu: 70, memory: 80, connections: 1000
+	ScalingLimits map[string]interface{} `json:"scaling_limits"` // min/max instances
+	Configuration map[string]interface{} `json:"configuration"`
 }
 
 // AutoScalingWorkflowResult результат автомасштабирования
 type AutoScalingWorkflowResult struct {
-	ResourceType      string                 `json:"resource_type"`
-	ScalingPolicy     string                 `json:"scaling_policy"`
-	ScalingActions    []string               `json:"scaling_actions"`
-	CurrentCapacity   map[string]interface{} `json:"current_capacity"`
-	TargetCapacity    map[string]interface{} `json:"target_capacity"`
-	ScalingResults    map[string]interface{} `json:"scaling_results"`
-	Status            string                 `json:"status"`
-	StartedAt         time.Time              `json:"started_at"`
-	CompletedAt       time.Time              `json:"completed_at"`
-	Message           string                 `json:"message"`
+	ResourceType    string                 `json:"resource_type"`
+	ScalingPolicy   string                 `json:"scaling_policy"`
+	ScalingActions  []string               `json:"scaling_actions"`
+	CurrentCapacity map[string]interface{} `json:"current_capacity"`
+	TargetCapacity  map[string]interface{} `json:"target_capacity"`
+	ScalingResults  map[string]interface{} `json:"scaling_results"`
+	Status          string                 `json:"status"`
+	StartedAt       time.Time              `json:"started_at"`
+	CompletedAt     time.Time              `json:"completed_at"`
+	Message         string                 `json:"message"`
 }
 
 // ResourceOptimizationWorkflowInput входные параметры для оптимизации ресурсов
@@ -41,39 +41,39 @@ type ResourceOptimizationWorkflowInput struct {
 
 // ResourceOptimizationWorkflowResult результат оптимизации ресурсов
 type ResourceOptimizationWorkflowResult struct {
-	OptimizationType     string                 `json:"optimization_type"`
-	OptimizedResources   []string               `json:"optimized_resources"`
-	OptimizationResults  map[string]interface{} `json:"optimization_results"`
-	CostSavings          float64                `json:"cost_savings"`
-	PerformanceImprovement float64              `json:"performance_improvement"`
-	EfficiencyGains      map[string]float64     `json:"efficiency_gains"`
-	Status               string                 `json:"status"`
-	StartedAt            time.Time              `json:"started_at"`
-	CompletedAt          time.Time              `json:"completed_at"`
-	Message              string                 `json:"message"`
+	OptimizationType       string                 `json:"optimization_type"`
+	OptimizedResources     []string               `json:"optimized_resources"`
+	OptimizationResults    map[string]interface{} `json:"optimization_results"`
+	CostSavings            float64                `json:"cost_savings"`
+	PerformanceImprovement float64                `json:"performance_improvement"`
+	EfficiencyGains        map[string]float64     `json:"efficiency_gains"`
+	Status                 string                 `json:"status"`
+	StartedAt              time.Time              `json:"started_at"`
+	CompletedAt            time.Time              `json:"completed_at"`
+	Message                string                 `json:"message"`
 }
 
 // PerformanceMonitoringWorkflowInput входные параметры для мониторинга производительности
 type PerformanceMonitoringWorkflowInput struct {
-	MonitoringScope   string                 `json:"monitoring_scope"`   // system, application, network, database
-	MetricsToMonitor  []string               `json:"metrics_to_monitor"` // latency, throughput, error_rate, resource_usage
-	MonitoringPeriod  string                 `json:"monitoring_period"`  // continuous, periodic, triggered
-	AlertThresholds   map[string]float64     `json:"alert_thresholds"`
-	Configuration     map[string]interface{} `json:"configuration"`
+	MonitoringScope  string                 `json:"monitoring_scope"`   // system, application, network, database
+	MetricsToMonitor []string               `json:"metrics_to_monitor"` // latency, throughput, error_rate, resource_usage
+	MonitoringPeriod string                 `json:"monitoring_period"`  // continuous, periodic, triggered
+	AlertThresholds  map[string]float64     `json:"alert_thresholds"`
+	Configuration    map[string]interface{} `json:"configuration"`
 }
 
 // PerformanceMonitoringWorkflowResult результат мониторинга производительности
 type PerformanceMonitoringWorkflowResult struct {
-	MonitoringScope      string                 `json:"monitoring_scope"`
-	MonitoredMetrics     map[string]float64     `json:"monitored_metrics"`
-	PerformanceBaseline  map[string]float64     `json:"performance_baseline"`
-	PerformanceTrends    map[string]interface{} `json:"performance_trends"`
-	TriggeredAlerts      []string               `json:"triggered_alerts"`
-	PerformanceScore     float64                `json:"performance_score"`
-	Status               string                 `json:"status"`
-	StartedAt            time.Time              `json:"started_at"`
-	CompletedAt          time.Time              `json:"completed_at"`
-	Message              string                 `json:"message"`
+	MonitoringScope     string                 `json:"monitoring_scope"`
+	MonitoredMetrics    map[string]float64     `json:"monitored_metrics"`
+	PerformanceBaseline map[string]float64     `json:"performance_baseline"`
+	PerformanceTrends   map[string]interface{} `json:"performance_trends"`
+	TriggeredAlerts     []string               `json:"triggered_alerts"`
+	PerformanceScore    float64                `json:"performance_score"`
+	Status              string                 `json:"status"`
+	StartedAt           time.Time              `json:"started_at"`
+	CompletedAt         time.Time              `json:"completed_at"`
+	Message             string                 `json:"message"`
 }
 
 // CapacityPlanningWorkflowInput входные параметры для планирования емкости
@@ -87,16 +87,16 @@ type CapacityPlanningWorkflowInput struct {
 
 // CapacityPlanningWorkflowResult результат планирования емкости
 type CapacityPlanningWorkflowResult struct {
-	PlanningHorizon       string                 `json:"planning_horizon"`
+	PlanningHorizon         string                 `json:"planning_horizon"`
 	CapacityRecommendations map[string]interface{} `json:"capacity_recommendations"`
-	ResourceRequirements  map[string]interface{} `json:"resource_requirements"`
-	CostProjections       map[string]float64     `json:"cost_projections"`
-	RiskAssessment        map[string]interface{} `json:"risk_assessment"`
-	MilestoneTimeline     []string               `json:"milestone_timeline"`
-	Status                string                 `json:"status"`
-	StartedAt             time.Time              `json:"started_at"`
-	CompletedAt           time.Time              `json:"completed_at"`
-	Message               string                 `json:"message"`
+	ResourceRequirements    map[string]interface{} `json:"resource_requirements"`
+	CostProjections         map[string]float64     `json:"cost_projections"`
+	RiskAssessment          map[string]interface{} `json:"risk_assessment"`
+	MilestoneTimeline       []string               `json:"milestone_timeline"`
+	Status                  string                 `json:"status"`
+	StartedAt               time.Time              `json:"started_at"`
+	CompletedAt             time.Time              `json:"completed_at"`
+	Message                 string                 `json:"message"`
 }
 
 // AutoScalingWorkflow workflow для автоматического масштабирования ресурсов
@@ -135,14 +135,14 @@ func AutoScalingWorkflow(ctx workflow.Context, input AutoScalingWorkflowInput) (
 	case "reactive":
 		// Реактивное масштабирование на основе текущих метрик
 		logger.Info("Реактивное масштабирование")
-		
+
 		// Настройка канала для получения сигналов управления
 		controlSignal := workflow.GetSignalChannel(ctx, "control-command")
-		
+
 		// Основной цикл мониторинга и масштабирования
 		for {
 			selector := workflow.NewSelector(ctx)
-			
+
 			// Добавить обработку сигнала остановки
 			selector.AddReceive(controlSignal, func(c workflow.Channel, more bool) {
 				var signal string
@@ -156,7 +156,7 @@ func AutoScalingWorkflow(ctx workflow.Context, input AutoScalingWorkflowInput) (
 					return // Выход из функции
 				}
 			})
-			
+
 			// Добавить таймер с интервалом для тестов
 			timer := workflow.NewTimer(ctx, getScalingInterval(ctx))
 			selector.AddFuture(timer, func(f workflow.Future) {
@@ -203,7 +203,7 @@ func AutoScalingWorkflow(ctx workflow.Context, input AutoScalingWorkflowInput) (
 									result.ScalingActions = append(result.ScalingActions, action)
 								}
 								result.ScalingResults["latest_scaling"] = scalingResult
-								
+
 								logger.Info("Масштабирование выполнено",
 									zap.Any("scaling_result", scalingResult),
 								)
@@ -217,9 +217,9 @@ func AutoScalingWorkflow(ctx workflow.Context, input AutoScalingWorkflowInput) (
 					}
 				}
 			})
-			
+
 			selector.Select(ctx)
-			
+
 			// Проверяем, не нужно ли завершить workflow
 			if result.Status == "stopped" {
 				break
@@ -229,7 +229,7 @@ func AutoScalingWorkflow(ctx workflow.Context, input AutoScalingWorkflowInput) (
 	case "predictive":
 		// Предиктивное масштабирование на основе прогнозов
 		logger.Info("Предиктивное масштабирование")
-		
+
 		// 1. Анализ исторических данных
 		var historicalAnalysis map[string]interface{}
 		err := workflow.ExecuteActivity(
@@ -314,7 +314,7 @@ func AutoScalingWorkflow(ctx workflow.Context, input AutoScalingWorkflowInput) (
 	case "scheduled":
 		// Запланированное масштабирование
 		logger.Info("Запланированное масштабирование")
-		
+
 		// 1. Получение расписания масштабирования
 		var scheduleResult map[string]interface{}
 		err := workflow.ExecuteActivity(
@@ -340,7 +340,7 @@ func AutoScalingWorkflow(ctx workflow.Context, input AutoScalingWorkflowInput) (
 					if executeTimeStr, ok := entryMap["execute_time"].(string); ok {
 						executeTime, _ := time.Parse(time.RFC3339, executeTimeStr)
 						waitDuration := executeTime.Sub(workflow.Now(ctx))
-						
+
 						if waitDuration > 0 {
 							logger.Info("Ожидание времени выполнения масштабирования",
 								zap.Duration("wait_duration", waitDuration),
@@ -423,12 +423,12 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 	)
 
 	result := &ResourceOptimizationWorkflowResult{
-		OptimizationType:   input.OptimizationType,
-		Status:             "optimizing",
-		StartedAt:          workflow.Now(ctx),
-		OptimizedResources: make([]string, 0),
+		OptimizationType:    input.OptimizationType,
+		Status:              "optimizing",
+		StartedAt:           workflow.Now(ctx),
+		OptimizedResources:  make([]string, 0),
 		OptimizationResults: make(map[string]interface{}),
-		EfficiencyGains:    make(map[string]float64),
+		EfficiencyGains:     make(map[string]float64),
 	}
 
 	// Настройки для activities
@@ -445,7 +445,7 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 
 	// 1. Анализ текущего использования ресурсов
 	logger.Info("Анализ текущего использования ресурсов")
-	
+
 	var usageAnalysis map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -466,7 +466,7 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 
 	// 2. Идентификация возможностей для оптимизации
 	logger.Info("Идентификация возможностей для оптимизации")
-	
+
 	var opportunitiesResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -488,7 +488,7 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 
 	// 3. Планирование оптимизации
 	logger.Info("Планирование оптимизации")
-	
+
 	var planningResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -510,7 +510,7 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 
 	// 4. Выполнение оптимизации
 	logger.Info("Выполнение оптимизации")
-	
+
 	if optimizationPlan, ok := planningResult["optimization_plan"].([]interface{}); ok {
 		for _, step := range optimizationPlan {
 			if stepMap, ok := step.(map[string]interface{}); ok {
@@ -528,11 +528,11 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 					if resource, ok := stepResult["optimized_resource"].(string); ok {
 						result.OptimizedResources = append(result.OptimizedResources, resource)
 					}
-					
+
 					if stepID, ok := stepMap["step_id"].(string); ok {
 						result.OptimizationResults[stepID] = stepResult
 					}
-					
+
 					logger.Info("Шаг оптимизации выполнен",
 						zap.Any("step_result", stepResult),
 					)
@@ -548,7 +548,7 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 
 	// 5. Оценка результатов оптимизации
 	logger.Info("Оценка результатов оптимизации")
-	
+
 	var evaluationResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -565,11 +565,11 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 		if costSavings, ok := evaluationResult["cost_savings"].(float64); ok {
 			result.CostSavings = costSavings
 		}
-		
+
 		if perfImprovement, ok := evaluationResult["performance_improvement"].(float64); ok {
 			result.PerformanceImprovement = perfImprovement
 		}
-		
+
 		if efficiencyGains, ok := evaluationResult["efficiency_gains"].(map[string]interface{}); ok {
 			for metric, gain := range efficiencyGains {
 				if gainFloat, ok := gain.(float64); ok {
@@ -577,7 +577,7 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 				}
 			}
 		}
-		
+
 		result.OptimizationResults["evaluation"] = evaluationResult
 	}
 
@@ -630,7 +630,7 @@ func PerformanceMonitoringWorkflow(ctx workflow.Context, input PerformanceMonito
 
 	// 1. Установка базовой линии производительности
 	logger.Info("Установка базовой линии производительности")
-	
+
 	var baselineResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -660,7 +660,7 @@ func PerformanceMonitoringWorkflow(ctx workflow.Context, input PerformanceMonito
 	case "continuous":
 		// Непрерывный мониторинг производительности
 		logger.Info("Запуск непрерывного мониторинга производительности")
-		
+
 		for {
 			// Сбор текущих метрик производительности
 			var metricsResult map[string]interface{}
@@ -735,7 +735,7 @@ func PerformanceMonitoringWorkflow(ctx workflow.Context, input PerformanceMonito
 	case "periodic":
 		// Периодический мониторинг производительности
 		logger.Info("Запуск периодического мониторинга производительности")
-		
+
 		// Получаем интервалы мониторинга
 		var scheduleResult map[string]interface{}
 		err = workflow.ExecuteActivity(
@@ -757,10 +757,10 @@ func PerformanceMonitoringWorkflow(ctx workflow.Context, input PerformanceMonito
 			for _, interval := range intervals {
 				if intervalStr, ok := interval.(string); ok {
 					intervalDuration, _ := time.ParseDuration(intervalStr)
-					
+
 					// Ждем до времени мониторинга
 					workflow.Sleep(ctx, intervalDuration)
-					
+
 					// Выполняем мониторинг (аналогично непрерывному)
 					var metricsResult map[string]interface{}
 					err := workflow.ExecuteActivity(
@@ -772,10 +772,9 @@ func PerformanceMonitoringWorkflow(ctx workflow.Context, input PerformanceMonito
 
 					if err != nil {
 						logger.Warn("Ошибка сбора метрик производительности", zap.Error(err))
-					} else {
-						// Обработка результатов аналогично непрерывному мониторингу
-						// ... (код аналогичен блоку выше)
 					}
+					// Обработка результатов аналогично непрерывному мониторингу
+					// ... (код аналогичен блоку выше)
 				}
 			}
 		}
@@ -783,19 +782,19 @@ func PerformanceMonitoringWorkflow(ctx workflow.Context, input PerformanceMonito
 	case "triggered":
 		// Мониторинг по триггерам
 		logger.Info("Запуск мониторинга производительности по триггерам")
-		
+
 		// Настраиваем слушатель триггеров
 		triggerChannel := workflow.GetSignalChannel(ctx, "performance-trigger")
 		selector := workflow.NewSelector(ctx)
-		
+
 		selector.AddReceive(triggerChannel, func(c workflow.Channel, more bool) {
 			var triggerData map[string]interface{}
 			c.Receive(ctx, &triggerData)
-			
+
 			logger.Info("Получен триггер для мониторинга производительности",
 				zap.Any("trigger_data", triggerData),
 			)
-			
+
 			// Выполняем мониторинг в ответ на триггер
 			var metricsResult map[string]interface{}
 			err := workflow.ExecuteActivity(
@@ -807,10 +806,9 @@ func PerformanceMonitoringWorkflow(ctx workflow.Context, input PerformanceMonito
 
 			if err != nil {
 				logger.Warn("Ошибка сбора метрик по триггеру", zap.Error(err))
-			} else {
-				// Обработка результатов
-				// ... (код аналогичен блоку выше)
 			}
+			// Обработка результатов
+			// ... (код аналогичен блоку выше)
 		})
 
 		// Ждем триггеры в течение определенного времени
@@ -872,7 +870,7 @@ func CapacityPlanningWorkflow(ctx workflow.Context, input CapacityPlanningWorkfl
 
 	// 1. Анализ текущего состояния ресурсов
 	logger.Info("Анализ текущего состояния ресурсов")
-	
+
 	var currentStateResult map[string]interface{}
 	err := workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -891,7 +889,7 @@ func CapacityPlanningWorkflow(ctx workflow.Context, input CapacityPlanningWorkfl
 
 	// 2. Прогнозирование роста нагрузки
 	logger.Info("Прогнозирование роста нагрузки")
-	
+
 	var growthForecastResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -911,7 +909,7 @@ func CapacityPlanningWorkflow(ctx workflow.Context, input CapacityPlanningWorkfl
 
 	// 3. Расчет требований к ресурсам
 	logger.Info("Расчет требований к ресурсам")
-	
+
 	var requirementsResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -935,7 +933,7 @@ func CapacityPlanningWorkflow(ctx workflow.Context, input CapacityPlanningWorkfl
 
 	// 4. Анализ стоимости
 	logger.Info("Анализ стоимости")
-	
+
 	var costAnalysisResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -959,7 +957,7 @@ func CapacityPlanningWorkflow(ctx workflow.Context, input CapacityPlanningWorkfl
 
 	// 5. Оценка рисков
 	logger.Info("Оценка рисков планирования емкости")
-	
+
 	var riskAssessmentResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -977,7 +975,7 @@ func CapacityPlanningWorkflow(ctx workflow.Context, input CapacityPlanningWorkfl
 
 	// 6. Генерация рекомендаций
 	logger.Info("Генерация рекомендаций по емкости")
-	
+
 	var recommendationsResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),
@@ -996,7 +994,7 @@ func CapacityPlanningWorkflow(ctx workflow.Context, input CapacityPlanningWorkfl
 
 	// 7. Создание временной шкалы
 	logger.Info("Создание временной шкалы реализации")
-	
+
 	var timelineResult map[string]interface{}
 	err = workflow.ExecuteActivity(
 		workflow.WithActivityOptions(ctx, activityOptions),

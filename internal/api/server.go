@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Server represents the API server
+// Server represents the API server.
 type Server struct {
 	port          string
 	tunnelManager *tunnel.Manager
@@ -26,7 +26,7 @@ type Server struct {
 	mu            sync.RWMutex
 }
 
-// Config represents API server configuration
+// Config represents API server configuration.
 type Config struct {
 	Port          string
 	TunnelManager *tunnel.Manager
@@ -35,7 +35,7 @@ type Config struct {
 	Version       string
 }
 
-// NewServer creates a new API server
+// NewServer creates a new API server.
 func NewServer(config Config) *Server {
 	return &Server{
 		port:          config.Port,

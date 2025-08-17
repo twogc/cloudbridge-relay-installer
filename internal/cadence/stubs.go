@@ -16,23 +16,21 @@ import (
 
 // Client представляет заглушку для Cadence клиента
 type Client struct {
-	logger *zap.Logger
-	config *CadenceConfig
+	logger  *zap.Logger
+	config  *CadenceConfig
 	running bool
 }
-
-
 
 // NewClient создает новый заглушечный Cadence клиент
 func NewClient(config *CadenceConfig, logger *zap.Logger) (*Client, error) {
 	if config == nil {
 		return nil, fmt.Errorf("конфигурация не может быть nil")
 	}
-	
+
 	if logger == nil {
 		logger = zap.NewNop()
 	}
-	
+
 	return &Client{
 		logger: logger,
 		config: config,
@@ -64,7 +62,7 @@ func (c *Client) StartWorkflow(ctx context.Context, workflowType string, input i
 		zap.String("workflow_type", workflowType),
 		zap.Any("input", input),
 	)
-	
+
 	return &WorkflowExecution{
 		ID:    fmt.Sprintf("workflow_%d", time.Now().Unix()),
 		RunID: fmt.Sprintf("run_%d", time.Now().UnixNano()),
@@ -77,7 +75,7 @@ func (c *Client) GetWorkflowResult(ctx context.Context, workflowID, runID string
 		zap.String("workflow_id", workflowID),
 		zap.String("run_id", runID),
 	)
-	
+
 	// Симуляция результата
 	time.Sleep(100 * time.Millisecond)
 	return nil
@@ -90,7 +88,7 @@ func (c *Client) SignalWorkflow(ctx context.Context, workflowID, runID, signalNa
 		zap.String("run_id", runID),
 		zap.String("signal_name", signalName),
 	)
-	
+
 	return nil
 }
 
@@ -101,7 +99,7 @@ func (c *Client) GetWorker() interface{} {
 
 // WorkerStub представляет заглушку для Cadence worker
 type WorkerStub struct {
-	logger *zap.Logger
+	logger  *zap.Logger
 	running bool
 }
 
