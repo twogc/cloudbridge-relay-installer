@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"context"
-	_ "net/http/pprof"
+	_ "net/http/pprof" //nosec G108 - профилирование для отладки
 	"runtime"
 	"sync"
 	"time"
