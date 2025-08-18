@@ -20,6 +20,6 @@ seaborn==0.12.2
 python-dotenv==1.0.0
 # Для работы с avro (если нужно):
 pandavro==1.8.0
-cryptography==42.0.2
+cryptography==45.0.6
 urllib3==2.2.2
 # Удалены tensorflow, torch, feast и их зависимости 
