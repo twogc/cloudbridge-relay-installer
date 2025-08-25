@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/quic-go/quic-go v0.53.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.uber.org/cadence v1.2.9
 	go.uber.org/yarpc v1.72.0
 	go.uber.org/zap v1.27.0
