@@ -1,97 +1,101 @@
-# Multi-stage build для CloudBridge Relay WireGuard
-FROM golang:1.23-alpine AS builder
+# =========================================================
+# CloudBridge Relay (Debian-based, без git.zx2c4 зависимостей)
+# =========================================================
 
-# Установка зависимостей для сборки
-RUN apk add --no-cache \
-    git \
-    build-base \
-    linux-headers \
-    wireguard-tools
+# ---------- Builder: Go binary ----------
+  FROM golang:1.23-bookworm AS builder
 
-# Установка рабочей директории
-WORKDIR /app
-
-# Копирование go mod файлов
-COPY go.mod go.sum ./
-
-# Скачивание зависимостей
-RUN go mod download
-
-# Копирование исходного кода
-COPY . .
-
-# Сборка приложения
-ARG VERSION=dev
-ARG BUILD_TIME
-ARG GIT_COMMIT
-
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}" \
-    -o cloudbridge-relay ./cmd/relay
-
-# Сборка WireGuard-go
-RUN git clone https://git.zx2c4.com/wireguard-go.git /tmp/wireguard-go && \
-    cd /tmp/wireguard-go && \
-    make && \
-    cp wireguard-go /app/
-
-# Финальный образ
-FROM alpine:3.18
-
-# Установка необходимых пакетов
-RUN apk add --no-cache \
-    ca-certificates \
-    tzdata \
-    iproute2 \
-    wireguard-tools \
-    iptables \
-    bash \
-    curl \
-    netcat-openbsd \
-    && rm -rf /var/cache/apk/*
-
-# Создание пользователя
-RUN addgroup -g 1000 cloudbridge && \
-    adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge
-
-# Создание необходимых директорий
-RUN mkdir -p \
-    /app/configs \
-    /app/logs \
-    /etc/wireguard \
-    /var/run/wireguard \
-    /var/log/cloudbridge-relay
-
-# Копирование бинарных файлов
-COPY --from=builder /app/cloudbridge-relay /usr/local/bin/
-COPY --from=builder /app/wireguard-go /usr/local/bin/
-
-# Установка прав
-RUN chmod +x /usr/local/bin/cloudbridge-relay && \
-    chmod +x /usr/local/bin/wireguard-go && \
-    chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay
-
-# Копирование конфигурации по умолчанию
-COPY configs/config.json /app/configs/config.json
-
-# Переключение на пользователя
-USER cloudbridge
-
-# Рабочая директория
-WORKDIR /app
-
-# Открытие портов
-EXPOSE 80 8080 8081 8082 9090 51820/udp
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:80/health || exit 1
-
-# Переменные окружения
-ENV CONFIG_PATH=/app/configs/config.json
-ENV LOG_LEVEL=info
-ENV WIREGUARD_ENABLED=true
-
-# Команда запуска
-ENTRYPOINT ["/usr/local/bin/cloudbridge-relay"]
-CMD ["--config", "/app/configs/config.json"] 
+  ENV CGO_ENABLED=1 GOOS=linux
+  WORKDIR /app
+  
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates git build-essential \
+      && rm -rf /var/lib/apt/lists/*
+  
+  # Cache go modules
+  COPY go.mod go.sum ./
+  RUN go mod download
+  
+  # App sources
+  COPY . .
+  
+  # Metadata
+  ARG VERSION=dev
+  ARG BUILD_TIME
+  ARG GIT_COMMIT
+  
+  # Build
+  RUN go build -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}" \
+        -o cloudbridge-relay ./cmd/relay
+  
+  
+  # ---------- (Optional) Builder: wireguard-go from GitHub mirror ----------
+  # Используется только если WITH_WG_GO=true
+  FROM golang:1.23-bookworm AS wggo-builder
+  
+  WORKDIR /tmp/wireguard-go
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates git build-essential make \
+      && rm -rf /var/lib/apt/lists/*
+  
+  # Официальное зеркало WireGuard-go на GitHub (mirror-only)
+  RUN git clone --depth=1 https://github.com/WireGuard/wireguard-go.git . \
+   && make \
+   && install -m 0755 wireguard-go /usr/local/bin/wireguard-go
+  
+  
+  # ---------- Final image ----------
+  FROM debian:bookworm-slim
+  
+  # Toggle: собирать и класть userspace wireguard-go внутрь контейнера
+  # По умолчанию false (рассчитываем на ядровой модуль у хоста)
+  ARG WITH_WG_GO=false
+  
+  # Базовые пакеты для рантайма
+  RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates tzdata bash curl \
+        iproute2 iptables wireguard-tools \
+      && rm -rf /var/lib/apt/lists/*
+  
+  # Если включен userspace WG — добавить бинарник из wggo-builder
+  # (Работать будет только при запуске контейнера с CAP_NET_ADMIN и /dev/net/tun)
+  COPY --from=wggo-builder /usr/local/bin/wireguard-go /usr/local/bin/wireguard-go
+  RUN if [ "${WITH_WG_GO}" != "true" ]; then rm -f /usr/local/bin/wireguard-go 2>/dev/null || true; fi
+  
+  # Пользователь и директории
+  RUN groupadd -g 1000 cloudbridge && \
+      useradd  -m -u 1000 -g 1000 -s /bin/bash cloudbridge && \
+      mkdir -p /app/configs /app/logs /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay
+  
+  # Бинарник приложения
+  COPY --from=builder /app/cloudbridge-relay /usr/local/bin/cloudbridge-relay
+  
+  # (Опционально) базовый конфиг внутрь образа — можно заменить своим томом
+  COPY configs/config.json /app/configs/config.json
+  
+  # Права
+  RUN chmod +x /usr/local/bin/cloudbridge-relay \
+   && chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay
+  
+  USER cloudbridge
+  WORKDIR /app
+  
+  # --------- Порты ---------
+  # 9090: TCP API/QUIC (TCP/UDP), 51820/udp: WireGuard, 8084: метрики
+  EXPOSE 9090 \
+         9090/udp \
+         51820/udp \
+         8084
+  
+  # Healthcheck (на API порт 9090)
+  HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -fsS http://localhost:9090/health || exit 1
+  
+  # ENV
+  ENV CONFIG_PATH=/app/configs/config.json \
+      LOG_LEVEL=info \
+      WIREGUARD_ENABLED=true
+  
+  ENTRYPOINT ["/usr/local/bin/cloudbridge-relay"]
+  CMD ["--config", "/app/configs/config.json"]
+  

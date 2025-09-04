@@ -1,7 +1,7 @@
 {
   "server": {
     "address": "0.0.0.0",
-    "port": 8080,
+    "port": 9090,
     "timeout": "30s",
     "max_tunnels": 1000,
     "ping_interval": "30s",
@@ -15,6 +15,28 @@
     "rest_cache_ttl": "5m",
     "rest_max_retries": 3,
     "rest_retry_delay": "100ms"
+  },
+  "tenants": {
+    "relay-test-tenant": {
+      "enabled": true,
+      "name": "Relay Test Tenant",
+      "description": "Test tenant for DevOps development",
+      "limits": {
+        "max_tunnels": 10,
+        "max_connections": 20,
+        "max_bandwidth_mbps": 100,
+        "rate_limit_per_second": 500,
+        "burst": 100
+      },
+      "jwt": {
+        "issuer": "2gc.ru",
+        "audience": "relay-test-tenant",
+        "allowed_claims": ["tenant_id", "user_id", "permissions"]
+      },
+      "allowed_ips": [],
+      "allowed_ports": [],
+      "features": ["tls", "jwt", "tunneling", "p2p", "quic"]
+    }
   },
   "keycloak": {
     "enabled": false,
@@ -33,8 +55,8 @@
   },
   "security": {
     "tls_enabled": false,
-    "cert_file": "",
-    "key_file": "",
+    "cert_file": "/app/certs/server.crt",
+    "key_file": "/app/certs/server.key",
     "allowed_ips": [],
     "rate_limit": {
       "enabled": true,
@@ -42,24 +64,25 @@
       "burst": 100
     },
     "mtls": {
-      "enabled": false,
-      "ca_file": ""
+      "enabled": true,
+      "ca_file": "/app/certs/ca.crt",
+      "client_cert_required": true
     },
-    "cipher_suites": [],
-    "min_tls_version": "",
+    "cipher_suites": ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+    "min_tls_version": "1.2",
     "audit": {
-      "enabled": false,
-      "log_file": ""
+      "enabled": true,
+      "log_file": "/app/logs/security.log"
     }
   },
   "metrics": {
     "enabled": true,
-    "port": 8081,
+    "port": 8084,
     "path": "/metrics"
   },
   "api": {
     "enabled": true,
-    "port": 8080,
+    "port": 9090,
     "version": "v1"
   },
   "logging": {
@@ -105,7 +128,7 @@
       "checks": [
         {
           "type": "http",
-          "url": "http://localhost:80/health",
+          "url": "http://localhost:9090/health",
           "timeout": "5s"
         },
         {

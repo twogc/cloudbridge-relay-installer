@@ -112,6 +112,15 @@ tenants:
     allowed_ports: [80, 443]
     rate_limit: 50
     burst: 5
+    
+  # Тестовый тенант для DevOps
+  relay-test-tenant:
+    bandwidth_limit: 104857600   # 100MB
+    connection_limit: 20
+    allowed_ips: []              # Все IP разрешены для тестирования
+    allowed_ports: []            # Все порты разрешены для тестирования
+    rate_limit: 500              # 500 запросов в минуту
+    burst: 100
 
 # Конфигурация балансировщика нагрузки
 load_balancer:

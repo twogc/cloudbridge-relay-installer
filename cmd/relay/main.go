@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -673,22 +674,113 @@ func (s *Server) handleWireGuardPacket(conn *net.UDPConn, addr *net.UDPAddr, dat
 	packetType := data[0]
 	switch packetType {
 	case 1: // Initiation
-		s.logger.Info("WireGuard initiation packet received", zap.String("from", addr.String()))
+		s.logger.Info("WireGuard initiation packet received", 
+			zap.String("from", addr.String()),
+			zap.Int("size", len(data)),
+			zap.String("hex_data", fmt.Sprintf("%x", data)),
+		)
+		// Генерируем Response пакет
+		responsePacket := s.generateWireGuardResponse(data, addr)
+		if responsePacket != nil {
+			s.logger.Info("Sending WireGuard response",
+				zap.String("to", addr.String()),
+				zap.Int("response_size", len(responsePacket)),
+			)
+			_, err := conn.WriteToUDP(responsePacket, addr)
+			if err != nil {
+				s.logger.Error("Failed to send WireGuard response", 
+					zap.String("to", addr.String()),
+					zap.Error(err),
+				)
+			} else {
+				s.logger.Info("WireGuard response sent successfully", 
+					zap.String("to", addr.String()),
+					zap.Int("bytes_sent", len(responsePacket)),
+				)
+			}
+		} else {
+			s.logger.Error("Failed to generate WireGuard response",
+				zap.String("to", addr.String()),
+			)
+		}
 	case 2: // Response
 		s.logger.Info("WireGuard response packet received", zap.String("from", addr.String()))
+		// Обрабатываем Response (завершение handshake)
+		s.handleWireGuardResponse(data, addr)
 	case 3: // Cookie Reply
 		s.logger.Debug("WireGuard cookie reply received", zap.String("from", addr.String()))
+		// Обрабатываем Cookie Reply
+		s.handleWireGuardCookieReply(data, addr)
 	case 4: // Transport Data
 		s.logger.Debug("WireGuard transport data received", zap.String("from", addr.String()))
+		// Обрабатываем транспортные данные
+		s.handleWireGuardTransport(data, addr)
 	default:
 		s.logger.Warn("Unknown WireGuard packet type", zap.Int("type", int(packetType)))
 	}
+}
 
-	// Echo back for testing (remove in production)
-	_, err := conn.WriteToUDP(data, addr)
-	if err != nil {
-		s.logger.Error("Failed to send WireGuard response", zap.Error(err))
+// generateWireGuardResponse генерирует Response пакет на Initiation
+func (s *Server) generateWireGuardResponse(initiationData []byte, addr *net.UDPAddr) []byte {
+	// Простая реализация Response пакета для тестирования
+	// В реальной реализации здесь будет полноценный WireGuard handshake
+	
+	// Формат Response: [тип][reserved][sender_index][receiver_index][reserved]
+	response := make([]byte, 6)
+	response[0] = 2 // Response тип
+	response[1] = 0 // Reserved
+	
+	// Копируем sender_index из initiation пакета
+	if len(initiationData) >= 4 {
+		response[2] = initiationData[2]
+		s.logger.Debug("Copied sender_index from initiation", 
+			zap.Uint8("sender_index", response[2]))
 	}
+	
+	// Генерируем receiver_index (в реальности это будет уникальный ID)
+	response[3] = byte(time.Now().Unix() % 256)
+	response[4] = 0 // Reserved
+	response[5] = 0 // Reserved
+	
+	s.logger.Info("Generated WireGuard response packet",
+		zap.String("to", addr.String()),
+		zap.Int("size", len(response)),
+		zap.Uint8("response_type", response[0]),
+		zap.Uint8("sender_index", response[2]),
+		zap.Uint8("receiver_index", response[3]),
+		zap.String("hex_data", fmt.Sprintf("%x", response)),
+	)
+	
+	return response
+}
+
+// handleWireGuardResponse обрабатывает Response пакет
+func (s *Server) handleWireGuardResponse(data []byte, addr *net.UDPAddr) {
+	s.logger.Info("Processing WireGuard response",
+		zap.String("from", addr.String()),
+		zap.Int("size", len(data)),
+	)
+	
+	// В реальной реализации здесь будет завершение handshake
+	// и установка защищенного соединения
+}
+
+// handleWireGuardCookieReply обрабатывает Cookie Reply
+func (s *Server) handleWireGuardCookieReply(data []byte, addr *net.UDPAddr) {
+	s.logger.Debug("Processing WireGuard cookie reply",
+		zap.String("from", addr.String()),
+		zap.Int("size", len(data)),
+	)
+}
+
+// handleWireGuardTransport обрабатывает транспортные данные
+func (s *Server) handleWireGuardTransport(data []byte, addr *net.UDPAddr) {
+	s.logger.Debug("Processing WireGuard transport data",
+		zap.String("from", addr.String()),
+		zap.Int("size", len(data)),
+	)
+	
+	// В реальной реализации здесь будет расшифровка и маршрутизация данных
 }
 
 // handleQUICPacket handles incoming QUIC packets
@@ -1031,21 +1123,99 @@ func (s *Server) processConnection(conn net.Conn) error {
 					continue
 				}
 
-				// Обновляем активность тенанта
-				s.tenantManager.UpdateTenantActivity(tenantID)
+							// Обновляем активность тенанта
+			s.tenantManager.UpdateTenantActivity(tenantID)
+		}
+
+		// Создаем реальный прокси туннель
+		tunnelID := fmt.Sprintf("tunnel_%s_%d", tenantID, time.Now().Unix())
+		if s.tunnelManager != nil {
+					// Приводим remotePort к int (поддерживаем как int, так и string)
+		var remotePortInt int
+		switch v := remotePort.(type) {
+		case int:
+			remotePortInt = v
+		case string:
+			if parsed, err := strconv.Atoi(v); err == nil {
+				remotePortInt = parsed
+			} else {
+				respTunnel := map[string]interface{}{
+					"type":    "tunnel_response",
+					"status":  "error",
+					"message": "Invalid remote_port format: " + v,
+				}
+				if err := writeJSON(writer, respTunnel); err != nil {
+					s.logger.Error("Failed to send tunnel response", zap.Error(err))
+					return err
+				}
+				s.logger.Error("Invalid remote_port format",
+					zap.String("tunnel_id", tunnelID),
+					zap.Any("remote_port", remotePort),
+				)
+				tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+				continue
+			}
+		case float64:
+			remotePortInt = int(v)
+		default:
+			respTunnel := map[string]interface{}{
+				"type":    "tunnel_response",
+				"status":  "error",
+				"message": "Invalid remote_port type",
+			}
+			if err := writeJSON(writer, respTunnel); err != nil {
+				s.logger.Error("Failed to send tunnel response", zap.Error(err))
+				return err
+			}
+			s.logger.Error("Invalid remote_port type",
+				zap.String("tunnel_id", tunnelID),
+				zap.Any("remote_port", remotePort),
+			)
+			tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+			continue
+		}
+
+			// Создаем новый прокси туннель
+			_, err := s.tunnelManager.CreateTunnel(tunnelID, conn, remoteHost, remotePortInt)
+			if err != nil {
+				respTunnel := map[string]interface{}{
+					"type":    "tunnel_response",
+					"status":  "error",
+					"message": "Failed to create proxy tunnel: " + err.Error(),
+				}
+				if err := writeJSON(writer, respTunnel); err != nil {
+					s.logger.Error("Failed to send tunnel response", zap.Error(err))
+					return err
+				}
+				s.logger.Error("Failed to create proxy tunnel",
+					zap.String("tunnel_id", tunnelID),
+					zap.String("remote_host", remoteHost),
+					zap.Int("remote_port", remotePortInt),
+					zap.Error(err),
+				)
+				tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+				continue
 			}
 
-			respTunnel := map[string]interface{}{
-				"type":          "tunnel_response",
-				"status":        "ok",
-				"tunnel_id":     fmt.Sprintf("tunnel_%s_%d", tenantID, time.Now().Unix()),
-				"local_port":    localPort,
-				"remote_host":   remoteHost,
-				"remote_port":   remotePort,
-				"protocol":      protocol,
-				"tenant_id":     tenantID,
-				"enhanced_mode": s.enhancedEnabled,
-			}
+			s.logger.Info("Proxy tunnel created successfully",
+				zap.String("tunnel_id", tunnelID),
+				zap.String("remote_host", remoteHost),
+				zap.Int("remote_port", remotePortInt),
+				zap.String("protocol", protocol),
+			)
+		}
+
+		respTunnel := map[string]interface{}{
+			"type":          "tunnel_response",
+			"status":        "ok",
+			"tunnel_id":     tunnelID,
+			"local_port":    localPort,
+			"remote_host":   remoteHost,
+			"remote_port":   remotePort,
+			"protocol":      protocol,
+			"tenant_id":     tenantID,
+			"enhanced_mode": s.enhancedEnabled,
+		}
 
 			if err := writeJSON(writer, respTunnel); err != nil {
 				s.logger.Error("Failed to send tunnel response", zap.Error(err))
@@ -1058,6 +1228,65 @@ func (s *Server) processConnection(conn net.Conn) error {
 				)
 				tunnelsCreatedTotal.WithLabelValues("success").Inc()
 			}
+		} else if msgType == "heartbeat" {
+			tunnelID, _ := msg["tunnel_id"].(string)
+			if tunnelID == "" {
+				_ = writeJSON(writer, map[string]interface{}{
+					"type":    "heartbeat_response",
+					"status":  "error",
+					"message": "tunnel_id required",
+				})
+				s.logger.Warn("Heartbeat without tunnel_id")
+				continue
+			}
+
+			if s.tunnelManager != nil {
+				if t, ok := s.tunnelManager.GetTunnel(tunnelID); ok && t != nil {
+					s.logger.Debug("Heartbeat for active tunnel", zap.String("tunnel_id", tunnelID))
+				} else {
+					s.logger.Debug("Heartbeat for unknown tunnel", zap.String("tunnel_id", tunnelID))
+				}
+			}
+
+			if err := writeJSON(writer, map[string]interface{}{
+				"type":      "heartbeat_response",
+				"status":    "ok",
+				"tunnel_id": tunnelID,
+			}); err != nil {
+				s.logger.Error("Failed to send heartbeat_response", zap.Error(err))
+				continue
+			}
+			s.logger.Info("Sent heartbeat_response", zap.String("tunnel_id", tunnelID))
+		} else if msgType == "tunnel_close" {
+			tunnelID, _ := msg["tunnel_id"].(string)
+			if tunnelID == "" {
+				_ = writeJSON(writer, map[string]interface{}{
+					"type":    "tunnel_response",
+					"status":  "error",
+					"message": "tunnel_id required",
+				})
+				s.logger.Warn("tunnel_close without tunnel_id")
+				continue
+			}
+
+			var closeErr error
+			if s.tunnelManager != nil {
+				closeErr = s.tunnelManager.CloseTunnel(tunnelID)
+			}
+
+			if closeErr != nil {
+				s.logger.Warn("CloseTunnel returned error", zap.String("tunnel_id", tunnelID), zap.Error(closeErr))
+			}
+
+			if err := writeJSON(writer, map[string]interface{}{
+				"type":      "tunnel_response",
+				"status":    "closed",
+				"tunnel_id": tunnelID,
+			}); err != nil {
+				s.logger.Error("Failed to send tunnel close response", zap.Error(err))
+				continue
+			}
+			s.logger.Info("Tunnel close acknowledged", zap.String("tunnel_id", tunnelID))
 		} else {
 			s.logger.Warn("Unknown message type", zap.String("type", msgType))
 		}
