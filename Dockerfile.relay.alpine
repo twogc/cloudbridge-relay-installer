@@ -1,0 +1,51 @@
+# Multi-stage build для CloudBridge Relay (без сборки wireguard-go)
+FROM golang:1.23-alpine AS builder
+
+RUN apk add --no-cache git build-base linux-headers
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+ARG VERSION=dev
+ARG BUILD_TIME
+ARG GIT_COMMIT
+# Если нужны CGO-фичи — оставляем CGO_ENABLED=1; иначе можно 0 для статического бинарника
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}" \
+    -o cloudbridge-relay ./cmd/relay
+
+FROM alpine:3.18
+
+# Инструменты сети + wireguard из apk
+RUN apk add --no-cache \
+    ca-certificates tzdata bash curl netcat-openbsd \
+    iproute2 iptables \
+    wireguard-tools wireguard-tools-wg-quick \
+    wireguard-go
+
+# Пользователь и директории
+RUN addgroup -g 1000 cloudbridge && adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge \
+ && mkdir -p /app/configs /app/logs /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay
+
+COPY --from=builder /app/cloudbridge-relay /usr/local/bin/
+COPY configs/config.json /app/configs/config.json
+
+RUN chmod +x /usr/local/bin/cloudbridge-relay \
+ && chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay
+
+USER cloudbridge
+WORKDIR /app
+
+EXPOSE 80 8080 8081 8082 9090 51820/udp
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:80/health || exit 1
+
+ENV CONFIG_PATH=/app/configs/config.json \
+    LOG_LEVEL=info \
+    WIREGUARD_ENABLED=true
+
+ENTRYPOINT ["/usr/local/bin/cloudbridge-relay"]
+CMD ["--config", "/app/configs/config.json"]

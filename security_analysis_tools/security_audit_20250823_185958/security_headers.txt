@@ -1,0 +1,21 @@
+# Анализ заголовков безопасности для example.com
+Дата проверки: Sat Aug 23 19:00:01 MSK 2025
+
+## Полученные заголовки:
+HTTP/2 200 
+content-type: text/html
+etag: "84238dfc8092e5d9c0dac8ef93371a07:1736799080.121134"
+last-modified: Mon, 13 Jan 2025 20:11:20 GMT
+cache-control: max-age=1655
+date: Sat, 23 Aug 2025 16:00:01 GMT
+alt-svc: h3=":443"; ma=93600,h3-29=":443"; ma=93600
+
+
+## Анализ заголовков безопасности:
+❌ Strict-Transport-Security: отсутствует
+❌ Content-Security-Policy: отсутствует
+❌ X-Frame-Options: отсутствует
+❌ X-Content-Type-Options: отсутствует
+❌ X-XSS-Protection: отсутствует
+❌ Referrer-Policy: отсутствует
+❌ Permissions-Policy: отсутствует

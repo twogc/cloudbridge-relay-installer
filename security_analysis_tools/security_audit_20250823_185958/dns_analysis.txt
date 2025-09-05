@@ -1,0 +1,11 @@
+# DNS анализ для example.com
+Дата проверки: Sat Aug 23 19:00:02 MSK 2025
+
+A запись: 23.220.75.232
+Обратный DNS: a23-220-75-232.deploy.static.akamaitechnologies.com.
+MX записи:
+0 .
+TXT записи:
+"_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9"
+"v=spf1 -all"
+DMARC запись: "v=DMARC1;p=reject;sp=reject;adkim=s;aspf=s"

@@ -1,208 +1,125 @@
 #!/bin/bash
+# CloudBridge Relay WireGuard - Универсальный инсталлер (исправленный)
+# Поддержка: Linux, macOS, (Windows через WSL2 с ручной установкой)
+# Не зависит от git.zx2c4.com — используем официальное GitHub-зеркало wireguard-go.
 
-# CloudBridge Relay WireGuard - Универсальный скрипт установки
-# Поддерживает: Linux, macOS, Windows (WSL)
-# Автоматическая установка и настройка
+set -euo pipefail
 
-set -e
+# === Цвета ===
+GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; NC='\033[0m'
 
-# Цвета для вывода
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Переменные
-VERSION="1.0.0"
+# === Переменные ===
+VERSION="1.0.1"
 BINARY_NAME="cloudbridge-relay"
 INSTALL_DIR="/usr/local/bin"
 CONFIG_DIR="/etc/cloudbridge-relay"
 SERVICE_DIR="/etc/systemd/system"
 REPO_URL="https://github.com/twogc/cloudbridge-relay-installer"
 DOCKER_IMAGE="twogc/cloudbridge-relay"
+WIREGUARD_GO_MIRROR="https://github.com/WireGuard/wireguard-go.git"  # оф. mirror-only :contentReference[oaicite:1]{index=1}
 
-# Функции
-print_banner() {
-    echo -e "${BLUE}"
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                    CloudBridge Relay                        ║"
-    echo "║                   WireGuard Edition                         ║"
-    echo "║                                                              ║"
-    echo "║  Enterprise-grade высокопроизводительный relay сервер       ║"
-    echo "║  с интеграцией WireGuard P2P Mesh Network                   ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
-    echo -e "${NC}"
-}
+# === Вывод ===
+log()   { echo -e "${GREEN}[INFO]${NC} $*"; }
+warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
+err()   { echo -e "${RED}[ERROR]${NC} $*"; }
+step()  { echo -e "${BLUE}[STEP]${NC} $*"; }
+banner(){ echo -e "${BLUE}\n== CloudBridge Relay · WireGuard Edition ==${NC}\n"; }
 
-print_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
-
-print_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_step() {
-    echo -e "${BLUE}[STEP]${NC} $1"
-}
-
-# Определение ОС
+# === ОС ===
+OS=""; VER=""
 detect_os() {
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        if [[ -f /etc/os-release ]]; then
-            . /etc/os-release
-            OS=$NAME
-            VER=$VERSION_ID
-        else
-            OS=$(uname -s)
-            VER=$(uname -r)
-        fi
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        OS="macOS"
-        VER=$(sw_vers -productVersion)
-    elif [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then
-        OS="Windows"
-        VER=$(uname -r)
-    else
-        OS="Unknown"
-        VER="Unknown"
-    fi
-    
-    print_info "Обнаружена ОС: $OS $VER"
+  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    if [[ -f /etc/os-release ]]; then . /etc/os-release; OS=$NAME; VER=$VERSION_ID; else OS=$(uname -s); VER=$(uname -r); fi
+  elif [[ "$OSTYPE" == "darwin"* ]]; then OS="macOS"; VER=$(sw_vers -productVersion)
+  elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then OS="Windows"; VER="$(uname -r)"
+  else OS="Unknown"; VER="Unknown"; fi
+  log "Обнаружена ОС: $OS $VER"
 }
 
-# Проверка зависимостей
-check_dependencies() {
-    print_step "Проверка зависимостей..."
-    
-    # Проверка Go
-    if ! command -v go &> /dev/null; then
-        print_error "Go не установлен. Установите Go 1.21+"
-        print_info "Скачать: https://golang.org/dl/"
+# === Зависимости разработчика (минимум: git; go нужен только для локальной сборки) ===
+check_base_deps() {
+  step "Проверка базовых зависимостей..."
+  command -v git >/dev/null || { err "Git не установлен"; exit 1; }
+  log "Git найден"
+  if command -v go >/dev/null; then
+    log "Go найден: $(go version)"
+  else
+    warn "Go не найден — локальная сборка бинарника будет пропущена (можно ставить Docker или использовать готовые пакеты)"
+  fi
+  if command -v docker >/dev/null; then
+    log "Docker найден"
+    DOCKER_AVAILABLE=true
+  else
+    warn "Docker не найден (режим Docker недоступен)"; DOCKER_AVAILABLE=false
+  fi
+}
+
+# === Установка WireGuard (инструменты) ===
+install_wireguard_tools() {
+  step "Установка WireGuard инструментов..."
+  case "$OS" in
+    "Ubuntu"|"Debian GNU/Linux"|"Debian")
+      sudo apt-get update
+      sudo apt-get install -y wireguard wireguard-tools iproute2 iptables
+      # Для старых ядер (<5.6) — модуль через DKMS:
+      if [[ "$(uname -r | cut -d. -f1-2)" < "5.6" ]]; then
+        sudo apt-get install -y wireguard-dkms
+      fi
+      ;;
+    "CentOS Linux"|"Red Hat Enterprise Linux"|"Rocky Linux"|"AlmaLinux"|"Fedora")
+      # См. оф. инструкцию WireGuard + EPEL/ELRepo при необходимости. :contentReference[oaicite:2]{index=2}
+      if command -v dnf >/dev/null; then PM=dnf; else PM=yum; fi
+      sudo $PM install -y epel-release || true
+      sudo $PM install -y wireguard-tools iproute iptables
+      ;;
+    "macOS")
+      # CLI утилиты доступны через brew. Также есть приложение в App Store. :contentReference[oaicite:3]{index=3}
+      if command -v brew >/dev/null; then
+        brew install wireguard-tools
+      else
+        err "Homebrew не установлен. Установите Homebrew и повторите: brew install wireguard-tools"
         exit 1
-    fi
-    
-    GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
-    print_info "Go версия: $GO_VERSION"
-    
-    # Проверка Git
-    if ! command -v git &> /dev/null; then
-        print_error "Git не установлен"
-        exit 1
-    fi
-    
-    print_info "Git найден"
-    
-    # Проверка Docker (опционально)
-    if command -v docker &> /dev/null; then
-        print_info "Docker найден"
-        DOCKER_AVAILABLE=true
-    else
-        print_warn "Docker не найден (некоторые функции недоступны)"
-        DOCKER_AVAILABLE=false
-    fi
+      fi
+      ;;
+    *)
+      warn "Авто-установка для \"$OS\" не поддержана. См. оф. инструкцию: https://www.wireguard.com/install/"
+      ;;
+  esac
+  log "wg / wg-quick доступны (wg-quick упрощает bring-up интерфейса). :contentReference[oaicite:4]{index=4}"
 }
 
-# Установка WireGuard зависимостей
-install_wireguard_deps() {
-    print_step "Установка WireGuard зависимостей..."
-    
-    case $OS in
-        "Ubuntu"|"Debian GNU/Linux")
-            print_info "Установка WireGuard для Ubuntu/Debian..."
-            sudo apt-get update
-            sudo apt-get install -y \
-                build-essential \
-                git \
-                iproute2 \
-                wireguard-tools \
-                wireguard-dkms
-            ;;
-        "CentOS Linux"|"Red Hat Enterprise Linux"|"Fedora")
-            print_info "Установка WireGuard для CentOS/RHEL/Fedora..."
-            sudo yum install -y \
-                gcc \
-                git \
-                iproute \
-                kernel-devel \
-                wireguard-tools
-            ;;
-        "macOS")
-            print_info "Установка WireGuard для macOS..."
-            if command -v brew &> /dev/null; then
-                brew install wireguard-tools
-            else
-                print_error "Homebrew не установлен. Установите Homebrew"
-                exit 1
-            fi
-            ;;
-        *)
-            print_warn "Автоматическая установка WireGuard не поддерживается для $OS"
-            print_info "Установите WireGuard вручную: https://www.wireguard.com/install/"
-            ;;
-    esac
-}
-
-# Сборка WireGuard-go
+# === Сборка wireguard-go (userspace), если нужно ===
 build_wireguard_go() {
-    print_step "Сборка WireGuard-go..."
-    
-    TEMP_DIR=$(mktemp -d)
-    cd $TEMP_DIR
-    
-    print_info "Клонирование WireGuard-go..."
-    git clone https://git.zx2c4.com/wireguard-go.git
-    cd wireguard-go
-    
-    print_info "Сборка WireGuard-go..."
-    make
-    
-    print_info "Установка WireGuard-go..."
-    sudo cp wireguard-go $INSTALL_DIR/
-    sudo chmod +x $INSTALL_DIR/wireguard-go
-    
-    cd /
-    rm -rf $TEMP_DIR
-    
-    print_info "WireGuard-go установлен в $INSTALL_DIR/wireguard-go"
+  step "Сборка wireguard-go (userspace) из GitHub mirror..."
+  local t; t="$(mktemp -d)"; pushd "$t" >/dev/null
+  git clone --depth=1 "$WIREGUARD_GO_MIRROR"
+  cd wireguard-go
+  make
+  sudo install -m 0755 wireguard-go "$INSTALL_DIR/wireguard-go"
+  popd >/dev/null; rm -rf "$t"
+  log "Установлено: $INSTALL_DIR/wireguard-go (mirror-only репозиторий). :contentReference[oaicite:5]{index=5}"
 }
 
-# Сборка CloudBridge Relay
+# === Сборка CloudBridge Relay (локально, если есть go) ===
 build_cloudbridge_relay() {
-    print_step "Сборка CloudBridge Relay..."
-    
-    # Создание временной директории
-    TEMP_DIR=$(mktemp -d)
-    cd $TEMP_DIR
-    
-    print_info "Клонирование репозитория..."
-    git clone $REPO_URL .
-    
-    print_info "Сборка CloudBridge Relay..."
-    make build
-    
-    print_info "Установка CloudBridge Relay..."
-    sudo cp bin/$BINARY_NAME $INSTALL_DIR/
-    sudo chmod +x $INSTALL_DIR/$BINARY_NAME
-    
-    cd /
-    rm -rf $TEMP_DIR
-    
-    print_info "CloudBridge Relay установлен в $INSTALL_DIR/$BINARY_NAME"
+  if ! command -v go >/dev/null; then
+    warn "Go не найден — пропускаю локальную сборку CloudBridge Relay"
+    return
+  fi
+  step "Сборка CloudBridge Relay..."
+  local t; t="$(mktemp -d)"; pushd "$t" >/dev/null
+  git clone "$REPO_URL" .
+  make build
+  sudo install -m 0755 "bin/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
+  popd >/dev/null; rm -rf "$t"
+  log "Установлено: $INSTALL_DIR/$BINARY_NAME"
 }
 
-# Создание конфигурации
+# === Конфигурация ===
 create_config() {
-    print_step "Создание конфигурации..."
-    
-    sudo mkdir -p $CONFIG_DIR
-    
-    cat > /tmp/config.yaml << EOF
+  step "Создание конфигурации..."
+  sudo mkdir -p "$CONFIG_DIR"
+  cat > /tmp/config.yaml <<'EOF'
 # CloudBridge Relay Configuration
 server:
   address: "0.0.0.0"
@@ -236,223 +153,177 @@ logging:
   format: "json"
   output: "stdout"
 EOF
-    
-    sudo cp /tmp/config.yaml $CONFIG_DIR/
-    rm /tmp/config.yaml
-    
-    print_info "Конфигурация создана в $CONFIG_DIR/config.yaml"
+  sudo mv /tmp/config.yaml "$CONFIG_DIR/config.yaml"
+  sudo chmod 0644 "$CONFIG_DIR/config.yaml"
+  log "Конфигурация: $CONFIG_DIR/config.yaml"
 }
 
-# Создание systemd сервиса
+# === systemd сервис с харденигом и доступом к TUN ===
 create_systemd_service() {
-    print_step "Создание systemd сервиса..."
-    
-    cat > /tmp/cloudbridge-relay.service << EOF
+  step "Создание systemd сервиса..."
+  # Нужны права на сетевые операции (NET_ADMIN) и доступ к /dev/net/tun
+  # Используем набор безопасных опций systemd (Protect*, NoNewPrivileges и т.д.). :contentReference[oaicite:6]{index=6}
+  cat > /tmp/cloudbridge-relay.service <<EOF
 [Unit]
-Description=CloudBridge Relay WireGuard
-After=network.target
-Wants=network.target
+Description=CloudBridge Relay (WireGuard)
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=root
 Group=root
-ExecStart=$INSTALL_DIR/$BINARY_NAME --config $CONFIG_DIR/config.yaml
+Environment=CONFIG_PATH=$CONFIG_DIR/config.yaml
+ExecStart=$INSTALL_DIR/$BINARY_NAME --config \$CONFIG_PATH
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=cloudbridge-relay
 
-# Security settings
-NoNewPrivileges=true
-PrivateTmp=true
+# Capabilities / devices
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+DeviceAllow=/dev/net/tun rw
+PrivateDevices=yes
+DevicePolicy=closed
+
+# Hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
 ProtectSystem=strict
-ProtectHome=true
+ProtectHome=read-only
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
 ReadWritePaths=$CONFIG_DIR /var/run/wireguard /etc/wireguard
 
 [Install]
 WantedBy=multi-user.target
 EOF
-    
-    sudo cp /tmp/cloudbridge-relay.service $SERVICE_DIR/
-    rm /tmp/cloudbridge-relay.service
-    
-    sudo systemctl daemon-reload
-    sudo systemctl enable cloudbridge-relay
-    
-    print_info "Systemd сервис создан и включен"
+  sudo mv /tmp/cloudbridge-relay.service "$SERVICE_DIR/cloudbridge-relay.service"
+  sudo systemctl daemon-reload
+  sudo systemctl enable cloudbridge-relay
+  log "systemd сервис установлен и включен"
 }
 
-# Установка через Docker
+# === Установка/запуск через Docker (с привилегиями WG) ===
 install_docker() {
-    print_step "Установка через Docker..."
-    
-    if [ "$DOCKER_AVAILABLE" = false ]; then
-        print_error "Docker недоступен"
-        exit 1
-    fi
-    
-    print_info "Скачивание Docker образа..."
-    docker pull $DOCKER_IMAGE:latest
-    
-    print_info "Создание Docker контейнера..."
-    docker run -d \
-        --name cloudbridge-relay \
-        --restart unless-stopped \
-        -p 8080:8080 \
-        -p 9090:9090 \
-        -p 51820:51820/udp \
-        -v $CONFIG_DIR:/app/configs \
-        -v /etc/wireguard:/etc/wireguard \
-        -v /var/run/wireguard:/var/run/wireguard \
-        $DOCKER_IMAGE:latest
-    
-    print_info "Docker контейнер запущен"
+  step "Установка через Docker..."
+  if [[ "${DOCKER_AVAILABLE:-false}" != "true" ]]; then err "Docker недоступен"; exit 1; fi
+
+  sudo mkdir -p "$CONFIG_DIR" /etc/wireguard /var/run/wireguard
+
+  log "Загрузка образа: $DOCKER_IMAGE:latest"
+  docker pull "$DOCKER_IMAGE:latest"
+
+  log "Запуск контейнера с CAP_NET_ADMIN и /dev/net/tun..."
+  docker run -d --name cloudbridge-relay \
+    --restart unless-stopped \
+    --cap-add=NET_ADMIN \
+    --device=/dev/net/tun \
+    -p 8080:8080 -p 9090:9090 -p 51820:51820/udp \
+    -v "$CONFIG_DIR":/app/configs:ro \
+    -v /etc/wireguard:/etc/wireguard \
+    -v /var/run/wireguard:/var/run/wireguard \
+    "$DOCKER_IMAGE:latest" \
+    --config /app/configs/config.yaml
+
+  log "Контейнер запущен. Для WireGuard в контейнере требуются NET_ADMIN и /dev/net/tun. :contentReference[oaicite:7]{index=7}"
 }
 
-# Проверка установки
+# === Проверки ===
 verify_installation() {
-    print_step "Проверка установки..."
-    
-    # Проверка бинарного файла
-    if [ -f "$INSTALL_DIR/$BINARY_NAME" ]; then
-        print_info "CloudBridge Relay установлен"
-        $INSTALL_DIR/$BINARY_NAME --version
-    else
-        print_error "CloudBridge Relay не найден"
-        exit 1
-    fi
-    
-    # Проверка WireGuard-go
-    if [ -f "$INSTALL_DIR/wireguard-go" ]; then
-        print_info "WireGuard-go установлен"
-        $INSTALL_DIR/wireguard-go --version
-    else
-        print_error "WireGuard-go не найден"
-        exit 1
-    fi
-    
-    # Проверка конфигурации
-    if [ -f "$CONFIG_DIR/config.yaml" ]; then
-        print_info "Конфигурация создана"
-    else
-        print_error "Конфигурация не найдена"
-        exit 1
-    fi
-    
-    print_info "Установка завершена успешно!"
+  step "Проверка установки..."
+  if [[ -x "$INSTALL_DIR/$BINARY_NAME" ]]; then
+    log "CloudBridge Relay: $("$INSTALL_DIR/$BINARY_NAME" --version || echo ok)"
+  else
+    warn "Бинарник CloudBridge Relay отсутствует (нормально при Docker-инсталляции)"
+  fi
+  if command -v wg >/dev/null; then log "wg OK"; else warn "wg не найден"; fi
+  if [[ -x "$INSTALL_DIR/wireguard-go" ]]; then "$INSTALL_DIR/wireguard-go" -version || true; fi
+  [[ -f "$CONFIG_DIR/config.yaml" ]] || { err "Нет $CONFIG_DIR/config.yaml"; exit 1; }
+  log "ОК"
 }
 
-# Показать справку
-show_help() {
-    echo "Использование: $0 [опции]"
-    echo ""
-    echo "Опции:"
-    echo "  --help, -h          Показать эту справку"
-    echo "  --version, -v       Показать версию"
-    echo "  --docker            Установить через Docker"
-    echo "  --no-wireguard      Пропустить установку WireGuard"
-    echo "  --config-only       Только создать конфигурацию"
-    echo ""
-    echo "Примеры:"
-    echo "  $0                  Полная установка"
-    echo "  $0 --docker         Установка через Docker"
-    echo "  $0 --config-only    Только конфигурация"
+# === Справка ===
+usage() {
+  cat <<EOF
+Использование: $0 [опции]
+  --help | -h         Показать помощь
+  --version | -v      Показать версию
+  --docker            Установка/запуск через Docker (рекомендуется без локальной сборки)
+  --no-wireguard      Пропустить установку WireGuard инструментов и wireguard-go
+  --config-only       Только создать конфигурацию
+  --no-build          Не собирать CloudBridge Relay локально (использовать только Docker или уже установленный бинарь)
+  --no-wggo           Не собирать wireguard-go (если ядро имеет модуль WireGuard)
+EOF
 }
 
-# Основная функция
+# === main ===
 main() {
-    print_banner
-    
-    # Парсинг аргументов
-    DOCKER_MODE=false
-    NO_WIREGUARD=false
-    CONFIG_ONLY=false
-    
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --help|-h)
-                show_help
-                exit 0
-                ;;
-            --version|-v)
-                echo "CloudBridge Relay WireGuard v$VERSION"
-                exit 0
-                ;;
-            --docker)
-                DOCKER_MODE=true
-                shift
-                ;;
-            --no-wireguard)
-                NO_WIREGUARD=true
-                shift
-                ;;
-            --config-only)
-                CONFIG_ONLY=true
-                shift
-                ;;
-            *)
-                print_error "Неизвестная опция: $1"
-                show_help
-                exit 1
-                ;;
-        esac
-    done
-    
-    # Проверка root прав
-    if [[ $EUID -ne 0 ]]; then
-        print_error "Этот скрипт должен быть запущен с правами root (sudo)"
-        exit 1
-    fi
-    
-    detect_os
-    check_dependencies
-    
-    if [ "$CONFIG_ONLY" = true ]; then
-        create_config
-        print_info "Конфигурация создана"
-        exit 0
-    fi
-    
-    if [ "$DOCKER_MODE" = true ]; then
-        install_docker
-    else
-        if [ "$NO_WIREGUARD" = false ]; then
-            install_wireguard_deps
-            build_wireguard_go
-        fi
-        build_cloudbridge_relay
-        create_config
-        create_systemd_service
-    fi
-    
-    verify_installation
-    
-    echo ""
-    echo -e "${GREEN}🎉 Установка завершена успешно!${NC}"
-    echo ""
-    echo -e "${BLUE}📋 Что было установлено:${NC}"
-    echo "  • CloudBridge Relay с WireGuard интеграцией"
-    echo "  • WireGuard-go (пользовательская реализация)"
-    echo "  • Systemd сервис (автозапуск)"
-    echo "  • Конфигурационные файлы"
-    echo ""
-    echo -e "${BLUE}🔧 Управление:${NC}"
-    echo "  • systemctl start cloudbridge-relay    - запуск"
-    echo "  • systemctl stop cloudbridge-relay     - остановка"
-    echo "  • systemctl status cloudbridge-relay   - статус"
-    echo "  • journalctl -u cloudbridge-relay -f   - логи"
-    echo ""
-    echo -e "${BLUE}🌐 Доступ:${NC}"
-    echo "  • Relay сервер: http://localhost:8080"
-    echo "  • Метрики: http://localhost:9090/metrics"
-    echo "  • WireGuard: wg show wg-mesh0"
-    echo ""
-    echo -e "${BLUE}📖 Документация:${NC}"
-    echo "  • https://github.com/twogc/cloudbridge-relay-installer"
-    echo "  • https://www.wireguard.com/"
+  banner
+  local DOCKER_MODE=false NO_WG=false CONFIG_ONLY=false NO_BUILD=false NO_WGGO=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --help|-h) usage; exit 0 ;;
+      --version|-v) echo "CloudBridge Relay Installer v$VERSION"; exit 0 ;;
+      --docker) DOCKER_MODE=true; shift ;;
+      --no-wireguard) NO_WG=true; shift ;;
+      --config-only) CONFIG_ONLY=true; shift ;;
+      --no-build) NO_BUILD=true; shift ;;
+      --no-wggo) NO_WGGO=true; shift ;;
+      *) err "Неизвестная опция: $1"; usage; exit 1 ;;
+    esac
+  done
+
+  # root
+  if [[ $EUID -ne 0 ]]; then err "Запустите с правами root (sudo)"; exit 1; fi
+
+  detect_os
+  check_base_deps
+
+  if $CONFIG_ONLY; then create_config; log "Готово"; exit 0; fi
+
+  # Инструменты WG (wg / wg-quick) — полезны в любом режиме. :contentReference[oaicite:8]{index=8}
+  if ! $NO_WG; then install_wireguard_tools; fi
+
+  # userspace wireguard-go — только если требуется (нет ядрового модуля / контейнер). :contentReference[oaicite:9]{index=9}
+  if ! $NO_WG && ! $NO_WGGO; then build_wireguard_go; fi
+
+  # бинарник relay
+  if ! $NO_BUILD; then build_cloudbridge_relay; fi
+
+  create_config
+
+  if $DOCKER_MODE; then
+    install_docker
+  else
+    create_systemd_service
+    systemctl restart cloudbridge-relay
+    systemctl --no-pager status cloudbridge-relay || true
+  fi
+
+  verify_installation
+
+  echo -e "\n${GREEN}🎉 Установка завершена успешно!${NC}\n"
+  echo -e "${BLUE}Управление:${NC}
+  • systemctl start|stop|status cloudbridge-relay
+  • journalctl -u cloudbridge-relay -f"
+  echo -e "${BLUE}Доступ:${NC}
+  • API:     http://localhost:8080
+  • Metrics: http://localhost:9090/metrics
+  • WG:      wg show wg-mesh0"
+  echo -e "${BLUE}Справка по WireGuard:${NC}
+  • Установка: https://www.wireguard.com/install/
+  • QuickStart + wg-quick: https://www.wireguard.com/quickstart/"
 }
 
-# Запуск
 main "$@"

@@ -1,0 +1,24 @@
+# Анализ заголовков безопасности для applications.iidf.ru
+Дата проверки: Sat Aug 23 19:00:44 MSK 2025
+
+## Полученные заголовки:
+HTTP/1.1 200 OK
+Server: nginx
+Date: Sat, 23 Aug 2025 16:00:44 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 967
+Last-Modified: Sat, 07 Jun 2025 08:06:00 GMT
+Connection: keep-alive
+ETag: "6843f2e8-3c7"
+X-Content-Type-Options: nosniff
+Accept-Ranges: bytes
+
+
+## Анализ заголовков безопасности:
+❌ Strict-Transport-Security: отсутствует
+❌ Content-Security-Policy: отсутствует
+❌ X-Frame-Options: отсутствует
+✅ X-Content-Type-Options: nosniff
+❌ X-XSS-Protection: отсутствует
+❌ Referrer-Policy: отсутствует
+❌ Permissions-Policy: отсутствует

@@ -1,0 +1,27 @@
+# Анализ заголовков безопасности для app60526.pushgrow.io
+Дата проверки: Sat Aug 23 18:59:02 MSK 2025
+
+## Полученные заголовки:
+HTTP/2 200 
+server: nginx
+date: Sat, 23 Aug 2025 15:57:11 GMT
+content-type: text/html
+content-length: 1262
+last-modified: Wed, 06 Mar 2019 06:33:42 GMT
+etag: "5c7f69c6-4ee"
+strict-transport-security: max-age=31536000; includeSubDomains
+content-security-policy-report-only: default-src https:; script-src https: 'unsafe-eval' 'unsafe-inline'; style-src https: 'unsafe-inline'; img-src https: data:; font-src https: data:; report-uri /csp-report
+cache-control: no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0
+x-frame-options: SAMEORIGIN
+x-xss-protection: 1; mode=block
+accept-ranges: bytes
+
+
+## Анализ заголовков безопасности:
+✅ strict-transport-security: max-age=31536000; includeSubDomains
+✅ content-security-policy-report-only: default-src https:; script-src https: 'unsafe-eval' 'unsafe-inline'; style-src https: 'unsafe-inline'; img-src https: data:; font-src https: data:; report-uri /csp-report
+✅ x-frame-options: SAMEORIGIN
+❌ X-Content-Type-Options: отсутствует
+✅ x-xss-protection: 1; mode=block
+❌ Referrer-Policy: отсутствует
+❌ Permissions-Policy: отсутствует

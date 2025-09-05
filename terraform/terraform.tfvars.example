@@ -1,0 +1,31 @@
+# CloudBridge Relay - Terraform Variables Example
+# Скопируйте этот файл в terraform.tfvars и настройте под свои нужды
+
+# Название проекта
+project_name = "cloudbridge-relay"
+
+# Конфигурация виртуальной машины
+# Доступные варианты:
+# - STD2-2-4: 2 vCPU, 4 GB RAM (для тестирования)
+# - STD2-4-8: 4 vCPU, 8 GB RAM (рекомендуется)
+# - STD2-8-16: 8 vCPU, 16 GB RAM (для высокой нагрузки)
+compute_flavor = "STD2-4-8"
+
+# Имя SSH ключа (создайте в VK Cloud консоли)
+key_pair_name = "your-ssh-key-name"
+
+# Зона доступности
+# Доступные зоны:
+# - MS1: Москва
+# - SPB1: Санкт-Петербург
+availability_zone = "MS1"
+
+# Размер диска в GB
+disk_size = 80
+
+# Публичный SSH ключ для доступа к VM
+# Сгенерируйте командой: ssh-keygen -t rsa -b 4096 -C "your-email@example.com"
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC..."
+
+
+

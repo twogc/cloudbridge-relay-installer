@@ -1,0 +1,9 @@
+# DNS анализ для app60526.pushgrow.io
+Дата проверки: Sat Aug 23 18:59:03 MSK 2025
+
+A запись: pushgrow.io.
+MX записи:
+pushgrow.io.
+TXT записи:
+pushgrow.io.
+DMARC запись: pushgrow.io.

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  cloudbridge-relay:
+    build:
+      context: .
+      dockerfile: Dockerfile.relay.alpine
+      args:
+        VERSION: ${VERSION:-dev}
+        BUILD_TIME: ${BUILD_TIME:-$(date -u +%Y-%m-%d_%H:%M:%S)}
+        GIT_COMMIT: ${GIT_COMMIT:-$(git rev-parse HEAD 2>/dev/null || echo 'unknown')}
+    image: twogc/cloudbridge-relay:${VERSION:-latest}
+    container_name: cloudbridge-relay
+    restart: unless-stopped
+    
+    # Критически важные настройки для WireGuard
+    cap_add:
+      - NET_ADMIN  # Для создания сетевых интерфейсов и маршрутов
+    devices:
+      - /dev/net/tun:/dev/net/tun  # TUN устройство для VPN
+    
+    # Сетевые настройки
+    network_mode: host  # Или bridge с пробросом портов
+    # ports:  # Раскомментировать если не используете host network
+    #   - "80:80"
+    #   - "8080:8080"
+    #   - "8081:8081"
+    #   - "8082:8082"
+    #   - "9090:9090"
+    #   - "51820:51820/udp"
+    
+    # Переменные окружения
+    environment:
+      - CONFIG_PATH=/app/configs/config.json
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - WIREGUARD_ENABLED=true
+      - TZ=${TZ:-UTC}
+    
+    # Тома для конфигурации и логов
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./logs:/app/logs
+      - /etc/wireguard:/etc/wireguard:ro  # Если есть внешние конфиги
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Логирование
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Ресурсы
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+
+networks:
+  default:
+    name: cloudbridge-network
+    driver: bridge

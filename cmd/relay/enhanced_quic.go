@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
@@ -10,6 +11,7 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 // EnhancedQUICManager управляет Enhanced QUIC функциональностью
@@ -68,10 +70,14 @@ func (eqm *EnhancedQUICManager) Initialize() error {
 	// Настраиваем тенантов
 	eqm.config.TenantManager = eqm.tenantManager
 
-	// Добавляем тестовых тенантов
-	eqm.tenantManager.AddTenant("premium", 1024*1024*1024, 100) // 1GB, 100 connections
-	eqm.tenantManager.AddTenant("standard", 100*1024*1024, 10)  // 100MB, 10 connections
-	eqm.tenantManager.AddTenant("basic", 10*1024*1024, 5)       // 10MB, 5 connections
+	// Загружаем tenant'ы из конфигурационного файла
+	if err := eqm.loadTenantsFromConfig(); err != nil {
+		eqm.logger.Warn("Failed to load tenants from config, using defaults", zap.Error(err))
+		// Fallback к тестовым tenant'ам
+		eqm.tenantManager.AddTenant("premium", 1024*1024*1024, 100) // 1GB, 100 connections
+		eqm.tenantManager.AddTenant("standard", 100*1024*1024, 10)  // 100MB, 10 connections
+		eqm.tenantManager.AddTenant("basic", 10*1024*1024, 5)       // 10MB, 5 connections
+	}
 
 	// Настраиваем Keycloak, если включен
 	if eqm.config.EnableKeycloakIntegration && eqm.config.KeycloakConfig != nil {
@@ -306,6 +312,67 @@ func (eqm *EnhancedQUICManager) UpdateConfig(config *quic.EnhancedConfig) error 
 	if eqm.enabled {
 		return eqm.Initialize()
 	}
+
+	return nil
+}
+
+// loadTenantsFromConfig загружает tenant'ы из конфигурационного файла enhanced_quic.yaml
+func (eqm *EnhancedQUICManager) loadTenantsFromConfig() error {
+	eqm.logger.Info("Loading tenants from configuration file")
+
+	// Путь к конфигурационному файлу
+	configPath := "configs/enhanced_quic.yaml"
+	
+	// Читаем файл конфигурации
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file %s: %w", configPath, err)
+	}
+
+	// Парсим YAML
+	var config struct {
+		Tenants map[string]struct {
+			BandwidthLimit   int64   `yaml:"bandwidth_limit"`
+			ConnectionLimit  int     `yaml:"connection_limit"`
+			AllowedIPs       []string `yaml:"allowed_ips"`
+			AllowedPorts     []int    `yaml:"allowed_ports"`
+			RateLimit        int     `yaml:"rate_limit"`
+			Burst           int     `yaml:"burst"`
+		} `yaml:"tenants"`
+	}
+
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("failed to parse YAML config: %w", err)
+	}
+
+	// Добавляем tenant'ы в менеджер и синхронизируем с relayTenantManager
+	for tenantID, tenantConfig := range config.Tenants {
+		eqm.logger.Info("Adding tenant from config",
+			zap.String("tenant_id", tenantID),
+			zap.Int64("bandwidth_limit", tenantConfig.BandwidthLimit),
+			zap.Int("connection_limit", tenantConfig.ConnectionLimit),
+		)
+
+		// Внутренний Enhanced TenantManager (для QUIC)
+		eqm.tenantManager.AddTenant(tenantID, tenantConfig.BandwidthLimit, tenantConfig.ConnectionLimit)
+
+		// Также добавляем в общий relay TenantManager, чтобы health/валидации видели тенантов
+		if eqm.relayTenantManager != nil {
+			limits := &tenant.TenantLimits{
+				MaxTunnels:     tenantConfig.ConnectionLimit,
+				MaxConnections: tenantConfig.ConnectionLimit,
+				RateLimit:      float64(tenantConfig.RateLimit),
+				Burst:          tenantConfig.Burst,
+				AllowedIPs:     tenantConfig.AllowedIPs,
+				AllowedPorts:   tenantConfig.AllowedPorts,
+			}
+			_ = eqm.relayTenantManager.CreateTenant(tenantID, tenantID, limits)
+		}
+	}
+
+	eqm.logger.Info("Tenants loaded from config successfully",
+		zap.Int("total_tenants", len(config.Tenants)),
+	)
 
 	return nil
 }

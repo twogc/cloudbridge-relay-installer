@@ -1,0 +1,322 @@
+# Конфигурация Border Gateway архитектуры для Cloudflare партнерства
+# Российские клиенты -> RU Relay -> EU Border Gateway -> Cloudflare
+
+# Российские Relay серверы (CloudBridge управление)
+russian_relays:
+  # Москва
+  moscow_relay:
+    enabled: true
+    address: "0.0.0.0:8080"
+    data_residency: "RU"
+    compliance_laws:
+      - "152-FZ"  # Персональные данные
+      - "187-FZ"  # Критическая информационная инфраструктура
+      - "SORM"    # Система оперативно-розыскных мероприятий
+    
+    local_isps:
+      - "Rostelecom"
+      - "MTS"
+      - "Beeline"
+      - "Megafon"
+    
+    border_gateways:
+      - "eu-gateway-1.2gc.eu:8443"
+      - "eu-gateway-2.2gc.eu:8443"
+      - "eu-gateway-3.2gc.eu:8443"
+    
+    traffic_routing: "geographic"  # geographic, load_balanced
+    header_masking: true
+    ip_obfuscation: true
+    traffic_encryption: "wireguard"  # wireguard, quic, tls
+    
+    metrics_enabled: true
+    audit_logging: true
+
+  # Санкт-Петербург
+  spb_relay:
+    enabled: true
+    address: "0.0.0.0:8081"
+    data_residency: "RU"
+    compliance_laws:
+      - "152-FZ"
+      - "187-FZ"
+      - "SORM"
+    
+    local_isps:
+      - "Rostelecom"
+      - "MTS"
+      - "Beeline"
+    
+    border_gateways:
+      - "eu-gateway-1.2gc.eu:8443"
+      - "eu-gateway-2.2gc.eu:8443"
+    
+    traffic_routing: "geographic"
+    header_masking: true
+    ip_obfuscation: true
+    traffic_encryption: "wireguard"
+    
+    metrics_enabled: true
+    audit_logging: true
+
+  # Екатеринбург
+  ekb_relay:
+    enabled: true
+    address: "0.0.0.0:8082"
+    data_residency: "RU"
+    compliance_laws:
+      - "152-FZ"
+      - "187-FZ"
+    
+    local_isps:
+      - "Rostelecom"
+      - "MTS"
+    
+    border_gateways:
+      - "eu-gateway-1.2gc.eu:8443"
+    
+    traffic_routing: "load_balanced"
+    header_masking: true
+    ip_obfuscation: true
+    traffic_encryption: "quic"
+    
+    metrics_enabled: true
+    audit_logging: true
+
+# EU Border Gateway серверы (совместное управление с Cloudflare)
+eu_border_gateways:
+  # Германия - Франкфурт
+  frankfurt_gateway:
+    enabled: true
+    address: "0.0.0.0:8443"
+    region: "EU-West"
+    provider: "Hetzner"
+    
+    cloudflare_endpoints:
+      - "api.cloudflare.com"
+      - "dash.cloudflare.com"
+      - "workers.cloudflare.com"
+    
+    russian_relays:
+      - "moscow-relay.2gc.ru:8080"
+      - "spb-relay.2gc.ru:8081"
+      - "ekb-relay.2gc.ru:8082"
+    
+    header_cleaning: true
+    ip_rotation: true
+    traffic_shaping: true
+    geographic_routing: true
+    
+    cloudflare_api: "https://api.cloudflare.com/client/v4"
+    cloudflare_token: "${CLOUDFLARE_API_TOKEN}"
+    cloudflare_zone: "${CLOUDFLARE_ZONE_ID}"
+    
+    metrics_enabled: true
+    cloudflare_metrics: true
+
+  # Нидерланды - Амстердам
+  amsterdam_gateway:
+    enabled: true
+    address: "0.0.0.0:8444"
+    region: "EU-North"
+    provider: "OVH"
+    
+    cloudflare_endpoints:
+      - "api.cloudflare.com"
+      - "dash.cloudflare.com"
+    
+    russian_relays:
+      - "moscow-relay.2gc.ru:8080"
+      - "spb-relay.2gc.ru:8081"
+    
+    header_cleaning: true
+    ip_rotation: true
+    traffic_shaping: true
+    geographic_routing: true
+    
+    cloudflare_api: "https://api.cloudflare.com/client/v4"
+    cloudflare_token: "${CLOUDFLARE_API_TOKEN}"
+    cloudflare_zone: "${CLOUDFLARE_ZONE_ID}"
+    
+    metrics_enabled: true
+    cloudflare_metrics: true
+
+  # Франция - Париж
+  paris_gateway:
+    enabled: true
+    address: "0.0.0.0:8445"
+    region: "EU-South"
+    provider: "DigitalOcean"
+    
+    cloudflare_endpoints:
+      - "api.cloudflare.com"
+    
+    russian_relays:
+      - "moscow-relay.2gc.ru:8080"
+    
+    header_cleaning: true
+    ip_rotation: true
+    traffic_shaping: true
+    geographic_routing: false
+    
+    cloudflare_api: "https://api.cloudflare.com/client/v4"
+    cloudflare_token: "${CLOUDFLARE_API_TOKEN}"
+    cloudflare_zone: "${CLOUDFLARE_ZONE_ID}"
+    
+    metrics_enabled: true
+    cloudflare_metrics: true
+
+# Настройки безопасности и маскировки
+security:
+  # Маскировка заголовков
+  header_masking:
+    enabled: true
+    remove_headers:
+      - "X-Forwarded-For"
+      - "X-Real-IP"
+      - "CF-Connecting-IP"
+      - "CF-Ray"
+      - "CF-Cache-Status"
+    
+    add_headers:
+      - "X-Forwarded-For: 185.199.108.153"
+      - "X-Real-IP: 185.199.108.153"
+      - "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  
+  # Ротация IP адресов
+  ip_rotation:
+    enabled: true
+    rotation_interval: "5m"
+    ip_pool:
+      - "185.199.108.153"
+      - "185.199.109.153"
+      - "185.199.110.153"
+      - "185.199.111.153"
+  
+  # Формирование трафика
+  traffic_shaping:
+    enabled: true
+    random_delay: "10-50ms"
+    packet_size_variation: "10%"
+    bandwidth_limiting: "100Mbps"
+
+# Настройки мониторинга
+monitoring:
+  # Prometheus метрики
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  
+  # Grafana дашборды
+  grafana:
+    enabled: true
+    port: 3000
+    dashboards:
+      - "border_gateway_overview"
+      - "russian_relay_metrics"
+      - "cloudflare_integration"
+  
+  # Алерты
+  alerts:
+    enabled: true
+    channels:
+      - "email"
+      - "slack"
+      - "telegram"
+    
+    rules:
+      - name: "high_latency"
+        condition: "latency > 100ms"
+        threshold: "5m"
+      
+      - name: "connection_failure"
+        condition: "connections_failed > 10"
+        threshold: "1m"
+      
+      - name: "cloudflare_unavailable"
+        condition: "cloudflare_errors > 5"
+        threshold: "2m"
+
+# Настройки compliance
+compliance:
+  # Российское соответствие
+  russian:
+    enabled: true
+    laws:
+      - "152-FZ"  # Персональные данные
+      - "187-FZ"  # Критическая информационная инфраструктура
+      - "SORM"    # Система оперативно-розыскных мероприятий
+    
+    data_retention:
+      logs: "30d"
+      metrics: "90d"
+      audit: "1y"
+    
+    data_localization:
+      personal_data: "RU"
+      metadata: "RU"
+      logs: "RU"
+  
+  # GDPR соответствие
+  gdpr:
+    enabled: true
+    data_processing_basis: "legitimate_interest"
+    data_retention: "30d"
+    right_to_erasure: true
+    data_portability: true
+
+# Настройки биллинга
+billing:
+  # Revenue sharing с Cloudflare
+  revenue_sharing:
+    enabled: true
+    cloudflare_share: 70  # 70% Cloudflare, 30% CloudBridge
+    partner_tiers:
+      bronze:
+        share: 30
+        min_sales: 10000
+      silver:
+        share: 40
+        min_sales: 50000
+      gold:
+        share: 50
+        min_sales: 100000
+  
+  # Usage metering
+  usage_metering:
+    enabled: true
+    metrics:
+      - "bandwidth_usage"
+      - "connection_count"
+      - "request_count"
+      - "error_count"
+    
+    billing_interval: "1h"
+    reporting_interval: "1d"
+
+# Настройки развертывания
+deployment:
+  # Kubernetes
+  kubernetes:
+    enabled: true
+    namespace: "border-gateway"
+    replicas:
+      russian_relay: 3
+      eu_gateway: 2
+  
+  # Docker
+  docker:
+    enabled: true
+    images:
+      russian_relay: "twogc/border-gateway-ru:latest"
+      eu_gateway: "twogc/border-gateway-eu:latest"
+  
+  # Terraform
+  terraform:
+    enabled: true
+    providers:
+      - "hetzner"
+      - "ovh"
+      - "digitalocean"
+      - "vk_cloud"

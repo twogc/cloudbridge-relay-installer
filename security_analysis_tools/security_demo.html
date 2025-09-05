@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔒 Демонстрация инструментов анализа безопасности</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .button.danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+
+        .button.success {
+            background: linear-gradient(135deg, #00b894, #00a085);
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .results {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .card p {
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔒 Инструменты анализа безопасности</h1>
+            <p>Демонстрация фреймворка для безопасного тестирования веб-приложений</p>
+        </div>
+
+        <div class="warning">
+            ⚠️ <strong>ВНИМАНИЕ:</strong> Эти инструменты предназначены только для обучения и тестирования систем, которыми вы владеете или имеете явное разрешение на тестирование.
+        </div>
+
+        <div class="content">
+            <!-- Конфигурация -->
+            <div class="section">
+                <h2>⚙️ Конфигурация</h2>
+                <div class="input-group">
+                    <label for="targetUrl">URL цели:</label>
+                    <input type="url" id="targetUrl" placeholder="https://example.com" value="https://applications.iidf.ru">
+                </div>
+                <div class="input-group">
+                    <label for="authToken">Токен аутентификации (опционально):</label>
+                    <input type="text" id="authToken" placeholder="Bearer token...">
+                </div>
+                <div class="input-group">
+                    <label for="jsContent">JavaScript контент для анализа (опционально):</label>
+                    <textarea id="jsContent" rows="5" placeholder="Вставьте JavaScript код для анализа API контракта..."></textarea>
+                </div>
+            </div>
+
+            <!-- Инструменты -->
+            <div class="section">
+                <h2>🛠️ Инструменты анализа</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>🔍 Анализ утечек данных</h3>
+                        <p>Анализирует localStorage, sessionStorage, cookies и формы на предмет утечки чувствительных данных.</p>
+                        <button class="button" onclick="runDataLeakAnalysis()">Запустить анализ</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🔌 Анализ API</h3>
+                        <p>Анализирует API контракт и тестирует эндпоинты на уязвимости.</p>
+                        <button class="button" onclick="runAPIAnalysis()">Запустить анализ</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🎯 XSS Payload</h3>
+                        <p>Генерирует XSS payload для демонстрации уязвимостей.</p>
+                        <button class="button" onclick="generateXSSPayloads()">Создать payload</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🚀 Полный аудит</h3>
+                        <p>Запускает комплексный анализ всех компонентов системы.</p>
+                        <button class="button success" onclick="runFullAudit()">Запустить полный аудит</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Результаты -->
+            <div class="section">
+                <h2>📊 Результаты анализа</h2>
+                <div id="status"></div>
+                <div id="results" class="results" style="display: none;"></div>
+            </div>
+
+            <!-- Демонстрация -->
+            <div class="section">
+                <h2>🎭 Демонстрация уязвимостей</h2>
+                <p>Эти примеры показывают, как могут выглядеть уязвимости в реальных системах:</p>
+                
+                <div class="grid">
+                    <div class="card">
+                        <h3>💾 Утечка данных</h3>
+                        <p>Демонстрация извлечения данных из браузера:</p>
+                        <button class="button danger" onclick="demonstrateDataLeak()">Демонстрировать утечку</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🔑 Перехват токенов</h3>
+                        <p>Демонстрация перехвата аутентификационных данных:</p>
+                        <button class="button danger" onclick="demonstrateTokenInterception()">Демонстрировать перехват</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>📝 Keylogger</h3>
+                        <p>Демонстрация перехвата пользовательского ввода:</p>
+                        <button class="button danger" onclick="demonstrateKeylogger()">Демонстрировать keylogger</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🔄 Перенаправление</h3>
+                        <p>Демонстрация фишинговой атаки:</p>
+                        <button class="button danger" onclick="demonstrateRedirect()">Демонстрировать перенаправление</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🔒 Инструменты для обучения безопасности | Создано для демонстрации методов защиты</p>
+        </div>
+    </div>
+
+    <!-- Подключение скриптов -->
+    <script src="security_analysis_framework.js"></script>
+    <script src="api_analyzer.js"></script>
+    <script src="xss_payload_generator.js"></script>
+    <script src="comprehensive_security_audit.js"></script>
+
+    <script>
+        // Глобальные переменные
+        let currentAuditor = null;
+        let xssGenerator = null;
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔒 Демо-страница загружена');
+            
+            // Инициализация генератора XSS
+            if (typeof XSSPayloadGenerator !== 'undefined') {
+                xssGenerator = new XSSPayloadGenerator();
+            }
+            
+            showStatus('Готов к работе', 'info');
+        });
+
+        // Функции для работы с интерфейсом
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function showResults(data) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Анализ утечек данных
+        async function runDataLeakAnalysis() {
+            try {
+                showStatus('Запуск анализа утечек данных...', 'info');
+                
+                const targetUrl = document.getElementById('targetUrl').value;
+                const authToken = document.getElementById('authToken').value;
+                
+                if (!targetUrl) {
+                    showStatus('Введите URL цели', 'error');
+                    return;
+                }
+                
+                const auditor = new ComprehensiveSecurityAudit();
+                auditor.init(targetUrl, authToken);
+                
+                const leaks = await auditor.analyzeDataLeaks();
+                
+                showStatus('Анализ утечек данных завершен', 'success');
+                showResults(leaks);
+                
+            } catch (error) {
+                showStatus(`Ошибка: ${error.message}`, 'error');
+                console.error('Ошибка анализа утечек:', error);
+            }
+        }
+
+        // Анализ API
+        async function runAPIAnalysis() {
+            try {
+                showStatus('Запуск анализа API...', 'info');
+                
+                const targetUrl = document.getElementById('targetUrl').value;
+                const authToken = document.getElementById('authToken').value;
+                const jsContent = document.getElementById('jsContent').value;
+                
+                if (!targetUrl) {
+                    showStatus('Введите URL цели', 'error');
+                    return;
+                }
+                
+                if (!jsContent) {
+                    showStatus('Введите JavaScript контент для анализа API', 'error');
+                    return;
+                }
+                
+                const auditor = new ComprehensiveSecurityAudit();
+                auditor.init(targetUrl, authToken, jsContent);
+                
+                const apiReport = await auditor.analyzeAPIVulnerabilities();
+                
+                showStatus('Анализ API завершен', 'success');
+                showResults(apiReport);
+                
+            } catch (error) {
+                showStatus(`Ошибка: ${error.message}`, 'error');
+                console.error('Ошибка анализа API:', error);
+            }
+        }
+
+        // Генерация XSS payload
+        function generateXSSPayloads() {
+            try {
+                showStatus('Генерация XSS payload...', 'info');
+                
+                if (!xssGenerator) {
+                    showStatus('XSS генератор недоступен', 'error');
+                    return;
+                }
+                
+                const payloads = xssGenerator.getAllPayloads();
+                const report = xssGenerator.generatePayloadReport();
+                
+                showStatus('XSS payload сгенерированы', 'success');
+                showResults({ payloads, report });
+                
+            } catch (error) {
+                showStatus(`Ошибка: ${error.message}`, 'error');
+                console.error('Ошибка генерации XSS:', error);
+            }
+        }
+
+        // Полный аудит
+        async function runFullAudit() {
+            try {
+                showStatus('Запуск полного аудита безопасности...', 'info');
+                
+                const targetUrl = document.getElementById('targetUrl').value;
+                const authToken = document.getElementById('authToken').value;
+                const jsContent = document.getElementById('jsContent').value;
+                
+                if (!targetUrl) {
+                    showStatus('Введите URL цели', 'error');
+                    return;
+                }
+                
+                const auditor = new ComprehensiveSecurityAudit();
+                auditor.init(targetUrl, authToken, jsContent);
+                
+                const report = await auditor.runFullAudit();
+                
+                showStatus('Полный аудит завершен', 'success');
+                showResults(report);
+                
+                // Сохранение отчета
+                auditor.saveReport(report);
+                
+            } catch (error) {
+                showStatus(`Ошибка: ${error.message}`, 'error');
+                console.error('Ошибка полного аудита:', error);
+            }
+        }
+
+        // Демонстрационные функции
+        function demonstrateDataLeak() {
+            showStatus('Демонстрация утечки данных...', 'info');
+            
+            // Симуляция извлечения данных
+            const mockData = {
+                localStorage: {
+                    'auth_token': 'user.2045597475330327839.60526-0d7eb462c42a221300af346a7a.1efa83c73e0ac992c0cf22b196cf6541bd268d402051e1e2',
+                    'user_id': '2045597475330327839',
+                    'app_id': '60526'
+                },
+                sessionStorage: {
+                    'session_data': 'sensitive_session_information'
+                },
+                cookies: {
+                    'session_id': 'abc123def456',
+                    'user_preferences': 'theme=dark&lang=ru'
+                },
+                forms: [
+                    {
+                        action: '/api/application/submit',
+                        method: 'POST',
+                        inputs: {
+                            'email': 'user@example.com',
+                            'phone': '+7 999 123-45-67',
+                            'passport': '1234 567890'
+                        }
+                    }
+                ]
+            };
+            
+            showStatus('Демонстрация утечки данных завершена', 'success');
+            showResults(mockData);
+        }
+
+        function demonstrateTokenInterception() {
+            showStatus('Демонстрация перехвата токенов...', 'info');
+            
+            const mockInterception = {
+                intercepted_tokens: [
+                    {
+                        type: 'Bearer Token',
+                        value: 'user.2045597475330327839.60526-0d7eb462c42a221300af346a7a.1efa83c73e0ac992c0cf22b196cf6541bd268d402051e1e2',
+                        source: 'localStorage',
+                        timestamp: new Date().toISOString()
+                    },
+                    {
+                        type: 'API Key',
+                        value: 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED',
+                        source: 'JavaScript code',
+                        timestamp: new Date().toISOString()
+                    }
+                ],
+                potential_impact: [
+                    'Доступ к API эндпоинтам',
+                    'Получение данных пользователей',
+                    'Выполнение административных действий',
+                    'Обход аутентификации'
+                ]
+            };
+            
+            showStatus('Демонстрация перехвата токенов завершена', 'success');
+            showResults(mockInterception);
+        }
+
+        function demonstrateKeylogger() {
+            showStatus('Демонстрация keylogger...', 'info');
+            
+            // Создание демонстрационного keylogger
+            let keystrokes = '';
+            const keyloggerDiv = document.createElement('div');
+            keyloggerDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #ff4444;
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                z-index: 10000;
+                font-family: monospace;
+                max-width: 400px;
+                text-align: center;
+            `;
+            keyloggerDiv.innerHTML = `
+                <h3>🎯 ДЕМОНСТРАЦИЯ KEYLOGGER</h3>
+                <p>Введите любой текст в поле ниже:</p>
+                <input type="text" id="demo-input" placeholder="Введите текст..." style="width: 100%; padding: 10px; margin: 10px 0;">
+                <p><strong>Перехваченные символы:</strong></p>
+                <div id="keystrokes" style="background: #333; padding: 10px; border-radius: 5px; min-height: 50px;"></div>
+                <button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 8px 16px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer;">Закрыть</button>
+            `;
+            
+            document.body.appendChild(keyloggerDiv);
+            
+            const input = document.getElementById('demo-input');
+            const keystrokesDiv = document.getElementById('keystrokes');
+            
+            input.addEventListener('keydown', function(e) {
+                keystrokes += e.key;
+                keystrokesDiv.textContent = keystrokes;
+            });
+            
+            input.focus();
+        }
+
+        function demonstrateRedirect() {
+            showStatus('Демонстрация фишингового перенаправления...', 'info');
+            
+            const redirectDiv = document.createElement('div');
+            redirectDiv.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            redirectDiv.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px;">
+                    <h2 style="color: #ff4444;">⚠️ ВНИМАНИЕ!</h2>
+                    <p>Ваша сессия истекла по соображениям безопасности.</p>
+                    <p>Вы будете перенаправлены на страницу входа через 5 секунд.</p>
+                    <div id="countdown" style="font-size: 2em; color: #ff4444; margin: 20px 0;">5</div>
+                    <p><small>Это демонстрация фишинговой атаки для обучения.</small></p>
+                    <button onclick="this.parentElement.parentElement.remove()" style="padding: 10px 20px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer;">Отменить</button>
+                </div>
+            `;
+            
+            document.body.appendChild(redirectDiv);
+            
+            let countdown = 5;
+            const countdownDiv = document.getElementById('countdown');
+            
+            const timer = setInterval(() => {
+                countdown--;
+                countdownDiv.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    redirectDiv.remove();
+                    showStatus('Демонстрация перенаправления завершена', 'success');
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

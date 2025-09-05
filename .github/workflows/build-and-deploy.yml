@@ -1,0 +1,141 @@
+name: Build and Deploy CloudBridge Relay
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'Dockerfile.relay'
+      - 'docker-compose.yml'
+      - 'cmd/**'
+      - 'pkg/**'
+      - 'go.mod'
+      - 'go.sum'
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+
+env:
+  REGISTRY: registry.vkcs.ru
+  IMAGE_NAME: cloudbridge-relay
+
+jobs:
+  # Сборка и тестирование
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - name: Run tests
+        run: |
+          go mod download
+          go test -v ./...
+
+      - name: Build binary
+        run: |
+          CGO_ENABLED=1 GOOS=linux go build \
+            -ldflags "-X main.Version=${{ github.sha }} -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=${{ github.sha }}" \
+            -o cloudbridge-relay ./cmd/relay
+
+  # Сборка Docker образа
+  build-image:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to VK Cloud Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.VK_REGISTRY_USERNAME }}
+          password: ${{ secrets.VK_REGISTRY_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=dev,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.relay
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Развертывание через Terraform (опционально)
+  deploy:
+    needs: build-image
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.0'
+
+      - name: Setup OpenStack credentials
+        run: |
+          echo "${{ secrets.VK_CLOUD_OPENRC }}" > openrc.sh
+          source openrc.sh
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./terraform
+        run: terraform plan -var="docker_image_tag=${{ github.sha }}" -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply tfplan
+
+  # Уведомления
+  notify:
+    needs: [build-image, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Notify on success
+        if: needs.build-image.result == 'success' && needs.deploy.result == 'success'
+        run: |
+          echo "✅ CloudBridge Relay успешно собран и развернут!"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          echo "Deployment: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Notify on failure
+        if: needs.build-image.result == 'failure' || needs.deploy.result == 'failure'
+        run: |
+          echo "❌ Ошибка в процессе сборки или развертывания!"
+          echo "Build result: ${{ needs.build-image.result }}"
+          echo "Deploy result: ${{ needs.deploy.result }}"
+          echo "Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

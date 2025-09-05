@@ -1,0 +1,9 @@
+# Анализ утечки информации в токене
+Дата проверки: Sat Aug 23 19:00:44 MSK 2025
+
+## Анализ частей токена:
+User ID: eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ
+App ID: SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+Session ID: SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+Подпись: SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+Уникальных символов в подписи: 29
