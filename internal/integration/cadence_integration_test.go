@@ -25,7 +25,7 @@ type CadenceIntegrationTestSuite struct {
 	suite.Suite
 	logger         *zap.Logger
 	config         *cadence.CadenceConfig
-	client         *cadence.CadenceClient
+	client         *cadence.Client
 	worker         *worker.CadenceWorker
 	cadenceMetrics *metrics.CadenceMetrics
 	ctx            context.Context
@@ -49,7 +49,12 @@ func (suite *CadenceIntegrationTestSuite) SetupSuite() {
 	suite.cadenceMetrics = metrics.NewCadenceMetrics(suite.logger)
 
 	// Создание Cadence клиента
-	suite.client, err = cadence.NewCadenceClient(suite.config, suite.logger)
+	cadenceConfig := cadence.Config{
+		HostPort: suite.config.Client.HostPort,
+		Domain:   suite.config.Client.Domain,
+		TaskList: suite.config.Worker.TaskListName,
+	}
+	suite.client, err = cadence.NewClient(cadenceConfig, suite.logger)
 	require.NoError(suite.T(), err, "Не удалось создать Cadence клиент")
 
 	// Запуск Cadence клиента
@@ -86,10 +91,7 @@ func (suite *CadenceIntegrationTestSuite) TearDownSuite() {
 
 	// Остановка клиента
 	if suite.client != nil {
-		err := suite.client.Stop()
-		if err != nil {
-			suite.logger.Warn("Ошибка при остановке клиента", zap.Error(err))
-		}
+		suite.client.Stop() // Stop() не возвращает ошибку
 	}
 
 	// Отмена контекста

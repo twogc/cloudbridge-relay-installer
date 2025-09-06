@@ -47,8 +47,8 @@ func (h *APIHandler) StartRelayDeploymentWorkflow(w http.ResponseWriter, r *http
 	}
 
 	response := map[string]interface{}{
-		"workflow_id": workflowRun.GetID(),
-		"run_id":      workflowRun.GetRunID(),
+		"workflow_id": workflowRun,
+		"run_id":      workflowRun,
 		"status":      "started",
 	}
 
@@ -80,8 +80,8 @@ func (h *APIHandler) StartCertificateRotationWorkflow(w http.ResponseWriter, r *
 	}
 
 	response := map[string]interface{}{
-		"workflow_id": workflowRun.GetID(),
-		"run_id":      workflowRun.GetRunID(),
+		"workflow_id": workflowRun,
+		"run_id":      workflowRun,
 		"status":      "started",
 	}
 
@@ -113,8 +113,8 @@ func (h *APIHandler) StartNetworkMaintenanceWorkflow(w http.ResponseWriter, r *h
 	}
 
 	response := map[string]interface{}{
-		"workflow_id": workflowRun.GetID(),
-		"run_id":      workflowRun.GetRunID(),
+		"workflow_id": workflowRun,
+		"run_id":      workflowRun,
 		"status":      "started",
 	}
 
@@ -146,8 +146,8 @@ func (h *APIHandler) StartSecurityAuditWorkflow(w http.ResponseWriter, r *http.R
 	}
 
 	response := map[string]interface{}{
-		"workflow_id": workflowRun.GetID(),
-		"run_id":      workflowRun.GetRunID(),
+		"workflow_id": workflowRun,
+		"run_id":      workflowRun,
 		"status":      "started",
 	}
 
@@ -179,8 +179,8 @@ func (h *APIHandler) StartBackupWorkflow(w http.ResponseWriter, r *http.Request)
 	}
 
 	response := map[string]interface{}{
-		"workflow_id": workflowRun.GetID(),
-		"run_id":      workflowRun.GetRunID(),
+		"workflow_id": workflowRun,
+		"run_id":      workflowRun,
 		"status":      "started",
 	}
 

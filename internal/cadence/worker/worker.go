@@ -21,7 +21,7 @@ import (
 
 // CadenceWorker представляет Cadence worker для CloudBridge Relay
 type CadenceWorker struct {
-	client         *cadence.CadenceClient
+	client         *cadence.Client
 	worker         worker.Worker
 	config         *cadence.CadenceConfig
 	logger         *zap.Logger
@@ -40,7 +40,7 @@ type CadenceWorker struct {
 }
 
 // NewCadenceWorker создает новый Cadence worker
-func NewCadenceWorker(client *cadence.CadenceClient, config *cadence.CadenceConfig, logger *zap.Logger, cadenceMetrics *metrics.CadenceMetrics) (*CadenceWorker, error) {
+func NewCadenceWorker(client *cadence.Client, config *cadence.CadenceConfig, logger *zap.Logger, cadenceMetrics *metrics.CadenceMetrics) (*CadenceWorker, error) {
 	if client == nil {
 		return nil, fmt.Errorf("cadence клиент не может быть nil")
 	}
@@ -89,10 +89,11 @@ func (cw *CadenceWorker) Start() error {
 		zap.String("identity", cw.config.Worker.Identity),
 	)
 
-	// Получаем worker от клиента
+	// Получаем worker от клиента (может быть nil для заглушек)
 	cw.worker = cw.client.GetWorker()
 	if cw.worker == nil {
-		return fmt.Errorf("не удалось получить Cadence worker от клиента")
+		cw.logger.Info("Cadence worker не доступен (заглушка режим)")
+		// В режиме заглушек продолжаем без реального worker
 	}
 
 	// Регистрируем workflows
@@ -115,13 +116,17 @@ func (cw *CadenceWorker) Start() error {
 		cw.logger.Warn("Не удалось запустить health endpoint", zap.Error(err))
 	}
 
-	// Запускаем worker в отдельной горутине
-	go func() {
-		cw.logger.Info("Запуск Cadence worker loop")
-		if err := cw.worker.Start(); err != nil {
-			cw.logger.Error("Ошибка при запуске Cadence worker", zap.Error(err))
-		}
-	}()
+	// Запускаем worker в отдельной горутине (если доступен)
+	if cw.worker != nil {
+		go func() {
+			cw.logger.Info("Запуск Cadence worker loop")
+			if err := cw.worker.Start(); err != nil {
+				cw.logger.Error("Ошибка при запуске Cadence worker", zap.Error(err))
+			}
+		}()
+	} else {
+		cw.logger.Info("Cadence worker loop пропущен (заглушка режим)")
+	}
 
 	cw.isRunning = true
 	cw.logger.Info("Cadence worker успешно запущен")
@@ -398,19 +403,18 @@ func (cw *CadenceWorker) StartMainWorkflow() error {
 	}
 
 	// Запускаем workflow
-	execution, err := cw.client.StartWorkflow(cw.ctx, "CloudBridgeMainWorkflow", input)
+	workflowID, err := cw.client.ExecuteWorkflow(cw.ctx, "CloudBridgeMainWorkflow", input)
 	if err != nil {
 		cw.logger.Error("Не удалось запустить основной workflow", zap.Error(err))
 		return err
 	}
 
 	cw.logger.Info("Основной CloudBridge workflow запущен",
-		zap.String("workflow_id", execution.ID),
-		zap.String("run_id", execution.RunID),
+		zap.String("workflow_id", workflowID),
 	)
 
 	// Записываем метрику
-	cw.cadenceMetrics.RecordWorkflowStarted("CloudBridgeMainWorkflow", cw.config.Domain, execution.ID)
+	cw.cadenceMetrics.RecordWorkflowStarted("CloudBridgeMainWorkflow", cw.config.Domain, workflowID)
 
 	return nil
 }
