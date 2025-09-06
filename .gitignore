@@ -166,3 +166,5 @@ gen/
 config.local.json
 config.dev.json test/quck-test/
 test/
+kubectl
+minikube-linux-amd64
