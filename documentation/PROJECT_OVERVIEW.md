@@ -61,6 +61,11 @@ graph TB
 - **Протоколы**: QUIC, HTTP/2, TLS 1.3
 - **Функции**: Аутентификация, создание туннелей, heartbeat
 
+#### **1.1 HTTP API Server (Port 9091)**
+- **Назначение**: REST API для управления и мониторинга
+- **Endpoints**: Health checks, Cadence workflows, метрики
+- **Функции**: Workflow orchestration, system monitoring
+
 #### **2. UDP Server (Port 51820)**
 - **Назначение**: WireGuard P2P mesh сеть
 - **Протокол**: WireGuard handshake
@@ -80,6 +85,11 @@ graph TB
 - **Назначение**: Оркестрация сложных бизнес-процессов
 - **Функции**: Workflow management, activity coordination, error handling
 - **Workflows**: WireGuard, Quantum, AI, Scaling, Security workflows
+- **API Endpoints**: 
+  - `GET /api/v1/cadence/health` - проверка состояния
+  - `POST /api/v1/cadence/workflows/relay-deployment` - развертывание
+  - `POST /api/v1/cadence/workflows/backup` - резервное копирование
+  - `GET /api/v1/cadence/workflows/status` - статус workflows
 
 ---
 

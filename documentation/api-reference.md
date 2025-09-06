@@ -4,10 +4,16 @@
 
 CloudBridge Relay Server предоставляет REST API для управления туннелями, мониторинга и конфигурации. API доступен на порту 9090 и поддерживает JSON формат данных.
 
-## Базовый URL
+## Базовые URL
 
+### Основной API (TCP Server)
 ```
 http://localhost:9090/api/v1
+```
+
+### HTTP API Server (Workflow Management)
+```
+http://localhost:9091/api/v1
 ```
 
 ## Аутентификация
@@ -653,5 +659,199 @@ ws.onmessage = function(event) {
 
 ---
 
+## Cadence Workflow Engine API
+
+### Базовый URL
+```
+http://localhost:9091/api/v1/cadence
+```
+
+### 1. Health Check
+
+**GET** `/health`
+
+Проверка состояния Cadence Workflow Engine.
+
+#### Ответ
+```json
+{
+  "status": "healthy",
+  "domain": "cloudbridge"
+}
+```
+
+#### Пример
+```bash
+curl -s http://localhost:9091/api/v1/cadence/health | jq
+```
+
+### 2. Relay Deployment Workflow
+
+**POST** `/workflows/relay-deployment`
+
+Запуск workflow развертывания Relay сервера.
+
+#### Запрос
+```json
+{
+  "config": {
+    "test": true,
+    "environment": "production"
+  },
+  "wireguard_config": {
+    "enabled": true,
+    "port": 51820
+  },
+  "quic_config": {
+    "enabled": true,
+    "port": 9090
+  },
+  "services": ["relay", "wireguard", "quic"],
+  "timeout": "5m"
+}
+```
+
+#### Ответ
+```json
+{
+  "status": "started",
+  "workflow_id": "RelayDeploymentWorkflow-1757145801968487275"
+}
+```
+
+#### Пример
+```bash
+curl -X POST http://localhost:9091/api/v1/cadence/workflows/relay-deployment \
+  -H "Content-Type: application/json" \
+  -d '{
+    "config": {"test": true},
+    "services": ["relay", "wireguard", "quic"]
+  }' | jq
+```
+
+### 3. Backup Workflow
+
+**POST** `/workflows/backup`
+
+Запуск workflow резервного копирования.
+
+#### Запрос
+```json
+{
+  "backup_config": {
+    "type": "full",
+    "compression": "gzip"
+  },
+  "config_paths": ["/etc/relay", "/var/lib/relay"],
+  "data_paths": ["/var/log/relay"],
+  "cleanup_config": {
+    "retention_days": 7,
+    "max_backups": 10
+  }
+}
+```
+
+#### Ответ
+```json
+{
+  "status": "started",
+  "workflow_id": "BackupWorkflow-1757145807687688437"
+}
+```
+
+#### Пример
+```bash
+curl -X POST http://localhost:9091/api/v1/cadence/workflows/backup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "backup_config": {"type": "full"},
+    "config_paths": ["/etc/relay"]
+  }' | jq
+```
+
+### 4. Workflow Status
+
+**GET** `/workflows/status?workflow_id={workflow_id}`
+
+Получение статуса выполнения workflow.
+
+#### Параметры
+- `workflow_id` (string, required) - ID workflow
+
+#### Ответ
+```json
+{
+  "status": "RUNNING",
+  "workflow_id": "RelayDeploymentWorkflow-1757145801968487275"
+}
+```
+
+#### Пример
+```bash
+curl -s "http://localhost:9091/api/v1/cadence/workflows/status?workflow_id=RelayDeploymentWorkflow-1757145801968487275" | jq
+```
+
+### 5. JavaScript SDK для Cadence API
+
+```javascript
+class CadenceClient {
+    constructor(baseUrl = 'http://localhost:9091/api/v1/cadence') {
+        this.baseUrl = baseUrl;
+    }
+
+    async health() {
+        const response = await fetch(`${this.baseUrl}/health`);
+        return await response.json();
+    }
+
+    async startRelayDeployment(config) {
+        const response = await fetch(`${this.baseUrl}/workflows/relay-deployment`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        return await response.json();
+    }
+
+    async startBackup(config) {
+        const response = await fetch(`${this.baseUrl}/workflows/backup`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        return await response.json();
+    }
+
+    async getWorkflowStatus(workflowId) {
+        const response = await fetch(`${this.baseUrl}/workflows/status?workflow_id=${workflowId}`);
+        return await response.json();
+    }
+}
+
+// Использование
+const cadence = new CadenceClient();
+
+// Проверка здоровья
+const health = await cadence.health();
+console.log('Cadence status:', health.status);
+
+// Запуск развертывания
+const deployment = await cadence.startRelayDeployment({
+    config: { test: true },
+    services: ['relay', 'wireguard']
+});
+console.log('Deployment started:', deployment.workflow_id);
+
+// Проверка статуса
+const status = await cadence.getWorkflowStatus(deployment.workflow_id);
+console.log('Workflow status:', status.status);
+```
+
+---
+
 *API Reference для CloudBridge Relay Server v1.0.0*
-*Обновлено: 2025-09-04*
+*Обновлено: 2025-09-06*

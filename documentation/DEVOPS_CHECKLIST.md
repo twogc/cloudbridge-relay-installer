@@ -12,6 +12,8 @@
 - [x] **Конфигурацию** - config.json, enhanced_quic.yaml, Docker
 - [x] **Развертывание** - Docker, Kubernetes, Systemd
 - [x] **Безопасность** - TLS, файрвол, DDoS защита
+- [x] **Cadence Workflow Engine** - Интеграция и API endpoints
+- [x] **Workflow Orchestration** - Relay deployment, backup workflows
 
 ### ✅ Дополнительно (ВЫПОЛНЕНО)
 
@@ -21,6 +23,8 @@
 - [x] **Метрики производительности** - Детальные метрики и алерты
 - [x] **Troubleshooting guide** - Решения частых проблем
 - [x] **FAQ** - Ответы на популярные вопросы
+- [x] **Cadence API Reference** - Полная документация API endpoints
+- [x] **DevOps Roadmap** - Комплексный план автоматизации
 
 ---
 
@@ -226,6 +230,23 @@ cloudbridge-relay-installer/
 - ✅ Метрики и мониторинг настроены
 - ✅ Troubleshooting guide создан
 - ✅ FAQ и дополнительные ресурсы добавлены
+- ✅ Cadence Workflow Engine интегрирован
+- ✅ API endpoints документированы
+- ✅ DevOps roadmap создан
+
+### 🚀 Новые возможности (2025-09-06):
+- **Cadence Workflow Engine** - автоматизация сложных процессов
+- **HTTP API Server** (порт 9091) - управление workflows
+- **Workflow Orchestration** - deployment, backup, scaling
+- **DevOps Roadmap** - полный план автоматизации
+
+### 📡 Порты системы:
+- **9090** - TCP Relay Server
+- **9091** - HTTP API Server (Cadence workflows)
+- **8084** - Prometheus Metrics
+- **9092** - Prometheus Server (изменен для избежания конфликта)
+- **7933** - Cadence Server
+- **51820** - WireGuard UDP
 
 **Документация обеспечивает полное понимание системы и готовность к production развертыванию.**
 

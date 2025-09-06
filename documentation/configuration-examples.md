@@ -775,5 +775,218 @@ LOG_FILE_ENABLED=false
 
 ---
 
+## 5. Cadence Workflow Engine конфигурация
+
+### Базовая конфигурация Cadence
+```json
+{
+  "cadence": {
+    "enabled": true,
+    "host_port": "localhost:7933",
+    "domain": "cloudbridge",
+    "task_list": "relay-task-list"
+  }
+}
+```
+
+### Расширенная конфигурация Cadence
+```json
+{
+  "cadence": {
+    "enabled": true,
+    "host_port": "localhost:7933",
+    "domain": "cloudbridge",
+    "task_list": "relay-task-list",
+    "client_options": {
+      "timeout": "30s",
+      "retry_policy": {
+        "initial_interval": "1s",
+        "maximum_interval": "10s",
+        "backoff_coefficient": 2.0,
+        "maximum_attempts": 3
+      }
+    },
+    "worker_options": {
+      "max_concurrent_activities": 100,
+      "max_concurrent_workflows": 50,
+      "identity": "cloudbridge-worker"
+    }
+  }
+}
+```
+
+### Docker Compose с Cadence
+```yaml
+version: '3.8'
+services:
+  cloudbridge-relay:
+    build: .
+    ports:
+      - "9090:9090"  # TCP Server
+      - "9091:9091"  # HTTP API
+      - "8084:8084"  # Metrics
+    environment:
+      - CADENCE_ENABLED=true
+      - CADENCE_HOST_PORT=cadence:7933
+      - CADENCE_DOMAIN=cloudbridge
+    depends_on:
+      - cadence
+      - cassandra
+    volumes:
+      - ./configs:/app/configs
+    restart: unless-stopped
+
+  cadence:
+    image: ubercadence/server:latest
+    ports:
+      - "7933:7933"
+      - "7934:7934"
+      - "7935:7935"
+      - "7936:7936"
+      - "7939:7939"
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+      - "8003:8003"
+    environment:
+      - CASSANDRA_SEEDS=cassandra
+      - DB=cassandra
+      - DB_PORT=9042
+      - KEYSPACE=cadence
+      - VISIBILITY_KEYSPACE=cadence_visibility
+    depends_on:
+      - cassandra
+    restart: unless-stopped
+
+  cassandra:
+    image: cassandra:3.11
+    ports:
+      - "9042:9042"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=cadence
+      - CASSANDRA_DC=dc1
+      - CASSANDRA_RACK=rack1
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9092:9090"  # Изменен порт для избежания конфликта
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: unless-stopped
+
+volumes:
+  cassandra_data:
+```
+
+### Kubernetes ConfigMap для Cadence
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudbridge-cadence-config
+data:
+  config.json: |
+    {
+      "cadence": {
+        "enabled": true,
+        "host_port": "cadence-service:7933",
+        "domain": "cloudbridge",
+        "task_list": "relay-task-list",
+        "client_options": {
+          "timeout": "30s",
+          "retry_policy": {
+            "initial_interval": "1s",
+            "maximum_interval": "10s",
+            "backoff_coefficient": 2.0,
+            "maximum_attempts": 3
+          }
+        }
+      }
+    }
+```
+
+### Переменные окружения для Cadence
+```bash
+# Cadence настройки
+CADENCE_ENABLED=true
+CADENCE_HOST_PORT=localhost:7933
+CADENCE_DOMAIN=cloudbridge
+CADENCE_TASK_LIST=relay-task-list
+
+# Cadence клиент
+CADENCE_CLIENT_TIMEOUT=30s
+CADENCE_CLIENT_RETRY_ATTEMPTS=3
+CADENCE_CLIENT_RETRY_INTERVAL=1s
+
+# Cadence worker
+CADENCE_WORKER_MAX_ACTIVITIES=100
+CADENCE_WORKER_MAX_WORKFLOWS=50
+CADENCE_WORKER_IDENTITY=cloudbridge-worker
+
+# Cadence домен
+CADENCE_DOMAIN_RETENTION=7d
+CADENCE_DOMAIN_GLOBAL=false
+```
+
+### Helm values для Cadence
+```yaml
+# helm/cloudbridge-relay/values.yaml
+cadence:
+  enabled: true
+  hostPort: "cadence-service:7933"
+  domain: "cloudbridge"
+  taskList: "relay-task-list"
+  
+  client:
+    timeout: "30s"
+    retryAttempts: 3
+    retryInterval: "1s"
+    
+  worker:
+    maxActivities: 100
+    maxWorkflows: 50
+    identity: "cloudbridge-worker"
+    
+  domain:
+    retention: "7d"
+    global: false
+
+# Порты
+ports:
+  tcp: 9090
+  api: 9091
+  metrics: 8084
+  prometheus: 9092  # Изменен для избежания конфликта
+```
+
+### Тестовая конфигурация
+```json
+{
+  "cadence": {
+    "enabled": true,
+    "host_port": "localhost:7933",
+    "domain": "cloudbridge-test",
+    "task_list": "relay-test-task-list",
+    "client_options": {
+      "timeout": "10s",
+      "retry_policy": {
+        "initial_interval": "500ms",
+        "maximum_interval": "5s",
+        "backoff_coefficient": 1.5,
+        "maximum_attempts": 2
+      }
+    }
+  }
+}
+```
+
+---
+
 *Примеры конфигурации для CloudBridge Relay Server v1.0.0*
-*Обновлено: 2025-09-04*
+*Обновлено: 2025-09-06*
