@@ -1,4 +1,4 @@
--- Insert into domains table
+-- Insert into domains table for CloudBridge Relay
 INSERT INTO domains (
     shard_id,
     id,
@@ -8,9 +8,9 @@ INSERT INTO domains (
     is_global
 ) VALUES (
     54321, -- Default shard_id
-    UNHEX(REPLACE(UUID(), '-', '')), -- Generate a 16-byte UUID
-    'default', -- Domain name
-    '{"key1":"value1","key2":"value2"}', -- Example data as JSON
+    UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440000', '-', '')), -- CloudBridge Relay Domain UUID
+    'cloudbridge', -- Domain name
+    '{"project":"cloudbridge-relay","version":"1.0.0","environment":"production","features":["p2p-mesh","wireguard","quic","workflow-engine"],"owner":"2GC Technologies","contact":"support@2gc.eu"}', -- CloudBridge Relay data as JSON
     'json', -- Encoding type
     1 -- Set to 1 for a global domain
 ) ON DUPLICATE KEY UPDATE

@@ -4,6 +4,7 @@
 
 - **[configuration-examples.md](./configuration-examples.md)** - Примеры конфигурации
 - **[DOCKER_BEST_PRACTICES.md](./DOCKER_BEST_PRACTICES.md)** - Лучшие практики Docker
+- **[DOMAIN_DATABASE_SETUP.md](./DOMAIN_DATABASE_SETUP.md)** - Настройка домена Cadence для баз данных
 
 ## ⚙️ Конфигурация системы
 

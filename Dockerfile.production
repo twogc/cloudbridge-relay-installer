@@ -41,7 +41,6 @@ RUN apk add --no-cache \
     iptables \
     wireguard-tools \
     wireguard-tools-wg-quick \
-    wireguard-go \
     && rm -rf /var/cache/apk/*
 
 # Create user and directories

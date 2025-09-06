@@ -1,4 +1,4 @@
-name: Weekly Security Audit
+name: 🔒 Weekly Security Audit
 
 on:
   schedule:
@@ -12,25 +12,25 @@ env:
 
 jobs:
   security-audit:
-    name: Comprehensive Security Audit
+    name: 🔒 Comprehensive Security Audit
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
+    - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
+    - name: 🔧 Set up Go
+      uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
-        cache: false
+        go-version: '1.25'
+        cache: true
 
-    - name: Install Python
+    - name: 🐍 Install Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
 
-    - name: Install security tools
+    - name: 🛠️ Install security tools
       run: |
         # Install gosec
         go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
@@ -44,30 +44,24 @@ jobs:
         # Install nancy for Go dependencies
         go install github.com/sonatype-nexus-community/nancy@latest
 
-    - name: Run basic security audit
+    - name: 🔍 Run comprehensive security audit
       run: |
-        echo "🔒 Running basic security audit..."
+        echo "🔒 Running comprehensive security audit..."
         
         # Create security reports directory
         mkdir -p security_reports
         
         # Run gosec for Go security
         echo "Running gosec security scan..."
-        gosec -fmt text -out security_reports/gosec_report.txt ./... || {
+        gosec -fmt json -out security_reports/gosec-results.json ./... || {
           echo "⚠️ gosec found issues, but continuing..."
         }
         
         # Run nancy for dependency vulnerabilities
         echo "Running nancy dependency scan..."
-        go list -json -deps ./... | nancy sleuth --output json > security_reports/nancy_results.json || {
+        go list -json -deps ./... | nancy sleuth --output json > security_reports/nancy-results.json || {
           echo "⚠️ nancy found issues, but continuing..."
         }
-        
-        echo "✅ Basic security audit completed"
-
-    - name: Run additional security checks
-      run: |
-        echo "🔍 Running additional security checks..."
         
         # Check for outdated dependencies
         echo "Checking for outdated Go dependencies..."
@@ -79,9 +73,9 @@ jobs:
           safety check -r requirements.txt --json --output security_reports/python-security-results.json || true
         fi
         
-        echo "✅ Additional security checks completed"
+        echo "✅ Comprehensive security audit completed"
 
-    - name: Create security report
+    - name: 📊 Create security report
       run: |
         echo "# Security Audit Report - $(date)" > security-audit-report.md
         echo "" >> security-audit-report.md
@@ -89,10 +83,10 @@ jobs:
         echo "" >> security-audit-report.md
         
         # Add Go security summary
-        if [ -f "security_reports/gosec_report.txt" ]; then
+        if [ -f "security_reports/gosec-results.json" ]; then
           echo "### Go Security Issues" >> security-audit-report.md
-          echo '```' >> security-audit-report.md
-          cat security_reports/gosec_report.txt >> security-audit-report.md
+          echo '```json' >> security-audit-report.md
+          cat security_reports/gosec-results.json >> security-audit-report.md
           echo '```' >> security-audit-report.md
           echo "" >> security-audit-report.md
         fi
@@ -107,19 +101,20 @@ jobs:
         fi
         
         echo "## Report Files" >> security-audit-report.md
-        echo "- gosec_report.txt: Go security scan results" >> security-audit-report.md
-        echo "- nancy_results.json: Dependency vulnerability scan" >> security-audit-report.md
+        echo "- gosec-results.json: Go security scan results" >> security-audit-report.md
+        echo "- nancy-results.json: Dependency vulnerability scan" >> security-audit-report.md
         echo "- go-dependencies-update.txt: Outdated dependencies" >> security-audit-report.md
 
-    - name: Upload security artifacts
+    - name: 📤 Upload security artifacts
       uses: actions/upload-artifact@v4
       with:
         name: weekly-security-audit-$(date +%Y%m%d)
         path: |
           security_reports/
           security-audit-report.md
+        retention-days: 90
 
-    - name: Security audit summary
+    - name: 📢 Security audit summary
       run: |
         echo "## 🔒 Security Audit Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -131,4 +126,4 @@ jobs:
         echo "- Dependency vulnerabilities (nancy)" >> $GITHUB_STEP_SUMMARY
         echo "- Outdated dependencies check" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Check the uploaded artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY 
+        echo "Check the uploaded artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY

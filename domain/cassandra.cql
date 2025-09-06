@@ -1,20 +1,27 @@
--- Insert into domains table
+-- Insert into domains table for CloudBridge Relay
 INSERT INTO domains (
     id,
     domain
 ) VALUES (
-    123e4567-e89b-12d3-a456-426614174000, -- Replace with your UUID
+    550e8400-e29b-41d4-a716-446655440000, -- CloudBridge Relay Domain UUID
     {
-        id: 123e4567-e89b-12d3-a456-426614174000, -- Replace with your UUID
-        name: 'default',
+        id: 550e8400-e29b-41d4-a716-446655440000, -- CloudBridge Relay Domain UUID
+        name: 'cloudbridge',
         status: 0, -- Registered
-        description: 'This is an example domain.',
-        data: {'key1': 'value1', 'key2': 'value2'},
-        owner_email: 'owner@example.com'
+        description: 'CloudBridge Relay P2P Mesh and Workflow Management Domain',
+        data: {
+            'project': 'cloudbridge-relay',
+            'version': '1.0.0',
+            'environment': 'production',
+            'features': ['p2p-mesh', 'wireguard', 'quic', 'workflow-engine'],
+            'owner': '2GC Technologies',
+            'contact': 'support@2gc.eu'
+        },
+        owner_email: 'support@2gc.eu'
     }
 ) IF NOT EXISTS;
 
--- Insert into domains_by_name_v2 table
+-- Insert into domains_by_name_v2 table for CloudBridge Relay
 INSERT INTO domains_by_name_v2 (
     domains_partition,
     name,
@@ -28,24 +35,34 @@ INSERT INTO domains_by_name_v2 (
     notification_version
 ) VALUES (
     0,
-    'default',
+    'cloudbridge',
     {
-        id: 123e4567-e89b-12d3-a456-426614174000, -- Replace with your UUID
-        name: 'default',
+        id: 550e8400-e29b-41d4-a716-446655440000, -- CloudBridge Relay Domain UUID
+        name: 'cloudbridge',
         status: 0, -- Registered
-        description: 'This is an example domain.',
-        data: {'key1': 'value1', 'key2': 'value2'},
-        owner_email: 'owner@example.com'
+        description: 'CloudBridge Relay P2P Mesh and Workflow Management Domain',
+        data: {
+            'project': 'cloudbridge-relay',
+            'version': '1.0.0',
+            'environment': 'production',
+            'features': ['p2p-mesh', 'wireguard', 'quic', 'workflow-engine'],
+            'owner': '2GC Technologies',
+            'contact': 'support@2gc.uk'
+        },
+        owner_email: 'support@2gc.uk'
     },
     {
-        retention: 7,
+        retention: 30, -- 30 days retention for production
         emit_metric: True,
-        history_archival_status: 0, -- Default to disabled
-        visibility_archival_status: 0 -- Default to disabled
+        history_archival_status: 1, -- Enabled for production
+        visibility_archival_status: 1 -- Enabled for production
     },
     {
-        active_cluster_name: 'cluster0',
-        clusters: [{cluster_name: 'cluster0'}]
+        active_cluster_name: 'cloudbridge-cluster',
+        clusters: [
+            {cluster_name: 'cloudbridge-cluster'},
+            {cluster_name: 'cloudbridge-backup-cluster'}
+        ]
     },
     True, -- is_global_domain
     1,    -- config_version

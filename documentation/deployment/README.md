@@ -6,6 +6,8 @@
 - **[DEVOPS_ROADMAP.md](./DEVOPS_ROADMAP.md)** - Дорожная карта DevOps развития
 - **[DOCKER_COMPOSE_GUIDE.md](./DOCKER_COMPOSE_GUIDE.md)** - Руководство по Docker Compose
 - **[DOCKER_CONTAINERIZATION.md](./DOCKER_CONTAINERIZATION.md)** - Контейнеризация с Docker
+- **[MINIKUBE_STAGING_GUIDE.md](./MINIKUBE_STAGING_GUIDE.md)** - Полное руководство по Minikube staging
+- **[QUICK_START_STAGING.md](./QUICK_START_STAGING.md)** - Быстрый старт staging environment
 
 ## 🚀 Процесс развертывания
 
