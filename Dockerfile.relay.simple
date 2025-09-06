@@ -1,89 +1,103 @@
-# Упрощенный Dockerfile для CloudBridge Relay без внешних зависимостей
-FROM golang:1.23-alpine AS builder
+# =========================================================
+# CloudBridge Relay - Simple Multi-stage Production Build
+# =========================================================
 
-# Установка зависимостей для сборки
+# ---------- Stage 1: Go Builder ----------
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies
 RUN apk add --no-cache \
     git \
     build-base \
     linux-headers \
-    wireguard-tools
+    ca-certificates \
+    tzdata
 
-# Установка рабочей директории
 WORKDIR /app
 
-# Копирование go mod файлов
+# Copy go mod files first for better caching
 COPY go.mod go.sum ./
+RUN go mod download && go mod verify
 
-# Скачивание зависимостей
-RUN go mod download
-
-# Копирование исходного кода
+# Copy source code
 COPY . .
 
-# Сборка приложения
+# Build arguments
 ARG VERSION=dev
 ARG BUILD_TIME
 ARG GIT_COMMIT
+ARG CGO_ENABLED=1
 
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT}" \
-    -o cloudbridge-relay ./cmd/relay
+# Build the binary with optimizations
+RUN CGO_ENABLED=${CGO_ENABLED} GOOS=linux GOARCH=amd64 go build \
+    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT} -s -w" \
+    -trimpath \
+    -o cloudbridge-relay \
+    ./cmd/relay
 
-# Финальный образ
+# ---------- Stage 2: Production Image ----------
 FROM alpine:3.18
 
-# Установка необходимых пакетов
+# Install runtime dependencies
 RUN apk add --no-cache \
     ca-certificates \
     tzdata \
-    iproute2 \
-    wireguard-tools \
-    iptables \
     bash \
     curl \
     netcat-openbsd \
+    iproute2 \
+    iptables \
+    wireguard-tools \
+    wireguard-tools-wg-quick \
     && rm -rf /var/cache/apk/*
 
-# Создание пользователя
+# Create user and directories
 RUN addgroup -g 1000 cloudbridge && \
-    adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge
+    adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge && \
+    mkdir -p \
+        /app/configs \
+        /app/logs \
+        /etc/wireguard \
+        /var/run/wireguard \
+        /var/log/cloudbridge-relay \
+        /tmp/cloudbridge
 
-# Создание необходимых директорий
-RUN mkdir -p \
-    /app/configs \
-    /app/logs \
-    /etc/wireguard \
-    /var/run/wireguard \
-    /var/log/cloudbridge-relay
+# Copy binary and configs
+COPY --from=builder /app/cloudbridge-relay /usr/local/bin/cloudbridge-relay
+COPY --from=builder /app/configs/config.json /app/configs/config.json
 
-# Копирование бинарного файла
-COPY --from=builder /app/cloudbridge-relay /usr/local/bin/
-
-# Установка прав
+# Set permissions
 RUN chmod +x /usr/local/bin/cloudbridge-relay && \
-    chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay
+    chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay /tmp/cloudbridge
 
-# Копирование конфигурации по умолчанию
-COPY configs/config.json /app/configs/config.json
-
-# Переключение на пользователя
+# Switch to non-root user
 USER cloudbridge
-
-# Рабочая директория
 WORKDIR /app
 
-# Открытие портов
-EXPOSE 80 8080 8081 8082 9090 51820/udp
+# Expose ports
+EXPOSE 9090/tcp 9090/udp 51820/udp 8084/tcp
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:80/health || exit 1
+    CMD curl -f http://localhost:9090/health || exit 1
 
-# Переменные окружения
-ENV CONFIG_PATH=/app/configs/config.json
-ENV LOG_LEVEL=info
-ENV WIREGUARD_ENABLED=true
+# Environment variables
+ENV CONFIG_PATH=/app/configs/config.json \
+    LOG_LEVEL=info \
+    WIREGUARD_ENABLED=true \
+    GIN_MODE=release \
+    TZ=UTC
 
-# Команда запуска
+# Labels
+LABEL maintainer="CloudBridge Team" \
+      version="${VERSION}" \
+      description="CloudBridge Relay Server with Cadence Workflow Engine" \
+      org.opencontainers.image.title="CloudBridge Relay" \
+      org.opencontainers.image.description="High-performance relay server with P2P mesh networking" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_TIME}" \
+      org.opencontainers.image.revision="${GIT_COMMIT}"
+
+# Entrypoint
 ENTRYPOINT ["/usr/local/bin/cloudbridge-relay"]
 CMD ["--config", "/app/configs/config.json"]

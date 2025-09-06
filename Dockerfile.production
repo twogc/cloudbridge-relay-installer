@@ -1,0 +1,90 @@
+# Multi-stage production build for CloudBridge Relay
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    build-base \
+    linux-headers \
+    ca-certificates
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build arguments
+ARG VERSION=dev
+ARG BUILD_TIME
+ARG GIT_COMMIT
+
+# Build the binary
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT} -s -w" \
+    -o cloudbridge-relay ./cmd/relay
+
+# Production stage
+FROM alpine:3.18
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    bash \
+    curl \
+    netcat-openbsd \
+    iproute2 \
+    iptables \
+    wireguard-tools \
+    wireguard-tools-wg-quick \
+    wireguard-go \
+    && rm -rf /var/cache/apk/*
+
+# Create user and directories
+RUN addgroup -g 1000 cloudbridge && \
+    adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge && \
+    mkdir -p \
+        /app/configs \
+        /app/logs \
+        /etc/wireguard \
+        /var/run/wireguard \
+        /var/log/cloudbridge-relay
+
+# Copy binary and configs
+COPY --from=builder /app/cloudbridge-relay /usr/local/bin/
+COPY --from=builder /app/configs/config.json /app/configs/config.json
+
+# Set permissions
+RUN chmod +x /usr/local/bin/cloudbridge-relay && \
+    chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay
+
+# Switch to non-root user
+USER cloudbridge
+WORKDIR /app
+
+# Expose ports
+EXPOSE 9090/tcp 9090/udp 51820/udp 8084/tcp
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:9090/health || exit 1
+
+# Environment variables
+ENV CONFIG_PATH=/app/configs/config.json \
+    LOG_LEVEL=info \
+    WIREGUARD_ENABLED=true \
+    GIN_MODE=release
+
+# Labels
+LABEL maintainer="CloudBridge Team" \
+      version="${VERSION}" \
+      description="CloudBridge Relay Server with Cadence Workflow Engine"
+
+# Entrypoint
+ENTRYPOINT ["/usr/local/bin/cloudbridge-relay"]
+CMD ["--config", "/app/configs/config.json"]
+

@@ -1,0 +1,208 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cassandra
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cassandra
+    app.kubernetes.io/version: "3.11"
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  serviceName: cassandra-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cassandra
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cassandra
+        app.kubernetes.io/version: "3.11"
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: cloudbridge-relay
+        app.kubernetes.io/managed-by: kubectl
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9500"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: cassandra
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: cassandra
+        image: cassandra:3.11
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: cql
+          containerPort: 9042
+          protocol: TCP
+        - name: thrift
+          containerPort: 9160
+          protocol: TCP
+        - name: storage
+          containerPort: 7000
+          protocol: TCP
+        - name: ssl-storage
+          containerPort: 7001
+          protocol: TCP
+        - name: metrics
+          containerPort: 9500
+          protocol: TCP
+        env:
+        - name: CASSANDRA_CLUSTER_NAME
+          value: "cloudbridge-cluster"
+        - name: CASSANDRA_DC
+          value: "datacenter1"
+        - name: CASSANDRA_RACK
+          value: "rack1"
+        - name: CASSANDRA_ENDPOINT_SNITCH
+          value: "GossipingPropertyFileSnitch"
+        - name: CASSANDRA_SEEDS
+          value: "cassandra-0.cassandra-service.cloudbridge.svc.cluster.local"
+        - name: HEAP_NEWSIZE
+          value: "128M"
+        - name: MAX_HEAP_SIZE
+          value: "512M"
+        - name: CASSANDRA_LISTEN_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CASSANDRA_BROADCAST_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CASSANDRA_RPC_ADDRESS
+          value: "0.0.0.0"
+        - name: CASSANDRA_BROADCAST_RPC_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: cassandra-data
+          mountPath: /var/lib/cassandra
+        - name: cassandra-config
+          mountPath: /etc/cassandra
+          readOnly: true
+        livenessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "cqlsh -e 'describe keyspaces'"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - "cqlsh -e 'describe keyspaces'"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 999
+          runAsGroup: 999
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: cassandra-config
+        configMap:
+          name: cassandra-config
+      - name: cassandra-data
+        persistentVolumeClaim:
+          claimName: cassandra-pvc
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+  volumeClaimTemplates:
+  - metadata:
+      name: cassandra-data
+      labels:
+        app.kubernetes.io/name: cassandra
+        app.kubernetes.io/version: "3.11"
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: cloudbridge-relay
+        app.kubernetes.io/managed-by: kubectl
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 20Gi
+      storageClassName: cassandra-storage
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cassandra
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cassandra
+    app.kubernetes.io/version: "3.11"
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cassandra
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cassandra
+    app.kubernetes.io/version: "3.11"
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["statefulsets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cassandra
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cassandra
+    app.kubernetes.io/version: "3.11"
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cassandra
+subjects:
+- kind: ServiceAccount
+  name: cassandra
+  namespace: cloudbridge
+

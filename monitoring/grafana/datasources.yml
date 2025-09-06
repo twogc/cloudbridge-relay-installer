@@ -1,0 +1,134 @@
+# Grafana Data Sources Configuration
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 15s
+    secureJsonData: {}
+    version: 1
+
+  - name: CloudBridge Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus.cloudbridge-monitoring.svc.cluster.local:9090
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 15s
+    secureJsonData: {}
+    version: 1
+
+  - name: CloudBridge Relay Metrics
+    type: prometheus
+    access: proxy
+    url: http://cloudbridge-relay.cloudbridge.svc.cluster.local:8084
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 30s
+      timeInterval: 10s
+    secureJsonData: {}
+    version: 1
+
+  - name: Cassandra Metrics
+    type: prometheus
+    access: proxy
+    url: http://cassandra-service.cloudbridge.svc.cluster.local:9500
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 30s
+      timeInterval: 15s
+    secureJsonData: {}
+    version: 1
+
+  - name: Cadence Metrics
+    type: prometheus
+    access: proxy
+    url: http://cadence-service.cloudbridge.svc.cluster.local:7934
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 30s
+      timeInterval: 15s
+    secureJsonData: {}
+    version: 1
+
+  - name: Kubernetes Metrics
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 15s
+    secureJsonData: {}
+    version: 1
+
+  - name: Node Exporter
+    type: prometheus
+    access: proxy
+    url: http://node-exporter:9100
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 30s
+      timeInterval: 15s
+    secureJsonData: {}
+    version: 1
+
+  - name: cAdvisor
+    type: prometheus
+    access: proxy
+    url: http://cadvisor:8080
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 30s
+      timeInterval: 15s
+    secureJsonData: {}
+    version: 1
+
+  - name: kube-state-metrics
+    type: prometheus
+    access: proxy
+    url: http://kube-state-metrics:8080
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 30s
+      timeInterval: 15s
+    secureJsonData: {}
+    version: 1
+
+  - name: Alertmanager
+    type: prometheus
+    access: proxy
+    url: http://alertmanager:9093
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 30s
+      timeInterval: 15s
+    secureJsonData: {}
+    version: 1
+

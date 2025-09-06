@@ -1,0 +1,226 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudbridge-relay
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: relay
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudbridge-relay
+      app.kubernetes.io/component: relay
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cloudbridge-relay
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: relay
+        app.kubernetes.io/part-of: cloudbridge-relay
+        app.kubernetes.io/managed-by: kubectl
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8084"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: cloudbridge-relay
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: cloudbridge-relay
+        image: cloudbridge-relay:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 9090
+          protocol: TCP
+        - name: quic
+          containerPort: 9090
+          protocol: UDP
+        - name: wireguard
+          containerPort: 51820
+          protocol: UDP
+        - name: metrics
+          containerPort: 8084
+          protocol: TCP
+        env:
+        - name: CONFIG_PATH
+          value: "/app/configs/config.json"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: GIN_MODE
+          value: "release"
+        - name: TZ
+          value: "UTC"
+        - name: CASSANDRA_HOSTS
+          value: "cassandra-service"
+        - name: CASSANDRA_PORT
+          value: "9042"
+        - name: CASSANDRA_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: cloudbridge-secrets
+              key: cassandra-username
+        - name: CASSANDRA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloudbridge-secrets
+              key: cassandra-password
+        - name: CADENCE_HOST
+          value: "cadence-service"
+        - name: CADENCE_PORT
+          value: "7933"
+        - name: WIREGUARD_ENABLED
+          value: "true"
+        - name: WIREGUARD_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: wireguard-keys
+              key: private-key
+        - name: WIREGUARD_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: wireguard-keys
+              key: public-key
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudbridge-secrets
+              key: api-key
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cloudbridge-secrets
+              key: jwt-secret
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: config
+          mountPath: /app/configs
+          readOnly: true
+        - name: logs
+          mountPath: /app/logs
+        - name: wireguard-config
+          mountPath: /etc/wireguard
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9090
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - NET_ADMIN
+            - NET_RAW
+      volumes:
+      - name: config
+        configMap:
+          name: cloudbridge-config
+      - name: logs
+        persistentVolumeClaim:
+          claimName: cloudbridge-logs-pvc
+      - name: wireguard-config
+        secret:
+          secretName: wireguard-keys
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - cloudbridge-relay
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloudbridge-relay
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: relay
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cloudbridge-relay
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: relay
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cloudbridge-relay
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: relay
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cloudbridge-relay
+subjects:
+- kind: ServiceAccount
+  name: cloudbridge-relay
+  namespace: cloudbridge
+

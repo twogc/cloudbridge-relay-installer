@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudbridge
+  labels:
+    name: cloudbridge
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: namespace
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+  annotations:
+    description: "Namespace for CloudBridge Relay Server and related services"
+    contact: "cloudbridge-team@example.com"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudbridge-monitoring
+  labels:
+    name: cloudbridge-monitoring
+    app.kubernetes.io/name: cloudbridge-monitoring
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+  annotations:
+    description: "Namespace for CloudBridge monitoring stack (Prometheus, Grafana)"
+    contact: "cloudbridge-team@example.com"
+

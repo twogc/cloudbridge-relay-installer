@@ -1,107 +1,144 @@
-# CloudBridge Relay Server - Документация
+# CloudBridge Relay - Documentation
 
-## 📋 Содержание документации
+Добро пожаловать в документацию CloudBridge Relay! Этот проект представляет собой современную систему релея с поддержкой QUIC, WireGuard, AI-сервисов и продвинутого мониторинга.
 
-Эта папка содержит полную документацию CloudBridge Relay Server, созданную для DevOps команды.
+## 📚 Структура документации
 
-### 📚 Основные документы
+### 🏗️ [Architecture](./architecture/)
+- [Project Overview](./architecture/PROJECT_OVERVIEW.md) - Обзор проекта и архитектуры
+- [Architecture Diagrams](./architecture/architecture-diagrams.md) - Диаграммы архитектуры системы
 
-1. **[PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)**
-   - Общий обзор проекта и его возможностей
-   - Архитектура, сценарии использования
-   - Технические характеристики и FAQ
+### 🚀 [Deployment](./deployment/)
+- [DevOps Checklist](./deployment/DEVOPS_CHECKLIST.md) - Чек-лист для DevOps
+- [DevOps Roadmap](./deployment/DEVOPS_ROADMAP.md) - Дорожная карта DevOps
+- [Docker Compose Guide](./deployment/DOCKER_COMPOSE_GUIDE.md) - Руководство по Docker Compose
+- [Docker Containerization](./deployment/DOCKER_CONTAINERIZATION.md) - Контейнеризация с Docker
 
-2. **[CLOUDBRIDGE_RELAY_DOCUMENTATION.md](./CLOUDBRIDGE_RELAY_DOCUMENTATION.md)**
-   - Полная техническая документация
-   - Архитектура, протоколы, безопасность
-   - 8 основных разделов с детальным описанием
+### ⚙️ [Configuration](./configuration/)
+- [Configuration Examples](./configuration/configuration-examples.md) - Примеры конфигурации
+- [Docker Best Practices](./configuration/DOCKER_BEST_PRACTICES.md) - Лучшие практики Docker
 
-3. **[README_COMPLETE.md](./README_COMPLETE.md)**
-   - Итоговый README с обзором проекта
-   - Быстрый старт и основные команды
-   - Ссылки на всю документацию
+### 📊 [Monitoring](./monitoring/)
+- [Monitoring Guide](./monitoring/MONITORING_GUIDE.md) - Руководство по мониторингу
 
-4. **[DEVOPS_CHECKLIST.md](./DEVOPS_CHECKLIST.md)**
-   - Чек-лист выполненной работы
-   - Статистика и метрики качества
-   - Итоговый статус проекта
+### 🔒 [Security](./security/)
+- Security policies и compliance
+- Network policies
+- Pod security policies
+- Security scanning tools
 
-### 🔧 Техническая документация
+### 🔌 [API](./api/)
+- [API Reference](./api/api-reference.md) - Справочник по API
 
-5. **[architecture-diagrams.md](./architecture-diagrams.md)**
-   - 12 Mermaid диаграмм архитектуры
-   - Схемы сетевого стека и процессов
-   - Диаграммы безопасности и масштабирования
+### 📖 [Guides](./guides/)
+- [Complete README](./guides/README_COMPLETE.md) - Полное руководство
+- [Documentation Structure](./guides/DOCUMENTATION_STRUCTURE.md) - Структура документации
 
-6. **[configuration-examples.md](./configuration-examples.md)**
-   - Примеры конфигурации для всех сценариев
-   - Docker Compose, Kubernetes, Systemd
-   - Prometheus, Grafana, Nginx конфигурации
+### 📋 [Reports](./reports/)
+- Отчеты по тестированию
+- Отчеты по безопасности
+- Отчеты по производительности
 
-7. **[api-reference.md](./api-reference.md)**
-   - Полный API Reference
-   - Примеры запросов и ответов
-   - Коды ошибок и troubleshooting
+## 🎯 Основные компоненты
 
-### 🧪 Тестовые скрипты
+### Core Services
+- **CloudBridge Relay** - Основной сервис релея
+- **QUIC Service** - QUIC протокол для быстрой передачи данных
+- **WireGuard Service** - VPN соединения
+- **AI Service** - Искусственный интеллект для оптимизации
+- **Cadence Service** - Workflow orchestration
 
-8. **[test_external_wireguard.sh](./test_external_wireguard.sh)**
-   - Тест внешнего UDP доступа к WireGuard
-   - Проверка локального и внешнего подключения
-   - Диагностика сетевых проблем
+### Infrastructure
+- **Kubernetes** - Оркестрация контейнеров
+- **Docker** - Контейнеризация
+- **Terraform** - Infrastructure as Code
+- **Prometheus** - Мониторинг метрик
+- **Grafana** - Визуализация данных
 
----
-
-## 🎯 Назначение документации
-
-### Для разработчиков
-- Понимание архитектуры системы
-- API Reference с примерами
-- Форматы сообщений и протоколы
-
-### Для DevOps
-- Готовые конфигурации для развертывания
-- Docker и Kubernetes манифесты
-- Мониторинг и алерты
-
-### Для администраторов
-- Настройка безопасности
-- Конфигурация tenant'ов
-- Управление ресурсами
-
-### Для пользователей
-- Быстрый старт
-- FAQ и troubleshooting
-- Примеры использования
-
----
-
-## 📊 Статистика
-
-- **Общий объем**: 4,000+ строк документации
-- **Файлов**: 9 основных документов
-- **Диаграмм**: 12 Mermaid диаграмм
-- **Примеров конфигурации**: 20+ готовых примеров
-- **API endpoints**: 15+ описанных endpoints
-
----
+### Security
+- **Network Policies** - Сетевая безопасность
+- **Pod Security Policies** - Безопасность подов
+- **RBAC** - Контроль доступа
+- **Security Scanning** - Автоматическое сканирование
 
 ## 🚀 Быстрый старт
 
-1. **Начните с**: [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) - общий обзор проекта
-2. **Для понимания архитектуры**: [CLOUDBRIDGE_RELAY_DOCUMENTATION.md](./CLOUDBRIDGE_RELAY_DOCUMENTATION.md)
-3. **Для развертывания**: [configuration-examples.md](./configuration-examples.md)
-4. **Для API интеграции**: [api-reference.md](./api-reference.md)
-5. **Для визуализации**: [architecture-diagrams.md](./architecture-diagrams.md)
+1. **Установка зависимостей**:
+   ```bash
+   ./scripts/setup/check_dependencies.sh
+   ```
+
+2. **Запуск локально**:
+   ```bash
+   ./run-local.sh
+   ```
+
+3. **Развертывание в Kubernetes**:
+   ```bash
+   ./deploy-k8s.sh
+   ```
+
+4. **Мониторинг**:
+   ```bash
+   ./deploy-monitoring.sh
+   ```
+
+## 📊 Статус проекта
+
+- ✅ **CI/CD Pipeline** - GitHub Actions настроен
+- ✅ **Docker Containerization** - Multi-stage builds
+- ✅ **Kubernetes Deployment** - Production-ready manifests
+- ✅ **Monitoring** - Prometheus/Grafana stack
+- ✅ **Security** - Comprehensive security policies
+- ✅ **Infrastructure as Code** - Terraform modules
+- 🔄 **Backup & Recovery** - В разработке
+- 🔄 **Performance Optimization** - В разработке
+
+## 🔧 Полезные команды
+
+### Разработка
+```bash
+# Запуск тестов
+make test
+
+# Сборка Docker образов
+./build-docker.sh
+
+# Локальный запуск
+./run-local.sh
+```
+
+### Развертывание
+```bash
+# Kubernetes deployment
+./deploy-k8s.sh
+
+# Terraform deployment
+./terraform/scripts/deploy.sh apply prod
+
+# Production testing
+./test-production.sh
+```
+
+### Мониторинг
+```bash
+# Security scanning
+./security/scanning/security-scan.sh
+
+# Performance analysis
+./performance-analysis.sh
+```
+
+## 📞 Поддержка
+
+- **Issues**: [GitHub Issues](https://github.com/your-org/cloudbridge-relay/issues)
+- **Documentation**: [Wiki](https://github.com/your-org/cloudbridge-relay/wiki)
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/cloudbridge-relay/discussions)
+
+## 📄 Лицензия
+
+Этот проект лицензирован под MIT License - см. файл [LICENSE](../LICENSE) для деталей.
 
 ---
 
-## 📝 Обновления
-
-- **Дата создания**: 2025-09-04
-- **Версия CloudBridge Relay Server**: v1.0.0
-- **Статус**: ✅ Полная документация готова
-
----
-
-*Документация создана для DevOps команды CloudBridge Relay Server*
+**CloudBridge Relay** - Современная система релея для высокопроизводительных соединений

@@ -1,0 +1,108 @@
+# =========================================================
+# CloudBridge AI Service - Enhanced Multi-stage Build
+# =========================================================
+
+# ---------- Stage 1: Go Builder ----------
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    build-base \
+    linux-headers \
+    ca-certificates \
+    tzdata
+
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+# Copy source code
+COPY . .
+
+# Build arguments
+ARG VERSION=dev
+ARG BUILD_TIME
+ARG GIT_COMMIT
+ARG CGO_ENABLED=1
+
+# Build the AI service binary
+RUN CGO_ENABLED=${CGO_ENABLED} GOOS=linux GOARCH=amd64 go build \
+    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT} -s -w" \
+    -trimpath \
+    -o cloudbridge-ai \
+    ./cmd/ai-service
+
+# ---------- Stage 2: Production Image ----------
+FROM alpine:3.18
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    bash \
+    curl \
+    netcat-openbsd \
+    python3 \
+    py3-pip \
+    && rm -rf /var/cache/apk/*
+
+# Install Python ML libraries
+RUN pip3 install --no-cache-dir \
+    numpy \
+    scikit-learn \
+    pandas \
+    requests
+
+# Create user and directories
+RUN addgroup -g 1000 cloudbridge && \
+    adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge && \
+    mkdir -p \
+        /app/configs \
+        /app/logs \
+        /app/models \
+        /var/log/cloudbridge-ai \
+        /tmp/cloudbridge
+
+# Copy binary and configs
+COPY --from=builder /app/cloudbridge-ai /usr/local/bin/cloudbridge-ai
+COPY --from=builder /app/configs/ai.yaml /app/configs/ai.yaml
+
+# Set permissions
+RUN chmod +x /usr/local/bin/cloudbridge-ai && \
+    chown -R cloudbridge:cloudbridge /app /var/log/cloudbridge-ai /tmp/cloudbridge
+
+# Switch to non-root user
+USER cloudbridge
+WORKDIR /app
+
+# Expose ports
+EXPOSE 8081/tcp 8084/tcp
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8081/health || exit 1
+
+# Environment variables
+ENV CONFIG_PATH=/app/configs/ai.yaml \
+    LOG_LEVEL=info \
+    GIN_MODE=release \
+    TZ=UTC \
+    PYTHONPATH=/app/models
+
+# Labels
+LABEL maintainer="CloudBridge Team" \
+      version="${VERSION}" \
+      description="CloudBridge AI Service for intelligent network optimization" \
+      org.opencontainers.image.title="CloudBridge AI Service" \
+      org.opencontainers.image.description="AI-powered network optimization and threat detection" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_TIME}" \
+      org.opencontainers.image.revision="${GIT_COMMIT}"
+
+# Entrypoint
+ENTRYPOINT ["/usr/local/bin/cloudbridge-ai"]
+CMD ["--config", "/app/configs/ai.yaml"]
+

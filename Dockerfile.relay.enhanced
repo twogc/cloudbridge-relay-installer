@@ -1,0 +1,119 @@
+# =========================================================
+# CloudBridge Relay - Enhanced Multi-stage Production Build
+# =========================================================
+
+# ---------- Stage 1: Go Builder ----------
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    build-base \
+    linux-headers \
+    ca-certificates \
+    tzdata
+
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+# Copy source code
+COPY . .
+
+# Build arguments
+ARG VERSION=dev
+ARG BUILD_TIME
+ARG GIT_COMMIT
+ARG CGO_ENABLED=1
+
+# Build the binary with optimizations
+RUN CGO_ENABLED=${CGO_ENABLED} GOOS=linux GOARCH=amd64 go build \
+    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT} -s -w" \
+    -trimpath \
+    -o cloudbridge-relay \
+    ./cmd/relay
+
+# ---------- Stage 2: WireGuard Builder (Optional) ----------
+FROM golang:1.25-alpine AS wireguard-builder
+
+ARG WITH_WIREGUARD_GO=false
+
+RUN if [ "${WITH_WIREGUARD_GO}" = "true" ]; then \
+        apk add --no-cache git build-base make; \
+        git clone --depth=1 https://github.com/WireGuard/wireguard-go.git /tmp/wireguard-go; \
+        cd /tmp/wireguard-go && make && install -m 0755 wireguard-go /usr/local/bin/wireguard-go; \
+    fi
+
+# ---------- Stage 3: Production Image ----------
+FROM alpine:3.18
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    bash \
+    curl \
+    netcat-openbsd \
+    iproute2 \
+    iptables \
+    wireguard-tools \
+    wireguard-tools-wg-quick \
+    && rm -rf /var/cache/apk/*
+
+# Copy WireGuard Go binary if built
+ARG WITH_WIREGUARD_GO=false
+COPY --from=wireguard-builder /usr/local/bin/wireguard-go /usr/local/bin/wireguard-go 2>/dev/null || true
+RUN if [ "${WITH_WIREGUARD_GO}" != "true" ]; then rm -f /usr/local/bin/wireguard-go 2>/dev/null || true; fi
+
+# Create user and directories
+RUN addgroup -g 1000 cloudbridge && \
+    adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge && \
+    mkdir -p \
+        /app/configs \
+        /app/logs \
+        /etc/wireguard \
+        /var/run/wireguard \
+        /var/log/cloudbridge-relay \
+        /tmp/cloudbridge
+
+# Copy binary and configs
+COPY --from=builder /app/cloudbridge-relay /usr/local/bin/cloudbridge-relay
+COPY --from=builder /app/configs/config.json /app/configs/config.json
+
+# Set permissions
+RUN chmod +x /usr/local/bin/cloudbridge-relay && \
+    chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-relay /tmp/cloudbridge
+
+# Switch to non-root user
+USER cloudbridge
+WORKDIR /app
+
+# Expose ports
+EXPOSE 9090/tcp 9090/udp 51820/udp 8084/tcp
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:9090/health || exit 1
+
+# Environment variables
+ENV CONFIG_PATH=/app/configs/config.json \
+    LOG_LEVEL=info \
+    WIREGUARD_ENABLED=true \
+    GIN_MODE=release \
+    TZ=UTC
+
+# Labels
+LABEL maintainer="CloudBridge Team" \
+      version="${VERSION}" \
+      description="CloudBridge Relay Server with Cadence Workflow Engine" \
+      org.opencontainers.image.title="CloudBridge Relay" \
+      org.opencontainers.image.description="High-performance relay server with P2P mesh networking" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_TIME}" \
+      org.opencontainers.image.revision="${GIT_COMMIT}"
+
+# Entrypoint
+ENTRYPOINT ["/usr/local/bin/cloudbridge-relay"]
+CMD ["--config", "/app/configs/config.json"]

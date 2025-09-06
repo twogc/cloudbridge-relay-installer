@@ -1,0 +1,436 @@
+version: '3.8'
+
+services:
+  # CloudBridge Relay Server (Main Service)
+  cloudbridge-relay:
+    build:
+      context: .
+      dockerfile: Dockerfile.relay.enhanced
+      args:
+        VERSION: ${VERSION:-latest}
+        BUILD_TIME: ${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
+        GIT_COMMIT: ${GIT_COMMIT:-$(git rev-parse HEAD)}
+        WITH_WIREGUARD_GO: ${WITH_WIREGUARD_GO:-false}
+    image: cloudbridge-relay:${VERSION:-latest}
+    container_name: cloudbridge-relay
+    restart: unless-stopped
+    ports:
+      - "9090:9090"    # CloudBridge Relay API
+      - "9090:9090/udp" # QUIC Protocol
+      - "51820:51820/udp" # WireGuard P2P
+      - "8084:8084"    # Metrics
+    environment:
+      - CONFIG_PATH=/app/configs/config.json
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - WIREGUARD_ENABLED=true
+      - GIN_MODE=release
+      - TZ=UTC
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./logs:/app/logs
+      - /etc/wireguard:/etc/wireguard:ro
+    networks:
+      - cloudbridge-network
+    depends_on:
+      - cadence
+      - cassandra
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # AI Service
+  cloudbridge-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.ai.enhanced
+      args:
+        VERSION: ${VERSION:-latest}
+        BUILD_TIME: ${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
+        GIT_COMMIT: ${GIT_COMMIT:-$(git rev-parse HEAD)}
+    image: cloudbridge-ai:${VERSION:-latest}
+    container_name: cloudbridge-ai
+    restart: unless-stopped
+    ports:
+      - "8081:8081"    # AI Service API
+      - "8084:8084"    # Metrics
+    environment:
+      - CONFIG_PATH=/app/configs/ai.yaml
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - GIN_MODE=release
+      - TZ=UTC
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./logs:/app/logs
+      - ./models:/app/models
+    networks:
+      - cloudbridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Cadence Service
+  cloudbridge-cadence:
+    build:
+      context: .
+      dockerfile: Dockerfile.cadence.enhanced
+      args:
+        VERSION: ${VERSION:-latest}
+        BUILD_TIME: ${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
+        GIT_COMMIT: ${GIT_COMMIT:-$(git rev-parse HEAD)}
+    image: cloudbridge-cadence:${VERSION:-latest}
+    container_name: cloudbridge-cadence
+    restart: unless-stopped
+    ports:
+      - "8082:8082"    # Cadence Service API
+      - "8084:8084"    # Metrics
+    environment:
+      - CONFIG_PATH=/app/configs/cadence.yaml
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - GIN_MODE=release
+      - TZ=UTC
+      - CADENCE_DOMAIN=cloudbridge-relay
+      - CADENCE_TASK_LIST=cloudbridge-task-list
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./logs:/app/logs
+      - ./workflows:/app/workflows
+    networks:
+      - cloudbridge-network
+    depends_on:
+      - cassandra
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # QUIC Service
+  cloudbridge-quic:
+    build:
+      context: .
+      dockerfile: Dockerfile.quic.enhanced
+      args:
+        VERSION: ${VERSION:-latest}
+        BUILD_TIME: ${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
+        GIT_COMMIT: ${GIT_COMMIT:-$(git rev-parse HEAD)}
+    image: cloudbridge-quic:${VERSION:-latest}
+    container_name: cloudbridge-quic
+    restart: unless-stopped
+    ports:
+      - "9090:9090"    # QUIC Service API
+      - "9090:9090/udp" # QUIC Protocol
+      - "8084:8084"    # Metrics
+    environment:
+      - CONFIG_PATH=/app/configs/enhanced_quic.yaml
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - GIN_MODE=release
+      - TZ=UTC
+      - QUIC_ENABLED=true
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./logs:/app/logs
+    networks:
+      - cloudbridge-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # WireGuard Service
+  cloudbridge-wireguard:
+    build:
+      context: .
+      dockerfile: Dockerfile.wireguard.enhanced
+      args:
+        VERSION: ${VERSION:-latest}
+        BUILD_TIME: ${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
+        GIT_COMMIT: ${GIT_COMMIT:-$(git rev-parse HEAD)}
+    image: cloudbridge-wireguard:${VERSION:-latest}
+    container_name: cloudbridge-wireguard
+    restart: unless-stopped
+    ports:
+      - "51820:51820/udp" # WireGuard P2P
+      - "8084:8084"    # Metrics
+    environment:
+      - CONFIG_PATH=/app/configs/wireguard.yaml
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - GIN_MODE=release
+      - TZ=UTC
+      - WIREGUARD_ENABLED=true
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./logs:/app/logs
+      - /etc/wireguard:/etc/wireguard:ro
+    networks:
+      - cloudbridge-network
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Cadence Workflow Engine
+  cadence:
+    image: ubercadence/server:latest
+    container_name: cadence-server
+    restart: unless-stopped
+    ports:
+      - "7933:7933"    # Cadence gRPC
+      - "7934:7934"    # Cadence Web
+      - "7935:7935"    # Cadence Admin
+    environment:
+      - CASSANDRA_SEEDS=cassandra
+      - DB=cassandra
+      - DB_PORT=9042
+      - KEYSPACE=cadence
+      - VISIBILITY_KEYSPACE=cadence_visibility
+      - RINGPOP_SEEDS=cadence:7933
+      - LOG_LEVEL=info
+      - NUM_HISTORY_SHARDS=4
+      - SERVICES=history,matching,frontend,worker
+    networks:
+      - cloudbridge-network
+    depends_on:
+      - cassandra
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7934/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Cadence Web UI
+  cadence-web:
+    image: ubercadence/web:latest
+    container_name: cadence-web
+    restart: unless-stopped
+    ports:
+      - "8088:8088"    # Cadence Web UI
+    environment:
+      - CADENCE_TCHANNEL_PEERS=cadence:7933
+      - CADENCE_WEB_PORT=8088
+    networks:
+      - cloudbridge-network
+    depends_on:
+      - cadence
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # Cassandra Database
+  cassandra:
+    image: cassandra:3.11
+    container_name: cassandra
+    restart: unless-stopped
+    ports:
+      - "9042:9042"    # Cassandra CQL
+    environment:
+      - CASSANDRA_CLUSTER_NAME=cloudbridge-cluster
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - HEAP_NEWSIZE=128M
+      - MAX_HEAP_SIZE=512M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+      - ./scripts/cassandra-init.cql:/docker-entrypoint-initdb.d/init.cql:ro
+    networks:
+      - cloudbridge-network
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Prometheus Metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9092:9090"    # Prometheus (changed port to avoid conflict)
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - cloudbridge-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"    # Grafana Dashboard
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - cloudbridge-network
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"    # Node Exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - cloudbridge-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 128M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+
+networks:
+  cloudbridge-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  cassandra_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+

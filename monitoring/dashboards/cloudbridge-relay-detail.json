@@ -1,0 +1,339 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CloudBridge Relay - Detailed",
+    "tags": ["cloudbridge", "relay", "detailed"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Relay Service Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"cloudbridge-relay\"}",
+            "legendFormat": "Service Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Active Sessions",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "cloudbridge_relay_active_sessions",
+            "legendFormat": "Active Sessions"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Total Requests",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "cloudbridge_relay_total_requests",
+            "legendFormat": "Total Requests"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 4,
+        "title": "Error Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(cloudbridge_relay_errors_total[5m]) / rate(cloudbridge_relay_requests_total[5m]) * 100",
+            "legendFormat": "Error Rate %"
+          }
+        ],
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        }
+      },
+      {
+        "id": 5,
+        "title": "Request Rate Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(cloudbridge_relay_requests_total[1m])",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests per second"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 4
+        }
+      },
+      {
+        "id": 6,
+        "title": "Response Time Distribution",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(cloudbridge_relay_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(cloudbridge_relay_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(cloudbridge_relay_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "99th percentile"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Response Time (seconds)"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 4
+        }
+      },
+      {
+        "id": 7,
+        "title": "WireGuard Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cloudbridge_wireguard_active_connections",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "cloudbridge_wireguard_total_connections",
+            "legendFormat": "Total Connections"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Connections"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 12
+        }
+      },
+      {
+        "id": 8,
+        "title": "QUIC Protocol Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cloudbridge_quic_active_streams",
+            "legendFormat": "Active Streams"
+          },
+          {
+            "expr": "cloudbridge_quic_bytes_sent_total",
+            "legendFormat": "Bytes Sent"
+          },
+          {
+            "expr": "cloudbridge_quic_bytes_received_total",
+            "legendFormat": "Bytes Received"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "QUIC Metrics"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 12
+        }
+      },
+      {
+        "id": 9,
+        "title": "Cadence Workflow Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cloudbridge_cadence_active_workflows",
+            "legendFormat": "Active Workflows"
+          },
+          {
+            "expr": "cloudbridge_cadence_completed_workflows",
+            "legendFormat": "Completed Workflows"
+          },
+          {
+            "expr": "cloudbridge_cadence_failed_workflows",
+            "legendFormat": "Failed Workflows"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Workflows"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 20
+        }
+      },
+      {
+        "id": 10,
+        "title": "Cassandra Database Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cloudbridge_cassandra_active_connections",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "cloudbridge_cassandra_queries_per_second",
+            "legendFormat": "Queries/sec"
+          },
+          {
+            "expr": "cloudbridge_cassandra_read_latency",
+            "legendFormat": "Read Latency (ms)"
+          },
+          {
+            "expr": "cloudbridge_cassandra_write_latency",
+            "legendFormat": "Write Latency (ms)"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Cassandra Metrics"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 20
+        }
+      },
+      {
+        "id": 11,
+        "title": "AI Service Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "cloudbridge_ai_requests_total",
+            "legendFormat": "Total Requests"
+          },
+          {
+            "expr": "cloudbridge_ai_processing_time_seconds",
+            "legendFormat": "Processing Time (sec)"
+          },
+          {
+            "expr": "cloudbridge_ai_model_accuracy",
+            "legendFormat": "Model Accuracy %"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "AI Metrics"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 28
+        }
+      },
+      {
+        "id": 12,
+        "title": "System Resources",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total{job=\"cloudbridge-relay\"}[5m]) * 100",
+            "legendFormat": "CPU Usage %"
+          },
+          {
+            "expr": "process_resident_memory_bytes{job=\"cloudbridge-relay\"} / 1024 / 1024",
+            "legendFormat": "Memory Usage (MB)"
+          },
+          {
+            "expr": "rate(process_open_fds{job=\"cloudbridge-relay\"}[5m])",
+            "legendFormat": "Open File Descriptors"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "System Resources"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 28
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": []
+  }
+}
+

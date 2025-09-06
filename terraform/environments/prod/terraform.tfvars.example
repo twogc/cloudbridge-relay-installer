@@ -1,0 +1,19 @@
+# CloudBridge Relay - Production Configuration
+# Copy this file to terraform.tfvars and update the values
+
+# Application
+app_version = "1.0.0"
+terraform_version = "1.0.0"
+image_registry = "docker.io"
+
+# Ingress
+ingress_host = "cloudbridge.example.com"
+
+# Security (use strong passwords in production)
+cassandra_password = "your-strong-cassandra-password"
+grafana_password = "your-strong-grafana-password"
+api_key = "your-strong-api-key"
+jwt_secret = "your-strong-jwt-secret"
+
+
+

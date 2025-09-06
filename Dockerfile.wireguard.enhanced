@@ -1,0 +1,118 @@
+# =========================================================
+# CloudBridge WireGuard Service - Enhanced Multi-stage Build
+# =========================================================
+
+# ---------- Stage 1: Go Builder ----------
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    build-base \
+    linux-headers \
+    ca-certificates \
+    tzdata
+
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
+# Copy source code
+COPY . .
+
+# Build arguments
+ARG VERSION=dev
+ARG BUILD_TIME
+ARG GIT_COMMIT
+ARG CGO_ENABLED=1
+
+# Build the WireGuard service binary
+RUN CGO_ENABLED=${CGO_ENABLED} GOOS=linux GOARCH=amd64 go build \
+    -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME} -X main.GitCommit=${GIT_COMMIT} -s -w" \
+    -trimpath \
+    -o cloudbridge-wireguard \
+    ./cmd/wireguard-service
+
+# ---------- Stage 2: WireGuard Go Builder ----------
+FROM golang:1.25-alpine AS wireguard-builder
+
+RUN apk add --no-cache git build-base make
+
+# Build WireGuard Go from official mirror
+RUN git clone --depth=1 https://github.com/WireGuard/wireguard-go.git /tmp/wireguard-go && \
+    cd /tmp/wireguard-go && \
+    make && \
+    install -m 0755 wireguard-go /usr/local/bin/wireguard-go
+
+# ---------- Stage 3: Production Image ----------
+FROM alpine:3.18
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    bash \
+    curl \
+    netcat-openbsd \
+    iproute2 \
+    iptables \
+    wireguard-tools \
+    wireguard-tools-wg-quick \
+    && rm -rf /var/cache/apk/*
+
+# Copy WireGuard Go binary
+COPY --from=wireguard-builder /usr/local/bin/wireguard-go /usr/local/bin/wireguard-go
+
+# Create user and directories
+RUN addgroup -g 1000 cloudbridge && \
+    adduser -D -s /bin/bash -u 1000 -G cloudbridge cloudbridge && \
+    mkdir -p \
+        /app/configs \
+        /app/logs \
+        /etc/wireguard \
+        /var/run/wireguard \
+        /var/log/cloudbridge-wireguard \
+        /tmp/cloudbridge
+
+# Copy binary and configs
+COPY --from=builder /app/cloudbridge-wireguard /usr/local/bin/cloudbridge-wireguard
+COPY --from=builder /app/configs/wireguard.yaml /app/configs/wireguard.yaml
+
+# Set permissions
+RUN chmod +x /usr/local/bin/cloudbridge-wireguard /usr/local/bin/wireguard-go && \
+    chown -R cloudbridge:cloudbridge /app /etc/wireguard /var/run/wireguard /var/log/cloudbridge-wireguard /tmp/cloudbridge
+
+# Switch to non-root user
+USER cloudbridge
+WORKDIR /app
+
+# Expose ports
+EXPOSE 51820/udp 8084/tcp
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8084/health || exit 1
+
+# Environment variables
+ENV CONFIG_PATH=/app/configs/wireguard.yaml \
+    LOG_LEVEL=info \
+    GIN_MODE=release \
+    TZ=UTC \
+    WIREGUARD_ENABLED=true
+
+# Labels
+LABEL maintainer="CloudBridge Team" \
+      version="${VERSION}" \
+      description="CloudBridge WireGuard Service for P2P mesh networking" \
+      org.opencontainers.image.title="CloudBridge WireGuard Service" \
+      org.opencontainers.image.description="WireGuard P2P mesh networking service" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_TIME}" \
+      org.opencontainers.image.revision="${GIT_COMMIT}"
+
+# Entrypoint
+ENTRYPOINT ["/usr/local/bin/cloudbridge-wireguard"]
+CMD ["--config", "/app/configs/wireguard.yaml"]
+

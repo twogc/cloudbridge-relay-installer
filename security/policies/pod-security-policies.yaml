@@ -1,0 +1,255 @@
+# CloudBridge Relay - Pod Security Policies
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: cloudbridge-relay-psp
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  allowedCapabilities:
+    - NET_ADMIN
+    - NET_RAW
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  runAsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1000
+        max: 65535
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1000
+        max: 65535
+  readOnlyRootFilesystem: true
+  allowedHostPaths: []
+  allowedFlexVolumes: []
+  allowedCSIDrivers: []
+  allowedUnsafeSysctls: []
+  forbiddenSysctls: []
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: cassandra-psp
+  labels:
+    app.kubernetes.io/name: cassandra
+    app.kubernetes.io/version: "3.11"
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  allowedCapabilities: []
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  runAsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 999
+        max: 999
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 999
+        max: 999
+  readOnlyRootFilesystem: false
+  allowedHostPaths: []
+  allowedFlexVolumes: []
+  allowedCSIDrivers: []
+  allowedUnsafeSysctls: []
+  forbiddenSysctls: []
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: monitoring-psp
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  allowedCapabilities: []
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  runAsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1000
+        max: 65535
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1000
+        max: 65535
+  readOnlyRootFilesystem: true
+  allowedHostPaths: []
+  allowedFlexVolumes: []
+  allowedCSIDrivers: []
+  allowedUnsafeSysctls: []
+  forbiddenSysctls: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudbridge-relay-psp
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs: ['use']
+  resourceNames:
+  - cloudbridge-relay-psp
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cassandra-psp
+  labels:
+    app.kubernetes.io/name: cassandra
+    app.kubernetes.io/version: "3.11"
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs: ['use']
+  resourceNames:
+  - cassandra-psp
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitoring-psp
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+rules:
+- apiGroups: ['policy']
+  resources: ['podsecuritypolicies']
+  verbs: ['use']
+  resourceNames:
+  - monitoring-psp
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudbridge-relay-psp
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cloudbridge-relay-psp
+subjects:
+- kind: ServiceAccount
+  name: cloudbridge-relay
+  namespace: cloudbridge
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cassandra-psp
+  labels:
+    app.kubernetes.io/name: cassandra
+    app.kubernetes.io/version: "3.11"
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cassandra-psp
+subjects:
+- kind: ServiceAccount
+  name: cassandra
+  namespace: cloudbridge
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: monitoring-psp
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: monitoring-psp
+subjects:
+- kind: ServiceAccount
+  name: prometheus
+  namespace: cloudbridge-monitoring
+- kind: ServiceAccount
+  name: grafana
+  namespace: cloudbridge-monitoring
+
