@@ -244,6 +244,14 @@ type configRaw struct {
 			RefreshRate  string `json:"refresh_rate"`
 		} `json:"monitoring"`
 	} `json:"ai"`
+
+	// Cadence Workflow Engine Configuration
+	Cadence struct {
+		Enabled  bool   `json:"enabled"`
+		HostPort string `json:"host_port"`
+		Domain   string `json:"domain"`
+		TaskList string `json:"task_list"`
+	} `json:"cadence"`
 }
 
 // Config represents the server configuration
@@ -553,6 +561,14 @@ type Config struct {
 			RefreshRate  time.Duration `json:"refresh_rate"`
 		} `json:"monitoring"`
 	} `json:"ai"`
+
+	// Cadence Workflow Engine Configuration
+	Cadence struct {
+		Enabled  bool   `json:"enabled"`
+		HostPort string `json:"host_port"`
+		Domain   string `json:"domain"`
+		TaskList string `json:"task_list"`
+	} `json:"cadence"`
 }
 
 // HealthCheckConfig represents a health check configuration
@@ -838,6 +854,12 @@ func Load(path string) (*Config, error) {
 	config.AI.Monitoring.Enabled = raw.AI.Monitoring.Enabled
 	config.AI.Monitoring.DashboardURL = raw.AI.Monitoring.DashboardURL
 	config.AI.Monitoring.RefreshRate = parseDuration(raw.AI.Monitoring.RefreshRate, 30*time.Second)
+
+	// Cadence
+	config.Cadence.Enabled = raw.Cadence.Enabled
+	config.Cadence.HostPort = raw.Cadence.HostPort
+	config.Cadence.Domain = raw.Cadence.Domain
+	config.Cadence.TaskList = raw.Cadence.TaskList
 
 	return config, nil
 }
