@@ -47,7 +47,7 @@ RUN git clone --depth=1 https://github.com/WireGuard/wireguard-go.git /tmp/wireg
     install -m 0755 wireguard-go /usr/local/bin/wireguard-go
 
 # ---------- Stage 3: Production Image ----------
-FROM alpine:3.18
+FROM alpine:3.22
 
 # Install runtime dependencies
 RUN apk add --no-cache \

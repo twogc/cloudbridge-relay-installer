@@ -36,7 +36,7 @@ RUN CGO_ENABLED=${CGO_ENABLED} GOOS=linux GOARCH=amd64 go build \
     ./cmd/relay
 
 # ---------- Stage 2: Production Image ----------
-FROM alpine:3.18
+FROM alpine:3.22
 
 # Install runtime dependencies
 RUN apk add --no-cache \

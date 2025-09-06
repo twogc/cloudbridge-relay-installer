@@ -47,7 +47,7 @@ RUN if [ "${WITH_WIREGUARD_GO}" = "true" ]; then \
     fi
 
 # ---------- Stage 3: Production Image ----------
-FROM alpine:3.18
+FROM alpine:3.22
 
 # Install runtime dependencies
 RUN apk add --no-cache \
