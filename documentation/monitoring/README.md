@@ -4,6 +4,7 @@
 
 - **[MONITORING_GUIDE.md](./MONITORING_GUIDE.md)** - Руководство по мониторингу
 - **[PROMETHEUS_OPTIMIZATION_GUIDE.md](./PROMETHEUS_OPTIMIZATION_GUIDE.md)** - Руководство по оптимизации Prometheus
+- **[UI_MONITORING_GUIDE.md](./UI_MONITORING_GUIDE.md)** - Руководство по мониторингу через UI
 
 ## 📊 Система мониторинга
 
@@ -18,6 +19,8 @@
 - **Автоматическая очистка** - каждые 6 часов
 - **Оптимизированные интервалы** - 4-20x реже scraping
 - **Фильтрация метрик** - удаление избыточных данных
+- **UI мониторинг** - удобные интерфейсы для Cadence и Minikube
+- **Автоматический запуск** - скрипт для управления всеми UI
 
 ### Метрики
 - **Application Metrics** - Метрики приложения
@@ -53,11 +56,16 @@ kubectl get pods -n cloudbridge-monitoring
 
 ### 2. Доступ к дашбордам
 ```bash
-# Port forward для Grafana
-kubectl port-forward service/grafana 3000:3000 -n cloudbridge-monitoring
+# Автоматический запуск всех UI интерфейсов
+./scripts/monitoring-ui.sh start
 
-# Port forward для оптимизированного Prometheus
+# Открытие всех интерфейсов в браузере
+./scripts/monitoring-ui.sh open
+
+# Или ручной port forward
+kubectl port-forward service/grafana 3000:3000 -n cloudbridge-monitoring
 kubectl port-forward service/prometheus-optimized-service 9090:9090 -n cloudbridge-monitoring
+kubectl port-forward service/cadence-service 7934:7934 -n cloudbridge
 ```
 
 ### 3. Анализ производительности
