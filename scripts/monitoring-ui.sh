@@ -136,18 +136,8 @@ stop_all_port_forwards() {
         echo -e "${YELLOW}ℹ️  Cadence Web UI не запущен${NC}"
     fi
     
-    # Останавливаем port-forward для Cadence
-    echo -e "${YELLOW}🛑 Остановка port-forward для Cadence...${NC}"
-    cadence_port_forward_pids=$(pgrep -f "kubectl port-forward.*7933" || true)
-    
-    if [ -n "$cadence_port_forward_pids" ]; then
-        echo "$cadence_port_forward_pids" | xargs kill -TERM 2>/dev/null || true
-        sleep 2
-        echo "$cadence_port_forward_pids" | xargs kill -KILL 2>/dev/null || true
-        echo -e "${GREEN}✅ Port-forward для Cadence остановлен${NC}"
-    else
-        echo -e "${YELLOW}ℹ️  Port-forward для Cadence не запущен${NC}"
-    fi
+    # NodePort сервис для Cadence остается активным
+    echo -e "${YELLOW}ℹ️  NodePort сервис для Cadence остается активным${NC}"
     
     echo ""
 }
@@ -179,16 +169,13 @@ show_port_forward_status() {
         echo -e "   ${YELLOW}ℹ️  Cadence Web UI не запущен${NC}"
     fi
     
-    echo -e "${YELLOW}📊 Статус port-forward для Cadence:${NC}"
-    local cadence_port_forward_pids=$(pgrep -f "kubectl port-forward.*7933" || true)
-    
-    if [ -n "$cadence_port_forward_pids" ]; then
-        echo "$cadence_port_forward_pids" | while read pid; do
-            local cmd=$(ps -p $pid -o args= 2>/dev/null || echo "Процесс не найден")
-            echo -e "   ${GREEN}✅ PID $pid:${NC} $cmd"
-        done
+    echo -e "${YELLOW}📊 Статус NodePort для Cadence:${NC}"
+    if kubectl get svc -n cloudbridge cadence-nodeport > /dev/null 2>&1; then
+        local nodeport=$(kubectl get svc -n cloudbridge cadence-nodeport -o jsonpath='{.spec.ports[0].nodePort}')
+        local minikube_ip=$(minikube ip 2>/dev/null || echo "unknown")
+        echo -e "   ${GREEN}✅ NodePort активен: $minikube_ip:$nodeport${NC}"
     else
-        echo -e "   ${YELLOW}ℹ️  Port-forward для Cadence не запущен${NC}"
+        echo -e "   ${YELLOW}ℹ️  NodePort сервис не найден${NC}"
     fi
     
     echo ""
@@ -234,10 +221,13 @@ main() {
             echo -e "${YELLOW}🚀 Запуск Cadence Web UI...${NC}"
             echo -e "${CYAN}💡 Cadence Web UI будет доступен на: http://localhost:8088${NC}"
             
-            # Запускаем port-forward для Cadence если не запущен
-            if ! pgrep -f "kubectl port-forward.*7933" > /dev/null; then
-                echo -e "${YELLOW}🔗 Запуск port-forward для Cadence...${NC}"
-                kubectl port-forward -n cloudbridge svc/cadence-service 7933:7933 > /dev/null 2>&1 &
+            # Проверяем NodePort сервис для Cadence
+            echo -e "${YELLOW}🔗 Проверка NodePort для Cadence...${NC}"
+            if kubectl get svc -n cloudbridge cadence-nodeport > /dev/null 2>&1; then
+                echo -e "${GREEN}✅ NodePort сервис для Cadence найден${NC}"
+            else
+                echo -e "${YELLOW}⚠️  NodePort сервис не найден, создаем...${NC}"
+                kubectl apply -f k8s/services/cadence-nodeport.yaml > /dev/null 2>&1
                 sleep 3
             fi
             
@@ -289,6 +279,14 @@ main() {
             start_port_forward "grafana" "$NAMESPACE_MONITORING" 3000 3000 "Grafana Dashboard" > /dev/null
             start_port_forward "prometheus-optimized-service" "$NAMESPACE_MONITORING" 9090 9090 "Prometheus Metrics" > /dev/null
             
+            # Проверяем NodePort сервис для Cadence
+            if kubectl get svc -n cloudbridge cadence-nodeport > /dev/null 2>&1; then
+                echo -e "${GREEN}✅ NodePort сервис для Cadence найден${NC}"
+            else
+                kubectl apply -f k8s/services/cadence-nodeport.yaml > /dev/null 2>&1
+                sleep 3
+            fi
+            
             # Запускаем Cadence Web UI если не запущен
             if ! pgrep -f "next dev.*8088" > /dev/null; then
                 cd tools/cadence-web
@@ -325,10 +323,13 @@ main() {
                 return 0
             fi
             
-            # Запускаем port-forward для Cadence если не запущен
-            if ! pgrep -f "kubectl port-forward.*7933" > /dev/null; then
-                echo -e "${YELLOW}🔗 Запуск port-forward для Cadence...${NC}"
-                kubectl port-forward -n cloudbridge svc/cadence-service 7933:7933 > /dev/null 2>&1 &
+            # Проверяем NodePort сервис для Cadence
+            echo -e "${YELLOW}🔗 Проверка NodePort для Cadence...${NC}"
+            if kubectl get svc -n cloudbridge cadence-nodeport > /dev/null 2>&1; then
+                echo -e "${GREEN}✅ NodePort сервис для Cadence найден${NC}"
+            else
+                echo -e "${YELLOW}⚠️  NodePort сервис не найден, создаем...${NC}"
+                kubectl apply -f k8s/services/cadence-nodeport.yaml > /dev/null 2>&1
                 sleep 3
             fi
             
