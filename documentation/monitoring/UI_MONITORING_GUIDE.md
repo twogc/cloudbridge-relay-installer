@@ -47,15 +47,15 @@
   - Просмотр алертов и правил
   - Статус targets и scraping
 
-### **3. ⚙️ Cadence Web UI**
-- **URL**: http://localhost:7934
-- **Описание**: Веб-интерфейс для управления Cadence Workflow Engine
-- **Порт**: 7934
+### **3. ⚙️ Cadence CLI Monitoring**
+- **Описание**: Мониторинг Cadence Workflow Engine через CLI
+- **Доступ**: `./scripts/cadence-monitor.sh`
 - **Функции**:
-  - Просмотр workflow executions
-  - Управление доменами
-  - Мониторинг активности
-  - Отладка workflow
+  - Просмотр доменов и их статуса
+  - Мониторинг workflow executions
+  - Просмотр task lists
+  - Информация о кластере
+  - Логи и метрики
 
 ### **4. 🗄️ Cassandra Metrics**
 - **URL**: http://localhost:9500
@@ -104,23 +104,37 @@ cadence_workflow_executions
 rate(cadence_errors[5m])
 ```
 
-### **Через Cadence Web UI:**
+### **Через Cadence CLI:**
 
-#### **1. Workflow Executions:**
-- Просмотр всех выполнений workflow
-- Фильтрация по статусу и времени
-- Детальная информация о каждом выполнении
-- История событий workflow
+#### **1. Мониторинг доменов:**
+```bash
+# Просмотр всех доменов
+./scripts/cadence-monitor.sh domains
 
-#### **2. Domains:**
-- Управление доменами Cadence
-- Настройка конфигурации
-- Мониторинг активности доменов
+# Описание конкретного домена
+kubectl exec -n cloudbridge cadence-xxx -- cadence --address 10.244.0.172:7933 --domain cadence-system domain describe
+```
 
-#### **3. Activity Workers:**
-- Статус activity workers
-- Мониторинг выполнения activities
-- Отладка проблем
+#### **2. Workflow Executions:**
+```bash
+# Просмотр workflow executions
+./scripts/cadence-monitor.sh workflows
+
+# Список workflow в домене
+kubectl exec -n cloudbridge cadence-xxx -- cadence --address 10.244.0.172:7933 --domain cadence-system workflow list
+```
+
+#### **3. Task Lists и кластер:**
+```bash
+# Просмотр task lists
+./scripts/cadence-monitor.sh tasklists
+
+# Информация о кластере
+./scripts/cadence-monitor.sh cluster
+
+# Логи Cadence
+./scripts/cadence-monitor.sh logs
+```
 
 ---
 
@@ -176,9 +190,13 @@ node_filesystem_avail_bytes{mountpoint="/"}
 # Запуск конкретного интерфейса
 ./scripts/monitoring-ui.sh grafana
 ./scripts/monitoring-ui.sh prometheus
-./scripts/monitoring-ui.sh cadence
 ./scripts/monitoring-ui.sh cassandra
 ./scripts/monitoring-ui.sh relay
+
+# Мониторинг Cadence через CLI
+./scripts/cadence-monitor.sh domains
+./scripts/cadence-monitor.sh workflows
+./scripts/cadence-monitor.sh logs
 
 # Открытие всех в браузере
 ./scripts/monitoring-ui.sh open

@@ -176,18 +176,22 @@ main() {
             # Запускаем port-forward для всех сервисов
             start_port_forward "grafana" "$NAMESPACE_MONITORING" 3000 3000 "Grafana Dashboard"
             start_port_forward "prometheus-optimized-service" "$NAMESPACE_MONITORING" 9090 9090 "Prometheus Metrics"
-            start_port_forward "cadence-service" "$NAMESPACE_CLOUDBRIDGE" 7934 7934 "Cadence Web UI"
             start_port_forward "cassandra-service" "$NAMESPACE_CLOUDBRIDGE" 9500 9500 "Cassandra Metrics"
             start_port_forward "cloudbridge-relay" "$NAMESPACE_CLOUDBRIDGE" 8084 8084 "CloudBridge Relay Metrics"
+            
+            echo -e "${YELLOW}ℹ️  Cadence Web UI не включен в стандартном образе${NC}"
+            echo -e "${CYAN}💡 Используйте Grafana и Prometheus для мониторинга Cadence${NC}"
             
             echo -e "${GREEN}🎉 Все UI интерфейсы запущены!${NC}"
             echo ""
             echo -e "${BLUE}📋 Доступные интерфейсы:${NC}"
-            print_service_info "Grafana" "3000" "Дашборды и визуализация" "http://localhost:3000"
-            print_service_info "Prometheus" "9090" "Метрики и алерты" "http://localhost:9090"
-            print_service_info "Cadence Web UI" "7934" "Workflow Engine UI" "http://localhost:7934"
+            print_service_info "Grafana" "3000" "Дашборды и визуализация (включая Cadence)" "http://localhost:3000"
+            print_service_info "Prometheus" "9090" "Метрики и алерты (включая Cadence)" "http://localhost:9090"
             print_service_info "Cassandra Metrics" "9500" "База данных метрики" "http://localhost:9500"
             print_service_info "CloudBridge Relay" "8084" "Основное приложение" "http://localhost:8084"
+            echo -e "${YELLOW}📋 Cadence мониторинг:${NC}"
+            echo -e "   ${CYAN}CLI:${NC} kubectl exec -n cloudbridge cadence-xxx -- cadence --address localhost:7933 domain describe --domain cloudbridge"
+            echo -e "   ${CYAN}Логи:${NC} kubectl logs -n cloudbridge cadence-xxx"
             
             echo -e "${YELLOW}💡 Для остановки используйте: $0 stop${NC}"
             ;;
@@ -229,8 +233,15 @@ main() {
             ;;
             
         "cadence")
-            start_port_forward "cadence-service" "$NAMESPACE_CLOUDBRIDGE" 7934 7934 "Cadence Web UI"
-            open_browser "http://localhost:7934" "Cadence Web UI"
+            echo -e "${YELLOW}⚠️  Cadence Web UI не включен в стандартном образе${NC}"
+            echo -e "${CYAN}💡 Используйте Cadence CLI для мониторинга:${NC}"
+            echo -e "   kubectl exec -n cloudbridge cadence-xxx -- cadence --address localhost:7933 domain describe --domain cloudbridge"
+            echo -e "   kubectl exec -n cloudbridge cadence-xxx -- cadence --address localhost:7933 workflow list --domain cloudbridge"
+            echo ""
+            echo -e "${YELLOW}🔧 Альтернативы для мониторинга Cadence:${NC}"
+            echo -e "   📊 Grafana Dashboard - http://localhost:3000 (Cadence метрики)"
+            echo -e "   📈 Prometheus - http://localhost:9090 (Cadence метрики)"
+            echo -e "   📋 Логи - kubectl logs -n cloudbridge cadence-xxx"
             ;;
             
         "cassandra")
