@@ -168,3 +168,4 @@ config.dev.json test/quck-test/
 test/
 kubectl
 minikube-linux-amd64
+documentation/docs-public/

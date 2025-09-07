@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cloudbridge-relay-staging-pdb
+  namespace: cloudbridge-staging
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudbridge-relay
+      app.kubernetes.io/component: staging
+

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cadence
+  labels:
+    name: cadence
+    app.kubernetes.io/name: cadence
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: workflow-engine
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubernetes
+

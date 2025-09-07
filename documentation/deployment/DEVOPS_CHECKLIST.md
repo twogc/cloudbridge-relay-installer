@@ -14,6 +14,10 @@
 - [x] **Безопасность** - TLS, файрвол, DDoS защита
 - [x] **Cadence Workflow Engine** - Интеграция и API endpoints
 - [x] **Workflow Orchestration** - Relay deployment, backup workflows
+- [x] **Cassandra Database** - Развертывание и конфигурация
+- [x] **Production Deployment** - Полное развертывание в Kubernetes
+- [x] **Load Testing** - k6 тесты и производительность
+- [x] **DevOps Onboarding** - Пошаговое руководство для новых разработчиков
 
 ### ✅ Дополнительно (ВЫПОЛНЕНО)
 

@@ -4,6 +4,7 @@
 
 - **[DEVOPS_CHECKLIST.md](./DEVOPS_CHECKLIST.md)** - Чек-лист для DevOps процессов
 - **[DEVOPS_ROADMAP.md](./DEVOPS_ROADMAP.md)** - Дорожная карта DevOps развития
+- **[CURRENT_DEPLOYMENT_STATUS.md](./CURRENT_DEPLOYMENT_STATUS.md)** - Текущий статус развертывания
 - **[DOCKER_COMPOSE_GUIDE.md](./DOCKER_COMPOSE_GUIDE.md)** - Руководство по Docker Compose
 - **[DOCKER_CONTAINERIZATION.md](./DOCKER_CONTAINERIZATION.md)** - Контейнеризация с Docker
 - **[MINIKUBE_STAGING_GUIDE.md](./MINIKUBE_STAGING_GUIDE.md)** - Полное руководство по Minikube staging

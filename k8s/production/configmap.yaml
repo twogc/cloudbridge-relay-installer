@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudbridge-relay-production-config
+  namespace: cloudbridge-production
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubernetes
+    environment: production
+data:
+  config.json: |
+    {
+      "server": {
+        "host": "0.0.0.0",
+        "port": 9090,
+        "read_timeout": "30s",
+        "write_timeout": "30s",
+        "idle_timeout": "120s"
+      },
+      "log": {
+        "level": "info",
+        "format": "json",
+        "output": "stdout"
+      },
+      "metrics": {
+        "enabled": true,
+        "port": 8084,
+        "path": "/metrics"
+      },
+      "wireguard": {
+        "enabled": true,
+        "interface": {
+          "name": "wg0",
+          "listen_port": 51820,
+          "address": "10.0.0.1/24"
+        },
+        "peers": []
+      },
+      "cadence": {
+        "host": "cadence-frontend.cloudbridge-production.svc.cluster.local",
+        "port": 7933,
+        "domain": "cloudbridge",
+        "task_list": "cloudbridge-relay-tasks",
+        "workflow_id": "cloudbridge-relay-workflow",
+        "execution_timeout": "24h",
+        "decision_timeout": "10s"
+      },
+      "cassandra": {
+        "hosts": ["cassandra.cloudbridge-production.svc.cluster.local"],
+        "port": 9042,
+        "keyspace": "cadence",
+        "consistency": "LOCAL_QUORUM",
+        "timeout": "10s",
+        "max_retries": 3
+      },
+      "django": {
+        "api_endpoint": "http://django-api.cloudbridge-production.svc.cluster.local:8000",
+        "jwt_secret": "production-jwt-secret-key-change-in-production"
+      },
+      "keycloak": {
+        "enabled": false,
+        "url": "http://keycloak.cloudbridge-production.svc.cluster.local:8080",
+        "realm": "cloudbridge",
+        "client_id": "cloudbridge-relay",
+        "client_secret": "production-client-secret"
+      },
+      "security": {
+        "tls": {
+          "enabled": true,
+          "cert_file": "/etc/ssl/certs/cloudbridge-relay.crt",
+          "key_file": "/etc/ssl/private/cloudbridge-relay.key"
+        },
+        "cors": {
+          "enabled": true,
+          "origins": ["*"],
+          "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+          "headers": ["Content-Type", "Authorization"]
+        }
+      },
+      "health": {
+        "enabled": true,
+        "path": "/health",
+        "interval": "30s",
+        "timeout": "10s"
+      },
+      "performance": {
+        "max_connections": 1000,
+        "max_requests_per_connection": 100,
+        "connection_pool_size": 100,
+        "worker_pool_size": 10
+      }
+    }
+

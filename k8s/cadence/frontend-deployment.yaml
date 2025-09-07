@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cadence-frontend
+  namespace: cadence
+  labels:
+    app.kubernetes.io/name: cadence
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubernetes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cadence
+      app.kubernetes.io/component: frontend
+      app.kubernetes.io/instance: production
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cadence
+        app.kubernetes.io/instance: production
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/part-of: cloudbridge-relay
+        app.kubernetes.io/managed-by: kubernetes
+    spec:
+      containers:
+        - name: cadence-frontend
+          image: uber/cadence:latest
+          imagePullPolicy: IfNotPresent
+          command: ["cadence-server"]
+          args:
+            - "--root"
+            - "/etc/cadence"
+            - "--env"
+            - "production"
+            - "--services"
+            - "frontend"
+            - "--config"
+            - "/etc/cadence/config/config.yaml"
+          ports:
+            - name: grpc
+              containerPort: 7933
+              protocol: TCP
+            - name: membership
+              containerPort: 7933
+              protocol: TCP
+            - name: pprof
+              containerPort: 7934
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            - name: CASSANDRA_SEEDS
+              value: "cassandra.cassandra.svc.cluster.local"
+            - name: CASSANDRA_PORT
+              value: "9042"
+            - name: CASSANDRA_DC
+              value: "dc1"
+            - name: CASSANDRA_KEYSPACE
+              value: "cadence"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: cadence-config
+              mountPath: /etc/cadence/config
+              readOnly: true
+          livenessProbe:
+            tcpSocket:
+              port: 7933
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            tcpSocket:
+              port: 7933
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+      volumes:
+        - name: cadence-config
+          configMap:
+            name: cadence-config
+
