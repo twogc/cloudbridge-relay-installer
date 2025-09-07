@@ -160,7 +160,11 @@ func (h *HTTP2ConnectionReuse) RemoveConnection(addr string) {
 	defer h.mu.Unlock()
 
 	if conn, exists := h.connections[addr]; exists {
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			if h.logger != nil {
+				h.logger.Warn("Failed to close HTTP/2 connection", zap.Error(err))
+			}
+		}
 		delete(h.connections, addr)
 		if h.logger != nil {
 			h.logger.Debug("Removed HTTP/2 connection",
@@ -212,7 +216,11 @@ func (h *HTTP2ConnectionReuse) cleanup() {
 
 	for addr, conn := range h.connections {
 		if now.Sub(conn.GetLastUsed()) > h.maxIdleTime {
-			conn.Close()
+			if err := conn.Close(); err != nil {
+			if h.logger != nil {
+				h.logger.Warn("Failed to close HTTP/2 connection", zap.Error(err))
+			}
+		}
 			delete(h.connections, addr)
 			removed++
 		}
@@ -235,7 +243,11 @@ func (h *HTTP2ConnectionReuse) Close() error {
 	defer h.mu.Unlock()
 
 	for addr, conn := range h.connections {
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			if h.logger != nil {
+				h.logger.Warn("Failed to close HTTP/2 connection", zap.Error(err))
+			}
+		}
 		delete(h.connections, addr)
 	}
 

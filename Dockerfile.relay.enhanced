@@ -62,10 +62,7 @@ RUN apk add --no-cache \
     wireguard-tools-wg-quick \
     && rm -rf /var/cache/apk/*
 
-# Copy WireGuard Go binary if built
-ARG WITH_WIREGUARD_GO=false
-COPY --from=wireguard-builder /usr/local/bin/wireguard-go /usr/local/bin/wireguard-go 2>/dev/null || true
-RUN if [ "${WITH_WIREGUARD_GO}" != "true" ]; then rm -f /usr/local/bin/wireguard-go 2>/dev/null || true; fi
+# WireGuard tools are already installed via apk
 
 # Create user and directories
 RUN addgroup -g 1000 cloudbridge && \

@@ -683,10 +683,14 @@ func (cw *CadenceWorker) handleHealthCheck(w http.ResponseWriter, r *http.Reques
 func (cw *CadenceWorker) handleReadinessCheck(w http.ResponseWriter, r *http.Request) {
 	if cw.isRunning && cw.worker != nil {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ready"))
+		if _, err := w.Write([]byte("ready")); err != nil {
+			cw.logger.Error("Failed to write readiness response", zap.Error(err))
+		}
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte("not ready"))
+		if _, err := w.Write([]byte("not ready")); err != nil {
+			cw.logger.Error("Failed to write readiness unavailable response", zap.Error(err))
+		}
 	}
 }
 
@@ -694,5 +698,7 @@ func (cw *CadenceWorker) handleReadinessCheck(w http.ResponseWriter, r *http.Req
 func (cw *CadenceWorker) handleLivenessCheck(w http.ResponseWriter, r *http.Request) {
 	// Простая проверка - если процесс отвечает, значит он живой
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("alive"))
+	if _, err := w.Write([]byte("alive")); err != nil {
+		cw.logger.Error("Failed to write liveness response", zap.Error(err))
+	}
 }

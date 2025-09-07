@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cadence-config-minimal
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cadence
+    app.kubernetes.io/instance: production
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: workflow-engine
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubernetes
+data:
+  config_template.yaml: |
+    log:
+      level: info
+      output: stdout
+
+    services:
+      frontend:
+        rpc:
+          grpcPort: 7933
+          membershipPort: 7933
+          bindOnLocalHost: false
+          bindOnIP: "0.0.0.0"
+        ringpop:
+          name: "cadence"
+          bootstrapMode: "hosts"
+          bootstrapHosts:
+            - "cadence:7933"
+        persistence:
+          defaultStore: "cassandra-default"
+          numHistoryShards: 4
+          datastores:
+            cassandra-default:
+              cassandra:
+                hosts: "cassandra-service.cloudbridge.svc.cluster.local"
+                port: 9042
+                keyspace: "cadence"
+                datacenter: "dc1"
+

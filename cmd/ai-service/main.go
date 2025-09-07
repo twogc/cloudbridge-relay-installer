@@ -38,5 +38,7 @@ func main() {
 	}
 
 	logger.Info("AI Service starting", zap.String("port", port))
-	r.Run(":" + port)
+	if err := r.Run(":" + port); err != nil {
+		logger.Fatal("Failed to start AI service", zap.Error(err))
+	}
 }

@@ -171,7 +171,9 @@ func (p *ConnectionPool) removeOldestConnection() {
 		if !conn.IsHealthy() {
 			// Удаляем нездоровое соединение
 			delete(p.connections, addr)
-			conn.Close()
+			if err := conn.Close(); err != nil {
+				p.logger.Warn("Failed to close unhealthy connection", zap.Error(err))
+			}
 			p.stats.DecTotalConnections()
 			return
 		}
@@ -223,7 +225,9 @@ func (p *ConnectionPool) cleanup() {
 		// Удаляем соединения, которые не использовались дольше idle_timeout
 		if now.Sub(conn.GetLastUsed()) > p.config.IdleTimeout {
 			delete(p.connections, addr)
-			conn.Close()
+			if err := conn.Close(); err != nil {
+			p.logger.Warn("Failed to close connection", zap.Error(err))
+		}
 			p.stats.DecTotalConnections()
 			removed++
 		}
@@ -249,7 +253,9 @@ func (p *ConnectionPool) Shutdown(ctx context.Context) error {
 	defer p.mu.Unlock()
 
 	for addr, conn := range p.connections {
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			p.logger.Warn("Failed to close connection", zap.Error(err))
+		}
 		delete(p.connections, addr)
 	}
 

@@ -66,6 +66,7 @@ type MultiplexedConnection struct {
 	activeStreams int64
 	compressed    bool
 	mu            sync.RWMutex
+	logger        *logger.Logger
 }
 
 // NewConnectionMultiplexer creates a new connection multiplexer
@@ -113,6 +114,7 @@ func (cm *ConnectionMultiplexerImpl) GetConnection(key string) (net.Conn, error)
 		useCount:      1,
 		activeStreams: 1,
 		compressed:    cm.config.EnableCompression,
+		logger:        cm.logger,
 	}
 
 	cm.connections[key] = multiplexedConn
@@ -255,7 +257,9 @@ func (mc *MultiplexedConnection) close() {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
 	if mc.conn != nil {
-		mc.conn.Close()
+		if err := mc.conn.Close(); err != nil {
+			mc.logger.Warn("Failed to close performance connection", zap.Error(err))
+		}
 	}
 }
 

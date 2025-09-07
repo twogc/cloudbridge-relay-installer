@@ -153,4 +153,43 @@ spec:
     requests:
       storage: 5Gi
   storageClassName: logs-storage
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cadence-pv
+  labels:
+    app.kubernetes.io/name: cadence
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: workflow
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: cadence-storage
+  hostPath:
+    path: /var/lib/cadence
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cadence-pvc
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cadence
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: workflow
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: cadence-storage
 

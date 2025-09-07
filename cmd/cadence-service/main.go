@@ -38,5 +38,7 @@ func main() {
 	}
 
 	logger.Info("Cadence Service starting", zap.String("port", port))
-	r.Run(":" + port)
+	if err := r.Run(":" + port); err != nil {
+		logger.Fatal("Failed to start Cadence service", zap.Error(err))
+	}
 }

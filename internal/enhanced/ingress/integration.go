@@ -75,7 +75,9 @@ func (i *IngressIntegration) setupHTTPServer() error {
 		// TODO: Добавить метод Handler в metrics
 		mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/plain")
-			w.Write([]byte("# Metrics endpoint - TODO: implement\n"))
+			if _, err := w.Write([]byte("# Metrics endpoint - TODO: implement\n")); err != nil {
+				i.logger.Error("Failed to write metrics response", zap.Error(err))
+			}
 		})
 	}
 
@@ -159,7 +161,9 @@ func (i *IngressIntegration) handleRequest(w http.ResponseWriter, r *http.Reques
 func (i *IngressIntegration) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"healthy","service":"ingress"}`))
+	if _, err := w.Write([]byte(`{"status":"healthy","service":"ingress"}`)); err != nil {
+		i.logger.Error("Failed to write health response", zap.Error(err))
+	}
 }
 
 // Start запускает ingress интеграцию

@@ -520,7 +520,11 @@ func (s *Server) Start() error {
 				"uptime":    time.Since(s.startTime).String(),
 				"version":   "1.0.0",
 			}
-			json.NewEncoder(w).Encode(response)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				s.logger.Error("Failed to encode health response", zap.Error(err))
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
 		})
 
 		// Ready check endpoint
@@ -536,7 +540,11 @@ func (s *Server) Start() error {
 					"metrics":   s.metricsServer != nil,
 				},
 			}
-			json.NewEncoder(w).Encode(response)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				s.logger.Error("Failed to encode ready response", zap.Error(err))
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
 		})
 
 		// Metrics endpoint
@@ -558,14 +566,22 @@ func (s *Server) Start() error {
 					"status": "healthy",
 					"domain": s.cadenceClient.GetDomain(),
 				}
-				json.NewEncoder(w).Encode(response)
+				if err := json.NewEncoder(w).Encode(response); err != nil {
+					s.logger.Error("Failed to encode cadence health response", zap.Error(err))
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					return
+				}
 			} else {
 				w.WriteHeader(http.StatusServiceUnavailable)
 				response := map[string]interface{}{
 					"status": "unavailable",
 					"error":  "Cadence client not initialized",
 				}
-				json.NewEncoder(w).Encode(response)
+				if err := json.NewEncoder(w).Encode(response); err != nil {
+					s.logger.Error("Failed to encode cadence unavailable response", zap.Error(err))
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					return
+				}
 			}
 		})
 
@@ -633,7 +649,11 @@ func (s *Server) Start() error {
 				"workflow_id": workflowID,
 				"status":      "started",
 			}
-			json.NewEncoder(w).Encode(response)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				s.logger.Error("Failed to encode backup workflow response", zap.Error(err))
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
 		})
 
 		httpMux.HandleFunc("/api/v1/cadence/workflows/status", func(w http.ResponseWriter, r *http.Request) {
@@ -660,7 +680,11 @@ func (s *Server) Start() error {
 				"workflow_id": workflowID,
 				"status":      status,
 			}
-			json.NewEncoder(w).Encode(response)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				s.logger.Error("Failed to encode status response", zap.Error(err))
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
 		})
 
 		httpServer := &http.Server{
@@ -1475,7 +1499,9 @@ func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufi
 
 		// Ensure all data is written before closing
 		if tcpConn, ok := conn.(*net.TCPConn); ok {
-			tcpConn.CloseWrite()
+			if err := tcpConn.CloseWrite(); err != nil {
+				s.logger.Warn("Failed to close TCP write", zap.Error(err))
+			}
 		}
 		return nil
 	}
@@ -1502,7 +1528,9 @@ func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufi
 
 		// Ensure all data is written before closing
 		if tcpConn, ok := conn.(*net.TCPConn); ok {
-			tcpConn.CloseWrite()
+			if err := tcpConn.CloseWrite(); err != nil {
+				s.logger.Warn("Failed to close TCP write", zap.Error(err))
+			}
 		}
 		return nil
 	}

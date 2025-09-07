@@ -177,14 +177,18 @@ relay_active_tunnels %d
 			s.metrics.GetActiveTunnels(),
 		)
 
-		w.Write([]byte(metrics))
+		if _, err := w.Write([]byte(metrics)); err != nil {
+			s.logger.Error("Failed to write metrics", zap.Error(err))
+		}
 		return
 	}
 
 	// Fallback response
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("# Metrics endpoint - no metrics available\n"))
+	if _, err := w.Write([]byte("# Metrics endpoint - no metrics available\n")); err != nil {
+		s.logger.Error("Failed to write metrics fallback response", zap.Error(err))
+	}
 }
 
 // handleStats handles statistics requests

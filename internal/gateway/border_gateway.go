@@ -320,12 +320,16 @@ func (bg *BorderGateway) Stop() error {
 	bg.logger.Info("Остановка EU Border Gateway")
 
 	if bg.listener != nil {
-		bg.listener.Close()
+		if err := bg.listener.Close(); err != nil {
+			bg.logger.Warn("Failed to close border gateway listener", zap.Error(err))
+		}
 	}
 
 	// Закрытие соединений с российскими relay
 	for _, conn := range bg.russianConnections {
-		conn.Connection.Close()
+		if err := conn.Connection.Close(); err != nil {
+			bg.logger.Warn("Failed to close russian connection", zap.Error(err))
+		}
 	}
 
 	return nil

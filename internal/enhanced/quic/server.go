@@ -210,7 +210,9 @@ func (qs *QUICServer) handleConnection(conn *quic.Conn) {
 		qs.mu.Unlock()
 
 		// Закрываем соединение
-		quicConn.Close()
+		if err := quicConn.Close(); err != nil {
+			qs.logger.Warn("Failed to close QUIC connection", zap.Error(err))
+		}
 		duration := time.Since(startTime)
 
 		// Обновляем метрики
@@ -366,7 +368,9 @@ func (qs *QUICServer) Stop() error {
 	// Закрываем все соединения
 	qs.mu.Lock()
 	for _, conn := range qs.connections {
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			qs.logger.Warn("Failed to close QUIC connection during shutdown", zap.Error(err))
+		}
 	}
 	qs.connections = make(map[uuid.UUID]*QUICConnection)
 	qs.mu.Unlock()

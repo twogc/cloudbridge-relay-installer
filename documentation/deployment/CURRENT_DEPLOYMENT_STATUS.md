@@ -1,7 +1,7 @@
 # CloudBridge Relay - Текущий статус развертывания
 
 ## 📅 Последнее обновление
-6 сентября 2025, 22:15 MSK
+7 сентября 2025, 19:00 MSK
 
 ## 🎯 Обзор
 
@@ -23,11 +23,11 @@ CloudBridge Relay успешно развернут в production окружен
 - **Статус**: ✅ Запущена и готова к работе
 
 ### 3. Cadence Workflow Engine
-- **Namespace**: `cadence`
-- **Frontend Service**: Развернут и настроен
-- **Конфигурация**: Подключение к Cassandra
+- **Namespace**: `cloudbridge`
+- **Deployment**: 2 реплики с полной схемой БД
+- **Конфигурация**: Подключение к Cassandra с созданной схемой
 - **API**: Готов к интеграции с CloudBridge Relay
-- **Статус**: ✅ Развернут и готов
+- **Статус**: ✅ **ПОЛНОСТЬЮ РАБОТАЕТ** (100% готовности)
 
 ### 4. CloudBridge Relay Production
 - **Namespace**: `cloudbridge-production`

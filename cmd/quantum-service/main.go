@@ -38,5 +38,7 @@ func main() {
 	}
 
 	logger.Info("Quantum Service starting", zap.String("port", port))
-	r.Run(":" + port)
+	if err := r.Run(":" + port); err != nil {
+		logger.Fatal("Failed to start Quantum service", zap.Error(err))
+	}
 }

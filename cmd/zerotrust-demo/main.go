@@ -27,7 +27,9 @@ func main() {
 	// Start Prometheus metrics server
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":9090", nil)
+		if err := http.ListenAndServe(":9090", nil); err != nil {
+			fmt.Printf("Failed to start metrics server: %v\n", err)
+		}
 	}()
 
 	// Demo 1: Circuit Breaker

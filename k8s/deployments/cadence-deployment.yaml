@@ -29,8 +29,16 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: cadence
+      initContainers:
+      - name: setup-config-dir
+        image: busybox:1.35
+        command: ['sh', '-c', 'mkdir -p /etc/cadence/config && echo "log:\n  level: info\n  output: stdout\n\nservices:\n  frontend:\n    rpc:\n      grpcPort: 7933\n      membershipPort: 7933\n      bindOnLocalHost: false\n      bindOnIP: \"0.0.0.0\"\n    pprof:\n      port: 7934\n    metrics:\n      prometheus:\n        timerType: histogram\n        listenAddress: \"0.0.0.0:9090\"\n    clusterMetadata:\n      enableGlobalDomain: true\n      failoverVersionIncrement: 10\n      masterClusterName: \"active\"\n      currentClusterName: \"active\"\n      clusterInformation:\n        active:\n          enabled: true\n          initialFailoverVersion: 1\n          rpcName: \"cadence-frontend\"\n          rpcAddress: \"cadence.cloudbridge.svc.cluster.local:7933\"\n    ringpop:\n      name: \"cadence\"\n      bootstrapMode: \"hosts\"\n      bootstrapHosts:\n        - \"cadence:7933\"\n    persistence:\n      defaultStore: \"cassandra-default\"\n      numHistoryShards: 4\n      datastores:\n        cassandra-default:\n          cassandra:\n            hosts: \"cassandra-service.cloudbridge.svc.cluster.local\"\n            port: 9042\n            keyspace: \"cadence\"\n            datacenter: \"dc1\"\n            maxConns: 2\n            connectConsistency: \"local-one\"\n            timeout: \"600ms\"\n            connectTimeout: \"600ms\"\n            maxRetryAttempts: 3\n            retryPolicy: \"exponential\"\n            convConsistency: \"local-quorum\"\n            reconnectionPolicy: \"constant\"\n            disableInitialHostLookup: false\n            consistency:\n              default:\n                consistency: \"local-quorum\"\n              serial:\n                consistency: \"local-serial\"\n              strong:\n                consistency: \"local-quorum\"\n              eventual:\n                consistency: \"local-one\"\n            auth:\n              enabled: false\n            protoVersion: 4" > /etc/cadence/config/config_template.yaml && chown -R 1000:1000 /etc/cadence/config && chmod -R 755 /etc/cadence/config']
+        volumeMounts:
+        - name: cadence-config-dir
+          mountPath: /etc/cadence/config
+        securityContext:
+          runAsUser: 0
       securityContext:
-        runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
@@ -61,8 +69,6 @@ spec:
           value: "cadence_visibility"
         - name: RINGPOP_SEEDS
           value: "cadence:7933"
-        - name: LOG_LEVEL
-          value: "info"
         - name: NUM_HISTORY_SHARDS
           value: "4"
         - name: SERVICES
@@ -77,6 +83,54 @@ spec:
             secretKeyRef:
               name: cloudbridge-secrets
               key: cassandra-password
+        - name: CASSANDRA_HOSTS
+          value: "cassandra-service.cloudbridge.svc.cluster.local"
+        - name: CASSANDRA_PORT
+          value: "9042"
+        - name: CASSANDRA_KEYSPACE
+          value: "cadence"
+        - name: CASSANDRA_VISIBILITY_KEYSPACE
+          value: "cadence_visibility"
+        - name: CASSANDRA_DATACENTER
+          value: "dc1"
+        - name: CASSANDRA_AUTH_ENABLED
+          value: "false"
+        - name: CASSANDRA_MAX_CONNS
+          value: "2"
+        - name: CASSANDRA_MAX_CONNECTIONS_PER_HOST
+          value: "1"
+        - name: CASSANDRA_CONNECT_CONSISTENCY
+          value: "local-one"
+        - name: CASSANDRA_TIMEOUT
+          value: "600ms"
+        - name: CASSANDRA_CONNECT_TIMEOUT
+          value: "600ms"
+        - name: CASSANDRA_MAX_RETRY_ATTEMPTS
+          value: "3"
+        - name: CASSANDRA_RETRY_POLICY
+          value: "exponential"
+        - name: CASSANDRA_CONV_CONSISTENCY
+          value: "local-quorum"
+        - name: CASSANDRA_RECONNECTION_POLICY
+          value: "constant"
+        - name: CASSANDRA_DISABLE_INITIAL_HOST_LOOKUP
+          value: "false"
+        - name: CASSANDRA_PROTO_VERSION
+          value: "4"
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: SKIP_SCHEMA_SETUP
+          value: "false"
+        - name: CASSANDRA_CONSISTENCY
+          value: "local-quorum"
+        - name: DOCKERIZE_TEMPLATE
+          value: ""
+        - name: DOCKERIZE_DELAY
+          value: "0"
+        - name: CONFIG_FILE_PATH
+          value: ""
+        - name: CONFIG_TEMPLATE_PATH
+          value: ""
         resources:
           requests:
             memory: "512Mi"
@@ -100,6 +154,11 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
+        volumeMounts:
+        - name: cadence-data
+          mountPath: /var/lib/cadence
+        - name: cadence-config-dir
+          mountPath: /etc/cadence/config
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: false
@@ -109,6 +168,12 @@ spec:
           capabilities:
             drop:
             - ALL
+      volumes:
+      - name: cadence-data
+        persistentVolumeClaim:
+          claimName: cadence-pvc
+      - name: cadence-config-dir
+        emptyDir: {}
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:

@@ -149,7 +149,9 @@ func (qc *QUICConnection) handleStream(ctx context.Context, stream *quic.Stream)
 		qc.activeStreams--
 		qc.mu.Unlock()
 
-		stream.Close()
+		if err := stream.Close(); err != nil {
+			qc.logger.Warn("Failed to close QUIC stream", zap.Error(err))
+		}
 		duration := time.Since(startTime)
 
 		// Обновляем метрики
@@ -194,7 +196,9 @@ func (qc *QUICConnection) processStream(ctx context.Context, stream *quic.Stream
 
 		default:
 			// Читаем данные с таймаутом
-			stream.SetReadDeadline(time.Now().Add(qc.config.IdleTimeout))
+			if err := stream.SetReadDeadline(time.Now().Add(qc.config.IdleTimeout)); err != nil {
+				qc.logger.Warn("Failed to set read deadline", zap.Error(err))
+			}
 			n, err := stream.Read(buffer)
 
 			if err != nil {
@@ -323,7 +327,9 @@ func (qc *QUICConnection) Close() error {
 	// Закрываем все активные потоки
 	qc.mu.Lock()
 	for streamID, stream := range qc.streams {
-		stream.Close()
+		if err := stream.Close(); err != nil {
+			qc.logger.Warn("Failed to close QUIC stream", zap.Error(err))
+		}
 		delete(qc.streams, streamID)
 	}
 	qc.mu.Unlock()

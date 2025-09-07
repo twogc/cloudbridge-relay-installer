@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: monitoring
+  namespace: cloudbridge-monitoring
 data:
   prometheus.yml: |
     global:
@@ -19,12 +19,26 @@ data:
         static_configs:
           - targets: ['localhost:9090']
 
-      # CloudBridge Relay staging
-      - job_name: 'cloudbridge-relay-staging'
+      # CloudBridge Relay
+      - job_name: 'cloudbridge-relay'
         static_configs:
-          - targets: ['cloudbridge-relay-staging-internal.cloudbridge-staging.svc.cluster.local:8084']
+          - targets: ['cloudbridge-relay.cloudbridge.svc.cluster.local:8084']
         metrics_path: '/metrics'
         scrape_interval: 10s
+
+      # Cassandra
+      - job_name: 'cassandra'
+        static_configs:
+          - targets: ['cassandra-service.cloudbridge.svc.cluster.local:9500']
+        metrics_path: '/metrics'
+        scrape_interval: 15s
+
+      # Cadence
+      - job_name: 'cadence'
+        static_configs:
+          - targets: ['cadence-service.cloudbridge.svc.cluster.local:7934']
+        metrics_path: '/metrics'
+        scrape_interval: 15s
 
       # Kubernetes API server
       - job_name: 'kubernetes-apiservers'

@@ -282,12 +282,16 @@ func (r *RussianRelay) Stop() error {
 	r.logger.Info("Остановка российского relay-сервера")
 
 	if r.listener != nil {
-		r.listener.Close()
+		if err := r.listener.Close(); err != nil {
+			r.logger.Warn("Failed to close russian relay listener", zap.Error(err))
+		}
 	}
 
 	// Закрытие Border Gateway соединений
 	for _, conn := range r.borderConnections {
-		conn.Connection.Close()
+		if err := conn.Connection.Close(); err != nil {
+			r.logger.Warn("Failed to close border connection", zap.Error(err))
+		}
 	}
 
 	return nil
