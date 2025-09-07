@@ -122,6 +122,33 @@ stop_all_port_forwards() {
     else
         echo -e "${YELLOW}ℹ️  Нет активных port-forward${NC}"
     fi
+    
+    # Останавливаем Cadence Web UI
+    echo -e "${YELLOW}🛑 Остановка Cadence Web UI...${NC}"
+    cadence_web_pids=$(pgrep -f "next dev.*8088" || true)
+    
+    if [ -n "$cadence_web_pids" ]; then
+        echo "$cadence_web_pids" | xargs kill -TERM 2>/dev/null || true
+        sleep 2
+        echo "$cadence_web_pids" | xargs kill -KILL 2>/dev/null || true
+        echo -e "${GREEN}✅ Cadence Web UI остановлен${NC}"
+    else
+        echo -e "${YELLOW}ℹ️  Cadence Web UI не запущен${NC}"
+    fi
+    
+    # Останавливаем port-forward для Cadence
+    echo -e "${YELLOW}🛑 Остановка port-forward для Cadence...${NC}"
+    cadence_port_forward_pids=$(pgrep -f "kubectl port-forward.*7933" || true)
+    
+    if [ -n "$cadence_port_forward_pids" ]; then
+        echo "$cadence_port_forward_pids" | xargs kill -TERM 2>/dev/null || true
+        sleep 2
+        echo "$cadence_port_forward_pids" | xargs kill -KILL 2>/dev/null || true
+        echo -e "${GREEN}✅ Port-forward для Cadence остановлен${NC}"
+    else
+        echo -e "${YELLOW}ℹ️  Port-forward для Cadence не запущен${NC}"
+    fi
+    
     echo ""
 }
 
@@ -139,6 +166,31 @@ show_port_forward_status() {
     else
         echo -e "   ${YELLOW}ℹ️  Нет активных port-forward${NC}"
     fi
+    
+    echo -e "${YELLOW}📊 Статус Cadence Web UI:${NC}"
+    local cadence_web_pids=$(pgrep -f "next dev.*8088" || true)
+    
+    if [ -n "$cadence_web_pids" ]; then
+        echo "$cadence_web_pids" | while read pid; do
+            local cmd=$(ps -p $pid -o args= 2>/dev/null || echo "Процесс не найден")
+            echo -e "   ${GREEN}✅ PID $pid:${NC} $cmd"
+        done
+    else
+        echo -e "   ${YELLOW}ℹ️  Cadence Web UI не запущен${NC}"
+    fi
+    
+    echo -e "${YELLOW}📊 Статус port-forward для Cadence:${NC}"
+    local cadence_port_forward_pids=$(pgrep -f "kubectl port-forward.*7933" || true)
+    
+    if [ -n "$cadence_port_forward_pids" ]; then
+        echo "$cadence_port_forward_pids" | while read pid; do
+            local cmd=$(ps -p $pid -o args= 2>/dev/null || echo "Процесс не найден")
+            echo -e "   ${GREEN}✅ PID $pid:${NC} $cmd"
+        done
+    else
+        echo -e "   ${YELLOW}ℹ️  Port-forward для Cadence не запущен${NC}"
+    fi
+    
     echo ""
 }
 
@@ -179,18 +231,42 @@ main() {
             start_port_forward "cassandra-service" "$NAMESPACE_CLOUDBRIDGE" 9500 9500 "Cassandra Metrics"
             start_port_forward "cloudbridge-relay" "$NAMESPACE_CLOUDBRIDGE" 8084 8084 "CloudBridge Relay Metrics"
             
-            echo -e "${YELLOW}ℹ️  Cadence Web UI не включен в стандартном образе${NC}"
-            echo -e "${CYAN}💡 Используйте Grafana и Prometheus для мониторинга Cadence${NC}"
+            echo -e "${YELLOW}🚀 Запуск Cadence Web UI...${NC}"
+            echo -e "${CYAN}💡 Cadence Web UI будет доступен на: http://localhost:8088${NC}"
+            
+            # Запускаем port-forward для Cadence если не запущен
+            if ! pgrep -f "kubectl port-forward.*7933" > /dev/null; then
+                echo -e "${YELLOW}🔗 Запуск port-forward для Cadence...${NC}"
+                kubectl port-forward -n cloudbridge svc/cadence-service 7933:7933 > /dev/null 2>&1 &
+                sleep 3
+            fi
+            
+            # Запускаем Cadence Web UI в фоне
+            cd tools/cadence-web
+            ./start-cadence-web.sh dev > /dev/null 2>&1 &
+            local cadence_web_pid=$!
+            cd ../..
+            
+            # Ждем немного для инициализации
+            sleep 8
+            
+            if kill -0 $cadence_web_pid 2>/dev/null; then
+                echo -e "${GREEN}✅ Cadence Web UI запущен (PID: $cadence_web_pid)${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Cadence Web UI не запустился автоматически${NC}"
+                echo -e "${CYAN}💡 Запустите вручную: cd tools/cadence-web && ./start-cadence-web.sh dev${NC}"
+            fi
             
             echo -e "${GREEN}🎉 Все UI интерфейсы запущены!${NC}"
             echo ""
             echo -e "${BLUE}📋 Доступные интерфейсы:${NC}"
+            print_service_info "Cadence Web UI" "8088" "Полноценный веб-интерфейс для Cadence" "http://localhost:8088"
             print_service_info "Grafana" "3000" "Дашборды и визуализация (включая Cadence)" "http://localhost:3000"
             print_service_info "Prometheus" "9090" "Метрики и алерты (включая Cadence)" "http://localhost:9090"
             print_service_info "Cassandra Metrics" "9500" "База данных метрики" "http://localhost:9500"
             print_service_info "CloudBridge Relay" "8084" "Основное приложение" "http://localhost:8084"
-            echo -e "${YELLOW}📋 Cadence мониторинг:${NC}"
-            echo -e "   ${CYAN}CLI:${NC} kubectl exec -n cloudbridge cadence-xxx -- cadence --address localhost:7933 domain describe --domain cloudbridge"
+            echo -e "${YELLOW}📋 Дополнительные инструменты:${NC}"
+            echo -e "   ${CYAN}CLI:${NC} ./tools/cadence-web/cadence-monitor.sh"
             echo -e "   ${CYAN}Логи:${NC} kubectl logs -n cloudbridge cadence-xxx"
             
             echo -e "${YELLOW}💡 Для остановки используйте: $0 stop${NC}"
@@ -212,14 +288,19 @@ main() {
             # Запускаем port-forward если не запущены
             start_port_forward "grafana" "$NAMESPACE_MONITORING" 3000 3000 "Grafana Dashboard" > /dev/null
             start_port_forward "prometheus-optimized-service" "$NAMESPACE_MONITORING" 9090 9090 "Prometheus Metrics" > /dev/null
-            start_port_forward "cadence-service" "$NAMESPACE_CLOUDBRIDGE" 7934 7934 "Cadence Web UI" > /dev/null
             
-            sleep 3
+            # Запускаем Cadence Web UI если не запущен
+            if ! pgrep -f "next dev.*8088" > /dev/null; then
+                cd tools/cadence-web
+                ./start-cadence-web.sh dev > /dev/null 2>&1 &
+                cd ../..
+                sleep 5
+            fi
             
             # Открываем браузеры
+            open_browser "http://localhost:8088" "Cadence Web UI"
             open_browser "http://localhost:3000" "Grafana Dashboard"
             open_browser "http://localhost:9090" "Prometheus Metrics"
-            open_browser "http://localhost:7934" "Cadence Web UI"
             ;;
             
         "grafana")
@@ -233,15 +314,42 @@ main() {
             ;;
             
         "cadence")
-            echo -e "${YELLOW}⚠️  Cadence Web UI не включен в стандартном образе${NC}"
-            echo -e "${CYAN}💡 Используйте Cadence CLI для мониторинга:${NC}"
-            echo -e "   kubectl exec -n cloudbridge cadence-xxx -- cadence --address localhost:7933 domain describe --domain cloudbridge"
-            echo -e "   kubectl exec -n cloudbridge cadence-xxx -- cadence --address localhost:7933 workflow list --domain cloudbridge"
+            echo -e "${YELLOW}🚀 Запуск Cadence Web UI...${NC}"
+            echo -e "${CYAN}💡 Cadence Web UI будет доступен на: http://localhost:8088${NC}"
             echo ""
-            echo -e "${YELLOW}🔧 Альтернативы для мониторинга Cadence:${NC}"
-            echo -e "   📊 Grafana Dashboard - http://localhost:3000 (Cadence метрики)"
-            echo -e "   📈 Prometheus - http://localhost:9090 (Cadence метрики)"
-            echo -e "   📋 Логи - kubectl logs -n cloudbridge cadence-xxx"
+            
+            # Проверяем, запущен ли уже Cadence Web UI
+            if pgrep -f "next dev.*8088" > /dev/null; then
+                echo -e "${YELLOW}⚠️  Cadence Web UI уже запущен${NC}"
+                echo -e "${CYAN}💡 Доступ: http://localhost:8088${NC}"
+                return 0
+            fi
+            
+            # Запускаем port-forward для Cadence если не запущен
+            if ! pgrep -f "kubectl port-forward.*7933" > /dev/null; then
+                echo -e "${YELLOW}🔗 Запуск port-forward для Cadence...${NC}"
+                kubectl port-forward -n cloudbridge svc/cadence-service 7933:7933 > /dev/null 2>&1 &
+                sleep 3
+            fi
+            
+            # Запускаем Cadence Web UI в фоне
+            cd tools/cadence-web
+            ./start-cadence-web.sh dev > /dev/null 2>&1 &
+            local pid=$!
+            cd ../..
+            
+            # Ждем немного для инициализации
+            sleep 8
+            
+            # Проверяем, что процесс запустился
+            if kill -0 $pid 2>/dev/null; then
+                echo -e "${GREEN}✅ Cadence Web UI запущен (PID: $pid)${NC}"
+                echo -e "${CYAN}💡 Доступ: http://localhost:8088${NC}"
+                echo -e "${CYAN}💡 Для остановки: kill $pid${NC}"
+            else
+                echo -e "${RED}❌ Ошибка запуска Cadence Web UI${NC}"
+                echo -e "${YELLOW}💡 Попробуйте запустить вручную: cd tools/cadence-web && ./start-cadence-web.sh dev${NC}"
+            fi
             ;;
             
         "cassandra")

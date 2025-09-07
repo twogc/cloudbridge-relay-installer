@@ -47,15 +47,17 @@
   - Просмотр алертов и правил
   - Статус targets и scraping
 
-### **3. ⚙️ Cadence CLI Monitoring**
-- **Описание**: Мониторинг Cadence Workflow Engine через CLI
-- **Доступ**: `./scripts/cadence-monitor.sh`
+### **3. ⚙️ Cadence Web UI**
+- **URL**: http://localhost:8088
+- **Описание**: Полноценный веб-интерфейс для Cadence Workflow Engine
+- **Порт**: 8088
 - **Функции**:
-  - Просмотр доменов и их статуса
+  - Просмотр и управление доменами
   - Мониторинг workflow executions
-  - Просмотр task lists
-  - Информация о кластере
-  - Логи и метрики
+  - Просмотр task lists и activity workers
+  - Отладка и диагностика workflow
+  - История событий и timeline
+  - Управление workflow (запуск, остановка, сброс)
 
 ### **4. 🗄️ Cassandra Metrics**
 - **URL**: http://localhost:9500
@@ -104,37 +106,29 @@ cadence_workflow_executions
 rate(cadence_errors[5m])
 ```
 
-### **Через Cadence CLI:**
+### **Через Cadence Web UI:**
 
-#### **1. Мониторинг доменов:**
-```bash
-# Просмотр всех доменов
-./scripts/cadence-monitor.sh domains
-
-# Описание конкретного домена
-kubectl exec -n cloudbridge cadence-xxx -- cadence --address 10.244.0.172:7933 --domain cadence-system domain describe
-```
+#### **1. Управление доменами:**
+- **Просмотр доменов**: http://localhost:8088/domains
+- **Создание доменов**: через веб-интерфейс
+- **Настройка конфигурации**: retention, archival, metadata
+- **Мониторинг активности**: статистика и метрики
 
 #### **2. Workflow Executions:**
-```bash
-# Просмотр workflow executions
-./scripts/cadence-monitor.sh workflows
+- **Список workflow**: http://localhost:8088/domains/{domain}/workflows
+- **Детальная информация**: история событий, timeline
+- **Управление workflow**: запуск, остановка, сброс, сигналы
+- **Отладка**: stack trace, диагностика проблем
 
-# Список workflow в домене
-kubectl exec -n cloudbridge cadence-xxx -- cadence --address 10.244.0.172:7933 --domain cadence-system workflow list
-```
+#### **3. Task Lists и Activity Workers:**
+- **Просмотр task lists**: http://localhost:8088/domains/{domain}/task-lists
+- **Мониторинг workers**: статус и производительность
+- **Управление activities**: выполнение и отладка
 
-#### **3. Task Lists и кластер:**
-```bash
-# Просмотр task lists
-./scripts/cadence-monitor.sh tasklists
-
-# Информация о кластере
-./scripts/cadence-monitor.sh cluster
-
-# Логи Cadence
-./scripts/cadence-monitor.sh logs
-```
+#### **4. Дополнительные возможности:**
+- **Архивные workflow**: поиск и просмотр
+- **Кластерная информация**: статус и конфигурация
+- **Метрики и алерты**: интеграция с Prometheus
 
 ---
 
@@ -188,15 +182,16 @@ node_filesystem_avail_bytes{mountpoint="/"}
 ./scripts/monitoring-ui.sh start
 
 # Запуск конкретного интерфейса
+./scripts/monitoring-ui.sh cadence
 ./scripts/monitoring-ui.sh grafana
 ./scripts/monitoring-ui.sh prometheus
 ./scripts/monitoring-ui.sh cassandra
 ./scripts/monitoring-ui.sh relay
 
-# Мониторинг Cadence через CLI
-./scripts/cadence-monitor.sh domains
-./scripts/cadence-monitor.sh workflows
-./scripts/cadence-monitor.sh logs
+# Дополнительные инструменты Cadence
+./tools/cadence-web/cadence-monitor.sh domains
+./tools/cadence-web/cadence-monitor.sh workflows
+./tools/cadence-web/cadence-monitor.sh logs
 
 # Открытие всех в браузере
 ./scripts/monitoring-ui.sh open
