@@ -1,0 +1,17 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: prometheus-optimized-storage
+  labels:
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/managed-by: kubectl
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/version: 2.45.0
+provisioner: k8s.io/minikube-hostpath
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+parameters:
+  type: optimized
+  disk: vdb1

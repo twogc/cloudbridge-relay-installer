@@ -1,0 +1,126 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: prometheus-cleanup
+  namespace: cloudbridge-monitoring
+  labels:
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kubectl
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/version: 2.45.0
+spec:
+  schedule: "0 */6 * * *"  # Каждые 6 часов
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: prometheus
+          containers:
+          - name: prometheus-cleanup
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/bash
+            - -c
+            - |
+              echo "🧹 Starting Prometheus storage cleanup..."
+              
+              # Получаем имя пода Prometheus
+              PROMETHEUS_POD=$(kubectl get pods -n cloudbridge-monitoring -l "app.kubernetes.io/name=prometheus,deployment-type=optimized" -o jsonpath='{.items[0].metadata.name}')
+              
+              if [ -z "$PROMETHEUS_POD" ]; then
+                echo "❌ Prometheus pod not found"
+                exit 1
+              fi
+              
+              echo "📊 Current storage metrics:"
+              
+              # Размер хранилища
+              STORAGE_SIZE=$(kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- du -sb /prometheus/ 2>/dev/null | awk '{print $1}')
+              STORAGE_SIZE_GB=$(echo "scale=2; $STORAGE_SIZE / 1024 / 1024 / 1024" | bc)
+              echo "Storage size: ${STORAGE_SIZE_GB}GB"
+              
+              # Количество блоков
+              BLOCK_COUNT=$(kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- find /prometheus/ -name "*-*" -type d 2>/dev/null | wc -l)
+              echo "Number of blocks: $BLOCK_COUNT"
+              
+              # Количество WAL файлов
+              WAL_COUNT=$(kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- find /prometheus/wal/ -name "*.log" 2>/dev/null | wc -l)
+              echo "Number of WAL files: $WAL_COUNT"
+              
+              # Проверяем, нужна ли очистка (если размер больше 30GB)
+              CLEANUP_THRESHOLD=32212254720  # 30GB в байтах
+              
+              if [ "$STORAGE_SIZE" -gt "$CLEANUP_THRESHOLD" ]; then
+                echo "⚠️  Storage size (${STORAGE_SIZE_GB}GB) exceeds threshold (30GB)"
+                echo "Starting cleanup process..."
+                
+                # Очищаем старые блоки (старше 1 дня)
+                echo "🗑️  Cleaning up old blocks..."
+                OLD_BLOCKS=$(kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- find /prometheus/ -name "*-*" -type d -mtime +1 2>/dev/null | head -5)
+                
+                if [ -n "$OLD_BLOCKS" ]; then
+                  echo "Found old blocks to clean up:"
+                  echo "$OLD_BLOCKS"
+                  
+                  for block in $OLD_BLOCKS; do
+                    echo "Removing block: $block"
+                    kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- rm -rf "$block"
+                  done
+                  
+                  echo "✅ Old blocks cleaned up successfully"
+                else
+                  echo "ℹ️  No old blocks found to clean up"
+                fi
+                
+                # Очищаем старые WAL файлы
+                echo "🗑️  Cleaning up old WAL files..."
+                OLD_WAL_FILES=$(kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- find /prometheus/wal/ -name "*.log" -mtime +1 2>/dev/null | head -10)
+                
+                if [ -n "$OLD_WAL_FILES" ]; then
+                  echo "Found old WAL files to clean up:"
+                  echo "$OLD_WAL_FILES"
+                  
+                  for wal_file in $OLD_WAL_FILES; do
+                    echo "Removing WAL file: $wal_file"
+                    kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- rm -f "$wal_file"
+                  done
+                  
+                  echo "✅ Old WAL files cleaned up successfully"
+                else
+                  echo "ℹ️  No old WAL files found to clean up"
+                fi
+                
+                # Принудительная очистка через API
+                echo "🔄 Force cleanup via Prometheus API..."
+                kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- curl -X POST http://localhost:9090/api/v1/admin/tsdb/clean_tombstones 2>/dev/null || true
+                
+                echo "✅ Force cleanup completed"
+                
+                # Проверяем результат
+                NEW_STORAGE_SIZE=$(kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- du -sb /prometheus/ 2>/dev/null | awk '{print $1}')
+                NEW_STORAGE_SIZE_GB=$(echo "scale=2; $NEW_STORAGE_SIZE / 1024 / 1024 / 1024" | bc)
+                SAVED_GB=$(echo "scale=2; $STORAGE_SIZE_GB - $NEW_STORAGE_SIZE_GB" | bc)
+                
+                echo "✅ Cleanup completed!"
+                echo "Storage size before: ${STORAGE_SIZE_GB}GB"
+                echo "Storage size after: ${NEW_STORAGE_SIZE_GB}GB"
+                echo "Space saved: ${SAVED_GB}GB"
+                
+              else
+                echo "ℹ️  Storage size (${STORAGE_SIZE_GB}GB) is within acceptable limits (30GB)"
+                echo "No cleanup needed at this time"
+              fi
+              
+              echo "🎉 Prometheus storage cleanup completed!"
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+              limits:
+                memory: "128Mi"
+                cpu: "100m"
+          restartPolicy: OnFailure

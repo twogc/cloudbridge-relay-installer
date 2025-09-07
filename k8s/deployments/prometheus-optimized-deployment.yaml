@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-optimized
+  namespace: cloudbridge-monitoring
+  labels:
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kubectl
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/version: 2.45.0
+    deployment-type: optimized
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: monitoring
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/part-of: cloudbridge-relay
+      deployment-type: optimized
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: monitoring
+        app.kubernetes.io/managed-by: kubectl
+        app.kubernetes.io/name: prometheus
+        app.kubernetes.io/part-of: cloudbridge-relay
+        app.kubernetes.io/version: 2.45.0
+        deployment-type: optimized
+    spec:
+      serviceAccountName: prometheus
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.45.0
+        imagePullPolicy: IfNotPresent
+        args:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus/'
+          - '--storage.tsdb.retention.time=24h'           # Оптимизировано: 24 часа вместо 200h
+          - '--storage.tsdb.retention.size=40GB'          # Оптимизировано: лимит 40GB из 50GB
+          - '--storage.tsdb.min-block-duration=2h'        # Оптимизировано: блоки по 2 часа
+          - '--storage.tsdb.max-block-duration=2h'        # Оптимизировано: блоки по 2 часа
+          - '--storage.tsdb.wal-compression'              # Оптимизировано: сжатие WAL
+          - '--web.console.libraries=/etc/prometheus/console_libraries'
+          - '--web.console.templates=/etc/prometheus/consoles'
+          - '--web.enable-lifecycle'
+          - '--web.enable-admin-api'
+          - '--query.max-concurrency=20'                  # Оптимизировано: лимит запросов
+          - '--query.max-samples=50000000'                # Оптимизировано: лимит сэмплов
+          - '--query.lookback-delta=5m'
+          - '--query.timeout=2m'
+          - '--web.max-connections=512'                   # Оптимизировано: лимит соединений
+        ports:
+        - containerPort: 9090
+          name: web
+          protocol: TCP
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: prometheus-config-volume
+          mountPath: /etc/prometheus/
+          readOnly: true
+        - name: prometheus-optimized-storage-volume
+          mountPath: /prometheus/
+        - name: prometheus-rules-volume
+          mountPath: /etc/prometheus/rules/
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: prometheus-config-volume
+        configMap:
+          defaultMode: 420
+          name: prometheus-optimized-config
+      - name: prometheus-optimized-storage-volume
+        emptyDir:
+          sizeLimit: 50Gi
+      - name: prometheus-rules-volume
+        configMap:
+          defaultMode: 420
+          name: prometheus-optimized-config
+          items:
+          - key: storage-optimization-rules.yml
+            path: storage-optimization-rules.yml
+      nodeSelector:
+        kubernetes.io/hostname: minikube
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule

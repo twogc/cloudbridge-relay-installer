@@ -1,0 +1,171 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-optimized-config
+  namespace: cloudbridge-monitoring
+  labels:
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/managed-by: kubectl
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/version: 2.45.0
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 60s          # Увеличено с 15s до 60s
+      evaluation_interval: 60s      # Увеличено с 15s до 60s
+      scrape_timeout: 30s           # Добавлен timeout
+      external_labels:
+        cluster: 'cloudbridge-relay'
+        environment: 'production'
+
+    # Правила для оптимизации хранения
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+
+    # Конфигурация удаленного хранения (для будущего использования)
+    # remote_write:
+    #   - url: "http://remote-storage-adapter:9201/write"
+    #     queue_config:
+    #       max_samples_per_send: 1000
+    #       batch_send_deadline: 5s
+    #       max_retries: 3
+    #       min_backoff: 30ms
+    #       max_backoff: 100ms
+
+    scrape_configs:
+      # Prometheus itself - оптимизированный
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+        scrape_interval: 120s        # Увеличено для самого Prometheus
+        metrics_path: '/metrics'
+        honor_labels: true
+
+      # CloudBridge Relay - оптимизированный
+      - job_name: 'cloudbridge-relay'
+        static_configs:
+          - targets: ['cloudbridge-relay.cloudbridge.svc.cluster.local:8084']
+        metrics_path: '/metrics'
+        scrape_interval: 60s         # Увеличено с 10s до 60s
+        scrape_timeout: 30s
+        honor_labels: true
+        # Фильтрация метрик для экономии места
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'go_gc_duration_seconds|go_memstats_.*|process_.*'
+            action: drop
+
+      # Cassandra - оптимизированный
+      - job_name: 'cassandra'
+        static_configs:
+          - targets: ['cassandra-service.cloudbridge.svc.cluster.local:9500']
+        metrics_path: '/metrics'
+        scrape_interval: 120s        # Увеличено с 15s до 120s
+        scrape_timeout: 30s
+        honor_labels: true
+        # Фильтрация метрик Cassandra
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'cassandra_.*_histogram_.*|cassandra_.*_timer_.*'
+            action: drop
+
+      # Cadence - оптимизированный
+      - job_name: 'cadence'
+        static_configs:
+          - targets: ['cadence-service.cloudbridge.svc.cluster.local:7934']
+        metrics_path: '/metrics'
+        scrape_interval: 120s        # Увеличено с 15s до 120s
+        scrape_timeout: 30s
+        honor_labels: true
+        # Фильтрация метрик Cadence
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'cadence_.*_histogram_.*|cadence_.*_timer_.*'
+            action: drop
+
+      # Kubernetes API server - оптимизированный
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+        - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        scrape_interval: 300s        # Увеличено до 5 минут
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+
+      # Kubernetes nodes - оптимизированный
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        scrape_interval: 300s        # Увеличено до 5 минут
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+
+      # Kubernetes pods - оптимизированный
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+        - role: pod
+        scrape_interval: 300s        # Увеличено до 5 минут
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+
+  # Правила для оптимизации хранения
+  storage-optimization-rules.yml: |
+    groups:
+    - name: storage_optimization
+      rules:
+      - alert: PrometheusStorageHigh
+        expr: prometheus_tsdb_storage_blocks_bytes / 1024 / 1024 / 1024 > 40
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus storage usage is high"
+          description: "Prometheus storage usage is {{ $value }}GB, approaching 50GB limit"
+      
+      - alert: PrometheusStorageCritical
+        expr: prometheus_tsdb_storage_blocks_bytes / 1024 / 1024 / 1024 > 45
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus storage usage is critical"
+          description: "Prometheus storage usage is {{ $value }}GB, close to 50GB limit"
+      
+      - alert: PrometheusRetentionTime
+        expr: time() - prometheus_tsdb_head_min_time / 1000 > 86400
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus data retention time exceeded"
+          description: "Prometheus data is older than 24 hours, consider cleanup"

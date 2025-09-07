@@ -263,3 +263,4 @@ kubectl delete pods --all -n cloudbridge-monitoring
 *Создано: 2025-09-07*  
 *Статус: Готов к выполнению*
 
+
