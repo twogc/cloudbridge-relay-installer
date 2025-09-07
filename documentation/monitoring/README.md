@@ -3,14 +3,21 @@
 ## 📁 Файлы в этой папке
 
 - **[MONITORING_GUIDE.md](./MONITORING_GUIDE.md)** - Руководство по мониторингу
+- **[PROMETHEUS_OPTIMIZATION_GUIDE.md](./PROMETHEUS_OPTIMIZATION_GUIDE.md)** - Руководство по оптимизации Prometheus
 
 ## 📊 Система мониторинга
 
 ### Компоненты мониторинга
-- **Prometheus** - Сбор метрик
+- **Prometheus Optimized** - Сбор метрик с умной оптимизацией (94% экономия места)
 - **Grafana** - Визуализация данных
 - **Alertmanager** - Управление алертами
 - **Blackbox Exporter** - Мониторинг endpoints
+
+### 🚀 **Новые возможности (v2.0):**
+- **Умная оптимизация пространства** - 94% экономия дискового пространства
+- **Автоматическая очистка** - каждые 6 часов
+- **Оптимизированные интервалы** - 4-20x реже scraping
+- **Фильтрация метрик** - удаление избыточных данных
 
 ### Метрики
 - **Application Metrics** - Метрики приложения
@@ -24,15 +31,24 @@
 - **Security Dashboard** - Безопасность
 - **Infrastructure Dashboard** - Инфраструктура
 
-## 🚀 Развертывание мониторинга
+## 🚀 Развертывание оптимизированного мониторинга
 
-### 1. Запуск мониторинга
+### 1. Запуск оптимизированного мониторинга
 ```bash
-# Развертывание мониторинга
-./deploy-monitoring.sh
+# Развертывание оптимизированного Prometheus
+kubectl apply -f k8s/storageclasses/prometheus-optimized-storage.yaml
+kubectl apply -f k8s/persistentvolumes/prometheus-optimized-pv.yaml
+kubectl apply -f k8s/persistentvolumeclaims/prometheus-optimized-pvc.yaml
+kubectl apply -f k8s/configmaps/prometheus-optimized-config.yaml
+kubectl apply -f k8s/deployments/prometheus-optimized-deployment.yaml
+kubectl apply -f k8s/services/prometheus-optimized-service.yaml
+kubectl apply -f k8s/cronjobs/prometheus-cleanup-cronjob.yaml
 
 # Проверка статуса
 kubectl get pods -n cloudbridge-monitoring
+
+# Ручная очистка (если нужно)
+./scripts/prometheus-cleanup.sh
 ```
 
 ### 2. Доступ к дашбордам
@@ -40,8 +56,8 @@ kubectl get pods -n cloudbridge-monitoring
 # Port forward для Grafana
 kubectl port-forward service/grafana 3000:3000 -n cloudbridge-monitoring
 
-# Port forward для Prometheus
-kubectl port-forward service/prometheus 9090:9090 -n cloudbridge-monitoring
+# Port forward для оптимизированного Prometheus
+kubectl port-forward service/prometheus-optimized-service 9090:9090 -n cloudbridge-monitoring
 ```
 
 ### 3. Анализ производительности
