@@ -219,6 +219,10 @@ cadence:
 - **TLS 1.3** - рекомендуемая версия
 - **Perfect Forward Secrecy** - обязателен
 - **Strong ciphers** - только сильные шифры
+- **Mutual TLS (mTLS)** - двусторонняя аутентификация
+- **Post-Quantum Cryptography** - CRYSTALS-Kyber/Dilithium
+- **Certificate Management** - автоматическое управление сертификатами
+- **Cipher Suites** - TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256
 
 ### **DDoS Protection**
 - **Rate limiting** - ограничение скорости

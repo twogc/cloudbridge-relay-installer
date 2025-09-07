@@ -67,7 +67,7 @@ data:
         "http_timeout": "30s"
       },
       "security": {
-        "tls_enabled": false,
+        "tls_enabled": true,
         "cert_file": "/app/certs/server.crt",
         "key_file": "/app/certs/server.key",
         "allowed_ips": [],

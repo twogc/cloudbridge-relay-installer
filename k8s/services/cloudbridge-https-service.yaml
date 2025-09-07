@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudbridge-https-service
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: relay
+    app.kubernetes.io/part-of: cloudbridge-relay
+  annotations:
+    prometheus.io/path: /metrics
+    prometheus.io/port: "8084"
+    prometheus.io/scrape: "true"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/component: relay
+    app.kubernetes.io/name: cloudbridge-relay
+  ports:
+    - name: https
+      port: 9091
+      targetPort: 9091
+      protocol: TCP

@@ -2,6 +2,7 @@
 
 ## 📁 Файлы в этой папке
 
+- **SSL_TLS_GUIDE.md** - Полное руководство по SSL/TLS
 - **Network Policies** - Сетевая безопасность
 - **Pod Security Policies** - Безопасность контейнеров
 - **Security Scanning** - Автоматическое сканирование
@@ -25,6 +26,13 @@
 - **Service Accounts** - Учетные записи сервисов
 - **Cluster Roles** - Роли кластера
 - **Role Bindings** - Привязки ролей
+
+### SSL/TLS Security
+- **TLS 1.3** - Современные протоколы шифрования
+- **Mutual TLS (mTLS)** - Двусторонняя аутентификация
+- **Post-Quantum Cryptography** - Квантово-устойчивое шифрование
+- **Certificate Management** - Управление сертификатами
+- **Perfect Forward Secrecy** - Защита от компрометации ключей
 
 ### Security Scanning
 - **Trivy** - Сканирование уязвимостей
@@ -63,6 +71,8 @@
 - [ ] Pod security policies настроены
 - [ ] RBAC настроен
 - [ ] Secrets настроены
+- [ ] SSL/TLS сертификаты созданы
+- [ ] mTLS конфигурация настроена
 
 ### Post-deployment
 - [ ] Security scan выполнен
@@ -70,6 +80,9 @@
 - [ ] Compliance проверен
 - [ ] Monitoring настроен
 - [ ] Alerts настроены
+- [ ] SSL/TLS соединения работают
+- [ ] mTLS аутентификация работает
+- [ ] Сертификаты валидны
 
 ## 🔍 Security Monitoring
 
@@ -79,6 +92,9 @@
 - Pod security policy violations
 - Resource usage anomalies
 - Security scan results
+- SSL/TLS handshake failures
+- Certificate expiration warnings
+- mTLS authentication failures
 
 ### Alerts
 - High CPU/Memory usage
@@ -86,6 +102,9 @@
 - Failed health checks
 - Network anomalies
 - Vulnerability discoveries
+- SSL/TLS certificate expiration
+- mTLS authentication failures
+- TLS version downgrade attempts
 
 
 

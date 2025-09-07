@@ -687,15 +687,57 @@ func (s *Server) Start() error {
 			}
 		})
 
-		httpServer := &http.Server{
-			Addr:    ":9091",
-			Handler: httpMux,
-		}
-		s.httpServer = httpServer
+		// Create TLS server instance
+		tlsServer := NewTLSServer(TLSConfig{
+			Enabled:      s.config.Security.TLSEnabled,
+			CertFile:     s.config.Security.CertFile,
+			KeyFile:      s.config.Security.KeyFile,
+			CipherSuites: s.config.Security.CipherSuites,
+			MinTLSVersion: s.config.Security.MinTLSVersion,
+			MTLS: MTLSConfig{
+				Enabled:            s.config.Security.MTLS.Enabled,
+				CAFile:             s.config.Security.MTLS.CACert,
+				ClientCertRequired: true, // Default to true when mTLS is enabled
+			},
+		}, s.logger.GetZapLogger())
 
-		s.logger.Info("HTTP server started on port 9091")
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			s.logger.Error("HTTP server error", zap.Error(err))
+		// Validate TLS configuration
+		if err := tlsServer.ValidateTLSConfig(); err != nil {
+			s.logger.Error("TLS configuration validation failed", zap.Error(err))
+			// Continue with HTTP fallback if TLS validation fails
+		} else {
+			// Start HTTP/HTTPS server based on configuration
+			if s.config.Security.TLSEnabled {
+				// Start HTTPS server
+				server, err := tlsServer.StartHTTPServer(":9091", httpMux)
+				if err != nil {
+					s.logger.Error("Failed to start HTTPS server", zap.Error(err))
+					// Fallback to HTTP
+				} else {
+					s.httpServer = server
+
+					// Start HTTPS server in goroutine
+					go func() {
+						if err := server.ListenAndServeTLS(s.config.Security.CertFile, s.config.Security.KeyFile); err != nil && err != http.ErrServerClosed {
+							s.logger.Error("HTTPS server error", zap.Error(err))
+						}
+					}()
+				}
+			} else {
+				// Fallback to HTTP for development
+				httpServer := &http.Server{
+					Addr:    ":9091",
+					Handler: httpMux,
+				}
+				s.httpServer = httpServer
+
+				s.logger.Warn("HTTP server started on port 9091 without TLS (development mode)")
+				go func() {
+					if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+						s.logger.Error("HTTP server error", zap.Error(err))
+					}
+				}()
+			}
 		}
 	}()
 
