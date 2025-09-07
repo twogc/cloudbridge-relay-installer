@@ -40,12 +40,12 @@ data:
               enabled: true
               initialFailoverVersion: 1
               rpcName: "cadence-frontend"
-              rpcAddress: "cadence.cloudbridge.svc.cluster.local:7933"
+              rpcAddress: "cadence-service.cloudbridge.svc.cluster.local:7933"
         ringpop:
           name: "cadence"
           bootstrapMode: "hosts"
           bootstrapHosts:
-            - "cadence:7933"
+            - "cadence-service:7933"
         persistence:
           defaultStore: "cassandra-default"
           visibilityStore: "cassandra-visibility"
