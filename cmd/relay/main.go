@@ -355,14 +355,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			zap.String("host", "0.0.0.0"),
 		)
 
-		// Start the P2P API Server
-		loggerInstance.Info("Starting P2P API Server...")
-		go func() {
-			if err := p2pAPIServer.Start(); err != nil {
-				loggerInstance.Error("Failed to start P2P API Server", zap.Error(err))
-			}
-		}()
-		loggerInstance.Info("P2P API Server started in goroutine")
+		// P2P API Server will be started later in Server.Start()
+		loggerInstance.Info("P2P API Server ready to start")
 	} else {
 		loggerInstance.Error("Failed to initialize P2P API Server - NewP2PAPIServer returned nil")
 	}
