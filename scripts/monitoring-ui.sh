@@ -218,39 +218,35 @@ main() {
             start_port_forward "cassandra-service" "$NAMESPACE_CLOUDBRIDGE" 9500 9500 "Cassandra Metrics"
             start_port_forward "cloudbridge-relay" "$NAMESPACE_CLOUDBRIDGE" 8084 8084 "CloudBridge Relay Metrics"
             
-            echo -e "${YELLOW}🚀 Запуск Cadence Web UI...${NC}"
-            echo -e "${CYAN}💡 Cadence Web UI будет доступен на: http://localhost:8088${NC}"
+            echo -e "${YELLOW}🚀 Проверка Cadence Web UI в кластере...${NC}"
+            echo -e "${CYAN}💡 Cadence Web UI доступен на: http://192.168.49.2:30088${NC}"
             
-            # Проверяем NodePort сервис для Cadence
-            echo -e "${YELLOW}🔗 Проверка NodePort для Cadence...${NC}"
-            if kubectl get svc -n cloudbridge cadence-nodeport > /dev/null 2>&1; then
-                echo -e "${GREEN}✅ NodePort сервис для Cadence найден${NC}"
+            # Проверяем развертывание Cadence Web UI в кластере
+            if kubectl get deployment -n cloudbridge cadence-web > /dev/null 2>&1; then
+                echo -e "${GREEN}✅ Cadence Web UI развернут в кластере${NC}"
+                
+                # Проверяем статус пода
+                local cadence_web_pod=$(kubectl get pods -n cloudbridge -l app.kubernetes.io/name=cadence-web -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+                if [ -n "$cadence_web_pod" ]; then
+                    local pod_status=$(kubectl get pod -n cloudbridge $cadence_web_pod -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+                    if [ "$pod_status" = "Running" ]; then
+                        echo -e "${GREEN}✅ Cadence Web UI pod работает: $cadence_web_pod${NC}"
+                    else
+                        echo -e "${YELLOW}⚠️  Cadence Web UI pod не в состоянии Running: $pod_status${NC}"
+                    fi
+                fi
             else
-                echo -e "${YELLOW}⚠️  NodePort сервис не найден, создаем...${NC}"
-                kubectl apply -f k8s/services/cadence-nodeport.yaml > /dev/null 2>&1
-                sleep 3
-            fi
-            
-            # Запускаем Cadence Web UI в фоне
-            cd tools/cadence-web
-            ./start-cadence-web.sh dev > /dev/null 2>&1 &
-            local cadence_web_pid=$!
-            cd ../..
-            
-            # Ждем немного для инициализации
-            sleep 8
-            
-            if kill -0 $cadence_web_pid 2>/dev/null; then
-                echo -e "${GREEN}✅ Cadence Web UI запущен (PID: $cadence_web_pid)${NC}"
-            else
-                echo -e "${YELLOW}⚠️  Cadence Web UI не запустился автоматически${NC}"
-                echo -e "${CYAN}💡 Запустите вручную: cd tools/cadence-web && ./start-cadence-web.sh dev${NC}"
+                echo -e "${YELLOW}⚠️  Cadence Web UI не развернут, разворачиваем...${NC}"
+                kubectl apply -f k8s/deployments/cadence-web-deployment.yaml > /dev/null 2>&1
+                kubectl apply -f k8s/services/cadence-web-service.yaml > /dev/null 2>&1
+                sleep 10
+                echo -e "${GREEN}✅ Cadence Web UI развернут${NC}"
             fi
             
             echo -e "${GREEN}🎉 Все UI интерфейсы запущены!${NC}"
             echo ""
             echo -e "${BLUE}📋 Доступные интерфейсы:${NC}"
-            print_service_info "Cadence Web UI" "8088" "Полноценный веб-интерфейс для Cadence" "http://localhost:8088"
+            print_service_info "Cadence Web UI" "30088" "Полноценный веб-интерфейс для Cadence" "http://192.168.49.2:30088"
             print_service_info "Grafana" "3000" "Дашборды и визуализация (включая Cadence)" "http://localhost:3000"
             print_service_info "Prometheus" "9090" "Метрики и алерты (включая Cadence)" "http://localhost:9090"
             print_service_info "Cassandra Metrics" "9500" "База данных метрики" "http://localhost:9500"
@@ -296,7 +292,7 @@ main() {
             fi
             
             # Открываем браузеры
-            open_browser "http://localhost:8088" "Cadence Web UI"
+            open_browser "http://192.168.49.2:30088" "Cadence Web UI"
             open_browser "http://localhost:3000" "Grafana Dashboard"
             open_browser "http://localhost:9090" "Prometheus Metrics"
             ;;
@@ -312,44 +308,32 @@ main() {
             ;;
             
         "cadence")
-            echo -e "${YELLOW}🚀 Запуск Cadence Web UI...${NC}"
-            echo -e "${CYAN}💡 Cadence Web UI будет доступен на: http://localhost:8088${NC}"
+            echo -e "${YELLOW}🚀 Проверка Cadence Web UI в кластере...${NC}"
+            echo -e "${CYAN}💡 Cadence Web UI доступен на: http://192.168.49.2:30088${NC}"
             echo ""
             
-            # Проверяем, запущен ли уже Cadence Web UI
-            if pgrep -f "next dev.*8088" > /dev/null; then
-                echo -e "${YELLOW}⚠️  Cadence Web UI уже запущен${NC}"
-                echo -e "${CYAN}💡 Доступ: http://localhost:8088${NC}"
-                return 0
-            fi
-            
-            # Проверяем NodePort сервис для Cadence
-            echo -e "${YELLOW}🔗 Проверка NodePort для Cadence...${NC}"
-            if kubectl get svc -n cloudbridge cadence-nodeport > /dev/null 2>&1; then
-                echo -e "${GREEN}✅ NodePort сервис для Cadence найден${NC}"
+            # Проверяем развертывание Cadence Web UI в кластере
+            if kubectl get deployment -n cloudbridge cadence-web > /dev/null 2>&1; then
+                echo -e "${GREEN}✅ Cadence Web UI развернут в кластере${NC}"
+                
+                # Проверяем статус пода
+                local cadence_web_pod=$(kubectl get pods -n cloudbridge -l app.kubernetes.io/name=cadence-web -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+                if [ -n "$cadence_web_pod" ]; then
+                    local pod_status=$(kubectl get pod -n cloudbridge $cadence_web_pod -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
+                    if [ "$pod_status" = "Running" ]; then
+                        echo -e "${GREEN}✅ Cadence Web UI pod работает: $cadence_web_pod${NC}"
+                        echo -e "${CYAN}💡 Доступ: http://192.168.49.2:30088${NC}"
+                    else
+                        echo -e "${YELLOW}⚠️  Cadence Web UI pod не в состоянии Running: $pod_status${NC}"
+                    fi
+                fi
             else
-                echo -e "${YELLOW}⚠️  NodePort сервис не найден, создаем...${NC}"
-                kubectl apply -f k8s/services/cadence-nodeport.yaml > /dev/null 2>&1
-                sleep 3
-            fi
-            
-            # Запускаем Cadence Web UI в фоне
-            cd tools/cadence-web
-            ./start-cadence-web.sh dev > /dev/null 2>&1 &
-            local pid=$!
-            cd ../..
-            
-            # Ждем немного для инициализации
-            sleep 8
-            
-            # Проверяем, что процесс запустился
-            if kill -0 $pid 2>/dev/null; then
-                echo -e "${GREEN}✅ Cadence Web UI запущен (PID: $pid)${NC}"
-                echo -e "${CYAN}💡 Доступ: http://localhost:8088${NC}"
-                echo -e "${CYAN}💡 Для остановки: kill $pid${NC}"
-            else
-                echo -e "${RED}❌ Ошибка запуска Cadence Web UI${NC}"
-                echo -e "${YELLOW}💡 Попробуйте запустить вручную: cd tools/cadence-web && ./start-cadence-web.sh dev${NC}"
+                echo -e "${YELLOW}⚠️  Cadence Web UI не развернут, разворачиваем...${NC}"
+                kubectl apply -f k8s/deployments/cadence-web-deployment.yaml > /dev/null 2>&1
+                kubectl apply -f k8s/services/cadence-web-service.yaml > /dev/null 2>&1
+                sleep 10
+                echo -e "${GREEN}✅ Cadence Web UI развернут${NC}"
+                echo -e "${CYAN}💡 Доступ: http://192.168.49.2:30088${NC}"
             fi
             ;;
             

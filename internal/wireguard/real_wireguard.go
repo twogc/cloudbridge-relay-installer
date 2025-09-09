@@ -2,6 +2,7 @@ package wireguard
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"os"
@@ -142,7 +143,14 @@ func (rwa *RealWireGuardAdapter) AddPeer(peer *WireGuardPeerConfig) error {
 	}
 
 	// Используем wg команду для добавления пира
-	cmd := exec.Command("wg", "set", rwa.interfaceName, "peer", peer.PublicKey)
+	// Валидация входных данных
+	if !isValidInterfaceName(rwa.interfaceName) {
+		return fmt.Errorf("invalid interface name: %s", rwa.interfaceName)
+	}
+	if !isValidPublicKey(peer.PublicKey) {
+		return fmt.Errorf("invalid public key: %s", peer.PublicKey)
+	}
+	cmd := exec.Command("wg", "set", rwa.interfaceName, "peer", peer.PublicKey) // #nosec G204 -- inputs validated above
 
 	if len(peer.AllowedIPs) > 0 {
 		cmd.Args = append(cmd.Args, "allowed-ips", strings.Join(peer.AllowedIPs, ","))
@@ -183,7 +191,14 @@ func (rwa *RealWireGuardAdapter) RemovePeer(publicKey string) error {
 		return fmt.Errorf("WireGuard interface %s not running", rwa.interfaceName)
 	}
 
-	cmd := exec.Command("wg", "set", rwa.interfaceName, "peer", publicKey, "remove")
+	// Валидация входных данных
+	if !isValidInterfaceName(rwa.interfaceName) {
+		return fmt.Errorf("invalid interface name: %s", rwa.interfaceName)
+	}
+	if !isValidPublicKey(publicKey) {
+		return fmt.Errorf("invalid public key: %s", publicKey)
+	}
+	cmd := exec.Command("wg", "set", rwa.interfaceName, "peer", publicKey, "remove") // #nosec G204 -- inputs validated above
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to remove peer: %w, output: %s", err, string(output))
@@ -210,7 +225,11 @@ func (rwa *RealWireGuardAdapter) GetStatus() (map[string]interface{}, error) {
 	}
 
 	// Получаем информацию о интерфейсе
-	cmd := exec.Command("wg", "show", rwa.interfaceName)
+	// Валидация имени интерфейса
+	if !isValidInterfaceName(rwa.interfaceName) {
+		return nil, fmt.Errorf("invalid interface name: %s", rwa.interfaceName)
+	}
+	cmd := exec.Command("wg", "show", rwa.interfaceName) // #nosec G204 -- interface name validated above
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get status: %w", err)
@@ -230,7 +249,7 @@ func (rwa *RealWireGuardAdapter) GetStatus() (map[string]interface{}, error) {
 func (rwa *RealWireGuardAdapter) createConfigFile(config *WireGuardConfig) error {
 	// Создаем директорию если не существует
 	configDir := filepath.Dir(rwa.configPath)
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0750); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
@@ -284,12 +303,16 @@ func (rwa *RealWireGuardAdapter) startWireGuardGo() error {
 
 	// Создаем директорию для сокета
 	socketDir := filepath.Dir(rwa.socketPath)
-	if err := os.MkdirAll(socketDir, 0755); err != nil {
+	if err := os.MkdirAll(socketDir, 0750); err != nil {
 		return fmt.Errorf("failed to create socket directory: %w", err)
 	}
 
 	// Запускаем wireguard-go в фоне
-	cmd := exec.Command("wireguard-go", rwa.interfaceName)
+	// Валидация имени интерфейса для предотвращения injection
+	if !isValidInterfaceName(rwa.interfaceName) {
+		return fmt.Errorf("invalid interface name: %s", rwa.interfaceName)
+	}
+	cmd := exec.Command("wireguard-go", rwa.interfaceName) // #nosec G204 -- interface name validated above
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -344,14 +367,19 @@ func (rwa *RealWireGuardAdapter) waitForInterface() error {
 // configureInterface настраивает сетевой интерфейс
 func (rwa *RealWireGuardAdapter) configureInterface(config *WireGuardConfig) error {
 	// Включаем интерфейс
-	cmd := exec.Command("ip", "link", "set", rwa.interfaceName, "up")
+	// Валидация имени интерфейса
+	if !isValidInterfaceName(rwa.interfaceName) {
+		return fmt.Errorf("invalid interface name: %s", rwa.interfaceName)
+	}
+	cmd := exec.Command("ip", "link", "set", rwa.interfaceName, "up") // #nosec G204 -- interface name validated above
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to bring up interface: %w, output: %s", err, string(output))
 	}
 
 	// Устанавливаем MTU
 	if config.Interface.MTU > 0 {
-		cmd = exec.Command("ip", "link", "set", rwa.interfaceName, "mtu", strconv.Itoa(config.Interface.MTU))
+		// Валидация имени интерфейса уже выполнена выше
+		cmd = exec.Command("ip", "link", "set", rwa.interfaceName, "mtu", strconv.Itoa(config.Interface.MTU)) // #nosec G204 -- interface name validated above
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("failed to set MTU: %w, output: %s", err, string(output))
 		}
@@ -367,7 +395,11 @@ func (rwa *RealWireGuardAdapter) configureInterface(config *WireGuardConfig) err
 
 // removeInterface удаляет сетевой интерфейс
 func (rwa *RealWireGuardAdapter) removeInterface() error {
-	cmd := exec.Command("ip", "link", "del", rwa.interfaceName)
+	// Валидация имени интерфейса
+	if !isValidInterfaceName(rwa.interfaceName) {
+		return fmt.Errorf("invalid interface name: %s", rwa.interfaceName)
+	}
+	cmd := exec.Command("ip", "link", "del", rwa.interfaceName) // #nosec G204 -- interface name validated above
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("failed to remove interface: %w, output: %s", err, string(output))
 	}
@@ -377,6 +409,40 @@ func (rwa *RealWireGuardAdapter) removeInterface() error {
 	)
 
 	return nil
+}
+
+// isValidInterfaceName проверяет валидность имени интерфейса
+func isValidInterfaceName(name string) bool {
+	// Проверяем, что имя содержит только допустимые символы
+	if len(name) == 0 || len(name) > 15 {
+		return false
+	}
+
+	// Проверяем, что имя начинается с буквы и содержит только буквы, цифры и дефисы
+	if !((name[0] >= 'a' && name[0] <= 'z') || (name[0] >= 'A' && name[0] <= 'Z')) {
+		return false
+	}
+
+	for _, char := range name {
+		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') || char == '-') {
+			return false
+		}
+	}
+
+	return true
+}
+
+// isValidPublicKey проверяет валидность публичного ключа WireGuard
+func isValidPublicKey(key string) bool {
+	// WireGuard публичные ключи должны быть base64 строкой длиной 44 символа
+	if len(key) != 44 {
+		return false
+	}
+
+	// Проверяем, что это валидная base64 строка
+	_, err := base64.StdEncoding.DecodeString(key)
+	return err == nil
 }
 
 // parseWgShowOutput парсит вывод команды wg show

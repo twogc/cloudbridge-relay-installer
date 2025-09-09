@@ -28,6 +28,13 @@ type WireGuardInterface struct {
 	// Интеграция с реальным WireGuard
 	realAdapter      *RealWireGuardAdapter
 	useRealWireGuard bool
+
+	// Peer whitelist
+	peerWhitelist    *PeerWhitelist
+	whitelistEnabled bool
+
+	// Notifications
+	notificationManager *P2PNotificationManager
 }
 
 // WireGuardPeer представляет WireGuard peer
@@ -201,15 +208,24 @@ func NewWireGuardInterface(name string, port int) *WireGuardInterface {
 		realAdapter = NewRealWireGuardAdapter(name, zap.NewNop())
 	}
 
+	// Создаем peer whitelist
+	peerWhitelist := NewPeerWhitelist(zap.NewNop())
+
+	// Создаем notification manager
+	notificationManager := NewP2PNotificationManager(zap.NewNop())
+
 	return &WireGuardInterface{
-		Name:             name,
-		ListenPort:       port,
-		PrivateKey:       privateKey,
-		PublicKey:        publicKey,
-		Peers:            make(map[string]*WireGuardPeer),
-		logger:           zap.NewNop(),
-		realAdapter:      realAdapter,
-		useRealWireGuard: useRealWireGuard,
+		Name:                name,
+		ListenPort:          port,
+		PrivateKey:          privateKey,
+		PublicKey:           publicKey,
+		Peers:               make(map[string]*WireGuardPeer),
+		logger:              zap.NewNop(),
+		realAdapter:         realAdapter,
+		useRealWireGuard:    useRealWireGuard,
+		peerWhitelist:       peerWhitelist,
+		whitelistEnabled:    false, // По умолчанию отключен
+		notificationManager: notificationManager,
 	}
 }
 
@@ -218,7 +234,9 @@ func generateKeyPair() (string, string) {
 	// В реальной реализации здесь будет генерация WireGuard ключей
 	// Пока используем простую симуляцию
 	privateKeyBytes := make([]byte, 32)
-	rand.Read(privateKeyBytes)
+	if _, err := rand.Read(privateKeyBytes); err != nil {
+		return "", ""
+	}
 
 	publicKeyBytes := sha256.Sum256(privateKeyBytes)
 
@@ -268,7 +286,9 @@ func NewMeshTopology(wgInterface *WireGuardInterface) *MeshTopology {
 // generatePeerID генерирует уникальный ID для peer
 func generatePeerID() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil {
+		return fmt.Sprintf("peer-%d", time.Now().UnixNano())
+	}
 	return fmt.Sprintf("peer-%x", bytes)
 }
 
@@ -406,6 +426,16 @@ func (wgi *WireGuardInterface) AddPeer(peer *WireGuardPeer) error {
 	wgi.mu.Lock()
 	defer wgi.mu.Unlock()
 
+	// Проверяем whitelist если включен
+	if wgi.whitelistEnabled && wgi.peerWhitelist != nil {
+		if !wgi.peerWhitelist.IsPeerAllowed(peer.PublicKey) {
+			wgi.logger.Warn("Peer not allowed by whitelist",
+				zap.String("public_key", peer.PublicKey),
+			)
+			return fmt.Errorf("peer %s not in whitelist", peer.PublicKey)
+		}
+	}
+
 	if wgi.useRealWireGuard && wgi.realAdapter != nil && wgi.isRunning {
 		// Добавляем пира в реальный WireGuard
 		realPeer := &WireGuardPeerConfig{
@@ -455,6 +485,43 @@ func (wgi *WireGuardInterface) RemovePeer(publicKey string) error {
 	)
 
 	return nil
+}
+
+// SetWhitelistEnabled enables or disables peer whitelist
+func (wgi *WireGuardInterface) SetWhitelistEnabled(enabled bool) {
+	wgi.mu.Lock()
+	defer wgi.mu.Unlock()
+
+	wgi.whitelistEnabled = enabled
+	wgi.logger.Info("Peer whitelist status changed",
+		zap.Bool("enabled", enabled),
+	)
+}
+
+// LoadPeerWhitelist loads peer whitelist from JWT claims
+func (wgi *WireGuardInterface) LoadPeerWhitelist(peerWhitelist []string) error {
+	if wgi.peerWhitelist == nil {
+		return fmt.Errorf("peer whitelist not initialized")
+	}
+
+	return wgi.peerWhitelist.LoadFromJWT(peerWhitelist)
+}
+
+// GetPeerWhitelist returns the peer whitelist
+func (wgi *WireGuardInterface) GetPeerWhitelist() *PeerWhitelist {
+	return wgi.peerWhitelist
+}
+
+// GetNotificationManager returns the notification manager
+func (wgi *WireGuardInterface) GetNotificationManager() *P2PNotificationManager {
+	return wgi.notificationManager
+}
+
+// NotifyP2PUnavailable notifies about P2P unavailability
+func (wgi *WireGuardInterface) NotifyP2PUnavailable(reason, fallback string) {
+	if wgi.notificationManager != nil {
+		wgi.notificationManager.NotifyP2PUnavailable(reason, fallback)
+	}
 }
 
 func (wgi *WireGuardInterface) GetStatus() map[string]interface{} {

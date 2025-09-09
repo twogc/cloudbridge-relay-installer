@@ -1,0 +1,28 @@
+{
+  "api": {
+    "version": "1.0.0",
+    "port": 8082,
+    "host": "0.0.0.0"
+  },
+  "keycloak": {
+    "enabled": false
+  },
+  "wireguard": {
+    "enabled": true,
+    "interface": {
+      "name": "wg0",
+      "listen_port": 51820,
+      "private_key": "test-private-key",
+      "public_key": "test-public-key"
+    }
+  },
+  "quantum": {
+    "enabled": false
+  },
+  "ai": {
+    "enabled": false
+  },
+  "enhanced_quic": {
+    "enabled": false
+  }
+}

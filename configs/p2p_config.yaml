@@ -1,0 +1,95 @@
+# CloudBridge Relay Server - P2P Configuration
+# Configuration for P2P (Peer-to-Peer) functionality including WireGuard and mesh networking
+
+p2p:
+  # WireGuard configuration
+  wireguard:
+    enabled: true
+    interface:
+      name: "wg0"
+      listen_port: 51820
+      address: "10.0.0.1/24"
+      mtu: 1420
+
+  # Mesh network configuration
+  mesh:
+    enabled: true
+    registry_url: "https://registry.cloudbridge.com"
+    heartbeat_interval: "30s"
+    max_peers: 100
+    routing_strategy: "hybrid"  # wireguard_first, performance_optimal, geographic_optimal, hybrid
+    enable_auto_discovery: true
+
+  # Security configuration
+  security:
+    peer_whitelist_enabled: false
+    key_rotation_interval: "24h"
+    strict_mode: false
+
+# Example configurations for different environments
+
+# Development environment
+development:
+  p2p:
+    wireguard:
+      enabled: true
+      interface:
+        name: "wg-dev"
+        listen_port: 51821
+        address: "10.1.0.1/24"
+        mtu: 1400
+    mesh:
+      enabled: true
+      registry_url: "http://localhost:8080/registry"
+      heartbeat_interval: "10s"
+      max_peers: 10
+      routing_strategy: "wireguard_first"
+      enable_auto_discovery: true
+    security:
+      peer_whitelist_enabled: false
+      key_rotation_interval: "1h"
+      strict_mode: false
+
+# Production environment
+production:
+  p2p:
+    wireguard:
+      enabled: true
+      interface:
+        name: "wg0"
+        listen_port: 51820
+        address: "10.0.0.1/24"
+        mtu: 1420
+    mesh:
+      enabled: true
+      registry_url: "https://registry.cloudbridge.com"
+      heartbeat_interval: "30s"
+      max_peers: 1000
+      routing_strategy: "hybrid"
+      enable_auto_discovery: true
+    security:
+      peer_whitelist_enabled: true
+      key_rotation_interval: "24h"
+      strict_mode: true
+
+# Testing environment
+testing:
+  p2p:
+    wireguard:
+      enabled: false  # Disable for testing
+      interface:
+        name: "wg-test"
+        listen_port: 51822
+        address: "10.2.0.1/24"
+        mtu: 1300
+    mesh:
+      enabled: false  # Disable for testing
+      registry_url: "http://test-registry:8080"
+      heartbeat_interval: "5s"
+      max_peers: 5
+      routing_strategy: "performance_optimal"
+      enable_auto_discovery: false
+    security:
+      peer_whitelist_enabled: true
+      key_rotation_interval: "1h"
+      strict_mode: true

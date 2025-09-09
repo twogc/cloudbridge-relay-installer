@@ -130,6 +130,9 @@ type Metrics struct {
 		comparisonMetrics          *prometheus.GaugeVec
 		resourceUtilizationPercent prometheus.Gauge
 	}
+
+	// P2P метрики
+	p2pMetrics *P2PMetrics
 }
 
 // NewMetrics creates new metrics
@@ -535,6 +538,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 				Help: "Overall resource utilization percentage",
 			}),
 		},
+		p2pMetrics: NewP2PMetrics(reg),
 	}
 
 	// Регистрация всех метрик
@@ -970,4 +974,45 @@ func (m *Metrics) SetTenantResourceUtilization(utilization float64) {
 // Business Metrics Methods
 func (m *Metrics) SetTotalRevenue(revenue float64) {
 	m.businessMetrics.totalRevenue.Set(revenue)
+}
+
+// P2P Metrics Methods
+func (m *Metrics) GetP2PMetrics() *P2PMetrics {
+	return m.p2pMetrics
+}
+
+func (m *Metrics) IncP2PConnections() {
+	m.p2pMetrics.IncP2PConnections()
+}
+
+func (m *Metrics) SetActivePeers(count int) {
+	m.p2pMetrics.SetActivePeers(count)
+}
+
+func (m *Metrics) IncP2PTraffic(direction, peerID string, bytes int64) {
+	m.p2pMetrics.IncP2PTraffic(direction, peerID, bytes)
+}
+
+func (m *Metrics) ObserveP2PLatency(peerID string, duration float64) {
+	m.p2pMetrics.ObserveP2PLatency(peerID, duration)
+}
+
+func (m *Metrics) ObserveHandshakeDuration(duration float64) {
+	m.p2pMetrics.ObserveHandshakeDuration(duration)
+}
+
+func (m *Metrics) SetMeshRoutes(count int) {
+	m.p2pMetrics.SetMeshRoutes(count)
+}
+
+func (m *Metrics) IncPeerDiscoveryEvent(eventType string) {
+	m.p2pMetrics.IncPeerDiscoveryEvent(eventType)
+}
+
+func (m *Metrics) IncFallbackEvent(fromProtocol, toProtocol, reason string) {
+	m.p2pMetrics.IncFallbackEvent(fromProtocol, toProtocol, reason)
+}
+
+func (m *Metrics) IncWhitelistViolation(violationType string) {
+	m.p2pMetrics.IncWhitelistViolation(violationType)
 }

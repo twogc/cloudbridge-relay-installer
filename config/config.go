@@ -877,12 +877,10 @@ func (c *Config) Validate() error {
 	}
 
 	// Validate Django configuration (for backward compatibility)
-	if !c.Keycloak.Enabled {
-		if c.Django.APIEndpoint == "" {
-			return fmt.Errorf("django.api_endpoint is required when keycloak is disabled")
-		}
+	// Django is optional - only validate if API endpoint is provided
+	if c.Django.APIEndpoint != "" {
 		if c.Django.JWTSecret == "" {
-			return fmt.Errorf("django.jwt_secret is required when keycloak is disabled")
+			return fmt.Errorf("django.jwt_secret is required when django.api_endpoint is provided")
 		}
 	}
 	if c.Django.RESTTimeout < time.Second {

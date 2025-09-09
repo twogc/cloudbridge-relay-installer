@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cadence-web-service
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/component: web-ui
+    app.kubernetes.io/name: cadence-web
+    app.kubernetes.io/part-of: cloudbridge-relay
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 8088
+    targetPort: 8088
+    nodePort: 30088
+    protocol: TCP
+  selector:
+    app.kubernetes.io/component: web-ui
+    app.kubernetes.io/name: cadence-web

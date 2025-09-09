@@ -121,6 +121,28 @@ func (v *Validator) validateJWT(token string) (string, error) {
 	return clientID, nil
 }
 
+// ValidateP2PToken validates a P2P token and returns P2P claims
+func (v *Validator) ValidateP2PToken(token string) (*P2PClaims, error) {
+	claims := &P2PClaims{}
+
+	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return v.jwtKey, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse P2P JWT: %v", err)
+	}
+
+	if err := claims.Validate(); err != nil {
+		return nil, fmt.Errorf("P2P claims validation failed: %v", err)
+	}
+
+	return claims, nil
+}
+
 // Cleanup removes expired tokens from the cache
 func (v *Validator) Cleanup() {
 	v.mu.Lock()

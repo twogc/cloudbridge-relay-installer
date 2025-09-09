@@ -100,16 +100,19 @@ type Server struct {
 	enhancedEnabled      bool
 
 	// WireGuard P2P Mesh components
-	wireGuardEnabled       bool
-	wireGuardInterface     *wireguard.WireGuardInterface
-	wireGuardMesh          *wireguard.MeshTopology
+	wireGuardEnabled   bool
+	wireGuardInterface *wireguard.WireGuardInterface
+	wireGuardMesh      *wireguard.MeshTopology
 
 	// Cadence Workflow Engine
-	cadenceClient *cadence.Client
+	cadenceClient          *cadence.Client
 	wireGuardPeerDiscovery *wireguard.PeerDiscovery
-	quicOverWireGuard      *wireguard.QUICOverWireGuard
-	hybridRouter           *wireguard.HybridRouter
-	siteToSiteManager      *wireguard.SiteToSiteManager
+
+	// P2P API Server
+	p2pAPIServer      *P2PAPIServer
+	quicOverWireGuard *wireguard.QUICOverWireGuard
+	hybridRouter      *wireguard.HybridRouter
+	siteToSiteManager *wireguard.SiteToSiteManager
 
 	// Post-Quantum Cryptography components
 	quantumEnabled      bool
@@ -328,6 +331,43 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		)
 	}
 
+	loggerInstance.Info("WireGuard initialization completed, proceeding to P2P API Server...")
+
+	// Initialize P2P API Server
+	loggerInstance.Info("Starting P2P API Server initialization...")
+	var p2pAPIServer *P2PAPIServer
+	// TODO: Добавить P2P конфигурацию в config.go
+	// if cfg.P2P.API.Enabled {
+	// Get JWT secret from config or environment
+	jwtSecret := []byte("default-jwt-secret")
+	loggerInstance.Info("JWT secret prepared", zap.Int("secret_length", len(jwtSecret)))
+	// if len(jwtSecret) == 0 {
+	// 	jwtSecret = []byte("default-jwt-secret")
+	// }
+
+	loggerInstance.Info("Calling NewP2PAPIServer...")
+	p2pAPIServer = NewP2PAPIServer(loggerInstance.GetZapLogger(), jwtSecret, cfg.API.Port)
+	loggerInstance.Info("NewP2PAPIServer call completed", zap.Bool("server_created", p2pAPIServer != nil))
+
+	if p2pAPIServer != nil {
+		loggerInstance.Info("P2P API Server initialized successfully",
+			zap.Int("port", cfg.API.Port),
+			zap.String("host", "0.0.0.0"),
+		)
+
+		// Start the P2P API Server
+		loggerInstance.Info("Starting P2P API Server...")
+		go func() {
+			if err := p2pAPIServer.Start(); err != nil {
+				loggerInstance.Error("Failed to start P2P API Server", zap.Error(err))
+			}
+		}()
+		loggerInstance.Info("P2P API Server started in goroutine")
+	} else {
+		loggerInstance.Error("Failed to initialize P2P API Server - NewP2PAPIServer returned nil")
+	}
+	// }
+
 	// Initialize Post-Quantum Cryptography components
 	quantumEnabled := cfg.Quantum.Enabled
 	var quantumConfig *quantum.PQCConfig
@@ -362,14 +402,14 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			Domain:   cfg.Cadence.Domain,
 			TaskList: cfg.Cadence.TaskList,
 		}
-		
+
 		var err error
 		cadenceClient, err = cadence.NewClient(cadenceConfig, loggerInstance.GetZapLogger())
 		if err != nil {
 			loggerInstance.Error("Failed to initialize Cadence client", zap.Error(err))
 			return nil, fmt.Errorf("failed to initialize Cadence client: %v", err)
 		}
-		
+
 		loggerInstance.Info("Cadence Workflow Engine initialized successfully",
 			zap.String("domain", cfg.Cadence.Domain),
 			zap.String("host_port", cfg.Cadence.HostPort),
@@ -470,6 +510,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		wireGuardInterface:     wireGuardInterface,
 		wireGuardMesh:          wireGuardMesh,
 		wireGuardPeerDiscovery: wireGuardPeerDiscovery,
+		p2pAPIServer:           p2pAPIServer,
 		quicOverWireGuard:      quicOverWireGuard,
 		hybridRouter:           hybridRouter,
 		siteToSiteManager:      siteToSiteManager,
@@ -593,11 +634,11 @@ func (s *Server) Start() error {
 			}
 
 			var req struct {
-				Config         map[string]interface{} `json:"config"`
+				Config          map[string]interface{} `json:"config"`
 				WireGuardConfig map[string]interface{} `json:"wireguard_config"`
-				QUICConfig     map[string]interface{} `json:"quic_config"`
-				Services       []string               `json:"services"`
-				Timeout        string                 `json:"timeout"`
+				QUICConfig      map[string]interface{} `json:"quic_config"`
+				Services        []string               `json:"services"`
+				Timeout         string                 `json:"timeout"`
 			}
 
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -616,7 +657,9 @@ func (s *Server) Start() error {
 				"workflow_id": workflowID,
 				"status":      "started",
 			}
-			json.NewEncoder(w).Encode(response)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				s.logger.Error("Failed to encode JSON response", zap.Error(err))
+			}
 		})
 
 		httpMux.HandleFunc("/api/v1/cadence/workflows/backup", func(w http.ResponseWriter, r *http.Request) {
@@ -627,10 +670,10 @@ func (s *Server) Start() error {
 			}
 
 			var req struct {
-				BackupConfig   map[string]interface{} `json:"backup_config"`
-				ConfigPaths    []string               `json:"config_paths"`
-				DataPaths      []string               `json:"data_paths"`
-				CleanupConfig  map[string]interface{} `json:"cleanup_config"`
+				BackupConfig  map[string]interface{} `json:"backup_config"`
+				ConfigPaths   []string               `json:"config_paths"`
+				DataPaths     []string               `json:"data_paths"`
+				CleanupConfig map[string]interface{} `json:"cleanup_config"`
 			}
 
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -688,56 +731,26 @@ func (s *Server) Start() error {
 		})
 
 		// Create TLS server instance
-		tlsServer := NewTLSServer(TLSConfig{
-			Enabled:      s.config.Security.TLSEnabled,
-			CertFile:     s.config.Security.CertFile,
-			KeyFile:      s.config.Security.KeyFile,
-			CipherSuites: s.config.Security.CipherSuites,
-			MinTLSVersion: s.config.Security.MinTLSVersion,
-			MTLS: MTLSConfig{
-				Enabled:            s.config.Security.MTLS.Enabled,
-				CAFile:             s.config.Security.MTLS.CACert,
-				ClientCertRequired: true, // Default to true when mTLS is enabled
-			},
-		}, s.logger.GetZapLogger())
-
-		// Validate TLS configuration
-		if err := tlsServer.ValidateTLSConfig(); err != nil {
-			s.logger.Error("TLS configuration validation failed", zap.Error(err))
-			// Continue with HTTP fallback if TLS validation fails
-		} else {
-			// Start HTTP/HTTPS server based on configuration
-			if s.config.Security.TLSEnabled {
-				// Start HTTPS server
-				server, err := tlsServer.StartHTTPServer(":9091", httpMux)
-				if err != nil {
-					s.logger.Error("Failed to start HTTPS server", zap.Error(err))
-					// Fallback to HTTP
-				} else {
-					s.httpServer = server
-
-					// Start HTTPS server in goroutine
-					go func() {
-						if err := server.ListenAndServeTLS(s.config.Security.CertFile, s.config.Security.KeyFile); err != nil && err != http.ErrServerClosed {
-							s.logger.Error("HTTPS server error", zap.Error(err))
-						}
-					}()
-				}
-			} else {
-				// Fallback to HTTP for development
-				httpServer := &http.Server{
-					Addr:    ":9091",
-					Handler: httpMux,
-				}
-				s.httpServer = httpServer
-
-				s.logger.Warn("HTTP server started on port 9091 without TLS (development mode)")
-				go func() {
-					if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-						s.logger.Error("HTTP server error", zap.Error(err))
-					}
-				}()
+		if s.config.Security.TLSEnabled {
+			if err := s.startTLSTunnelListener(); err != nil {
+				s.logger.Error("TLS tunnel listener startup failed", zap.Error(err))
 			}
+		} else {
+			// Fallback to HTTP for development only when TLS is disabled
+			httpServer := &http.Server{
+				Addr:              "127.0.0.1:9091",
+				Handler:           httpMux,
+				ReadHeaderTimeout: 30 * time.Second,
+				ReadTimeout:       30 * time.Second,
+				WriteTimeout:      30 * time.Second,
+			}
+			s.httpServer = httpServer
+			s.logger.Warn("HTTP server started on port 9091 without TLS (development mode)")
+			go func() {
+				if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					s.logger.Error("HTTP server error", zap.Error(err))
+				}
+			}()
 		}
 	}()
 
@@ -849,6 +862,16 @@ func (s *Server) Start() error {
 		}()
 	}
 
+	// Запуск P2P API сервера
+	if s.p2pAPIServer != nil {
+		go func() {
+			if err := s.p2pAPIServer.Start(); err != nil {
+				s.logger.Error("Failed to start P2P API server", zap.Error(err))
+			}
+		}()
+		s.logger.Info("P2P API Server started")
+	}
+
 	// Handle TCP connections
 	for {
 		conn, err := listener.Accept()
@@ -861,167 +884,6 @@ func (s *Server) Start() error {
 		}
 
 		go s.handleConnection(conn)
-	}
-}
-
-// handleWireGuardPacket handles incoming WireGuard packets
-func (s *Server) handleWireGuardPacket(conn *net.UDPConn, addr *net.UDPAddr, data []byte) {
-	s.logger.Debug("Received WireGuard packet",
-		zap.String("from", addr.String()),
-		zap.Int("size", len(data)),
-	)
-
-	// Basic WireGuard packet validation
-	if len(data) < 4 {
-		s.logger.Warn("Invalid WireGuard packet size", zap.Int("size", len(data)))
-		return
-	}
-
-	// Check if it's a WireGuard handshake packet
-	packetType := data[0]
-	switch packetType {
-	case 1: // Initiation
-		s.logger.Info("WireGuard initiation packet received", 
-			zap.String("from", addr.String()),
-			zap.Int("size", len(data)),
-			zap.String("hex_data", fmt.Sprintf("%x", data)),
-		)
-		// Генерируем Response пакет
-		responsePacket := s.generateWireGuardResponse(data, addr)
-		if responsePacket != nil {
-			s.logger.Info("Sending WireGuard response",
-				zap.String("to", addr.String()),
-				zap.Int("response_size", len(responsePacket)),
-			)
-			_, err := conn.WriteToUDP(responsePacket, addr)
-			if err != nil {
-				s.logger.Error("Failed to send WireGuard response", 
-					zap.String("to", addr.String()),
-					zap.Error(err),
-				)
-			} else {
-				s.logger.Info("WireGuard response sent successfully", 
-					zap.String("to", addr.String()),
-					zap.Int("bytes_sent", len(responsePacket)),
-				)
-			}
-		} else {
-			s.logger.Error("Failed to generate WireGuard response",
-				zap.String("to", addr.String()),
-			)
-		}
-	case 2: // Response
-		s.logger.Info("WireGuard response packet received", zap.String("from", addr.String()))
-		// Обрабатываем Response (завершение handshake)
-		s.handleWireGuardResponse(data, addr)
-	case 3: // Cookie Reply
-		s.logger.Debug("WireGuard cookie reply received", zap.String("from", addr.String()))
-		// Обрабатываем Cookie Reply
-		s.handleWireGuardCookieReply(data, addr)
-	case 4: // Transport Data
-		s.logger.Debug("WireGuard transport data received", zap.String("from", addr.String()))
-		// Обрабатываем транспортные данные
-		s.handleWireGuardTransport(data, addr)
-	default:
-		s.logger.Warn("Unknown WireGuard packet type", zap.Int("type", int(packetType)))
-	}
-}
-
-// generateWireGuardResponse генерирует Response пакет на Initiation
-func (s *Server) generateWireGuardResponse(initiationData []byte, addr *net.UDPAddr) []byte {
-	// Простая реализация Response пакета для тестирования
-	// В реальной реализации здесь будет полноценный WireGuard handshake
-	
-	// Формат Response: [тип][reserved][sender_index][receiver_index][reserved]
-	response := make([]byte, 6)
-	response[0] = 2 // Response тип
-	response[1] = 0 // Reserved
-	
-	// Копируем sender_index из initiation пакета
-	if len(initiationData) >= 4 {
-		response[2] = initiationData[2]
-		s.logger.Debug("Copied sender_index from initiation", 
-			zap.Uint8("sender_index", response[2]))
-	}
-	
-	// Генерируем receiver_index (в реальности это будет уникальный ID)
-	response[3] = byte(time.Now().Unix() % 256)
-	response[4] = 0 // Reserved
-	response[5] = 0 // Reserved
-	
-	s.logger.Info("Generated WireGuard response packet",
-		zap.String("to", addr.String()),
-		zap.Int("size", len(response)),
-		zap.Uint8("response_type", response[0]),
-		zap.Uint8("sender_index", response[2]),
-		zap.Uint8("receiver_index", response[3]),
-		zap.String("hex_data", fmt.Sprintf("%x", response)),
-	)
-	
-	return response
-}
-
-// handleWireGuardResponse обрабатывает Response пакет
-func (s *Server) handleWireGuardResponse(data []byte, addr *net.UDPAddr) {
-	s.logger.Info("Processing WireGuard response",
-		zap.String("from", addr.String()),
-		zap.Int("size", len(data)),
-	)
-	
-	// В реальной реализации здесь будет завершение handshake
-	// и установка защищенного соединения
-}
-
-// handleWireGuardCookieReply обрабатывает Cookie Reply
-func (s *Server) handleWireGuardCookieReply(data []byte, addr *net.UDPAddr) {
-	s.logger.Debug("Processing WireGuard cookie reply",
-		zap.String("from", addr.String()),
-		zap.Int("size", len(data)),
-	)
-}
-
-// handleWireGuardTransport обрабатывает транспортные данные
-func (s *Server) handleWireGuardTransport(data []byte, addr *net.UDPAddr) {
-	s.logger.Debug("Processing WireGuard transport data",
-		zap.String("from", addr.String()),
-		zap.Int("size", len(data)),
-	)
-	
-	// В реальной реализации здесь будет расшифровка и маршрутизация данных
-}
-
-// handleQUICPacket handles incoming QUIC packets
-func (s *Server) handleQUICPacket(conn *net.UDPConn, addr *net.UDPAddr, data []byte) {
-	s.logger.Debug("Received QUIC packet",
-		zap.String("from", addr.String()),
-		zap.Int("size", len(data)),
-	)
-
-	// Basic QUIC packet validation
-	if len(data) < 1 {
-		s.logger.Warn("Invalid QUIC packet size", zap.Int("size", len(data)))
-		return
-	}
-
-	// Check QUIC packet type (first byte)
-	packetType := data[0] & 0x30 >> 4 // Extract packet type from first byte
-	switch packetType {
-	case 0: // Initial
-		s.logger.Info("QUIC initial packet received", zap.String("from", addr.String()))
-	case 1: // 0-RTT
-		s.logger.Info("QUIC 0-RTT packet received", zap.String("from", addr.String()))
-	case 2: // Handshake
-		s.logger.Info("QUIC handshake packet received", zap.String("from", addr.String()))
-	case 3: // Retry
-		s.logger.Debug("QUIC retry packet received", zap.String("from", addr.String()))
-	default:
-		s.logger.Debug("QUIC short header packet received", zap.String("from", addr.String()))
-	}
-
-	// Echo back for testing (remove in production)
-	_, err := conn.WriteToUDP(data, addr)
-	if err != nil {
-		s.logger.Error("Failed to send QUIC response", zap.Error(err))
 	}
 }
 
@@ -1330,99 +1192,99 @@ func (s *Server) processConnection(conn net.Conn) error {
 					continue
 				}
 
-							// Обновляем активность тенанта
-			s.tenantManager.UpdateTenantActivity(tenantID)
-		}
+				// Обновляем активность тенанта
+				s.tenantManager.UpdateTenantActivity(tenantID)
+			}
 
-		// Создаем реальный прокси туннель
-		tunnelID := fmt.Sprintf("tunnel_%s_%d", tenantID, time.Now().Unix())
-		if s.tunnelManager != nil {
-					// Приводим remotePort к int (поддерживаем как int, так и string)
-		var remotePortInt int
-		switch v := remotePort.(type) {
-		case int:
-			remotePortInt = v
-		case string:
-			if parsed, err := strconv.Atoi(v); err == nil {
-				remotePortInt = parsed
-			} else {
-				respTunnel := map[string]interface{}{
-					"type":    "tunnel_response",
-					"status":  "error",
-					"message": "Invalid remote_port format: " + v,
+			// Создаем реальный прокси туннель
+			tunnelID := fmt.Sprintf("tunnel_%s_%d", tenantID, time.Now().Unix())
+			if s.tunnelManager != nil {
+				// Приводим remotePort к int (поддерживаем как int, так и string)
+				var remotePortInt int
+				switch v := remotePort.(type) {
+				case int:
+					remotePortInt = v
+				case string:
+					if parsed, err := strconv.Atoi(v); err == nil {
+						remotePortInt = parsed
+					} else {
+						respTunnel := map[string]interface{}{
+							"type":    "tunnel_response",
+							"status":  "error",
+							"message": "Invalid remote_port format: " + v,
+						}
+						if err := writeJSON(writer, respTunnel); err != nil {
+							s.logger.Error("Failed to send tunnel response", zap.Error(err))
+							return err
+						}
+						s.logger.Error("Invalid remote_port format",
+							zap.String("tunnel_id", tunnelID),
+							zap.Any("remote_port", remotePort),
+						)
+						tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+						continue
+					}
+				case float64:
+					remotePortInt = int(v)
+				default:
+					respTunnel := map[string]interface{}{
+						"type":    "tunnel_response",
+						"status":  "error",
+						"message": "Invalid remote_port type",
+					}
+					if err := writeJSON(writer, respTunnel); err != nil {
+						s.logger.Error("Failed to send tunnel response", zap.Error(err))
+						return err
+					}
+					s.logger.Error("Invalid remote_port type",
+						zap.String("tunnel_id", tunnelID),
+						zap.Any("remote_port", remotePort),
+					)
+					tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+					continue
 				}
-				if err := writeJSON(writer, respTunnel); err != nil {
-					s.logger.Error("Failed to send tunnel response", zap.Error(err))
-					return err
-				}
-				s.logger.Error("Invalid remote_port format",
-					zap.String("tunnel_id", tunnelID),
-					zap.Any("remote_port", remotePort),
-				)
-				tunnelsCreatedTotal.WithLabelValues("failed").Inc()
-				continue
-			}
-		case float64:
-			remotePortInt = int(v)
-		default:
-			respTunnel := map[string]interface{}{
-				"type":    "tunnel_response",
-				"status":  "error",
-				"message": "Invalid remote_port type",
-			}
-			if err := writeJSON(writer, respTunnel); err != nil {
-				s.logger.Error("Failed to send tunnel response", zap.Error(err))
-				return err
-			}
-			s.logger.Error("Invalid remote_port type",
-				zap.String("tunnel_id", tunnelID),
-				zap.Any("remote_port", remotePort),
-			)
-			tunnelsCreatedTotal.WithLabelValues("failed").Inc()
-			continue
-		}
 
-			// Создаем новый прокси туннель
-			_, err := s.tunnelManager.CreateTunnel(tunnelID, conn, remoteHost, remotePortInt)
-			if err != nil {
-				respTunnel := map[string]interface{}{
-					"type":    "tunnel_response",
-					"status":  "error",
-					"message": "Failed to create proxy tunnel: " + err.Error(),
+				// Создаем новый прокси туннель
+				_, err := s.tunnelManager.CreateTunnel(tunnelID, conn, remoteHost, remotePortInt)
+				if err != nil {
+					respTunnel := map[string]interface{}{
+						"type":    "tunnel_response",
+						"status":  "error",
+						"message": "Failed to create proxy tunnel: " + err.Error(),
+					}
+					if err := writeJSON(writer, respTunnel); err != nil {
+						s.logger.Error("Failed to send tunnel response", zap.Error(err))
+						return err
+					}
+					s.logger.Error("Failed to create proxy tunnel",
+						zap.String("tunnel_id", tunnelID),
+						zap.String("remote_host", remoteHost),
+						zap.Int("remote_port", remotePortInt),
+						zap.Error(err),
+					)
+					tunnelsCreatedTotal.WithLabelValues("failed").Inc()
+					continue
 				}
-				if err := writeJSON(writer, respTunnel); err != nil {
-					s.logger.Error("Failed to send tunnel response", zap.Error(err))
-					return err
-				}
-				s.logger.Error("Failed to create proxy tunnel",
+
+				s.logger.Info("Proxy tunnel created successfully",
 					zap.String("tunnel_id", tunnelID),
 					zap.String("remote_host", remoteHost),
 					zap.Int("remote_port", remotePortInt),
-					zap.Error(err),
+					zap.String("protocol", protocol),
 				)
-				tunnelsCreatedTotal.WithLabelValues("failed").Inc()
-				continue
 			}
 
-			s.logger.Info("Proxy tunnel created successfully",
-				zap.String("tunnel_id", tunnelID),
-				zap.String("remote_host", remoteHost),
-				zap.Int("remote_port", remotePortInt),
-				zap.String("protocol", protocol),
-			)
-		}
-
-		respTunnel := map[string]interface{}{
-			"type":          "tunnel_response",
-			"status":        "ok",
-			"tunnel_id":     tunnelID,
-			"local_port":    localPort,
-			"remote_host":   remoteHost,
-			"remote_port":   remotePort,
-			"protocol":      protocol,
-			"tenant_id":     tenantID,
-			"enhanced_mode": s.enhancedEnabled,
-		}
+			respTunnel := map[string]interface{}{
+				"type":          "tunnel_response",
+				"status":        "ok",
+				"tunnel_id":     tunnelID,
+				"local_port":    localPort,
+				"remote_host":   remoteHost,
+				"remote_port":   remotePort,
+				"protocol":      protocol,
+				"tenant_id":     tenantID,
+				"enhanced_mode": s.enhancedEnabled,
+			}
 
 			if err := writeJSON(writer, respTunnel); err != nil {
 				s.logger.Error("Failed to send tunnel response", zap.Error(err))
@@ -1501,182 +1363,6 @@ func (s *Server) processConnection(conn net.Conn) error {
 	return nil
 }
 
-// handleHTTPRequest handles HTTP requests (like health checks)
-func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufio.Reader) error {
-	// Read the rest of the HTTP request headers
-	var lines []string
-	lines = append(lines, firstLine)
-
-	// Read headers until empty line
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			// If we can't read more, just proceed with what we have
-			break
-		}
-		lines = append(lines, line)
-		if line == "\r\n" || line == "\n" {
-			break // End of headers
-		}
-	}
-
-	// Skip body for now - we don't need it for health checks and 404 responses
-
-	// Parse the first line to get method and path
-	parts := strings.Fields(firstLine)
-	if len(parts) < 2 {
-		// If we can't parse the request line, return 400 Bad Request
-		errorResponse := `{"error": "Invalid request line"}`
-		response := "HTTP/1.1 400 Bad Request\r\n"
-		response += "Content-Type: application/json\r\n"
-		response += "Connection: close\r\n"
-		response += fmt.Sprintf("Content-Length: %d\r\n", len(errorResponse))
-		response += "\r\n"
-		response += errorResponse
-
-		_, writeErr := conn.Write([]byte(response))
-		if writeErr != nil {
-			return writeErr
-		}
-
-		// Ensure all data is written before closing
-		if tcpConn, ok := conn.(*net.TCPConn); ok {
-			if err := tcpConn.CloseWrite(); err != nil {
-				s.logger.Warn("Failed to close TCP write", zap.Error(err))
-			}
-		}
-		return nil
-	}
-
-	method := parts[0]
-	path := parts[1]
-
-	s.logger.Debug("HTTP request", zap.String("method", method), zap.String("path", path))
-
-	// Handle OPTIONS request (CORS preflight)
-	if method == "OPTIONS" {
-		response := "HTTP/1.1 200 OK\r\n"
-		response += "Access-Control-Allow-Origin: *\r\n"
-		response += "Access-Control-Allow-Methods: GET, OPTIONS\r\n"
-		response += "Access-Control-Allow-Headers: Content-Type\r\n"
-		response += "Connection: close\r\n"
-		response += "Content-Length: 0\r\n"
-		response += "\r\n"
-
-		_, writeErr := conn.Write([]byte(response))
-		if writeErr != nil {
-			return writeErr
-		}
-
-		// Ensure all data is written before closing
-		if tcpConn, ok := conn.(*net.TCPConn); ok {
-			if err := tcpConn.CloseWrite(); err != nil {
-				s.logger.Warn("Failed to close TCP write", zap.Error(err))
-			}
-		}
-		return nil
-	}
-
-	// Handle health endpoint
-	if path == "/health" {
-		return s.handleHealthHTTP(conn)
-	}
-
-	// Return 404 for unknown paths
-	errorResponse := `{"error": "Not Found"}`
-	response := "HTTP/1.1 404 Not Found\r\n"
-	response += "Content-Type: application/json\r\n"
-	response += "Access-Control-Allow-Origin: *\r\n"
-	response += "Connection: close\r\n"
-	response += fmt.Sprintf("Content-Length: %d\r\n", len(errorResponse))
-	response += "\r\n"
-	response += errorResponse
-
-	_, writeErr := conn.Write([]byte(response))
-	if writeErr != nil {
-		return writeErr
-	}
-
-	// Ensure all data is written before closing
-	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		tcpConn.CloseWrite()
-	}
-	return nil
-}
-
-// handleHealthHTTP handles HTTP health check requests
-func (s *Server) handleHealthHTTP(conn net.Conn) error {
-	status := map[string]interface{}{
-		"status":    "ok",
-		"version":   s.config.API.Version,
-		"timestamp": time.Now().Format(time.RFC3339),
-		"service":   "cloudbridge-relay",
-		"uptime":    time.Since(s.startTime).String(),
-		"components": map[string]interface{}{
-			"tcp_server":        "running",
-			"metrics":           s.metricsServer != nil,
-			"health_checker":    s.healthChecker != nil,
-			"circuit_breaker":   s.circuitBreaker != nil,
-			"enhanced_quic":     s.enhancedEnabled,
-			"tenant_manager":    s.tenantManager != nil,
-			"load_balancer":     s.loadBalancer != nil,
-			"rate_limiter":      s.ipRateLimit != nil,
-			"enhanced_keycloak": s.enhancedKeycloakAuth != nil,
-		},
-	}
-
-	// Добавляем Enhanced QUIC статистику
-	if s.enhancedEnabled && s.enhancedQUICManager != nil {
-		status["enhanced_quic_stats"] = s.enhancedQUICManager.GetStats()
-	}
-
-	// Добавляем статистику тенантов
-	if s.tenantManager != nil {
-		status["tenant_stats"] = map[string]interface{}{
-			"total_tenants": s.tenantManager.GetTenantCount(),
-			"enhanced_mode": s.tenantManager.IsEnhancedEnabled(),
-		}
-	}
-
-	jsonData, err := json.Marshal(status)
-	if err != nil {
-		return err
-	}
-
-	response := "HTTP/1.1 200 OK\r\n"
-	response += "Content-Type: application/json\r\n"
-	response += "Access-Control-Allow-Origin: *\r\n"
-	response += "Access-Control-Allow-Methods: GET, OPTIONS\r\n"
-	response += "Access-Control-Allow-Headers: Content-Type\r\n"
-	response += "Connection: close\r\n"
-	response += fmt.Sprintf("Content-Length: %d\r\n", len(jsonData))
-	response += "\r\n"
-	response += string(jsonData)
-
-	_, err = conn.Write([]byte(response))
-	if err != nil {
-		return err
-	}
-
-	// Ensure all data is written before closing
-	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		tcpConn.CloseWrite()
-	}
-	return nil
-}
-
-func writeJSON(writer *bufio.Writer, msg interface{}) error {
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	data = append(data, '\n')
-	if _, err := writer.Write(data); err != nil {
-		return err
-	}
-	return writer.Flush()
-}
-
 // Stop stops the server
 func (s *Server) Stop() {
 	s.logger.Info("Stopping relay server...")
@@ -1716,6 +1402,9 @@ func (s *Server) Stop() {
 			s.logger.Error("Error closing listener", zap.Error(err))
 		}
 	}
+
+	// Stop additional server components
+	s.StopServer()
 
 	// Cancel context
 	s.cancel()

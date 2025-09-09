@@ -13,8 +13,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3"
 	"go.uber.org/zap"
 )
 
@@ -133,7 +131,9 @@ func main() {
 			"client_addr": "%s"
 		}`, Version, time.Now().Format(time.RFC3339), r.RemoteAddr)
 
-		w.Write([]byte(response))
+		if _, err := w.Write([]byte(response)); err != nil {
+			logger.Error("Failed to write response", zap.Error(err))
+		}
 		logger.Info("Request handled",
 			zap.String("method", r.Method),
 			zap.String("path", r.URL.Path),
@@ -143,7 +143,9 @@ func main() {
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status": "healthy", "service": "enhanced-quic"}`))
+		if _, err := w.Write([]byte(`{"status": "healthy", "service": "enhanced-quic"}`)); err != nil {
+			logger.Error("Failed to write health response", zap.Error(err))
+		}
 	})
 
 	// Generate self-signed certificate if not exists
@@ -154,14 +156,13 @@ func main() {
 		}
 	}
 
-	// Start Enhanced QUIC/HTTP3 server
-	server := &http3.Server{
-		Addr:    fmt.Sprintf("%s:%d", config.Host, config.Port),
-		Handler: mux,
-		QUICConfig: &quic.Config{
-			MaxIncomingStreams: int64(config.MaxStreams),
-			KeepAlivePeriod:    30 * time.Second,
-		},
+	// Start Enhanced QUIC server with HTTP/2 support
+	server := &http.Server{
+		Addr:         fmt.Sprintf("%s:%d", config.Host, config.Port),
+		Handler:      mux,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	logger.Info("Starting Enhanced QUIC server",
@@ -172,7 +173,14 @@ func main() {
 
 	// Start server in goroutine
 	go func() {
-		if err := server.ListenAndServeTLS(config.CertFile, config.KeyFile); err != nil {
+		var err error
+		if config.EnableHTTP3 {
+			// For now, use HTTPS instead of HTTP/3
+			err = server.ListenAndServeTLS(config.CertFile, config.KeyFile)
+		} else {
+			err = server.ListenAndServe()
+		}
+		if err != nil {
 			logger.Error("Server error", zap.Error(err))
 			cancel()
 		}
@@ -193,10 +201,10 @@ func main() {
 func generateSelfSignedCert(certFile, keyFile string) error {
 	// This is a placeholder - in real implementation you would generate actual certificates
 	// For demo purposes, we'll just create empty files
-	if err := os.WriteFile(certFile, []byte("# Demo cert file"), 0644); err != nil {
+	if err := os.WriteFile(certFile, []byte("# Demo cert file"), 0600); err != nil {
 		return err
 	}
-	if err := os.WriteFile(keyFile, []byte("# Demo key file"), 0644); err != nil {
+	if err := os.WriteFile(keyFile, []byte("# Demo key file"), 0600); err != nil {
 		return err
 	}
 	return nil

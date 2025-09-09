@@ -2,7 +2,9 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 )
 
 // Config represents the main configuration structure
@@ -15,10 +17,10 @@ type Config struct {
 
 // RelayConfig represents relay server configuration
 type RelayConfig struct {
-	Host         string `json:"host"`
-	Port         int    `json:"port"`
-	MaxConnections int  `json:"max_connections"`
-	Timeout      int    `json:"timeout"`
+	Host           string `json:"host"`
+	Port           int    `json:"port"`
+	MaxConnections int    `json:"max_connections"`
+	Timeout        int    `json:"timeout"`
 }
 
 // CadenceConfig represents Cadence configuration
@@ -30,9 +32,9 @@ type CadenceConfig struct {
 
 // TenantConfig represents tenant management configuration
 type TenantConfig struct {
-	MaxTunnelsPerTenant int `json:"max_tunnels_per_tenant"`
+	MaxTunnelsPerTenant     int `json:"max_tunnels_per_tenant"`
 	MaxConnectionsPerTenant int `json:"max_connections_per_tenant"`
-	RateLimitPerTenant  int `json:"rate_limit_per_tenant"`
+	RateLimitPerTenant      int `json:"rate_limit_per_tenant"`
 }
 
 // TunnelConfig represents tunnel management configuration
@@ -44,7 +46,11 @@ type TunnelConfig struct {
 
 // LoadConfig loads configuration from file
 func LoadConfig(filename string) (*Config, error) {
-	file, err := os.Open(filename)
+	// Валидация пути к файлу для предотвращения path traversal
+	if !isValidConfigPath(filename) {
+		return nil, fmt.Errorf("invalid config file path: %s", filename)
+	}
+	file, err := os.Open(filename) // #nosec G304 -- path validated above
 	if err != nil {
 		return nil, err
 	}
@@ -57,4 +63,24 @@ func LoadConfig(filename string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+// isValidConfigPath проверяет валидность пути к конфигурационному файлу
+func isValidConfigPath(path string) bool {
+	// Проверяем, что путь не содержит опасные символы
+	if strings.Contains(path, "..") || strings.Contains(path, "~") {
+		return false
+	}
+
+	// Проверяем, что путь начинается с допустимого префикса
+	validPrefixes := []string{"./", "/", "configs/", "internal/config/"}
+	hasValidPrefix := false
+	for _, prefix := range validPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			hasValidPrefix = true
+			break
+		}
+	}
+
+	return hasValidPrefix
 }
