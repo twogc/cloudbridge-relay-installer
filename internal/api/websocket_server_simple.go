@@ -1,29 +1,33 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
 
-// WebSocketConnection представляет WebSocket соединение (упрощенная версия)
+// WebSocketConnection представляет WebSocket соединение
 type WebSocketConnection struct {
 	PeerID   string
 	TenantID string
+	Conn     *websocket.Conn
 	Send     chan []byte
 	Hub      *Hub
 	mu       sync.RWMutex
 }
 
-// Hub управляет WebSocket соединениями (упрощенная версия)
+// Hub управляет WebSocket соединениями
 type Hub struct {
 	Connections map[string]*WebSocketConnection
 	Register    chan *WebSocketConnection
 	Unregister  chan *WebSocketConnection
 	Broadcast   chan []byte
+	upgrader    websocket.Upgrader
 	mu          sync.RWMutex
 	logger      *zap.Logger
 }
@@ -35,7 +39,14 @@ func NewHub(logger *zap.Logger) *Hub {
 		Register:    make(chan *WebSocketConnection),
 		Unregister:  make(chan *WebSocketConnection),
 		Broadcast:   make(chan []byte),
-		logger:      logger,
+		upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true // В production здесь должна быть проверка origin
+			},
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		},
+		logger: logger,
 	}
 }
 
@@ -79,13 +90,44 @@ func (h *Hub) Run() {
 	}
 }
 
-// HandleWebSocket обрабатывает WebSocket соединения (заглушка)
+// HandleWebSocket обрабатывает WebSocket соединения
 func (h *Hub) HandleWebSocket(c *gin.Context) {
-	// TODO: Реализовать WebSocket после добавления зависимости
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"error":   "WebSocket not implemented yet",
-		"message": "WebSocket functionality will be available after adding websocket dependency",
-	})
+	// Валидация JWT токена
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Missing authorization header",
+		})
+		return
+	}
+
+	// TODO: Валидация токена и извлечение peer_id и tenant_id
+	// Пока используем mock данные
+	peerID := "mock-peer-id"
+	tenantID := "mock-tenant-id"
+
+	// Обновление HTTP соединения до WebSocket
+	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		h.logger.Error("Failed to upgrade connection to WebSocket", zap.Error(err))
+		return
+	}
+
+	// Создание WebSocket соединения
+	wsConn := &WebSocketConnection{
+		PeerID:   peerID,
+		TenantID: tenantID,
+		Conn:     conn,
+		Send:     make(chan []byte, 256),
+		Hub:      h,
+	}
+
+	// Регистрация соединения
+	h.Register <- wsConn
+
+	// Запуск горутин для чтения и записи
+	go wsConn.writePump()
+	go wsConn.readPump()
 }
 
 // BroadcastToTenant отправляет сообщение всем пирам тенанта
@@ -216,8 +258,98 @@ func (h *Hub) GetTenantConnectionCount(tenantID string) int {
 	return count
 }
 
+// readPump читает сообщения из WebSocket соединения
+func (c *WebSocketConnection) readPump() {
+	defer func() {
+		c.Hub.Unregister <- c
+		c.Conn.Close()
+	}()
+
+	c.Conn.SetReadLimit(512)
+	if err := c.Conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+		return
+	}
+	c.Conn.SetPongHandler(func(string) error {
+		if err := c.Conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	for {
+		_, _, err := c.Conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				c.Hub.logger.Error("WebSocket error", zap.Error(err))
+			}
+			break
+		}
+	}
+}
+
+// writePump записывает сообщения в WebSocket соединение
+func (c *WebSocketConnection) writePump() {
+	ticker := time.NewTicker(54 * time.Second)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+
+	for {
+		select {
+		case message, ok := <-c.Send:
+			if err := c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+				return
+			}
+			if !ok {
+				if err := c.Conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
+					// Log error but continue
+				}
+				return
+			}
+
+			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			if _, err := w.Write(message); err != nil {
+				w.Close()
+				return
+			}
+
+			// Добавляем дополнительные сообщения из очереди
+			n := len(c.Send)
+			for i := 0; i < n; i++ {
+				if _, err := w.Write([]byte{'\n'}); err != nil {
+					w.Close()
+					return
+				}
+				if _, err := w.Write(<-c.Send); err != nil {
+					w.Close()
+					return
+				}
+			}
+
+			if err := w.Close(); err != nil {
+				return
+			}
+
+		case <-ticker.C:
+			if err := c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
+				return
+			}
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
+}
+
 // String возвращает JSON представление сообщения
 func (m WebSocketMessage) String() string {
-	// В реальной реализации здесь должен быть JSON marshal
-	return `{"type":"` + m.Type + `","timestamp":"` + m.Timestamp.Format(time.RFC3339) + `"}`
+	data, err := json.Marshal(m)
+	if err != nil {
+		return `{"type":"` + m.Type + `","timestamp":"` + m.Timestamp.Format(time.RFC3339) + `"}`
+	}
+	return string(data)
 }

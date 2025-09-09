@@ -1,0 +1,229 @@
+package database
+
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+// Peer represents a peer in the database
+type Peer struct {
+	ID                uuid.UUID       `json:"id" db:"id"`
+	PeerID            string          `json:"peer_id" db:"peer_id"`
+	TenantID          string          `json:"tenant_id" db:"tenant_id"`
+	OrgID             string          `json:"org_id" db:"org_id"`
+	DeviceID          string          `json:"device_id" db:"device_id"`
+	ConnectionType    string          `json:"connection_type" db:"connection_type"`
+	WireGuardConfig   *WireGuardConfig `json:"wireguard_config" db:"wireguard_config"`
+	MeshConfig        *MeshConfig     `json:"mesh_config" db:"mesh_config"`
+	PeerWhitelist     *PeerWhitelist  `json:"peer_whitelist" db:"peer_whitelist"`
+	NetworkConfig     *NetworkConfig  `json:"network_config" db:"network_config"`
+	IsOnline          bool            `json:"is_online" db:"is_online"`
+	LastSeen          time.Time       `json:"last_seen" db:"last_seen"`
+	RegisteredAt      time.Time       `json:"registered_at" db:"registered_at"`
+	ActiveConnections int             `json:"active_connections" db:"active_connections"`
+	MeshStatus        string          `json:"mesh_status" db:"mesh_status"`
+	LatencyMS         int             `json:"latency_ms" db:"latency_ms"`
+	CreatedAt         time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time       `json:"updated_at" db:"updated_at"`
+}
+
+// PeerConnection represents a connection between peers
+type PeerConnection struct {
+	ID               uuid.UUID `json:"id" db:"id"`
+	FromPeerID       string    `json:"from_peer_id" db:"from_peer_id"`
+	ToPeerID         string    `json:"to_peer_id" db:"to_peer_id"`
+	ConnectionType   string    `json:"connection_type" db:"connection_type"`
+	IsActive         bool      `json:"is_active" db:"is_active"`
+	EstablishedAt    time.Time `json:"established_at" db:"established_at"`
+	LastActivity     time.Time `json:"last_activity" db:"last_activity"`
+	BytesTransferred int64     `json:"bytes_transferred" db:"bytes_transferred"`
+	LatencyMS        int       `json:"latency_ms" db:"latency_ms"`
+	CreatedAt        time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// PeerMetric represents a metric for a peer
+type PeerMetric struct {
+	ID          uuid.UUID       `json:"id" db:"id"`
+	PeerID      string          `json:"peer_id" db:"peer_id"`
+	MetricType  string          `json:"metric_type" db:"metric_type"`
+	MetricValue float64         `json:"metric_value" db:"metric_value"`
+	MetricUnit  string          `json:"metric_unit" db:"metric_unit"`
+	Labels      map[string]string `json:"labels" db:"labels"`
+	Timestamp   time.Time       `json:"timestamp" db:"timestamp"`
+	CreatedAt   time.Time       `json:"created_at" db:"created_at"`
+}
+
+// WebSocketConnection represents a WebSocket connection
+type WebSocketConnection struct {
+	ID           uuid.UUID `json:"id" db:"id"`
+	PeerID       string    `json:"peer_id" db:"peer_id"`
+	TenantID     string    `json:"tenant_id" db:"tenant_id"`
+	ConnectionID string    `json:"connection_id" db:"connection_id"`
+	IsActive     bool      `json:"is_active" db:"is_active"`
+	ConnectedAt  time.Time `json:"connected_at" db:"connected_at"`
+	LastPing     time.Time `json:"last_ping" db:"last_ping"`
+	UserAgent    string    `json:"user_agent" db:"user_agent"`
+	RemoteAddr   string    `json:"remote_addr" db:"remote_addr"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// RelayMessage represents a relay message for audit
+type RelayMessage struct {
+	ID            uuid.UUID `json:"id" db:"id"`
+	FromPeerID    string    `json:"from_peer_id" db:"from_peer_id"`
+	ToPeerID      string    `json:"to_peer_id" db:"to_peer_id"`
+	MessageType   string    `json:"message_type" db:"message_type"`
+	MessageSize   int       `json:"message_size" db:"message_size"`
+	Success       bool      `json:"success" db:"success"`
+	LatencyMS     int       `json:"latency_ms" db:"latency_ms"`
+	ErrorMessage  string    `json:"error_message" db:"error_message"`
+	Timestamp     time.Time `json:"timestamp" db:"timestamp"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+}
+
+// WireGuardConfig represents WireGuard configuration
+type WireGuardConfig struct {
+	PublicKey  string   `json:"public_key"`
+	Endpoint   string   `json:"endpoint"`
+	ListenPort int      `json:"listen_port"`
+	AllowedIPs []string `json:"allowed_ips"`
+}
+
+// Value implements driver.Valuer for database storage
+func (wgc *WireGuardConfig) Value() (driver.Value, error) {
+	if wgc == nil {
+		return nil, nil
+	}
+	return json.Marshal(wgc)
+}
+
+// Scan implements sql.Scanner for database retrieval
+func (wgc *WireGuardConfig) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	
+	bytes, ok := value.([]byte)
+	if !ok {
+		return nil
+	}
+	
+	return json.Unmarshal(bytes, wgc)
+}
+
+// MeshConfig represents mesh network configuration
+type MeshConfig struct {
+	AutoDiscovery bool   `json:"auto_discovery"`
+	Routing       string `json:"routing"`
+	Encryption    string `json:"encryption"`
+}
+
+// Value implements driver.Valuer for database storage
+func (mc *MeshConfig) Value() (driver.Value, error) {
+	if mc == nil {
+		return nil, nil
+	}
+	return json.Marshal(mc)
+}
+
+// Scan implements sql.Scanner for database retrieval
+func (mc *MeshConfig) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	
+	bytes, ok := value.([]byte)
+	if !ok {
+		return nil
+	}
+	
+	return json.Unmarshal(bytes, mc)
+}
+
+// PeerWhitelist represents peer whitelist configuration
+type PeerWhitelist struct {
+	AllowedPeers []string `json:"allowed_peers"`
+	AutoApprove  bool     `json:"auto_approve"`
+	MaxPeers     int      `json:"max_peers"`
+}
+
+// Value implements driver.Valuer for database storage
+func (pwl *PeerWhitelist) Value() (driver.Value, error) {
+	if pwl == nil {
+		return nil, nil
+	}
+	return json.Marshal(pwl)
+}
+
+// Scan implements sql.Scanner for database retrieval
+func (pwl *PeerWhitelist) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	
+	bytes, ok := value.([]byte)
+	if !ok {
+		return nil
+	}
+	
+	return json.Unmarshal(bytes, pwl)
+}
+
+// NetworkConfig represents network configuration
+type NetworkConfig struct {
+	Subnet string   `json:"subnet"`
+	DNS    []string `json:"dns"`
+	MTU    int      `json:"mtu"`
+}
+
+// Value implements driver.Valuer for database storage
+func (nc *NetworkConfig) Value() (driver.Value, error) {
+	if nc == nil {
+		return nil, nil
+	}
+	return json.Marshal(nc)
+}
+
+// Scan implements sql.Scanner for database retrieval
+func (nc *NetworkConfig) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	
+	bytes, ok := value.([]byte)
+	if !ok {
+		return nil
+	}
+	
+	return json.Unmarshal(bytes, nc)
+}
+
+// Labels represents metric labels
+type Labels map[string]string
+
+// Value implements driver.Valuer for database storage
+func (l Labels) Value() (driver.Value, error) {
+	if l == nil {
+		return nil, nil
+	}
+	return json.Marshal(l)
+}
+
+// Scan implements sql.Scanner for database retrieval
+func (l *Labels) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	
+	bytes, ok := value.([]byte)
+	if !ok {
+		return nil
+	}
+	
+	return json.Unmarshal(bytes, l)
+}

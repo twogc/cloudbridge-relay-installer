@@ -3,6 +3,7 @@ package api
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ type PeerManager struct {
 	connections map[string]*PeerConnection
 	logger      *zap.Logger
 	validator   TokenValidator
+	ipValidator *IPValidator
 }
 
 // TokenValidator интерфейс для валидации токенов
@@ -53,6 +55,7 @@ func NewPeerManager(logger *zap.Logger, validator TokenValidator) *PeerManager {
 		connections: make(map[string]*PeerConnection),
 		logger:      logger,
 		validator:   validator,
+		ipValidator: NewIPValidator(logger),
 	}
 }
 
@@ -110,6 +113,47 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 			Message: "Peer with this ID is already registered",
 		})
 		return
+	}
+
+	// Валидация WireGuard конфигурации
+	if req.WireGuardConfig != nil {
+		// Валидация endpoint IP
+		if err := pm.ipValidator.ValidateWireGuardEndpoint(req.WireGuardConfig.Endpoint); err != nil {
+			pm.logger.Error("Invalid WireGuard endpoint", zap.Error(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Error:   "Invalid WireGuard endpoint",
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+			})
+			return
+		}
+
+		// Валидация allowed IPs
+		if err := pm.ipValidator.ValidateAllowedIPs(req.WireGuardConfig.AllowedIPs); err != nil {
+			pm.logger.Error("Invalid WireGuard allowed IPs", zap.Error(err))
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Error:   "Invalid WireGuard allowed IPs",
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
+			})
+			return
+		}
+	}
+
+	// Валидация peer whitelist
+	if req.PeerWhitelist != nil {
+		// Проверяем, что все allowed peers являются валидными
+		for _, allowedPeer := range req.PeerWhitelist.AllowedPeers {
+			if allowedPeer == "" {
+				pm.logger.Error("Invalid peer whitelist: empty peer ID")
+				c.JSON(http.StatusBadRequest, ErrorResponse{
+					Error:   "Invalid peer whitelist",
+					Code:    http.StatusBadRequest,
+					Message: "Empty peer ID in whitelist",
+				})
+				return
+			}
+		}
 	}
 
 	// Создание пира
@@ -334,6 +378,7 @@ func (pm *PeerManager) validatePeerAccess(peerID string, whitelist *PeerWhitelis
 		return true
 	}
 
+	// Проверяем, что peerID есть в списке разрешенных
 	for _, allowedPeer := range whitelist.AllowedPeers {
 		if allowedPeer == peerID {
 			return true
@@ -367,7 +412,11 @@ func (pm *PeerManager) getLastSeen(peerID string) time.Time {
 // generateID генерирует уникальный ID
 func generateID() string {
 	bytes := make([]byte, 16)
-	rand.Read(bytes)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		// Fallback to timestamp-based ID if crypto/rand fails
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
 	return hex.EncodeToString(bytes)
 }
 
