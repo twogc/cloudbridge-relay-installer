@@ -1,0 +1,98 @@
+# AI Configuration for CloudBridge Relay
+# CPU-only implementation optimized for 4 cores, 11GB RAM
+
+ai:
+  # General AI settings
+  enabled: true
+  mode: "cpu-only"  # cpu-only, gpu, hybrid
+  log_level: "info"
+  
+  # Performance settings
+  max_concurrent_requests: 100
+  request_timeout: "30s"
+  cache_ttl: "5m"
+  
+  # Model settings
+  models:
+    anomaly_detection:
+      enabled: true
+      algorithm: "isolation_forest"
+      threshold: 0.8
+      learning_rate: 0.01
+      max_samples: 10000
+      contamination: 0.1
+      
+    load_prediction:
+      enabled: true
+      algorithm: "arima"
+      arima_params:
+        p: 2  # autoregressive
+        d: 1  # differencing
+        q: 2  # moving average
+      forecast_horizon: 24  # hours
+      confidence_level: 0.8
+      
+    route_optimization:
+      enabled: true
+      algorithm: "multi_armed_bandit"
+      exploration_rate: 0.1
+      learning_rate: 0.05
+      update_interval: "1m"
+      
+  # Data pipeline settings
+  data_pipeline:
+    enabled: true
+    batch_size: 1000
+    processing_interval: "10s"
+    retention_days: 30
+    
+    # Feature extraction
+    features:
+      network:
+        - "bandwidth_utilization"
+        - "latency"
+        - "packet_loss"
+        - "connection_count"
+        - "protocol_distribution"
+        
+      system:
+        - "cpu_usage"
+        - "memory_usage"
+        - "disk_io"
+        - "network_io"
+        
+      security:
+        - "failed_connections"
+        - "suspicious_patterns"
+        - "rate_limiting"
+        - "authentication_failures"
+        
+  # Monitoring settings
+  monitoring:
+    enabled: true
+    metrics_interval: "30s"
+    alert_thresholds:
+      anomaly_score: 0.9
+      prediction_accuracy: 0.7
+      processing_latency: "100ms"
+      
+  # Storage settings
+  storage:
+    type: "file"  # file, redis, database
+    path: "/data/ai"
+    max_size: "1GB"
+    compression: true
+    
+  # API settings
+  api:
+    enabled: true
+    port: 8083
+    cors_enabled: true
+    rate_limit: 1000  # requests per minute
+    
+  # Development settings
+  development:
+    debug: false
+    mock_data: false
+    test_mode: false
+

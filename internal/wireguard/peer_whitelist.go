@@ -160,3 +160,5 @@ func (pw *PeerWhitelist) Clear() {
 	pw.AllowedPeers = make(map[string]bool)
 	pw.logger.Info("Peer whitelist cleared")
 }
+
+

@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-config
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: ai-config
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: ai
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+data:
+  ai-config.yaml: |
+    ai:
+      enabled: true
+      mode: "kubernetes"
+      models_path: "/app/models"
+      redis_address: "redis-service:6379"
+      redis_password: ""
+      redis_db: 0
+      kubernetes:
+        namespace: "cloudbridge"
+        monitoring_interval: "30s"
+        metrics_collection: true
+        auto_scaling: true
+      anomaly_detection:
+        enabled: true
+        threshold: 0.8
+        learning_rate: 0.01
+        max_samples: 10000
+        contamination: 0.1
+        model_file: "anomaly_detector.gob"
+        kubernetes_integration: true
+        retrain_interval: "1h"
+      predictive_analytics:
+        enabled: true
+        algorithm: "arima"
+        forecast_horizon: 24
+        confidence_level: 0.8
+        model_file: "load_predictor.gob"
+        retrain_interval: "6h"
+      intelligent_routing:
+        enabled: true
+        algorithm: "multi_armed_bandit"
+        exploration_rate: 0.1
+        learning_rate: 0.05
+        update_interval: "5m"
+        model_file: "route_optimizer.gob"
+        kubernetes_aware: true
+      security_intelligence:
+        enabled: true
+        model_file: "security_threat_model.gob"
+        threat_detection: true
+        auto_response: false
+      data_pipeline:
+        enabled: true
+        batch_size: 100
+        processing_interval: "10s"
+        retention_days: 30
+        kubernetes_metrics: true
+        prometheus_metrics: true
+      monitoring:
+        enabled: true
+        metrics_endpoint: "/metrics"
+        health_endpoint: "/health"
+        cadence_integration: true
+        prometheus_integration: true
+

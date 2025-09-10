@@ -34,3 +34,5 @@ func (n *NetworkConfig) Validate() error {
 
 	return nil
 }
+
+

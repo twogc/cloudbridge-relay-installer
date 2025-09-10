@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-worker
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: ai-worker
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: ai-worker
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-worker
+      app.kubernetes.io/component: ai-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ai-worker
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: ai-worker
+        app.kubernetes.io/part-of: cloudbridge-relay
+        app.kubernetes.io/managed-by: kubectl
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8085"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: ai-worker
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: ai-worker
+        image: cloudbridge-ai-worker:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: metrics
+          containerPort: 8085
+          protocol: TCP
+        env:
+        - name: LOG_LEVEL
+          value: "info"
+        - name: TZ
+          value: "UTC"
+        - name: CADENCE_HOST
+          value: "cadence-service"
+        - name: CADENCE_PORT
+          value: "7933"
+        - name: CADENCE_DOMAIN
+          value: "cloudbridge"
+        - name: TASK_LIST
+          value: "ai-task-list"
+        - name: WORKER_IDENTITY
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_NAMESPACE
+          value: "cloudbridge"
+        - name: AI_CONFIG_PATH
+          value: "/app/configs/ai-config.yaml"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: ai-config
+          mountPath: /app/configs
+          readOnly: true
+        - name: ai-models
+          mountPath: /app/models
+        - name: ai-logs
+          mountPath: /app/logs
+        # Health checks disabled for now - focusing on Cadence integration
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: ai-config
+        configMap:
+          name: ai-config
+      - name: ai-models
+        persistentVolumeClaim:
+          claimName: ai-models-pvc
+      - name: ai-logs
+        persistentVolumeClaim:
+          claimName: ai-logs-pvc
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - ai-worker
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-worker
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: ai-worker
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: ai-worker
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ai-worker
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: ai-worker
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: ai-worker
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ai-worker
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: ai-worker
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: ai-worker
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ai-worker
+subjects:
+- kind: ServiceAccount
+  name: ai-worker
+  namespace: cloudbridge

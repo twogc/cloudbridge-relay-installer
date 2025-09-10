@@ -73,3 +73,5 @@ func (nm *P2PNotificationManager) ClearCallbacks() {
 	nm.callbacks = make([]P2PUnavailableCallback, 0)
 	nm.logger.Info("All P2P notification callbacks cleared")
 }
+
+

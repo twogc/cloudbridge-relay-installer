@@ -42,3 +42,5 @@ func (wg *WireGuardConfig) Validate() error {
 
 	return nil
 }
+
+

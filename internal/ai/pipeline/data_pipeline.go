@@ -1,0 +1,519 @@
+package pipeline
+
+import (
+	"context"
+	"fmt"
+	"sync"
+	"time"
+
+	"go.uber.org/zap"
+)
+
+// DataPipeline обрабатывает данные для AI системы
+type DataPipeline struct {
+	config    *Config
+	logger    *zap.Logger
+	collectors map[string]DataCollector
+	processors []DataProcessor
+	storage   DataStorage
+	
+	// State
+	started   bool
+	stopCh    chan struct{}
+	wg        sync.WaitGroup
+	ctx       context.Context
+	cancel    context.CancelFunc
+}
+
+// Config конфигурация data pipeline
+type Config struct {
+	Enabled            bool          `yaml:"enabled"`
+	BatchSize          int           `yaml:"batch_size"`
+	ProcessingInterval time.Duration `yaml:"processing_interval"`
+	RetentionDays      int           `yaml:"retention_days"`
+}
+
+// DataCollector интерфейс для сбора данных
+type DataCollector interface {
+	Collect() ([]DataPoint, error)
+	Start() error
+	Stop() error
+}
+
+// DataProcessor интерфейс для обработки данных
+type DataProcessor interface {
+	Process(data []DataPoint) ([]DataPoint, error)
+}
+
+// DataStorage интерфейс для хранения данных
+type DataStorage interface {
+	Store(data []DataPoint) error
+	Retrieve(timeRange TimeRange) ([]DataPoint, error)
+}
+
+// DataPoint представляет точку данных
+type DataPoint struct {
+	Timestamp time.Time              `json:"timestamp"`
+	Source    string                 `json:"source"`
+	Type      string                 `json:"type"`
+	Data      map[string]interface{} `json:"data"`
+}
+
+// TimeRange представляет временной диапазон
+type TimeRange struct {
+	Start time.Time `json:"start"`
+	End   time.Time `json:"end"`
+}
+
+// NewDataPipeline создает новый data pipeline
+func NewDataPipeline(config *Config, logger *zap.Logger) *DataPipeline {
+	ctx, cancel := context.WithCancel(context.Background())
+	
+	return &DataPipeline{
+		config:     config,
+		logger:     logger,
+		collectors: make(map[string]DataCollector),
+		processors: make([]DataProcessor, 0),
+		stopCh:     make(chan struct{}),
+		ctx:        ctx,
+		cancel:     cancel,
+	}
+}
+
+// Initialize инициализирует data pipeline
+func (dp *DataPipeline) Initialize() error {
+	dp.logger.Info("Initializing Data Pipeline...")
+	
+	// Инициализируем коллекторы
+	if err := dp.initializeCollectors(); err != nil {
+		return fmt.Errorf("failed to initialize collectors: %w", err)
+	}
+	
+	// Инициализируем процессоры
+	if err := dp.initializeProcessors(); err != nil {
+		return fmt.Errorf("failed to initialize processors: %w", err)
+	}
+	
+	// Инициализируем хранилище
+	if err := dp.initializeStorage(); err != nil {
+		return fmt.Errorf("failed to initialize storage: %w", err)
+	}
+	
+	dp.logger.Info("Data Pipeline initialized successfully")
+	return nil
+}
+
+// Start запускает data pipeline
+func (dp *DataPipeline) Start() error {
+	if dp.started {
+		return fmt.Errorf("data pipeline is already started")
+	}
+	
+	dp.logger.Info("Starting Data Pipeline...")
+	
+	// Запускаем коллекторы
+	for name, collector := range dp.collectors {
+		if err := collector.Start(); err != nil {
+			return fmt.Errorf("failed to start collector %s: %w", name, err)
+		}
+	}
+	
+	// Запускаем обработку данных
+	dp.wg.Add(1)
+	go dp.dataProcessing()
+	
+	dp.started = true
+	dp.logger.Info("Data Pipeline started successfully")
+	return nil
+}
+
+// Stop останавливает data pipeline
+func (dp *DataPipeline) Stop() error {
+	if !dp.started {
+		return nil
+	}
+	
+	dp.logger.Info("Stopping Data Pipeline...")
+	
+	// Останавливаем коллекторы
+	for name, collector := range dp.collectors {
+		if err := collector.Stop(); err != nil {
+			dp.logger.Error("Failed to stop collector", zap.String("name", name), zap.Error(err))
+		}
+	}
+	
+	// Останавливаем обработку данных
+	dp.cancel()
+	close(dp.stopCh)
+	dp.wg.Wait()
+	
+	dp.started = false
+	dp.logger.Info("Data Pipeline stopped successfully")
+	return nil
+}
+
+// CollectData собирает данные из всех коллекторов
+func (dp *DataPipeline) CollectData() ([]DataPoint, error) {
+	var allData []DataPoint
+	
+	for name, collector := range dp.collectors {
+		data, err := collector.Collect()
+		if err != nil {
+			dp.logger.Error("Failed to collect data", zap.String("collector", name), zap.Error(err))
+			continue
+		}
+		
+		allData = append(allData, data...)
+	}
+	
+	return allData, nil
+}
+
+// dataProcessing обрабатывает данные в фоновом режиме
+func (dp *DataPipeline) dataProcessing() {
+	defer dp.wg.Done()
+	
+	ticker := time.NewTicker(dp.config.ProcessingInterval)
+	defer ticker.Stop()
+	
+	for {
+		select {
+		case <-dp.ctx.Done():
+			return
+		case <-dp.stopCh:
+			return
+		case <-ticker.C:
+			dp.processData()
+		}
+	}
+}
+
+// processData обрабатывает собранные данные
+func (dp *DataPipeline) processData() {
+	start := time.Now()
+	
+	// Собираем данные
+	data, err := dp.CollectData()
+	if err != nil {
+		dp.logger.Error("Failed to collect data", zap.Error(err))
+		return
+	}
+	
+	if len(data) == 0 {
+		return
+	}
+	
+	// Обрабатываем данные
+	processedData := data
+	for _, processor := range dp.processors {
+		processedData, err = processor.Process(processedData)
+		if err != nil {
+			dp.logger.Error("Failed to process data", zap.Error(err))
+			return
+		}
+	}
+	
+	// Сохраняем данные
+	if err := dp.storage.Store(processedData); err != nil {
+		dp.logger.Error("Failed to store data", zap.Error(err))
+		return
+	}
+	
+	processingTime := time.Since(start)
+	dp.logger.Debug("Data processing completed",
+		zap.Int("data_points", len(data)),
+		zap.Duration("processing_time", processingTime))
+}
+
+// initializeCollectors инициализирует коллекторы данных
+func (dp *DataPipeline) initializeCollectors() error {
+	// Prometheus коллектор
+	prometheusCollector := NewPrometheusCollector(dp.logger)
+	dp.collectors["prometheus"] = prometheusCollector
+	
+	// System коллектор
+	systemCollector := NewSystemCollector(dp.logger)
+	dp.collectors["system"] = systemCollector
+	
+	// Network коллектор
+	networkCollector := NewNetworkCollector(dp.logger)
+	dp.collectors["network"] = networkCollector
+	
+	dp.logger.Info("Collectors initialized", zap.Int("count", len(dp.collectors)))
+	return nil
+}
+
+// initializeProcessors инициализирует процессоры данных
+func (dp *DataPipeline) initializeProcessors() error {
+	// Feature extractor
+	featureExtractor := NewFeatureExtractor(dp.logger)
+	dp.processors = append(dp.processors, featureExtractor)
+	
+	// Data normalizer
+	normalizer := NewDataNormalizer(dp.logger)
+	dp.processors = append(dp.processors, normalizer)
+	
+	dp.logger.Info("Processors initialized", zap.Int("count", len(dp.processors)))
+	return nil
+}
+
+// initializeStorage инициализирует хранилище данных
+func (dp *DataPipeline) initializeStorage() error {
+	// File storage
+	dp.storage = NewFileStorage(dp.config, dp.logger)
+	
+	dp.logger.Info("Storage initialized")
+	return nil
+}
+
+// PrometheusCollector собирает данные из Prometheus
+type PrometheusCollector struct {
+	logger *zap.Logger
+}
+
+// NewPrometheusCollector создает новый Prometheus коллектор
+func NewPrometheusCollector(logger *zap.Logger) *PrometheusCollector {
+	return &PrometheusCollector{
+		logger: logger,
+	}
+}
+
+// Collect собирает данные из Prometheus
+func (pc *PrometheusCollector) Collect() ([]DataPoint, error) {
+	// Заглушка для сбора данных из Prometheus
+	data := []DataPoint{
+		{
+			Timestamp: time.Now(),
+			Source:    "prometheus",
+			Type:      "metrics",
+			Data: map[string]interface{}{
+				"cpu_usage":    45.5,
+				"memory_usage": 60.2,
+				"connections":  150,
+			},
+		},
+	}
+	
+	return data, nil
+}
+
+// Start запускает коллектор
+func (pc *PrometheusCollector) Start() error {
+	pc.logger.Info("Prometheus collector started")
+	return nil
+}
+
+// Stop останавливает коллектор
+func (pc *PrometheusCollector) Stop() error {
+	pc.logger.Info("Prometheus collector stopped")
+	return nil
+}
+
+// SystemCollector собирает системные данные
+type SystemCollector struct {
+	logger *zap.Logger
+}
+
+// NewSystemCollector создает новый системный коллектор
+func NewSystemCollector(logger *zap.Logger) *SystemCollector {
+	return &SystemCollector{
+		logger: logger,
+	}
+}
+
+// Collect собирает системные данные
+func (sc *SystemCollector) Collect() ([]DataPoint, error) {
+	// Заглушка для сбора системных данных
+	data := []DataPoint{
+		{
+			Timestamp: time.Now(),
+			Source:    "system",
+			Type:      "system_metrics",
+			Data: map[string]interface{}{
+				"load_average": 1.2,
+				"disk_usage":   75.8,
+				"network_io":   1024000,
+			},
+		},
+	}
+	
+	return data, nil
+}
+
+// Start запускает коллектор
+func (sc *SystemCollector) Start() error {
+	sc.logger.Info("System collector started")
+	return nil
+}
+
+// Stop останавливает коллектор
+func (sc *SystemCollector) Stop() error {
+	sc.logger.Info("System collector stopped")
+	return nil
+}
+
+// NetworkCollector собирает сетевые данные
+type NetworkCollector struct {
+	logger *zap.Logger
+}
+
+// NewNetworkCollector создает новый сетевой коллектор
+func NewNetworkCollector(logger *zap.Logger) *NetworkCollector {
+	return &NetworkCollector{
+		logger: logger,
+	}
+}
+
+// Collect собирает сетевые данные
+func (nc *NetworkCollector) Collect() ([]DataPoint, error) {
+	// Заглушка для сбора сетевых данных
+	data := []DataPoint{
+		{
+			Timestamp: time.Now(),
+			Source:    "network",
+			Type:      "network_metrics",
+			Data: map[string]interface{}{
+				"packets_in":   1000000,
+				"packets_out":  950000,
+				"bytes_in":     50000000,
+				"bytes_out":    45000000,
+				"latency":      25.5,
+			},
+		},
+	}
+	
+	return data, nil
+}
+
+// Start запускает коллектор
+func (nc *NetworkCollector) Start() error {
+	nc.logger.Info("Network collector started")
+	return nil
+}
+
+// Stop останавливает коллектор
+func (nc *NetworkCollector) Stop() error {
+	nc.logger.Info("Network collector stopped")
+	return nil
+}
+
+// FeatureExtractor извлекает признаки из данных
+type FeatureExtractor struct {
+	logger *zap.Logger
+}
+
+// NewFeatureExtractor создает новый извлекатель признаков
+func NewFeatureExtractor(logger *zap.Logger) *FeatureExtractor {
+	return &FeatureExtractor{
+		logger: logger,
+	}
+}
+
+// Process обрабатывает данные и извлекает признаки
+func (fe *FeatureExtractor) Process(data []DataPoint) ([]DataPoint, error) {
+	// Заглушка для извлечения признаков
+	processedData := make([]DataPoint, len(data))
+	
+	for i, point := range data {
+		processedData[i] = DataPoint{
+			Timestamp: point.Timestamp,
+			Source:    point.Source,
+			Type:      "features",
+			Data: map[string]interface{}{
+				"original_data": point.Data,
+				"features":      fe.extractFeatures(point.Data),
+			},
+		}
+	}
+	
+	return processedData, nil
+}
+
+// extractFeatures извлекает признаки из данных
+func (fe *FeatureExtractor) extractFeatures(data map[string]interface{}) map[string]interface{} {
+	features := make(map[string]interface{})
+	
+	// Извлекаем числовые признаки
+	for key, value := range data {
+		if num, ok := value.(float64); ok {
+			features[key] = num
+		} else if num, ok := value.(int); ok {
+			features[key] = float64(num)
+		}
+	}
+	
+	return features
+}
+
+// DataNormalizer нормализует данные
+type DataNormalizer struct {
+	logger *zap.Logger
+}
+
+// NewDataNormalizer создает новый нормализатор данных
+func NewDataNormalizer(logger *zap.Logger) *DataNormalizer {
+	return &DataNormalizer{
+		logger: logger,
+	}
+}
+
+// Process нормализует данные
+func (dn *DataNormalizer) Process(data []DataPoint) ([]DataPoint, error) {
+	// Заглушка для нормализации данных
+	normalizedData := make([]DataPoint, len(data))
+	
+	for i, point := range data {
+		normalizedData[i] = DataPoint{
+			Timestamp: point.Timestamp,
+			Source:    point.Source,
+			Type:      "normalized",
+			Data:      dn.normalizeData(point.Data),
+		}
+	}
+	
+	return normalizedData, nil
+}
+
+// normalizeData нормализует данные
+func (dn *DataNormalizer) normalizeData(data map[string]interface{}) map[string]interface{} {
+	normalized := make(map[string]interface{})
+	
+	for key, value := range data {
+		if num, ok := value.(float64); ok {
+			// Простая нормализация в диапазон [0, 1]
+			normalized[key] = num / 100.0
+		} else {
+			normalized[key] = value
+		}
+	}
+	
+	return normalized
+}
+
+// FileStorage хранит данные в файлах
+type FileStorage struct {
+	config *Config
+	logger *zap.Logger
+}
+
+// NewFileStorage создает новое файловое хранилище
+func NewFileStorage(config *Config, logger *zap.Logger) *FileStorage {
+	return &FileStorage{
+		config: config,
+		logger: logger,
+	}
+}
+
+// Store сохраняет данные
+func (fs *FileStorage) Store(data []DataPoint) error {
+	// Заглушка для сохранения данных
+	fs.logger.Debug("Storing data", zap.Int("points", len(data)))
+	return nil
+}
+
+// Retrieve извлекает данные
+func (fs *FileStorage) Retrieve(timeRange TimeRange) ([]DataPoint, error) {
+	// Заглушка для извлечения данных
+	return []DataPoint{}, nil
+}
+
