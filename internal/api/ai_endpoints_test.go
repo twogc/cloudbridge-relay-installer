@@ -18,27 +18,27 @@ import (
 	"go.uber.org/zap"
 )
 
-// MockAIService мок для AIServiceInterface
-type MockAIService struct {
+// TestMockAIService мок для тестирования AIServiceInterface
+type TestMockAIService struct {
 	mock.Mock
 }
 
-func (m *MockAIService) GetStatus() *ai.ServiceStatus {
+func (m *TestMockAIService) GetStatus() *ai.ServiceStatus {
 	args := m.Called()
 	return args.Get(0).(*ai.ServiceStatus)
 }
 
-func (m *MockAIService) DetectAnomaly(ctx context.Context, metrics *anomaly.NetworkMetrics) (*anomaly.AnomalyResult, error) {
+func (m *TestMockAIService) DetectAnomaly(ctx context.Context, metrics *anomaly.NetworkMetrics) (*anomaly.AnomalyResult, error) {
 	args := m.Called(ctx, metrics)
 	return args.Get(0).(*anomaly.AnomalyResult), args.Error(1)
 }
 
-func (m *MockAIService) PredictLoad(ctx context.Context, horizon int) (*predictive.LoadPrediction, error) {
+func (m *TestMockAIService) PredictLoad(ctx context.Context, horizon int) (*predictive.LoadPrediction, error) {
 	args := m.Called(ctx, horizon)
 	return args.Get(0).(*predictive.LoadPrediction), args.Error(1)
 }
 
-func (m *MockAIService) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.OptimizedRoute, error) {
+func (m *TestMockAIService) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.OptimizedRoute, error) {
 	args := m.Called(ctx, source, destination, constraints)
 	return args.Get(0).(*routing.OptimizedRoute), args.Error(1)
 }
@@ -48,7 +48,7 @@ func TestAIEndpoints_GetAIStatus(t *testing.T) {
 	logger := zap.NewNop()
 
 	t.Run("success", func(t *testing.T) {
-		mockAI := new(MockAIService)
+		mockAI := new(TestMockAIService)
 		status := &ai.ServiceStatus{
 			Status: "running",
 			Components: map[string]bool{
@@ -95,7 +95,7 @@ func TestAIEndpoints_DetectAnomaly(t *testing.T) {
 	logger := zap.NewNop()
 
 	t.Run("success", func(t *testing.T) {
-		mockAI := new(MockAIService)
+		mockAI := new(TestMockAIService)
 		result := &anomaly.AnomalyResult{
 			IsAnomaly:   true,
 			Score:       0.95,
@@ -151,7 +151,7 @@ func TestAIEndpoints_PredictLoad(t *testing.T) {
 	logger := zap.NewNop()
 
 	t.Run("success", func(t *testing.T) {
-		mockAI := new(MockAIService)
+		mockAI := new(TestMockAIService)
 		prediction := &predictive.LoadPrediction{
 			Forecast:   []float64{0.5, 0.6, 0.7},
 			Confidence: 0.85,
@@ -194,7 +194,7 @@ func TestAIEndpoints_OptimizeRoute(t *testing.T) {
 	logger := zap.NewNop()
 
 	t.Run("success", func(t *testing.T) {
-		mockAI := new(MockAIService)
+		mockAI := new(TestMockAIService)
 		route := &routing.OptimizedRoute{
 			Path:             []string{"A", "B", "C"},
 			PredictedLatency: 100.5,
@@ -237,7 +237,7 @@ func TestAIEndpoints_GetAIHealth(t *testing.T) {
 	logger := zap.NewNop()
 
 	t.Run("healthy", func(t *testing.T) {
-		mockAI := new(MockAIService)
+		mockAI := new(TestMockAIService)
 		status := &ai.ServiceStatus{
 			Status: "running",
 			Components: map[string]bool{
@@ -265,7 +265,7 @@ func TestAIEndpoints_GetAIHealth(t *testing.T) {
 	})
 
 	t.Run("unhealthy", func(t *testing.T) {
-		mockAI := new(MockAIService)
+		mockAI := new(TestMockAIService)
 		status := &ai.ServiceStatus{
 			Status: "stopped",
 			Components: map[string]bool{
