@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/api"
+	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/token"
 )
 
@@ -108,6 +109,16 @@ func convertNetworkConfig(cfg *token.NetworkConfig) *api.NetworkConfig {
 
 // NewP2PAPIServer создает новый P2P API сервер
 func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServer {
+	return NewP2PAPIServerWithConfig(logger, jwtSecret, port, nil)
+}
+
+// NewP2PAPIServerWithConfig создает новый P2P API сервер с конфигурацией
+func NewP2PAPIServerWithConfig(logger *zap.Logger, jwtSecret []byte, port int, allowedIPs []string) *P2PAPIServer {
+	return NewP2PAPIServerWithKeycloak(logger, jwtSecret, port, allowedIPs, nil)
+}
+
+// NewP2PAPIServerWithKeycloak создает новый P2P API сервер с Keycloak валидацией
+func NewP2PAPIServerWithKeycloak(logger *zap.Logger, jwtSecret []byte, port int, allowedIPs []string, keycloakValidator *keycloak.KeycloakValidator) *P2PAPIServer {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Error("Panic in NewP2PAPIServer", zap.Any("panic", r))
@@ -128,7 +139,17 @@ func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServ
 
 	// Создание API router
 	logger.Info("Creating API router...")
-	apiRouter := api.NewAPIRouter(logger, validator)
+	var apiRouter *api.APIRouter
+	if keycloakValidator != nil {
+		logger.Info("Creating API router with Keycloak validation")
+		apiRouter = api.NewAPIRouterWithKeycloak(logger, validator, keycloakValidator, allowedIPs)
+	} else if len(allowedIPs) > 0 {
+		logger.Info("Creating API router with IP configuration", zap.Int("allowed_ips_count", len(allowedIPs)))
+		apiRouter = api.NewAPIRouterWithConfig(logger, validator, allowedIPs)
+	} else {
+		logger.Info("Creating API router with default configuration")
+		apiRouter = api.NewAPIRouter(logger, validator)
+	}
 	if apiRouter == nil {
 		logger.Error("Failed to create API router")
 		return nil

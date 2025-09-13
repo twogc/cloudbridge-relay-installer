@@ -9,7 +9,7 @@
   },
   "django": {
     "api_endpoint": "http://localhost:8000/api",
-    "jwt_secret": "your-secret-key",
+    "jwt_secret": "1Pc6bvrTUDtXMKm6mMF6+7UJi/EYAdOcGPkXCRYV4xI=",
     "jwt_expiry": "24h",
     "rest_timeout": "5s",
     "rest_cache_ttl": "5m",
@@ -33,23 +33,35 @@
         "audience": "relay-test-tenant",
         "allowed_claims": ["tenant_id", "user_id", "permissions"]
       },
-      "allowed_ips": [],
+      "allowed_ips": [
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "203.0.113.0/24",
+        "198.51.100.0/24",
+        "192.0.2.0/24",
+        "127.0.0.1",
+        "::1",
+        "192.168.49.2",
+        "95.163.250.190"
+      ],
       "allowed_ports": [],
       "features": ["tls", "jwt", "tunneling", "p2p", "quic"]
     }
   },
   "keycloak": {
-    "enabled": false,
-    "server_url": "",
-    "realm": "",
-    "client_id": "",
-    "client_secret": "",
+    "enabled": true,
+    "server_url": "https://auth.2gc.ru",
+    "realm": "cloudbridge",
+    "client_id": "relay-server",
+    "client_secret": "relay-server-secret-456",
     "public_key": "",
     "token_validation": {
-      "issuer": "",
-      "audience": "",
+      "issuer": "https://auth.2gc.ru/realms/cloudbridge",
+      "audience": "account",
       "clock_skew": "30s"
     },
+    "jwks_url": "https://auth.2gc.ru/realms/cloudbridge/protocol/openid-connect/certs",
     "jwks_cache_ttl": "1h",
     "http_timeout": "30s"
   },
@@ -57,7 +69,18 @@
     "tls_enabled": false,
     "cert_file": "/app/certs/server.crt",
     "key_file": "/app/certs/server.key",
-    "allowed_ips": [],
+    "allowed_ips": [
+      "10.0.0.0/8",
+      "172.16.0.0/12",
+      "192.168.0.0/16",
+      "203.0.113.0/24",
+      "198.51.100.0/24",
+      "192.0.2.0/24",
+      "127.0.0.1",
+      "::1",
+      "192.168.49.2",
+      "95.163.250.190"
+    ],
     "rate_limit": {
       "enabled": true,
       "requests_per_second": 1000,
@@ -82,7 +105,7 @@
   },
   "api": {
     "enabled": true,
-    "port": 9091,
+    "port": 8082,
     "version": "v1"
   },
   "logging": {

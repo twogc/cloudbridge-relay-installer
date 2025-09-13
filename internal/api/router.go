@@ -5,22 +5,24 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"go.uber.org/zap"
 )
 
 // APIRouter настраивает маршруты API
 type APIRouter struct {
-	peerManager   *PeerManager
-	relayManager  *RelayManager
-	healthManager *HealthManager
-	hub           *Hub
-	logger        *zap.Logger
+	peerManager     *PeerManager
+	relayManager    *RelayManager
+	healthManager   *HealthManager
+	protocolHandler *ProtocolHandler
+	hub             *Hub
+	logger          *zap.Logger
 }
 
 // NewAPIRouter создает новый APIRouter
 func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 	logger.Info("Creating API router components...")
-	
+
 	// Создание общих структур данных
 	peers := make(map[string]*Peer)
 	connections := make(map[string]*PeerConnection)
@@ -32,21 +34,95 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 	// Создание менеджеров
 	logger.Info("Creating PeerManager...")
 	peerManager := NewPeerManager(logger, validator)
-	
+
 	logger.Info("Creating RelayManager...")
 	relayManager := NewRelayManager(hub, peers, connections, logger, validator)
-	
+
 	logger.Info("Creating HealthManager...")
 	healthManager := NewHealthManager(hub, peers, connections, logger)
 
 	logger.Info("API router components created successfully")
-	
+
 	return &APIRouter{
 		peerManager:   peerManager,
 		relayManager:  relayManager,
 		healthManager: healthManager,
 		hub:           hub,
 		logger:        logger,
+	}
+}
+
+// NewAPIRouterWithConfig создает новый APIRouter с конфигурацией
+func NewAPIRouterWithConfig(logger *zap.Logger, validator TokenValidator, allowedIPs []string) *APIRouter {
+	logger.Info("Creating API router components with configuration...")
+
+	// Создание общих структур данных
+	peers := make(map[string]*Peer)
+	connections := make(map[string]*PeerConnection)
+
+	// Создание Hub для WebSocket
+	logger.Info("Creating WebSocket Hub...")
+	hub := NewHub(logger)
+
+	// Создание менеджеров с конфигурацией
+	logger.Info("Creating PeerManager with configuration...")
+	peerManager := NewPeerManagerWithConfig(logger, validator, allowedIPs)
+
+	logger.Info("Creating RelayManager...")
+	relayManager := NewRelayManager(hub, peers, connections, logger, validator)
+
+	logger.Info("Creating HealthManager...")
+	healthManager := NewHealthManager(hub, peers, connections, logger)
+
+	logger.Info("API router components created successfully with configuration")
+
+	return &APIRouter{
+		peerManager:   peerManager,
+		relayManager:  relayManager,
+		healthManager: healthManager,
+		hub:           hub,
+		logger:        logger,
+	}
+}
+
+// NewAPIRouterWithKeycloak создает новый APIRouter с Keycloak валидацией
+func NewAPIRouterWithKeycloak(logger *zap.Logger, validator TokenValidator, keycloakValidator *keycloak.KeycloakValidator, allowedIPs []string) *APIRouter {
+	logger.Info("Creating API router components with Keycloak validation...")
+
+	// Создание общих структур данных
+	peers := make(map[string]*Peer)
+	connections := make(map[string]*PeerConnection)
+
+	// Создание Hub для WebSocket
+	logger.Info("Creating WebSocket Hub...")
+	hub := NewHub(logger)
+
+	// Создание менеджеров с конфигурацией
+	logger.Info("Creating PeerManager with configuration...")
+	peerManager := NewPeerManagerWithConfig(logger, validator, allowedIPs)
+
+	logger.Info("Creating RelayManager...")
+	relayManager := NewRelayManager(hub, peers, connections, logger, validator)
+
+	logger.Info("Creating HealthManager...")
+	healthManager := NewHealthManager(hub, peers, connections, logger)
+
+	// Создание ProtocolHandler если есть Keycloak валидатор
+	var protocolHandler *ProtocolHandler
+	if keycloakValidator != nil {
+		logger.Info("Creating ProtocolHandler with Keycloak validation...")
+		protocolHandler = NewProtocolHandler(keycloakValidator, logger, peerManager, relayManager)
+	}
+
+	logger.Info("API router components created successfully with Keycloak validation")
+
+	return &APIRouter{
+		peerManager:     peerManager,
+		relayManager:    relayManager,
+		healthManager:   healthManager,
+		protocolHandler: protocolHandler,
+		hub:             hub,
+		logger:          logger,
 	}
 }
 
@@ -75,6 +151,21 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 		{
 			relay.POST("/route", r.relayManager.RouteThroughRelay)
 			relay.GET("/stats", r.relayManager.GetRelayStats)
+		}
+
+		// Protocol endpoints (только если есть ProtocolHandler)
+		if r.protocolHandler != nil {
+			// Quick protocol endpoints
+			quick := v1.Group("/quick")
+			{
+				quick.POST("/connect", gin.WrapF(r.protocolHandler.RegisterClient))
+			}
+
+			// P2P Mesh protocol endpoints
+			p2p := v1.Group("/p2p")
+			{
+				p2p.POST("/mesh/join", gin.WrapF(r.protocolHandler.RegisterClient))
+			}
 		}
 
 		// Health and monitoring endpoints

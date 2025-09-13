@@ -618,3 +618,9 @@ func (nm *P2PNotificationManager) NotifyP2PUnavailable(reason, fallback string) 
 **Начинаем выполнение?** 🚀
 
 
+
+
+
+
+
+

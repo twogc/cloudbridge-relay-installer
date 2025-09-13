@@ -26,6 +26,7 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/cadence"
 	"github.com/twogc/cloudbridge-relay-installer/internal/circuitbreaker"
 	"github.com/twogc/cloudbridge-relay-installer/internal/health"
+	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2c"
@@ -338,15 +339,37 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	var p2pAPIServer *P2PAPIServer
 	// TODO: Добавить P2P конфигурацию в config.go
 	// if cfg.P2P.API.Enabled {
-	// Get JWT secret from config or environment
-	jwtSecret := []byte("default-jwt-secret")
+	// Get JWT secret from environment variable
+	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	loggerInstance.Info("JWT secret prepared", zap.Int("secret_length", len(jwtSecret)))
-	// if len(jwtSecret) == 0 {
-	// 	jwtSecret = []byte("default-jwt-secret")
-	// }
+	if len(jwtSecret) == 0 {
+		jwtSecret = []byte("default-jwt-secret")
+		loggerInstance.Warn("JWT_SECRET environment variable not set, using default")
+	}
 
 	loggerInstance.Info("Calling NewP2PAPIServer...")
-	p2pAPIServer = NewP2PAPIServer(loggerInstance.GetZapLogger(), jwtSecret, cfg.API.Port)
+	// Передаем allowed_ips из конфигурации
+	allowedIPs := cfg.Security.AllowedIPs
+	loggerInstance.Info("Using allowed IPs from configuration", zap.Int("count", len(allowedIPs)))
+
+	// Создаем Keycloak валидатор если включен
+	var keycloakValidator *keycloak.KeycloakValidator
+	if cfg.Keycloak.Enabled {
+		loggerInstance.Info("Initializing Keycloak validator",
+			zap.String("jwks_url", cfg.Keycloak.JWKSURL),
+			zap.String("issuer", cfg.Keycloak.TokenValidation.Issuer),
+			zap.String("audience", cfg.Keycloak.TokenValidation.Audience),
+		)
+
+		keycloakValidator = keycloak.NewKeycloakValidator(
+			cfg.Keycloak.JWKSURL,
+			cfg.Keycloak.TokenValidation.Audience,
+			cfg.Keycloak.TokenValidation.Issuer,
+			loggerInstance.GetZapLogger(),
+		)
+	}
+
+	p2pAPIServer = NewP2PAPIServerWithKeycloak(loggerInstance.GetZapLogger(), jwtSecret, cfg.API.Port, allowedIPs, keycloakValidator)
 	loggerInstance.Info("NewP2PAPIServer call completed", zap.Bool("server_created", p2pAPIServer != nil))
 
 	if p2pAPIServer != nil {

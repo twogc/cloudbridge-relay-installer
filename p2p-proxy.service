@@ -1,0 +1,16 @@
+[Unit]
+Description=P2P API Proxy
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
+ExecStart=/home/ubuntu/cloudbridge-relay-installer/p2p-proxy
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

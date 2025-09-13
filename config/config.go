@@ -53,6 +53,7 @@ type configRaw struct {
 		ClientID        string `json:"client_id"`
 		ClientSecret    string `json:"client_secret"`
 		PublicKey       string `json:"public_key"`
+		JWKSURL         string `json:"jwks_url"`
 		TokenValidation struct {
 			Issuer    string `json:"issuer"`
 			Audience  string `json:"audience"`
@@ -283,6 +284,7 @@ type Config struct {
 		ClientID        string `json:"client_id"`
 		ClientSecret    string `json:"client_secret"`
 		PublicKey       string `json:"public_key"`
+		JWKSURL         string `json:"jwks_url"`
 		TokenValidation struct {
 			Issuer    string        `json:"issuer"`
 			Audience  string        `json:"audience"`

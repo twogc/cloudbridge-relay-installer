@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -43,7 +44,30 @@ func (rm *RelayManager) RouteThroughRelay(c *gin.Context) {
 	}
 
 	// Валидация JWT токена
-	token := c.GetHeader("Authorization")
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Error:   "Missing Authorization header",
+			Code:    http.StatusUnauthorized,
+			Message: "Authorization header is required",
+		})
+		return
+	}
+
+	// Извлекаем токен из "Bearer <token>"
+	token := authHeader
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+	}
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Error:   "Missing authorization header",
+			Code:    http.StatusUnauthorized,
+			Message: "Authorization header is required",
+		})
+		return
+	}
+
 	claims, err := rm.validator.ValidateP2PToken(token)
 	if err != nil {
 		rm.logger.Error("Failed to validate P2P token", zap.Error(err))
@@ -140,7 +164,30 @@ func (rm *RelayManager) GetRelayStats(c *gin.Context) {
 	}
 
 	// Валидация JWT токена
-	token := c.GetHeader("Authorization")
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Error:   "Missing Authorization header",
+			Code:    http.StatusUnauthorized,
+			Message: "Authorization header is required",
+		})
+		return
+	}
+
+	// Извлекаем токен из "Bearer <token>"
+	token := authHeader
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+	}
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Error:   "Missing authorization header",
+			Code:    http.StatusUnauthorized,
+			Message: "Authorization header is required",
+		})
+		return
+	}
+
 	claims, err := rm.validator.ValidateP2PToken(token)
 	if err != nil {
 		rm.logger.Error("Failed to validate P2P token", zap.Error(err))

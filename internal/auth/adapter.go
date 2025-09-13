@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/config"
@@ -94,9 +95,15 @@ func NewAdapter(cfg *config.Config, logger *logger.Logger) (*Adapter, error) {
 		adapter.provider = &KeycloakProvider{client: keycloakClient}
 	} else {
 		// Initialize Django provider
+		// Get JWT secret from environment variable instead of config
+		jwtSecret := os.Getenv("JWT_SECRET")
+		if jwtSecret == "" {
+			jwtSecret = cfg.Django.JWTSecret // Fallback to config if env var not set
+		}
+		
 		djangoConfig := django.Config{
 			APIEndpoint: cfg.Django.APIEndpoint,
-			JWTSecret:   cfg.Django.JWTSecret,
+			JWTSecret:   jwtSecret,
 			Timeout:     cfg.Django.RESTTimeout,
 		}
 

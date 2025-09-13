@@ -118,5 +118,3 @@ func (p *P2PClaims) IsExpired() bool {
 	}
 	return time.Now().After(p.ExpiresAt.Time)
 }
-
-

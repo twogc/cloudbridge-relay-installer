@@ -1,0 +1,22 @@
+# WireGuard Keys for CloudBridge Relay
+# Эти ключи НЕ должны попадать в git
+
+# Private Key
+PRIVATE_KEY=iB7ZFl4fqYxgu818pHYqmytiU2fzReWZoJ/fdFSWXmI=
+
+# Public Key  
+PUBLIC_KEY=LG2l0xUInTlYGJzIPeI6//t/SYlBkd+N6f6g5Hsr6Wc=
+
+# WireGuard Configuration
+[Interface]
+PrivateKey = iB7ZFl4fqYxgu818pHYqmytiU2fzReWZoJ/fdFSWXmI=
+Address = 10.0.0.1/24
+ListenPort = 51820
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+[Peer]
+PublicKey = PEER_PUBLIC_KEY
+AllowedIPs = 10.0.0.2/32
+Endpoint = peer.example.com:51820
+PersistentKeepalive = 25

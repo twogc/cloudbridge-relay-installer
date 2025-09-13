@@ -50,12 +50,74 @@ type P2PClaims struct {
 
 // NewPeerManager создает новый PeerManager
 func NewPeerManager(logger *zap.Logger, validator TokenValidator) *PeerManager {
+	ipValidator := NewIPValidator(logger)
+
+	// Добавляем разрешенные IP адреса для тестирования
+	// RFC 1918 private networks
+	ipValidator.AddAllowedCIDR("10.0.0.0/8")
+	ipValidator.AddAllowedCIDR("172.16.0.0/12")
+	ipValidator.AddAllowedCIDR("192.168.0.0/16")
+
+	// RFC 5737 documentation networks
+	ipValidator.AddAllowedCIDR("203.0.113.0/24")
+	ipValidator.AddAllowedCIDR("198.51.100.0/24")
+	ipValidator.AddAllowedCIDR("192.0.2.0/24")
+
+	// Localhost
+	ipValidator.AddAllowedIP("127.0.0.1")
+	ipValidator.AddAllowedIP("::1")
+
+	// Minikube IP
+	ipValidator.AddAllowedIP("192.168.49.2")
+	ipValidator.AddAllowedIP("95.163.250.190")
+
+	logger.Info("IP validator initialized with allowed networks")
+
 	return &PeerManager{
 		peers:       make(map[string]*Peer),
 		connections: make(map[string]*PeerConnection),
 		logger:      logger,
 		validator:   validator,
-		ipValidator: NewIPValidator(logger),
+		ipValidator: ipValidator,
+	}
+}
+
+// NewPeerManagerWithConfig создает новый PeerManager с конфигурацией
+func NewPeerManagerWithConfig(logger *zap.Logger, validator TokenValidator, allowedIPs []string) *PeerManager {
+	ipValidator := NewIPValidator(logger)
+
+	// Добавляем разрешенные IP адреса из конфигурации
+	for _, ip := range allowedIPs {
+		if strings.Contains(ip, "/") {
+			// Это CIDR
+			if err := ipValidator.AddAllowedCIDR(ip); err != nil {
+				logger.Warn("Failed to add CIDR to allowed list",
+					zap.String("cidr", ip),
+					zap.Error(err))
+			} else {
+				logger.Info("Added CIDR to allowed list", zap.String("cidr", ip))
+			}
+		} else {
+			// Это отдельный IP
+			if err := ipValidator.AddAllowedIP(ip); err != nil {
+				logger.Warn("Failed to add IP to allowed list",
+					zap.String("ip", ip),
+					zap.Error(err))
+			} else {
+				logger.Info("Added IP to allowed list", zap.String("ip", ip))
+			}
+		}
+	}
+
+	logger.Info("IP validator initialized with configuration",
+		zap.Int("allowed_ips_count", len(allowedIPs)))
+
+	return &PeerManager{
+		peers:       make(map[string]*Peer),
+		connections: make(map[string]*PeerConnection),
+		logger:      logger,
+		validator:   validator,
+		ipValidator: ipValidator,
 	}
 }
 
@@ -74,7 +136,21 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 	}
 
 	// Валидация JWT токена
-	token := c.GetHeader("Authorization")
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Error:   "Missing Authorization header",
+			Code:    http.StatusUnauthorized,
+			Message: "Authorization header is required",
+		})
+		return
+	}
+
+	// Извлекаем токен из "Bearer <token>"
+	token := authHeader
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+	}
 	if token == "" {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
 			Error:   "Missing authorization header",
@@ -207,7 +283,21 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 	}
 
 	// Валидация JWT токена
-	token := c.GetHeader("Authorization")
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Error:   "Missing Authorization header",
+			Code:    http.StatusUnauthorized,
+			Message: "Authorization header is required",
+		})
+		return
+	}
+
+	// Извлекаем токен из "Bearer <token>"
+	token := authHeader
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+	}
 	claims, err := pm.validator.ValidateP2PToken(token)
 	if err != nil {
 		pm.logger.Error("Failed to validate P2P token", zap.Error(err))
@@ -271,7 +361,21 @@ func (pm *PeerManager) UpdatePeerStatus(c *gin.Context) {
 	}
 
 	// Валидация JWT токена
-	token := c.GetHeader("Authorization")
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Error:   "Missing Authorization header",
+			Code:    http.StatusUnauthorized,
+			Message: "Authorization header is required",
+		})
+		return
+	}
+
+	// Извлекаем токен из "Bearer <token>"
+	token := authHeader
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+	}
 	claims, err := pm.validator.ValidateP2PToken(token)
 	if err != nil {
 		pm.logger.Error("Failed to validate P2P token", zap.Error(err))
@@ -329,7 +433,21 @@ func (pm *PeerManager) GetPeerInfo(c *gin.Context) {
 	peerID := c.Param("peer_id")
 
 	// Валидация JWT токена
-	token := c.GetHeader("Authorization")
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Error:   "Missing Authorization header",
+			Code:    http.StatusUnauthorized,
+			Message: "Authorization header is required",
+		})
+		return
+	}
+
+	// Извлекаем токен из "Bearer <token>"
+	token := authHeader
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		token = strings.TrimPrefix(authHeader, "Bearer ")
+	}
 	claims, err := pm.validator.ValidateP2PToken(token)
 	if err != nil {
 		pm.logger.Error("Failed to validate P2P token", zap.Error(err))
