@@ -330,18 +330,18 @@ gantt
     title Готовность к продакшену
     dateFormat  YYYY-MM-DD
     section Завершено
-    Код в Git           :done, git, 2024-01-15, 1d
-    Keycloak интеграция :done, keycloak, 2024-01-16, 2d
-    Разделение протоколов:done, protocols, 2024-01-17, 1d
-    Безопасность        :done, security, 2024-01-18, 1d
-    Тестирование        :done, testing, 2024-01-19, 1d
-    Документация        :done, docs, 2024-01-20, 1d
+    Код в Git           :done, git, 2025-09-08, 1d
+    Keycloak интеграция :done, keycloak, 2025-09-09, 2d
+    Разделение протоколов:done, protocols, 2025-09-10, 1d
+    Безопасность        :done, security, 2025-09-11, 1d
+    Тестирование        :done, testing, 2025-09-12, 1d
+    Документация        :done, docs, 2025-09-13, 1d
     
     section Следующие шаги
-    JWKS настройка      :active, jwks, 2024-01-21, 2d
-    Keycloak клиенты    :keycloak-clients, 2024-01-23, 2d
-    Продакшен деплой    :prod-deploy, 2024-01-25, 3d
-    Мониторинг          :monitoring, 2024-01-28, 2d
+    JWKS настройка      :active, jwks, 2025-09-14, 2d
+    Keycloak клиенты    :keycloak-clients, 2025-09-16, 2d
+    Продакшен деплой    :prod-deploy, 2025-09-18, 3d
+    Мониторинг          :monitoring, 2025-09-21, 2d
 ```
 
 ## 📈 Бизнес-ценность
