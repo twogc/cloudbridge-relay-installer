@@ -31,6 +31,8 @@ type Config struct {
 	BatchSize          int           `yaml:"batch_size"`
 	ProcessingInterval time.Duration `yaml:"processing_interval"`
 	RetentionDays      int           `yaml:"retention_days"`
+	StoragePath        string        `yaml:"storage_path"`
+	PrometheusURL      string        `yaml:"prometheus_url"`
 }
 
 // DataCollector интерфейс для сбора данных
@@ -227,31 +229,45 @@ func (dp *DataPipeline) processData() {
 
 // initializeCollectors инициализирует коллекторы данных
 func (dp *DataPipeline) initializeCollectors() error {
-	// Prometheus коллектор
-	prometheusCollector := NewPrometheusCollector(dp.logger)
+	// Real Prometheus коллектор
+	prometheusURL := dp.config.PrometheusURL
+	if prometheusURL == "" {
+		prometheusURL = "http://localhost:9090"
+	}
+	prometheusCollector := NewRealPrometheusCollector(dp.logger, prometheusURL)
 	dp.collectors["prometheus"] = prometheusCollector
 	
-	// System коллектор
-	systemCollector := NewSystemCollector(dp.logger)
+	// Real System коллектор
+	systemCollector := NewRealSystemCollector(dp.logger)
 	dp.collectors["system"] = systemCollector
 	
-	// Network коллектор
-	networkCollector := NewNetworkCollector(dp.logger)
+	// Real Network коллектор
+	networkCollector := NewRealNetworkCollector(dp.logger)
 	dp.collectors["network"] = networkCollector
 	
-	dp.logger.Info("Collectors initialized", zap.Int("count", len(dp.collectors)))
+	// Relay Metrics коллектор
+	relayCollector := NewRelayMetricsCollector(dp.logger)
+	dp.collectors["relay"] = relayCollector
+	
+	dp.logger.Info("Collectors initialized", 
+		zap.Int("count", len(dp.collectors)),
+		zap.String("prometheus_url", prometheusURL))
 	return nil
 }
 
 // initializeProcessors инициализирует процессоры данных
 func (dp *DataPipeline) initializeProcessors() error {
-	// Feature extractor
-	featureExtractor := NewFeatureExtractor(dp.logger)
+	// Real Feature extractor
+	featureExtractor := NewRealFeatureExtractor(dp.logger)
 	dp.processors = append(dp.processors, featureExtractor)
 	
-	// Data normalizer
-	normalizer := NewDataNormalizer(dp.logger)
+	// Real Data normalizer
+	normalizer := NewRealDataNormalizer(dp.logger)
 	dp.processors = append(dp.processors, normalizer)
+	
+	// Data aggregator (5-минутные окна)
+	aggregator := NewDataAggregator(dp.logger, 5*time.Minute)
+	dp.processors = append(dp.processors, aggregator)
 	
 	dp.logger.Info("Processors initialized", zap.Int("count", len(dp.processors)))
 	return nil
@@ -259,10 +275,11 @@ func (dp *DataPipeline) initializeProcessors() error {
 
 // initializeStorage инициализирует хранилище данных
 func (dp *DataPipeline) initializeStorage() error {
-	// File storage
-	dp.storage = NewFileStorage(dp.config, dp.logger)
+	// Hybrid storage (file + memory)
+	dp.storage = NewHybridStorage(dp.config, dp.logger)
 	
-	dp.logger.Info("Storage initialized")
+	dp.logger.Info("Storage initialized", 
+		zap.String("storage_path", dp.config.StoragePath))
 	return nil
 }
 
