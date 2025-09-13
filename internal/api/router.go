@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/anomaly"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ai/pipeline"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/predictive"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/routing"
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
@@ -22,6 +23,8 @@ type APIRouter struct {
 	protocolHandler       *ProtocolHandler
 	hub                   *Hub
 	logger                *zap.Logger
+	authMiddleware        *AuthMiddleware
+	rateLimiter           *RateLimiter
 	aiMiddleware          *AIMiddleware
 	aiEndpoints           *AIEndpoints
 	dataPipelineEndpoints *DataPipelineEndpoints
@@ -44,6 +47,14 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 	logger.Info("Creating PeerManager...")
 	peerManager := NewPeerManager(logger, validator)
 
+	// Создание Auth Middleware
+	logger.Info("Creating Auth Middleware...")
+	authMiddleware := NewAuthMiddleware(validator, logger)
+
+	// Создание Rate Limiter
+	logger.Info("Creating Rate Limiter...")
+	rateLimiter := NewRateLimiter(DefaultRateLimiterConfig(), logger)
+
 	logger.Info("Creating RelayManager...")
 	relayManager := NewRelayManager(hub, peers, connections, logger, validator)
 
@@ -58,14 +69,15 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 
 	// Создание AI endpoints
 	logger.Info("Creating AI endpoints...")
-	// TODO: создать адаптер для ai.Client чтобы он соответствовал AIServiceInterface
-	// Создаем заглушку для AI сервиса
-	mockAIService := &MockAIService{}
-	aiEndpoints := NewAIEndpoints(mockAIService, logger)
+	// Создаем адаптер для ai.Client
+	aiAdapter := NewAIClientAdapter(aiClient, logger)
+	aiEndpoints := NewAIEndpoints(aiAdapter, logger)
 
 	// Создание Data Pipeline endpoints
 	logger.Info("Creating Data Pipeline endpoints...")
-	dataPipelineEndpoints := NewDataPipelineEndpoints(nil, logger) // TODO: передать реальный pipeline
+	// Создаем реальный Data Pipeline
+	dataPipeline := createDataPipeline(logger)
+	dataPipelineEndpoints := NewDataPipelineEndpoints(dataPipeline, logger)
 
 	// Создание Monitoring endpoints
 	logger.Info("Creating Monitoring endpoints...")
@@ -79,6 +91,8 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 		healthManager:         healthManager,
 		hub:                   hub,
 		logger:                logger,
+		authMiddleware:        authMiddleware,
+		rateLimiter:           rateLimiter,
 		aiMiddleware:          aiMiddleware,
 		aiEndpoints:           aiEndpoints,
 		dataPipelineEndpoints: dataPipelineEndpoints,
@@ -102,6 +116,14 @@ func NewAPIRouterWithConfig(logger *zap.Logger, validator TokenValidator, allowe
 	logger.Info("Creating PeerManager with configuration...")
 	peerManager := NewPeerManagerWithConfig(logger, validator, allowedIPs)
 
+	// Создание Auth Middleware
+	logger.Info("Creating Auth Middleware...")
+	authMiddleware := NewAuthMiddleware(validator, logger)
+
+	// Создание Rate Limiter
+	logger.Info("Creating Rate Limiter...")
+	rateLimiter := NewRateLimiter(DefaultRateLimiterConfig(), logger)
+
 	logger.Info("Creating RelayManager...")
 	relayManager := NewRelayManager(hub, peers, connections, logger, validator)
 
@@ -116,12 +138,13 @@ func NewAPIRouterWithConfig(logger *zap.Logger, validator TokenValidator, allowe
 
 	// Создание AI endpoints
 	logger.Info("Creating AI endpoints...")
-	mockAIService := &MockAIService{}
-	aiEndpoints := NewAIEndpoints(mockAIService, logger)
+	aiAdapter := NewAIClientAdapter(aiClient, logger)
+	aiEndpoints := NewAIEndpoints(aiAdapter, logger)
 
 	// Создание Data Pipeline endpoints
 	logger.Info("Creating Data Pipeline endpoints...")
-	dataPipelineEndpoints := NewDataPipelineEndpoints(nil, logger)
+	dataPipeline := createDataPipeline(logger)
+	dataPipelineEndpoints := NewDataPipelineEndpoints(dataPipeline, logger)
 
 	// Создание Monitoring endpoints
 	logger.Info("Creating Monitoring endpoints...")
@@ -135,6 +158,8 @@ func NewAPIRouterWithConfig(logger *zap.Logger, validator TokenValidator, allowe
 		healthManager:         healthManager,
 		hub:                   hub,
 		logger:                logger,
+		authMiddleware:        authMiddleware,
+		rateLimiter:           rateLimiter,
 		aiMiddleware:          aiMiddleware,
 		aiEndpoints:           aiEndpoints,
 		dataPipelineEndpoints: dataPipelineEndpoints,
@@ -158,6 +183,14 @@ func NewAPIRouterWithKeycloak(logger *zap.Logger, validator TokenValidator, keyc
 	logger.Info("Creating PeerManager with configuration...")
 	peerManager := NewPeerManagerWithConfig(logger, validator, allowedIPs)
 
+	// Создание Auth Middleware
+	logger.Info("Creating Auth Middleware...")
+	authMiddleware := NewAuthMiddleware(validator, logger)
+
+	// Создание Rate Limiter
+	logger.Info("Creating Rate Limiter...")
+	rateLimiter := NewRateLimiter(DefaultRateLimiterConfig(), logger)
+
 	logger.Info("Creating RelayManager...")
 	relayManager := NewRelayManager(hub, peers, connections, logger, validator)
 
@@ -172,12 +205,13 @@ func NewAPIRouterWithKeycloak(logger *zap.Logger, validator TokenValidator, keyc
 
 	// Создание AI endpoints
 	logger.Info("Creating AI endpoints...")
-	mockAIService := &MockAIService{}
-	aiEndpoints := NewAIEndpoints(mockAIService, logger)
+	aiAdapter := NewAIClientAdapter(aiClient, logger)
+	aiEndpoints := NewAIEndpoints(aiAdapter, logger)
 
 	// Создание Data Pipeline endpoints
 	logger.Info("Creating Data Pipeline endpoints...")
-	dataPipelineEndpoints := NewDataPipelineEndpoints(nil, logger)
+	dataPipeline := createDataPipeline(logger)
+	dataPipelineEndpoints := NewDataPipelineEndpoints(dataPipeline, logger)
 
 	// Создание Monitoring endpoints
 	logger.Info("Creating Monitoring endpoints...")
@@ -199,6 +233,8 @@ func NewAPIRouterWithKeycloak(logger *zap.Logger, validator TokenValidator, keyc
 		protocolHandler:       protocolHandler,
 		hub:                   hub,
 		logger:                logger,
+		authMiddleware:        authMiddleware,
+		rateLimiter:           rateLimiter,
 		aiMiddleware:          aiMiddleware,
 		aiEndpoints:           aiEndpoints,
 		dataPipelineEndpoints: dataPipelineEndpoints,
@@ -257,10 +293,12 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 			health.GET("/connections", r.healthManager.GetConnectionMetrics)
 		}
 
-		// AI endpoints
+		// AI endpoints (требуют аутентификации и rate limiting)
 		ai := v1.Group("/ai")
+		ai.Use(r.authMiddleware.RequireAuth())
+		ai.Use(r.rateLimiter.CreateRateLimitMiddleware("ai"))
 		{
-			r.logger.Info("Registering AI endpoints")
+			r.logger.Info("Registering AI endpoints with authentication and rate limiting")
 			ai.GET("/status", r.aiEndpoints.GetAIStatus)
 			ai.GET("/health", r.aiEndpoints.GetAIHealth)
 			ai.GET("/metrics", r.aiEndpoints.GetAIMetrics)
@@ -269,8 +307,10 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 			ai.POST("/optimize-route", r.aiEndpoints.OptimizeRoute)
 		}
 
-		// Data Pipeline endpoints
+		// Data Pipeline endpoints (требуют аутентификации и rate limiting)
 		pipeline := v1.Group("/pipeline")
+		pipeline.Use(r.authMiddleware.RequireAuth())
+		pipeline.Use(r.rateLimiter.CreateRateLimitMiddleware("pipeline"))
 		{
 			pipeline.GET("/status", r.dataPipelineEndpoints.GetPipelineStatus)
 			pipeline.GET("/metrics", r.dataPipelineEndpoints.GetPipelineMetrics)
@@ -281,10 +321,12 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 			pipeline.GET("/collectors/:collector/data", r.dataPipelineEndpoints.GetCollectorData)
 		}
 
-		// Extended monitoring endpoints
+		// Extended monitoring endpoints (требуют административных прав и rate limiting)
 		monitoring := v1.Group("/monitoring")
+		monitoring.Use(r.authMiddleware.RequireAdmin())
+		monitoring.Use(r.rateLimiter.CreateRateLimitMiddleware("monitoring"))
 		{
-			r.logger.Info("Registering monitoring endpoints")
+			r.logger.Info("Registering monitoring endpoints with admin authentication and rate limiting")
 			monitoring.GET("/system", r.monitoringEndpoints.GetSystemMetrics)
 			monitoring.GET("/health", r.monitoringEndpoints.GetHealthCheck)
 			monitoring.GET("/prometheus", r.monitoringEndpoints.GetPrometheusMetrics)
@@ -449,4 +491,39 @@ func (m *MockTokenValidator) ValidateP2PToken(token string) (*P2PClaims, error) 
 		Issuer:    "mock-issuer",
 		Audience:  "mock-audience",
 	}, nil
+}
+
+// createDataPipeline создает и инициализирует реальный Data Pipeline
+func createDataPipeline(logger *zap.Logger) *pipeline.DataPipeline {
+	logger.Info("Creating real Data Pipeline...")
+
+	// Создаем конфигурацию для Data Pipeline
+	config := &pipeline.Config{
+		Enabled:            true,
+		BatchSize:          1000,
+		ProcessingInterval: 30 * time.Second,
+		RetentionDays:      7,
+		StoragePath:        "/tmp/cloudbridge-pipeline",
+		PrometheusURL:      "http://localhost:9090",
+	}
+
+	// Создаем Data Pipeline
+	dataPipeline := pipeline.NewDataPipeline(config, logger)
+
+	// Инициализируем Data Pipeline
+	if err := dataPipeline.Initialize(); err != nil {
+		logger.Error("Failed to initialize Data Pipeline", zap.Error(err))
+		// Возвращаем nil, чтобы endpoints работали в graceful degradation режиме
+		return nil
+	}
+
+	// Запускаем Data Pipeline
+	if err := dataPipeline.Start(); err != nil {
+		logger.Error("Failed to start Data Pipeline", zap.Error(err))
+		// Возвращаем nil, чтобы endpoints работали в graceful degradation режиме
+		return nil
+	}
+
+	logger.Info("Data Pipeline created and started successfully")
+	return dataPipeline
 }

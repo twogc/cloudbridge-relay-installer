@@ -11,15 +11,17 @@ import (
 
 // DataPipelineEndpoints предоставляет Data Pipeline API endpoints
 type DataPipelineEndpoints struct {
-	pipeline *pipeline.DataPipeline
-	logger   *zap.Logger
+	pipeline       *pipeline.DataPipeline
+	logger         *zap.Logger
+	inputValidator *InputValidator
 }
 
 // NewDataPipelineEndpoints создает новый DataPipelineEndpoints
 func NewDataPipelineEndpoints(pipeline *pipeline.DataPipeline, logger *zap.Logger) *DataPipelineEndpoints {
 	return &DataPipelineEndpoints{
-		pipeline: pipeline,
-		logger:   logger,
+		pipeline:       pipeline,
+		logger:         logger,
+		inputValidator: NewInputValidator(logger),
 	}
 }
 
@@ -94,14 +96,16 @@ func (dpe *DataPipelineEndpoints) GetPipelineStatus(c *gin.Context) {
 // GetCollectorData возвращает данные от коллектора
 func (dpe *DataPipelineEndpoints) GetCollectorData(c *gin.Context) {
 	collectorName := c.Param("collector")
-	if collectorName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":    "error",
-			"message":   "Collector name is required",
-			"timestamp": time.Now(),
-		})
+
+	// Валидируем имя коллектора
+	validationResult := dpe.inputValidator.ValidateCollectorName(collectorName)
+	if !validationResult.Valid {
+		dpe.inputValidator.HandleValidationError(c, validationResult)
 		return
 	}
+
+	// Используем валидированное имя коллектора
+	collectorName = validationResult.Data.(string)
 
 	dpe.logger.Info("Getting collector data", zap.String("collector", collectorName))
 
@@ -146,16 +150,15 @@ func (dpe *DataPipelineEndpoints) QueryData(c *gin.Context) {
 		return
 	}
 
-	// Устанавливаем значения по умолчанию
-	if req.EndTime.IsZero() {
-		req.EndTime = time.Now()
+	// Валидируем запрос
+	validationResult := dpe.inputValidator.ValidateDataQueryRequest(&req, nil)
+	if !validationResult.Valid {
+		dpe.inputValidator.HandleValidationError(c, validationResult)
+		return
 	}
-	if req.StartTime.IsZero() {
-		req.StartTime = req.EndTime.Add(-24 * time.Hour) // Последние 24 часа
-	}
-	if req.Limit == 0 {
-		req.Limit = 1000
-	}
+
+	// Используем валидированные данные
+	req = *validationResult.Data.(*DataQueryRequest)
 
 	dpe.logger.Info("Querying data",
 		zap.Time("start_time", req.StartTime),

@@ -364,14 +364,21 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		)
 	}
 
-	loggerInstance.Info("API Config", zap.Int("port", cfg.API.Port), zap.Bool("enabled", cfg.API.Enabled))
+	// Ensure API port is set correctly
+	apiPort := cfg.API.Port
+	if apiPort == 0 {
+		apiPort = 8082 // fallback to default port
+		loggerInstance.Warn("API port was 0, using fallback port 8082")
+	}
+
+	loggerInstance.Info("API Config", zap.Int("port", apiPort), zap.Bool("enabled", cfg.API.Enabled))
 	loggerInstance.Info("DEBUG: About to create P2P API Server")
-	p2pAPIServer = NewP2PAPIServerWithKeycloak(loggerInstance.GetZapLogger(), jwtSecret, cfg.API.Port, allowedIPs, keycloakValidator)
+	p2pAPIServer = NewP2PAPIServerWithKeycloak(loggerInstance.GetZapLogger(), jwtSecret, apiPort, allowedIPs, keycloakValidator)
 	loggerInstance.Info("NewP2PAPIServer call completed", zap.Bool("server_created", p2pAPIServer != nil))
 
 	if p2pAPIServer != nil {
 		loggerInstance.Info("P2P API Server initialized successfully",
-			zap.Int("port", cfg.API.Port),
+			zap.Int("port", apiPort),
 			zap.String("host", "0.0.0.0"),
 		)
 
