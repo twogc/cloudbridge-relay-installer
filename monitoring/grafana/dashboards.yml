@@ -1,4 +1,3 @@
-# Grafana Dashboards Configuration
 apiVersion: 1
 
 providers:
@@ -10,25 +9,14 @@ providers:
     updateIntervalSeconds: 10
     allowUiUpdates: true
     options:
-      path: /var/lib/grafana/dashboards
+      path: /var/lib/grafana/dashboards/cloudbridge
 
-  - name: 'kubernetes-dashboards'
+  - name: 'ai-dashboards'
     orgId: 1
-    folder: 'Kubernetes'
+    folder: 'AI System'
     type: file
     disableDeletion: false
     updateIntervalSeconds: 10
     allowUiUpdates: true
     options:
-      path: /var/lib/grafana/dashboards/kubernetes
-
-  - name: 'infrastructure-dashboards'
-    orgId: 1
-    folder: 'Infrastructure'
-    type: file
-    disableDeletion: false
-    updateIntervalSeconds: 10
-    allowUiUpdates: true
-    options:
-      path: /var/lib/grafana/dashboards/infrastructure
-
+      path: /var/lib/grafana/dashboards/ai

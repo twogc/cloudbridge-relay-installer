@@ -21,6 +21,7 @@ rule_files:
   - "rules/*.yml"
   - "rules/cloudbridge-*.yml"
   - "rules/kubernetes-*.yml"
+  - "rules/ai-*.yml"
 
 # A scrape configuration containing exactly one endpoint to scrape:
 scrape_configs:
@@ -43,6 +44,23 @@ scrape_configs:
       - source_labels: [__meta_kubernetes_service_name]
         action: keep
         regex: cloudbridge-relay
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: metrics
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+
+  # AI Service
+  - job_name: 'ai-service'
+    kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+            - cloudbridge
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: ai-service
       - source_labels: [__meta_kubernetes_endpoint_port_name]
         action: keep
         regex: metrics

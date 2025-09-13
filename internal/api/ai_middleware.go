@@ -273,6 +273,16 @@ func (m *AIMiddleware) CleanupCache() {
 	m.cache.Cleanup()
 }
 
+// GetCacheStats возвращает статистику кэша
+func (m *AIMiddleware) GetCacheStats() map[string]int {
+	return m.cache.GetStats()
+}
+
+// GetCircuitBreakerStats возвращает статистику circuit breaker
+func (m *AIMiddleware) GetCircuitBreakerStats() map[string]interface{} {
+	return m.circuitBreaker.GetStats()
+}
+
 // AIMiddlewareGin создает Gin middleware для AI обработки
 func AIMiddlewareGin(aiMiddleware *AIMiddleware) gin.HandlerFunc {
 	return func(c *gin.Context) {

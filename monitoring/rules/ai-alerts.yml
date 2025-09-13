@@ -1,0 +1,133 @@
+groups:
+- name: ai-alerts
+  rules:
+  - alert: HighAnomalyRate
+    expr: rate(ai_anomalies_detected_total[5m]) > 0.1
+    for: 2m
+    labels:
+      severity: warning
+      service: ai
+      component: anomaly-detection
+    annotations:
+      summary: "High anomaly detection rate"
+      description: "Anomaly detection rate is {{ $value }} anomalies per second"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-anomaly-detection"
+
+  - alert: AIServiceDown
+    expr: ai_service_health == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: ai
+    annotations:
+      summary: "AI Service is down"
+      description: "AI Service {{ $labels.service }} component {{ $labels.component }} is unhealthy"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-service-recovery"
+
+  - alert: HighAIProcessingLatency
+    expr: histogram_quantile(0.95, rate(ai_processing_duration_seconds_bucket[5m])) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+      service: ai
+      component: processing
+    annotations:
+      summary: "High AI processing latency"
+      description: "95th percentile AI processing latency is {{ $value }}s"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-performance-optimization"
+
+  - alert: LowCacheHitRate
+    expr: rate(ai_cache_hits_total[5m]) / (rate(ai_cache_hits_total[5m]) + rate(ai_cache_misses_total[5m])) < 0.8
+    for: 10m
+    labels:
+      severity: warning
+      service: ai
+      component: cache
+    annotations:
+      summary: "Low AI cache hit rate"
+      description: "AI cache hit rate is {{ $value }}%"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-cache-optimization"
+
+  - alert: AICircuitBreakerOpen
+    expr: ai_circuit_breaker_state == 1
+    for: 30s
+    labels:
+      severity: critical
+      service: ai
+      component: circuit-breaker
+    annotations:
+      summary: "AI Circuit Breaker is open"
+      description: "AI Circuit Breaker for {{ $labels.service }} is open due to failures"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-circuit-breaker"
+
+  - alert: LowAnomalyDetectionAccuracy
+    expr: ai_anomaly_detection_accuracy < 0.9
+    for: 15m
+    labels:
+      severity: warning
+      service: ai
+      component: anomaly-detection
+    annotations:
+      summary: "Low anomaly detection accuracy"
+      description: "Anomaly detection accuracy is {{ $value }}%"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-model-retraining"
+
+  - alert: HighAIMemoryUsage
+    expr: ai_memory_usage_bytes / 1024 / 1024 / 1024 > 2
+    for: 5m
+    labels:
+      severity: warning
+      service: ai
+      component: memory
+    annotations:
+      summary: "High AI memory usage"
+      description: "AI component {{ $labels.component }} is using {{ $value }}GB of memory"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-resource-optimization"
+
+  - alert: HighAICPUUsage
+    expr: ai_cpu_usage_percent > 80
+    for: 5m
+    labels:
+      severity: warning
+      service: ai
+      component: cpu
+    annotations:
+      summary: "High AI CPU usage"
+      description: "AI component {{ $labels.component }} is using {{ $value }}% CPU"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-resource-optimization"
+
+  - alert: LoadPredictionAccuracyLow
+    expr: ai_load_prediction_accuracy < 0.8
+    for: 10m
+    labels:
+      severity: warning
+      service: ai
+      component: load-prediction
+    annotations:
+      summary: "Low load prediction accuracy"
+      description: "Load prediction accuracy for {{ $labels.model_version }} is {{ $value }}%"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-model-retraining"
+
+  - alert: RouteOptimizationLatencyHigh
+    expr: histogram_quantile(0.95, rate(ai_route_optimization_latency_seconds_bucket[5m])) > 0.05
+    for: 5m
+    labels:
+      severity: warning
+      service: ai
+      component: route-optimization
+    annotations:
+      summary: "High route optimization latency"
+      description: "95th percentile route optimization latency is {{ $value }}s"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-performance-optimization"
+
+  - alert: AIAutomationRateLow
+    expr: ai_automation_rate_percent < 70
+    for: 15m
+    labels:
+      severity: info
+      service: ai
+      component: automation
+    annotations:
+      summary: "Low AI automation rate"
+      description: "AI automation rate for {{ $labels.operation_type }} is {{ $value }}%"
+      runbook_url: "https://docs.cloudbridge.com/runbooks/ai-automation-improvement"
