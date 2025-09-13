@@ -242,3 +242,4 @@ ok      github.com/twogc/cloudbridge-relay-installer/internal/ai/ml
 ---
 
 *Проверка завершена: 13 сентября 2025*
+

@@ -1,24 +1,31 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ai/anomaly"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ai/predictive"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ai/routing"
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"go.uber.org/zap"
 )
 
 // APIRouter настраивает маршруты API
 type APIRouter struct {
-	peerManager     *PeerManager
-	relayManager    *RelayManager
-	healthManager   *HealthManager
-	protocolHandler *ProtocolHandler
-	hub             *Hub
-	logger          *zap.Logger
-	aiMiddleware    *AIMiddleware
+	peerManager           *PeerManager
+	relayManager          *RelayManager
+	healthManager         *HealthManager
+	protocolHandler       *ProtocolHandler
+	hub                   *Hub
+	logger                *zap.Logger
+	aiMiddleware          *AIMiddleware
+	aiEndpoints           *AIEndpoints
+	dataPipelineEndpoints *DataPipelineEndpoints
+	monitoringEndpoints   *MonitoringEndpoints
 }
 
 // NewAPIRouter создает новый APIRouter
@@ -49,15 +56,33 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 	aiConfig := ai.GetDefaultConfig()
 	aiMiddleware := NewAIMiddleware(aiClient, aiConfig, logger)
 
+	// Создание AI endpoints
+	logger.Info("Creating AI endpoints...")
+	// TODO: создать адаптер для ai.Client чтобы он соответствовал AIServiceInterface
+	// Создаем заглушку для AI сервиса
+	mockAIService := &MockAIService{}
+	aiEndpoints := NewAIEndpoints(mockAIService, logger)
+
+	// Создание Data Pipeline endpoints
+	logger.Info("Creating Data Pipeline endpoints...")
+	dataPipelineEndpoints := NewDataPipelineEndpoints(nil, logger) // TODO: передать реальный pipeline
+
+	// Создание Monitoring endpoints
+	logger.Info("Creating Monitoring endpoints...")
+	monitoringEndpoints := NewMonitoringEndpoints(logger)
+
 	logger.Info("API router components created successfully")
 
 	return &APIRouter{
-		peerManager:   peerManager,
-		relayManager:  relayManager,
-		healthManager: healthManager,
-		hub:           hub,
-		logger:        logger,
-		aiMiddleware:  aiMiddleware,
+		peerManager:           peerManager,
+		relayManager:          relayManager,
+		healthManager:         healthManager,
+		hub:                   hub,
+		logger:                logger,
+		aiMiddleware:          aiMiddleware,
+		aiEndpoints:           aiEndpoints,
+		dataPipelineEndpoints: dataPipelineEndpoints,
+		monitoringEndpoints:   monitoringEndpoints,
 	}
 }
 
@@ -83,14 +108,37 @@ func NewAPIRouterWithConfig(logger *zap.Logger, validator TokenValidator, allowe
 	logger.Info("Creating HealthManager...")
 	healthManager := NewHealthManager(hub, peers, connections, logger)
 
+	// Создание AI middleware
+	logger.Info("Creating AI Middleware...")
+	aiClient := ai.NewClient("http://localhost:8083", logger)
+	aiConfig := ai.GetDefaultConfig()
+	aiMiddleware := NewAIMiddleware(aiClient, aiConfig, logger)
+
+	// Создание AI endpoints
+	logger.Info("Creating AI endpoints...")
+	mockAIService := &MockAIService{}
+	aiEndpoints := NewAIEndpoints(mockAIService, logger)
+
+	// Создание Data Pipeline endpoints
+	logger.Info("Creating Data Pipeline endpoints...")
+	dataPipelineEndpoints := NewDataPipelineEndpoints(nil, logger)
+
+	// Создание Monitoring endpoints
+	logger.Info("Creating Monitoring endpoints...")
+	monitoringEndpoints := NewMonitoringEndpoints(logger)
+
 	logger.Info("API router components created successfully with configuration")
 
 	return &APIRouter{
-		peerManager:   peerManager,
-		relayManager:  relayManager,
-		healthManager: healthManager,
-		hub:           hub,
-		logger:        logger,
+		peerManager:           peerManager,
+		relayManager:          relayManager,
+		healthManager:         healthManager,
+		hub:                   hub,
+		logger:                logger,
+		aiMiddleware:          aiMiddleware,
+		aiEndpoints:           aiEndpoints,
+		dataPipelineEndpoints: dataPipelineEndpoints,
+		monitoringEndpoints:   monitoringEndpoints,
 	}
 }
 
@@ -116,6 +164,25 @@ func NewAPIRouterWithKeycloak(logger *zap.Logger, validator TokenValidator, keyc
 	logger.Info("Creating HealthManager...")
 	healthManager := NewHealthManager(hub, peers, connections, logger)
 
+	// Создание AI middleware
+	logger.Info("Creating AI Middleware...")
+	aiClient := ai.NewClient("http://localhost:8083", logger)
+	aiConfig := ai.GetDefaultConfig()
+	aiMiddleware := NewAIMiddleware(aiClient, aiConfig, logger)
+
+	// Создание AI endpoints
+	logger.Info("Creating AI endpoints...")
+	mockAIService := &MockAIService{}
+	aiEndpoints := NewAIEndpoints(mockAIService, logger)
+
+	// Создание Data Pipeline endpoints
+	logger.Info("Creating Data Pipeline endpoints...")
+	dataPipelineEndpoints := NewDataPipelineEndpoints(nil, logger)
+
+	// Создание Monitoring endpoints
+	logger.Info("Creating Monitoring endpoints...")
+	monitoringEndpoints := NewMonitoringEndpoints(logger)
+
 	// Создание ProtocolHandler если есть Keycloak валидатор
 	var protocolHandler *ProtocolHandler
 	if keycloakValidator != nil {
@@ -126,12 +193,16 @@ func NewAPIRouterWithKeycloak(logger *zap.Logger, validator TokenValidator, keyc
 	logger.Info("API router components created successfully with Keycloak validation")
 
 	return &APIRouter{
-		peerManager:     peerManager,
-		relayManager:    relayManager,
-		healthManager:   healthManager,
-		protocolHandler: protocolHandler,
-		hub:             hub,
-		logger:          logger,
+		peerManager:           peerManager,
+		relayManager:          relayManager,
+		healthManager:         healthManager,
+		protocolHandler:       protocolHandler,
+		hub:                   hub,
+		logger:                logger,
+		aiMiddleware:          aiMiddleware,
+		aiEndpoints:           aiEndpoints,
+		dataPipelineEndpoints: dataPipelineEndpoints,
+		monitoringEndpoints:   monitoringEndpoints,
 	}
 }
 
@@ -184,6 +255,40 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 			health.GET("/metrics", r.healthManager.GetSystemMetrics)
 			health.GET("/peers", r.healthManager.GetPeerMetrics)
 			health.GET("/connections", r.healthManager.GetConnectionMetrics)
+		}
+
+		// AI endpoints
+		ai := v1.Group("/ai")
+		{
+			r.logger.Info("Registering AI endpoints")
+			ai.GET("/status", r.aiEndpoints.GetAIStatus)
+			ai.GET("/health", r.aiEndpoints.GetAIHealth)
+			ai.GET("/metrics", r.aiEndpoints.GetAIMetrics)
+			ai.POST("/detect-anomaly", r.aiEndpoints.DetectAnomaly)
+			ai.GET("/predict-load", r.aiEndpoints.PredictLoad)
+			ai.POST("/optimize-route", r.aiEndpoints.OptimizeRoute)
+		}
+
+		// Data Pipeline endpoints
+		pipeline := v1.Group("/pipeline")
+		{
+			pipeline.GET("/status", r.dataPipelineEndpoints.GetPipelineStatus)
+			pipeline.GET("/metrics", r.dataPipelineEndpoints.GetPipelineMetrics)
+			pipeline.GET("/data-types", r.dataPipelineEndpoints.GetDataTypes)
+			pipeline.POST("/query", r.dataPipelineEndpoints.QueryData)
+			pipeline.POST("/start", r.dataPipelineEndpoints.StartPipeline)
+			pipeline.POST("/stop", r.dataPipelineEndpoints.StopPipeline)
+			pipeline.GET("/collectors/:collector/data", r.dataPipelineEndpoints.GetCollectorData)
+		}
+
+		// Extended monitoring endpoints
+		monitoring := v1.Group("/monitoring")
+		{
+			r.logger.Info("Registering monitoring endpoints")
+			monitoring.GET("/system", r.monitoringEndpoints.GetSystemMetrics)
+			monitoring.GET("/health", r.monitoringEndpoints.GetHealthCheck)
+			monitoring.GET("/prometheus", r.monitoringEndpoints.GetPrometheusMetrics)
+			monitoring.GET("/services", r.monitoringEndpoints.GetServiceStatus)
 		}
 	}
 
@@ -248,6 +353,60 @@ func (r *APIRouter) GetRelayManager() *RelayManager {
 // GetHealthManager возвращает HealthManager
 func (r *APIRouter) GetHealthManager() *HealthManager {
 	return r.healthManager
+}
+
+// GetAIEndpoints возвращает AIEndpoints
+func (r *APIRouter) GetAIEndpoints() *AIEndpoints {
+	return r.aiEndpoints
+}
+
+// GetDataPipelineEndpoints возвращает DataPipelineEndpoints
+func (r *APIRouter) GetDataPipelineEndpoints() *DataPipelineEndpoints {
+	return r.dataPipelineEndpoints
+}
+
+// GetMonitoringEndpoints возвращает MonitoringEndpoints
+func (r *APIRouter) GetMonitoringEndpoints() *MonitoringEndpoints {
+	return r.monitoringEndpoints
+}
+
+// MockAIService заглушка для AI сервиса
+type MockAIService struct{}
+
+func (m *MockAIService) GetStatus() *ai.ServiceStatus {
+	return &ai.ServiceStatus{
+		Status: "running",
+		Components: map[string]bool{
+			"anomaly_detection":  true,
+			"load_prediction":    true,
+			"route_optimization": true,
+		},
+	}
+}
+
+func (m *MockAIService) DetectAnomaly(ctx context.Context, metrics *anomaly.NetworkMetrics) (*anomaly.AnomalyResult, error) {
+	return &anomaly.AnomalyResult{
+		IsAnomaly:   false,
+		Score:       0.1,
+		AnomalyType: "normal",
+		Severity:    "low",
+	}, nil
+}
+
+func (m *MockAIService) PredictLoad(ctx context.Context, horizon int) (*predictive.LoadPrediction, error) {
+	return &predictive.LoadPrediction{
+		Forecast:   []float64{0.5, 0.6, 0.7},
+		Confidence: 0.85,
+	}, nil
+}
+
+func (m *MockAIService) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.OptimizedRoute, error) {
+	return &routing.OptimizedRoute{
+		Path:             []string{source, destination},
+		PredictedLatency: 100.5,
+		Confidence:       0.9,
+		Protocol:         "QUIC",
+	}, nil
 }
 
 // MockTokenValidator для тестирования

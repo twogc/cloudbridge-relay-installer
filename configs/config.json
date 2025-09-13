@@ -231,23 +231,23 @@
     }
   },
   "ai": {
-    "enabled": false,
+    "enabled": true,
     "behavior_analysis": {
-      "enabled": false,
-      "model_path": "",
+      "enabled": true,
+      "model_path": "/models/behavior",
       "threshold": 0.8,
       "learning_rate": 0.01
     },
     "predictive_security": {
-      "enabled": false,
+      "enabled": true,
       "confidence": 0.9
     },
     "automated_response": {
-      "enabled": false
+      "enabled": true
     },
     "monitoring": {
-      "enabled": false,
-      "dashboard_url": "",
+      "enabled": true,
+      "dashboard_url": "http://grafana:3000",
       "refresh_rate": "30s"
     }
   },
