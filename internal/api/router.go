@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"go.uber.org/zap"
 )
@@ -17,6 +18,7 @@ type APIRouter struct {
 	protocolHandler *ProtocolHandler
 	hub             *Hub
 	logger          *zap.Logger
+	aiMiddleware    *AIMiddleware
 }
 
 // NewAPIRouter создает новый APIRouter
@@ -41,6 +43,12 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 	logger.Info("Creating HealthManager...")
 	healthManager := NewHealthManager(hub, peers, connections, logger)
 
+	// Создание AI middleware
+	logger.Info("Creating AI Middleware...")
+	aiClient := ai.NewClient("http://localhost:8083", logger)
+	aiConfig := ai.GetDefaultConfig()
+	aiMiddleware := NewAIMiddleware(aiClient, aiConfig, logger)
+
 	logger.Info("API router components created successfully")
 
 	return &APIRouter{
@@ -49,6 +57,7 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 		healthManager: healthManager,
 		hub:           hub,
 		logger:        logger,
+		aiMiddleware:  aiMiddleware,
 	}
 }
 
