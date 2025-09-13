@@ -68,22 +68,22 @@
 
 ```bash
 # Изучите структуру проекта
-tree cmd/relay-server/
-tree internal/relay/
+tree cmd/relay/
+tree internal/api/
 ```
 
 **Ключевые файлы для изучения**:
-- `cmd/relay-server/main.go` - Точка входа
-- `internal/relay/server.go` - Основной сервер
-- `internal/relay/handler.go` - Обработчики запросов
-- `internal/relay/connection.go` - Управление соединениями
+- `cmd/relay/main.go` - Точка входа
+- `internal/api/` - API обработчики
+- `internal/keycloak/` - Keycloak интеграция
+- `internal/api/protocol_handlers.go` - Обработчики протоколов
 
 ### **1.2 Создание AI Middleware**
 
-Создайте файл `internal/relay/ai_middleware.go`:
+Создайте файл `internal/api/ai_middleware.go`:
 
 ```go
-package relay
+package api
 
 import (
     "context"
@@ -372,7 +372,7 @@ func (m *AIMiddleware) CleanupCache() {
 
 ### **1.3 Интеграция в Relay Server**
 
-Обновите `internal/relay/server.go`:
+Обновите `cmd/relay/main.go`:
 
 ```go
 // Добавьте в структуру Server

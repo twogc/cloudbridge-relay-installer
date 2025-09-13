@@ -20,10 +20,10 @@
 ### Перед началом работы ОБЯЗАТЕЛЬНО изучите:
 
 1. **📖 Основная документация проекта**:
-   - `documentation/architecture/PROJECT_OVERVIEW.md` - Обзор архитектуры
-   - `documentation/architecture/SYSTEM_ARCHITECTURE.md` - Детальная архитектура
-   - `AI_INTEGRATION_FINAL_REPORT.md` - Отчет по AI интеграции
-   - `AI_CADENCE_KUBERNETES_FINAL_REPORT.md` - Отчет по Cadence интеграции
+   - `docs/analysis/CLOUDBRIDGE_COMPREHENSIVE_ANALYSIS.md` - Обзор архитектуры
+   - `docs/analysis/CODEBASE_ANALYSIS.md` - Детальная архитектура
+   - `docs/analysis/AI_INTEGRATION_FINAL_REPORT.md` - Отчет по AI интеграции
+   - `docs/analysis/AI_CADENCE_KUBERNETES_FINAL_REPORT.md` - Отчет по Cadence интеграции
 
 2. **🔧 Техническая документация**:
    - `docs/cadence/WORKFLOW_GUIDE.md` - Руководство по Cadence workflows
@@ -36,7 +36,7 @@
    - `config/ai-config.yaml` - Конфигурация AI
 
 4. **🚀 Текущее состояние**:
-   - `test-ai-workflows.sh` - Тестовый скрипт (запустите для понимания текущего состояния)
+   - `scripts/setup/test-ai-workflows.sh` - Тестовый скрипт (запустите для понимания текущего состояния)
    - `k8s/deployments/` - Kubernetes манифесты
    - `cmd/ai-service/` и `cmd/ai-worker/` - Основные сервисы
 
@@ -56,7 +56,7 @@
 ### 🧪 Протестированные компоненты:
 ```bash
 # Запустите для проверки текущего состояния:
-./test-ai-workflows.sh
+./scripts/setup/test-ai-workflows.sh
 ```
 
 **Результаты тестирования**:
@@ -277,8 +277,8 @@
 
 ### **Перед началом работы**:
 - [ ] Изучить всю документацию проекта
-- [ ] Запустить `./test-ai-workflows.sh` для понимания текущего состояния
-- [ ] Ознакомиться с архитектурой в `documentation/architecture/`
+- [ ] Запустить `./scripts/setup/test-ai-workflows.sh` для понимания текущего состояния
+- [ ] Ознакомиться с архитектурой в `docs/analysis/`
 - [ ] Изучить Cadence workflows в `internal/cadence/workflows/ai.go`
 
 ### **Задача 1 - Интеграция с Relay Server**:
@@ -317,7 +317,7 @@
 ### **Автоматические тесты**:
 ```bash
 # Запуск тестов AI системы
-./test-ai-workflows.sh
+./scripts/setup/test-ai-workflows.sh
 
 # Запуск unit тестов
 go test ./internal/ai/...
