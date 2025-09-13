@@ -25,11 +25,12 @@ type Service struct {
 	metrics         *AIMetrics
 
 	// Service state
-	started bool
-	stopCh  chan struct{}
-	wg      sync.WaitGroup
-	ctx     context.Context
-	cancel  context.CancelFunc
+	started   bool
+	startTime time.Time
+	stopCh    chan struct{}
+	wg        sync.WaitGroup
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // NewService creates a new AI service
@@ -156,6 +157,7 @@ func (s *Service) Start() error {
 	go s.backgroundProcessing()
 
 	s.started = true
+	s.startTime = time.Now()
 	s.logger.Info("AI service started successfully")
 	return nil
 }
@@ -306,24 +308,41 @@ func (s *Service) processData() {
 
 // GetStatus returns the current status of the AI service
 func (s *Service) GetStatus() *ServiceStatus {
+	status := "stopped"
+	if s.started {
+		status = "running"
+	}
+
+	components := map[string]bool{
+		"anomaly_detector": s.anomalyDetector != nil,
+		"load_predictor":   s.loadPredictor != nil,
+		"route_optimizer":  s.routeOptimizer != nil,
+		"data_pipeline":    s.dataPipeline != nil,
+		"monitoring":       s.monitoring != nil,
+	}
+
+	performance := map[string]interface{}{
+		"metrics": s.metrics.GetMetrics(),
+	}
+
 	return &ServiceStatus{
-		Started:         s.started,
-		AnomalyDetector: s.anomalyDetector != nil,
-		LoadPredictor:   s.loadPredictor != nil,
-		RouteOptimizer:  s.routeOptimizer != nil,
-		DataPipeline:    s.dataPipeline != nil,
-		Monitoring:      s.monitoring != nil,
-		Metrics:         s.metrics.GetMetrics(),
+		Status:      status,
+		Components:  components,
+		Performance: performance,
+		Health:      s.started && s.anomalyDetector != nil && s.loadPredictor != nil && s.routeOptimizer != nil,
+		Resources:   map[string]interface{}{}, // Заглушка для ресурсов
+		Uptime:      time.Since(s.startTime),
+		LastUpdate:  time.Now(),
 	}
 }
 
 // ServiceStatus represents the status of the AI service
 type ServiceStatus struct {
-	Started         bool                   `json:"started"`
-	AnomalyDetector bool                   `json:"anomaly_detector"`
-	LoadPredictor   bool                   `json:"load_predictor"`
-	RouteOptimizer  bool                   `json:"route_optimizer"`
-	DataPipeline    bool                   `json:"data_pipeline"`
-	Monitoring      bool                   `json:"monitoring"`
-	Metrics         map[string]interface{} `json:"metrics"`
+	Status      string                 `json:"status"`
+	Components  map[string]bool        `json:"components"`
+	Performance map[string]interface{} `json:"performance"`
+	Health      bool                   `json:"health"`
+	Resources   map[string]interface{} `json:"resources"`
+	Uptime      time.Duration          `json:"uptime"`
+	LastUpdate  time.Time              `json:"last_update"`
 }

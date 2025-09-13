@@ -3,6 +3,8 @@ package ai
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -96,9 +98,9 @@ type Monitoring struct {
 
 // AlertThresholds configuration
 type AlertThresholds struct {
-	AnomalyScore      float64       `yaml:"anomaly_score"`
-	PredictionAccuracy float64      `yaml:"prediction_accuracy"`
-	ProcessingLatency time.Duration `yaml:"processing_latency"`
+	AnomalyScore       float64       `yaml:"anomaly_score"`
+	PredictionAccuracy float64       `yaml:"prediction_accuracy"`
+	ProcessingLatency  time.Duration `yaml:"processing_latency"`
 }
 
 // Storage configuration
@@ -111,17 +113,17 @@ type Storage struct {
 
 // API configuration
 type API struct {
-	Enabled    bool `yaml:"enabled"`
-	Port       int  `yaml:"port"`
+	Enabled     bool `yaml:"enabled"`
+	Port        int  `yaml:"port"`
 	CORSEnabled bool `yaml:"cors_enabled"`
-	RateLimit  int  `yaml:"rate_limit"`
+	RateLimit   int  `yaml:"rate_limit"`
 }
 
 // Development configuration
 type Development struct {
-	Debug     bool `yaml:"debug"`
-	MockData  bool `yaml:"mock_data"`
-	TestMode  bool `yaml:"test_mode"`
+	Debug    bool `yaml:"debug"`
+	MockData bool `yaml:"mock_data"`
+	TestMode bool `yaml:"test_mode"`
 }
 
 // LoadConfig loads AI configuration from file
@@ -130,9 +132,15 @@ func LoadConfig(configPath string) (*Config, error) {
 		configPath = "config/ai-config.yaml"
 	}
 
-	data, err := os.ReadFile(configPath)
+	// Валидация пути для предотвращения path traversal атак
+	cleanPath := filepath.Clean(configPath)
+	if strings.Contains(cleanPath, "..") || strings.HasPrefix(cleanPath, "/") {
+		return nil, fmt.Errorf("invalid config path: %s", configPath)
+	}
+
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file %s: %w", configPath, err)
+		return nil, fmt.Errorf("failed to read config file %s: %w", cleanPath, err)
 	}
 
 	var config Config
@@ -251,4 +259,3 @@ func GetDefaultConfig() *Config {
 		},
 	}
 }
-

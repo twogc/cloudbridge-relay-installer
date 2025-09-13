@@ -38,12 +38,24 @@ type ARIMAParams struct {
 	Q int `yaml:"q"` // moving average
 }
 
+// ConfidenceInterval представляет доверительный интервал
+type ConfidenceInterval struct {
+	Lower float64 `json:"lower"`
+	Upper float64 `json:"upper"`
+}
+
 // LoadPrediction результат предсказания нагрузки
 type LoadPrediction struct {
-	Forecast   []float64 `json:"forecast"`
-	Confidence float64   `json:"confidence"`
-	Horizon    int       `json:"horizon"`
-	Timestamp  time.Time `json:"timestamp"`
+	Forecast           []float64            `json:"forecast"`
+	Confidence         float64              `json:"confidence"`
+	ConfidenceInterval []ConfidenceInterval `json:"confidence_interval"`
+	Horizon            int                  `json:"horizon"`
+	Timestamp          time.Time            `json:"timestamp"`
+	ModelID            string               `json:"model_id"`
+	Features           map[string]float64   `json:"features"`
+	ProcessingTime     time.Duration        `json:"processing_time"`
+	Seasonality        float64              `json:"seasonality"`
+	Trend              float64              `json:"trend"`
 }
 
 // NewLoadPredictor создает новый предсказатель нагрузки
@@ -250,4 +262,3 @@ func (lp *LoadPredictor) GetMetrics() map[string]interface{} {
 		"confidence_level": lp.config.ConfidenceLevel,
 	}
 }
-

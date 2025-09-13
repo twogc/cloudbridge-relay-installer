@@ -29,7 +29,7 @@ func TestServerIntegration(t *testing.T) {
 	assert.True(t, server.enhancedEnabled)
 	assert.True(t, server.wireGuardEnabled)
 	assert.True(t, server.quantumEnabled)
-	assert.True(t, server.aiAnalyticsEnabled)
+	assert.True(t, server.aiComponents.Enabled)
 
 	// Проверяем WireGuard компоненты
 	assert.NotNil(t, server.wireGuardInterface)
@@ -45,10 +45,12 @@ func TestServerIntegration(t *testing.T) {
 	assert.NotNil(t, server.quantumEnhancedQUIC)
 
 	// Проверяем AI компоненты
-	assert.NotNil(t, server.aiBehaviorAnalyzer)
-	assert.NotNil(t, server.aiPredictiveSecurity)
-	assert.NotNil(t, server.aiAutomatedResponse)
-	assert.NotNil(t, server.aiMonitoring)
+	assert.NotNil(t, server.aiComponents.BehaviorAnalyzer)
+	assert.NotNil(t, server.aiComponents.PredictiveSecurity)
+	assert.NotNil(t, server.aiComponents.AutomatedResponse)
+	assert.NotNil(t, server.aiComponents.Monitoring)
+	assert.NotNil(t, server.aiComponents.Middleware)
+	assert.NotNil(t, server.aiComponents.ServerIntegration)
 }
 
 func TestServerStartStop(t *testing.T) {
@@ -117,7 +119,7 @@ func TestServerWithAllModulesEnabled(t *testing.T) {
 	assert.True(t, server.enhancedEnabled)
 	assert.True(t, server.wireGuardEnabled)
 	assert.True(t, server.quantumEnabled)
-	assert.True(t, server.aiAnalyticsEnabled)
+	assert.True(t, server.aiComponents.Enabled)
 
 	// Проверяем конфигурацию WireGuard (более гибкие проверки)
 	assert.NotNil(t, server.wireGuardInterface)
@@ -129,8 +131,8 @@ func TestServerWithAllModulesEnabled(t *testing.T) {
 	assert.Equal(t, "kyber", string(server.quantumConfig.Algorithm))
 
 	// Проверяем конфигурацию AI
-	assert.NotNil(t, server.aiBehaviorAnalyzer)
-	assert.True(t, server.aiBehaviorAnalyzer.Enabled)
+	assert.NotNil(t, server.aiComponents.BehaviorAnalyzer)
+	assert.True(t, server.aiComponents.BehaviorAnalyzer.Enabled)
 }
 
 func TestServerWithPartialModules(t *testing.T) {
@@ -150,11 +152,11 @@ func TestServerWithPartialModules(t *testing.T) {
 	assert.False(t, server.enhancedEnabled)
 	assert.True(t, server.wireGuardEnabled)
 	assert.False(t, server.quantumEnabled)
-	assert.True(t, server.aiAnalyticsEnabled)
+	assert.True(t, server.aiComponents.Enabled)
 
 	// Проверяем, что соответствующие компоненты инициализированы
 	assert.NotNil(t, server.wireGuardInterface)
-	assert.NotNil(t, server.aiBehaviorAnalyzer)
+	assert.NotNil(t, server.aiComponents.BehaviorAnalyzer)
 
 	// Проверяем, что отключенные модули не инициализированы
 	assert.Nil(t, server.quantumConfig)

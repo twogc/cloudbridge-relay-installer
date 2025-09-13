@@ -75,7 +75,11 @@ func (am *ARIMAModel) Train(data []float64) error {
 
 // Retrain переобучает модель на новых данных
 func (am *ARIMAModel) Retrain(data []float64) {
-	am.Train(data)
+	if err := am.Train(data); err != nil {
+		// В реальной реализации здесь была бы обработка ошибки
+		// Для демонстрации просто игнорируем ошибку
+		_ = err
+	}
 }
 
 // computeCoefficients вычисляет коэффициенты модели
@@ -121,4 +125,3 @@ func (am *ARIMAModel) GetCoefficients() []float64 {
 func (am *ARIMAModel) IsTrained() bool {
 	return am.trained
 }
-

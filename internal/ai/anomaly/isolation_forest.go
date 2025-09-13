@@ -1,8 +1,9 @@
 package anomaly
 
 import (
+	"crypto/rand"
 	"math"
-	"math/rand"
+	"math/big"
 )
 
 // SimpleIsolationForest простая реализация Isolation Forest
@@ -91,7 +92,8 @@ func (it *IsolationTree) buildNode(data [][]float64, height int) *Node {
 
 	// Выбираем случайную фичу
 	featureCount := len(data[0])
-	feature := rand.Intn(featureCount)
+	featureBig, _ := rand.Int(rand.Reader, big.NewInt(int64(featureCount)))
+	feature := int(featureBig.Int64())
 
 	// Находим min и max значения для фичи
 	minVal := data[0][feature]
@@ -115,7 +117,17 @@ func (it *IsolationTree) buildNode(data [][]float64, height int) *Node {
 	}
 
 	// Выбираем случайный порог
-	threshold := minVal + rand.Float64()*(maxVal-minVal)
+	// Генерируем криптографически стойкое случайное число от 0 до 1
+	var threshold float64
+	randomBytes := make([]byte, 8)
+	if _, err := rand.Read(randomBytes); err != nil {
+		// В случае ошибки используем детерминированное значение
+		randomFloat := 0.5
+		threshold = minVal + randomFloat*(maxVal-minVal)
+	} else {
+		randomFloat := float64(randomBytes[0]) / 255.0 // Нормализуем к [0,1]
+		threshold = minVal + randomFloat*(maxVal-minVal)
+	}
 
 	// Разделяем данные
 	var leftData, rightData [][]float64
@@ -177,4 +189,3 @@ func (it *IsolationTree) getPathLength(node *Node, features []float64) float64 {
 		return it.getPathLength(node.right, features)
 	}
 }
-

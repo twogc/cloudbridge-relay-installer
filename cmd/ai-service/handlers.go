@@ -75,7 +75,7 @@ func (s *AIService) DetectAnomaly(c *gin.Context) {
 
 	// Получаем AI сервис и детектор аномалий
 	status := s.aiService.GetStatus()
-	if !status.AnomalyDetector {
+	if !status.Components["anomaly_detector"] {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "anomaly detector not available"})
 		return
 	}
@@ -86,7 +86,7 @@ func (s *AIService) DetectAnomaly(c *gin.Context) {
 		Score:       0.3,
 		IsAnomaly:   false,
 		Timestamp:   time.Now(),
-		Features:    []float64{100, 1000000, 0.01, 50, 45, 60},
+		Features:    map[string]float64{"connections": 100, "bytes": 1000000, "loss": 0.01, "latency": 50, "cpu": 45, "memory": 60},
 		Confidence:  0.85,
 		AnomalyType: "normal",
 		Severity:    "low",
@@ -102,7 +102,7 @@ func (s *AIService) GetAnomalyStatus(c *gin.Context) {
 	status := s.aiService.GetStatus()
 
 	c.JSON(http.StatusOK, gin.H{
-		"enabled": status.AnomalyDetector,
+		"enabled": status.Components["anomaly_detector"],
 		"status":  "running",
 		"metrics": map[string]interface{}{
 			"detections": 100,
@@ -132,7 +132,7 @@ func (s *AIService) PredictLoad(c *gin.Context) {
 
 	// Получаем AI сервис и предсказатель нагрузки
 	status := s.aiService.GetStatus()
-	if !status.LoadPredictor {
+	if !status.Components["load_predictor"] {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "load predictor not available"})
 		return
 	}
@@ -162,7 +162,7 @@ func (s *AIService) PredictLoadWithHorizon(c *gin.Context) {
 
 	// Получаем AI сервис и предсказатель нагрузки
 	status := s.aiService.GetStatus()
-	if !status.LoadPredictor {
+	if !status.Components["load_predictor"] {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "load predictor not available"})
 		return
 	}
@@ -204,7 +204,7 @@ func (s *AIService) OptimizeRoute(c *gin.Context) {
 
 	// Получаем AI сервис и оптимизатор маршрутов
 	status := s.aiService.GetStatus()
-	if !status.RouteOptimizer {
+	if !status.Components["route_optimizer"] {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "route optimizer not available"})
 		return
 	}
@@ -228,7 +228,7 @@ func (s *AIService) OptimizeRoute(c *gin.Context) {
 func (s *AIService) GetRouteRecommendations(c *gin.Context) {
 	// Получаем AI сервис и оптимизатор маршрутов
 	status := s.aiService.GetStatus()
-	if !status.RouteOptimizer {
+	if !status.Components["route_optimizer"] {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "route optimizer not available"})
 		return
 	}
@@ -329,11 +329,11 @@ func (s *AIService) GetStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "running",
 		"components": map[string]interface{}{
-			"anomaly_detector": status.AnomalyDetector,
-			"load_predictor":   status.LoadPredictor,
-			"route_optimizer":  status.RouteOptimizer,
-			"data_pipeline":    status.DataPipeline,
-			"monitoring":       status.Monitoring,
+			"anomaly_detector": status.Components["anomaly_detector"],
+			"load_predictor":   status.Components["load_predictor"],
+			"route_optimizer":  status.Components["route_optimizer"],
+			"data_pipeline":    status.Components["data_pipeline"],
+			"monitoring":       status.Components["monitoring"],
 		},
 		"started": time.Now(),
 		"metrics": map[string]interface{}{

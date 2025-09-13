@@ -20,7 +20,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/twogc/cloudbridge-relay-installer/config"
-	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
 	"github.com/twogc/cloudbridge-relay-installer/internal/balancer"
 	"github.com/twogc/cloudbridge-relay-installer/internal/cadence"
@@ -122,11 +121,7 @@ type Server struct {
 	quantumEnhancedQUIC *quantum.QuantumEnhancedQUIC
 
 	// AI Analytics components
-	aiAnalyticsEnabled   bool
-	aiBehaviorAnalyzer   *ai.BehaviorAnalyzer
-	aiPredictiveSecurity *ai.PredictiveSecurity
-	aiAutomatedResponse  *ai.AutomatedResponse
-	aiMonitoring         *ai.AIMonitoring
+	aiComponents *AIComponents
 
 	// Мультипротокольные компоненты
 	protocolSelector  *protocol.IntelligentProtocolSelector
@@ -434,24 +429,10 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize AI Analytics components
-	aiAnalyticsEnabled := cfg.AI.Enabled
-	var aiBehaviorAnalyzer *ai.BehaviorAnalyzer
-	var aiPredictiveSecurity *ai.PredictiveSecurity
-	var aiAutomatedResponse *ai.AutomatedResponse
-	var aiMonitoring *ai.AIMonitoring
-
-	if aiAnalyticsEnabled {
-		// Initialize AI components
-		aiBehaviorAnalyzer = ai.NewBehaviorAnalyzer()
-		aiPredictiveSecurity = ai.NewPredictiveSecurity()
-		aiAutomatedResponse = ai.NewAutomatedResponse()
-		aiMonitoring = ai.NewAIMonitoring()
-
-		loggerInstance.Info("AI Analytics initialized",
-			zap.Bool("behavior_analysis", aiBehaviorAnalyzer.Enabled),
-			zap.Bool("predictive_security", aiPredictiveSecurity.Enabled),
-			zap.Bool("automated_response", aiAutomatedResponse.Enabled),
-		)
+	aiComponents, err := InitializeAIComponents(cfg, loggerInstance)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to initialize AI components: %v", err)
 	}
 
 	// Initialize Multiprotocol components
@@ -535,11 +516,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		quantumConfig:          quantumConfig,
 		quantumWireGuard:       quantumWireGuard,
 		quantumEnhancedQUIC:    quantumEnhancedQUIC,
-		aiAnalyticsEnabled:     aiAnalyticsEnabled,
-		aiBehaviorAnalyzer:     aiBehaviorAnalyzer,
-		aiPredictiveSecurity:   aiPredictiveSecurity,
-		aiAutomatedResponse:    aiAutomatedResponse,
-		aiMonitoring:           aiMonitoring,
+		aiComponents:           aiComponents,
 		protocolSelector:       protocolSelector,
 		protocolEngine:         protocolEngine,
 		p2pManager:             p2pManager,
@@ -934,6 +911,14 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 // processConnection processes a connection
 func (s *Server) processConnection(conn net.Conn) error {
+	// Обрабатываем соединение через AI Middleware
+	if s.aiComponents != nil {
+		if err := s.aiComponents.ProcessConnectionWithAI(conn); err != nil {
+			s.logger.Warn("AI processing failed", zap.Error(err))
+			// Продолжаем обработку без AI
+		}
+	}
+
 	// Получаем IP клиента
 	clientIP := conn.RemoteAddr().String()
 	if tcpAddr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
@@ -1397,6 +1382,13 @@ func (s *Server) Stop() {
 	// Stop health checker
 	if s.healthChecker != nil {
 		s.healthChecker.Stop()
+	}
+
+	// Shutdown AI components
+	if s.aiComponents != nil {
+		if err := s.aiComponents.ShutdownAI(); err != nil {
+			s.logger.Error("Error shutting down AI components", zap.Error(err))
+		}
 	}
 
 	// Stop metrics server
