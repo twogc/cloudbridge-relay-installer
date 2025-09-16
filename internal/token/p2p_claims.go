@@ -1,6 +1,7 @@
 package token
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -84,6 +85,55 @@ func (p *P2PClaims) GetMeshConfig() *MeshConfig {
 // GetPeerWhitelist returns peer whitelist
 func (p *P2PClaims) GetPeerWhitelist() []string {
 	return p.PeerWhitelist
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for P2PClaims
+// to handle mesh_config with string heartbeat_interval
+func (p *P2PClaims) UnmarshalJSON(data []byte) error {
+	// Create a temporary struct with mesh_config as interface{}
+	type TempP2PClaims struct {
+		jwt.RegisteredClaims
+		ConnectionType  string           `json:"connection_type"`
+		WireGuardConfig *WireGuardConfig `json:"wireguard_config,omitempty"`
+		MeshConfig      interface{}      `json:"mesh_config,omitempty"`
+		PeerWhitelist   []string         `json:"peer_whitelist,omitempty"`
+		NetworkConfig   *NetworkConfig   `json:"network_config,omitempty"`
+		TenantID        string           `json:"tenant_id,omitempty"`
+		Permissions     []string         `json:"permissions,omitempty"`
+		ExpiresAt       *jwt.NumericDate `json:"exp,omitempty"`
+	}
+
+	var temp TempP2PClaims
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+
+	// Copy simple fields
+	p.RegisteredClaims = temp.RegisteredClaims
+	p.ConnectionType = temp.ConnectionType
+	p.WireGuardConfig = temp.WireGuardConfig
+	p.PeerWhitelist = temp.PeerWhitelist
+	p.NetworkConfig = temp.NetworkConfig
+	p.TenantID = temp.TenantID
+	p.Permissions = temp.Permissions
+	p.ExpiresAt = temp.ExpiresAt
+
+	// Handle mesh_config conversion
+	if temp.MeshConfig != nil {
+		// Convert to JSON and back to MeshConfig
+		meshConfigBytes, err := json.Marshal(temp.MeshConfig)
+		if err != nil {
+			return fmt.Errorf("failed to marshal mesh_config: %v", err)
+		}
+
+		var meshConfig MeshConfig
+		if err := json.Unmarshal(meshConfigBytes, &meshConfig); err != nil {
+			return fmt.Errorf("failed to unmarshal mesh_config: %v", err)
+		}
+		p.MeshConfig = &meshConfig
+	}
+
+	return nil
 }
 
 // GetNetworkConfig returns network configuration
