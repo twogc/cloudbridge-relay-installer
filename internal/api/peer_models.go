@@ -12,6 +12,7 @@ type Peer struct {
 	OrgID             string           `json:"org_id" db:"org_id"`
 	DeviceID          string           `json:"device_id" db:"device_id"`
 	ConnectionType    string           `json:"connection_type" db:"connection_type"`
+	RelaySessionID    string           `json:"relay_session_id" db:"relay_session_id"`
 	WireGuardConfig   *WireGuardConfig `json:"wireguard_config" db:"wireguard_config"`
 	MeshConfig        *MeshConfig      `json:"mesh_config" db:"mesh_config"`
 	PeerWhitelist     *PeerWhitelist   `json:"peer_whitelist" db:"peer_whitelist"`
@@ -193,4 +194,31 @@ type ErrorResponse struct {
 // SuccessResponse базовый успешный ответ
 type SuccessResponse struct {
 	Success bool `json:"success"`
+}
+
+// RelayAssistedRegistrationRequest запрос на регистрацию пира для relay-assisted режима
+type RelayAssistedRegistrationRequest struct {
+	PublicKey  string   `json:"public_key" binding:"required"`
+	AllowedIPs []string `json:"allowed_ips" binding:"required"`
+}
+
+// RelayAssistedRegistrationResponse ответ на регистрацию пира для relay-assisted режима
+type RelayAssistedRegistrationResponse struct {
+	Success        bool      `json:"success"`
+	PeerID         string    `json:"peer_id"`
+	RelaySessionID string    `json:"relay_session_id"`
+	RegisteredAt   time.Time `json:"registered_at"`
+}
+
+// RelayAssistedStatusUpdateRequest запрос на обновление статуса пира для relay-assisted режима
+type RelayAssistedStatusUpdateRequest struct {
+	RelaySessionID string `json:"relay_session_id" binding:"required"`
+	Status         string `json:"status" binding:"required"`
+}
+
+// RelayAssistedDiscoveryResponse ответ на discovery запрос для relay-assisted режима
+type RelayAssistedDiscoveryResponse struct {
+	Success  bool    `json:"success"`
+	TenantID string  `json:"tenant_id"`
+	Peers    []*Peer `json:"peers"`
 }

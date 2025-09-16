@@ -28,10 +28,11 @@ func (p *P2PClaims) Validate() error {
 	}
 
 	validConnectionTypes := map[string]bool{
-		"wireguard": true,
-		"quic":      true,
-		"tls":       true,
-		"hybrid":    true,
+		"wireguard":      true,
+		"quic":           true,
+		"tls":            true,
+		"hybrid":         true,
+		"relay-assisted": true,
 	}
 	if !validConnectionTypes[p.ConnectionType] {
 		return fmt.Errorf("invalid connection_type: %s", p.ConnectionType)

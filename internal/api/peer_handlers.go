@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,69 @@ type PeerManager struct {
 	logger      *zap.Logger
 	validator   TokenValidator
 	ipValidator *IPValidator
+	peerStore   *PeerStore
+}
+
+// PeerStore управляет хранением пиров
+type PeerStore struct {
+	peers map[string]map[string]*Peer // tenant_id -> peer_id -> peer
+	mu    sync.RWMutex
+}
+
+// NewPeerStore создает новый PeerStore
+func NewPeerStore() *PeerStore {
+	return &PeerStore{
+		peers: make(map[string]map[string]*Peer),
+	}
+}
+
+// Store сохраняет пира
+func (ps *PeerStore) Store(tenantID, peerID string, peer *Peer) {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	if ps.peers[tenantID] == nil {
+		ps.peers[tenantID] = make(map[string]*Peer)
+	}
+	ps.peers[tenantID][peerID] = peer
+}
+
+// Get получает пира
+func (ps *PeerStore) Get(tenantID, peerID string) (*Peer, bool) {
+	ps.mu.RLock()
+	defer ps.mu.RUnlock()
+
+	if tenantPeers, exists := ps.peers[tenantID]; exists {
+		if peer, exists := tenantPeers[peerID]; exists {
+			return peer, true
+		}
+	}
+	return nil, false
+}
+
+// Update обновляет пира
+func (ps *PeerStore) Update(tenantID, peerID string, peer *Peer) {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+
+	if ps.peers[tenantID] == nil {
+		ps.peers[tenantID] = make(map[string]*Peer)
+	}
+	ps.peers[tenantID][peerID] = peer
+}
+
+// GetAll получает всех пиров для тенанта
+func (ps *PeerStore) GetAll(tenantID string) []*Peer {
+	ps.mu.RLock()
+	defer ps.mu.RUnlock()
+
+	var peers []*Peer
+	if tenantPeers, exists := ps.peers[tenantID]; exists {
+		for _, peer := range tenantPeers {
+			peers = append(peers, peer)
+		}
+	}
+	return peers
 }
 
 // TokenValidator интерфейс для валидации токенов
@@ -79,6 +143,7 @@ func NewPeerManager(logger *zap.Logger, validator TokenValidator) *PeerManager {
 		logger:      logger,
 		validator:   validator,
 		ipValidator: ipValidator,
+		peerStore:   NewPeerStore(),
 	}
 }
 
@@ -118,12 +183,13 @@ func NewPeerManagerWithConfig(logger *zap.Logger, validator TokenValidator, allo
 		logger:      logger,
 		validator:   validator,
 		ipValidator: ipValidator,
+		peerStore:   NewPeerStore(),
 	}
 }
 
-// RegisterPeer регистрирует новый пир
+// RegisterPeer регистрирует новый пир для relay-assisted режима
 func (pm *PeerManager) RegisterPeer(c *gin.Context) {
-	var req PeerRegistrationRequest
+	var req RelayAssistedRegistrationRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		pm.logger.Error("Failed to bind registration request", zap.Error(err))
@@ -136,33 +202,9 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 	}
 
 	// Валидация JWT токена
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{
-			Error:   "Missing Authorization header",
-			Code:    http.StatusUnauthorized,
-			Message: "Authorization header is required",
-		})
-		return
-	}
-
-	// Извлекаем токен из "Bearer <token>"
-	token := authHeader
-	if strings.HasPrefix(authHeader, "Bearer ") {
-		token = strings.TrimPrefix(authHeader, "Bearer ")
-	}
-	if token == "" {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{
-			Error:   "Missing authorization header",
-			Code:    http.StatusUnauthorized,
-			Message: "Authorization header is required",
-		})
-		return
-	}
-
-	claims, err := pm.validator.ValidateP2PToken(token)
+	claims, err := pm.validateToken(c)
 	if err != nil {
-		pm.logger.Error("Failed to validate P2P token", zap.Error(err))
+		pm.logger.Error("Failed to validate token", zap.Error(err))
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
 			Error:   "Invalid token",
 			Code:    http.StatusUnauthorized,
@@ -171,13 +213,14 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		return
 	}
 
-	// Prefer tenant_id from path namespace if provided: /api/v1/tenants/:tenant_id/...
-	if pathTenant := c.Param("tenant_id"); pathTenant != "" {
-		req.TenantID = pathTenant
+	// Извлекаем tenant_id из пути или токена
+	tenantID := c.Param("tenant_id")
+	if tenantID == "" {
+		tenantID = claims.TenantID
 	}
 
 	// Проверка прав доступа
-	if claims.TenantID != req.TenantID {
+	if claims.TenantID != tenantID {
 		c.JSON(http.StatusForbidden, ErrorResponse{
 			Error:   "Tenant mismatch",
 			Code:    http.StatusForbidden,
@@ -186,8 +229,11 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		return
 	}
 
+	// Генерируем peer_id из server_id в токене
+	peerID := generatePeerID(claims.Subject)
+
 	// Проверка существования пира
-	if _, exists := pm.peers[req.PeerID]; exists {
+	if _, exists := pm.peerStore.Get(tenantID, peerID); exists {
 		c.JSON(http.StatusConflict, ErrorResponse{
 			Error:   "Peer already exists",
 			Code:    http.StatusConflict,
@@ -196,60 +242,34 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		return
 	}
 
-	// Валидация WireGuard конфигурации
-	if req.WireGuardConfig != nil {
-		// Валидация endpoint IP
-		if err := pm.ipValidator.ValidateWireGuardEndpoint(req.WireGuardConfig.Endpoint); err != nil {
-			pm.logger.Error("Invalid WireGuard endpoint", zap.Error(err))
-			c.JSON(http.StatusBadRequest, ErrorResponse{
-				Error:   "Invalid WireGuard endpoint",
-				Code:    http.StatusBadRequest,
-				Message: err.Error(),
-			})
-			return
-		}
-
-		// Валидация allowed IPs
-		if err := pm.ipValidator.ValidateAllowedIPs(req.WireGuardConfig.AllowedIPs); err != nil {
-			pm.logger.Error("Invalid WireGuard allowed IPs", zap.Error(err))
-			c.JSON(http.StatusBadRequest, ErrorResponse{
-				Error:   "Invalid WireGuard allowed IPs",
-				Code:    http.StatusBadRequest,
-				Message: err.Error(),
-			})
-			return
-		}
+	// Валидация allowed IPs
+	if err := pm.ipValidator.ValidateAllowedIPs(req.AllowedIPs); err != nil {
+		pm.logger.Error("Invalid allowed IPs", zap.Error(err))
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid allowed IPs",
+			Code:    http.StatusBadRequest,
+			Message: err.Error(),
+		})
+		return
 	}
 
-	// Валидация peer whitelist
-	if req.PeerWhitelist != nil {
-		// Проверяем, что все allowed peers являются валидными
-		for _, allowedPeer := range req.PeerWhitelist.AllowedPeers {
-			if allowedPeer == "" {
-				pm.logger.Error("Invalid peer whitelist: empty peer ID")
-				c.JSON(http.StatusBadRequest, ErrorResponse{
-					Error:   "Invalid peer whitelist",
-					Code:    http.StatusBadRequest,
-					Message: "Empty peer ID in whitelist",
-				})
-				return
-			}
-		}
-	}
+	// Генерируем relay_session_id
+	relaySessionID := generateRelaySessionID()
 
-	// Создание пира
-	peerID := generateID()
+	// Создание пира для relay-assisted режима
 	peer := &Peer{
-		ID:                peerID,
-		PeerID:            req.PeerID,
-		TenantID:          req.TenantID,
-		OrgID:             req.OrgID,
-		DeviceID:          req.DeviceID,
-		ConnectionType:    req.ConnectionType,
-		WireGuardConfig:   req.WireGuardConfig,
-		MeshConfig:        req.MeshConfig,
-		PeerWhitelist:     req.PeerWhitelist,
-		NetworkConfig:     req.NetworkConfig,
+		ID:             peerID,
+		PeerID:         peerID,
+		TenantID:       tenantID,
+		OrgID:          "", // Извлекается из токена при необходимости
+		DeviceID:       claims.Subject,
+		ConnectionType: "relay-assisted",
+		RelaySessionID: relaySessionID,
+		WireGuardConfig: &WireGuardConfig{
+			PublicKey:  req.PublicKey,
+			AllowedIPs: req.AllowedIPs,
+			// endpoint НЕ сохраняем в relay-assisted режиме
+		},
 		IsOnline:          true,
 		LastSeen:          time.Now(),
 		RegisteredAt:      time.Now(),
@@ -258,24 +278,25 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		LatencyMS:         0,
 	}
 
-	// Сохранение пира
-	pm.peers[req.PeerID] = peer
+	// Сохранение пира в peerStore
+	pm.peerStore.Store(tenantID, peerID, peer)
 
-	pm.logger.Info("Peer registered successfully",
-		zap.String("peer_id", req.PeerID),
-		zap.String("tenant_id", req.TenantID),
-		zap.String("device_id", req.DeviceID),
+	pm.logger.Info("Peer registered successfully for relay-assisted mode",
+		zap.String("peer_id", peerID),
+		zap.String("tenant_id", tenantID),
+		zap.String("relay_session_id", relaySessionID),
+		zap.String("public_key", req.PublicKey[:8]+"..."), // Только первые 8 символов
 	)
 
-	c.JSON(http.StatusOK, PeerRegistrationResponse{
-		Success:           true,
-		PeerID:            peer.PeerID,
-		RegisteredAt:      peer.RegisteredAt,
-		DiscoveryEndpoint: "wss://relay.2gc.ru/ws/peers",
+	c.JSON(http.StatusOK, RelayAssistedRegistrationResponse{
+		Success:        true,
+		PeerID:         peerID,
+		RelaySessionID: relaySessionID,
+		RegisteredAt:   peer.RegisteredAt,
 	})
 }
 
-// DiscoverPeers возвращает список пиров для тенанта
+// DiscoverPeers возвращает список пиров для тенанта в relay-assisted режиме
 func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 	// Support both namespaced and query variants
 	tenantID := c.Param("tenant_id")
@@ -292,24 +313,9 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 	}
 
 	// Валидация JWT токена
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{
-			Error:   "Missing Authorization header",
-			Code:    http.StatusUnauthorized,
-			Message: "Authorization header is required",
-		})
-		return
-	}
-
-	// Извлекаем токен из "Bearer <token>"
-	token := authHeader
-	if strings.HasPrefix(authHeader, "Bearer ") {
-		token = strings.TrimPrefix(authHeader, "Bearer ")
-	}
-	claims, err := pm.validator.ValidateP2PToken(token)
+	claims, err := pm.validateToken(c)
 	if err != nil {
-		pm.logger.Error("Failed to validate P2P token", zap.Error(err))
+		pm.logger.Error("Failed to validate token", zap.Error(err))
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
 			Error:   "Invalid token",
 			Code:    http.StatusUnauthorized,
@@ -328,37 +334,44 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 		return
 	}
 
-	// Получение пиров из памяти (в реальной реализации - из базы данных)
-	var peers []*Peer
-	for _, peer := range pm.peers {
-		if peer.TenantID == tenantID {
-			// Фильтрация по whitelist
-			if pm.validatePeerAccess(peer.PeerID, claims.PeerWhitelist) {
-				// Обновление статуса онлайн
-				peer.IsOnline = pm.isPeerOnline(peer.PeerID)
-				peer.LastSeen = pm.getLastSeen(peer.PeerID)
-				peers = append(peers, peer)
-			}
+	// Получение пиров из peerStore
+	peers := pm.peerStore.GetAll(tenantID)
+
+	// Фильтрация по whitelist и обновление статуса
+	var filteredPeers []*Peer
+	for _, peer := range peers {
+		// Фильтрация по whitelist
+		if pm.validatePeerAccess(peer.PeerID, claims.PeerWhitelist) {
+			// Обновление статуса онлайн
+			peer.IsOnline = pm.isPeerOnline(peer.PeerID)
+			peer.LastSeen = pm.getLastSeen(peer.PeerID)
+			filteredPeers = append(filteredPeers, peer)
 		}
 	}
 
 	pm.logger.Info("Peer discovery completed",
 		zap.String("tenant_id", tenantID),
-		zap.Int("peers_found", len(peers)),
+		zap.Int("peers_found", len(filteredPeers)),
 	)
 
-	c.JSON(http.StatusOK, PeerDiscoveryResponse{
+	c.JSON(http.StatusOK, RelayAssistedDiscoveryResponse{
 		Success:  true,
 		TenantID: tenantID,
-		Peers:    peers,
+		Peers:    filteredPeers,
 	})
 }
 
-// UpdatePeerStatus обновляет статус пира
+// UpdatePeerStatus обновляет статус пира (heartbeat)
 func (pm *PeerManager) UpdatePeerStatus(c *gin.Context) {
 	peerID := c.Param("peer_id")
+	tenantID := c.Param("tenant_id")
 
-	var req PeerStatusUpdateRequest
+	// ДОБАВИТЬ: Логирование для диагностики
+	pm.logger.Info("Heartbeat request",
+		zap.String("peer_id", peerID),
+		zap.String("tenant_id", tenantID))
+
+	var req RelayAssistedStatusUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		pm.logger.Error("Failed to bind status update request", zap.Error(err))
 		c.JSON(http.StatusBadRequest, ErrorResponse{
@@ -370,24 +383,9 @@ func (pm *PeerManager) UpdatePeerStatus(c *gin.Context) {
 	}
 
 	// Валидация JWT токена
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{
-			Error:   "Missing Authorization header",
-			Code:    http.StatusUnauthorized,
-			Message: "Authorization header is required",
-		})
-		return
-	}
-
-	// Извлекаем токен из "Bearer <token>"
-	token := authHeader
-	if strings.HasPrefix(authHeader, "Bearer ") {
-		token = strings.TrimPrefix(authHeader, "Bearer ")
-	}
-	claims, err := pm.validator.ValidateP2PToken(token)
+	claims, err := pm.validateToken(c)
 	if err != nil {
-		pm.logger.Error("Failed to validate P2P token", zap.Error(err))
+		pm.logger.Error("Failed to validate token", zap.Error(err))
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
 			Error:   "Invalid token",
 			Code:    http.StatusUnauthorized,
@@ -396,39 +394,68 @@ func (pm *PeerManager) UpdatePeerStatus(c *gin.Context) {
 		return
 	}
 
-	// Проверка существования пира
-	peer, exists := pm.peers[peerID]
-	if !exists {
-		c.JSON(http.StatusNotFound, ErrorResponse{
-			Error:   "Peer not found",
-			Code:    http.StatusNotFound,
-			Message: "Peer with this ID does not exist",
-		})
-		return
-	}
-
 	// Проверка прав доступа
-	if peer.TenantID != claims.TenantID {
+	if claims.TenantID != tenantID {
 		c.JSON(http.StatusForbidden, ErrorResponse{
 			Error:   "Tenant mismatch",
 			Code:    http.StatusForbidden,
-			Message: "Token tenant does not match peer tenant",
+			Message: "Token tenant does not match request tenant",
 		})
 		return
 	}
 
-	// Обновление статуса
-	peer.IsOnline = req.IsOnline
-	peer.LatencyMS = req.LatencyMS
-	peer.ActiveConnections = req.ActiveConnections
-	peer.MeshStatus = req.MeshStatus
-	peer.LastSeen = time.Now()
+	// ДОБАВИТЬ: Проверка существования пира
+	peer, exists := pm.peerStore.Get(tenantID, peerID)
+	if !exists {
+		// ДОБАВИТЬ: Автоматическая регистрация при heartbeat
+		pm.logger.Info("Peer not found during heartbeat, attempting auto-registration",
+			zap.String("peer_id", peerID),
+			zap.String("tenant_id", tenantID))
 
-	pm.logger.Info("Peer status updated",
+		// Создаем пира автоматически на основе heartbeat запроса
+		relaySessionID := generateRelaySessionID()
+		peer = &Peer{
+			ID:             peerID,
+			PeerID:         peerID,
+			TenantID:       tenantID,
+			OrgID:          "",
+			DeviceID:       claims.Subject,
+			ConnectionType: "relay-assisted",
+			RelaySessionID: relaySessionID,
+			WireGuardConfig: &WireGuardConfig{
+				PublicKey:  "auto-registered",       // Временное значение
+				AllowedIPs: []string{"10.0.0.0/24"}, // Дефолтное значение
+			},
+			IsOnline:          true,
+			LastSeen:          time.Now(),
+			RegisteredAt:      time.Now(),
+			ActiveConnections: 0,
+			MeshStatus:        req.Status,
+			LatencyMS:         0,
+		}
+
+		// Сохраняем пира
+		pm.peerStore.Store(tenantID, peerID, peer)
+
+		pm.logger.Info("Peer auto-registered during heartbeat",
+			zap.String("peer_id", peerID),
+			zap.String("tenant_id", tenantID),
+			zap.String("relay_session_id", relaySessionID))
+	}
+
+	// Обновление статуса
+	peer.IsOnline = req.Status == "active"
+	peer.LastSeen = time.Now()
+	peer.MeshStatus = req.Status
+
+	// Сохраняем обновленный пир
+	pm.peerStore.Update(tenantID, peerID, peer)
+
+	pm.logger.Info("Peer status updated (heartbeat)",
 		zap.String("peer_id", peerID),
-		zap.Bool("is_online", req.IsOnline),
-		zap.Int("latency_ms", req.LatencyMS),
-		zap.String("mesh_status", req.MeshStatus),
+		zap.String("tenant_id", tenantID),
+		zap.String("status", req.Status),
+		zap.String("relay_session_id", req.RelaySessionID),
 	)
 
 	c.JSON(http.StatusOK, PeerStatusResponse{
@@ -440,26 +467,12 @@ func (pm *PeerManager) UpdatePeerStatus(c *gin.Context) {
 // GetPeerInfo возвращает информацию о пире
 func (pm *PeerManager) GetPeerInfo(c *gin.Context) {
 	peerID := c.Param("peer_id")
+	tenantID := c.Param("tenant_id")
 
 	// Валидация JWT токена
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{
-			Error:   "Missing Authorization header",
-			Code:    http.StatusUnauthorized,
-			Message: "Authorization header is required",
-		})
-		return
-	}
-
-	// Извлекаем токен из "Bearer <token>"
-	token := authHeader
-	if strings.HasPrefix(authHeader, "Bearer ") {
-		token = strings.TrimPrefix(authHeader, "Bearer ")
-	}
-	claims, err := pm.validator.ValidateP2PToken(token)
+	claims, err := pm.validateToken(c)
 	if err != nil {
-		pm.logger.Error("Failed to validate P2P token", zap.Error(err))
+		pm.logger.Error("Failed to validate token", zap.Error(err))
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
 			Error:   "Invalid token",
 			Code:    http.StatusUnauthorized,
@@ -468,23 +481,23 @@ func (pm *PeerManager) GetPeerInfo(c *gin.Context) {
 		return
 	}
 
+	// Проверка прав доступа
+	if claims.TenantID != tenantID {
+		c.JSON(http.StatusForbidden, ErrorResponse{
+			Error:   "Tenant mismatch",
+			Code:    http.StatusForbidden,
+			Message: "Token tenant does not match request tenant",
+		})
+		return
+	}
+
 	// Проверка существования пира
-	peer, exists := pm.peers[peerID]
+	peer, exists := pm.peerStore.Get(tenantID, peerID)
 	if !exists {
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Error:   "Peer not found",
 			Code:    http.StatusNotFound,
 			Message: "Peer with this ID does not exist",
-		})
-		return
-	}
-
-	// Проверка прав доступа
-	if peer.TenantID != claims.TenantID {
-		c.JSON(http.StatusForbidden, ErrorResponse{
-			Error:   "Tenant mismatch",
-			Code:    http.StatusForbidden,
-			Message: "Token tenant does not match peer tenant",
 		})
 		return
 	}
@@ -545,6 +558,39 @@ func generateID() string {
 		return fmt.Sprintf("%d", time.Now().UnixNano())
 	}
 	return hex.EncodeToString(bytes)
+}
+
+// generatePeerID генерирует peer ID из server_id
+func generatePeerID(serverID string) string {
+	if serverID == "" {
+		return "peer_" + generateID()
+	}
+	return "peer_" + serverID
+}
+
+// generateRelaySessionID генерирует relay session ID
+func generateRelaySessionID() string {
+	return "rs_" + generateID()
+}
+
+// validateToken валидирует JWT токен
+func (pm *PeerManager) validateToken(c *gin.Context) (*P2PClaims, error) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		return nil, fmt.Errorf("missing authorization header")
+	}
+
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	if token == authHeader {
+		return nil, fmt.Errorf("invalid authorization format")
+	}
+
+	claims, err := pm.validator.ValidateP2PToken(token)
+	if err != nil {
+		return nil, fmt.Errorf("invalid token: %v", err)
+	}
+
+	return claims, nil
 }
 
 // validateP2PToken валидирует P2P JWT токен
