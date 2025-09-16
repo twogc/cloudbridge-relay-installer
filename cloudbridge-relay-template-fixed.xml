@@ -1,0 +1,1058 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+  <version>6.0</version>
+  <date>2025-09-14T00:00:00Z</date>
+
+  <groups>
+    <group>
+       <uuid>1edaf527272f4b0088200355c8008125</uuid>
+      <name>CloudBridge</name>
+    </group>
+  </groups>
+
+  <templates>
+    <template>
+       <uuid>979232396bc24ae5b3704fbb2929a1f6</uuid>
+      <template>CloudBridge Relay Template NEW</template>
+      <name>CloudBridge Relay Template</name>
+      <description>Template for monitoring CloudBridge Relay Server with AI integration</description>
+      <groups>
+        <group>
+          <name>CloudBridge</name>
+        </group>
+      </groups>
+
+      <macros>
+        <macro><macro>{$CB.CPU.WARN}</macro><value>60</value></macro>
+        <macro><macro>{$CB.CPU.HIGH}</macro><value>80</value></macro>
+        <macro><macro>{$CB.MEM.WARN}</macro><value>70</value></macro>
+        <macro><macro>{$CB.MEM.HIGH}</macro><value>90</value></macro>
+        <macro><macro>{$CB.DISK.WARN}</macro><value>70</value></macro>
+        <macro><macro>{$CB.DISK.HIGH}</macro><value>85</value></macro>
+        <macro><macro>{$CB.AI.STATUS}</macro><value>running</value></macro>
+        <macro><macro>{$CB.AI.PROCESSING_TIME.WARN}</macro><value>500</value></macro>
+        <macro><macro>{$CB.AI.PROCESSING_TIME.HIGH}</macro><value>1000</value></macro>
+        <macro><macro>{$CB.AI.ERROR_RATE.WARN}</macro><value>5</value></macro>
+        <macro><macro>{$CB.AI.ERROR_RATE.HIGH}</macro><value>10</value></macro>
+        <macro><macro>{$CB.AI.ACCURACY.WARN}</macro><value>80</value></macro>
+        <macro><macro>{$CB.AI.ACCURACY.HIGH}</macro><value>70</value></macro>
+        <macro><macro>{$CB.RELAY.MIN_CONN}</macro><value>1</value></macro>
+        <macro><macro>{$CB.NODATA.WINDOW}</macro><value>2m</value></macro>
+        <macro><macro>{$CB.AI.API_URL}</macro><value>http://10.0.0.249:8083</value></macro>
+        <macro><macro>{$CB.AI.TIMEOUT.S}</macro><value>5</value></macro>
+        <macro><macro>{$CB.AI.HTTP.LATENCY.WARN}</macro><value>500</value></macro>
+        <macro><macro>{$CB.AI.HTTP.LATENCY.HIGH}</macro><value>1000</value></macro>
+        <macro><macro>{$CB.AI.ANOMALIES.BURST}</macro><value>100</value></macro>
+      </macros>
+
+      <items>
+        <!-- ===================== Relay Server Items ===================== -->
+        <item>
+           <uuid>b922449d8d38438499cf5a043ff3307e</uuid>
+          <name>Relay Active Connections</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.relay.connections</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>connections</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>relay</value></tag>
+            <tag><tag>scope</tag><value>capacity</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>63b090538c7249d59f5e300f9e1d9a14</uuid>
+          <name>Relay Uptime</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.relay.uptime</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>seconds</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>relay</value></tag>
+            <tag><tag>scope</tag><value>availability</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>211065c7e4514af180a322157ba9f2b4</uuid>
+          <name>Relay Memory Usage (MB)</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.relay.memory</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>MB</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>relay</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>941fcef7439d4457b4de85ca0c29cda4</uuid>
+          <name>Relay Goroutines</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.relay.goroutines</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>goroutines</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>relay</value></tag>
+            <tag><tag>scope</tag><value>runtime</value></tag>
+          </tags>
+        </item>
+
+        <!-- ====================== AI Service Items ====================== -->
+        <item>
+           <uuid>1ee788dc9803422698a1d3ce020cad57</uuid>
+          <name>AI Service Status</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.ai.status</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>TEXT</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>availability</value></tag>
+          </tags>
+        </item>
+
+        <!-- New: AI Service HTTP checks via UserParameter -->
+        <item>
+           <uuid>c7c9b5f9a8ac4daca9a8f3b2d8e6a9ab</uuid>
+          <name>AI Service HTTP 200</name>
+          <type>ZABBIX_AGENT</type>
+          <key>ai.health.http200[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}]</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>availability</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>0a0fd0a7e8a240f1a0725a1e361b3d65</uuid>
+          <name>AI Service HTTP Latency (ms)</name>
+          <type>ZABBIX_AGENT</type>
+          <key>ai.health.latency_ms[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}]</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>ms</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>c5a3a239b8fd4f0aa1f2a7a33b1dbf4b</uuid>
+          <name>AI Service Status (text)</name>
+          <type>ZABBIX_AGENT</type>
+          <key>ai.service.status[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}]</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>TEXT</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>availability</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>f44895ebe26244f68b7d542ac4a3c131</uuid>
+          <name>AI Detections</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.ai.detections</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>detections</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>security</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>2e5efaf6bf7d4cd9a9581800dbf3d188</uuid>
+          <name>AI Predictions</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.ai.predictions</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>predictions</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>analytics</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>285af494982b4961bcb3883d5d582eb2</uuid>
+          <name>AI Optimizations</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.ai.optimizations</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>optimizations</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>4408e2a411d447d1bd93a138a2467c66</uuid>
+          <name>AI Service Health</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.health</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>availability</value></tag>
+          </tags>
+        </item>
+
+        <!-- Anomaly Detection Metrics -->
+        <item>
+           <uuid>2cd0a40256f44eb8a0fd4e21a83be6ef</uuid>
+          <name>AI Anomaly Detections</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.anomaly_detections</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>reliability</value></tag>
+          </tags>
+        </item>
+        
+        <item>
+           <uuid>8a34f5ecc3a14b8896b4d6109fde396d</uuid>
+          <name>AI Anomaly Detection Accuracy</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.anomaly_detection_accuracy</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>quality</value></tag>
+          </tags>
+        </item>
+
+        <!-- Load Prediction Metrics -->
+        <item>
+           <uuid>d860d2ce1a3f422ba40a2c0de67ca373</uuid>
+          <name>AI Load Predictions</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.load_predictions</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>reliability</value></tag>
+          </tags>
+        </item>
+        
+        <item>
+           <uuid>a0e35088c2d0403e8592b5c5f4d52af8</uuid>
+          <name>AI Load Prediction Accuracy</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.load_prediction_accuracy</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>quality</value></tag>
+          </tags>
+        </item>
+
+        <!-- Route Optimization Metrics -->
+        <item>
+           <uuid>3adc8a525cb14294841aed029b5ad7db</uuid>
+          <name>AI Routes Optimized</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.routes_optimized</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>reliability</value></tag>
+          </tags>
+        </item>
+        
+        <item>
+           <uuid>a843969ec2e6406ab74a1eafab435d21</uuid>
+          <name>AI Route Optimization Accuracy</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.route_optimization_accuracy</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>quality</value></tag>
+          </tags>
+        </item>
+
+        <!-- Performance Metrics -->
+        <item>
+           <uuid>98c5b065ad914232ad8c5431151c8a12</uuid>
+          <name>AI Processing Time</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.processing_time</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>ms</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <!-- New: AI Service metrics via /metrics or JSON -->
+        <item>
+           <uuid>7f3a6e660a2e4db8b2d19c0b9d16a2c5</uuid>
+          <name>AI Requests Total</name>
+          <type>ZABBIX_AGENT</type>
+          <key>ai.metrics.requests_total[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}]</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>f4fdd00bb2bb4f30b88f8fef0f2f4a1a</uuid>
+          <name>AI Errors Total</name>
+          <type>ZABBIX_AGENT</type>
+          <key>ai.metrics.errors_total[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}]</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>reliability</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>e91d3c8ff2d146e5a4b8b9d1e3f7a5d0</uuid>
+          <name>AI Anomalies Total</name>
+          <type>ZABBIX_AGENT</type>
+          <key>ai.metrics.anomalies_total[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}]</key>
+          <delay>60s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>reliability</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>5cf0cdd4c7a54a28b2d984d6a4f7bd9f</uuid>
+          <name>AI Predictions Total</name>
+          <type>ZABBIX_AGENT</type>
+          <key>ai.metrics.predictions_total[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}]</key>
+          <delay>60s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>analytics</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>9b6c8b7a9c1d48bdb3c9e24e7a0d0d0f</uuid>
+          <name>AI Error Rate (%)</name>
+          <type>ZABBIX_AGENT</type>
+          <key>ai.health.error_rate[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}]</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>reliability</value></tag>
+          </tags>
+        </item>
+        
+        <item>
+           <uuid>d40e42d931da4a5c89924ada06c4ff8c</uuid>
+          <name>AI Requests per Second</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.requests_per_second</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>req/s</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+        
+        <item>
+           <uuid>87ca2edf76604a5496ae8eaa7a37275e</uuid>
+          <name>AI Active Connections</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.active_connections</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <!-- Cache Metrics -->
+        <item>
+           <uuid>cffaf11255114b6b82994a860ccaef28</uuid>
+          <name>AI Cache Hits</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.cache_hits</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+        
+        <item>
+           <uuid>3ece839c2ea543c89b345a3b847e246c</uuid>
+          <name>AI Cache Misses</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.cache_misses</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <!-- Circuit Breaker -->
+        <item>
+           <uuid>3897e5c050bd4aef8ffc20cd26af91f2</uuid>
+          <name>AI Circuit Breaker State</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.circuit_breaker_state</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>TEXT</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>reliability</value></tag>
+          </tags>
+        </item>
+
+        <!-- Error Rate -->
+        <item>
+           <uuid>270d1a6f76b5478f8618ecdea0117111</uuid>
+          <name>AI Error Rate</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>ai.error_rate</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>reliability</value></tag>
+          </tags>
+        </item>
+
+        <!-- ======================== System Items ======================== -->
+        <item>
+           <uuid>5cf9ff31fba34db9be909d29c4f7fb3a</uuid>
+          <name>System CPU Usage</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.system.cpu.usage</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>system</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>0d53ffd9fa754c67bb031fd36030d572</uuid>
+          <name>System Memory Usage</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.system.memory.usage</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>system</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>aabbee50e29b4562916deffe9b00301d</uuid>
+          <name>System Disk Usage</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.system.disk.usage</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>system</value></tag>
+            <tag><tag>scope</tag><value>capacity</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>689da72261694a43983fa55f721e32af</uuid>
+          <name>System Network Connections</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.system.network.connections</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>connections</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>system</value></tag>
+            <tag><tag>scope</tag><value>network</value></tag>
+          </tags>
+        </item>
+
+        <!-- ======================== Docker Items ======================== -->
+        <item>
+           <uuid>be13140fa47b49e59929ed539b8df257</uuid>
+          <name>Docker Containers Running</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.docker.containers.running</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>containers</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>docker</value></tag>
+            <tag><tag>scope</tag><value>capacity</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>833d6388679c423fae1e6eb418b73a6e</uuid>
+          <name>Docker Containers Total</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.docker.containers.total</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>containers</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>docker</value></tag>
+            <tag><tag>scope</tag><value>inventory</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>bf6b49f437664c509e596f72ec4d6d20</uuid>
+          <name>Docker Images Total</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.docker.images.total</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>images</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>docker</value></tag>
+            <tag><tag>scope</tag><value>inventory</value></tag>
+          </tags>
+        </item>
+
+        <!-- ====================== Kubernetes Items ====================== -->
+        <item>
+           <uuid>6832d4365629461da3fbae139300a276</uuid>
+          <name>K8s Pods Running</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.k8s.pods.running</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>pods</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>k8s</value></tag>
+            <tag><tag>scope</tag><value>capacity</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>01b0203e35aa42d0adae60ed7be0bf01</uuid>
+          <name>K8s Pods Total</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.k8s.pods.total</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>pods</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>k8s</value></tag>
+            <tag><tag>scope</tag><value>inventory</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>97241ed88da6452b8b3ead7b82de9b39</uuid>
+          <name>K8s Nodes Ready</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.k8s.nodes.ready</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>nodes</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>k8s</value></tag>
+            <tag><tag>scope</tag><value>availability</value></tag>
+          </tags>
+        </item>
+      </items>
+    </template>
+  </templates>
+
+  <triggers>
+    <!-- ======================== Critical Triggers ======================== -->
+    <trigger>
+       <uuid>70b95ba3ee53449889729e7a832a45bf</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.relay.connections,5m)&lt;{$CB.RELAY.MIN_CONN}</expression>
+      <name>CloudBridge Relay: no active connections</name>
+      <priority>HIGH</priority>
+      <description>No active relay connections for 5m (threshold: {$CB.RELAY.MIN_CONN}).</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>relay</value></tag>
+        <tag><tag>scope</tag><value>availability</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>d75900f6df8f4f8a8da23b7de3c8af1a</uuid>
+      <expression>nodata(/CloudBridge Relay Template/cloudbridge.relay.connections,{$CB.NODATA.WINDOW})=1</expression>
+      <name>CloudBridge Relay: no data</name>
+      <priority>HIGH</priority>
+      <description>No data received for relay connections for {$CB.NODATA.WINDOW}.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>relay</value></tag>
+        <tag><tag>scope</tag><value>monitoring</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>0a9b6ac710284e449a1a34aeb93b5dff</uuid>
+      <expression>last(/CloudBridge Relay Template/cloudbridge.ai.status)&lt;&gt;"{$CB.AI.STATUS}"</expression>
+      <name>AI Service is not "{$CB.AI.STATUS}"</name>
+      <priority>HIGH</priority>
+      <description>AI service status differs from expected "{$CB.AI.STATUS}".</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>availability</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>d3f842c767bb40ceaed1b21d2417071c</uuid>
+      <expression>avg(/CloudBridge Relay Template/cloudbridge.system.cpu.usage,5m)&gt;{$CB.CPU.HIGH}</expression>
+      <name>High CPU usage (&gt; {$CB.CPU.HIGH}% for 5m)</name>
+      <priority>HIGH</priority>
+      <description>CPU usage averaged over 5m is above {$CB.CPU.HIGH}%.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>0f06f68f72ad4f6c871a2eec576a3c59</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.system.memory.usage,5m)&gt;{$CB.MEM.HIGH}</expression>
+      <name>High Memory usage (&gt; {$CB.MEM.HIGH}% for 5m)</name>
+      <priority>HIGH</priority>
+      <description>Memory usage above {$CB.MEM.HIGH}% for 5m.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>698db476e97d4360a63373f0ae6f1783</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.system.disk.usage,5m)&gt;{$CB.DISK.HIGH}</expression>
+      <name>High Disk usage (&gt; {$CB.DISK.HIGH}% for 5m)</name>
+      <priority>HIGH</priority>
+      <description>Disk usage above {$CB.DISK.HIGH}% for 5m.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>capacity</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <!-- ========================= Warning Triggers ======================== -->
+    <trigger>
+       <uuid>2800edea5d1a4753aac12617da490f87</uuid>
+      <expression>avg(/CloudBridge Relay Template/cloudbridge.system.cpu.usage,5m)&gt;{$CB.CPU.WARN}</expression>
+      <name>CPU usage warning (&gt; {$CB.CPU.WARN}% for 5m)</name>
+      <priority>WARNING</priority>
+      <description>CPU usage averaged over 5m is above {$CB.CPU.WARN}%.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>35a95e626a1b4a34b3383bea19727497</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.system.memory.usage,5m)&gt;{$CB.MEM.WARN}</expression>
+      <name>Memory usage warning (&gt; {$CB.MEM.WARN}% for 5m)</name>
+      <priority>WARNING</priority>
+      <description>Memory usage above {$CB.MEM.WARN}% for 5m.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>1922924ede6f4e82a7db4887bbe42c03</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.system.disk.usage,5m)&gt;{$CB.DISK.WARN}</expression>
+      <name>Disk usage warning (&gt; {$CB.DISK.WARN}% for 5m)</name>
+      <priority>WARNING</priority>
+      <description>Disk usage above {$CB.DISK.WARN}% for 5m.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>capacity</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <!-- ===================== AI Service Triggers ===================== -->
+    <trigger>
+       <uuid>d913027f78d54d47aa1db695dab4e85f</uuid>
+      <expression>last(/CloudBridge Relay Template/ai.health)=0</expression>
+      <name>AI Service Down</name>
+      <priority>HIGH</priority>
+      <description>AI service is not responding or unhealthy</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>availability</value></tag>
+      </tags>
+    </trigger>
+
+    <!-- New: Triggers based on new UserParameter items -->
+    <trigger>
+       <uuid>4d4f6f6e2a6247f6a0d1c0ba3f0a1b9e</uuid>
+      <expression>max(/CloudBridge Relay Template/ai.health.http200[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}],#3)=0</expression>
+      <name>AI Service DOWN (HTTP 200 check failed 3 times)</name>
+      <priority>HIGH</priority>
+      <description>AI Service did not return HTTP 200 in 3 consecutive checks.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>availability</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>8a2a3b2c1d0e4f9a9b8c7d6e5f4a3b2c</uuid>
+      <expression>avg(/CloudBridge Relay Template/ai.health.latency_ms[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}],5m)&gt;{$CB.AI.HTTP.LATENCY.HIGH}</expression>
+      <name>High AI HTTP Latency (&gt; {$CB.AI.HTTP.LATENCY.HIGH}ms for 5m)</name>
+      <priority>HIGH</priority>
+      <description>HTTP latency to AI Service is high.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>performance</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>3f2e1d0c9b8a7f6e5d4c3b2a1908f7e6</uuid>
+      <expression>avg(/CloudBridge Relay Template/ai.health.error_rate[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}],5m)&gt;{$CB.AI.ERROR_RATE.HIGH}</expression>
+      <name>High AI Error Rate (HTTP) (&gt; {$CB.AI.ERROR_RATE.HIGH}% for 5m)</name>
+      <priority>HIGH</priority>
+      <description>AI Service HTTP error rate is high.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>reliability</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f</uuid>
+      <expression>change(/CloudBridge Relay Template/ai.metrics.anomalies_total[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}],15m)=0</expression>
+      <name>No anomalies detected in last 15m (expected activity)</name>
+      <priority>WARNING</priority>
+      <description>No increase in anomalies counter in last 15m. Verify if expected.</description>
+      <status>ENABLED</status>
+      <manual_close>YES</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>quality</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>1a2b3c4d5e6f70819283746556473829</uuid>
+      <expression>change(/CloudBridge Relay Template/ai.metrics.anomalies_total[{$CB.AI.API_URL},{$CB.AI.TIMEOUT.S}],5m)&gt;{$CB.AI.ANOMALIES.BURST}</expression>
+      <name>Too many anomalies in 5m (&gt; {$CB.AI.ANOMALIES.BURST})</name>
+      <priority>WARNING</priority>
+      <description>Potential anomaly storm detected.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>reliability</value></tag>
+      </tags>
+    </trigger>
+    
+    <trigger>
+       <uuid>095dcf7ecf96423db97feb7d8cd11e00</uuid>
+      <expression>last(/CloudBridge Relay Template/ai.status)&lt;&gt;"{$CB.AI.STATUS}"</expression>
+      <name>AI Service Status Not Running</name>
+      <priority>HIGH</priority>
+      <description>AI service status is not "{$CB.AI.STATUS}"</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>availability</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>a33784363bff42dbb8d966c264a40af3</uuid>
+      <expression>last(/CloudBridge Relay Template/ai.circuit_breaker_state)="open"</expression>
+      <name>AI Circuit Breaker Open</name>
+      <priority>HIGH</priority>
+      <description>AI circuit breaker is open, indicating high error rate</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>reliability</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>a141ce1ff896482dbb8f2b440fca74fc</uuid>
+      <expression>avg(/CloudBridge Relay Template/ai.processing_time,5m)&gt;{$CB.AI.PROCESSING_TIME.HIGH}</expression>
+      <name>High AI Processing Time (&gt; {$CB.AI.PROCESSING_TIME.HIGH}ms for 5m)</name>
+      <priority>HIGH</priority>
+      <description>AI processing time averaged over 5m is above {$CB.AI.PROCESSING_TIME.HIGH}ms</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>ai</value></tag>
+      </tags>
+    </trigger>
+    
+    <trigger>
+       <uuid>f1a1825036fe4061ae8fd834c777907c</uuid>
+      <expression>avg(/CloudBridge Relay Template/ai.error_rate,5m)&gt;{$CB.AI.ERROR_RATE.HIGH}</expression>
+      <name>High AI Error Rate (&gt; {$CB.AI.ERROR_RATE.HIGH}% for 5m)</name>
+      <priority>HIGH</priority>
+      <description>AI error rate averaged over 5m is above {$CB.AI.ERROR_RATE.HIGH}%</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>reliability</value></tag>
+        <tag><tag>component</tag><value>ai</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>c98b75692e984e94ab64b11053de5742</uuid>
+      <expression>min(/CloudBridge Relay Template/ai.anomaly_detection_accuracy,5m)&lt;{$CB.AI.ACCURACY.WARN}</expression>
+      <name>Low AI Anomaly Detection Accuracy (&lt; {$CB.AI.ACCURACY.WARN}% for 5m)</name>
+      <priority>WARNING</priority>
+      <description>AI anomaly detection accuracy below {$CB.AI.ACCURACY.WARN}% for 5m</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>quality</value></tag>
+        <tag><tag>component</tag><value>ai</value></tag>
+      </tags>
+    </trigger>
+    
+    <trigger>
+       <uuid>82be728cb75d417393e9ebb7f1bfb65b</uuid>
+      <expression>min(/CloudBridge Relay Template/ai.load_prediction_accuracy,5m)&lt;{$CB.AI.ACCURACY.HIGH}</expression>
+      <name>Low AI Load Prediction Accuracy (&lt; {$CB.AI.ACCURACY.HIGH}% for 5m)</name>
+      <priority>WARNING</priority>
+      <description>AI load prediction accuracy below {$CB.AI.ACCURACY.HIGH}% for 5m</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>quality</value></tag>
+        <tag><tag>component</tag><value>ai</value></tag>
+      </tags>
+    </trigger>
+    
+    <trigger>
+       <uuid>a8e1187c92fb4f1bbfbcbd7b29dd623b</uuid>
+      <expression>min(/CloudBridge Relay Template/ai.route_optimization_accuracy,5m)&lt;{$CB.AI.ACCURACY.WARN}</expression>
+      <name>Low AI Route Optimization Accuracy (&lt; {$CB.AI.ACCURACY.WARN}% for 5m)</name>
+      <priority>WARNING</priority>
+      <description>AI route optimization accuracy below {$CB.AI.ACCURACY.WARN}% for 5m</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>quality</value></tag>
+        <tag><tag>component</tag><value>ai</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>68aed73b24834f0a943d51c8ea096e09</uuid>
+      <expression>last(/CloudBridge Relay Template/ai.cache_hits)/(last(/CloudBridge Relay Template/ai.cache_hits)+last(/CloudBridge Relay Template/ai.cache_misses))*100&lt;50</expression>
+      <name>Low AI Cache Hit Rate (&lt; 50%)</name>
+      <priority>WARNING</priority>
+      <description>AI cache hit rate is below 50%</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>ai</value></tag>
+      </tags>
+    </trigger>
+  </triggers>
+</zabbix_export>

@@ -1,0 +1,67 @@
+{
+  "header": {
+    "alg": "HS256",
+    "typ": "JWT",
+    "kid": "p2p-mesh-key"
+  },
+  "payload": {
+    "protocol_type": "p2p-mesh",
+    "scope": "p2p-mesh-claims",
+    "tenant_id": "b2dbb292-d833-4de2-921a-2e12aeacf880",
+    "server_id": "server-1757766138083",
+    "connection_type": "wireguard",
+    
+    "network_config": {
+      "subnet": "10.0.0.0/24",
+      "gateway": "10.0.0.1",
+      "dns": ["8.8.8.8", "1.1.1.1"],
+      "mtu": 1420,
+      "firewall_rules": ["allow_ssh", "allow_http"],
+      "enable_ipv6": false
+    },
+    
+    "wireguard_config": {
+      "interface_name": "wg0",
+      "listen_port": 51820,
+      "address": "10.0.0.100/24",
+      "mtu": 1420,
+      "allowed_ips": ["10.0.0.0/24", "192.168.1.0/24"],
+      "private_key": "WG_PRIVATE_KEY_HERE",
+      "public_key": "WG_PUBLIC_KEY_HERE",
+      "endpoint": "192.168.1.100:51820"
+    },
+    
+    "mesh_config": {
+      "network_id": "mesh-network-001",
+      "subnet": "10.0.0.0/16",
+      "registry_url": "https://mesh-registry.2gc.ru",
+      "heartbeat_interval": "30s",
+      "max_peers": 10,
+      "routing_strategy": "performance_optimal",
+      "enable_auto_discovery": true,
+      "trust_level": "basic"
+    },
+    
+    "peer_whitelist": [
+      "peer-001",
+      "peer-002",
+      "peer-003"
+    ],
+    
+    "permissions": [
+      "mesh_join",
+      "mesh_manage",
+      "wireguard_connect",
+      "peer_discovery"
+    ],
+    
+    "exp": 1757766441,
+    "iat": 1757766141,
+    "iss": "https://auth.2gc.ru/realms/cloudbridge",
+    "aud": "account",
+    "sub": "server-client-server-1757766138083",
+    "jti": "jwt_p2p_mesh_token"
+  }
+}
+
+

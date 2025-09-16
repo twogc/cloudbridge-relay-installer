@@ -13,7 +13,12 @@ func main() {
 	defer logger.Sync()
 
 	// Загружаем конфигурацию AI
-	config, err := ai.LoadConfig("config/ai-config.yaml")
+	configPath := os.Getenv("AI_CONFIG_PATH")
+	if configPath == "" {
+		configPath = "configs/ai-config.yaml" // Используем путь из ConfigMap
+	}
+
+	config, err := ai.LoadConfig(configPath)
 	if err != nil {
 		logger.Warn("Failed to load AI config, using defaults", zap.Error(err))
 		config = ai.GetDefaultConfig()
@@ -33,8 +38,15 @@ func main() {
 	}
 	defer aiService.Stop()
 
+	// Создаем метрики
+	metrics := NewMetrics()
+	metrics.StartMetricsUpdater()
+
 	// Настраиваем Gin router
 	r := gin.Default()
+
+	// Добавляем Prometheus middleware
+	r.Use(metrics.PrometheusMiddleware())
 
 	// Создаем AI API сервис
 	apiService := NewAIService(aiService, logger)
@@ -56,10 +68,8 @@ func main() {
 		c.JSON(200, gin.H{"message": "analysis completed"})
 	})
 
-	// Metrics
-	r.GET("/metrics", func(c *gin.Context) {
-		c.JSON(200, gin.H{"metrics": "ai_metrics"})
-	})
+	// Prometheus metrics endpoint
+	r.GET("/metrics", metrics.GetPrometheusHandler())
 
 	port := os.Getenv("AI_PORT")
 	if port == "" {

@@ -598,3 +598,7 @@ go tool pprof http://localhost:8084/debug/pprof/heap
 
 *Последнее обновление: 13 сентября 2025*
 
+
+
+
+

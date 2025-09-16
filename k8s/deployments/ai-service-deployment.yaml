@@ -35,6 +35,24 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       containers:
+      - name: prometheus-proxy
+        image: alpine/socat:1.8.0.0
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh","-c"]
+        args:
+        - |
+          set -e
+          socat -d -d TCP-LISTEN:9090,bind=127.0.0.1,fork,reuseaddr TCP:prometheus.cloudbridge-monitoring.svc.cluster.local:9090 &
+          socat -d -d TCP6-LISTEN:9090,bind=::1,fork,reuseaddr TCP:prometheus.cloudbridge-monitoring.svc.cluster.local:9090
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
       - name: ai-service
         image: cloudbridge-ai:latest
         imagePullPolicy: IfNotPresent

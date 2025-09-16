@@ -247,31 +247,50 @@ func (s *Service) processData() {
 		return
 	}
 
+	// Проверяем, есть ли активность для обработки
+	if !s.shouldProcessData(data) {
+		s.logger.Debug("No significant activity detected, skipping processing",
+			zap.Int("data_points", len(data)))
+		return
+	}
+
 	// Process anomaly detection
 	if s.anomalyDetector != nil {
-		// Создаем простые метрики для тестирования
-		metrics := &anomaly.NetworkMetrics{
-			Timestamp:            time.Now(),
-			ConnectionsPerSecond: 100,
-			BytesPerSecond:       1000000,
-			PacketLossRate:       0.01,
-			AverageLatency:       50.0,
-			CPUUsage:             45.0,
-			MemoryUsage:          60.0,
-			ActiveConnections:    150,
-			FailedConnections:    5,
-			ProtocolDistribution: map[string]int{
-				"QUIC":      50,
-				"WireGuard": 30,
-				"TCP":       20,
-			},
+		// Получаем реальные метрики от Relay коллектора
+		relayData, err := s.getRelayMetrics()
+		if err != nil {
+			s.logger.Warn("Failed to get relay metrics, using fallback data",
+				zap.Error(err),
+				zap.String("component", "anomaly_detection"))
+			// Используем базовые метрики в случае ошибки
+			relayData = &anomaly.NetworkMetrics{
+				Timestamp:            time.Now(),
+				ConnectionsPerSecond: 0,
+				BytesPerSecond:       0,
+				PacketLossRate:       0.0,
+				AverageLatency:       0.0,
+				CPUUsage:             0.0,
+				MemoryUsage:          0.0,
+				ActiveConnections:    0,
+				FailedConnections:    0,
+				ProtocolDistribution: map[string]int{},
+			}
+		} else {
+			s.logger.Debug("Successfully retrieved relay metrics",
+				zap.Int("active_connections", relayData.ActiveConnections),
+				zap.Float64("cpu_usage", relayData.CPUUsage),
+				zap.Float64("memory_usage", relayData.MemoryUsage))
 		}
 
-		_, err := s.anomalyDetector.DetectAnomaly(metrics)
+		_, err = s.anomalyDetector.DetectAnomaly(relayData)
 		if err != nil {
-			s.logger.Error("Failed to detect anomalies", zap.Error(err))
+			s.logger.Error("Failed to detect anomalies",
+				zap.Error(err),
+				zap.String("component", "anomaly_detection"))
 		} else {
 			s.metrics.RecordAnomalyDetections(1)
+			s.logger.Debug("Anomaly detection completed successfully",
+				zap.String("component", "anomaly_detection"))
 		}
 	}
 
@@ -304,6 +323,146 @@ func (s *Service) processData() {
 		zap.Duration("processing_time", processingTime),
 		zap.Int("data_points", len(data)),
 	)
+}
+
+// getRelayMetrics получает метрики от Relay коллектора
+func (s *Service) getRelayMetrics() (*anomaly.NetworkMetrics, error) {
+	if s.dataPipeline == nil {
+		return nil, fmt.Errorf("data pipeline not initialized")
+	}
+
+	// Получаем данные от Relay коллектора
+	relayCollector, exists := s.dataPipeline.GetCollector("relay")
+	if !exists {
+		return nil, fmt.Errorf("relay collector not found")
+	}
+
+	data, err := relayCollector.Collect()
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect relay data: %w", err)
+	}
+
+	if len(data) == 0 {
+		return nil, fmt.Errorf("no relay data available")
+	}
+
+	// Преобразуем данные в NetworkMetrics
+	relayData := data[0].Data
+
+	// Получаем системные метрики
+	systemMetrics, err := s.getSystemMetrics()
+	if err != nil {
+		s.logger.Warn("Failed to get system metrics, using defaults", zap.Error(err))
+		systemMetrics = map[string]float64{
+			"cpu_usage":    0.0,
+			"memory_usage": 0.0,
+		}
+	}
+
+	metrics := &anomaly.NetworkMetrics{
+		Timestamp:            time.Now(),
+		ConnectionsPerSecond: int(relayData["connections_active"].(int64)),
+		BytesPerSecond:       relayData["bytes_transferred"].(int64),
+		PacketLossRate:       relayData["error_rate"].(float64),
+		AverageLatency:       relayData["average_latency"].(float64),
+		CPUUsage:             systemMetrics["cpu_usage"],
+		MemoryUsage:          systemMetrics["memory_usage"],
+		ActiveConnections:    int(relayData["connections_active"].(int64)),
+		FailedConnections:    int(relayData["error_rate"].(float64) * float64(relayData["connections_total"].(int64))),
+		ProtocolDistribution: map[string]int{
+			"QUIC":      50, // Пока статичные значения
+			"WireGuard": 30,
+			"TCP":       20,
+		},
+	}
+
+	return metrics, nil
+}
+
+// shouldProcessData определяет, нужно ли обрабатывать данные
+func (s *Service) shouldProcessData(data []pipeline.DataPoint) bool {
+	// Если данных нет, не обрабатываем
+	if len(data) == 0 {
+		return false
+	}
+
+	// Проверяем активность в данных
+	for _, dataPoint := range data {
+		if dataPoint.Source == "relay" && dataPoint.Type == "metrics" {
+			// Проверяем активные подключения
+			if activeConnections, ok := dataPoint.Data["connections_active"].(int64); ok {
+				if activeConnections > 0 {
+					return true
+				}
+			}
+
+			// Проверяем переданные байты
+			if bytesTransferred, ok := dataPoint.Data["bytes_transferred"].(int64); ok {
+				if bytesTransferred > 0 {
+					return true
+				}
+			}
+		}
+
+		// Проверяем системную нагрузку
+		if dataPoint.Source == "system" {
+			if dataPoint.Type == "cpu" {
+				if cpuUsage, ok := dataPoint.Data["cpu_usage_percent"].(float64); ok {
+					if cpuUsage > 10.0 { // Если CPU > 10%
+						return true
+					}
+				}
+			}
+			if dataPoint.Type == "memory" {
+				if memoryUsage, ok := dataPoint.Data["memory_usage_percent"].(float64); ok {
+					if memoryUsage > 50.0 { // Если Memory > 50%
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// getSystemMetrics получает системные метрики от системного коллектора
+func (s *Service) getSystemMetrics() (map[string]float64, error) {
+	if s.dataPipeline == nil {
+		return nil, fmt.Errorf("data pipeline not initialized")
+	}
+
+	// Получаем данные от системного коллектора
+	systemCollector, exists := s.dataPipeline.GetCollector("system")
+	if !exists {
+		return nil, fmt.Errorf("system collector not found")
+	}
+
+	data, err := systemCollector.Collect()
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect system data: %w", err)
+	}
+
+	if len(data) == 0 {
+		return nil, fmt.Errorf("no system data available")
+	}
+
+	// Извлекаем CPU и Memory метрики
+	metrics := make(map[string]float64)
+
+	for _, dataPoint := range data {
+		if dataPoint.Type == "cpu" {
+			if cpuUsage, ok := dataPoint.Data["cpu_usage_percent"].(float64); ok {
+				metrics["cpu_usage"] = cpuUsage
+			}
+		} else if dataPoint.Type == "memory" {
+			if memoryUsage, ok := dataPoint.Data["memory_usage_percent"].(float64); ok {
+				metrics["memory_usage"] = memoryUsage
+			}
+		}
+	}
+
+	return metrics, nil
 }
 
 // GetStatus returns the current status of the AI service

@@ -2,6 +2,7 @@ package token
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -123,9 +124,10 @@ func (v *Validator) validateJWT(token string) (string, error) {
 
 // ValidateP2PToken validates a P2P token and returns P2P claims
 func (v *Validator) ValidateP2PToken(token string) (*P2PClaims, error) {
-	claims := &P2PClaims{}
+	// Сначала парсим токен в MapClaims для получения raw claims
+	mapClaims := jwt.MapClaims{}
 
-	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+	_, err := jwt.ParseWithClaims(token, mapClaims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -134,6 +136,17 @@ func (v *Validator) ValidateP2PToken(token string) (*P2PClaims, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse P2P JWT: %v", err)
+	}
+
+	// Конвертируем MapClaims в JSON и обратно в P2PClaims для использования кастомного UnmarshalJSON
+	claimsJSON, err := json.Marshal(mapClaims)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal claims: %v", err)
+	}
+
+	claims := &P2PClaims{}
+	if err := json.Unmarshal(claimsJSON, claims); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal P2P claims: %v", err)
 	}
 
 	if err := claims.Validate(); err != nil {

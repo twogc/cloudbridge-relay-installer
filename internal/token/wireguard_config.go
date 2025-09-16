@@ -11,6 +11,7 @@ type WireGuardConfig struct {
 	AllowedIPs    []string `json:"allowed_ips"`
 	PrivateKey    string   `json:"private_key,omitempty"`
 	PublicKey     string   `json:"public_key,omitempty"`
+	Endpoint      string   `json:"endpoint,omitempty"`
 }
 
 // Validate validates WireGuard configuration
@@ -40,13 +41,10 @@ func (wg *WireGuardConfig) Validate() error {
 		}
 	}
 
+	// Validate endpoint if provided
+	if wg.Endpoint != "" && len(wg.Endpoint) < 7 { // minimum: "1.1.1.1:1"
+		return fmt.Errorf("endpoint appears to be invalid format: %s", wg.Endpoint)
+	}
+
 	return nil
 }
-
-
-
-
-
-
-
-

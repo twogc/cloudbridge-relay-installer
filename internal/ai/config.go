@@ -222,7 +222,7 @@ func GetDefaultConfig() *Config {
 			DataPipeline: DataPipeline{
 				Enabled:            true,
 				BatchSize:          1000,
-				ProcessingInterval: 10 * time.Second,
+				ProcessingInterval: 60 * time.Second,
 				RetentionDays:      30,
 				Features: Features{
 					Network:  []string{"bandwidth_utilization", "latency", "packet_loss", "connection_count", "protocol_distribution"},

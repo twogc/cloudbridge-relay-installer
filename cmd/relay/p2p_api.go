@@ -36,6 +36,21 @@ func (t *TokenValidatorAdapter) ValidateP2PToken(tokenString string) (*api.P2PCl
 	}
 
 	// Конвертируем token.P2PClaims в api.P2PClaims
+	// Безопасно обрабатываем необязательные поля aud/iat/nbf, которые могут отсутствовать
+	var audience string
+	if len(claims.Audience) > 0 {
+		audience = claims.Audience[0]
+	}
+
+	var issuedAt int64
+	if claims.IssuedAt != nil {
+		issuedAt = claims.IssuedAt.Unix()
+	}
+
+	var notBefore int64
+	if claims.NotBefore != nil {
+		notBefore = claims.NotBefore.Unix()
+	}
 	apiClaims := &api.P2PClaims{
 		JTI:               claims.ID,
 		Subject:           claims.Subject,
@@ -49,10 +64,10 @@ func (t *TokenValidatorAdapter) ValidateP2PToken(tokenString string) (*api.P2PCl
 		MeshConfig:        convertMeshConfig(claims.MeshConfig),
 		PeerWhitelist:     convertPeerWhitelist(claims.PeerWhitelist),
 		NetworkConfig:     convertNetworkConfig(claims.NetworkConfig),
-		IssuedAt:          claims.IssuedAt.Unix(),
-		NotBefore:         claims.NotBefore.Unix(),
+		IssuedAt:          issuedAt,
+		NotBefore:         notBefore,
 		Issuer:            claims.Issuer,
-		Audience:          claims.Audience[0], // Берем первый элемент
+		Audience:          audience,
 	}
 
 	return apiClaims, nil

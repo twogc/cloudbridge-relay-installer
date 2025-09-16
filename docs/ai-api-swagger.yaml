@@ -1,0 +1,824 @@
+openapi: 3.0.3
+info:
+  title: CloudBridge AI Service API
+  description: |
+    API для мониторинга и управления AI сервисом CloudBridge.
+    
+    Этот API предоставляет endpoints для:
+    - Обнаружения аномалий в сетевом трафике
+    - Предсказания нагрузки
+    - Оптимизации маршрутов
+    - Мониторинга производительности
+    - Управления моделями машинного обучения
+  version: 1.0.0
+  contact:
+    name: CloudBridge Team
+    email: support@cloudbridge.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8083
+    description: Local development server
+  - url: http://ai-service.cloudbridge.svc.cluster.local:8083
+    description: Kubernetes cluster server
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Проверка состояния AI сервиса
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Сервис работает нормально
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: "ai"
+                  status:
+                    type: string
+                    example: "healthy"
+
+  /api/v1/ai/status:
+    get:
+      summary: AI Service Status
+      description: Получение детального статуса AI сервиса и его компонентов
+      tags:
+        - Status
+      responses:
+        '200':
+          description: Статус сервиса получен успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "running"
+                  started:
+                    type: boolean
+                    example: true
+                  components:
+                    type: object
+                    properties:
+                      anomaly_detector:
+                        type: boolean
+                        example: true
+                      load_predictor:
+                        type: boolean
+                        example: true
+                      route_optimizer:
+                        type: boolean
+                        example: true
+                      data_pipeline:
+                        type: boolean
+                        example: true
+                      monitoring:
+                        type: boolean
+                        example: true
+                  metrics:
+                    type: object
+                    properties:
+                      anomaly_detection:
+                        type: object
+                        properties:
+                          total_detections:
+                            type: integer
+                            example: 150
+                          accuracy:
+                            type: number
+                            format: float
+                            example: 0.95
+                          false_positives:
+                            type: integer
+                            example: 5
+                          false_negatives:
+                            type: integer
+                            example: 2
+                      load_prediction:
+                        type: object
+                        properties:
+                          total_predictions:
+                            type: integer
+                            example: 200
+                          accuracy:
+                            type: number
+                            format: float
+                            example: 0.85
+                          prediction_errors:
+                            type: integer
+                            example: 3
+                      route_optimization:
+                        type: object
+                        properties:
+                          total_optimizations:
+                            type: integer
+                            example: 180
+                          average_gain:
+                            type: number
+                            format: float
+                            example: 0.22
+                      processing:
+                        type: object
+                        properties:
+                          total_count:
+                            type: integer
+                            example: 500
+                          average_time:
+                            type: number
+                            format: float
+                            example: 0.15
+                          current_time:
+                            type: number
+                            format: float
+                            example: 0.12
+                      system:
+                        type: object
+                        properties:
+                          active_connections:
+                            type: integer
+                            example: 45
+                          cpu_usage:
+                            type: number
+                            format: float
+                            example: 51.3
+                          memory_usage:
+                            type: number
+                            format: float
+                            example: 67.8
+
+  /api/v1/ai/metrics:
+    get:
+      summary: AI Service Metrics
+      description: Получение метрик производительности AI сервиса
+      tags:
+        - Metrics
+      responses:
+        '200':
+          description: Метрики получены успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metrics:
+                    type: object
+                    properties:
+                      requests_processed:
+                        type: integer
+                        example: 1000
+                      anomalies_detected:
+                        type: integer
+                        example: 50
+                      predictions_made:
+                        type: integer
+                        example: 200
+                      routes_optimized:
+                        type: integer
+                        example: 150
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-09-15T22:00:00Z"
+
+  /api/v1/ai/anomaly/detect:
+    post:
+      summary: Detect Anomalies
+      description: Обнаружение аномалий в сетевых метриках
+      tags:
+        - Anomaly Detection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - metrics
+              properties:
+                metrics:
+                  $ref: '#/components/schemas/NetworkMetrics'
+      responses:
+        '200':
+          description: Аномалии обнаружены успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    $ref: '#/components/schemas/AnomalyResult'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/ai/anomaly/status:
+    get:
+      summary: Anomaly Detector Status
+      description: Получение статуса детектора аномалий
+      tags:
+        - Anomaly Detection
+      responses:
+        '200':
+          description: Статус получен успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    example: "running"
+                  metrics:
+                    type: object
+                    properties:
+                      detections:
+                        type: integer
+                        example: 100
+                      accuracy:
+                        type: number
+                        format: float
+                        example: 0.95
+
+  /api/v1/ai/predict/load:
+    post:
+      summary: Predict Load
+      description: Предсказание нагрузки на основе исторических данных
+      tags:
+        - Load Prediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - horizon
+              properties:
+                horizon:
+                  type: integer
+                  description: Горизонт предсказания в часах
+                  example: 24
+                  minimum: 1
+                  maximum: 168
+      responses:
+        '200':
+          description: Предсказание выполнено успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    $ref: '#/components/schemas/LoadPrediction'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/ai/predict/load/{horizon}:
+    get:
+      summary: Predict Load with Horizon
+      description: Предсказание нагрузки с указанием горизонта в URL
+      tags:
+        - Load Prediction
+      parameters:
+        - name: horizon
+          in: path
+          required: true
+          description: Горизонт предсказания в часах
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 168
+            example: 24
+      responses:
+        '200':
+          description: Предсказание выполнено успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    $ref: '#/components/schemas/LoadPrediction'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/ai/route/optimize:
+    post:
+      summary: Optimize Route
+      description: Оптимизация маршрута между узлами
+      tags:
+        - Route Optimization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - source
+                - destination
+              properties:
+                source:
+                  type: string
+                  description: Исходный узел
+                  example: "node1"
+                destination:
+                  type: string
+                  description: Целевой узел
+                  example: "node3"
+                constraints:
+                  type: object
+                  description: Ограничения для оптимизации
+                  properties:
+                    max_latency:
+                      type: number
+                      format: float
+                      example: 100.0
+                    min_bandwidth:
+                      type: number
+                      format: float
+                      example: 10.0
+      responses:
+        '200':
+          description: Маршрут оптимизирован успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    $ref: '#/components/schemas/OptimizedRoute'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/ai/route/recommendations:
+    get:
+      summary: Get Route Recommendations
+      description: Получение рекомендаций по маршрутам
+      tags:
+        - Route Optimization
+      responses:
+        '200':
+          description: Рекомендации получены успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recommendations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        protocol:
+                          type: string
+                          example: "QUIC"
+                        latency:
+                          type: number
+                          format: float
+                          example: 25.5
+                        score:
+                          type: number
+                          format: float
+                          example: 0.9
+        '503':
+          description: Сервис недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/ai/models:
+    get:
+      summary: List Models
+      description: Получение списка доступных моделей машинного обучения
+      tags:
+        - Model Management
+      responses:
+        '200':
+          description: Список моделей получен успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Model'
+
+  /api/v1/ai/models/{id}/train:
+    post:
+      summary: Train Model
+      description: Обучение модели машинного обучения
+      tags:
+        - Model Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор модели
+          schema:
+            type: string
+            example: "anomaly-detector"
+      responses:
+        '200':
+          description: Обучение модели запущено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Model training started"
+                  model_id:
+                    type: string
+                    example: "anomaly-detector"
+                  status:
+                    type: string
+                    example: "training"
+                  started_at:
+                    type: string
+                    format: date-time
+
+  /api/v1/ai/models/{id}/deploy:
+    post:
+      summary: Deploy Model
+      description: Развертывание модели машинного обучения
+      tags:
+        - Model Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор модели
+          schema:
+            type: string
+            example: "anomaly-detector"
+      responses:
+        '200':
+          description: Модель развернута успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Model deployed successfully"
+                  model_id:
+                    type: string
+                    example: "anomaly-detector"
+                  status:
+                    type: string
+                    example: "deployed"
+                  deployed_at:
+                    type: string
+                    format: date-time
+
+components:
+  schemas:
+    NetworkMetrics:
+      type: object
+      required:
+        - timestamp
+        - connections_per_second
+        - bytes_per_second
+        - packet_loss_rate
+        - average_latency
+        - cpu_usage
+        - memory_usage
+        - active_connections
+        - failed_connections
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Временная метка метрик
+        connections_per_second:
+          type: integer
+          description: Количество подключений в секунду
+          example: 150
+        bytes_per_second:
+          type: integer
+          description: Количество байт в секунду
+          example: 1000000
+        packet_loss_rate:
+          type: number
+          format: float
+          description: Процент потери пакетов
+          example: 0.01
+        average_latency:
+          type: number
+          format: float
+          description: Средняя задержка в миллисекундах
+          example: 25.5
+        cpu_usage:
+          type: number
+          format: float
+          description: Использование CPU в процентах
+          example: 45.2
+        memory_usage:
+          type: number
+          format: float
+          description: Использование памяти в процентах
+          example: 67.8
+        active_connections:
+          type: integer
+          description: Количество активных подключений
+          example: 45
+        failed_connections:
+          type: integer
+          description: Количество неудачных подключений
+          example: 2
+        protocol_distribution:
+          type: object
+          description: Распределение по протоколам
+          properties:
+            QUIC:
+              type: integer
+              example: 25
+            WireGuard:
+              type: integer
+              example: 15
+            TCP:
+              type: integer
+              example: 5
+
+    AnomalyResult:
+      type: object
+      required:
+        - score
+        - is_anomaly
+        - timestamp
+        - confidence
+        - anomaly_type
+        - severity
+      properties:
+        score:
+          type: number
+          format: float
+          description: Оценка аномальности (0-1)
+          example: 0.8
+          minimum: 0
+          maximum: 1
+        is_anomaly:
+          type: boolean
+          description: Является ли это аномалией
+          example: true
+        timestamp:
+          type: string
+          format: date-time
+          description: Временная метка обнаружения
+        features:
+          type: object
+          description: Характеристики аномалии
+          properties:
+            connections:
+              type: number
+              format: float
+              example: 100
+            bytes:
+              type: number
+              format: float
+              example: 1000000
+            loss:
+              type: number
+              format: float
+              example: 0.01
+            latency:
+              type: number
+              format: float
+              example: 50
+            cpu:
+              type: number
+              format: float
+              example: 45
+            memory:
+              type: number
+              format: float
+              example: 60
+        confidence:
+          type: number
+          format: float
+          description: Уверенность в обнаружении (0-1)
+          example: 0.85
+          minimum: 0
+          maximum: 1
+        anomaly_type:
+          type: string
+          description: Тип аномалии
+          example: "network_spike"
+          enum:
+            - "network_spike"
+            - "latency_anomaly"
+            - "bandwidth_anomaly"
+            - "connection_anomaly"
+            - "normal"
+        severity:
+          type: string
+          description: Серьезность аномалии
+          example: "high"
+          enum:
+            - "low"
+            - "medium"
+            - "high"
+            - "critical"
+
+    LoadPrediction:
+      type: object
+      required:
+        - forecast
+        - confidence
+        - horizon
+        - timestamp
+      properties:
+        forecast:
+          type: array
+          items:
+            type: number
+            format: float
+          description: Прогноз нагрузки
+          example: [45, 50, 55, 60, 65]
+        confidence:
+          type: number
+          format: float
+          description: Уверенность в прогнозе (0-1)
+          example: 0.8
+          minimum: 0
+          maximum: 1
+        horizon:
+          type: integer
+          description: Горизонт предсказания в часах
+          example: 24
+        timestamp:
+          type: string
+          format: date-time
+          description: Временная метка прогноза
+
+    OptimizedRoute:
+      type: object
+      required:
+        - protocol
+        - path
+        - predicted_latency
+        - confidence
+        - timestamp
+      properties:
+        protocol:
+          type: string
+          description: Рекомендуемый протокол
+          example: "QUIC"
+          enum:
+            - "QUIC"
+            - "WireGuard"
+            - "TCP"
+            - "UDP"
+        path:
+          type: array
+          items:
+            type: string
+          description: Путь через узлы
+          example: ["node1", "node2", "node3"]
+        predicted_latency:
+          type: number
+          format: float
+          description: Предсказанная задержка в миллисекундах
+          example: 25.5
+        confidence:
+          type: number
+          format: float
+          description: Уверенность в оптимизации (0-1)
+          example: 0.9
+          minimum: 0
+          maximum: 1
+        timestamp:
+          type: string
+          format: date-time
+          description: Временная метка оптимизации
+
+    Model:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - status
+        - accuracy
+        - last_trained
+      properties:
+        id:
+          type: string
+          description: Идентификатор модели
+          example: "anomaly-detector"
+        name:
+          type: string
+          description: Название модели
+          example: "Network Anomaly Detector"
+        type:
+          type: string
+          description: Тип модели
+          example: "isolation_forest"
+          enum:
+            - "isolation_forest"
+            - "arima"
+            - "multi_armed_bandit"
+            - "neural_network"
+        status:
+          type: string
+          description: Статус модели
+          example: "active"
+          enum:
+            - "active"
+            - "training"
+            - "deploying"
+            - "inactive"
+        accuracy:
+          type: number
+          format: float
+          description: Точность модели (0-1)
+          example: 0.95
+          minimum: 0
+          maximum: 1
+        last_trained:
+          type: string
+          format: date-time
+          description: Время последнего обучения
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Описание ошибки
+          example: "Invalid request parameters"
+
+tags:
+  - name: Health
+    description: Проверка состояния сервиса
+  - name: Status
+    description: Статус и метрики сервиса
+  - name: Metrics
+    description: Метрики производительности
+  - name: Anomaly Detection
+    description: Обнаружение аномалий
+  - name: Load Prediction
+    description: Предсказание нагрузки
+  - name: Route Optimization
+    description: Оптимизация маршрутов
+  - name: Model Management
+    description: Управление моделями машинного обучения

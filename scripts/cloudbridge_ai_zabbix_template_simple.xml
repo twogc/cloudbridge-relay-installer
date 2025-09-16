@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>6.0</version>
+    <date>2024-09-15T16:00:00Z</date>
+    <groups>
+        <group>
+            <uuid>cloudbridge-group-uuid</uuid>
+            <name>CloudBridge</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <uuid>cloudbridge-ai-template-uuid</uuid>
+            <template>CloudBridge AI Monitoring</template>
+            <name>CloudBridge AI Monitoring</name>
+            <description>Template for monitoring CloudBridge AI components and metrics</description>
+            <groups>
+                <group>
+                    <name>CloudBridge</name>
+                </group>
+            </groups>
+            <items>
+                <item>
+                    <uuid>ai-status-uuid</uuid>
+                    <name>AI Service Status</name>
+                    <type>0</type>
+                    <key>ai.status</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>1</value_type>
+                    <units/>
+                    <description>Current status of AI service</description>
+                </item>
+                
+                <item>
+                    <uuid>ai-health-uuid</uuid>
+                    <name>AI Service Health</name>
+                    <type>0</type>
+                    <key>ai.health</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>3</value_type>
+                    <units/>
+                    <description>AI service health</description>
+                </item>
+
+                <item>
+                    <uuid>ai-anomaly-detections-uuid</uuid>
+                    <name>Anomaly Detections</name>
+                    <type>0</type>
+                    <key>ai.anomaly_detections</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>3</value_type>
+                    <units/>
+                    <description>Total number of anomalies detected</description>
+                </item>
+                
+                <item>
+                    <uuid>ai-load-predictions-uuid</uuid>
+                    <name>Load Predictions</name>
+                    <type>0</type>
+                    <key>ai.load_predictions</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>3</value_type>
+                    <units/>
+                    <description>Total number of load predictions</description>
+                </item>
+
+                <item>
+                    <uuid>ai-routes-optimized-uuid</uuid>
+                    <name>Routes Optimized</name>
+                    <type>0</type>
+                    <key>ai.routes_optimized</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>3</value_type>
+                    <units/>
+                    <description>Total number of routes optimized</description>
+                </item>
+
+                <item>
+                    <uuid>ai-processing-time-uuid</uuid>
+                    <name>AI Processing Time</name>
+                    <type>0</type>
+                    <key>ai.processing_time</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>0</value_type>
+                    <units>ms</units>
+                    <description>Average AI processing time</description>
+                </item>
+                
+                <item>
+                    <uuid>ai-cache-hits-uuid</uuid>
+                    <name>AI Cache Hits</name>
+                    <type>0</type>
+                    <key>ai.cache_hits</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>3</value_type>
+                    <units/>
+                    <description>Number of AI cache hits</description>
+                </item>
+                
+                <item>
+                    <uuid>ai-cache-misses-uuid</uuid>
+                    <name>AI Cache Misses</name>
+                    <type>0</type>
+                    <key>ai.cache_misses</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>3</value_type>
+                    <units/>
+                    <description>Number of AI cache misses</description>
+                </item>
+
+                <item>
+                    <uuid>ai-circuit-breaker-state-uuid</uuid>
+                    <name>AI Circuit Breaker State</name>
+                    <type>0</type>
+                    <key>ai.circuit_breaker_state</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>1</value_type>
+                    <units/>
+                    <description>State of AI circuit breaker</description>
+                </item>
+
+                <item>
+                    <uuid>ai-error-rate-uuid</uuid>
+                    <name>AI Error Rate</name>
+                    <type>0</type>
+                    <key>ai.error_rate</key>
+                    <history>7d</history>
+                    <trends>365d</trends>
+                    <value_type>0</value_type>
+                    <units>%</units>
+                    <description>AI service error rate</description>
+                </item>
+            </items>
+            
+            <triggers>
+                <trigger>
+                    <uuid>ai-service-down-uuid</uuid>
+                    <expression>last(/CloudBridge AI Monitoring/ai.health)=0</expression>
+                    <name>AI Service Down</name>
+                    <priority>5</priority>
+                    <description>AI service is not responding</description>
+                </trigger>
+                
+                <trigger>
+                    <uuid>ai-circuit-breaker-open-uuid</uuid>
+                    <expression>last(/CloudBridge AI Monitoring/ai.circuit_breaker_state)="open"</expression>
+                    <name>AI Circuit Breaker Open</name>
+                    <priority>4</priority>
+                    <description>AI circuit breaker is open</description>
+                </trigger>
+
+                <trigger>
+                    <uuid>ai-high-processing-time-uuid</uuid>
+                    <expression>last(/CloudBridge AI Monitoring/ai.processing_time)>1000</expression>
+                    <name>High AI Processing Time</name>
+                    <priority>3</priority>
+                    <description>AI processing time is above 1000ms</description>
+                </trigger>
+                
+                <trigger>
+                    <uuid>ai-high-error-rate-uuid</uuid>
+                    <expression>last(/CloudBridge AI Monitoring/ai.error_rate)>10</expression>
+                    <name>High AI Error Rate</name>
+                    <priority>4</priority>
+                    <description>AI error rate is above 10%</description>
+                </trigger>
+            </triggers>
+        </template>
+    </templates>
+</zabbix_export>

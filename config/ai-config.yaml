@@ -43,7 +43,7 @@ ai:
   data_pipeline:
     enabled: true
     batch_size: 1000
-    processing_interval: "10s"
+    processing_interval: "60s"  # Увеличиваем интервал до 1 минуты
     retention_days: 30
     
     # Feature extraction
@@ -94,5 +94,5 @@ ai:
   development:
     debug: false
     mock_data: false
-    test_mode: false
+    test_mode: false  # Отключаем тестовый режим
 

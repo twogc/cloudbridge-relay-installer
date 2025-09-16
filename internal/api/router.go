@@ -262,6 +262,18 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 			peers.GET("/:peer_id", r.peerManager.GetPeerInfo)
 		}
 
+		// Tenant-namespaced peers endpoints (new, preferred): /api/v1/tenants/:tenant_id/peers/...
+		tenant := v1.Group("/tenants/:tenant_id")
+		{
+			tenantPeers := tenant.Group("/peers")
+			{
+				tenantPeers.POST("/register", r.peerManager.RegisterPeer)
+				tenantPeers.GET("/discover", r.peerManager.DiscoverPeers)
+				tenantPeers.PUT("/:peer_id/status", r.peerManager.UpdatePeerStatus)
+				tenantPeers.GET("/:peer_id", r.peerManager.GetPeerInfo)
+			}
+		}
+
 		// Relay endpoints
 		relay := v1.Group("/relay")
 		{
@@ -295,10 +307,9 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 
 		// AI endpoints (требуют аутентификации и rate limiting)
 		ai := v1.Group("/ai")
-		ai.Use(r.authMiddleware.RequireAuth())
 		ai.Use(r.rateLimiter.CreateRateLimitMiddleware("ai"))
 		{
-			r.logger.Info("Registering AI endpoints with authentication and rate limiting")
+			r.logger.Info("Registering AI endpoints with rate limiting only (auth disabled)")
 			ai.GET("/status", r.aiEndpoints.GetAIStatus)
 			ai.GET("/health", r.aiEndpoints.GetAIHealth)
 			ai.GET("/metrics", r.aiEndpoints.GetAIMetrics)

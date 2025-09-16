@@ -171,6 +171,11 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		return
 	}
 
+	// Prefer tenant_id from path namespace if provided: /api/v1/tenants/:tenant_id/...
+	if pathTenant := c.Param("tenant_id"); pathTenant != "" {
+		req.TenantID = pathTenant
+	}
+
 	// Проверка прав доступа
 	if claims.TenantID != req.TenantID {
 		c.JSON(http.StatusForbidden, ErrorResponse{
@@ -272,7 +277,11 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 
 // DiscoverPeers возвращает список пиров для тенанта
 func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
-	tenantID := c.Query("tenant_id")
+	// Support both namespaced and query variants
+	tenantID := c.Param("tenant_id")
+	if tenantID == "" {
+		tenantID = c.Query("tenant_id")
+	}
 	if tenantID == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error:   "Missing tenant_id",

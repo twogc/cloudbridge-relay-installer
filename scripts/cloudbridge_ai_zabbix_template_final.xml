@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+  <version>6.0</version>
+  <date>2025-09-14T00:00:00Z</date>
+
+  <groups>
+    <group>
+       <uuid>36bc5e87cd9c4b1fb808aa3d3f8e2851</uuid>
+      <name>CloudBridge</name>
+    </group>
+  </groups>
+
+  <templates>
+    <template>
+       <uuid>404e32b2030c4fe7ba875597a14d4b24</uuid>
+      <template>CloudBridge Relay Template</template>
+      <name>CloudBridge Relay Template</name>
+      <description>Template for monitoring CloudBridge Relay Server with AI integration</description>
+      <groups>
+        <group>
+          <name>CloudBridge</name>
+        </group>
+      </groups>
+
+      <macros>
+        <macro><macro>{$CB.CPU.WARN}</macro><value>60</value></macro>
+        <macro><macro>{$CB.CPU.HIGH}</macro><value>80</value></macro>
+        <macro><macro>{$CB.MEM.WARN}</macro><value>70</value></macro>
+        <macro><macro>{$CB.MEM.HIGH}</macro><value>90</value></macro>
+        <macro><macro>{$CB.DISK.WARN}</macro><value>70</value></macro>
+        <macro><macro>{$CB.DISK.HIGH}</macro><value>85</value></macro>
+        <macro><macro>{$CB.AI.STATUS}</macro><value>running</value></macro>
+        <macro><macro>{$CB.RELAY.MIN_CONN}</macro><value>1</value></macro>
+        <macro><macro>{$CB.NODATA.WINDOW}</macro><value>2m</value></macro>
+      </macros>
+
+      <items>
+        <!-- ===================== Relay Server Items ===================== -->
+        <item>
+           <uuid>a3883f0c763c4bd2a45128a269e9552f</uuid>
+          <name>Relay Active Connections</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.relay.connections</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>connections</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>relay</value></tag>
+            <tag><tag>scope</tag><value>capacity</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>aec0cf890b034cd9963b6deb4d5ab9f4</uuid>
+          <name>Relay Uptime</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.relay.uptime</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>seconds</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>relay</value></tag>
+            <tag><tag>scope</tag><value>availability</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>62e9ee4690fe4125a14cacf60cbf6eaa</uuid>
+          <name>Relay Memory Usage (MB)</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.relay.memory</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>MB</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>relay</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>6ab1a1c8826f4ca8be766a048cd6d888</uuid>
+          <name>Relay Goroutines</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.relay.goroutines</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>goroutines</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>relay</value></tag>
+            <tag><tag>scope</tag><value>runtime</value></tag>
+          </tags>
+        </item>
+
+        <!-- ====================== AI Service Items ====================== -->
+        <item>
+           <uuid>7f244fec124b497287e3e733d00592c2</uuid>
+          <name>AI Service Status</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.ai.status</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>TEXT</value_type>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>availability</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>7ebe113a6a6d42bbad38e8d3f530be01</uuid>
+          <name>AI Detections</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.ai.detections</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>detections</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>security</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>976804f4e67a4996a549a859c4249eca</uuid>
+          <name>AI Predictions</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.ai.predictions</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>predictions</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>analytics</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>e2ec40bd301a45a4ba00796d4a2b8fe4</uuid>
+          <name>AI Optimizations</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.ai.optimizations</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>optimizations</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>ai</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <!-- ======================== System Items ======================== -->
+        <item>
+           <uuid>d6988d32fc194f3ba2b761a59614a546</uuid>
+          <name>System CPU Usage</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.system.cpu.usage</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>system</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>dcc432213d0a4e92bdf2da3b0cd86e80</uuid>
+          <name>System Memory Usage</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.system.memory.usage</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>system</value></tag>
+            <tag><tag>scope</tag><value>performance</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>8b95baa87c384049b7636a62e3140a22</uuid>
+          <name>System Disk Usage</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.system.disk.usage</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>FLOAT</value_type>
+          <units>%</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>system</value></tag>
+            <tag><tag>scope</tag><value>capacity</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>f4cdf619e4bc4bab95fa5ee2be06f96f</uuid>
+          <name>System Network Connections</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.system.network.connections</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>connections</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>system</value></tag>
+            <tag><tag>scope</tag><value>network</value></tag>
+          </tags>
+        </item>
+
+        <!-- ======================== Docker Items ======================== -->
+        <item>
+           <uuid>f1465cefd7cf4860b40a04d868b555c4</uuid>
+          <name>Docker Containers Running</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.docker.containers.running</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>containers</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>docker</value></tag>
+            <tag><tag>scope</tag><value>capacity</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>5fbdda8673584fe59444ad6f35a9b7c4</uuid>
+          <name>Docker Containers Total</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.docker.containers.total</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>containers</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>docker</value></tag>
+            <tag><tag>scope</tag><value>inventory</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>b1d30beb4431475cacaa07761dfabea0</uuid>
+          <name>Docker Images Total</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.docker.images.total</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>images</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>docker</value></tag>
+            <tag><tag>scope</tag><value>inventory</value></tag>
+          </tags>
+        </item>
+
+        <!-- ====================== Kubernetes Items ====================== -->
+        <item>
+           <uuid>8cca34e82711485faa3cf1d61fd802f2</uuid>
+          <name>K8s Pods Running</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.k8s.pods.running</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>pods</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>k8s</value></tag>
+            <tag><tag>scope</tag><value>capacity</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>28853363ee604ddba2f59eaa9792362b</uuid>
+          <name>K8s Pods Total</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.k8s.pods.total</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>pods</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>k8s</value></tag>
+            <tag><tag>scope</tag><value>inventory</value></tag>
+          </tags>
+        </item>
+
+        <item>
+           <uuid>d37e1409264c4094b4d5a56bb0b675e5</uuid>
+          <name>K8s Nodes Ready</name>
+          <type>ZABBIX_PASSIVE</type>
+          <key>cloudbridge.k8s.nodes.ready</key>
+          <delay>30s</delay>
+          <history>7d</history>
+          <trends>365d</trends>
+          <value_type>UNSIGNED</value_type>
+          <units>nodes</units>
+          <status>ENABLED</status>
+          <tags>
+            <tag><tag>component</tag><value>k8s</value></tag>
+            <tag><tag>scope</tag><value>availability</value></tag>
+          </tags>
+        </item>
+      </items>
+    </template>
+  </templates>
+
+  <triggers>
+    <!-- ======================== Critical Triggers ======================== -->
+    <trigger>
+       <uuid>ff6397542fa74b579103827fe69c215f</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.relay.connections,5m)&lt;{$CB.RELAY.MIN_CONN}</expression>
+      <name>CloudBridge Relay: no active connections</name>
+      <priority>HIGH</priority>
+      <description>No active relay connections for 5m (threshold: {$CB.RELAY.MIN_CONN}).</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>relay</value></tag>
+        <tag><tag>scope</tag><value>availability</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>0e64291440864171950063701836144d</uuid>
+      <expression>nodata(/CloudBridge Relay Template/cloudbridge.relay.connections,{$CB.NODATA.WINDOW})=1</expression>
+      <name>CloudBridge Relay: no data</name>
+      <priority>HIGH</priority>
+      <description>No data received for relay connections for {$CB.NODATA.WINDOW}.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>relay</value></tag>
+        <tag><tag>scope</tag><value>monitoring</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>35a23909f0c84498b24d213e3ae5fadd</uuid>
+      <expression>last(/CloudBridge Relay Template/cloudbridge.ai.status)&lt;&gt;"{$CB.AI.STATUS}"</expression>
+      <name>AI Service is not "{$CB.AI.STATUS}"</name>
+      <priority>HIGH</priority>
+      <description>AI service status differs from expected "{$CB.AI.STATUS}".</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>component</tag><value>ai</value></tag>
+        <tag><tag>scope</tag><value>availability</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>1d03e26d79e143f8952b623c26b09769</uuid>
+      <expression>avg(/CloudBridge Relay Template/cloudbridge.system.cpu.usage,5m)&gt;{$CB.CPU.HIGH}</expression>
+      <name>High CPU usage (&gt; {$CB.CPU.HIGH}% for 5m)</name>
+      <priority>HIGH</priority>
+      <description>CPU usage averaged over 5m is above {$CB.CPU.HIGH}%.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>06f6e07322e64a2293c452a54cc99618</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.system.memory.usage,5m)&gt;{$CB.MEM.HIGH}</expression>
+      <name>High Memory usage (&gt; {$CB.MEM.HIGH}% for 5m)</name>
+      <priority>HIGH</priority>
+      <description>Memory usage above {$CB.MEM.HIGH}% for 5m.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>30e6310ae67a44b799b697a6cb8a360f</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.system.disk.usage,5m)&gt;{$CB.DISK.HIGH}</expression>
+      <name>High Disk usage (&gt; {$CB.DISK.HIGH}% for 5m)</name>
+      <priority>HIGH</priority>
+      <description>Disk usage above {$CB.DISK.HIGH}% for 5m.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>capacity</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <!-- ========================= Warning Triggers ======================== -->
+    <trigger>
+       <uuid>16b7c8fa334b405ea2c2cf756a871114</uuid>
+      <expression>avg(/CloudBridge Relay Template/cloudbridge.system.cpu.usage,5m)&gt;{$CB.CPU.WARN}</expression>
+      <name>CPU usage warning (&gt; {$CB.CPU.WARN}% for 5m)</name>
+      <priority>WARNING</priority>
+      <description>CPU usage averaged over 5m is above {$CB.CPU.WARN}%.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>40c2206ac52240e693960dfdc8517932</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.system.memory.usage,5m)&gt;{$CB.MEM.WARN}</expression>
+      <name>Memory usage warning (&gt; {$CB.MEM.WARN}% for 5m)</name>
+      <priority>WARNING</priority>
+      <description>Memory usage above {$CB.MEM.WARN}% for 5m.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>performance</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+
+    <trigger>
+       <uuid>a8f5edeac5cf47d6a5a835ba1f82204b</uuid>
+      <expression>min(/CloudBridge Relay Template/cloudbridge.system.disk.usage,5m)&gt;{$CB.DISK.WARN}</expression>
+      <name>Disk usage warning (&gt; {$CB.DISK.WARN}% for 5m)</name>
+      <priority>WARNING</priority>
+      <description>Disk usage above {$CB.DISK.WARN}% for 5m.</description>
+      <status>ENABLED</status>
+      <manual_close>NO</manual_close>
+      <tags>
+        <tag><tag>scope</tag><value>capacity</value></tag>
+        <tag><tag>component</tag><value>system</value></tag>
+      </tags>
+    </trigger>
+  </triggers>
+</zabbix_export>

@@ -11,18 +11,18 @@ import (
 
 // DataPipeline обрабатывает данные для AI системы
 type DataPipeline struct {
-	config    *Config
-	logger    *zap.Logger
+	config     *Config
+	logger     *zap.Logger
 	collectors map[string]DataCollector
 	processors []DataProcessor
-	storage   DataStorage
-	
+	storage    DataStorage
+
 	// State
-	started   bool
-	stopCh    chan struct{}
-	wg        sync.WaitGroup
-	ctx       context.Context
-	cancel    context.CancelFunc
+	started bool
+	stopCh  chan struct{}
+	wg      sync.WaitGroup
+	ctx     context.Context
+	cancel  context.CancelFunc
 }
 
 // Config конфигурация data pipeline
@@ -70,7 +70,7 @@ type TimeRange struct {
 // NewDataPipeline создает новый data pipeline
 func NewDataPipeline(config *Config, logger *zap.Logger) *DataPipeline {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &DataPipeline{
 		config:     config,
 		logger:     logger,
@@ -85,22 +85,22 @@ func NewDataPipeline(config *Config, logger *zap.Logger) *DataPipeline {
 // Initialize инициализирует data pipeline
 func (dp *DataPipeline) Initialize() error {
 	dp.logger.Info("Initializing Data Pipeline...")
-	
+
 	// Инициализируем коллекторы
 	if err := dp.initializeCollectors(); err != nil {
 		return fmt.Errorf("failed to initialize collectors: %w", err)
 	}
-	
+
 	// Инициализируем процессоры
 	if err := dp.initializeProcessors(); err != nil {
 		return fmt.Errorf("failed to initialize processors: %w", err)
 	}
-	
+
 	// Инициализируем хранилище
 	if err := dp.initializeStorage(); err != nil {
 		return fmt.Errorf("failed to initialize storage: %w", err)
 	}
-	
+
 	dp.logger.Info("Data Pipeline initialized successfully")
 	return nil
 }
@@ -110,20 +110,20 @@ func (dp *DataPipeline) Start() error {
 	if dp.started {
 		return fmt.Errorf("data pipeline is already started")
 	}
-	
+
 	dp.logger.Info("Starting Data Pipeline...")
-	
+
 	// Запускаем коллекторы
 	for name, collector := range dp.collectors {
 		if err := collector.Start(); err != nil {
 			return fmt.Errorf("failed to start collector %s: %w", name, err)
 		}
 	}
-	
+
 	// Запускаем обработку данных
 	dp.wg.Add(1)
 	go dp.dataProcessing()
-	
+
 	dp.started = true
 	dp.logger.Info("Data Pipeline started successfully")
 	return nil
@@ -134,21 +134,21 @@ func (dp *DataPipeline) Stop() error {
 	if !dp.started {
 		return nil
 	}
-	
+
 	dp.logger.Info("Stopping Data Pipeline...")
-	
+
 	// Останавливаем коллекторы
 	for name, collector := range dp.collectors {
 		if err := collector.Stop(); err != nil {
 			dp.logger.Error("Failed to stop collector", zap.String("name", name), zap.Error(err))
 		}
 	}
-	
+
 	// Останавливаем обработку данных
 	dp.cancel()
 	close(dp.stopCh)
 	dp.wg.Wait()
-	
+
 	dp.started = false
 	dp.logger.Info("Data Pipeline stopped successfully")
 	return nil
@@ -157,27 +157,27 @@ func (dp *DataPipeline) Stop() error {
 // CollectData собирает данные из всех коллекторов
 func (dp *DataPipeline) CollectData() ([]DataPoint, error) {
 	var allData []DataPoint
-	
+
 	for name, collector := range dp.collectors {
 		data, err := collector.Collect()
 		if err != nil {
 			dp.logger.Error("Failed to collect data", zap.String("collector", name), zap.Error(err))
 			continue
 		}
-		
+
 		allData = append(allData, data...)
 	}
-	
+
 	return allData, nil
 }
 
 // dataProcessing обрабатывает данные в фоновом режиме
 func (dp *DataPipeline) dataProcessing() {
 	defer dp.wg.Done()
-	
+
 	ticker := time.NewTicker(dp.config.ProcessingInterval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-dp.ctx.Done():
@@ -193,18 +193,18 @@ func (dp *DataPipeline) dataProcessing() {
 // processData обрабатывает собранные данные
 func (dp *DataPipeline) processData() {
 	start := time.Now()
-	
+
 	// Собираем данные
 	data, err := dp.CollectData()
 	if err != nil {
 		dp.logger.Error("Failed to collect data", zap.Error(err))
 		return
 	}
-	
+
 	if len(data) == 0 {
 		return
 	}
-	
+
 	// Обрабатываем данные
 	processedData := data
 	for _, processor := range dp.processors {
@@ -214,13 +214,13 @@ func (dp *DataPipeline) processData() {
 			return
 		}
 	}
-	
+
 	// Сохраняем данные
 	if err := dp.storage.Store(processedData); err != nil {
 		dp.logger.Error("Failed to store data", zap.Error(err))
 		return
 	}
-	
+
 	processingTime := time.Since(start)
 	dp.logger.Debug("Data processing completed",
 		zap.Int("data_points", len(data)),
@@ -236,20 +236,20 @@ func (dp *DataPipeline) initializeCollectors() error {
 	}
 	prometheusCollector := NewRealPrometheusCollector(dp.logger, prometheusURL)
 	dp.collectors["prometheus"] = prometheusCollector
-	
+
 	// Real System коллектор
 	systemCollector := NewRealSystemCollector(dp.logger)
 	dp.collectors["system"] = systemCollector
-	
+
 	// Real Network коллектор
 	networkCollector := NewRealNetworkCollector(dp.logger)
 	dp.collectors["network"] = networkCollector
-	
+
 	// Relay Metrics коллектор
 	relayCollector := NewRelayMetricsCollector(dp.logger)
 	dp.collectors["relay"] = relayCollector
-	
-	dp.logger.Info("Collectors initialized", 
+
+	dp.logger.Info("Collectors initialized",
 		zap.Int("count", len(dp.collectors)),
 		zap.String("prometheus_url", prometheusURL))
 	return nil
@@ -260,15 +260,15 @@ func (dp *DataPipeline) initializeProcessors() error {
 	// Real Feature extractor
 	featureExtractor := NewRealFeatureExtractor(dp.logger)
 	dp.processors = append(dp.processors, featureExtractor)
-	
+
 	// Real Data normalizer
 	normalizer := NewRealDataNormalizer(dp.logger)
 	dp.processors = append(dp.processors, normalizer)
-	
+
 	// Data aggregator (5-минутные окна)
 	aggregator := NewDataAggregator(dp.logger, 5*time.Minute)
 	dp.processors = append(dp.processors, aggregator)
-	
+
 	dp.logger.Info("Processors initialized", zap.Int("count", len(dp.processors)))
 	return nil
 }
@@ -277,8 +277,8 @@ func (dp *DataPipeline) initializeProcessors() error {
 func (dp *DataPipeline) initializeStorage() error {
 	// Hybrid storage (file + memory)
 	dp.storage = NewHybridStorage(dp.config, dp.logger)
-	
-	dp.logger.Info("Storage initialized", 
+
+	dp.logger.Info("Storage initialized",
 		zap.String("storage_path", dp.config.StoragePath))
 	return nil
 }
@@ -310,7 +310,7 @@ func (pc *PrometheusCollector) Collect() ([]DataPoint, error) {
 			},
 		},
 	}
-	
+
 	return data, nil
 }
 
@@ -353,7 +353,7 @@ func (sc *SystemCollector) Collect() ([]DataPoint, error) {
 			},
 		},
 	}
-	
+
 	return data, nil
 }
 
@@ -390,15 +390,15 @@ func (nc *NetworkCollector) Collect() ([]DataPoint, error) {
 			Source:    "network",
 			Type:      "network_metrics",
 			Data: map[string]interface{}{
-				"packets_in":   1000000,
-				"packets_out":  950000,
-				"bytes_in":     50000000,
-				"bytes_out":    45000000,
-				"latency":      25.5,
+				"packets_in":  1000000,
+				"packets_out": 950000,
+				"bytes_in":    50000000,
+				"bytes_out":   45000000,
+				"latency":     25.5,
 			},
 		},
 	}
-	
+
 	return data, nil
 }
 
@@ -430,7 +430,7 @@ func NewFeatureExtractor(logger *zap.Logger) *FeatureExtractor {
 func (fe *FeatureExtractor) Process(data []DataPoint) ([]DataPoint, error) {
 	// Заглушка для извлечения признаков
 	processedData := make([]DataPoint, len(data))
-	
+
 	for i, point := range data {
 		processedData[i] = DataPoint{
 			Timestamp: point.Timestamp,
@@ -442,14 +442,14 @@ func (fe *FeatureExtractor) Process(data []DataPoint) ([]DataPoint, error) {
 			},
 		}
 	}
-	
+
 	return processedData, nil
 }
 
 // extractFeatures извлекает признаки из данных
 func (fe *FeatureExtractor) extractFeatures(data map[string]interface{}) map[string]interface{} {
 	features := make(map[string]interface{})
-	
+
 	// Извлекаем числовые признаки
 	for key, value := range data {
 		if num, ok := value.(float64); ok {
@@ -458,7 +458,7 @@ func (fe *FeatureExtractor) extractFeatures(data map[string]interface{}) map[str
 			features[key] = float64(num)
 		}
 	}
-	
+
 	return features
 }
 
@@ -478,7 +478,7 @@ func NewDataNormalizer(logger *zap.Logger) *DataNormalizer {
 func (dn *DataNormalizer) Process(data []DataPoint) ([]DataPoint, error) {
 	// Заглушка для нормализации данных
 	normalizedData := make([]DataPoint, len(data))
-	
+
 	for i, point := range data {
 		normalizedData[i] = DataPoint{
 			Timestamp: point.Timestamp,
@@ -487,14 +487,14 @@ func (dn *DataNormalizer) Process(data []DataPoint) ([]DataPoint, error) {
 			Data:      dn.normalizeData(point.Data),
 		}
 	}
-	
+
 	return normalizedData, nil
 }
 
 // normalizeData нормализует данные
 func (dn *DataNormalizer) normalizeData(data map[string]interface{}) map[string]interface{} {
 	normalized := make(map[string]interface{})
-	
+
 	for key, value := range data {
 		if num, ok := value.(float64); ok {
 			// Простая нормализация в диапазон [0, 1]
@@ -503,7 +503,7 @@ func (dn *DataNormalizer) normalizeData(data map[string]interface{}) map[string]
 			normalized[key] = value
 		}
 	}
-	
+
 	return normalized
 }
 
@@ -534,3 +534,8 @@ func (fs *FileStorage) Retrieve(timeRange TimeRange) ([]DataPoint, error) {
 	return []DataPoint{}, nil
 }
 
+// GetCollector возвращает коллектор по имени
+func (dp *DataPipeline) GetCollector(name string) (DataCollector, bool) {
+	collector, exists := dp.collectors[name]
+	return collector, exists
+}

@@ -39,21 +39,23 @@ type P2PMeshTokenClaims struct {
 
 // KeycloakValidator валидатор токенов Keycloak
 type KeycloakValidator struct {
-	jwksURL    string
-	audience   string
-	issuer     string
-	jwksCache  interface{} // Временно используем interface{} вместо jwk.Set
-	lastUpdate time.Time
-	logger     *zap.Logger
+	jwksURL        string
+	audience       string
+	issuer         string
+	fallbackSecret string
+	jwksCache      interface{} // Временно используем interface{} вместо jwk.Set
+	lastUpdate     time.Time
+	logger         *zap.Logger
 }
 
 // NewKeycloakValidator создает новый валидатор Keycloak
-func NewKeycloakValidator(jwksURL, audience, issuer string, logger *zap.Logger) *KeycloakValidator {
+func NewKeycloakValidator(jwksURL, audience, issuer, fallbackSecret string, logger *zap.Logger) *KeycloakValidator {
 	return &KeycloakValidator{
-		jwksURL:  jwksURL,
-		audience: audience,
-		issuer:   issuer,
-		logger:   logger,
+		jwksURL:        jwksURL,
+		audience:       audience,
+		issuer:         issuer,
+		fallbackSecret: fallbackSecret,
+		logger:         logger,
 	}
 }
 
@@ -76,8 +78,12 @@ func (kv *KeycloakValidator) ValidateToken(tokenString string) (*BaseTokenClaims
 		case *jwt.SigningMethodHMAC:
 			// HS256 ключи - fallback режим
 			kv.logger.Info("Using HS256 fallback validation", zap.String("kid", token.Header["kid"].(string)))
-			// Для fallback используем секретный ключ
-			fallbackSecret := "test-secret" // TODO: Получить из конфигурации
+			// Для fallback используем секретный ключ из конфигурации
+			fallbackSecret := kv.fallbackSecret
+			if fallbackSecret == "" {
+				fallbackSecret = "test-secret" // fallback для разработки
+				kv.logger.Warn("Fallback secret not configured, using default")
+			}
 			return []byte(fallbackSecret), nil
 		default:
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

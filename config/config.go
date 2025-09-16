@@ -53,6 +53,7 @@ type configRaw struct {
 		ClientID        string `json:"client_id"`
 		ClientSecret    string `json:"client_secret"`
 		PublicKey       string `json:"public_key"`
+		FallbackSecret  string `json:"fallback_secret"`
 		JWKSURL         string `json:"jwks_url"`
 		TokenValidation struct {
 			Issuer    string `json:"issuer"`
@@ -284,6 +285,7 @@ type Config struct {
 		ClientID        string `json:"client_id"`
 		ClientSecret    string `json:"client_secret"`
 		PublicKey       string `json:"public_key"`
+		FallbackSecret  string `json:"fallback_secret"`
 		JWKSURL         string `json:"jwks_url"`
 		TokenValidation struct {
 			Issuer    string        `json:"issuer"`
@@ -665,6 +667,7 @@ func Load(path string) (*Config, error) {
 	config.Keycloak.ClientID = raw.Keycloak.ClientID
 	config.Keycloak.ClientSecret = raw.Keycloak.ClientSecret
 	config.Keycloak.PublicKey = raw.Keycloak.PublicKey
+	config.Keycloak.FallbackSecret = raw.Keycloak.FallbackSecret
 	config.Keycloak.TokenValidation.Issuer = raw.Keycloak.TokenValidation.Issuer
 	config.Keycloak.TokenValidation.Audience = raw.Keycloak.TokenValidation.Audience
 	config.Keycloak.TokenValidation.ClockSkew = parseDuration(raw.Keycloak.TokenValidation.ClockSkew, 30*time.Second)

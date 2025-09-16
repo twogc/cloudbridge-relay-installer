@@ -1,10 +1,13 @@
 package pipeline
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -421,6 +424,8 @@ type RelayMetricsCollector struct {
 	logger     *zap.Logger
 	relayStats *RelayStats
 	mutex      sync.RWMutex
+	httpClient *http.Client
+	relayURL   string
 }
 
 // RelayStats содержит статистики Relay сервера
@@ -441,6 +446,10 @@ func NewRelayMetricsCollector(logger *zap.Logger) *RelayMetricsCollector {
 		relayStats: &RelayStats{
 			LastUpdated: time.Now(),
 		},
+		httpClient: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+		relayURL: "http://cloudbridge-relay.cloudbridge.svc.cluster.local:9090",
 	}
 }
 
@@ -455,21 +464,46 @@ func (rmc *RelayMetricsCollector) UpdateStats(stats *RelayStats) {
 
 // Collect собирает метрики Relay сервера
 func (rmc *RelayMetricsCollector) Collect() ([]DataPoint, error) {
-	rmc.mutex.RLock()
-	defer rmc.mutex.RUnlock()
+	// Попытаемся получить реальные данные от Relay сервера
+	realStats, err := rmc.fetchRelayStats()
+	if err != nil {
+		rmc.logger.Warn("Failed to fetch real relay stats, using cached data", zap.Error(err))
+		// Используем кэшированные данные в случае ошибки
+		rmc.mutex.RLock()
+		defer rmc.mutex.RUnlock()
+
+		return []DataPoint{
+			{
+				Timestamp: rmc.relayStats.LastUpdated,
+				Source:    "relay",
+				Type:      "metrics",
+				Data: map[string]interface{}{
+					"connections_total":   rmc.relayStats.ConnectionsTotal,
+					"connections_active":  rmc.relayStats.ConnectionsActive,
+					"bytes_transferred":   rmc.relayStats.BytesTransferred,
+					"packets_transferred": rmc.relayStats.PacketsTransferred,
+					"average_latency":     rmc.relayStats.AverageLatency,
+					"error_rate":          rmc.relayStats.ErrorRate,
+				},
+			},
+		}, nil
+	}
+
+	// Обновляем кэшированные данные
+	rmc.UpdateStats(realStats)
 
 	return []DataPoint{
 		{
-			Timestamp: rmc.relayStats.LastUpdated,
+			Timestamp: realStats.LastUpdated,
 			Source:    "relay",
 			Type:      "metrics",
 			Data: map[string]interface{}{
-				"connections_total":   rmc.relayStats.ConnectionsTotal,
-				"connections_active":  rmc.relayStats.ConnectionsActive,
-				"bytes_transferred":   rmc.relayStats.BytesTransferred,
-				"packets_transferred": rmc.relayStats.PacketsTransferred,
-				"average_latency":     rmc.relayStats.AverageLatency,
-				"error_rate":          rmc.relayStats.ErrorRate,
+				"connections_total":   realStats.ConnectionsTotal,
+				"connections_active":  realStats.ConnectionsActive,
+				"bytes_transferred":   realStats.BytesTransferred,
+				"packets_transferred": realStats.PacketsTransferred,
+				"average_latency":     realStats.AverageLatency,
+				"error_rate":          realStats.ErrorRate,
 			},
 		},
 	}, nil
@@ -485,4 +519,103 @@ func (rmc *RelayMetricsCollector) Start() error {
 func (rmc *RelayMetricsCollector) Stop() error {
 	rmc.logger.Info("Relay metrics collector stopped")
 	return nil
+}
+
+// fetchRelayStats получает реальные статистики от Relay сервера
+func (rmc *RelayMetricsCollector) fetchRelayStats() (*RelayStats, error) {
+	// Получаем health endpoint от Relay сервера
+	healthURL := fmt.Sprintf("%s/health", rmc.relayURL)
+	resp, err := rmc.httpClient.Get(healthURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch relay health: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("relay health check failed with status: %d", resp.StatusCode)
+	}
+
+	var healthResponse struct {
+		Status    string `json:"status"`
+		Timestamp string `json:"timestamp"`
+		Uptime    string `json:"uptime"`
+		Version   string `json:"version"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&healthResponse); err != nil {
+		return nil, fmt.Errorf("failed to decode health response: %w", err)
+	}
+
+	// Получаем метрики от Relay сервера
+	metricsURL := fmt.Sprintf("%s/metrics", rmc.relayURL)
+	metricsResp, err := rmc.httpClient.Get(metricsURL)
+	if err != nil {
+		// Если метрики недоступны, возвращаем базовые данные
+		rmc.logger.Warn("Failed to fetch relay metrics, using basic stats", zap.Error(err))
+		return &RelayStats{
+			ConnectionsTotal:   0,
+			ConnectionsActive:  0,
+			BytesTransferred:   0,
+			PacketsTransferred: 0,
+			AverageLatency:     0.0,
+			ErrorRate:          0.0,
+			LastUpdated:        time.Now(),
+		}, nil
+	}
+	defer metricsResp.Body.Close()
+
+	// Парсим Prometheus метрики
+	stats := &RelayStats{
+		LastUpdated: time.Now(),
+	}
+
+	// Читаем метрики построчно
+	scanner := bufio.NewScanner(metricsResp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Парсим метрики
+		if strings.HasPrefix(line, "relay_connections_total") {
+			if value := rmc.parseMetricValue(line); value > 0 {
+				stats.ConnectionsTotal = int64(value)
+			}
+		} else if strings.HasPrefix(line, "relay_active_connections") {
+			if value := rmc.parseMetricValue(line); value > 0 {
+				stats.ConnectionsActive = int64(value)
+			}
+		} else if strings.HasPrefix(line, "relay_bandwidth_bytes_total") {
+			if value := rmc.parseMetricValue(line); value > 0 {
+				stats.BytesTransferred = int64(value)
+			}
+		} else if strings.HasPrefix(line, "relay_latency_seconds") {
+			if value := rmc.parseMetricValue(line); value > 0 {
+				stats.AverageLatency = value
+			}
+		} else if strings.HasPrefix(line, "relay_errors_total") {
+			if value := rmc.parseMetricValue(line); value > 0 {
+				// Вычисляем error rate
+				if stats.ConnectionsTotal > 0 {
+					stats.ErrorRate = value / float64(stats.ConnectionsTotal)
+				}
+			}
+		}
+	}
+
+	return stats, nil
+}
+
+// parseMetricValue парсит значение из строки метрики Prometheus
+func (rmc *RelayMetricsCollector) parseMetricValue(line string) float64 {
+	// Формат: metric_name{labels} value
+	parts := strings.Fields(line)
+	if len(parts) < 2 {
+		return 0
+	}
+
+	value, err := strconv.ParseFloat(parts[len(parts)-1], 64)
+	if err != nil {
+		return 0
+	}
+
+	return value
 }

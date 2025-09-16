@@ -1,0 +1,17 @@
+# Основные настройки
+max_execution_time = 300
+memory_limit = 256M
+post_max_size = 32M
+upload_max_filesize = 16M
+max_input_time = 300
+
+# Настройки сессий
+session.auto_start = 0
+session.cookie_httponly = 1
+
+# Настройки даты
+date.timezone = Europe/Moscow
+
+
+
+

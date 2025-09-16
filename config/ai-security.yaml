@@ -1,0 +1,116 @@
+# NetworkPolicy для AI сервиса
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-service-network-policy
+  namespace: cloudbridge
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ai-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: cloudbridge
+    - namespaceSelector:
+        matchLabels:
+          name: cloudbridge-monitoring
+    ports:
+    - protocol: TCP
+      port: 8083
+    - protocol: TCP
+      port: 8084
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: cloudbridge
+    - namespaceSelector:
+        matchLabels:
+          name: cloudbridge-monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 8080
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+
+---
+# PodSecurityPolicy для AI сервиса
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: ai-service-psp
+  namespace: cloudbridge
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+
+---
+# ServiceAccount для AI сервиса
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-service-sa
+  namespace: cloudbridge
+automountServiceAccountToken: false
+
+---
+# Role для AI сервиса
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: cloudbridge
+  name: ai-service-role
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+
+---
+# RoleBinding для AI сервиса
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ai-service-rolebinding
+  namespace: cloudbridge
+subjects:
+- kind: ServiceAccount
+  name: ai-service-sa
+  namespace: cloudbridge
+roleRef:
+  kind: Role
+  name: ai-service-role
+  apiGroup: rbac.authorization.k8s.io
+
+

@@ -1,0 +1,310 @@
+# Конфигурация мониторинга AI сервиса
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-monitoring-config
+  namespace: cloudbridge
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+
+    scrape_configs:
+      - job_name: 'ai-service'
+        static_configs:
+          - targets: ['ai-service.cloudbridge.svc.cluster.local:8083']
+        metrics_path: '/api/v1/ai/metrics'
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      - job_name: 'ai-service-health'
+        static_configs:
+          - targets: ['ai-service.cloudbridge.svc.cluster.local:8083']
+        metrics_path: '/health'
+        scrape_interval: 15s
+        scrape_timeout: 5s
+
+      - job_name: 'relay-service'
+        static_configs:
+          - targets: ['cloudbridge-relay.cloudbridge.svc.cluster.local:9090']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+  ai-alerts.yml: |
+    groups:
+      - name: ai-service-alerts
+        rules:
+          - alert: AIServiceDown
+            expr: up{job="ai-service"} == 0
+            for: 1m
+            labels:
+              severity: critical
+              service: ai
+            annotations:
+              summary: "AI Service is down"
+              description: "AI Service has been down for more than 1 minute"
+
+          - alert: AIServiceHighCPU
+            expr: ai_cpu_usage > 80
+            for: 5m
+            labels:
+              severity: warning
+              service: ai
+            annotations:
+              summary: "AI Service high CPU usage"
+              description: "AI Service CPU usage is above 80% for more than 5 minutes"
+
+          - alert: AIServiceHighMemory
+            expr: ai_memory_usage > 85
+            for: 5m
+            labels:
+              severity: warning
+              service: ai
+            annotations:
+              summary: "AI Service high memory usage"
+              description: "AI Service memory usage is above 85% for more than 5 minutes"
+
+          - alert: AIAnomalyDetectionFailed
+            expr: ai_anomaly_detection_errors > 0
+            for: 1m
+            labels:
+              severity: warning
+              service: ai
+            annotations:
+              summary: "AI Anomaly Detection failed"
+              description: "AI Anomaly Detection has failed {{ $value }} times in the last minute"
+
+          - alert: AILoadPredictionFailed
+            expr: ai_load_prediction_errors > 0
+            for: 1m
+            labels:
+              severity: warning
+              service: ai
+            annotations:
+              summary: "AI Load Prediction failed"
+              description: "AI Load Prediction has failed {{ $value }} times in the last minute"
+
+          - alert: AIRouteOptimizationFailed
+            expr: ai_route_optimization_errors > 0
+            for: 1m
+            labels:
+              severity: warning
+              service: ai
+            annotations:
+              summary: "AI Route Optimization failed"
+              description: "AI Route Optimization has failed {{ $value }} times in the last minute"
+
+          - alert: AIDataPipelineDown
+            expr: ai_data_pipeline_status == 0
+            for: 2m
+            labels:
+              severity: critical
+              service: ai
+            annotations:
+              summary: "AI Data Pipeline is down"
+              description: "AI Data Pipeline has been down for more than 2 minutes"
+
+          - alert: AIRelayIntegrationFailed
+            expr: ai_relay_integration_errors > 0
+            for: 1m
+            labels:
+              severity: warning
+              service: ai
+            annotations:
+              summary: "AI Relay Integration failed"
+              description: "AI Relay Integration has failed {{ $value }} times in the last minute"
+
+          - alert: AIHighAnomalyRate
+            expr: rate(ai_anomalies_detected[5m]) > 10
+            for: 2m
+            labels:
+              severity: warning
+              service: ai
+            annotations:
+              summary: "High anomaly detection rate"
+              description: "AI is detecting {{ $value }} anomalies per second"
+
+          - alert: AILowPredictionAccuracy
+            expr: ai_prediction_accuracy < 0.7
+            for: 10m
+            labels:
+              severity: warning
+              service: ai
+            annotations:
+              summary: "Low prediction accuracy"
+              description: "AI prediction accuracy is below 70% for more than 10 minutes"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: cloudbridge-monitoring
+data:
+  ai-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "CloudBridge AI Service Dashboard",
+        "tags": ["ai", "cloudbridge"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "AI Service Status",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "up{job=\"ai-service\"}",
+                "legendFormat": "AI Service"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "green", "value": 1}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "CPU Usage",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "ai_cpu_usage",
+                "legendFormat": "CPU %"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 70},
+                    {"color": "red", "value": 90}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Memory Usage",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "ai_memory_usage",
+                "legendFormat": "Memory %"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 70},
+                    {"color": "red", "value": 90}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0}
+          },
+          {
+            "id": 4,
+            "title": "Active Connections",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "ai_active_connections",
+                "legendFormat": "Connections"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "palette-classic"
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0}
+          },
+          {
+            "id": 5,
+            "title": "Anomaly Detection Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(ai_anomalies_detected[5m])",
+                "legendFormat": "Anomalies/sec"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+          },
+          {
+            "id": 6,
+            "title": "Load Predictions",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(ai_predictions_made[5m])",
+                "legendFormat": "Predictions/sec"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+          },
+          {
+            "id": 7,
+            "title": "Route Optimizations",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(ai_routes_optimized[5m])",
+                "legendFormat": "Optimizations/sec"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+          },
+          {
+            "id": 8,
+            "title": "Prediction Accuracy",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "ai_prediction_accuracy",
+                "legendFormat": "Accuracy"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }

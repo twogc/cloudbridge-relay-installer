@@ -1,106 +1,62 @@
 {
   "server": {
     "address": "0.0.0.0",
-    "port": 9090,
+    "port": 8080,
     "timeout": "30s",
     "max_tunnels": 1000,
     "ping_interval": "30s",
-    "cleanup_interval": "1m"
+    "cleanup_interval": "60s"
   },
   "django": {
-    "api_endpoint": "http://localhost:8000/api",
-    "jwt_secret": "1Pc6bvrTUDtXMKm6mMF6+7UJi/EYAdOcGPkXCRYV4xI=",
+    "api_endpoint": "",
+    "jwt_secret": "${RELAY_JWT_SECRET}",
     "jwt_expiry": "24h",
     "rest_timeout": "5s",
     "rest_cache_ttl": "5m",
     "rest_max_retries": 3,
     "rest_retry_delay": "100ms"
   },
-  "tenants": {
-    "relay-test-tenant": {
-      "enabled": true,
-      "name": "Relay Test Tenant",
-      "description": "Test tenant for DevOps development",
-      "limits": {
-        "max_tunnels": 10,
-        "max_connections": 20,
-        "max_bandwidth_mbps": 100,
-        "rate_limit_per_second": 500,
-        "burst": 100
-      },
-      "jwt": {
-        "issuer": "2gc.ru",
-        "audience": "relay-test-tenant",
-        "allowed_claims": ["tenant_id", "user_id", "permissions"]
-      },
-      "allowed_ips": [
-        "10.0.0.0/8",
-        "172.16.0.0/12",
-        "192.168.0.0/16",
-        "203.0.113.0/24",
-        "198.51.100.0/24",
-        "192.0.2.0/24",
-        "127.0.0.1",
-        "::1",
-        "192.168.49.2",
-        "95.163.250.190"
-      ],
-      "allowed_ports": [],
-      "features": ["tls", "jwt", "tunneling", "p2p", "quic"]
-    }
-  },
   "keycloak": {
-    "enabled": true,
-    "server_url": "https://auth.2gc.ru",
-    "realm": "cloudbridge",
-    "client_id": "relay-server",
-    "client_secret": "relay-server-secret-456",
-    "public_key": "",
+    "enabled": false,
+    "server_url": "${KEYCLOAK_SERVER_URL}",
+    "realm": "${KEYCLOAK_REALM}",
+    "client_id": "${KEYCLOAK_CLIENT_ID}",
+    "client_secret": "${KEYCLOAK_CLIENT_SECRET}",
+    "public_key": "${KEYCLOAK_PUBLIC_KEY}",
+    "fallback_secret": "",
+    "jwks_url": "",
     "token_validation": {
-      "issuer": "https://auth.2gc.ru/realms/cloudbridge",
-      "audience": "account",
+      "issuer": "${KEYCLOAK_ISSUER}",
+      "audience": "${KEYCLOAK_AUDIENCE}",
       "clock_skew": "30s"
     },
-    "jwks_url": "https://auth.2gc.ru/realms/cloudbridge/protocol/openid-connect/certs",
     "jwks_cache_ttl": "1h",
     "http_timeout": "30s"
   },
   "security": {
     "tls_enabled": false,
-    "cert_file": "/app/certs/server.crt",
-    "key_file": "/app/certs/server.key",
-    "allowed_ips": [
-      "10.0.0.0/8",
-      "172.16.0.0/12",
-      "192.168.0.0/16",
-      "203.0.113.0/24",
-      "198.51.100.0/24",
-      "192.0.2.0/24",
-      "127.0.0.1",
-      "::1",
-      "192.168.49.2",
-      "95.163.250.190"
-    ],
+    "cert_file": "${RELAY_TLS_CERT_FILE}",
+    "key_file": "${RELAY_TLS_KEY_FILE}",
+    "allowed_ips": [],
     "rate_limit": {
       "enabled": true,
-      "requests_per_second": 1000,
-      "burst": 100
+      "requests_per_second": 100.0,
+      "burst": 1000
     },
     "mtls": {
-      "enabled": true,
-      "ca_file": "/app/certs/ca.crt",
-      "client_cert_required": true
+      "enabled": false,
+      "ca_file": "${RELAY_MTLS_CA_FILE}"
     },
-    "cipher_suites": ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
-    "min_tls_version": "1.2",
+    "cipher_suites": [],
+    "min_tls_version": "TLS1.3",
     "audit": {
-      "enabled": true,
-      "log_file": "/app/logs/security.log"
+      "enabled": false,
+      "log_file": "/var/log/relay_audit.log"
     }
   },
   "metrics": {
     "enabled": true,
-    "port": 8084,
+    "port": 9090,
     "path": "/metrics"
   },
   "api": {
@@ -112,22 +68,46 @@
     "level": "info",
     "format": "json",
     "output": "stdout",
-    "file": "",
-    "max_size": "100MB",
-    "max_age": "7d",
-    "max_backups": 5
+    "file": "/var/log/relay.log",
+    "max_size": "100m",
+    "max_age": "720h",
+    "max_backups": 10
   },
   "protocol": {
     "auto_select": true,
     "preferred": "quic",
-    "fallback": "http2",
-    "switch_threshold": 0.8,
+    "fallback": "http",
+    "switch_threshold": 0.2,
     "health_check_interval": "30s"
+  },
+  "http_api": {
+    "enabled": true,
+    "port": 9090,
+    "host": "0.0.0.0",
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 100
+    }
+  },
+  "https_api": {
+    "enabled": true,
+    "port": 9091,
+    "host": "0.0.0.0",
+    "tls": {
+      "enabled": true,
+      "cert_file": "/app/certs/tls.crt",
+      "key_file": "/app/certs/tls.key"
+    },
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 100
+    }
   },
   "quic": {
     "enabled": true,
-    "port": 9090,
-    "max_streams": 100,
+    "max_streams": 1000,
     "keep_alive": true,
     "idle_timeout": "30s",
     "handshake_timeout": "10s"
@@ -136,7 +116,7 @@
     "enabled": false,
     "client_daemon": false,
     "service_discovery": false,
-    "auto_reconnect": false,
+    "auto_reconnect": true,
     "circuit_breaker": {
       "enabled": false,
       "failure_threshold": 5,
@@ -145,32 +125,14 @@
       "window_size": "60s"
     },
     "health_check": {
-      "enabled": true,
+      "enabled": false,
       "interval": "30s",
-      "timeout": "5s",
-      "checks": [
-        {
-          "type": "http",
-          "url": "http://localhost:9090/health",
-          "timeout": "5s"
-        },
-        {
-          "type": "tcp",
-          "host": "localhost",
-          "port": 51820,
-          "timeout": "5s"
-        },
-        {
-          "type": "tcp",
-          "host": "localhost",
-          "port": 9090,
-          "timeout": "5s"
-        }
-      ]
+      "timeout": "10s",
+      "checks": []
     },
     "rate_limit": {
       "enabled": false,
-      "requests_per": 1000,
+      "requests_per": 100,
       "window_size": 60
     },
     "authentication": {
@@ -180,10 +142,68 @@
       "keycloak_url": ""
     }
   },
+  "ingress": {
+    "enabled": false,
+    "bastion_mode": false,
+    "ip_access_control": {
+      "enabled": false,
+      "default_allow": true,
+      "rules": []
+    },
+    "tls": {
+      "enabled": false,
+      "cert_file": "${RELAY_TLS_CERT_FILE}",
+      "key_file": "${RELAY_TLS_KEY_FILE}",
+      "min_version": "TLS1.3",
+      "cipher_suites": [],
+      "verify_client_cert": false,
+      "client_ca_file": "",
+      "insecure_skip_verify": false
+    },
+    "connection_pool": {
+      "max_size": 200,
+      "idle_timeout": "60s",
+      "max_idle": 50,
+      "max_lifetime": "10m",
+      "retry": {
+        "max_retries": 3,
+        "base_time": "100ms",
+        "max_delay": "2s",
+        "jitter": 0.1,
+        "retry_forever": false
+      },
+      "graceful_shutdown": {
+        "grace_period": "10s",
+        "max_wait_time": "20s"
+      },
+      "http2_reuse": {
+        "max_connections": 100,
+        "max_idle_time": "30s",
+        "cleanup_interval": "30s"
+      }
+    },
+    "rules": [],
+    "origin_request": {
+      "connect_timeout": "5s",
+      "tls_timeout": "5s",
+      "tcp_keep_alive": "30s",
+      "keep_alive_connections": 64,
+      "keep_alive_timeout": "30s",
+      "http_host_header": "",
+      "origin_server_name": "",
+      "no_tls_verify": false,
+      "ca_pool": "",
+      "disable_chunked_encoding": false,
+      "bastion_mode": false,
+      "proxy_address": "",
+      "proxy_port": 0,
+      "proxy_type": "",
+      "http2_origin": true
+    }
+  },
   "enhanced_quic": {
-    "enabled": true,
-    "port": 9092,
-    "max_streams": 100,
+    "enabled": false,
+    "max_streams": 1000,
     "keep_alive": true,
     "idle_timeout": "30s",
     "handshake_timeout": "10s",
@@ -191,17 +211,51 @@
     "geographic_routing": false,
     "keycloak_integration": false
   },
+  "p2p_api": {
+    "enabled": true,
+    "port": 8082,
+    "host": "0.0.0.0",
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 100
+    },
+    "endpoints": {
+      "register": "/api/v1/register",
+      "peers": "/api/v1/peers",
+      "health": "/api/v1/health"
+    }
+  },
+  "p2p_api_https": {
+    "enabled": true,
+    "port": 8083,
+    "host": "0.0.0.0",
+    "tls": {
+      "enabled": true,
+      "cert_file": "/app/certs/tls.crt",
+      "key_file": "/app/certs/tls.key"
+    },
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 100
+    },
+    "endpoints": {
+      "register": "/api/v1/register",
+      "peers": "/api/v1/peers",
+      "health": "/api/v1/health"
+    }
+  },
   "wireguard": {
     "enabled": true,
-    "port": 51820,
     "interface": {
-      "name": "wg-mesh0",
+      "name": "wg0",
       "listen_port": 51820,
       "address": "10.100.1.1/24"
     },
     "discovery": {
-      "registry_url": "https://edge.2gc.ru/wg/peers",
-      "heartbeat_interval": "25s",
+      "registry_url": "https://registry.cloudbridge.com",
+      "heartbeat_interval": "30s",
       "max_peers": 50
     },
     "mesh": {
@@ -219,42 +273,38 @@
     "enabled": false,
     "algorithm": "kyber",
     "hybrid_mode": true,
-    "key_size": 256,
-    "signature_scheme": "dilithium",
+    "key_size": 7680,
+    "signature_scheme": "dilithium3",
     "fallback_enabled": true,
     "key_rotation_days": 30,
-    "wireguard": {
-      "enabled": false
-    },
-    "enhanced_quic": {
-      "enabled": false
-    }
+    "wireguard": { "enabled": false },
+    "enhanced_quic": { "enabled": false }
   },
   "ai": {
-    "enabled": true,
+    "enabled": false,
     "behavior_analysis": {
-      "enabled": true,
-      "model_path": "/models/behavior",
+      "enabled": false,
+      "model_path": "",
       "threshold": 0.8,
       "learning_rate": 0.01
     },
     "predictive_security": {
-      "enabled": true,
+      "enabled": false,
       "confidence": 0.9
     },
     "automated_response": {
-      "enabled": true
+      "enabled": false
     },
     "monitoring": {
       "enabled": true,
-      "dashboard_url": "http://grafana:3000",
+      "dashboard_url": "http://localhost:3000",
       "refresh_rate": "30s"
     }
   },
   "cadence": {
-    "enabled": true,
+    "enabled": false,
     "host_port": "localhost:7933",
-    "domain": "cloudbridge",
-    "task_list": "relay-task-list"
+    "domain": "default",
+    "task_list": "relay-tasks"
   }
 }

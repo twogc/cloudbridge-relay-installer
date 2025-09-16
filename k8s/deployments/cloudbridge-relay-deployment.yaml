@@ -35,6 +35,24 @@ spec:
         runAsGroup: 1000
         fsGroup: 1000
       containers:
+      - name: prometheus-proxy
+        image: alpine/socat:1.8.0.0
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/sh","-c"]
+        args:
+        - |
+          set -e
+          socat -d -d TCP-LISTEN:9095,bind=127.0.0.1,fork,reuseaddr TCP:prometheus.cloudbridge-monitoring.svc.cluster.local:9090 &
+          socat -d -d TCP6-LISTEN:9095,bind=::1,fork,reuseaddr TCP:prometheus.cloudbridge-monitoring.svc.cluster.local:9090
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
       - name: cloudbridge-relay
         image: cloudbridge-relay:latest
         imagePullPolicy: IfNotPresent
@@ -96,6 +114,13 @@ spec:
               name: cloudbridge-secrets
               key: api-key
         - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cloudbridge-secrets
+              key: jwt-secret
+        - name: PROMETHEUS_URL
+          value: "http://localhost:9095"
+        - name: RELAY_JWT_SECRET
           valueFrom:
             secretKeyRef:
               name: cloudbridge-secrets

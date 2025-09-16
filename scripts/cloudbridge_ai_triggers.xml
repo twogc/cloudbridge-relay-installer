@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>6.0</version>
+    <date>2024-09-15T16:00:00Z</date>
+    <triggers>
+        <trigger>
+            <uuid>ai-service-down-uuid</uuid>
+            <expression>last(/CloudBridge AI Monitoring/ai.health)=0</expression>
+            <name>AI Service Down</name>
+            <priority>5</priority>
+            <description>AI service is not responding</description>
+            <tags>
+                <tag>
+                    <tag>service</tag>
+                    <value>ai</value>
+                </tag>
+            </tags>
+        </trigger>
+        
+        <trigger>
+            <uuid>ai-circuit-breaker-open-uuid</uuid>
+            <expression>last(/CloudBridge AI Monitoring/ai.circuit_breaker_state)="open"</expression>
+            <name>AI Circuit Breaker Open</name>
+            <priority>4</priority>
+            <description>AI circuit breaker is open</description>
+            <tags>
+                <tag>
+                    <tag>service</tag>
+                    <value>ai</value>
+                </tag>
+            </tags>
+        </trigger>
+
+        <trigger>
+            <uuid>ai-high-processing-time-uuid</uuid>
+            <expression>last(/CloudBridge AI Monitoring/ai.processing_time)>1000</expression>
+            <name>High AI Processing Time</name>
+            <priority>3</priority>
+            <description>AI processing time is above 1000ms</description>
+            <tags>
+                <tag>
+                    <tag>service</tag>
+                    <value>ai</value>
+                </tag>
+            </tags>
+        </trigger>
+        
+        <trigger>
+            <uuid>ai-high-error-rate-uuid</uuid>
+            <expression>last(/CloudBridge AI Monitoring/ai.error_rate)>10</expression>
+            <name>High AI Error Rate</name>
+            <priority>4</priority>
+            <description>AI error rate is above 10%</description>
+            <tags>
+                <tag>
+                    <tag>service</tag>
+                    <value>ai</value>
+                </tag>
+            </tags>
+        </trigger>
+    </triggers>
+</zabbix_export>
+

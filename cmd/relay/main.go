@@ -360,6 +360,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			cfg.Keycloak.JWKSURL,
 			cfg.Keycloak.TokenValidation.Audience,
 			cfg.Keycloak.TokenValidation.Issuer,
+			cfg.Keycloak.FallbackSecret,
 			loggerInstance.GetZapLogger(),
 		)
 	}
