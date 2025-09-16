@@ -349,6 +349,21 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 		}
 	}
 
+	// ДОБАВИТЬ: Если нет пиров в whitelist, но есть зарегистрированные пиры,
+	// показываем их (для отладки и тестирования)
+	if len(filteredPeers) == 0 && len(peers) > 0 {
+		pm.logger.Info("No peers in whitelist, showing all registered peers for debugging",
+			zap.String("tenant_id", tenantID),
+			zap.Int("total_peers", len(peers)),
+			zap.Strings("whitelist", claims.PeerWhitelist.AllowedPeers))
+		
+		for _, peer := range peers {
+			peer.IsOnline = pm.isPeerOnline(peer.PeerID)
+			peer.LastSeen = pm.getLastSeen(peer.PeerID)
+			filteredPeers = append(filteredPeers, peer)
+		}
+	}
+
 	pm.logger.Info("Peer discovery completed",
 		zap.String("tenant_id", tenantID),
 		zap.Int("peers_found", len(filteredPeers)),
@@ -530,23 +545,31 @@ func (pm *PeerManager) validatePeerAccess(peerID string, whitelist *PeerWhitelis
 
 // isPeerOnline проверяет, онлайн ли пир
 func (pm *PeerManager) isPeerOnline(peerID string) bool {
-	peer, exists := pm.peers[peerID]
-	if !exists {
-		return false
-	}
+	// Ищем пира во всех тенантах
+	pm.peerStore.mu.RLock()
+	defer pm.peerStore.mu.RUnlock()
 
-	// Простая проверка: если последний раз видели менее 5 минут назад
-	return time.Since(peer.LastSeen) < 5*time.Minute
+	for _, tenantPeers := range pm.peerStore.peers {
+		if peer, exists := tenantPeers[peerID]; exists {
+			// Простая проверка: если последний раз видели менее 5 минут назад
+			return time.Since(peer.LastSeen) < 5*time.Minute
+		}
+	}
+	return false
 }
 
 // getLastSeen возвращает время последнего контакта с пиром
 func (pm *PeerManager) getLastSeen(peerID string) time.Time {
-	peer, exists := pm.peers[peerID]
-	if !exists {
-		return time.Time{}
-	}
+	// Ищем пира во всех тенантах
+	pm.peerStore.mu.RLock()
+	defer pm.peerStore.mu.RUnlock()
 
-	return peer.LastSeen
+	for _, tenantPeers := range pm.peerStore.peers {
+		if peer, exists := tenantPeers[peerID]; exists {
+			return peer.LastSeen
+		}
+	}
+	return time.Time{}
 }
 
 // generateID генерирует уникальный ID
