@@ -1,0 +1,33 @@
+FROM alpine:latest
+
+# Установка необходимых пакетов
+RUN apk --no-cache add ca-certificates tzdata
+
+# Создание пользователя
+RUN addgroup -g 1001 -S relay && \
+    adduser -u 1001 -S relay -G relay
+
+# Рабочая директория
+WORKDIR /app
+
+# Копирование собранного бинарника
+COPY relay-server-test ./relay-server
+RUN chmod +x ./relay-server
+COPY configs/ ./configs/
+COPY certs/ ./certs/
+
+# Установка прав
+RUN chown -R relay:relay /app
+
+# Переключение на пользователя relay
+USER relay
+
+# Порты
+EXPOSE 8080 8443 9090
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# Запуск
+CMD ["./relay-server", "-config", "configs/config.json"]
