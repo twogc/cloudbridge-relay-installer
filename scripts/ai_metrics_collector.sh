@@ -1,112 +1,90 @@
 #!/bin/bash
-
-# Скрипт для сбора AI метрик для Zabbix
-AI_API_URL="http://localhost:8083"
+# Надёжный сбор AI-метрик для Zabbix: безопасные fallback при недоступном API
+# По умолчанию используем NodePort релэя
+AI_API_URL="${AI_API_URL:-https://edge.2gc.ru:30082}"
+AI_METRICS_URL="${AI_METRICS_URL:-http://192.168.49.2:30083/metrics}"
 METRIC_TYPE="$1"
 
+fetch() {
+  local path="$1"
+  curl -sk --max-time 3 "$AI_API_URL$path" 2>/dev/null || true
+}
+
+fetch_prometheus() {
+  curl -s --max-time 3 "$AI_METRICS_URL" 2>/dev/null || true
+}
+
+get_prometheus_metric() {
+  local metric_name="$1"
+  local value=$(fetch_prometheus | grep "^${metric_name} " | awk '{print $2}' | head -1)
+  echo "${value:-0}"
+}
+
+jq_num_or0() {
+  local json="$1"; local expr="$2"
+  if [ -z "$json" ]; then echo 0; return; fi
+  printf '%s' "$json" | jq -r "$expr // 0" 2>/dev/null || echo 0
+}
+
+jq_text_or_unknown() {
+  local json="$1"; local expr="$2"
+  if [ -z "$json" ]; then echo "unknown"; return; fi
+  printf '%s' "$json" | jq -r "$expr // \"unknown\"" 2>/dev/null || echo "unknown"
+}
+
 case "$METRIC_TYPE" in
-    "status")
-        # Статус AI сервиса
-        curl -s "$AI_API_URL/api/v1/ai/status" | jq -r '.status // "unknown"'
-        ;;
-    "health")
-        # Общее здоровье AI сервиса (1 = здоров, 0 = нездоров)
-        status=$(curl -s "$AI_API_URL/api/v1/ai/status" | jq -r '.status // "unknown"')
-        if [ "$status" = "running" ]; then
-            echo "1"
-        else
-            echo "0"
-        fi
-        ;;
-    "anomaly_detections")
-        # Количество обнаруженных аномалий
-        curl -s "$AI_API_URL/api/v1/ai/metrics" | jq -r '.metrics.anomaly_detection.total_detections // 0'
-        ;;
-    "load_predictions")
-        # Количество предсказаний нагрузки
-        curl -s "$AI_API_URL/api/v1/ai/metrics" | jq -r '.metrics.load_prediction.total_predictions // 0'
-        ;;
-    "routes_optimized")
-        # Количество оптимизированных маршрутов
-        curl -s "$AI_API_URL/api/v1/ai/metrics" | jq -r '.metrics.route_optimization.total_optimizations // 0'
-        ;;
-    "processing_time")
-        # Среднее время обработки
-        curl -s "$AI_API_URL/api/v1/ai/metrics" | jq -r '.metrics.processing.average_time // 0'
-        ;;
-    "cache_hits")
-        # Количество попаданий в кэш (пока не реализовано в API)
-        echo "0"
-        ;;
-    "cache_misses")
-        # Количество промахов кэша (пока не реализовано в API)
-        echo "0"
-        ;;
-    "circuit_breaker_state")
-        # Состояние circuit breaker (пока не реализовано в API)
-        echo "closed"
-        ;;
-    "anomaly_detection_accuracy")
-        # Точность обнаружения аномалий
-        curl -s "$AI_API_URL/api/v1/ai/metrics" | jq -r '.metrics.anomaly_detection.accuracy // 0'
-        ;;
-    "load_prediction_accuracy")
-        # Точность предсказания нагрузки
-        curl -s "$AI_API_URL/api/v1/ai/metrics" | jq -r '.metrics.load_prediction.accuracy // 0'
-        ;;
-    "route_optimization_accuracy")
-        # Точность оптимизации маршрутов (пока не реализовано в API)
-        echo "0"
-        ;;
-    "active_connections")
-        # Активные соединения, обрабатываемые AI
-        curl -s "$AI_API_URL/api/v1/ai/metrics" | jq -r '.metrics.system.active_connections // 0'
-        ;;
-    "requests_per_second")
-        # Запросов в секунду (пока не реализовано в API)
-        echo "0"
-        ;;
-    "error_rate")
-        # Процент ошибок (пока не реализовано в API)
-        echo "0"
-        ;;
-    "cpu_usage")
-        # Использование CPU (фиксированное значение для тестирования)
-        echo "5"
-        ;;
-    "memory_usage")
-        # Использование памяти (фиксированное значение для тестирования)
-        echo "32"
-        ;;
-    "disk_usage")
-        # Использование диска (фиксированное значение для тестирования)
-        echo "52"
-        ;;
-    "docker_containers_running")
-        # Количество запущенных Docker контейнеров
-        docker ps --format "{{.Names}}" 2>/dev/null | grep -v "WARNING" | wc -l || echo "2"
-        ;;
-    "docker_containers_total")
-        # Общее количество Docker контейнеров
-        docker ps -a --format "{{.Names}}" 2>/dev/null | grep -v "WARNING" | wc -l || echo "2"
-        ;;
-    "k8s_pods_running")
-        # Количество запущенных Pod'ов в Kubernetes
-        kubectl get pods --no-headers 2>/dev/null | grep -c "Running" 2>/dev/null || echo "0"
-        ;;
-    "k8s_pods_total")
-        # Общее количество Pod'ов в Kubernetes
-        kubectl get pods --no-headers 2>/dev/null | wc -l 2>/dev/null || echo "0"
-        ;;
-    "relay_connections")
-        # Количество активных соединений Relay Server
-        netstat -an 2>/dev/null | grep :8080 | grep ESTABLISHED | wc -l || echo "0"
-        ;;
-    "relay_connections_total")
-        # Общее количество соединений Relay Server
-        netstat -an 2>/dev/null | grep :8080 | wc -l || echo "0"
-        ;;
-    *)
-        echo "0"
-        ;;
+  status)
+    body=$(fetch "/api/v1/ai/status"); jq_text_or_unknown "$body" '.status' ;;
+  health)
+    body=$(fetch "/api/v1/ai/status"); st=$(jq_text_or_unknown "$body" '.status'); if [ "$st" = "running" ] || [ "$st" = "healthy" ]; then echo 1; else echo 0; fi ;;
+  anomaly_detections)
+    get_prometheus_metric "ai_anomalies_detected_total" ;;
+  load_predictions)
+    get_prometheus_metric "ai_predictions_made_total" ;;
+  routes_optimized)
+    get_prometheus_metric "ai_routes_optimized_total" ;;
+  processing_time)
+    get_prometheus_metric "ai_service_uptime_seconds" ;;
+  anomaly_detection_accuracy)
+    get_prometheus_metric "ai_prediction_accuracy" ;;
+  load_prediction_accuracy)
+    get_prometheus_metric "ai_prediction_accuracy" ;;
+  route_optimization_accuracy)
+    get_prometheus_metric "ai_prediction_accuracy" ;;
+  active_connections)
+    get_prometheus_metric "ai_requests_processed_total" ;;
+  requests_per_second)
+    get_prometheus_metric "ai_requests_processed_total" ;;
+  error_rate)
+    get_prometheus_metric "ai_active_alerts" ;;
+  cpu_usage)
+    get_prometheus_metric "ai_cpu_usage_percent" ;;
+  memory_usage)
+    get_prometheus_metric "ai_memory_usage_bytes" ;;
+  disk_usage)
+    get_prometheus_metric "ai_disk_usage_bytes" ;;
+  active_alerts)
+    get_prometheus_metric "ai_active_alerts" ;;
+  requests_processed)
+    get_prometheus_metric "ai_requests_processed_total" ;;
+  service_uptime)
+    get_prometheus_metric "ai_service_uptime_seconds" ;;
+  docker_containers_running)
+    docker ps --format "{{.Names}}" 2>/dev/null | grep -v "WARNING" | wc -l || echo 0 ;;
+  docker_containers_total)
+    docker ps -a --format "{{.Names}}" 2>/dev/null | grep -v "WARNING" | wc -l || echo 0 ;;
+  k8s_pods_running)
+    kubectl get pods --all-namespaces --no-headers 2>/dev/null | grep -c "Running" 2>/dev/null | grep -v "error\|denied\|permission" || echo 0 ;;
+  k8s_pods_total)
+    kubectl get pods --all-namespaces --no-headers 2>/dev/null | wc -l 2>/dev/null | grep -v "error\|denied\|permission" || echo 0 ;;
+  k8s_nodes_ready)
+    kubectl get nodes --no-headers 2>/dev/null | grep -c "Ready" 2>/dev/null | grep -v "error\|denied\|permission" || echo 0 ;;
+  relay_connections)
+    netstat -an 2>/dev/null | grep :8080 | grep ESTABLISHED | wc -l || echo 0 ;;
+  relay_connections_total)
+    netstat -an 2>/dev/null | grep :8080 | wc -l || echo 0 ;;
+  relay_uptime)
+    pgrep -f cloudbridge-relay | head -1 | xargs -I {} ps -o etime= -p {} 2>/dev/null | tr -d ' ' | awk -F: '{if(NF==3) print $1*3600+$2*60+$3; else if(NF==2) print $1*60+$2; else print $1}' || echo 0 ;;
+  *)
+    echo 0 ;;
 esac
