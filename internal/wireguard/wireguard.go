@@ -25,9 +25,11 @@ type WireGuardInterface struct {
 	logger     *zap.Logger
 	isRunning  bool
 
-	// Интеграция с реальным WireGuard
-	realAdapter      *RealWireGuardAdapter
-	useRealWireGuard bool
+	// Интеграция с WireGuard
+	wgctrlAdapter      *WgctrlAdapter
+	useKernelWireGuard bool
+	realAdapter        *RealWireGuardAdapter
+	useRealWireGuard   bool
 
 	// Peer whitelist
 	peerWhitelist    *PeerWhitelist
@@ -200,12 +202,22 @@ func NewWireGuardInterface(name string, port int) *WireGuardInterface {
 	// Генерируем ключи
 	privateKey, publicKey := generateKeyPair()
 
-	// Проверяем доступность реального WireGuard
-	useRealWireGuard := checkRealWireGuardAvailability()
+	// Пытаемся использовать kernel WireGuard через wgctrl
+	var (
+		wgctrlAdapter      *WgctrlAdapter
+		useKernelWireGuard bool
+	)
+	if wa, err := NewWgctrlAdapter(name, zap.NewNop()); err == nil {
+		wgctrlAdapter = wa
+		useKernelWireGuard = true
+	}
 
+	// Если wgctrl недоступен, проверим userspace wireguard-go
 	var realAdapter *RealWireGuardAdapter
-	if useRealWireGuard {
+	useRealWireGuard := false
+	if !useKernelWireGuard && checkRealWireGuardAvailability() {
 		realAdapter = NewRealWireGuardAdapter(name, zap.NewNop())
+		useRealWireGuard = true
 	}
 
 	// Создаем peer whitelist
@@ -221,6 +233,8 @@ func NewWireGuardInterface(name string, port int) *WireGuardInterface {
 		PublicKey:           publicKey,
 		Peers:               make(map[string]*WireGuardPeer),
 		logger:              zap.NewNop(),
+		wgctrlAdapter:       wgctrlAdapter,
+		useKernelWireGuard:  useKernelWireGuard,
 		realAdapter:         realAdapter,
 		useRealWireGuard:    useRealWireGuard,
 		peerWhitelist:       peerWhitelist,
@@ -348,6 +362,44 @@ func (wgi *WireGuardInterface) Start() error {
 		return fmt.Errorf("WireGuard interface already running")
 	}
 
+	// 1) Пытаемся запустить kernel WireGuard через wgctrl
+	if wgi.useKernelWireGuard && wgi.wgctrlAdapter != nil {
+		cfg := &WireGuardConfig{
+			Interface: struct {
+				Name       string `json:"name"`
+				ListenPort int    `json:"listen_port"`
+				Address    string `json:"address"`
+				PrivateKey string `json:"private_key"`
+				MTU        int    `json:"mtu"`
+			}{
+				Name:       wgi.Name,
+				ListenPort: wgi.ListenPort,
+				Address:    wgi.Address,
+				PrivateKey: wgi.PrivateKey,
+				MTU:        1420,
+			},
+			Peers: []WireGuardPeerConfig{},
+		}
+		for _, peer := range wgi.Peers {
+			cfg.Peers = append(cfg.Peers, WireGuardPeerConfig{
+				PublicKey:  peer.PublicKey,
+				AllowedIPs: peer.AllowedIPs,
+				Endpoint:   peer.Endpoint,
+			})
+		}
+		if err := wgi.wgctrlAdapter.Start(cfg); err != nil {
+			wgi.logger.Error("Failed to start kernel WireGuard via wgctrl, trying userspace", zap.Error(err))
+		} else {
+			wgi.isRunning = true
+			wgi.logger.Info("Kernel WireGuard interface started (wgctrl)",
+				zap.String("name", wgi.Name),
+				zap.Int("port", wgi.ListenPort),
+			)
+			return nil
+		}
+	}
+
+	// 2) Fallback: userspace wireguard-go
 	if wgi.useRealWireGuard && wgi.realAdapter != nil {
 		// Используем реальный WireGuard
 		config := &WireGuardConfig{
@@ -389,7 +441,7 @@ func (wgi *WireGuardInterface) Start() error {
 		}
 	}
 
-	// Fallback на симуляцию
+	// 3) Fallback на симуляцию
 	wgi.isRunning = true
 	wgi.logger.Info("Simulated WireGuard interface started",
 		zap.String("name", wgi.Name),

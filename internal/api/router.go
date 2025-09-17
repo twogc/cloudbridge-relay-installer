@@ -305,6 +305,14 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 			health.GET("/connections", r.healthManager.GetConnectionMetrics)
 		}
 
+		// Relay status endpoint for dashboards and Zabbix
+		relayStatus := v1.Group("/relay")
+		{
+			relayStatus.GET("/status", r.healthManager.GetRelayStatus)
+			relayStatus.POST("/connections/open", r.healthManager.OpenConnection)
+			relayStatus.POST("/connections/close", r.healthManager.CloseConnection)
+		}
+
 		// AI endpoints (требуют аутентификации и rate limiting)
 		ai := v1.Group("/ai")
 		ai.Use(r.rateLimiter.CreateRateLimitMiddleware("ai"))

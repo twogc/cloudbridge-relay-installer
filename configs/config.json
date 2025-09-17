@@ -23,7 +23,7 @@
     "client_id": "${KEYCLOAK_CLIENT_ID}",
     "client_secret": "${KEYCLOAK_CLIENT_SECRET}",
     "public_key": "${KEYCLOAK_PUBLIC_KEY}",
-    "fallback_secret": "",
+    "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
     "jwks_url": "",
     "token_validation": {
       "issuer": "${KEYCLOAK_ISSUER}",

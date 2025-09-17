@@ -11,8 +11,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -75,6 +77,10 @@ var (
 			Help: "Number of active connections",
 		},
 	)
+
+	// Local numeric counters for JSON status endpoint
+	activeConnCount int64
+	totalConnCount  int64
 )
 
 // Server represents the main relay server
@@ -571,6 +577,45 @@ func (s *Server) Start() error {
 				return
 			}
 		})
+		// Relay status (JSON) endpoint for dashboards and Zabbix
+		httpMux.HandleFunc("/relay/status", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			resp := map[string]interface{}{
+				"connections": map[string]interface{}{
+					"active": atomic.LoadInt64(&activeConnCount),
+					"total":  atomic.LoadInt64(&totalConnCount),
+				},
+				"runtime": map[string]interface{}{
+					"goroutines": runtime.NumGoroutine(),
+				},
+				"uptime": time.Since(s.startTime).Seconds(),
+			}
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				s.logger.Error("Failed to encode relay status response", zap.Error(err))
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+		})
+
+		// Backward-compatible API path
+		httpMux.HandleFunc("/api/v1/relay/status", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			resp := map[string]interface{}{
+				"connections": map[string]interface{}{
+					"active": atomic.LoadInt64(&activeConnCount),
+					"total":  atomic.LoadInt64(&totalConnCount),
+				},
+				"runtime": map[string]interface{}{
+					"goroutines": runtime.NumGoroutine(),
+				},
+				"uptime": time.Since(s.startTime).Seconds(),
+			}
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				s.logger.Error("Failed to encode relay status response", zap.Error(err))
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+		})
 
 		// Ready check endpoint
 		httpMux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
@@ -897,7 +942,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 	connectionsTotal.WithLabelValues("accepted").Inc()
 	activeConnections.Inc()
+	atomic.AddInt64(&activeConnCount, 1)
 	defer activeConnections.Dec()
+	defer atomic.AddInt64(&activeConnCount, -1)
 
 	// Use circuit breaker if enabled
 	if s.circuitBreaker != nil {
@@ -917,6 +964,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 
 	connectionsTotal.WithLabelValues("completed").Inc()
+	atomic.AddInt64(&totalConnCount, 1)
 }
 
 // processConnection processes a connection

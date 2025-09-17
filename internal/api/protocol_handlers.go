@@ -174,7 +174,9 @@ func (ph *ProtocolHandler) handleQuickConnection(w http.ResponseWriter, r *http.
 	)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		ph.logger.Error("Failed to encode quick response", zap.Error(err))
+	}
 }
 
 // handleP2PMeshConnection обрабатывает P2P Mesh соединения
@@ -254,7 +256,9 @@ func (ph *ProtocolHandler) handleP2PMeshConnection(w http.ResponseWriter, r *htt
 	)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		ph.logger.Error("Failed to encode p2p mesh response", zap.Error(err))
+	}
 }
 
 // getCurrentConnections возвращает текущее количество соединений

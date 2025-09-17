@@ -1,3 +1,68 @@
+Локальный запуск (без Minikube)
+================================
+
+Предпочтительный способ запустить CloudBridge Relay локально — напрямую (Go) или через Docker, без Minikube. Minikube оставлен как отдельный сценарий и описан в `README_MINIKUBE.md`.
+
+Требования
+----------
+* Go 1.25+
+* Docker (для запуска в контейнере — опционально)
+
+Быстрый старт: нативный запуск (Go)
+-----------------------------------
+```bash
+# В корне репозитория
+# Секреты для аутентификации
+export JWT_SECRET="change-me-strong"          # используется P2P API (cmd/relay)
+export RELAY_JWT_SECRET="change-me-strong"    # если в configs/config.json используется ${RELAY_JWT_SECRET}
+
+# (опционально) интеграция с Keycloak
+# export KEYCLOAK_SERVER_URL="https://edge.example.org"
+# export KEYCLOAK_REALM="cloudbridge"
+# export KEYCLOAK_CLIENT_ID="quic-client"
+# export KEYCLOAK_CLIENT_SECRET="***"
+
+# Сборка
+go build -o ./bin/relay ./cmd/relay
+
+# Запуск (используется пример конфига из configs/)
+./bin/relay -config configs/config.json -log-level debug
+```
+
+Порты и проверки
+----------------
+* TCP сервер: порт из `server.port` (по умолчанию 3456)
+* HTTP (dev, без TLS): 127.0.0.1:9091
+  - Health: `curl http://127.0.0.1:9091/health`
+  - Ready: `curl http://127.0.0.1:9091/ready`
+  - Metrics: `curl http://127.0.0.1:9091/metrics`
+* QUIC (если включён Enhanced QUIC): `:9090/udp`
+* WireGuard (если включён WG): `:51820/udp`
+* P2P API: порт из `api.port` (пример: 8082)
+
+Запуск через Docker (локально)
+------------------------------
+```bash
+# Сборка образов (универсальный скрипт)
+./scripts/setup/build-docker.sh --service relay
+
+# Или готовый скрипт локального запуска (Alpine образ)
+./scripts/setup/run-local.sh
+
+# Проверка
+docker ps | grep cloudbridge-relay-alpine
+docker logs cloudbridge-relay-alpine --tail=100
+```
+
+Minikube (опционально)
+----------------------
+Сценарий Minikube остаётся поддерживаемым и подробно описан здесь:
+
+* README_MINIKUBE.md — быстрый старт
+* docs/MINIKUBE_DEPLOYMENT_GUIDE.md — полная инструкция
+
+---
+
 Quickstart for development with local Cadence server
 ====================================
 

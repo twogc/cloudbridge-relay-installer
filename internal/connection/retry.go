@@ -2,7 +2,8 @@ package connection
 
 import (
 	"context"
-	"math/rand"
+	crand "crypto/rand"
+	"math/big"
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
@@ -129,8 +130,14 @@ func (b *BackoffHandler) GetBackoffDuration(attempt int) time.Duration {
 	// Apply jitter
 	if b.jitter > 0 {
 		jitterRange := float64(backoff) * b.jitter
-		jitter := time.Duration(rand.Float64() * jitterRange)
-		backoff += jitter
+		// Secure random in [0,1) approximated via big.Int
+		// Convert jitterRange to nanoseconds to avoid float reuse
+		maxNanos := int64(jitterRange)
+		if maxNanos > 0 {
+			if n, err := crand.Int(crand.Reader, big.NewInt(maxNanos)); err == nil {
+				backoff += time.Duration(n.Int64())
+			}
+		}
 	}
 
 	return backoff
@@ -178,7 +185,13 @@ func (b *BackoffHandler) SetGracePeriod() time.Duration {
 	if maxTimeToWait <= 0 {
 		maxTimeToWait = time.Nanosecond
 	}
-	timeToWait := time.Duration(rand.Int63n(maxTimeToWait.Nanoseconds()))
+	// Secure random duration in [0, maxTimeToWait)
+	var timeToWait time.Duration
+	if maxTimeToWait > 0 {
+		if n, err := crand.Int(crand.Reader, big.NewInt(maxTimeToWait.Nanoseconds())); err == nil {
+			timeToWait = time.Duration(n.Int64())
+		}
+	}
 	b.resetDeadline = b.Clock.Now().Add(timeToWait)
 
 	if b.logger != nil {
@@ -208,7 +221,12 @@ func (b *BackoffHandler) Backoff(ctx context.Context) bool {
 	if maxTimeToWait <= 0 {
 		maxTimeToWait = time.Nanosecond
 	}
-	timeToWait := time.Duration(rand.Int63n(maxTimeToWait.Nanoseconds()))
+	var timeToWait time.Duration
+	if maxTimeToWait > 0 {
+		if n, err := crand.Int(crand.Reader, big.NewInt(maxTimeToWait.Nanoseconds())); err == nil {
+			timeToWait = time.Duration(n.Int64())
+		}
+	}
 
 	if b.logger != nil {
 		b.logger.Debug("Backoff delay",

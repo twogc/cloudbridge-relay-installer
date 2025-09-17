@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"runtime"
 	"time"
@@ -280,6 +282,137 @@ func (hm *HealthManager) GetConnectionMetrics(c *gin.Context) {
 	})
 }
 
+// GetRelayStatus proxies relay status JSON from the relay's local HTTP endpoint (port 9091).
+// It exposes a stable JSON for dashboards on port 30082.
+func (hm *HealthManager) GetRelayStatus(c *gin.Context) {
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Get("http://127.0.0.1:9091/relay/status")
+	if err == nil && resp != nil && resp.StatusCode == http.StatusOK {
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		// Merge in-memory API counters (logical connections) into relay JSON
+		type relayJSON struct {
+			Connections struct {
+				Active int64 `json:"active"`
+				Total  int64 `json:"total"`
+			} `json:"connections"`
+			Runtime map[string]interface{} `json:"runtime"`
+			Uptime  interface{}            `json:"uptime"`
+		}
+		var rj relayJSON
+		if err := json.Unmarshal(body, &rj); err == nil {
+			active := int64(hm.getActiveConnectionsCount())
+			total := int64(len(hm.connections))
+			if active > rj.Connections.Active {
+				rj.Connections.Active = active
+			}
+			if total > rj.Connections.Total {
+				rj.Connections.Total = total
+			}
+			out, _ := json.Marshal(rj)
+			c.Data(http.StatusOK, "application/json", out)
+			return
+		}
+		c.Data(http.StatusOK, "application/json", body)
+		return
+	}
+
+	// Fallback: synthesize minimal JSON from in-memory maps if relay endpoint is unavailable
+	uptime := 0.0
+	// We don't have the relay start time here; return 0 as a safe default
+	c.JSON(http.StatusOK, gin.H{
+		"connections": gin.H{
+			"active": hm.getActiveConnectionsCount(),
+			"total":  len(hm.connections),
+		},
+		"peers": gin.H{
+			"online": hm.getOnlinePeersCount(),
+			"total":  len(hm.peers),
+		},
+		"runtime": gin.H{
+			"goroutines": runtime.NumGoroutine(),
+		},
+		"uptime":   uptime,
+		"fallback": true,
+	})
+}
+
+// ConnectionEventRequest represents open/close logical connection event
+type ConnectionEventRequest struct {
+	TenantID  string                 `json:"tenant_id" binding:"required"`
+	PeerID    string                 `json:"peer_id" binding:"required"`
+	SessionID string                 `json:"session_id" binding:"required"`
+	Protocol  string                 `json:"protocol"`
+	Meta      map[string]interface{} `json:"meta"`
+}
+
+// OpenConnection marks a logical connection as active (idempotent)
+func (hm *HealthManager) OpenConnection(c *gin.Context) {
+	var req ConnectionEventRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		hm.logger.Error("Invalid open connection request", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	// Use SessionID as connection ID key
+	if req.SessionID == "" || req.PeerID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "session_id and peer_id required"})
+		return
+	}
+
+	// Create or update
+	if _, exists := hm.connections[req.SessionID]; !exists {
+		hm.connections[req.SessionID] = &PeerConnection{
+			ID:               req.SessionID,
+			FromPeerID:       req.PeerID,
+			ToPeerID:         "",
+			ConnectionType:   req.Protocol,
+			IsActive:         true,
+			EstablishedAt:    time.Now(),
+			LastActivity:     time.Now(),
+			BytesTransferred: 0,
+			LatencyMS:        0,
+		}
+	} else {
+		hm.connections[req.SessionID].IsActive = true
+		hm.connections[req.SessionID].LastActivity = time.Now()
+	}
+
+	hm.logger.Info("Logical connection opened",
+		zap.String("session_id", req.SessionID),
+		zap.String("peer_id", req.PeerID),
+		zap.String("tenant_id", req.TenantID),
+	)
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+// CloseConnection marks a logical connection as inactive (idempotent)
+func (hm *HealthManager) CloseConnection(c *gin.Context) {
+	var req ConnectionEventRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		hm.logger.Error("Invalid close connection request", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if req.SessionID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "session_id required"})
+		return
+	}
+
+	if conn, ok := hm.connections[req.SessionID]; ok {
+		conn.IsActive = false
+		conn.LastActivity = time.Now()
+		hm.logger.Info("Logical connection closed", zap.String("session_id", req.SessionID))
+	} else {
+		hm.logger.Info("Close called for unknown session", zap.String("session_id", req.SessionID))
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
 // getOnlinePeersCount возвращает количество онлайн пиров
 func (hm *HealthManager) getOnlinePeersCount() int {
 	count := 0
@@ -313,11 +446,3 @@ func (hm *HealthManager) getMemoryUsage() uint64 {
 func bToMb(b uint64) uint64 {
 	return b / 1024 / 1024
 }
-
-
-
-
-
-
-
-

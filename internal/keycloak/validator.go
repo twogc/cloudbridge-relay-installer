@@ -68,6 +68,12 @@ func (kv *KeycloakValidator) ValidateToken(tokenString string) (*BaseTokenClaims
 
 	// Парсинг токена
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		kid, _ := token.Header["kid"].(string)
+		alg, _ := token.Header["alg"].(string)
+		kv.logger.Info("JWT header",
+			zap.String("alg", alg),
+			zap.String("kid", kid),
+		)
 		// Проверка алгоритма (поддерживаем и RSA, и HS256 для fallback)
 		switch token.Method.(type) {
 		case *jwt.SigningMethodRSA:
@@ -77,13 +83,17 @@ func (kv *KeycloakValidator) ValidateToken(tokenString string) (*BaseTokenClaims
 			return nil, fmt.Errorf("RSA validation not implemented yet")
 		case *jwt.SigningMethodHMAC:
 			// HS256 ключи - fallback режим
-			kv.logger.Info("Using HS256 fallback validation", zap.String("kid", token.Header["kid"].(string)))
-			// Для fallback используем секретный ключ из конфигурации
+			kid, _ := token.Header["kid"].(string)
 			fallbackSecret := kv.fallbackSecret
 			if fallbackSecret == "" {
 				fallbackSecret = "test-secret" // fallback для разработки
 				kv.logger.Warn("Fallback secret not configured, using default")
 			}
+			kv.logger.Info("Using HS256 fallback validation",
+				zap.String("kid", kid),
+				zap.Int("secret_len", len(fallbackSecret)),
+				zap.Bool("secret_has_equals", strings.Contains(fallbackSecret, "=")),
+			)
 			return []byte(fallbackSecret), nil
 		default:
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

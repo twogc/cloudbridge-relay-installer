@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -100,6 +101,7 @@ type P2PClaims struct {
 	DeviceID          string           `json:"device_id"`
 	DeviceFingerprint string           `json:"device_fingerprint"`
 	ConnectionType    string           `json:"connection_type"`
+	ProtocolType      string           `json:"protocol_type,omitempty"`
 	Permissions       []string         `json:"permissions"`
 	WireGuardConfig   *WireGuardConfig `json:"wireguard_config"`
 	MeshConfig        *MeshConfig      `json:"mesh_config"`
@@ -232,12 +234,26 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 	// Генерируем peer_id из server_id в токене
 	peerID := generatePeerID(claims.Subject)
 
-	// Проверка существования пира
-	if _, exists := pm.peerStore.Get(tenantID, peerID); exists {
-		c.JSON(http.StatusConflict, ErrorResponse{
-			Error:   "Peer already exists",
-			Code:    http.StatusConflict,
-			Message: "Peer with this ID is already registered",
+	// Проверка существования пира — делаем регистрацию идемпотентной
+	if existingPeer, exists := pm.peerStore.Get(tenantID, peerID); exists {
+		// Если у существующего пира нет relay_session_id, сгенерируем и сохраним
+		if strings.TrimSpace(existingPeer.RelaySessionID) == "" {
+			existingPeer.RelaySessionID = generateRelaySessionID()
+			if existingPeer.RegisteredAt.IsZero() {
+				existingPeer.RegisteredAt = time.Now()
+			}
+			pm.peerStore.Update(tenantID, peerID, existingPeer)
+			pm.logger.Info("Assigned relay_session_id to existing peer",
+				zap.String("peer_id", peerID),
+				zap.String("tenant_id", tenantID),
+				zap.String("relay_session_id", existingPeer.RelaySessionID))
+		}
+
+		c.JSON(http.StatusOK, RelayAssistedRegistrationResponse{
+			Success:        true,
+			PeerID:         existingPeer.PeerID,
+			RelaySessionID: existingPeer.RelaySessionID,
+			RegisteredAt:   existingPeer.RegisteredAt,
 		})
 		return
 	}
@@ -352,10 +368,14 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 	// ДОБАВИТЬ: Если нет пиров в whitelist, но есть зарегистрированные пиры,
 	// показываем их (для отладки и тестирования)
 	if len(filteredPeers) == 0 && len(peers) > 0 {
+		var wlDebug []string
+		if claims.PeerWhitelist != nil {
+			wlDebug = claims.PeerWhitelist.AllowedPeers
+		}
 		pm.logger.Info("No peers in whitelist, showing all registered peers for debugging",
 			zap.String("tenant_id", tenantID),
 			zap.Int("total_peers", len(peers)),
-			zap.Strings("whitelist", claims.PeerWhitelist.AllowedPeers))
+			zap.Strings("whitelist", wlDebug))
 
 		for _, peer := range peers {
 			peer.IsOnline = pm.isPeerOnline(peer.PeerID)
@@ -367,10 +387,14 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 	// ДОБАВИТЬ: Если whitelist содержит только тестовые пиры (peer-001, peer-002, peer-003),
 	// показываем всех зарегистрированных пиров для тестирования
 	if len(filteredPeers) == 0 && len(peers) > 0 && pm.isTestWhitelist(claims.PeerWhitelist) {
+		var wlTest []string
+		if claims.PeerWhitelist != nil {
+			wlTest = claims.PeerWhitelist.AllowedPeers
+		}
 		pm.logger.Info("Test whitelist detected, showing all registered peers for testing",
 			zap.String("tenant_id", tenantID),
 			zap.Int("total_peers", len(peers)),
-			zap.Strings("whitelist", claims.PeerWhitelist.AllowedPeers))
+			zap.Strings("whitelist", wlTest))
 
 		for _, peer := range peers {
 			peer.IsOnline = pm.isPeerOnline(peer.PeerID)
@@ -652,11 +676,11 @@ func (pm *PeerManager) validateToken(c *gin.Context) (*P2PClaims, error) {
 		return nil, fmt.Errorf("invalid authorization format")
 	}
 
-	claims, err := pm.validator.ValidateP2PToken(token)
+	// Используем локальную HS256/JWT проверку с fallback секретом
+	claims, err := pm.validateP2PToken(token)
 	if err != nil {
 		return nil, fmt.Errorf("invalid token: %v", err)
 	}
-
 	return claims, nil
 }
 
@@ -667,10 +691,21 @@ func (pm *PeerManager) validateP2PToken(tokenString string) (*P2PClaims, error) 
 		tokenString = tokenString[7:]
 	}
 
-	// Парсинг токена
+	// Определяем секрет: сначала KEYCLOAK_FALLBACK_SECRET, затем JWT_SECRET
+	secret := os.Getenv("KEYCLOAK_FALLBACK_SECRET")
+	if secret == "" {
+		secret = os.Getenv("JWT_SECRET")
+	}
+	if secret == "" {
+		secret = "test-secret"
+	}
+
+	// Парсинг токена с HS256 секретом (raw, без base64 декодирования)
 	token, err := jwt.ParseWithClaims(tokenString, &P2PClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// В реальной реализации здесь должен быть секретный ключ
-		return []byte("your-jwt-secret-key"), nil
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secret), nil
 	})
 
 	if err != nil {
@@ -682,17 +717,25 @@ func (pm *PeerManager) validateP2PToken(tokenString string) (*P2PClaims, error) 
 		return nil, err
 	}
 
-	// Проверка обязательных полей
-	if claims.ConnectionType != "p2p-mesh" {
-		return nil, err
+	// Проверка обязательных полей с учетом совместимости
+	// Разрешаем два варианта идентификации протокола:
+	// 1) connection_type == "p2p-mesh" (старый вариант)
+	// 2) protocol_type == "p2p-mesh" и connection_type == "wireguard" (новый вариант)
+	if !(claims.ConnectionType == "p2p-mesh" || (claims.ProtocolType == "p2p-mesh" && claims.ConnectionType == "wireguard")) {
+		return nil, fmt.Errorf("unsupported protocol: connection_type=%s protocol_type=%s", claims.ConnectionType, claims.ProtocolType)
 	}
 
-	if claims.DeviceID == "" {
-		return nil, err
+	// Если device_id отсутствует, используем subject как идентификатор устройства
+	if strings.TrimSpace(claims.DeviceID) == "" {
+		claims.DeviceID = strings.TrimSpace(claims.Subject)
+	}
+
+	if strings.TrimSpace(claims.DeviceID) == "" {
+		return nil, fmt.Errorf("missing device_id and subject")
 	}
 
 	if claims.WireGuardConfig == nil {
-		return nil, err
+		return nil, fmt.Errorf("missing wireguard_config")
 	}
 
 	return claims, nil

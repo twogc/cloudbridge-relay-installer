@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -45,6 +46,33 @@ type PeerWhitelist struct {
 	AllowedPeers []string `json:"allowed_peers"`
 	AutoApprove  bool     `json:"auto_approve"`
 	MaxPeers     int      `json:"max_peers"`
+}
+
+// UnmarshalJSON allows PeerWhitelist to be parsed from either an object
+// or a plain JSON array of strings (backward compatibility).
+func (pw *PeerWhitelist) UnmarshalJSON(data []byte) error {
+	// Try array form: ["peer-001", "peer-002"]
+	var arr []string
+	if err := json.Unmarshal(data, &arr); err == nil {
+		pw.AllowedPeers = arr
+		// If only a list provided, default to auto-approve true and max peers = len
+		pw.AutoApprove = true
+		if len(arr) > 0 {
+			pw.MaxPeers = len(arr)
+		}
+		return nil
+	}
+
+	// Try object form
+	type alias PeerWhitelist
+	var a alias
+	if err := json.Unmarshal(data, &a); err != nil {
+		return err
+	}
+	pw.AllowedPeers = a.AllowedPeers
+	pw.AutoApprove = a.AutoApprove
+	pw.MaxPeers = a.MaxPeers
+	return nil
 }
 
 // NetworkConfig сетевая конфигурация

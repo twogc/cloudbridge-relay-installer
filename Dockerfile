@@ -1,8 +1,8 @@
 # Multi-stage build for CloudBridge Relay Server
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25.1-bookworm AS builder
 
 # Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata git && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -20,14 +20,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o relay-server ./cmd/relay/
 
 # Final stage
-FROM alpine:latest
-
-# Install runtime dependencies
-RUN apk --no-cache add ca-certificates tzdata
-
-# Create non-root user
-RUN addgroup -g 1001 -S relay && \
-    adduser -u 1001 -S relay -G relay
+FROM gcr.io/distroless/base-debian12:nonroot
 
 # Set working directory
 WORKDIR /app
@@ -39,18 +32,12 @@ COPY --from=builder /app/relay-server .
 COPY --from=builder /app/configs/ ./configs/
 COPY --from=builder /app/certs/ ./certs/
 
-# Change ownership to non-root user
-RUN chown -R relay:relay /app
-
-# Switch to non-root user
-USER relay
+USER nonroot
 
 # Expose ports
-EXPOSE 8080 8443 9090
+EXPOSE 8080 8443 9090 9091
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+# Distroless image does not include shell/wget; rely on k8s/externals for health checks
 
 # Run the relay server
 CMD ["./relay-server", "-config", "configs/config.json"]
