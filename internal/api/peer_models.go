@@ -18,6 +18,9 @@ type Peer struct {
 	MeshConfig        *MeshConfig      `json:"mesh_config" db:"mesh_config"`
 	PeerWhitelist     *PeerWhitelist   `json:"peer_whitelist" db:"peer_whitelist"`
 	NetworkConfig     *NetworkConfig   `json:"network_config" db:"network_config"`
+	ICECandidates     []*ICECandidate  `json:"ice_candidates" db:"ice_candidates"`
+	STUNServers       []string         `json:"stun_servers" db:"stun_servers"`
+	MASQUESupport     bool             `json:"masque_support" db:"masque_support"`
 	IsOnline          bool             `json:"is_online" db:"is_online"`
 	LastSeen          time.Time        `json:"last_seen" db:"last_seen"`
 	RegisteredAt      time.Time        `json:"registered_at" db:"registered_at"`
@@ -82,6 +85,21 @@ type NetworkConfig struct {
 	MTU    int      `json:"mtu"`
 }
 
+// ICECandidate представляет ICE candidate для NAT traversal
+type ICECandidate struct {
+	Foundation  string `json:"foundation"`
+	Component   int    `json:"component"`
+	Transport   string `json:"transport"`
+	Priority    uint32 `json:"priority"`
+	Address     string `json:"address"`
+	Port        int    `json:"port"`
+	Type        string `json:"type"` // "host", "srflx", "prflx", "relay"
+	RelatedAddr string `json:"related_address,omitempty"`
+	RelatedPort int    `json:"related_port,omitempty"`
+	Username    string `json:"username,omitempty"`
+	Password    string `json:"password,omitempty"`
+}
+
 // PeerConnection представляет соединение между пирами
 type PeerConnection struct {
 	ID               string    `json:"id" db:"id"`
@@ -106,6 +124,9 @@ type PeerRegistrationRequest struct {
 	MeshConfig      *MeshConfig      `json:"mesh_config"`
 	PeerWhitelist   *PeerWhitelist   `json:"peer_whitelist"`
 	NetworkConfig   *NetworkConfig   `json:"network_config"`
+	ICECandidates   []*ICECandidate  `json:"ice_candidates"`
+	STUNServers     []string         `json:"stun_servers"`
+	MASQUESupport   bool             `json:"masque_support"`
 }
 
 // PeerStatusUpdateRequest запрос на обновление статуса пира
@@ -149,6 +170,41 @@ type RelayRouteRequest struct {
 	ToPeer      string `json:"to_peer" binding:"required"`
 	Data        string `json:"data" binding:"required"`
 	MessageType string `json:"message_type" binding:"required"`
+}
+
+// P2PConnectionRequest запрос на установку P2P соединения
+type P2PConnectionRequest struct {
+	SessionID     string          `json:"session_id" binding:"required"`
+	TargetPeerID  string          `json:"target_peer_id" binding:"required"`
+	Protocol      string          `json:"protocol" binding:"required"` // "quic", "websocket", "tcp"
+	ICECandidates []*ICECandidate `json:"ice_candidates"`
+}
+
+// P2PConnectionResponse ответ на запрос P2P соединения
+type P2PConnectionResponse struct {
+	Success        bool            `json:"success"`
+	SessionID      string          `json:"session_id"`
+	ConnectionType string          `json:"connection_type"` // "direct", "relay", "masque"
+	Endpoint       string          `json:"endpoint,omitempty"`
+	ICECandidates  []*ICECandidate `json:"ice_candidates,omitempty"`
+}
+
+// ICESignalingRequest запрос для ICE signaling
+type ICESignalingRequest struct {
+	SessionID  string          `json:"session_id" binding:"required"`
+	PeerID     string          `json:"peer_id" binding:"required"`
+	Candidates []*ICECandidate `json:"candidates" binding:"required"`
+	Offer      string          `json:"offer,omitempty"`
+	Answer     string          `json:"answer,omitempty"`
+}
+
+// ICESignalingResponse ответ на ICE signaling
+type ICESignalingResponse struct {
+	Success    bool            `json:"success"`
+	SessionID  string          `json:"session_id"`
+	Candidates []*ICECandidate `json:"candidates,omitempty"`
+	Offer      string          `json:"offer,omitempty"`
+	Answer     string          `json:"answer,omitempty"`
 }
 
 // RelayRouteResponse ответ на маршрутизацию

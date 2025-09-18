@@ -247,7 +247,7 @@
     }
   },
   "wireguard": {
-    "enabled": true,
+    "enabled": false,
     "interface": {
       "name": "wg0",
       "listen_port": 51820,

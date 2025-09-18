@@ -1,0 +1,228 @@
+package notifications
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/twogc/cloudbridge-relay-installer/internal/ai/analytics"
+)
+
+// NotificationSystem система уведомлений
+type NotificationSystem struct {
+	slackWebhook string
+	emailConfig  *EmailConfig
+	webhooks     []string
+}
+
+// EmailConfig конфигурация Email
+type EmailConfig struct {
+	SMTPHost   string
+	SMTPPort   int
+	Username   string
+	Password   string
+	Recipients []string
+}
+
+// NotificationConfig конфигурация уведомлений
+type NotificationConfig struct {
+	SlackWebhook string       `json:"slack_webhook"`
+	EmailConfig  *EmailConfig `json:"email_config"`
+	Webhooks     []string     `json:"webhooks"`
+}
+
+// NewNotificationSystem создает новую систему уведомлений
+func NewNotificationSystem() *NotificationSystem {
+	return &NotificationSystem{
+		webhooks: make([]string, 0),
+	}
+}
+
+// AddSlackWebhook добавляет Slack webhook
+func (n *NotificationSystem) AddSlackWebhook(webhook string) {
+	n.slackWebhook = webhook
+}
+
+// Configure настраивает систему уведомлений
+func (n *NotificationSystem) Configure(config NotificationConfig) {
+	n.slackWebhook = config.SlackWebhook
+	n.emailConfig = config.EmailConfig
+	n.webhooks = config.Webhooks
+}
+
+// SendReport отправляет отчет через все настроенные каналы
+func (n *NotificationSystem) SendReport(report *analytics.Report) error {
+	// Slack уведомление
+	if n.slackWebhook != "" {
+		if err := n.sendSlackNotification(report); err != nil {
+			return fmt.Errorf("failed to send Slack notification: %w", err)
+		}
+	}
+
+	// Webhook уведомления
+	for _, webhook := range n.webhooks {
+		if err := n.sendWebhookNotification(report, webhook); err != nil {
+			// Логируем ошибку, но не прерываем процесс
+			fmt.Printf("Failed to send webhook to %s: %v\n", webhook, err)
+		}
+	}
+
+	return nil
+}
+
+// sendSlackNotification отправляет уведомление в Slack
+func (n *NotificationSystem) sendSlackNotification(report *analytics.Report) error {
+	payload := map[string]interface{}{
+		"text": "🤖 CloudBridge AI Analytics Report",
+		"blocks": []map[string]interface{}{
+			{
+				"type": "header",
+				"text": map[string]interface{}{
+					"type": "plain_text",
+					"text": "🤖 CloudBridge AI Analytics Report",
+				},
+			},
+			{
+				"type": "section",
+				"text": map[string]interface{}{
+					"type": "mrkdwn",
+					"text": fmt.Sprintf("*%s*\n\n%s",
+						report.Timestamp.Format("2006-01-02 15:04:05"),
+						report.Analysis.Summary),
+				},
+			},
+			{
+				"type": "divider",
+			},
+		},
+	}
+
+	// Добавление инсайтов
+	if len(report.Analysis.Insights) > 0 {
+		insightsText := "*🔍 Ключевые инсайты:*\n"
+		for _, insight := range report.Analysis.Insights {
+			insightsText += fmt.Sprintf("• %s\n", insight)
+		}
+
+		payload["blocks"] = append(payload["blocks"].([]map[string]interface{}), map[string]interface{}{
+			"type": "section",
+			"text": map[string]interface{}{
+				"type": "mrkdwn",
+				"text": insightsText,
+			},
+		})
+	}
+
+	// Добавление критических проблем
+	if len(report.Analysis.CriticalIssues) > 0 {
+		issuesText := "*🚨 Критические проблемы:*\n"
+		for _, issue := range report.Analysis.CriticalIssues {
+			issuesText += fmt.Sprintf("• %s\n", issue)
+		}
+
+		payload["blocks"] = append(payload["blocks"].([]map[string]interface{}), map[string]interface{}{
+			"type": "section",
+			"text": map[string]interface{}{
+				"type": "mrkdwn",
+				"text": issuesText,
+			},
+		})
+	}
+
+	// Добавление рекомендаций
+	if len(report.Analysis.Recommendations) > 0 {
+		recommendationsText := "*💡 Рекомендации:*\n"
+		for _, rec := range report.Analysis.Recommendations {
+			recommendationsText += fmt.Sprintf("• %s\n", rec)
+		}
+
+		payload["blocks"] = append(payload["blocks"].([]map[string]interface{}), map[string]interface{}{
+			"type": "section",
+			"text": map[string]interface{}{
+				"type": "mrkdwn",
+				"text": recommendationsText,
+			},
+		})
+	}
+
+	// Добавление информации о производительности
+	if report.Analysis.Performance != "" {
+		payload["blocks"] = append(payload["blocks"].([]map[string]interface{}), map[string]interface{}{
+			"type": "section",
+			"text": map[string]interface{}{
+				"type": "mrkdwn",
+				"text": fmt.Sprintf("*📊 Производительность:* %s", report.Analysis.Performance),
+			},
+		})
+	}
+
+	// Добавление информации о здоровье системы
+	if report.Metrics.Health != nil {
+		payload["blocks"] = append(payload["blocks"].([]map[string]interface{}), map[string]interface{}{
+			"type": "section",
+			"text": map[string]interface{}{
+				"type": "mrkdwn",
+				"text": fmt.Sprintf("*🏥 Статус здоровья:* %s (%.1f/100)",
+					report.Metrics.Health.Overall, report.Metrics.Health.Score),
+			},
+		})
+	}
+
+	// Добавление footer
+	payload["blocks"] = append(payload["blocks"].([]map[string]interface{}), map[string]interface{}{
+		"type": "context",
+		"elements": []map[string]interface{}{
+			{
+				"type": "mrkdwn",
+				"text": fmt.Sprintf("Report ID: %s | Generated by CloudBridge AI Analytics", report.ID),
+			},
+		},
+	})
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(n.slackWebhook, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// sendWebhookNotification отправляет уведомление через webhook
+func (n *NotificationSystem) sendWebhookNotification(report *analytics.Report, webhookURL string) error {
+	payload := map[string]interface{}{
+		"timestamp":       report.Timestamp,
+		"report_id":       report.ID,
+		"analysis":        report.Analysis,
+		"health":          report.Metrics.Health,
+		"anomalies_count": len(report.Metrics.Anomalies),
+		"source":          "cloudbridge_ai_analytics",
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}

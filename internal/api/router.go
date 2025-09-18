@@ -21,6 +21,8 @@ type APIRouter struct {
 	relayManager          *RelayManager
 	healthManager         *HealthManager
 	protocolHandler       *ProtocolHandler
+	p2pManager            *P2PManager
+	iceManager            *ICEManager
 	hub                   *Hub
 	logger                *zap.Logger
 	authMiddleware        *AuthMiddleware
@@ -83,12 +85,26 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 	logger.Info("Creating Monitoring endpoints...")
 	monitoringEndpoints := NewMonitoringEndpoints(logger)
 
+	// Создание P2P Manager
+	logger.Info("Creating P2P Manager...")
+	p2pManager := NewP2PManager(logger)
+
+	// Создание ICE Manager
+	logger.Info("Creating ICE Manager...")
+	iceManager := NewICEManager(logger)
+
+	// ProtocolHandler будет nil для обычного NewAPIRouter
+	var protocolHandler *ProtocolHandler
+
 	logger.Info("API router components created successfully")
 
 	return &APIRouter{
 		peerManager:           peerManager,
 		relayManager:          relayManager,
 		healthManager:         healthManager,
+		protocolHandler:       protocolHandler,
+		p2pManager:            p2pManager,
+		iceManager:            iceManager,
 		hub:                   hub,
 		logger:                logger,
 		authMiddleware:        authMiddleware,
@@ -281,18 +297,31 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 			relay.GET("/stats", r.relayManager.GetRelayStats)
 		}
 
+		// P2P Mesh protocol endpoints
+		p2p := v1.Group("/p2p")
+		{
+			if r.protocolHandler != nil {
+				p2p.POST("/mesh/join", gin.WrapF(r.protocolHandler.RegisterClient))
+			}
+			p2p.POST("/connect", r.p2pManager.EstablishConnection)
+			p2p.GET("/sessions/:session_id/status", r.p2pManager.GetSessionStatus)
+			p2p.DELETE("/sessions/:session_id", r.p2pManager.CloseSession)
+		}
+
+		// ICE signaling endpoints
+		ice := v1.Group("/ice")
+		{
+			ice.POST("/candidates", r.iceManager.ExchangeCandidates)
+			ice.POST("/offer", r.iceManager.HandleOffer)
+			ice.POST("/answer", r.iceManager.HandleAnswer)
+		}
+
 		// Protocol endpoints (только если есть ProtocolHandler)
 		if r.protocolHandler != nil {
 			// Quick protocol endpoints
 			quick := v1.Group("/quick")
 			{
 				quick.POST("/connect", gin.WrapF(r.protocolHandler.RegisterClient))
-			}
-
-			// P2P Mesh protocol endpoints
-			p2p := v1.Group("/p2p")
-			{
-				p2p.POST("/mesh/join", gin.WrapF(r.protocolHandler.RegisterClient))
 			}
 		}
 

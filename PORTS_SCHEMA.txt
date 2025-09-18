@@ -1,0 +1,66 @@
+🚀 АРХИТЕКТУРА ПОРТОВ: QUIC + ICE/STUN/TURN
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    CLOUDBRIDGE RELAY SERVER                    │
+│                                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+│  │   Port 8080 │  │   Port 8082 │  │   Port 9090 │            │
+│  │   HTTP API  │  │   P2P API   │  │   QUIC      │            │
+│  │   Health    │  │   ICE       │  │   Transport │            │
+│  │   Metrics   │  │   Signaling │  │   Data      │            │
+│  └─────────────┘  └─────────────┘  └─────────────┘            │
+│                                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+│  │   Port 8443 │  │  Port 19302 │  │   Port 9092 │            │
+│  │   HTTPS     │  │   STUN      │  │ Enhanced    │            │
+│  │   MASQUE    │  │   NAT Disc  │  │   QUIC      │            │
+│  │   Proxy     │  │   Discovery │  │   Advanced  │            │
+│  └─────────────┘  └─────────────┘  └─────────────┘            │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                │
+                    ┌───────────┼───────────┐
+                    │           │           │
+            ┌───────▼───┐ ┌─────▼─────┐ ┌──▼────────┐
+            │  Client A │ │  Client B │ │  Client C │
+            │           │ │           │ │           │
+            │  ┌─────┐  │ │  ┌─────┐  │ │  ┌─────┐  │
+            │  │ ICE │  │ │  │ ICE │  │ │  │ ICE │  │
+            │  │Agent│  │ │  │Agent│  │ │  │Agent│  │
+            │  └─────┘  │ │  └─────┘  │ │  └─────┘  │
+            │           │ │           │ │           │
+            │  ┌─────┐  │ │  ┌─────┐  │ │  ┌─────┐  │
+            │  │QUIC │  │ │  │QUIC │  │ │  │QUIC │  │
+            │  │Conn │  │ │  │Conn │  │ │  │Conn │  │
+            │  └─────┘  │ │  └─────┘  │ │  └─────┘  │
+            └───────────┘ └───────────┘ └───────────┘
+
+🔄 ПОТОКИ ДАННЫХ:
+
+1. ICE SIGNALING (Port 8082):
+   Client A ←→ HTTP:8082 ←→ Relay ←→ HTTP:8082 ←→ Client B
+   [Обмен ICE candidates, установка соединения]
+
+2. QUIC TRANSPORT (Port 9090):
+   Client A ←→ UDP:9090 ←→ Relay ←→ UDP:9090 ←→ Client B
+   [Основной транспорт для P2P данных]
+
+3. STUN DISCOVERY (Port 19302):
+   Client A ←→ UDP:19302 ←→ STUN Server ←→ UDP:19302 ←→ Client A
+   [Определение внешнего IP, NAT traversal]
+
+4. MASQUE PROXY (Port 8443):
+   Client A ←→ HTTPS:8443 ←→ Relay ←→ UDP:9090 ←→ Client B
+   [Обход корпоративных файрволов]
+
+🎯 КЛЮЧЕВЫЕ ОСОБЕННОСТИ:
+
+✅ КЛИЕНТЫ НЕ ОТКРЫВАЮТ ПОРТОВ!
+✅ Все соединения outbound (исходящие)
+✅ NAT traversal через ICE/STUN/TURN
+✅ Connection migration через QUIC
+✅ MASQUE для корпоративных сетей
+✅ "Почти LAN" опыт на L3 уровне
+
+🚀 РЕЗУЛЬТАТ:
+P2P mesh network без открытия портов на клиентской стороне!

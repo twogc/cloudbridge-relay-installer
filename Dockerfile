@@ -1,8 +1,8 @@
-# Multi-stage build for CloudBridge Relay Server
-FROM golang:1.25.1-bookworm AS builder
+# Multi-stage build for CloudBridge Relay
+FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates tzdata git && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache git ca-certificates tzdata
 
 # Set working directory
 WORKDIR /app
@@ -16,28 +16,40 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the relay server
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o relay-server ./cmd/relay/
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o cloudbridge-relay ./cmd/relay
 
 # Final stage
-FROM gcr.io/distroless/base-debian12:nonroot
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk --no-cache add ca-certificates tzdata
+
+# Create non-root user
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
 
 # Set working directory
 WORKDIR /app
 
 # Copy binary from builder stage
-COPY --from=builder /app/relay-server .
+COPY --from=builder /app/cloudbridge-relay .
 
-# Copy configuration files
-COPY --from=builder /app/configs/ ./configs/
-COPY --from=builder /app/certs/ ./certs/
+# Copy config files
+COPY --from=builder /app/configs ./configs
 
-USER nonroot
+# Change ownership
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
 
 # Expose ports
-EXPOSE 8080 8443 9090 9091
+EXPOSE 8080 8443 19302/udp
 
-# Distroless image does not include shell/wget; rely on k8s/externals for health checks
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
-# Run the relay server
-CMD ["./relay-server", "-config", "configs/config.json"]
+# Run the application
+CMD ["./cloudbridge-relay"]

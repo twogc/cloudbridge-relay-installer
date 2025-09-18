@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -236,18 +237,29 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 
 	// Проверка существования пира — делаем регистрацию идемпотентной
 	if existingPeer, exists := pm.peerStore.Get(tenantID, peerID); exists {
-		// Если у существующего пира нет relay_session_id, сгенерируем и сохраним
+		// Обновляем relay_session, если отсутствует
 		if strings.TrimSpace(existingPeer.RelaySessionID) == "" {
 			existingPeer.RelaySessionID = generateRelaySessionID()
-			if existingPeer.RegisteredAt.IsZero() {
-				existingPeer.RegisteredAt = time.Now()
-			}
-			pm.peerStore.Update(tenantID, peerID, existingPeer)
-			pm.logger.Info("Assigned relay_session_id to existing peer",
-				zap.String("peer_id", peerID),
-				zap.String("tenant_id", tenantID),
-				zap.String("relay_session_id", existingPeer.RelaySessionID))
 		}
+		// Обновляем WireGuard конфигурацию текущими значениями регистрации
+		if existingPeer.WireGuardConfig == nil {
+			existingPeer.WireGuardConfig = &WireGuardConfig{}
+		}
+		existingPeer.WireGuardConfig.PublicKey = req.PublicKey
+		existingPeer.WireGuardConfig.AllowedIPs = req.AllowedIPs
+		if existingPeer.RegisteredAt.IsZero() {
+			existingPeer.RegisteredAt = time.Now()
+		} else {
+			// Обновляем время регистрации, чтобы определить самую свежую запись
+			existingPeer.RegisteredAt = time.Now()
+		}
+
+		pm.peerStore.Update(tenantID, peerID, existingPeer)
+		pm.logger.Info("Peer re-registered; WireGuard config updated",
+			zap.String("peer_id", peerID),
+			zap.String("tenant_id", tenantID),
+			zap.String("relay_session_id", existingPeer.RelaySessionID),
+			zap.String("public_key", truncateForLog(req.PublicKey)))
 
 		c.JSON(http.StatusOK, RelayAssistedRegistrationResponse{
 			Success:        true,
@@ -401,6 +413,76 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 			peer.LastSeen = pm.getLastSeen(peer.PeerID)
 			filteredPeers = append(filteredPeers, peer)
 		}
+	}
+
+	// Вставка synthetic relay-peer с параметрами WireGuard из окружения,
+	// чтобы клиенты могли автоматически применить конфигурацию пира релея
+	relayEndpoint := strings.TrimSpace(os.Getenv("RELAY_WG_ENDPOINT"))
+	if relayEndpoint == "" {
+		// fallback к стандартному DNS:порт, если не задано явно
+		relayEndpoint = "edge.2gc.ru:51820"
+	}
+	relayPubKey := strings.TrimSpace(os.Getenv("RELAY_WG_PUBLIC_KEY"))
+	if relayPubKey == "" {
+		// совместимость: использовать WIREGUARD_PUBLIC_KEY из секретов деплоймента, если задан
+		relayPubKey = strings.TrimSpace(os.Getenv("WIREGUARD_PUBLIC_KEY"))
+	}
+
+	// MTU и keepalive (необязательные)
+	mtu := 0
+	if v := strings.TrimSpace(os.Getenv("RELAY_WG_MTU")); v != "" {
+		if mv, err := strconv.Atoi(v); err == nil {
+			mtu = mv
+		}
+	}
+	// keepalive поддерживается клиентом как рекомендация; сервер его логирует для отладки
+	if v := strings.TrimSpace(os.Getenv("RELAY_WG_KEEPALIVE")); v != "" {
+		if kv, err := strconv.Atoi(v); err == nil {
+			pm.logger.Debug("Using relay keepalive from env", zap.Int("keepalive_sec", kv))
+		}
+	}
+
+	// Попытаться взять /32 клиента из конкретного пира вызывающего устройства
+	// Приоритет: peer, соответствующий текущему токену (peerID из subject), затем fallback на первый доступный
+	var clientAllowed []string
+	requesterPeerID := generatePeerID(claims.Subject)
+	if peer, ok := pm.peerStore.Get(tenantID, requesterPeerID); ok {
+		if peer != nil && peer.WireGuardConfig != nil && len(peer.WireGuardConfig.AllowedIPs) > 0 {
+			clientAllowed = peer.WireGuardConfig.AllowedIPs
+		}
+	}
+	if len(clientAllowed) == 0 {
+		for _, p := range filteredPeers {
+			if p != nil && p.WireGuardConfig != nil && len(p.WireGuardConfig.AllowedIPs) > 0 {
+				clientAllowed = p.WireGuardConfig.AllowedIPs
+				break
+			}
+		}
+	}
+
+	// Добавляем synthetic peer только если заданы ключ и endpoint
+	if relayPubKey != "" && relayEndpoint != "" {
+		relayPeer := &Peer{
+			PeerID:         "relay",
+			TenantID:       tenantID,
+			ConnectionType: "relay",
+			WireGuardConfig: &WireGuardConfig{
+				PublicKey:  relayPubKey,
+				Endpoint:   relayEndpoint,
+				AllowedIPs: clientAllowed, // как минимум /32 клиента, если уже назначен/передан при register
+			},
+			NetworkConfig: &NetworkConfig{
+				MTU: mtu,
+			},
+			IsOnline: true,
+			LastSeen: time.Now(),
+		}
+		// Если требуется keepalive в ответе и модель его не содержит напрямую,
+		// клиенты могут использовать значение из RELAY_WG_KEEPALIVE через собственный контракт;
+		// сервер хранит его в окружении и логах для отладки
+		filteredPeers = append([]*Peer{relayPeer}, filteredPeers...)
+	} else {
+		pm.logger.Warn("Relay peer info is incomplete; set RELAY_WG_PUBLIC_KEY and RELAY_WG_ENDPOINT to enable auto WG peer provisioning")
 	}
 
 	pm.logger.Info("Peer discovery completed",
@@ -662,6 +744,14 @@ func generatePeerID(serverID string) string {
 // generateRelaySessionID генерирует relay session ID
 func generateRelaySessionID() string {
 	return "rs_" + generateID()
+}
+
+// truncateForLog возвращает первые 8 символов строки для безопасного логирования
+func truncateForLog(s string) string {
+	if len(s) <= 8 {
+		return s
+	}
+	return s[:8] + "..."
 }
 
 // validateToken валидирует JWT токен
