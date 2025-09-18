@@ -14,7 +14,7 @@ import (
 
 // MASQUEProxy представляет MASQUE CONNECT-UDP прокси
 type MASQUEProxy struct {
-	quicServer    *quic.Server
+	quicServer    *quic.Listener
 	udpConn       *net.UDPConn
 	activeTunnels map[string]*UDPTunnel
 	mu            sync.RWMutex
@@ -27,7 +27,7 @@ type MASQUEProxy struct {
 type UDPTunnel struct {
 	SessionID    string
 	TargetAddr   *net.UDPAddr
-	QUICStream   quic.Stream
+	QUICStream   *quic.Stream
 	UDPConn      *net.UDPConn
 	BytesRelayed int64
 	StartTime    time.Time
@@ -136,7 +136,7 @@ func (mp *MASQUEProxy) handleQUICConnections() {
 }
 
 // handleQUICConnection обрабатывает QUIC соединение
-func (mp *MASQUEProxy) handleQUICConnection(conn quic.Connection) {
+func (mp *MASQUEProxy) handleQUICConnection(conn *quic.Conn) {
 	defer conn.CloseWithError(0, "connection closed")
 
 	mp.logger.Info("New QUIC connection",
@@ -162,7 +162,7 @@ func (mp *MASQUEProxy) handleQUICConnection(conn quic.Connection) {
 }
 
 // handleStream обрабатывает QUIC поток
-func (mp *MASQUEProxy) handleStream(stream quic.Stream) {
+func (mp *MASQUEProxy) handleStream(stream *quic.Stream) {
 	defer stream.Close()
 
 	// Читаем CONNECT-UDP запрос
@@ -192,7 +192,7 @@ func (mp *MASQUEProxy) handleStream(stream quic.Stream) {
 }
 
 // readCONNECTUDPRequest читает CONNECT-UDP запрос
-func (mp *MASQUEProxy) readCONNECTUDPRequest(stream quic.Stream) (*CONNECTUDPRequest, error) {
+func (mp *MASQUEProxy) readCONNECTUDPRequest(stream *quic.Stream) (*CONNECTUDPRequest, error) {
 	// Читаем заголовок запроса
 	buffer := make([]byte, 1024)
 	n, err := stream.Read(buffer)
@@ -234,7 +234,7 @@ func (mp *MASQUEProxy) parseCONNECTUDPRequest(data []byte) (*CONNECTUDPRequest, 
 }
 
 // createUDPTunnel создает UDP туннель
-func (mp *MASQUEProxy) createUDPTunnel(request *CONNECTUDPRequest, stream quic.Stream) (*UDPTunnel, error) {
+func (mp *MASQUEProxy) createUDPTunnel(request *CONNECTUDPRequest, stream *quic.Stream) (*UDPTunnel, error) {
 	// Разрешаем целевой адрес
 	targetAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", request.TargetHost, request.TargetPort))
 	if err != nil {
@@ -270,7 +270,7 @@ func (mp *MASQUEProxy) createUDPTunnel(request *CONNECTUDPRequest, stream quic.S
 }
 
 // sendSuccessResponse отправляет успешный ответ
-func (mp *MASQUEProxy) sendSuccessResponse(stream quic.Stream, tunnel *UDPTunnel) error {
+func (mp *MASQUEProxy) sendSuccessResponse(stream *quic.Stream, tunnel *UDPTunnel) error {
 	// Отправляем HTTP/3 200 OK ответ
 	response := fmt.Sprintf("HTTP/3 200 OK\r\nSession-ID: %s\r\n\r\n", tunnel.SessionID)
 	_, err := stream.Write([]byte(response))
@@ -278,7 +278,7 @@ func (mp *MASQUEProxy) sendSuccessResponse(stream quic.Stream, tunnel *UDPTunnel
 }
 
 // sendErrorResponse отправляет ответ об ошибке
-func (mp *MASQUEProxy) sendErrorResponse(stream quic.Stream, errorCode string) error {
+func (mp *MASQUEProxy) sendErrorResponse(stream *quic.Stream, errorCode string) error {
 	response := fmt.Sprintf("HTTP/3 400 Bad Request\r\nError: %s\r\n\r\n", errorCode)
 	_, err := stream.Write([]byte(response))
 	return err

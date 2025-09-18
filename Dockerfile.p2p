@@ -1,0 +1,30 @@
+# P2P Dockerfile with new binary
+FROM ubuntu:22.04
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -s /bin/bash -m appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy new binary with P2P changes
+COPY cloudbridge-relay-p2p ./cloudbridge-relay
+
+# Copy config files
+COPY configs ./configs
+
+# Change ownership
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose ports
+EXPOSE 8080 8082 8443 9090 9092 19302/udp
+
+# Run the application
+CMD ["./cloudbridge-relay"]

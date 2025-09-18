@@ -1,8 +1,8 @@
 # Multi-stage build for CloudBridge Relay
-FROM golang:1.25-alpine AS builder
+FROM golang:1.21-alpine AS builder
 
 # Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+RUN apk update && apk add --no-cache git ca-certificates tzdata
 
 # Set working directory
 WORKDIR /app
@@ -20,10 +20,10 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o cloudbridge-relay ./cmd/relay
 
 # Final stage
-FROM alpine:latest
+FROM alpine:3.18
 
 # Install runtime dependencies
-RUN apk --no-cache add ca-certificates tzdata
+RUN apk update && apk --no-cache add ca-certificates tzdata
 
 # Create non-root user
 RUN addgroup -g 1001 -S appgroup && \

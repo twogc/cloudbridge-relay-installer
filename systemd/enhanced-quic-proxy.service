@@ -1,0 +1,14 @@
+[Unit]
+Description=Enhanced QUIC UDP Proxy
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/socat UDP4-LISTEN:9092,fork UDP4:192.168.49.2:30467
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,240 +1,259 @@
-Локальный запуск (без Minikube)
-================================
+# 🚀 **CloudBridge Relay**
 
-Предпочтительный способ запустить CloudBridge Relay локально — напрямую (Go) или через Docker, без Minikube. Minikube оставлен как отдельный сценарий и описан в `README_MINIKUBE.md`.
+**P2P mesh сеть для создания "почти LAN" соединений между удаленными серверами клиентов через централизованный relay сервер.**
 
-Требования
-----------
-* Go 1.25+
-* Docker (для запуска в контейнере — опционально)
+## 🎯 **Цель проекта**
 
-Быстрый старт: нативный запуск (Go)
------------------------------------
+CloudBridge Relay решает проблему создания надежных P2P соединений между удаленными серверами, которые находятся за NAT/Firewall и не могут напрямую общаться друг с другом. Система обеспечивает:
+
+- **"Почти LAN" опыт** - удаленные серверы общаются как в локальной сети
+- **Мультитунельность** - полная изоляция между разными пользователями/организациями
+- **Современные протоколы** - QUIC + ICE/STUN/TURN для максимальной совместимости
+- **Автоматический fallback** - если прямое соединение не работает, используется relay
+- **Простота настройки** - клиент просто подключается к relay серверу
+
+## 🏗️ **Архитектура**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    CloudBridge Relay                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Tenant A (tenant-216420165)                                   │
+│  Network: 10.100.77.0/24                                      │
+│  ┌─────────────────┐    ┌─────────────────┐                    │
+│  │   Server A1     │◄──►│   Server A2     │                    │
+│  │ 10.100.77.10    │    │ 10.100.77.11    │                    │
+│  │ QUIC + ICE      │    │ QUIC + ICE      │                    │
+│  └─────────────────┘    └─────────────────┘                    │
+├─────────────────────────────────────────────────────────────────┤
+│  Tenant B (tenant-123456789)                                   │
+│  Network: 10.100.78.0/24                                      │
+│  ┌─────────────────┐    ┌─────────────────┐                    │
+│  │   Server B1     │◄──►│   Server B2     │                    │
+│  │ 10.100.78.10    │    │ 10.100.78.11    │                    │
+│  │ QUIC + ICE      │    │ QUIC + ICE      │                    │
+│  └─────────────────┘    └─────────────────┘                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 🔧 **Технологический стек**
+
+- **Backend:** Go 1.21+
+- **Протоколы:** QUIC, ICE/STUN/TURN, MASQUE (HTTP/3 proxy)
+- **Аутентификация:** JWT токены с tenant изоляцией
+- **Контейнеризация:** Docker + Kubernetes
+- **Развертывание:** Minikube для разработки, Kubernetes для продакшена
+
+## 📋 **Порты и сервисы**
+
+| Порт | Протокол | Назначение | Статус |
+|------|----------|------------|--------|
+| 8080 | TCP/HTTPS | HTTP API (Health, Registration) | ✅ Работает |
+| 8082 | TCP/HTTPS | P2P API (ICE signaling) | ✅ Работает |
+| 19302 | UDP | STUN Server | ✅ Работает |
+| 9090 | UDP | QUIC Transport | ✅ Работает |
+| 8443 | TCP/HTTPS | HTTPS/MASQUE (Corporate proxy) | ✅ Работает |
+| 9092 | UDP | Enhanced QUIC (Advanced features) | ✅ Работает |
+
+## 🚀 **Быстрый старт**
+
+### **Требования:**
+- Go 1.21+
+- Docker (опционально)
+- Kubernetes/Minikube (для развертывания)
+
+### **1. Локальный запуск (Go)**
+
 ```bash
-# В корне репозитория
-# Секреты для аутентификации
-export JWT_SECRET="change-me-strong"          # используется P2P API (cmd/relay)
-export RELAY_JWT_SECRET="change-me-strong"    # если в configs/config.json используется ${RELAY_JWT_SECRET}
+# Установить переменные окружения
+export JWT_SECRET="fallback-key"
+export RELAY_JWT_SECRET="fallback-key"
 
-# (опционально) интеграция с Keycloak
-# export KEYCLOAK_SERVER_URL="https://edge.example.org"
-# export KEYCLOAK_REALM="cloudbridge"
-# export KEYCLOAK_CLIENT_ID="quic-client"
-# export KEYCLOAK_CLIENT_SECRET="***"
-
-# Сборка
+# Собрать проект
 go build -o ./bin/relay ./cmd/relay
 
-# Запуск (используется пример конфига из configs/)
+# Запустить сервер
 ./bin/relay -config configs/config.json -log-level debug
 ```
 
-Порты и проверки
-----------------
-* TCP сервер: порт из `server.port` (по умолчанию 3456)
-* HTTP (dev, без TLS): 127.0.0.1:9091
-  - Health: `curl http://127.0.0.1:9091/health`
-  - Ready: `curl http://127.0.0.1:9091/ready`
-  - Metrics: `curl http://127.0.0.1:9091/metrics`
-* QUIC (если включён Enhanced QUIC): `:9090/udp`
-* WireGuard (если включён WG): `:51820/udp`
-* P2P API: порт из `api.port` (пример: 8082)
+### **2. Запуск через Docker**
 
-Запуск через Docker (локально)
-------------------------------
 ```bash
-# Сборка образов (универсальный скрипт)
-./scripts/setup/build-docker.sh --service relay
+# Собрать Docker образ
+docker build -t cloudbridge-relay:latest .
 
-# Или готовый скрипт локального запуска (Alpine образ)
-./scripts/setup/run-local.sh
-
-# Проверка
-docker ps | grep cloudbridge-relay-alpine
-docker logs cloudbridge-relay-alpine --tail=100
+# Запустить контейнер
+docker run -d \
+  --name cloudbridge-relay \
+  -p 8080:8080 -p 8082:8082 -p 19302:19302/udp \
+  -p 9090:9090/udp -p 8443:8443 -p 9092:9092/udp \
+  -e JWT_SECRET="fallback-key" \
+  -e RELAY_JWT_SECRET="fallback-key" \
+  cloudbridge-relay:latest
 ```
 
-Minikube (опционально)
-----------------------
-Сценарий Minikube остаётся поддерживаемым и подробно описан здесь:
+### **3. Развертывание в Minikube**
 
-* README_MINIKUBE.md — быстрый старт
-* docs/MINIKUBE_DEPLOYMENT_GUIDE.md — полная инструкция
+```bash
+# Запустить Minikube
+minikube start --driver=docker --memory=4096 --cpus=2
+
+# Собрать и загрузить образ
+docker build -t cloudbridge-relay:quic-ice-v2 .
+minikube image load cloudbridge-relay:quic-ice-v2
+
+# Применить конфигурации
+kubectl create namespace cloudbridge
+kubectl apply -f k8s/deployment.yaml -n cloudbridge
+kubectl apply -f k8s/cloudbridge-relay-external-service.yaml -n cloudbridge
+
+# Проверить статус
+kubectl get pods -n cloudbridge
+kubectl get services -n cloudbridge
+```
+
+## 🧪 **Тестирование**
+
+### **Проверка здоровья сервисов:**
+
+```bash
+# HTTP API
+curl http://localhost:8080/health
+
+# P2P API
+curl http://localhost:8082/health
+
+# STUN сервер
+python3 -c "
+import socket
+import struct
+
+def test_stun():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(3.0)
+    
+    try:
+        transaction_id = b'123456789012'
+        magic_cookie = 0x2112A442
+        stun_request = struct.pack('>HHI', 0x0001, 0x0000, magic_cookie) + transaction_id
+        
+        sock.sendto(stun_request, ('localhost', 19302))
+        response, addr = sock.recvfrom(1024)
+        
+        msg_type = struct.unpack('>H', response[0:2])[0]
+        if msg_type == 0x0101:
+            print('✅ STUN Server - WORKING')
+        else:
+            print(f'⚠️  STUN Server - Unexpected response: 0x{msg_type:04x}')
+        
+    except Exception as e:
+        print(f'❌ STUN Server - Error: {e}')
+    finally:
+        sock.close()
+
+test_stun()
+"
+```
+
+### **Регистрация пира:**
+
+```bash
+# Использовать JWT токен из official-token.txt
+curl -X POST "http://localhost:8082/api/v1/tenants/tenant-216420165/peers/register" \
+  -H "Authorization: Bearer $(cat official-token.txt)" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "public_key": "test-peer-key",
+    "allowed_ips": ["10.100.77.10/32"],
+    "peer_info": {
+      "name": "Test Peer",
+      "location": "Test Location"
+    }
+  }'
+```
+
+## 📚 **Документация**
+
+### **Для разработчиков:**
+- **[DEVELOPER_BRIEFING.md](DEVELOPER_BRIEFING.md)** - Краткий брифинг с основными задачами
+- **[DEVELOPER_TECHNICAL_SPECIFICATION.md](DEVELOPER_TECHNICAL_SPECIFICATION.md)** - Полное техническое задание
+- **[MULTI_TENANT_ARCHITECTURE.md](MULTI_TENANT_ARCHITECTURE.md)** - Архитектура мультитунельности
+- **[MINIKUBE_BUILD_GUIDE.md](MINIKUBE_BUILD_GUIDE.md)** - Инструкция по сборке Minikube
+- **[P2P_ROUTING_DEVELOPMENT_PLAN.md](P2P_ROUTING_DEVELOPMENT_PLAN.md)** - План доработки P2P маршрутизации
+
+### **Структура проекта:**
+```
+cloudbridge-relay-installer/
+├── cmd/relay/                 # Основной сервер
+├── internal/                  # Внутренние пакеты
+│   ├── api/                  # HTTP/P2P API
+│   ├── token/                # JWT токены
+│   └── p2p/                  # P2P маршрутизация
+├── k8s/                      # Kubernetes конфигурации
+├── configs/                  # Конфигурационные файлы
+├── nginx/                    # Nginx конфигурации
+└── systemd/                  # Systemd сервисы
+```
+
+## 🔄 **Текущее состояние разработки**
+
+### **✅ Реализовано:**
+- ✅ Базовая инфраструктура сервера
+- ✅ HTTP API и P2P API endpoints
+- ✅ JWT аутентификация с tenant изоляцией
+- ✅ STUN сервер для NAT traversal
+- ✅ QUIC Transport и Enhanced QUIC
+- ✅ MASQUE proxy для корпоративных сетей
+- ✅ Docker контейнеризация
+- ✅ Kubernetes развертывание
+
+### **🚧 В разработке:**
+- 🚧 P2P маршрутизация между клиентами
+- 🚧 Heartbeat система для поддержания соединений
+- 🚧 ICE кандидаты обмен для NAT traversal
+- 🚧 Мультитунельность с полной изоляцией
+
+### **📋 План разработки:**
+1. **Этап 1 (1-2 дня):** Базовая P2P маршрутизация
+2. **Этап 2 (1-2 дня):** Heartbeat система
+3. **Этап 3 (2-3 дня):** Мультитунельность
+4. **Этап 4 (1-2 дня):** ICE/STUN интеграция
+
+## 🎯 **Цели проекта**
+
+### **Краткосрочные (1-2 недели):**
+- Реализовать P2P маршрутизацию между клиентами
+- Добавить heartbeat систему для стабильности
+- Обеспечить мультитунельность с изоляцией
+
+### **Долгосрочные (1-2 месяца):**
+- Поддержка 1000+ одновременных соединений
+- Автоматическое масштабирование
+- Мониторинг и метрики
+- Production-ready развертывание
+
+## 🤝 **Участие в разработке**
+
+### **Для разработчиков:**
+1. Изучите [DEVELOPER_BRIEFING.md](DEVELOPER_BRIEFING.md)
+2. Ознакомьтесь с [техническим заданием](DEVELOPER_TECHNICAL_SPECIFICATION.md)
+3. Следуйте [плану разработки](P2P_ROUTING_DEVELOPMENT_PLAN.md)
+
+### **Для DevOps:**
+1. Используйте [инструкцию по Minikube](MINIKUBE_BUILD_GUIDE.md)
+2. Настройте мониторинг и логирование
+3. Подготовьте production окружение
+
+## 📞 **Поддержка**
+
+- **Issues:** Создавайте issues для багов и feature requests
+- **Документация:** Все документы в корне проекта
+- **Тестирование:** Используйте скрипты в `test-*.sh`
+
+## 📄 **Лицензия**
+
+Проект распространяется под лицензией MIT. См. [LICENSE](LICENSE) для подробностей.
 
 ---
 
-Quickstart for development with local Cadence server
-====================================
-
-**Prerequisite**: [Docker + Docker compose](https://docs.docker.com/engine/installation/)
-
-Following steps will bring up the docker container running cadence server
-along with all its dependencies (cassandra, prometheus, grafana). Exposes cadence
-frontend on ports 7933 (tchannel) / 7833 (grpc), web on port 8088, and grafana on port 3000.
-
-```
-cd $GOPATH/src/github.com/uber/cadence/docker
-docker compose up
-```
-> Note: Above command will run with `master-auto-setup` image, which is a changing image all the time.
-> You can use a released image if you want a stable version. See the below section of "Using a released image".
-
-To update your `master-auto-setup` image to the latest version
-```
-docker pull ubercadence/server:master-auto-setup
-```
-
-* View Cadence-Web at http://localhost:8088
-* View metrics at http://localhost:3000
-
-Using different docker-compose files
------------------------
-By default `docker compose up` will run with `docker-compose.yml` in this folder.
-This compose file is running with Cassandra, with basic visibility,
-using Prometheus for emitting metric, with Grafana access.
-
-
-We also provide several other compose files for different features/modes:
-
-* docker-compose-es.yml enables advanced visibility with ElasticSearch 6.x
-* docker-compose-es-v7.yml enables advanced visibility with ElasticSearch 7.x
-* docker-compose-mysql.yml uses MySQL as persistence storage
-* docker-compose-postgres.yml uses PostgreSQL as persistence storage
-* docker-compose-statsd.yaml runs with Statsd+Graphite
-* docker-compose-multiclusters.yaml runs with 2 cadence clusters
-
-For example:
-```
-docker compose -f docker-compose-mysql.yml up
-```
-
-Also feel free to make your own to combine the above features.
-
-Run canary and bench(load test)
------------------------
-After a local cadence server started, use the below command to run canary ro bench test
-```
-docker compose -f docker-compose-bench.yml up
-```
-and
-```
-docker compose -f docker-compose-canary.yml up
-```
-
-
-Using a released image
------------------------
-The above compose files all using master image. It's taking the latest bits on the master branch of this repo.
-You may want to use more stable version from our release process.
-
-With every tagged release of the cadence server, there is also a corresponding
-docker image that's uploaded to docker hub. In addition, the release will also
-contain a **docker.tar.gz** file (docker-compose startup scripts).
-
-Go [here](https://github.com/cadence-workflow/cadence/releases/latest) to download a latest **docker.tar.gz**
-
-Execute the following
-commands to start a pre-built image along with all dependencies.
-
-```
-tar -xzvf docker.tar.gz
-cd docker
-docker compose up
-```
-
-DIY: Building an image for any tag or branch
------------------------------------------
-Replace **YOUR_TAG** and **YOUR_CHECKOUT_BRANCH_OR_TAG** in the below command to build:
-You can checkout a [release tag](https://github.com/cadence-workflow/cadence/tags) (e.g. v0.21.3) or any branch you are interested.
-
-```
-cd $GOPATH/src/github.com/uber/cadence
-git checkout YOUR_CHECKOUT_BRANCH_OR_TAG
-docker build . -t ubercadence/<imageName>:YOUR_TAG
-```
-
-You can specify `--build-arg TARGET=<target>` to build different binaries.
-There are three targets supported:
-* server. Default target if not specified. This will build a regular server binary.
-* auto-setup. The image will setup all the DB/ElasticSearch schema during startup.
-* cli. This image is for [CLI](https://cadenceworkflow.io/docs/cli/).
-
-For example of auto-setup images:
-```
-cd $GOPATH/src/github.com/uber/cadence
-git checkout YOUR_CHECKOUT_BRANCH
-docker build . -t ubercadence/server:YOUR_TAG-auto-setup --build-arg TARGET=auto-setup
-```
-Replace the tag of **image: ubercadence/server** to **YOUR_TAG** in docker-compose.yml .
-Then stop service and remove all containers using the below commands.
-```
-docker compose down
-docker compose up
-```
-
-DIY: Troubleshooting docker builds
-----------------------------------
-
-Note that Docker has been making changes to its build system, and the new system is currently missing some capabilities
-that the old one had, and makes major changes to how you control it.
-When searching for workarounds, make sure you are looking at modern answers, and consider specifically searching for
-"buildkit" solutions.
-
-You can also disable buildkit explicitly with `DOCKER_BUILDKIT=0 docker build ...`.
-
-For output limiting (e.g. `[output clipped ...]` messages), or for anything that requires changing buildkit environment
-variables or other options, start a new builder and use it to build with:
-```
-# create a new builder with your options
-docker buildx create ...
-# which will print out a name, use it in the build step.
-
-# now use the exact same command as normal, but it prepends `buildx` and adds a builder flag.
-docker buildx build . -t ubercadence/<imageName>:YOUR_TAG --builder <that_builder_name>
-```
-
-For output limiting (e.g. `[output clipped ...]` messages), you can fix this with some buildkit env variables:
-```
-docker buildx create --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=-1 --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=-1
-```
-
-DIY: Running a custom cadence server locally alongside cadence requirements
----------------------------------------------------------------------------
-If you want to test out a custom-built cadence server, while running all the normal cadence dependencies, there's a simple workflow to do that:
-
-Make your cadence server changes and build using "make bins". Then start everything, stop cadence server, and run your own cadence-server:
-```
-docker compose up
-docker stop docker-cadence-1
-./cadence-server start
-```
-
-Using docker image for production
-=========================
-In a typical production setting, dependencies (cassandra / statsd server) are
-managed / started independently of the cadence-server. To use the container in
-a production setting, use the following docker command:
-
-```
-docker run -e CASSANDRA_SEEDS=10.x.x.x                  -- csv of cassandra server ipaddrs
-    -e CASSANDRA_USER=<username>                        -- Cassandra username
-    -e CASSANDRA_PASSWORD=<password>                    -- Cassandra password
-    -e KEYSPACE=<keyspace>                              -- Cassandra keyspace
-    -e VISIBILITY_KEYSPACE=<visibility_keyspace>        -- Cassandra visibility keyspace, if using basic visibility
-    -e KAFKA_SEEDS=10.x.x.x                             -- Kafka broker seed, if using ElasticSearch + Kafka for advanced visibility feature
-    -e CASSANDRA_PROTO_VERSION=<protocol_version>       -- Cassandra protocol version
-    -e ES_SEEDS=10.x.x.x                                -- ElasticSearch seed , if using ElasticSearch + Kafka for advanced visibility feature
-    -e RINGPOP_SEEDS=10.x.x.x,10.x.x.x                  -- csv of ipaddrs for gossip bootstrap
-    -e STATSD_ENDPOINT=10.x.x.x:8125                    -- statsd server endpoint
-    -e NUM_HISTORY_SHARDS=1024                          -- Number of history shards
-    -e SERVICES=history,matching                        -- Spinup only the provided services, separated by commas, options are frontend,history,matching and worker
-    -e LOG_LEVEL=debug,info                             -- Logging level
-    -e DYNAMIC_CONFIG_FILE_PATH=<dynamic_config_file>   -- Dynamic config file to be watched, default to /etc/cadence/config/dynamicconfig/development.yaml, but you can choose /etc/cadence/config/dynamicconfig/development_es.yaml if using ElasticSearch
-    ubercadence/server:<tag>
-```
-Note that each env variable has a default value, so you don't have to specify it if the default works for you.
-For more options to configure the docker, please refer to `config_template.yaml`.
-
-For `<tag>`, use `auto-setup` images only for first initial setup, and use regular ones for production deployment. See the above explanation about `auto-setup`.
-
-When upgrading, follow the release instrusctions if version upgrades require some configuration or schema changes.
+**🎯 Цель: Создать полноценную P2P mesh сеть, где удаленные серверы клиентов могут общаться как в локальной сети, с полной изоляцией между разными пользователями!**

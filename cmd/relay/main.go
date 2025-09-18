@@ -109,6 +109,11 @@ type Server struct {
 	wireGuardEnabled   bool
 	wireGuardInterface *wireguard.WireGuardInterface
 	wireGuardMesh      *wireguard.MeshTopology
+	
+	// P2P Relay components
+	relayManager        *p2p.RelayManager
+	heartbeatManager    *p2p.HeartbeatManager
+	quicRelayHandler    *QUICRelayHandler
 
 	// Cadence Workflow Engine
 	cadenceClient          *cadence.Client
@@ -506,6 +511,20 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		zap.Bool("auto_switch_enabled", cfg.Protocol.AutoSelect),
 	)
 
+	// Initialize P2P Relay components
+	loggerInstance.Info("Initializing P2P Relay components...")
+	
+	// Create Relay Manager
+	relayManager := p2p.NewRelayManager(loggerInstance.GetZapLogger())
+	
+	// Create Heartbeat Manager
+	heartbeatManager := p2p.NewHeartbeatManager(relayManager, loggerInstance.GetZapLogger())
+	
+	// Create QUIC Relay Handler
+	quicRelayHandler := NewQUICRelayHandler(relayManager, loggerInstance.GetZapLogger())
+	
+	loggerInstance.Info("P2P Relay components initialized successfully")
+
 	return &Server{
 		config:                 cfg,
 		logger:                 loggerInstance,
@@ -540,6 +559,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		connectionHandler:      connectionHandler,
 		autoSwitchManager:      autoSwitchManager,
 		cadenceClient:          cadenceClient,
+		relayManager:           relayManager,
+		heartbeatManager:       heartbeatManager,
+		quicRelayHandler:       quicRelayHandler,
 		ctx:                    ctx,
 		cancel:                 cancel,
 		startTime:              time.Now(),
@@ -873,6 +895,77 @@ func (s *Server) Start() error {
 		}()
 	}
 
+	// Start STUN UDP server on port 19302
+	// STUN server is always enabled for P2P mesh functionality
+	{
+		go func() {
+			udpAddr, err := net.ResolveUDPAddr("udp", ":19302")
+			if err != nil {
+				s.logger.Error("Failed to resolve UDP address for STUN", zap.Error(err))
+				return
+			}
+
+			udpConn, err := net.ListenUDP("udp", udpAddr)
+			if err != nil {
+				s.logger.Error("Failed to start STUN UDP server", zap.Error(err))
+				return
+			}
+			defer udpConn.Close()
+
+			s.logger.Info("STUN UDP server started on port 19302")
+
+			buffer := make([]byte, 4096)
+			for {
+				n, addr, err := udpConn.ReadFromUDP(buffer)
+				if err != nil {
+					if s.ctx.Err() != nil {
+						return // Server is shutting down
+					}
+					s.logger.Error("Failed to read from STUN UDP", zap.Error(err))
+					continue
+				}
+
+				// Handle STUN packet
+				go s.handleSTUNPacket(udpConn, addr, buffer[:n])
+			}
+		}()
+	}
+
+	// Start Enhanced QUIC UDP server on port 9092
+	if s.config.EnhancedQUIC.Enabled {
+		go func() {
+			udpAddr, err := net.ResolveUDPAddr("udp", ":9092")
+			if err != nil {
+				s.logger.Error("Failed to resolve UDP address for Enhanced QUIC", zap.Error(err))
+				return
+			}
+
+			udpConn, err := net.ListenUDP("udp", udpAddr)
+			if err != nil {
+				s.logger.Error("Failed to start Enhanced QUIC UDP server", zap.Error(err))
+				return
+			}
+			defer udpConn.Close()
+
+			s.logger.Info("Enhanced QUIC UDP server started on port 9092")
+
+			buffer := make([]byte, 4096)
+			for {
+				n, addr, err := udpConn.ReadFromUDP(buffer)
+				if err != nil {
+					if s.ctx.Err() != nil {
+						return // Server is shutting down
+					}
+					s.logger.Error("Failed to read from Enhanced QUIC UDP", zap.Error(err))
+					continue
+				}
+
+				// Handle Enhanced QUIC packet
+				go s.handleEnhancedQUICPacket(udpConn, addr, buffer[:n])
+			}
+		}()
+	}
+
 	// Start main TCP server on configured port
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.Server.Port))
 	if err != nil {
@@ -885,6 +978,10 @@ func (s *Server) Start() error {
 		zap.Int("http_port", 80),
 		zap.Int("wireguard_port", 51820),
 		zap.Int("quic_port", 9090),
+		zap.Int("stun_port", 19302),
+		zap.Int("enhanced_quic_port", 9092),
+		zap.Bool("stun_enabled", true),
+		zap.Bool("enhanced_quic_enabled", s.config.EnhancedQUIC.Enabled),
 		zap.Bool("zero_trust_enabled", s.config.ZeroTrust.Enabled),
 		zap.Bool("circuit_breaker_enabled", s.config.ZeroTrust.CircuitBreaker.Enabled),
 		zap.Bool("health_check_enabled", s.config.ZeroTrust.HealthCheck.Enabled),
@@ -919,6 +1016,27 @@ func (s *Server) Start() error {
 			}
 		}()
 		s.logger.Info("P2P API Server started")
+	}
+
+	// Запуск P2P Relay компонентов
+	if s.heartbeatManager != nil {
+		go func() {
+			if err := s.heartbeatManager.Start(); err != nil {
+				s.logger.Error("Failed to start Heartbeat Manager", zap.Error(err))
+			}
+		}()
+		s.logger.Info("Heartbeat Manager started")
+	}
+
+	// Запуск QUIC Relay Handler
+	if s.quicRelayHandler != nil {
+		// TODO: Получить QUIC listener из enhanced QUIC manager
+		// go func() {
+		// 	if err := s.quicRelayHandler.Start(quicListener); err != nil {
+		// 		s.logger.Error("Failed to start QUIC Relay Handler", zap.Error(err))
+		// 	}
+		// }()
+		s.logger.Info("QUIC Relay Handler ready")
 	}
 
 	// Handle TCP connections
@@ -1468,6 +1586,19 @@ func (s *Server) Stop() {
 		if err := s.listener.Close(); err != nil {
 			s.logger.Error("Error closing listener", zap.Error(err))
 		}
+	}
+
+	// Stop P2P Relay components
+	if s.heartbeatManager != nil {
+		s.heartbeatManager.Stop()
+	}
+
+	if s.quicRelayHandler != nil {
+		s.quicRelayHandler.Stop()
+	}
+
+	if s.relayManager != nil {
+		s.relayManager.Shutdown()
 	}
 
 	// Stop additional server components

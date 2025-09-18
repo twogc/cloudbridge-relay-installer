@@ -31,6 +31,7 @@ type APIRouter struct {
 	aiEndpoints           *AIEndpoints
 	dataPipelineEndpoints *DataPipelineEndpoints
 	monitoringEndpoints   *MonitoringEndpoints
+	heartbeatHandler      *HeartbeatHandler
 }
 
 // NewAPIRouter создает новый APIRouter
@@ -93,6 +94,10 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 	logger.Info("Creating ICE Manager...")
 	iceManager := NewICEManager(logger)
 
+	// Создание Heartbeat Handler
+	logger.Info("Creating Heartbeat Handler...")
+	heartbeatHandler := NewHeartbeatHandler(nil, nil, logger) // TODO: Передать реальные managers
+
 	// ProtocolHandler будет nil для обычного NewAPIRouter
 	var protocolHandler *ProtocolHandler
 
@@ -113,6 +118,7 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 		aiEndpoints:           aiEndpoints,
 		dataPipelineEndpoints: dataPipelineEndpoints,
 		monitoringEndpoints:   monitoringEndpoints,
+		heartbeatHandler:      heartbeatHandler,
 	}
 }
 
@@ -287,7 +293,15 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 				tenantPeers.GET("/discover", r.peerManager.DiscoverPeers)
 				tenantPeers.PUT("/:peer_id/status", r.peerManager.UpdatePeerStatus)
 				tenantPeers.GET("/:peer_id", r.peerManager.GetPeerInfo)
+				
+				// Heartbeat endpoints
+				tenantPeers.POST("/:peer_id/heartbeat", r.heartbeatHandler.HandleHeartbeat)
+				tenantPeers.GET("/:peer_id/status", r.heartbeatHandler.GetPeerStatus)
 			}
+			
+			// Tenant statistics endpoints
+			tenant.GET("/stats", r.heartbeatHandler.GetTenantStats)
+			tenant.GET("/peers/online", r.heartbeatHandler.GetOnlinePeers)
 		}
 
 		// Relay endpoints

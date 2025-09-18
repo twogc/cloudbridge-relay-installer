@@ -808,10 +808,13 @@ func (pm *PeerManager) validateP2PToken(tokenString string) (*P2PClaims, error) 
 	}
 
 	// Проверка обязательных полей с учетом совместимости
-	// Разрешаем два варианта идентификации протокола:
+	// Разрешаем варианты идентификации протокола:
 	// 1) connection_type == "p2p-mesh" (старый вариант)
 	// 2) protocol_type == "p2p-mesh" и connection_type == "wireguard" (новый вариант)
-	if !(claims.ConnectionType == "p2p-mesh" || (claims.ProtocolType == "p2p-mesh" && claims.ConnectionType == "wireguard")) {
+	// 3) protocol_type == "p2p-mesh" и connection_type == "quic-ice" (QUIC+ICE вариант)
+	if !(claims.ConnectionType == "p2p-mesh" ||
+		(claims.ProtocolType == "p2p-mesh" && claims.ConnectionType == "wireguard") ||
+		(claims.ProtocolType == "p2p-mesh" && claims.ConnectionType == "quic-ice")) {
 		return nil, fmt.Errorf("unsupported protocol: connection_type=%s protocol_type=%s", claims.ConnectionType, claims.ProtocolType)
 	}
 
@@ -824,7 +827,8 @@ func (pm *PeerManager) validateP2PToken(tokenString string) (*P2PClaims, error) 
 		return nil, fmt.Errorf("missing device_id and subject")
 	}
 
-	if claims.WireGuardConfig == nil {
+	// WireGuard config is only required for wireguard/hybrid connection types
+	if (claims.ConnectionType == "wireguard" || claims.ConnectionType == "hybrid") && claims.WireGuardConfig == nil {
 		return nil, fmt.Errorf("missing wireguard_config")
 	}
 

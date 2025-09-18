@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: cloudbridge-relay
-        image: cloudbridge-relay:no-wg
+        image: cloudbridge-relay:p2p-routing-20250918-211004-53c7b168
         imagePullPolicy: Never  # For minikube local images
         ports:
         - containerPort: 8080

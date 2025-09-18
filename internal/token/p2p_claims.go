@@ -13,6 +13,8 @@ type P2PClaims struct {
 	jwt.RegisteredClaims
 	ConnectionType  string           `json:"connection_type"`
 	WireGuardConfig *WireGuardConfig `json:"wireguard_config,omitempty"`
+	QuicConfig      *QuicConfig      `json:"quic_config,omitempty"`
+	IceConfig       *IceConfig       `json:"ice_config,omitempty"`
 	MeshConfig      *MeshConfig      `json:"mesh_config,omitempty"`
 	PeerWhitelist   []string         `json:"peer_whitelist,omitempty"`
 	NetworkConfig   *NetworkConfig   `json:"network_config,omitempty"`
@@ -30,6 +32,7 @@ func (p *P2PClaims) Validate() error {
 	validConnectionTypes := map[string]bool{
 		"wireguard":      true,
 		"quic":           true,
+		"quic-ice":       true,
 		"tls":            true,
 		"hybrid":         true,
 		"relay-assisted": true,
@@ -44,6 +47,19 @@ func (p *P2PClaims) Validate() error {
 		}
 		if err := p.WireGuardConfig.Validate(); err != nil {
 			return fmt.Errorf("wireguard_config validation failed: %v", err)
+		}
+	}
+
+	if p.ConnectionType == "quic-ice" {
+		if p.QuicConfig != nil {
+			if err := p.QuicConfig.Validate(); err != nil {
+				return fmt.Errorf("quic_config validation failed: %v", err)
+			}
+		}
+		if p.IceConfig != nil {
+			if err := p.IceConfig.Validate(); err != nil {
+				return fmt.Errorf("ice_config validation failed: %v", err)
+			}
 		}
 	}
 
@@ -96,6 +112,8 @@ func (p *P2PClaims) UnmarshalJSON(data []byte) error {
 		jwt.RegisteredClaims
 		ConnectionType  string           `json:"connection_type"`
 		WireGuardConfig *WireGuardConfig `json:"wireguard_config,omitempty"`
+		QuicConfig      *QuicConfig      `json:"quic_config,omitempty"`
+		IceConfig       *IceConfig       `json:"ice_config,omitempty"`
 		MeshConfig      interface{}      `json:"mesh_config,omitempty"`
 		PeerWhitelist   []string         `json:"peer_whitelist,omitempty"`
 		NetworkConfig   *NetworkConfig   `json:"network_config,omitempty"`
@@ -113,6 +131,8 @@ func (p *P2PClaims) UnmarshalJSON(data []byte) error {
 	p.RegisteredClaims = temp.RegisteredClaims
 	p.ConnectionType = temp.ConnectionType
 	p.WireGuardConfig = temp.WireGuardConfig
+	p.QuicConfig = temp.QuicConfig
+	p.IceConfig = temp.IceConfig
 	p.PeerWhitelist = temp.PeerWhitelist
 	p.NetworkConfig = temp.NetworkConfig
 	p.TenantID = temp.TenantID
