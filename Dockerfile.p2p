@@ -12,7 +12,7 @@ RUN groupadd -g 1001 appgroup && \
 WORKDIR /app
 
 # Copy new binary with P2P changes
-COPY cloudbridge-relay-p2p ./cloudbridge-relay
+COPY cloudbridge-relay-p2p-new ./cloudbridge-relay
 
 # Copy config files
 COPY configs ./configs

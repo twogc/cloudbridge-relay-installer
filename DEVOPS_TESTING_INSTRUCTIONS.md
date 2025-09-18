@@ -28,11 +28,27 @@
 
 ## 🔧 Инструкции по развертыванию
 
-### 1. Сборка нового образа
+### 🚀 Быстрый способ (рекомендуется)
 
 ```bash
 # Перейти в директорию проекта
 cd /home/ubuntu/cloudbridge-relay-installer
+
+# Запустить автоматический скрипт сборки
+./build-p2p-image.sh
+```
+
+### 🔨 Ручной способ
+
+```bash
+# Перейти в директорию проекта
+cd /home/ubuntu/cloudbridge-relay-installer
+
+# Собрать новый бинарник с P2P изменениями
+go build -o cloudbridge-relay-p2p-new ./cmd/relay
+
+# Обновить Dockerfile.p2p для использования нового бинарника
+sed -i 's/cloudbridge-relay-p2p-new/cloudbridge-relay-p2p-new/g' Dockerfile.p2p
 
 # Собрать образ с новым тегом
 docker build -f Dockerfile.p2p -t cloudbridge-relay:p2p-routing-$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD) .
@@ -75,12 +91,19 @@ kubectl logs -n cloudbridge-relay deployment/cloudbridge-relay --tail=50
 
 ### 1. Проверка запуска P2P компонентов
 
+**ВАЖНО**: Убедитесь, что образ содержит новые изменения!
+
 В логах должны появиться следующие сообщения:
 ```
 "P2P Relay components initialized successfully"
 "Heartbeat Manager started"
 "QUIC Relay Handler ready"
 ```
+
+Если эти сообщения не появляются, значит образ не содержит новые изменения. В этом случае:
+1. Пересоберите бинарник: `go build -o cloudbridge-relay-p2p-new ./cmd/relay`
+2. Пересоберите образ с новым бинарником
+3. Обновите deployment
 
 ### 2. Тестирование Heartbeat API
 
