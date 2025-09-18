@@ -406,3 +406,4 @@ func (t CandidateType) String() string {
 		return "unknown"
 	}
 }
+

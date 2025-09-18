@@ -130,3 +130,4 @@ echo "  View logs: kubectl logs -n cloudbridge-relay deployment/cloudbridge-rela
 echo "  Port forward: kubectl port-forward -n cloudbridge-relay service/cloudbridge-relay-service 8080:8080"
 echo "  Delete deployment: kubectl delete -f k8s/"
 echo ""
+

@@ -297,3 +297,4 @@ func (s MigrationState) String() string {
 		return "unknown"
 	}
 }
+

@@ -77,3 +77,4 @@
 
 ## 🎯 **Итог:**
 **Заменить WireGuard конфигурацию на QUIC + ICE/STUN/TURN конфигурацию с новыми endpoints для edge.2gc.ru**
+

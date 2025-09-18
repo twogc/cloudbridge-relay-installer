@@ -107,10 +107,12 @@
   },
   "quic": {
     "enabled": true,
-    "max_streams": 1000,
+    "max_streams": 100,
     "keep_alive": true,
     "idle_timeout": "30s",
-    "handshake_timeout": "10s"
+    "handshake_timeout": "10s",
+    "connection_migration": true,
+    "multiplexing": true
   },
   "zero_trust": {
     "enabled": false,
@@ -202,8 +204,8 @@
     }
   },
   "enhanced_quic": {
-    "enabled": false,
-    "max_streams": 1000,
+    "enabled": true,
+    "max_streams": 100,
     "keep_alive": true,
     "idle_timeout": "30s",
     "handshake_timeout": "10s",
@@ -245,6 +247,30 @@
       "peers": "/api/v1/peers",
       "health": "/api/v1/health"
     }
+  },
+  "ice_stun_turn": {
+    "enabled": true,
+    "stun_servers": [
+      "edge.2gc.ru:19302"
+    ],
+    "turn_servers": [],
+    "ice_timeout": "30s",
+    "connection_timeout": "10s",
+    "gathering_timeout": "5s",
+    "candidate_types": [
+      "host",
+      "srflx",
+      "relay"
+    ]
+  },
+  "masque": {
+    "enabled": true,
+    "proxy_url": "https://edge.2gc.ru:8443",
+    "alpn_protocols": [
+      "h3",
+      "h3-29"
+    ],
+    "fallback_enabled": true
   },
   "wireguard": {
     "enabled": false,
