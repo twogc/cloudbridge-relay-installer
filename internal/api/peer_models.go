@@ -16,6 +16,7 @@ type Peer struct {
 	LastSeen          time.Time `json:"last_seen" db:"last_seen"`
 	RegisteredAt      time.Time `json:"registered_at" db:"registered_at"`
 	MeshStatus        string    `json:"mesh_status" db:"mesh_status"`
+	AllocatedIP       string    `json:"allocated_ip" db:"allocated_ip"`
 }
 
 
@@ -182,6 +183,7 @@ type RelayAssistedRegistrationResponse struct {
 	PeerID         string    `json:"peer_id"`
 	RelaySessionID string    `json:"relay_session_id"`
 	RegisteredAt   time.Time `json:"registered_at"`
+	AllocatedIP    string    `json:"allocated_ip"`
 }
 
 // RelayAssistedStatusUpdateRequest запрос на обновление статуса пира для relay-assisted режима

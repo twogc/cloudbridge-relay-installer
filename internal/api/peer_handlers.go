@@ -23,6 +23,8 @@ type PeerManager struct {
 	validator   TokenValidator
 	ipValidator *IPValidator
 	peerStore   *PeerStore
+	allocatedIPs map[string]string // peer_id -> allocated_ip
+	ipMutex     sync.RWMutex
 }
 
 // PeerStore управляет хранением пиров
@@ -140,6 +142,7 @@ func NewPeerManager(logger *zap.Logger, validator TokenValidator) *PeerManager {
 		validator:   validator,
 		ipValidator: ipValidator,
 		peerStore:   NewPeerStore(),
+		allocatedIPs: make(map[string]string),
 	}
 }
 
@@ -180,6 +183,59 @@ func NewPeerManagerWithConfig(logger *zap.Logger, validator TokenValidator, allo
 		validator:   validator,
 		ipValidator: ipValidator,
 		peerStore:   NewPeerStore(),
+	}
+}
+
+// allocateIPForTenant выделяет IP адрес для пира в рамках tenant
+func (pm *PeerManager) allocateIPForTenant(tenantID, peerID string) (string, error) {
+	pm.ipMutex.Lock()
+	defer pm.ipMutex.Unlock()
+
+	// Проверяем, есть ли уже выделенный IP для этого пира
+	if allocatedIP, exists := pm.allocatedIPs[peerID]; exists {
+		return allocatedIP, nil
+	}
+
+	// Определяем базовый IP для tenant
+	// tenant-216420165 -> 10.100.77.0/24
+	baseIP := "10.100.77"
+	
+	// Находим следующий доступный IP
+	for i := 10; i <= 254; i++ {
+		candidateIP := fmt.Sprintf("%s.%d", baseIP, i)
+		
+		// Проверяем, не занят ли этот IP
+		alreadyAllocated := false
+		for _, allocatedIP := range pm.allocatedIPs {
+			if allocatedIP == candidateIP {
+				alreadyAllocated = true
+				break
+			}
+		}
+		
+		if !alreadyAllocated {
+			pm.allocatedIPs[peerID] = candidateIP
+			pm.logger.Info("Allocated IP for peer",
+				zap.String("peer_id", peerID),
+				zap.String("tenant_id", tenantID),
+				zap.String("allocated_ip", candidateIP))
+			return candidateIP, nil
+		}
+	}
+	
+	return "", fmt.Errorf("no available IP addresses for tenant %s", tenantID)
+}
+
+// deallocateIP освобождает IP адрес пира
+func (pm *PeerManager) deallocateIP(peerID string) {
+	pm.ipMutex.Lock()
+	defer pm.ipMutex.Unlock()
+	
+	if allocatedIP, exists := pm.allocatedIPs[peerID]; exists {
+		delete(pm.allocatedIPs, peerID)
+		pm.logger.Info("Deallocated IP for peer",
+			zap.String("peer_id", peerID),
+			zap.String("deallocated_ip", allocatedIP))
 	}
 }
 
@@ -241,17 +297,41 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 			existingPeer.RegisteredAt = time.Now()
 		}
 
+		// Выделяем IP адрес, если он еще не выделен
+		var allocatedIP string
+		if existingPeer.AllocatedIP == "" {
+			var err error
+			allocatedIP, err = pm.allocateIPForTenant(tenantID, peerID)
+			if err != nil {
+				pm.logger.Error("Failed to allocate IP for existing peer", 
+					zap.String("peer_id", peerID),
+					zap.String("tenant_id", tenantID),
+					zap.Error(err))
+				c.JSON(http.StatusInternalServerError, ErrorResponse{
+					Error:   "Failed to allocate IP address",
+					Code:    http.StatusInternalServerError,
+					Message: err.Error(),
+				})
+				return
+			}
+			existingPeer.AllocatedIP = allocatedIP
+		} else {
+			allocatedIP = existingPeer.AllocatedIP
+		}
+
 		pm.peerStore.Update(tenantID, peerID, existingPeer)
 		pm.logger.Info("Peer re-registered",
 			zap.String("peer_id", peerID),
 			zap.String("tenant_id", tenantID),
-			zap.String("relay_session_id", existingPeer.RelaySessionID))
+			zap.String("relay_session_id", existingPeer.RelaySessionID),
+			zap.String("allocated_ip", allocatedIP))
 
 		c.JSON(http.StatusOK, RelayAssistedRegistrationResponse{
 			Success:        true,
 			PeerID:         existingPeer.PeerID,
 			RelaySessionID: existingPeer.RelaySessionID,
 			RegisteredAt:   existingPeer.RegisteredAt,
+			AllocatedIP:    allocatedIP,
 		})
 		return
 	}
@@ -270,6 +350,21 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 	// Генерируем relay_session_id
 	relaySessionID := generateRelaySessionID()
 
+	// Выделяем IP адрес для пира
+	allocatedIP, err := pm.allocateIPForTenant(tenantID, peerID)
+	if err != nil {
+		pm.logger.Error("Failed to allocate IP for peer", 
+			zap.String("peer_id", peerID),
+			zap.String("tenant_id", tenantID),
+			zap.Error(err))
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "Failed to allocate IP address",
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+		return
+	}
+
 	// Создание пира для P2P mesh режима
 	peer := &Peer{
 		ID:             peerID,
@@ -282,6 +377,7 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		LastSeen:       time.Now(),
 		RegisteredAt:   time.Now(),
 		MeshStatus:     "connected",
+		AllocatedIP:    allocatedIP, // Добавляем выделенный IP
 	}
 
 	// Сохранение пира в peerStore
@@ -299,6 +395,7 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		PeerID:         peerID,
 		RelaySessionID: relaySessionID,
 		RegisteredAt:   peer.RegisteredAt,
+		AllocatedIP:    allocatedIP,
 	})
 }
 

@@ -930,7 +930,6 @@ func (s *Server) Start() error {
 				s.logger.Error("Failed to start P2P QUIC UDP server", zap.Error(err))
 				return
 			}
-			defer udpConn.Close()
 
 			// Создаем QUIC listener
 			quicListener, err := quic.Listen(udpConn, s.generateTLSConfig(), &quic.Config{
@@ -939,17 +938,25 @@ func (s *Server) Start() error {
 			})
 			if err != nil {
 				s.logger.Error("Failed to create QUIC listener for P2P relay", zap.Error(err))
+				udpConn.Close()
 				return
 			}
-			defer quicListener.Close()
 
 			s.logger.Info("P2P QUIC server started on port 9091")
 
 			// Запускаем QUIC Relay Handler
 			if err := s.quicRelayHandler.Start(quicListener); err != nil {
 				s.logger.Error("Failed to start QUIC Relay Handler", zap.Error(err))
+				quicListener.Close()
+				udpConn.Close()
 				return
 			}
+
+			// Ждем завершения контекста сервера
+			<-s.ctx.Done()
+			s.logger.Info("Shutting down P2P QUIC server")
+			quicListener.Close()
+			udpConn.Close()
 		}()
 	}
 
