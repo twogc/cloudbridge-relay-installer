@@ -103,7 +103,6 @@ func (pm *P2PManager) EstablishConnection(c *gin.Context) {
 		Success:        true,
 		SessionID:      connection.SessionID,
 		ConnectionType: connection.ConnectionType,
-		ICECandidates:  iceCandidates,
 	}
 
 	pm.logger.Info("P2P connection established",

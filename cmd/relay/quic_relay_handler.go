@@ -21,7 +21,7 @@ type QUICRelayHandler struct {
 // NewQUICRelayHandler создает новый QUIC Relay Handler
 func NewQUICRelayHandler(relayManager *p2p.RelayManager, logger *zap.Logger) *QUICRelayHandler {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &QUICRelayHandler{
 		relayManager: relayManager,
 		logger:       logger,
@@ -33,13 +33,13 @@ func NewQUICRelayHandler(relayManager *p2p.RelayManager, logger *zap.Logger) *QU
 // Start запускает QUIC relay handler
 func (qrh *QUICRelayHandler) Start(quicServer *quic.Listener) error {
 	qrh.logger.Info("Starting QUIC Relay Handler")
-	
+
 	// Запускаем cleanup routine
 	qrh.relayManager.StartCleanupRoutine()
-	
+
 	// Обрабатываем входящие QUIC соединения
 	go qrh.handleQUICConnections(quicServer)
-	
+
 	return nil
 }
 
@@ -58,7 +58,7 @@ func (qrh *QUICRelayHandler) handleQUICConnections(quicServer *quic.Listener) {
 				qrh.logger.Error("Failed to accept QUIC connection", zap.Error(err))
 				continue
 			}
-			
+
 			go qrh.handleQUICConnection(conn)
 		}
 	}
@@ -67,25 +67,25 @@ func (qrh *QUICRelayHandler) handleQUICConnections(quicServer *quic.Listener) {
 // handleQUICConnection обрабатывает QUIC соединение
 func (qrh *QUICRelayHandler) handleQUICConnection(conn *quic.Conn) {
 	defer conn.CloseWithError(0, "connection closed")
-	
+
 	clientAddr := conn.RemoteAddr().String()
 	qrh.logger.Info("New QUIC connection",
 		zap.String("client_addr", clientAddr))
-	
+
 	// Извлекаем peer ID из соединения (в реальности из JWT токена)
 	peerID := qrh.extractPeerID(conn)
 	if peerID == "" {
 		qrh.logger.Error("Failed to extract peer ID from connection")
 		return
 	}
-	
+
 	// Извлекаем tenant ID (в реальности из JWT токена)
 	tenantID := qrh.extractTenantID(conn)
 	if tenantID == "" {
 		qrh.logger.Error("Failed to extract tenant ID from connection")
 		return
 	}
-	
+
 	// Регистрируем QUIC соединение
 	err := qrh.relayManager.RegisterQUICConnection(peerID, tenantID, conn)
 	if err != nil {
@@ -95,7 +95,7 @@ func (qrh *QUICRelayHandler) handleQUICConnection(conn *quic.Conn) {
 			zap.Error(err))
 		return
 	}
-	
+
 	// Обрабатываем потоки
 	qrh.handleStreams(conn, peerID)
 }
@@ -117,7 +117,7 @@ func (qrh *QUICRelayHandler) handleStreams(conn *quic.Conn, peerID string) {
 					zap.Error(err))
 				continue
 			}
-			
+
 			go qrh.handleStream(*stream, peerID)
 		}
 	}
@@ -126,11 +126,11 @@ func (qrh *QUICRelayHandler) handleStreams(conn *quic.Conn, peerID string) {
 // handleStream обрабатывает QUIC поток
 func (qrh *QUICRelayHandler) handleStream(stream quic.Stream, peerID string) {
 	defer stream.Close()
-	
+
 	qrh.logger.Debug("New stream accepted",
 		zap.String("peer_id", peerID),
 		zap.Uint64("stream_id", uint64(stream.StreamID())))
-	
+
 	// Читаем данные из потока
 	buffer := make([]byte, 4096)
 	for {
@@ -150,7 +150,7 @@ func (qrh *QUICRelayHandler) handleStream(stream quic.Stream, peerID string) {
 					zap.Error(err))
 				return
 			}
-			
+
 			// Пересылаем пакет
 			err = qrh.relayManager.RelayPacket(peerID, buffer[:n])
 			if err != nil {
@@ -159,7 +159,7 @@ func (qrh *QUICRelayHandler) handleStream(stream quic.Stream, peerID string) {
 					zap.Error(err))
 				continue
 			}
-			
+
 			qrh.logger.Debug("Packet relayed",
 				zap.String("peer_id", peerID),
 				zap.Int("bytes", n))
@@ -172,7 +172,7 @@ func (qrh *QUICRelayHandler) extractPeerID(conn *quic.Conn) string {
 	// В реальной реализации здесь должен быть парсинг JWT токена
 	// Для демонстрации используем IP адрес
 	clientAddr := conn.RemoteAddr().String()
-	
+
 	// Простая логика для демонстрации
 	// В реальности peer ID должен приходить в JWT токене
 	return fmt.Sprintf("peer-%s", clientAddr)

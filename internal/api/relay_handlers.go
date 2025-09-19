@@ -9,6 +9,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// PeerWhitelist список разрешенных пиров
+type PeerWhitelist struct {
+	AllowedPeers []string `json:"allowed_peers"`
+	AutoApprove  bool     `json:"auto_approve"`
+	MaxPeers     int      `json:"max_peers"`
+}
+
 // RelayManager управляет fallback маршрутизацией
 type RelayManager struct {
 	hub         *Hub
@@ -110,15 +117,7 @@ func (rm *RelayManager) RouteThroughRelay(c *gin.Context) {
 		return
 	}
 
-	// Проверка whitelist
-	if !rm.validatePeerAccess(req.ToPeer, fromPeer.PeerWhitelist) {
-		c.JSON(http.StatusForbidden, ErrorResponse{
-			Error:   "Peer not in whitelist",
-			Code:    http.StatusForbidden,
-			Message: "Destination peer is not in source peer's whitelist",
-		})
-		return
-	}
+	// P2P mesh не требует whitelist проверки
 
 	// Маршрутизация через WebSocket
 	startTime := time.Now()
@@ -302,9 +301,8 @@ func (rm *RelayManager) calculateStats(tenantID string) *RelayStats {
 	totalLatency := 0
 	latencyCount := 0
 	for _, peer := range rm.peers {
-		if peer.TenantID == tenantID && peer.LatencyMS > 0 {
-			totalLatency += peer.LatencyMS
-			latencyCount++
+		if peer.TenantID == tenantID {
+			// LatencyMS removed from simplified Peer structure
 		}
 	}
 

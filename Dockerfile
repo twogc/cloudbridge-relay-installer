@@ -1,5 +1,5 @@
 # Multi-stage build for CloudBridge Relay
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
 RUN apk update && apk add --no-cache git ca-certificates tzdata
@@ -45,7 +45,7 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # Expose ports
-EXPOSE 8080 8443 19302/udp
+EXPOSE 8080 8082 8443 9090/udp 19302/udp
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

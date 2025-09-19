@@ -26,17 +26,23 @@ spec:
     spec:
       containers:
       - name: cloudbridge-relay-p2p
-        image: cloudbridge-relay-p2p:20250918-211458-53c7b168-fixed
+        image: cloudbridge-relay-p2p:20250918-232719-p2p-complete
         imagePullPolicy: IfNotPresent
         ports:
-        - name: http
-          containerPort: 9090
+        - name: http-api
+          containerPort: 8080
           protocol: TCP
         - name: p2p-api
-          containerPort: 9091
+          containerPort: 8082
           protocol: TCP
-        - name: wireguard
-          containerPort: 51820
+        - name: quic-p2p
+          containerPort: 9090
+          protocol: UDP
+        - name: https
+          containerPort: 8443
+          protocol: TCP
+        - name: stun
+          containerPort: 19302
           protocol: UDP
         env:
         - name: CONFIG_PATH
@@ -67,7 +73,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 9090
+            port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -75,7 +81,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 9090
+            port: 8080
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3

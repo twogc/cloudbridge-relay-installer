@@ -11,6 +11,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// NetworkConfig сетевая конфигурация
+type NetworkConfig struct {
+	Subnet string   `json:"subnet"`
+	DNS    []string `json:"dns"`
+	MTU    int      `json:"mtu"`
+}
+
 // IPValidator validates IP addresses and CIDR ranges
 type IPValidator struct {
 	allowedCIDRs []*net.IPNet

@@ -3,10 +3,16 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"math/big"
 	"net"
 	"net/http"
 	"os"
@@ -21,6 +27,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/quic-go/quic-go"
 	"github.com/twogc/cloudbridge-relay-installer/config"
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
 	"github.com/twogc/cloudbridge-relay-installer/internal/balancer"
@@ -109,11 +116,11 @@ type Server struct {
 	wireGuardEnabled   bool
 	wireGuardInterface *wireguard.WireGuardInterface
 	wireGuardMesh      *wireguard.MeshTopology
-	
+
 	// P2P Relay components
-	relayManager        *p2p.RelayManager
-	heartbeatManager    *p2p.HeartbeatManager
-	quicRelayHandler    *QUICRelayHandler
+	relayManager     *p2p.RelayManager
+	heartbeatManager *p2p.HeartbeatManager
+	quicRelayHandler *QUICRelayHandler
 
 	// Cadence Workflow Engine
 	cadenceClient          *cadence.Client
@@ -513,16 +520,21 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// Initialize P2P Relay components
 	loggerInstance.Info("Initializing P2P Relay components...")
-	
+
 	// Create Relay Manager
 	relayManager := p2p.NewRelayManager(loggerInstance.GetZapLogger())
-	
+
 	// Create Heartbeat Manager
 	heartbeatManager := p2p.NewHeartbeatManager(relayManager, loggerInstance.GetZapLogger())
-	
+
 	// Create QUIC Relay Handler
 	quicRelayHandler := NewQUICRelayHandler(relayManager, loggerInstance.GetZapLogger())
-	
+
+	// Set managers for P2P API Server
+	if p2pAPIServer != nil {
+		p2pAPIServer.SetManagers(relayManager, heartbeatManager)
+	}
+
 	loggerInstance.Info("P2P Relay components initialized successfully")
 
 	return &Server{
@@ -895,6 +907,44 @@ func (s *Server) Start() error {
 		}()
 	}
 
+	// Start P2P QUIC server on port 9090 for P2P relay
+	if s.quicRelayHandler != nil {
+		go func() {
+			// Создаем QUIC listener для P2P relay
+			udpAddr, err := net.ResolveUDPAddr("udp", ":9090")
+			if err != nil {
+				s.logger.Error("Failed to resolve UDP address for P2P QUIC", zap.Error(err))
+				return
+			}
+
+			udpConn, err := net.ListenUDP("udp", udpAddr)
+			if err != nil {
+				s.logger.Error("Failed to start P2P QUIC UDP server", zap.Error(err))
+				return
+			}
+			defer udpConn.Close()
+
+			// Создаем QUIC listener
+			quicListener, err := quic.Listen(udpConn, s.generateTLSConfig(), &quic.Config{
+				MaxIdleTimeout:  30 * time.Second,
+				KeepAlivePeriod: 15 * time.Second,
+			})
+			if err != nil {
+				s.logger.Error("Failed to create QUIC listener for P2P relay", zap.Error(err))
+				return
+			}
+			defer quicListener.Close()
+
+			s.logger.Info("P2P QUIC server started on port 9090")
+
+			// Запускаем QUIC Relay Handler
+			if err := s.quicRelayHandler.Start(quicListener); err != nil {
+				s.logger.Error("Failed to start QUIC Relay Handler", zap.Error(err))
+				return
+			}
+		}()
+	}
+
 	// Start STUN UDP server on port 19302
 	// STUN server is always enabled for P2P mesh functionality
 	{
@@ -1030,12 +1080,6 @@ func (s *Server) Start() error {
 
 	// Запуск QUIC Relay Handler
 	if s.quicRelayHandler != nil {
-		// TODO: Получить QUIC listener из enhanced QUIC manager
-		// go func() {
-		// 	if err := s.quicRelayHandler.Start(quicListener); err != nil {
-		// 		s.logger.Error("Failed to start QUIC Relay Handler", zap.Error(err))
-		// 	}
-		// }()
 		s.logger.Info("QUIC Relay Handler ready")
 	}
 
@@ -1643,4 +1687,61 @@ func main() {
 	if err := server.Start(); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
+}
+
+// generateTLSConfig генерирует TLS конфигурацию для QUIC
+func (s *Server) generateTLSConfig() *tls.Config {
+	// Создаем самоподписанный сертификат для QUIC
+	cert, err := s.generateSelfSignedCert()
+	if err != nil {
+		s.logger.Error("Failed to generate self-signed certificate", zap.Error(err))
+		// Возвращаем nil, что приведет к ошибке при создании QUIC listener
+		return nil
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		NextProtos:   []string{"h3", "h3-29", "h3-28", "h3-27"},
+	}
+}
+
+// generateSelfSignedCert генерирует самоподписанный сертификат
+func (s *Server) generateSelfSignedCert() (tls.Certificate, error) {
+	// Генерируем приватный ключ
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	// Создаем сертификат
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization:  []string{"CloudBridge Relay"},
+			Country:       []string{"RU"},
+			Province:      []string{""},
+			Locality:      []string{"Moscow"},
+			StreetAddress: []string{""},
+			PostalCode:    []string{""},
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().Add(365 * 24 * time.Hour), // 1 год
+		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IPAddresses: []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
+		DNSNames:    []string{"localhost", "edge.2gc.ru"},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	// Создаем TLS сертификат
+	cert := tls.Certificate{
+		Certificate: [][]byte{certDER},
+		PrivateKey:  priv,
+	}
+
+	return cert, nil
 }

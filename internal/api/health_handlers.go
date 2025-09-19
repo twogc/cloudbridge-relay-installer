@@ -183,10 +183,7 @@ func (hm *HealthManager) GetPeerMetrics(c *gin.Context) {
 			metrics["offline_peers"] = metrics["offline_peers"].(int) + 1
 		}
 
-		if peer.LatencyMS > 0 {
-			totalLatency += peer.LatencyMS
-			latencyCount++
-		}
+		// LatencyMS removed from simplified Peer structure
 
 		// Подсчет типов соединений
 		connType := peer.ConnectionType

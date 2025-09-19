@@ -167,9 +167,9 @@ func (h *Hub) NotifyPeerJoined(tenantID string, peer *Peer) {
 	message := WebSocketMessage{
 		Type: "peer_joined",
 		Data: PeerJoinedData{
-			PeerID:          peer.PeerID,
-			WireGuardConfig: peer.WireGuardConfig,
-			Timestamp:       time.Now(),
+			PeerID: peer.PeerID,
+			// WireGuardConfig removed from simplified Peer structure
+			Timestamp: time.Now(),
 		},
 		Timestamp: time.Now(),
 	}

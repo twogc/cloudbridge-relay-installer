@@ -522,36 +522,15 @@ func (m *MockTokenValidator) ValidateP2PToken(token string) (*P2PClaims, error) 
 	return &P2PClaims{
 		JTI:            "mock-jti",
 		Subject:        "mock-peer-id",
-		OrgID:          "mock-org-id",
 		TenantID:       "mock-tenant-id",
-		DeviceID:       "mock-device-id",
-		ConnectionType: "p2p-mesh",
-		Permissions:    []string{"read", "write"},
-		WireGuardConfig: &WireGuardConfig{
-			PublicKey:  "mock-public-key",
-			Endpoint:   "mock.example.com:51820",
-			ListenPort: 51820,
-			AllowedIPs: []string{"10.0.1.0/24"},
-		},
-		MeshConfig: &MeshConfig{
-			AutoDiscovery: true,
-			Routing:       "hybrid",
-			Encryption:    "aes256",
-		},
-		PeerWhitelist: &PeerWhitelist{
-			AllowedPeers: []string{"peer1", "peer2"},
-			AutoApprove:  false,
-			MaxPeers:     10,
-		},
-		NetworkConfig: &NetworkConfig{
-			Subnet: "10.0.1.0/24",
-			DNS:    []string{"8.8.8.8", "8.8.4.4"},
-			MTU:    1500,
-		},
-		IssuedAt:  time.Now().Unix(),
-		NotBefore: time.Now().Unix(),
-		Issuer:    "mock-issuer",
-		Audience:  "mock-audience",
+		ServerID:       "mock-server-id",
+		ConnectionType: "quic",
+		ProtocolType:   "p2p-mesh",
+		Permissions:    []string{"p2p_connect", "mesh_join"},
+		IssuedAt:       time.Now().Unix(),
+		NotBefore:      time.Now().Unix(),
+		Issuer:         "mock-issuer",
+		Audience:       "mock-audience",
 	}, nil
 }
 

@@ -10,6 +10,39 @@ import (
 	"go.uber.org/zap"
 )
 
+// ICECandidate представляет ICE candidate для NAT traversal
+type ICECandidate struct {
+	Foundation  string `json:"foundation"`
+	Component   int    `json:"component"`
+	Transport   string `json:"transport"`
+	Priority    uint32 `json:"priority"`
+	Address     string `json:"address"`
+	Port        int    `json:"port"`
+	Type        string `json:"type"` // "host", "srflx", "prflx", "relay"
+	RelatedAddr string `json:"related_address,omitempty"`
+	RelatedPort int    `json:"related_port,omitempty"`
+	Username    string `json:"username,omitempty"`
+	Password    string `json:"password,omitempty"`
+}
+
+// ICESignalingRequest запрос для ICE signaling
+type ICESignalingRequest struct {
+	SessionID  string          `json:"session_id" binding:"required"`
+	PeerID     string          `json:"peer_id" binding:"required"`
+	Candidates []*ICECandidate `json:"candidates" binding:"required"`
+	Offer      string          `json:"offer,omitempty"`
+	Answer     string          `json:"answer,omitempty"`
+}
+
+// ICESignalingResponse ответ на ICE signaling
+type ICESignalingResponse struct {
+	Success    bool            `json:"success"`
+	SessionID  string          `json:"session_id"`
+	Candidates []*ICECandidate `json:"candidates,omitempty"`
+	Offer      string          `json:"offer,omitempty"`
+	Answer     string          `json:"answer,omitempty"`
+}
+
 // ICEManager управляет ICE signaling через API
 type ICEManager struct {
 	sessions map[string]*ICESession

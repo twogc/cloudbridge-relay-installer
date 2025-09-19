@@ -2,7 +2,6 @@ package token
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -124,37 +123,45 @@ func (v *Validator) validateJWT(token string) (string, error) {
 
 // ValidateP2PToken validates a P2P token and returns P2P claims
 func (v *Validator) ValidateP2PToken(token string) (*P2PClaims, error) {
-	// Сначала парсим токен в MapClaims для получения raw claims
-	mapClaims := jwt.MapClaims{}
-
-	_, err := jwt.ParseWithClaims(token, mapClaims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
+	// 1. Парсить JWT токен
+	tokenObj, err := jwt.ParseWithClaims(token, &P2PClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return v.jwtKey, nil
 	})
-
+	
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse P2P JWT: %v", err)
+		return nil, fmt.Errorf("invalid token: %v", err)
 	}
-
-	// Конвертируем MapClaims в JSON и обратно в P2PClaims для использования кастомного UnmarshalJSON
-	claimsJSON, err := json.Marshal(mapClaims)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal claims: %v", err)
+	
+	claims, ok := tokenObj.Claims.(*P2PClaims)
+	if !ok || !tokenObj.Valid {
+		return nil, fmt.Errorf("invalid token claims")
 	}
-
-	claims := &P2PClaims{}
-	if err := json.Unmarshal(claimsJSON, claims); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal P2P claims: %v", err)
+	
+	// 2. Проверить обязательные поля
+	if claims.ProtocolType != "p2p-mesh" {
+		return nil, fmt.Errorf("unsupported protocol: %s", claims.ProtocolType)
 	}
-
-	if err := claims.Validate(); err != nil {
-		return nil, fmt.Errorf("P2P claims validation failed: %v", err)
+	
+	if claims.ConnectionType != "quic" {
+		return nil, fmt.Errorf("unsupported connection type: %s", claims.ConnectionType)
 	}
-
+	
+	if claims.TenantID == "" {
+		return nil, fmt.Errorf("missing tenant_id")
+	}
+	
+	if claims.ServerID == "" {
+		return nil, fmt.Errorf("missing server_id")
+	}
+	
+	// 3. Проверить разрешения
+	if !contains(claims.Permissions, "p2p_connect") {
+		return nil, fmt.Errorf("missing p2p_connect permission")
+	}
+	
 	return claims, nil
 }
+
 
 // Cleanup removes expired tokens from the cache
 func (v *Validator) Cleanup() {

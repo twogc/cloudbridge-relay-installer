@@ -1,104 +1,23 @@
 package api
 
 import (
-	"encoding/json"
 	"time"
 )
 
 // Peer представляет зарегистрированный пир
 type Peer struct {
-	ID                string           `json:"id" db:"id"`
-	PeerID            string           `json:"peer_id" db:"peer_id"`
-	TenantID          string           `json:"tenant_id" db:"tenant_id"`
-	OrgID             string           `json:"org_id" db:"org_id"`
-	DeviceID          string           `json:"device_id" db:"device_id"`
-	ConnectionType    string           `json:"connection_type" db:"connection_type"`
-	RelaySessionID    string           `json:"relay_session_id" db:"relay_session_id"`
-	WireGuardConfig   *WireGuardConfig `json:"wireguard_config" db:"wireguard_config"`
-	MeshConfig        *MeshConfig      `json:"mesh_config" db:"mesh_config"`
-	PeerWhitelist     *PeerWhitelist   `json:"peer_whitelist" db:"peer_whitelist"`
-	NetworkConfig     *NetworkConfig   `json:"network_config" db:"network_config"`
-	ICECandidates     []*ICECandidate  `json:"ice_candidates" db:"ice_candidates"`
-	STUNServers       []string         `json:"stun_servers" db:"stun_servers"`
-	MASQUESupport     bool             `json:"masque_support" db:"masque_support"`
-	IsOnline          bool             `json:"is_online" db:"is_online"`
-	LastSeen          time.Time        `json:"last_seen" db:"last_seen"`
-	RegisteredAt      time.Time        `json:"registered_at" db:"registered_at"`
-	ActiveConnections int              `json:"active_connections" db:"active_connections"`
-	MeshStatus        string           `json:"mesh_status" db:"mesh_status"`
-	LatencyMS         int              `json:"latency_ms" db:"latency_ms"`
+	ID                string    `json:"id" db:"id"`
+	PeerID            string    `json:"peer_id" db:"peer_id"`
+	TenantID          string    `json:"tenant_id" db:"tenant_id"`
+	DeviceID          string    `json:"device_id" db:"device_id"`
+	ConnectionType    string    `json:"connection_type" db:"connection_type"`
+	RelaySessionID    string    `json:"relay_session_id" db:"relay_session_id"`
+	IsOnline          bool      `json:"is_online" db:"is_online"`
+	LastSeen          time.Time `json:"last_seen" db:"last_seen"`
+	RegisteredAt      time.Time `json:"registered_at" db:"registered_at"`
+	MeshStatus        string    `json:"mesh_status" db:"mesh_status"`
 }
 
-// WireGuardConfig конфигурация WireGuard
-type WireGuardConfig struct {
-	PublicKey  string   `json:"public_key"`
-	Endpoint   string   `json:"endpoint"`
-	ListenPort int      `json:"listen_port"`
-	AllowedIPs []string `json:"allowed_ips"`
-}
-
-// MeshConfig конфигурация mesh сети
-type MeshConfig struct {
-	AutoDiscovery bool   `json:"auto_discovery"`
-	Routing       string `json:"routing"`
-	Encryption    string `json:"encryption"`
-}
-
-// PeerWhitelist список разрешенных пиров
-type PeerWhitelist struct {
-	AllowedPeers []string `json:"allowed_peers"`
-	AutoApprove  bool     `json:"auto_approve"`
-	MaxPeers     int      `json:"max_peers"`
-}
-
-// UnmarshalJSON allows PeerWhitelist to be parsed from either an object
-// or a plain JSON array of strings (backward compatibility).
-func (pw *PeerWhitelist) UnmarshalJSON(data []byte) error {
-	// Try array form: ["peer-001", "peer-002"]
-	var arr []string
-	if err := json.Unmarshal(data, &arr); err == nil {
-		pw.AllowedPeers = arr
-		// If only a list provided, default to auto-approve true and max peers = len
-		pw.AutoApprove = true
-		if len(arr) > 0 {
-			pw.MaxPeers = len(arr)
-		}
-		return nil
-	}
-
-	// Try object form
-	type alias PeerWhitelist
-	var a alias
-	if err := json.Unmarshal(data, &a); err != nil {
-		return err
-	}
-	pw.AllowedPeers = a.AllowedPeers
-	pw.AutoApprove = a.AutoApprove
-	pw.MaxPeers = a.MaxPeers
-	return nil
-}
-
-// NetworkConfig сетевая конфигурация
-type NetworkConfig struct {
-	Subnet string   `json:"subnet"`
-	DNS    []string `json:"dns"`
-	MTU    int      `json:"mtu"`
-}
-
-// ICECandidate представляет ICE candidate для NAT traversal
-type ICECandidate struct {
-	Foundation  string `json:"foundation"`
-	Component   int    `json:"component"`
-	Transport   string `json:"transport"`
-	Priority    uint32 `json:"priority"`
-	Address     string `json:"address"`
-	Port        int    `json:"port"`
-	Type        string `json:"type"` // "host", "srflx", "prflx", "relay"
-	RelatedAddr string `json:"related_address,omitempty"`
-	RelatedPort int    `json:"related_port,omitempty"`
-	Username    string `json:"username,omitempty"`
-	Password    string `json:"password,omitempty"`
-}
 
 // PeerConnection представляет соединение между пирами
 type PeerConnection struct {
@@ -115,18 +34,10 @@ type PeerConnection struct {
 
 // PeerRegistrationRequest запрос на регистрацию пира
 type PeerRegistrationRequest struct {
-	PeerID          string           `json:"peer_id" binding:"required"`
-	TenantID        string           `json:"tenant_id" binding:"required"`
-	OrgID           string           `json:"org_id" binding:"required"`
-	DeviceID        string           `json:"device_id" binding:"required"`
-	ConnectionType  string           `json:"connection_type" binding:"required"`
-	WireGuardConfig *WireGuardConfig `json:"wireguard_config" binding:"required"`
-	MeshConfig      *MeshConfig      `json:"mesh_config"`
-	PeerWhitelist   *PeerWhitelist   `json:"peer_whitelist"`
-	NetworkConfig   *NetworkConfig   `json:"network_config"`
-	ICECandidates   []*ICECandidate  `json:"ice_candidates"`
-	STUNServers     []string         `json:"stun_servers"`
-	MASQUESupport   bool             `json:"masque_support"`
+	PeerID         string `json:"peer_id" binding:"required"`
+	TenantID       string `json:"tenant_id" binding:"required"`
+	DeviceID       string `json:"device_id" binding:"required"`
+	ConnectionType string `json:"connection_type" binding:"required"`
 }
 
 // PeerStatusUpdateRequest запрос на обновление статуса пира
@@ -174,37 +85,17 @@ type RelayRouteRequest struct {
 
 // P2PConnectionRequest запрос на установку P2P соединения
 type P2PConnectionRequest struct {
-	SessionID     string          `json:"session_id" binding:"required"`
-	TargetPeerID  string          `json:"target_peer_id" binding:"required"`
-	Protocol      string          `json:"protocol" binding:"required"` // "quic", "websocket", "tcp"
-	ICECandidates []*ICECandidate `json:"ice_candidates"`
+	SessionID    string `json:"session_id" binding:"required"`
+	TargetPeerID string `json:"target_peer_id" binding:"required"`
+	Protocol     string `json:"protocol" binding:"required"` // "quic", "websocket", "tcp"
 }
 
 // P2PConnectionResponse ответ на запрос P2P соединения
 type P2PConnectionResponse struct {
-	Success        bool            `json:"success"`
-	SessionID      string          `json:"session_id"`
-	ConnectionType string          `json:"connection_type"` // "direct", "relay", "masque"
-	Endpoint       string          `json:"endpoint,omitempty"`
-	ICECandidates  []*ICECandidate `json:"ice_candidates,omitempty"`
-}
-
-// ICESignalingRequest запрос для ICE signaling
-type ICESignalingRequest struct {
-	SessionID  string          `json:"session_id" binding:"required"`
-	PeerID     string          `json:"peer_id" binding:"required"`
-	Candidates []*ICECandidate `json:"candidates" binding:"required"`
-	Offer      string          `json:"offer,omitempty"`
-	Answer     string          `json:"answer,omitempty"`
-}
-
-// ICESignalingResponse ответ на ICE signaling
-type ICESignalingResponse struct {
-	Success    bool            `json:"success"`
-	SessionID  string          `json:"session_id"`
-	Candidates []*ICECandidate `json:"candidates,omitempty"`
-	Offer      string          `json:"offer,omitempty"`
-	Answer     string          `json:"answer,omitempty"`
+	Success        bool   `json:"success"`
+	SessionID      string `json:"session_id"`
+	ConnectionType string `json:"connection_type"` // "direct", "relay", "masque"
+	Endpoint       string `json:"endpoint,omitempty"`
 }
 
 // RelayRouteResponse ответ на маршрутизацию
@@ -240,9 +131,8 @@ type WebSocketMessage struct {
 
 // PeerJoinedData данные о подключившемся пире
 type PeerJoinedData struct {
-	PeerID          string           `json:"peer_id"`
-	WireGuardConfig *WireGuardConfig `json:"wireguard_config"`
-	Timestamp       time.Time        `json:"timestamp"`
+	PeerID    string    `json:"peer_id"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // PeerLeftData данные об отключившемся пире

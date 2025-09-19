@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -95,23 +94,17 @@ type TokenValidator interface {
 
 // P2PClaims JWT claims для P2P токенов
 type P2PClaims struct {
-	JTI               string           `json:"jti"`
-	Subject           string           `json:"sub"`
-	OrgID             string           `json:"org_id"`
-	TenantID          string           `json:"tenant_id"`
-	DeviceID          string           `json:"device_id"`
-	DeviceFingerprint string           `json:"device_fingerprint"`
-	ConnectionType    string           `json:"connection_type"`
-	ProtocolType      string           `json:"protocol_type,omitempty"`
-	Permissions       []string         `json:"permissions"`
-	WireGuardConfig   *WireGuardConfig `json:"wireguard_config"`
-	MeshConfig        *MeshConfig      `json:"mesh_config"`
-	PeerWhitelist     *PeerWhitelist   `json:"peer_whitelist"`
-	NetworkConfig     *NetworkConfig   `json:"network_config"`
-	IssuedAt          int64            `json:"iat"`
-	NotBefore         int64            `json:"nbf"`
-	Issuer            string           `json:"iss"`
-	Audience          string           `json:"aud"`
+	JTI               string   `json:"jti"`
+	Subject           string   `json:"sub"`
+	TenantID          string   `json:"tenant_id"`
+	ServerID          string   `json:"server_id"`
+	ConnectionType    string   `json:"connection_type"`
+	ProtocolType      string   `json:"protocol_type"`
+	Permissions       []string `json:"permissions"`
+	IssuedAt          int64    `json:"iat"`
+	NotBefore         int64    `json:"nbf"`
+	Issuer            string   `json:"iss"`
+	Audience          string   `json:"aud"`
 	jwt.RegisteredClaims
 }
 
@@ -233,7 +226,7 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 	}
 
 	// Генерируем peer_id из server_id в токене
-	peerID := generatePeerID(claims.Subject)
+	peerID := generatePeerID(claims.ServerID)
 
 	// Проверка существования пира — делаем регистрацию идемпотентной
 	if existingPeer, exists := pm.peerStore.Get(tenantID, peerID); exists {
@@ -241,12 +234,6 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		if strings.TrimSpace(existingPeer.RelaySessionID) == "" {
 			existingPeer.RelaySessionID = generateRelaySessionID()
 		}
-		// Обновляем WireGuard конфигурацию текущими значениями регистрации
-		if existingPeer.WireGuardConfig == nil {
-			existingPeer.WireGuardConfig = &WireGuardConfig{}
-		}
-		existingPeer.WireGuardConfig.PublicKey = req.PublicKey
-		existingPeer.WireGuardConfig.AllowedIPs = req.AllowedIPs
 		if existingPeer.RegisteredAt.IsZero() {
 			existingPeer.RegisteredAt = time.Now()
 		} else {
@@ -255,11 +242,10 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		}
 
 		pm.peerStore.Update(tenantID, peerID, existingPeer)
-		pm.logger.Info("Peer re-registered; WireGuard config updated",
+		pm.logger.Info("Peer re-registered",
 			zap.String("peer_id", peerID),
 			zap.String("tenant_id", tenantID),
-			zap.String("relay_session_id", existingPeer.RelaySessionID),
-			zap.String("public_key", truncateForLog(req.PublicKey)))
+			zap.String("relay_session_id", existingPeer.RelaySessionID))
 
 		c.JSON(http.StatusOK, RelayAssistedRegistrationResponse{
 			Success:        true,
@@ -284,36 +270,28 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 	// Генерируем relay_session_id
 	relaySessionID := generateRelaySessionID()
 
-	// Создание пира для relay-assisted режима
+	// Создание пира для P2P mesh режима
 	peer := &Peer{
 		ID:             peerID,
 		PeerID:         peerID,
 		TenantID:       tenantID,
-		OrgID:          "", // Извлекается из токена при необходимости
-		DeviceID:       claims.Subject,
-		ConnectionType: "relay-assisted",
+		DeviceID:       claims.ServerID,
+		ConnectionType: claims.ConnectionType,
 		RelaySessionID: relaySessionID,
-		WireGuardConfig: &WireGuardConfig{
-			PublicKey:  req.PublicKey,
-			AllowedIPs: req.AllowedIPs,
-			// endpoint НЕ сохраняем в relay-assisted режиме
-		},
-		IsOnline:          true,
-		LastSeen:          time.Now(),
-		RegisteredAt:      time.Now(),
-		ActiveConnections: 0,
-		MeshStatus:        "connected",
-		LatencyMS:         0,
+		IsOnline:       true,
+		LastSeen:       time.Now(),
+		RegisteredAt:   time.Now(),
+		MeshStatus:     "connected",
 	}
 
 	// Сохранение пира в peerStore
 	pm.peerStore.Store(tenantID, peerID, peer)
 
-	pm.logger.Info("Peer registered successfully for relay-assisted mode",
+	pm.logger.Info("Peer registered successfully for P2P mesh mode",
 		zap.String("peer_id", peerID),
 		zap.String("tenant_id", tenantID),
 		zap.String("relay_session_id", relaySessionID),
-		zap.String("public_key", req.PublicKey[:8]+"..."), // Только первые 8 символов
+		zap.String("connection_type", claims.ConnectionType),
 	)
 
 	c.JSON(http.StatusOK, RelayAssistedRegistrationResponse{
@@ -365,125 +343,16 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 	// Получение пиров из peerStore
 	peers := pm.peerStore.GetAll(tenantID)
 
-	// Фильтрация по whitelist и обновление статуса
+	// Обновление статуса и возврат всех пиров для P2P mesh
 	var filteredPeers []*Peer
 	for _, peer := range peers {
-		// Фильтрация по whitelist
-		if pm.validatePeerAccess(peer.PeerID, claims.PeerWhitelist) {
-			// Обновление статуса онлайн
-			peer.IsOnline = pm.isPeerOnline(peer.PeerID)
-			peer.LastSeen = pm.getLastSeen(peer.PeerID)
-			filteredPeers = append(filteredPeers, peer)
-		}
+		// Обновление статуса онлайн
+		peer.IsOnline = pm.isPeerOnline(peer.PeerID)
+		peer.LastSeen = pm.getLastSeen(peer.PeerID)
+		filteredPeers = append(filteredPeers, peer)
 	}
 
-	// ДОБАВИТЬ: Если нет пиров в whitelist, но есть зарегистрированные пиры,
-	// показываем их (для отладки и тестирования)
-	if len(filteredPeers) == 0 && len(peers) > 0 {
-		var wlDebug []string
-		if claims.PeerWhitelist != nil {
-			wlDebug = claims.PeerWhitelist.AllowedPeers
-		}
-		pm.logger.Info("No peers in whitelist, showing all registered peers for debugging",
-			zap.String("tenant_id", tenantID),
-			zap.Int("total_peers", len(peers)),
-			zap.Strings("whitelist", wlDebug))
-
-		for _, peer := range peers {
-			peer.IsOnline = pm.isPeerOnline(peer.PeerID)
-			peer.LastSeen = pm.getLastSeen(peer.PeerID)
-			filteredPeers = append(filteredPeers, peer)
-		}
-	}
-
-	// ДОБАВИТЬ: Если whitelist содержит только тестовые пиры (peer-001, peer-002, peer-003),
-	// показываем всех зарегистрированных пиров для тестирования
-	if len(filteredPeers) == 0 && len(peers) > 0 && pm.isTestWhitelist(claims.PeerWhitelist) {
-		var wlTest []string
-		if claims.PeerWhitelist != nil {
-			wlTest = claims.PeerWhitelist.AllowedPeers
-		}
-		pm.logger.Info("Test whitelist detected, showing all registered peers for testing",
-			zap.String("tenant_id", tenantID),
-			zap.Int("total_peers", len(peers)),
-			zap.Strings("whitelist", wlTest))
-
-		for _, peer := range peers {
-			peer.IsOnline = pm.isPeerOnline(peer.PeerID)
-			peer.LastSeen = pm.getLastSeen(peer.PeerID)
-			filteredPeers = append(filteredPeers, peer)
-		}
-	}
-
-	// Вставка synthetic relay-peer с параметрами WireGuard из окружения,
-	// чтобы клиенты могли автоматически применить конфигурацию пира релея
-	relayEndpoint := strings.TrimSpace(os.Getenv("RELAY_WG_ENDPOINT"))
-	if relayEndpoint == "" {
-		// fallback к стандартному DNS:порт, если не задано явно
-		relayEndpoint = "edge.2gc.ru:51820"
-	}
-	relayPubKey := strings.TrimSpace(os.Getenv("RELAY_WG_PUBLIC_KEY"))
-	if relayPubKey == "" {
-		// совместимость: использовать WIREGUARD_PUBLIC_KEY из секретов деплоймента, если задан
-		relayPubKey = strings.TrimSpace(os.Getenv("WIREGUARD_PUBLIC_KEY"))
-	}
-
-	// MTU и keepalive (необязательные)
-	mtu := 0
-	if v := strings.TrimSpace(os.Getenv("RELAY_WG_MTU")); v != "" {
-		if mv, err := strconv.Atoi(v); err == nil {
-			mtu = mv
-		}
-	}
-	// keepalive поддерживается клиентом как рекомендация; сервер его логирует для отладки
-	if v := strings.TrimSpace(os.Getenv("RELAY_WG_KEEPALIVE")); v != "" {
-		if kv, err := strconv.Atoi(v); err == nil {
-			pm.logger.Debug("Using relay keepalive from env", zap.Int("keepalive_sec", kv))
-		}
-	}
-
-	// Попытаться взять /32 клиента из конкретного пира вызывающего устройства
-	// Приоритет: peer, соответствующий текущему токену (peerID из subject), затем fallback на первый доступный
-	var clientAllowed []string
-	requesterPeerID := generatePeerID(claims.Subject)
-	if peer, ok := pm.peerStore.Get(tenantID, requesterPeerID); ok {
-		if peer != nil && peer.WireGuardConfig != nil && len(peer.WireGuardConfig.AllowedIPs) > 0 {
-			clientAllowed = peer.WireGuardConfig.AllowedIPs
-		}
-	}
-	if len(clientAllowed) == 0 {
-		for _, p := range filteredPeers {
-			if p != nil && p.WireGuardConfig != nil && len(p.WireGuardConfig.AllowedIPs) > 0 {
-				clientAllowed = p.WireGuardConfig.AllowedIPs
-				break
-			}
-		}
-	}
-
-	// Добавляем synthetic peer только если заданы ключ и endpoint
-	if relayPubKey != "" && relayEndpoint != "" {
-		relayPeer := &Peer{
-			PeerID:         "relay",
-			TenantID:       tenantID,
-			ConnectionType: "relay",
-			WireGuardConfig: &WireGuardConfig{
-				PublicKey:  relayPubKey,
-				Endpoint:   relayEndpoint,
-				AllowedIPs: clientAllowed, // как минимум /32 клиента, если уже назначен/передан при register
-			},
-			NetworkConfig: &NetworkConfig{
-				MTU: mtu,
-			},
-			IsOnline: true,
-			LastSeen: time.Now(),
-		}
-		// Если требуется keepalive в ответе и модель его не содержит напрямую,
-		// клиенты могут использовать значение из RELAY_WG_KEEPALIVE через собственный контракт;
-		// сервер хранит его в окружении и логах для отладки
-		filteredPeers = append([]*Peer{relayPeer}, filteredPeers...)
-	} else {
-		pm.logger.Warn("Relay peer info is incomplete; set RELAY_WG_PUBLIC_KEY and RELAY_WG_ENDPOINT to enable auto WG peer provisioning")
-	}
+	// P2P mesh не требует синтетического relay peer
 
 	pm.logger.Info("Peer discovery completed",
 		zap.String("tenant_id", tenantID),
@@ -554,20 +423,13 @@ func (pm *PeerManager) UpdatePeerStatus(c *gin.Context) {
 			ID:             peerID,
 			PeerID:         peerID,
 			TenantID:       tenantID,
-			OrgID:          "",
-			DeviceID:       claims.Subject,
-			ConnectionType: "relay-assisted",
+			DeviceID:       claims.ServerID,
+			ConnectionType: claims.ConnectionType,
 			RelaySessionID: relaySessionID,
-			WireGuardConfig: &WireGuardConfig{
-				PublicKey:  "auto-registered",       // Временное значение
-				AllowedIPs: []string{"10.0.0.0/24"}, // Дефолтное значение
-			},
-			IsOnline:          true,
-			LastSeen:          time.Now(),
-			RegisteredAt:      time.Now(),
-			ActiveConnections: 0,
-			MeshStatus:        req.Status,
-			LatencyMS:         0,
+			IsOnline:       true,
+			LastSeen:       time.Now(),
+			RegisteredAt:   time.Now(),
+			MeshStatus:     req.Status,
 		}
 
 		// Сохраняем пира
@@ -644,54 +506,6 @@ func (pm *PeerManager) GetPeerInfo(c *gin.Context) {
 	})
 }
 
-// validatePeerAccess проверяет доступ пира
-func (pm *PeerManager) validatePeerAccess(peerID string, whitelist *PeerWhitelist) bool {
-	if whitelist == nil {
-		return true // Нет whitelist - все разрешено
-	}
-
-	if whitelist.AutoApprove {
-		return true
-	}
-
-	// Проверяем, что peerID есть в списке разрешенных
-	for _, allowedPeer := range whitelist.AllowedPeers {
-		if allowedPeer == peerID {
-			return true
-		}
-	}
-
-	return false
-}
-
-// isTestWhitelist проверяет, является ли whitelist тестовым
-func (pm *PeerManager) isTestWhitelist(whitelist *PeerWhitelist) bool {
-	if whitelist == nil {
-		return false
-	}
-
-	// Проверяем, содержит ли whitelist только тестовые пиры
-	testPeers := []string{"peer-001", "peer-002", "peer-003"}
-
-	// Если whitelist содержит только тестовые пиры, считаем его тестовым
-	if len(whitelist.AllowedPeers) <= 3 {
-		for _, allowedPeer := range whitelist.AllowedPeers {
-			isTestPeer := false
-			for _, testPeer := range testPeers {
-				if allowedPeer == testPeer {
-					isTestPeer = true
-					break
-				}
-			}
-			if !isTestPeer {
-				return false // Найден не тестовый пир
-			}
-		}
-		return true // Все пиры тестовые
-	}
-
-	return false
-}
 
 // isPeerOnline проверяет, онлайн ли пир
 func (pm *PeerManager) isPeerOnline(peerID string) bool {
@@ -807,29 +621,21 @@ func (pm *PeerManager) validateP2PToken(tokenString string) (*P2PClaims, error) 
 		return nil, err
 	}
 
-	// Проверка обязательных полей с учетом совместимости
-	// Разрешаем варианты идентификации протокола:
-	// 1) connection_type == "p2p-mesh" (старый вариант)
-	// 2) protocol_type == "p2p-mesh" и connection_type == "wireguard" (новый вариант)
-	// 3) protocol_type == "p2p-mesh" и connection_type == "quic-ice" (QUIC+ICE вариант)
-	if !(claims.ConnectionType == "p2p-mesh" ||
-		(claims.ProtocolType == "p2p-mesh" && claims.ConnectionType == "wireguard") ||
-		(claims.ProtocolType == "p2p-mesh" && claims.ConnectionType == "quic-ice")) {
-		return nil, fmt.Errorf("unsupported protocol: connection_type=%s protocol_type=%s", claims.ConnectionType, claims.ProtocolType)
+	// Проверка обязательных полей для P2P mesh
+	if claims.ProtocolType != "p2p-mesh" {
+		return nil, fmt.Errorf("unsupported protocol: %s", claims.ProtocolType)
 	}
 
-	// Если device_id отсутствует, используем subject как идентификатор устройства
-	if strings.TrimSpace(claims.DeviceID) == "" {
-		claims.DeviceID = strings.TrimSpace(claims.Subject)
+	if claims.ConnectionType != "quic" {
+		return nil, fmt.Errorf("unsupported connection type: %s", claims.ConnectionType)
 	}
 
-	if strings.TrimSpace(claims.DeviceID) == "" {
-		return nil, fmt.Errorf("missing device_id and subject")
+	if strings.TrimSpace(claims.TenantID) == "" {
+		return nil, fmt.Errorf("missing tenant_id")
 	}
 
-	// WireGuard config is only required for wireguard/hybrid connection types
-	if (claims.ConnectionType == "wireguard" || claims.ConnectionType == "hybrid") && claims.WireGuardConfig == nil {
-		return nil, fmt.Errorf("missing wireguard_config")
+	if strings.TrimSpace(claims.ServerID) == "" {
+		return nil, fmt.Errorf("missing server_id")
 	}
 
 	return claims, nil

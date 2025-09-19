@@ -11,16 +11,19 @@ import (
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/api"
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
+	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"github.com/twogc/cloudbridge-relay-installer/internal/token"
 )
 
 // P2PAPIServer сервер P2P API
 type P2PAPIServer struct {
-	router    *gin.Engine
-	apiRouter *api.APIRouter
-	logger    *zap.Logger
-	validator *TokenValidatorAdapter
-	server    *http.Server
+	router           *gin.Engine
+	apiRouter        *api.APIRouter
+	logger           *zap.Logger
+	validator        *TokenValidatorAdapter
+	server           *http.Server
+	relayManager     *p2p.RelayManager
+	heartbeatManager *p2p.HeartbeatManager
 }
 
 // TokenValidatorAdapter адаптер для token.Validator
@@ -52,74 +55,20 @@ func (t *TokenValidatorAdapter) ValidateP2PToken(tokenString string) (*api.P2PCl
 		notBefore = claims.NotBefore.Unix()
 	}
 	apiClaims := &api.P2PClaims{
-		JTI:               claims.ID,
-		Subject:           claims.Subject,
-		OrgID:             "", // Нет в token.P2PClaims
-		TenantID:          claims.TenantID,
-		DeviceID:          "", // Нет в token.P2PClaims
-		DeviceFingerprint: "", // Нет в token.P2PClaims
-		ConnectionType:    claims.ConnectionType,
-		Permissions:       claims.Permissions,
-		WireGuardConfig:   convertWireGuardConfig(claims.WireGuardConfig),
-		MeshConfig:        convertMeshConfig(claims.MeshConfig),
-		PeerWhitelist:     convertPeerWhitelist(claims.PeerWhitelist),
-		NetworkConfig:     convertNetworkConfig(claims.NetworkConfig),
-		IssuedAt:          issuedAt,
-		NotBefore:         notBefore,
-		Issuer:            claims.Issuer,
-		Audience:          audience,
+		JTI:            claims.ID,
+		Subject:        claims.Subject,
+		TenantID:       claims.TenantID,
+		ServerID:       claims.ServerID,
+		ConnectionType: claims.ConnectionType,
+		ProtocolType:   claims.ProtocolType,
+		Permissions:    claims.Permissions,
+		IssuedAt:       issuedAt,
+		NotBefore:      notBefore,
+		Issuer:         claims.Issuer,
+		Audience:       audience,
 	}
 
 	return apiClaims, nil
-}
-
-// convertWireGuardConfig конвертирует WireGuardConfig
-func convertWireGuardConfig(cfg *token.WireGuardConfig) *api.WireGuardConfig {
-	if cfg == nil {
-		return nil
-	}
-	return &api.WireGuardConfig{
-		PublicKey:  cfg.PublicKey,
-		Endpoint:   "", // Нет в token.WireGuardConfig
-		ListenPort: 0,  // Нет в token.WireGuardConfig
-		AllowedIPs: cfg.AllowedIPs,
-	}
-}
-
-// convertMeshConfig конвертирует MeshConfig
-func convertMeshConfig(cfg *token.MeshConfig) *api.MeshConfig {
-	if cfg == nil {
-		return nil
-	}
-	return &api.MeshConfig{
-		AutoDiscovery: cfg.EnableAutoDiscovery,
-		Routing:       cfg.RoutingStrategy,
-		Encryption:    cfg.TrustLevel,
-	}
-}
-
-// convertPeerWhitelist конвертирует PeerWhitelist
-func convertPeerWhitelist(whitelist []string) *api.PeerWhitelist {
-	if whitelist == nil {
-		return nil
-	}
-	return &api.PeerWhitelist{
-		AllowedPeers: whitelist,
-		AutoApprove:  false, // Нет в token.P2PClaims
-		MaxPeers:     0,     // Нет в token.P2PClaims
-	}
-}
-
-// convertNetworkConfig конвертирует NetworkConfig
-func convertNetworkConfig(cfg *token.NetworkConfig) *api.NetworkConfig {
-	if cfg == nil {
-		return nil
-	}
-	return &api.NetworkConfig{
-		Subnet: cfg.Subnet,
-		DNS:    cfg.DNS,
-		MTU:    cfg.MTU,
-	}
 }
 
 // NewP2PAPIServer создает новый P2P API сервер
@@ -244,6 +193,13 @@ func (s *P2PAPIServer) GetRelayManager() *api.RelayManager {
 // GetHealthManager возвращает HealthManager
 func (s *P2PAPIServer) GetHealthManager() *api.HealthManager {
 	return s.apiRouter.GetHealthManager()
+}
+
+// SetManagers устанавливает P2P менеджеры
+func (s *P2PAPIServer) SetManagers(relayManager *p2p.RelayManager, heartbeatManager *p2p.HeartbeatManager) {
+	s.relayManager = relayManager
+	s.heartbeatManager = heartbeatManager
+	s.logger.Info("P2P managers set for API server")
 }
 
 // P2PAPIServerConfig конфигурация P2P API сервера
