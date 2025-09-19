@@ -21,6 +21,8 @@ type P2PAPIServer struct {
 	apiRouter        *api.APIRouter
 	logger           *zap.Logger
 	validator        *TokenValidatorAdapter
+	tokenValidator   *token.Validator
+	peerManager      *api.PeerManager
 	server           *http.Server
 	relayManager     *p2p.RelayManager
 	heartbeatManager *p2p.HeartbeatManager
@@ -138,12 +140,17 @@ func NewP2PAPIServerWithKeycloak(logger *zap.Logger, jwtSecret []byte, port int,
 		IdleTimeout:  120 * time.Second,
 	}
 
+	// Создание Peer Manager
+	peerManager := api.NewPeerManager(logger, validator)
+
 	return &P2PAPIServer{
-		router:    router,
-		apiRouter: apiRouter,
-		logger:    logger,
-		validator: validator,
-		server:    server,
+		router:         router,
+		apiRouter:      apiRouter,
+		logger:         logger,
+		validator:      validator,
+		tokenValidator: tokenValidator,
+		peerManager:    peerManager,
+		server:         server,
 	}
 }
 
@@ -182,7 +189,7 @@ func (s *P2PAPIServer) GetHub() *api.Hub {
 
 // GetPeerManager возвращает PeerManager
 func (s *P2PAPIServer) GetPeerManager() *api.PeerManager {
-	return s.apiRouter.GetPeerManager()
+	return s.peerManager
 }
 
 // GetRelayManager возвращает RelayManager
@@ -201,6 +208,12 @@ func (s *P2PAPIServer) SetManagers(relayManager *p2p.RelayManager, heartbeatMana
 	s.heartbeatManager = heartbeatManager
 	s.logger.Info("P2P managers set for API server")
 }
+
+// GetTokenValidator возвращает token validator
+func (s *P2PAPIServer) GetTokenValidator() *token.Validator {
+	return s.tokenValidator
+}
+
 
 // P2PAPIServerConfig конфигурация P2P API сервера
 type P2PAPIServerConfig struct {

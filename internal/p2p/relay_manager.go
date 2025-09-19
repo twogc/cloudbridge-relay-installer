@@ -211,20 +211,39 @@ func (rm *RelayManager) RelayPacket(sourcePeerID string, data []byte) error {
 
 // parsePacketTarget парсит пакет для определения получателя
 func (rm *RelayManager) parsePacketTarget(data []byte) (string, error) {
-	// Простая реализация - в реальности нужно парсить QUIC заголовки
-	// Для демонстрации используем первые 32 байта как peer ID
-	if len(data) >= 32 {
-		// Ищем peer ID в заголовке пакета
-		// В реальной реализации здесь должен быть парсинг QUIC заголовков
-		peerID := string(data[:32])
+	// Простой протокол P2P сообщений:
+	// Формат: "TO:<peer_id>:<payload>"
+	if len(data) < 4 {
+		return "", fmt.Errorf("packet too short")
+	}
 
-		// Проверяем, что это валидный peer ID
-		if _, exists := rm.quicConnections[peerID]; exists {
-			return peerID, nil
+	// Ищем префикс "TO:"
+	if string(data[:3]) != "TO:" {
+		return "", fmt.Errorf("invalid packet format")
+	}
+
+	// Ищем разделитель ':'
+	colonIndex := -1
+	for i := 3; i < len(data) && i < 100; i++ { // Ограничиваем поиск первыми 100 байтами
+		if data[i] == ':' {
+			colonIndex = i
+			break
 		}
 	}
 
-	return "", fmt.Errorf("cannot determine target peer from packet")
+	if colonIndex == -1 {
+		return "", fmt.Errorf("peer ID separator not found")
+	}
+
+	// Извлекаем peer ID
+	peerID := string(data[3:colonIndex])
+	
+	// Проверяем, что это валидный peer ID
+	if _, exists := rm.quicConnections[peerID]; exists {
+		return peerID, nil
+	}
+
+	return "", fmt.Errorf("target peer not found: %s", peerID)
 }
 
 // EstablishP2PConnection создает P2P соединение (публичный метод)

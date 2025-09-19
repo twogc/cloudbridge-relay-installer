@@ -528,7 +528,15 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	heartbeatManager := p2p.NewHeartbeatManager(relayManager, loggerInstance.GetZapLogger())
 
 	// Create QUIC Relay Handler
-	quicRelayHandler := NewQUICRelayHandler(relayManager, loggerInstance.GetZapLogger())
+	var quicRelayHandler *QUICRelayHandler
+	if p2pAPIServer != nil {
+		quicRelayHandler = NewQUICRelayHandler(
+			relayManager, 
+			p2pAPIServer.GetPeerManager(), 
+			p2pAPIServer.GetTokenValidator(), 
+			loggerInstance.GetZapLogger(),
+		)
+	}
 
 	// Set managers for P2P API Server
 	if p2pAPIServer != nil {
