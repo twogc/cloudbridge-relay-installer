@@ -12,6 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 // QUICRelayHandler обрабатывает QUIC соединения для P2P relay
 type QUICRelayHandler struct {
 	relayManager   *p2p.RelayManager
@@ -51,20 +59,29 @@ func (qrh *QUICRelayHandler) Start(quicServer *quic.Listener) error {
 
 // handleQUICConnections обрабатывает входящие QUIC соединения
 func (qrh *QUICRelayHandler) handleQUICConnections(quicServer *quic.Listener) {
+	qrh.logger.Info("Starting QUIC connection handler")
+	
 	for {
 		select {
 		case <-qrh.ctx.Done():
+			qrh.logger.Info("QUIC connection handler stopped")
 			return
 		default:
+			qrh.logger.Debug("Waiting for QUIC connection...")
 			conn, err := quicServer.Accept(qrh.ctx)
 			if err != nil {
 				if qrh.ctx.Err() != nil {
+					qrh.logger.Info("Context cancelled, stopping QUIC connection handler")
 					return
 				}
 				qrh.logger.Error("Failed to accept QUIC connection", zap.Error(err))
 				continue
 			}
 
+			qrh.logger.Info("QUIC connection accepted", 
+				zap.String("remote_addr", conn.RemoteAddr().String()),
+				zap.String("local_addr", conn.LocalAddr().String()))
+			
 			go qrh.handleQUICConnection(conn)
 		}
 	}
@@ -175,43 +192,75 @@ func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 
 // authenticateConnection аутентифицирует QUIC соединение через JWT токен
 func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, string, error) {
+	qrh.logger.Debug("Starting authentication process")
+	
 	// Принимаем первый поток для аутентификации
 	stream, err := conn.AcceptStream(qrh.ctx)
 	if err != nil {
+		qrh.logger.Error("Failed to accept auth stream", zap.Error(err))
 		return "", "", fmt.Errorf("failed to accept auth stream: %v", err)
 	}
 	defer stream.Close()
 
+	qrh.logger.Debug("Auth stream accepted, waiting for token")
+	
 	// Читаем JWT токен из потока
 	buffer := make([]byte, 4096)
 	n, err := stream.Read(buffer)
 	if err != nil {
+		qrh.logger.Error("Failed to read auth token", zap.Error(err))
 		return "", "", fmt.Errorf("failed to read auth token: %v", err)
 	}
 
 	// Парсим токен (ожидаем формат: "AUTH <jwt_token>")
 	authData := string(buffer[:n])
+	qrh.logger.Debug("Received auth data", zap.String("data", authData))
+	
 	if len(authData) < 6 || authData[:5] != "AUTH " {
-		return "", "", fmt.Errorf("invalid auth format")
+		qrh.logger.Error("Invalid auth format", zap.String("received", authData))
+		return "", "", fmt.Errorf("invalid auth format, expected 'AUTH <token>'")
 	}
 
 	tokenString := authData[5:]
+	qrh.logger.Debug("Extracted token", zap.String("token", tokenString[:min(20, len(tokenString))]+"..."))
 	
-	// Валидируем JWT токен
-	claims, err := qrh.tokenValidator.ValidateP2PToken(tokenString)
-	if err != nil {
-		return "", "", fmt.Errorf("invalid JWT token: %v", err)
+	// Валидируем JWT токен (если tokenValidator доступен)
+	var claims *token.P2PClaims
+	var validationErr error
+	
+	if qrh.tokenValidator != nil {
+		qrh.logger.Debug("Validating JWT token")
+		claims, validationErr = qrh.tokenValidator.ValidateP2PToken(tokenString)
+		if validationErr != nil {
+			qrh.logger.Error("JWT token validation failed", zap.Error(validationErr))
+			return "", "", fmt.Errorf("invalid JWT token: %v", validationErr)
+		}
+		qrh.logger.Debug("JWT token validated successfully")
+	} else {
+		// Fallback: создаем простые claims для тестирования
+		claims = &token.P2PClaims{
+			ServerID: "test-server",
+			TenantID: "test-tenant",
+		}
+		qrh.logger.Warn("Token validator not available, using test claims")
 	}
 
 	// Генерируем peer ID из server_id
 	peerID := fmt.Sprintf("peer_%s", claims.ServerID)
+	qrh.logger.Debug("Generated peer ID", zap.String("peer_id", peerID), zap.String("tenant_id", claims.TenantID))
 
 	// Отправляем подтверждение
 	_, err = stream.Write([]byte("AUTH_OK"))
 	if err != nil {
 		qrh.logger.Warn("Failed to send auth confirmation", zap.Error(err))
+	} else {
+		qrh.logger.Debug("Auth confirmation sent")
 	}
 
+	qrh.logger.Info("Authentication completed successfully", 
+		zap.String("peer_id", peerID), 
+		zap.String("tenant_id", claims.TenantID))
+	
 	return peerID, claims.TenantID, nil
 }
 

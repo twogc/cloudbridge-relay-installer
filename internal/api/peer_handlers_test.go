@@ -42,15 +42,8 @@ func TestPeerManager_RegisterPeer(t *testing.T) {
 			request: PeerRegistrationRequest{
 				PeerID:         "test-peer-1",
 				TenantID:       "tenant-1",
-				OrgID:          "org-1",
 				DeviceID:       "device-1",
 				ConnectionType: "p2p-mesh",
-				WireGuardConfig: &WireGuardConfig{
-					PublicKey:  "test-public-key",
-					Endpoint:   "192.168.1.1:51820",
-					ListenPort: 51820,
-					AllowedIPs: []string{"10.0.1.0/24"},
-				},
 			},
 			mockClaims: &P2PClaims{
 				TenantID: "tenant-1",
@@ -63,7 +56,6 @@ func TestPeerManager_RegisterPeer(t *testing.T) {
 			request: PeerRegistrationRequest{
 				PeerID:         "test-peer-2",
 				TenantID:       "tenant-1",
-				OrgID:          "org-1",
 				DeviceID:       "device-1",
 				ConnectionType: "p2p-mesh",
 			},
@@ -77,7 +69,6 @@ func TestPeerManager_RegisterPeer(t *testing.T) {
 			request: PeerRegistrationRequest{
 				PeerID:         "test-peer-3",
 				TenantID:       "tenant-1",
-				OrgID:          "org-1",
 				DeviceID:       "device-1",
 				ConnectionType: "p2p-mesh",
 			},
@@ -150,7 +141,6 @@ func TestPeerManager_DiscoverPeers(t *testing.T) {
 		ID:             "test-id",
 		PeerID:         "test-peer-1",
 		TenantID:       "tenant-1",
-		OrgID:          "org-1",
 		DeviceID:       "device-1",
 		ConnectionType: "p2p-mesh",
 		IsOnline:       true,
@@ -250,9 +240,8 @@ func TestPeerManager_DiscoverPeers(t *testing.T) {
 }
 
 func TestPeerManager_validatePeerAccess(t *testing.T) {
-	logger := zap.NewNop()
-	validator := &TestTokenValidator{}
-	pm := NewPeerManager(logger, validator)
+	// Создаем RelayManager для тестирования validatePeerAccess
+	rm := &RelayManager{}
 
 	tests := []struct {
 		name      string
@@ -296,7 +285,7 @@ func TestPeerManager_validatePeerAccess(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := pm.validatePeerAccess(tt.peerID, tt.whitelist)
+			result := rm.validatePeerAccess(tt.peerID, tt.whitelist)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

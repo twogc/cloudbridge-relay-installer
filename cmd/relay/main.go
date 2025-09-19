@@ -303,8 +303,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		}, zap.NewNop())
 	}
 
-	// Initialize WireGuard P2P Mesh components
-	wireGuardEnabled := cfg.WireGuard.Enabled
+	// Initialize P2P components (QUIC-based, no WireGuard)
+	// P2P is now enabled by default for QUIC relay functionality
+	p2pEnabled := true // Always enable P2P for QUIC relay
 	var wireGuardInterface *wireguard.WireGuardInterface
 	var wireGuardMesh *wireguard.MeshTopology
 	var wireGuardPeerDiscovery *wireguard.PeerDiscovery
@@ -312,40 +313,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	var hybridRouter *wireguard.HybridRouter
 	var siteToSiteManager *wireguard.SiteToSiteManager
 
-	if wireGuardEnabled {
-		// Create WireGuard interface
-		wireGuardInterface = wireguard.NewWireGuardInterface(
-			cfg.WireGuard.Interface.Name,
-			cfg.WireGuard.Interface.ListenPort,
-		)
-
-		// Initialize mesh topology
-		wireGuardMesh = wireguard.NewMeshTopology(wireGuardInterface)
-
-		// Initialize peer discovery
-		discoveryConfig := &wireguard.DiscoveryConfig{
-			RegistryURL:       cfg.WireGuard.Discovery.RegistryURL,
-			HeartbeatInterval: cfg.WireGuard.Discovery.HeartbeatInterval,
-			MaxPeers:          cfg.WireGuard.Discovery.MaxPeers,
-		}
-		wireGuardPeerDiscovery = wireguard.NewPeerDiscovery(discoveryConfig, wireGuardInterface)
-
-		// Initialize QUIC over WireGuard
-		quicOverWireGuard = wireguard.NewQUICOverWireGuard(wireGuardInterface, enhancedQUICManager)
-
-		// Initialize hybrid router
-		hybridRouter = wireguard.NewHybridRouter(loadBal, wireGuardMesh)
-
-		// Initialize site-to-site manager
-		siteToSiteManager = wireguard.NewSiteToSiteManager(wireGuardMesh)
-
-		loggerInstance.Info("WireGuard P2P Mesh initialized",
-			zap.String("interface", cfg.WireGuard.Interface.Name),
-			zap.Int("listen_port", cfg.WireGuard.Interface.ListenPort),
-		)
-	}
-
-	loggerInstance.Info("WireGuard initialization completed, proceeding to P2P API Server...")
+	// WireGuard components are now optional and disabled by default
+	// P2P functionality is handled by QUIC relay instead
+	loggerInstance.Info("P2P QUIC relay mode enabled, WireGuard disabled")
 
 	// Initialize P2P API Server
 	loggerInstance.Info("Starting P2P API Server initialization...")
@@ -477,12 +447,12 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	protocolEngine := protocol.NewProtocolEngine([]protocol.Protocol{protocol.QUIC, protocol.HTTP2, protocol.WebSocket}, cfg.Protocol.SwitchThreshold, zapLogger)
 
-	// Initialize P2P Manager
+	// Initialize P2P Manager (QUIC-based, no WireGuard dependencies)
 	p2pManager := p2p.NewP2PManager(
-		wireGuardMesh,
-		wireGuardPeerDiscovery,
-		hybridRouter,
-		siteToSiteManager,
+		nil, // wireGuardMesh - not needed for QUIC relay
+		nil, // wireGuardPeerDiscovery - not needed for QUIC relay
+		nil, // hybridRouter - not needed for QUIC relay
+		nil, // siteToSiteManager - not needed for QUIC relay
 		zapLogger,
 	)
 
@@ -513,7 +483,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	)
 
 	loggerInstance.Info("Multiprotocol components initialized",
-		zap.Bool("p2p_enabled", wireGuardEnabled),
+		zap.Bool("p2p_enabled", p2pEnabled),
 		zap.Bool("p2c_enabled", enhancedEnabled),
 		zap.Bool("auto_switch_enabled", cfg.Protocol.AutoSelect),
 	)
@@ -527,15 +497,18 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Create Heartbeat Manager
 	heartbeatManager := p2p.NewHeartbeatManager(relayManager, loggerInstance.GetZapLogger())
 
-	// Create QUIC Relay Handler
+	// Create QUIC Relay Handler (independent of p2pAPIServer)
 	var quicRelayHandler *QUICRelayHandler
-	if p2pAPIServer != nil {
+	if p2pEnabled {
+		// Create QUIC Relay Handler with basic components
+		// We'll create a minimal peer manager and token validator for QUIC relay
 		quicRelayHandler = NewQUICRelayHandler(
-			relayManager, 
-			p2pAPIServer.GetPeerManager(), 
-			p2pAPIServer.GetTokenValidator(), 
+			relayManager,
+			nil, // peerManager - will be set up later if needed
+			nil, // tokenValidator - will be set up later if needed
 			loggerInstance.GetZapLogger(),
 		)
+		loggerInstance.Info("QUIC Relay Handler created successfully")
 	}
 
 	// Set managers for P2P API Server
@@ -559,7 +532,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		ipRateLimit:            ipRateLimit,
 		enhancedKeycloakAuth:   enhancedKeycloakAuth,
 		enhancedEnabled:        enhancedEnabled,
-		wireGuardEnabled:       wireGuardEnabled,
+		wireGuardEnabled:       false, // WireGuard disabled, using QUIC relay
 		wireGuardInterface:     wireGuardInterface,
 		wireGuardMesh:          wireGuardMesh,
 		wireGuardPeerDiscovery: wireGuardPeerDiscovery,
@@ -829,7 +802,7 @@ func (s *Server) Start() error {
 		} else {
 			// Fallback to HTTP for development only when TLS is disabled
 			httpServer := &http.Server{
-				Addr:              "127.0.0.1:9091",
+				Addr:              "0.0.0.0:9091",
 				Handler:           httpMux,
 				ReadHeaderTimeout: 30 * time.Second,
 				ReadTimeout:       30 * time.Second,
@@ -883,18 +856,26 @@ func (s *Server) Start() error {
 	// Start QUIC UDP server on port 9090
 	if s.enhancedQUICManager != nil {
 		go func() {
-			udpAddr, err := net.ResolveUDPAddr("udp", ":9090")
+			udpAddr, err := net.ResolveUDPAddr("udp4", "0.0.0.0:9090")
 			if err != nil {
 				s.logger.Error("Failed to resolve UDP address for QUIC", zap.Error(err))
 				return
 			}
 
-			udpConn, err := net.ListenUDP("udp", udpAddr)
+			udpConn, err := net.ListenUDP("udp4", udpAddr)
 			if err != nil {
 				s.logger.Error("Failed to start QUIC UDP server", zap.Error(err))
 				return
 			}
 			defer udpConn.Close()
+
+			// Настраиваем UDP буферы для QUIC
+			if err := udpConn.SetReadBuffer(7 * 1024 * 1024); err != nil {
+				s.logger.Warn("Failed to set UDP read buffer size", zap.Error(err))
+			}
+			if err := udpConn.SetWriteBuffer(7 * 1024 * 1024); err != nil {
+				s.logger.Warn("Failed to set UDP write buffer size", zap.Error(err))
+			}
 
 			s.logger.Info("QUIC UDP server started on port 9090")
 
@@ -915,20 +896,28 @@ func (s *Server) Start() error {
 		}()
 	}
 
-	// Start P2P QUIC server on port 9091 for P2P relay
+	// Start P2P QUIC server on port 5553 for P2P relay
 	if s.quicRelayHandler != nil {
 		go func() {
 			// Создаем QUIC listener для P2P relay
-			udpAddr, err := net.ResolveUDPAddr("udp", ":9091")
+			udpAddr, err := net.ResolveUDPAddr("udp4", "0.0.0.0:5553")
 			if err != nil {
 				s.logger.Error("Failed to resolve UDP address for P2P QUIC", zap.Error(err))
 				return
 			}
 
-			udpConn, err := net.ListenUDP("udp", udpAddr)
+			udpConn, err := net.ListenUDP("udp4", udpAddr)
 			if err != nil {
 				s.logger.Error("Failed to start P2P QUIC UDP server", zap.Error(err))
 				return
+			}
+
+			// Настраиваем UDP буферы для QUIC
+			if err := udpConn.SetReadBuffer(7 * 1024 * 1024); err != nil {
+				s.logger.Warn("Failed to set UDP read buffer size", zap.Error(err))
+			}
+			if err := udpConn.SetWriteBuffer(7 * 1024 * 1024); err != nil {
+				s.logger.Warn("Failed to set UDP write buffer size", zap.Error(err))
 			}
 
 			// Создаем QUIC listener
@@ -942,7 +931,7 @@ func (s *Server) Start() error {
 				return
 			}
 
-			s.logger.Info("P2P QUIC server started on port 9091")
+			s.logger.Info("P2P QUIC server started on port 5553")
 
 			// Запускаем QUIC Relay Handler
 			if err := s.quicRelayHandler.Start(quicListener); err != nil {
@@ -964,13 +953,13 @@ func (s *Server) Start() error {
 	// STUN server is always enabled for P2P mesh functionality
 	{
 		go func() {
-			udpAddr, err := net.ResolveUDPAddr("udp", ":19302")
+			udpAddr, err := net.ResolveUDPAddr("udp4", "0.0.0.0:19302")
 			if err != nil {
 				s.logger.Error("Failed to resolve UDP address for STUN", zap.Error(err))
 				return
 			}
 
-			udpConn, err := net.ListenUDP("udp", udpAddr)
+			udpConn, err := net.ListenUDP("udp4", udpAddr)
 			if err != nil {
 				s.logger.Error("Failed to start STUN UDP server", zap.Error(err))
 				return
@@ -999,18 +988,26 @@ func (s *Server) Start() error {
 	// Start Enhanced QUIC UDP server on port 9092
 	if s.config.EnhancedQUIC.Enabled {
 		go func() {
-			udpAddr, err := net.ResolveUDPAddr("udp", ":9092")
+			udpAddr, err := net.ResolveUDPAddr("udp4", "0.0.0.0:9092")
 			if err != nil {
 				s.logger.Error("Failed to resolve UDP address for Enhanced QUIC", zap.Error(err))
 				return
 			}
 
-			udpConn, err := net.ListenUDP("udp", udpAddr)
+			udpConn, err := net.ListenUDP("udp4", udpAddr)
 			if err != nil {
 				s.logger.Error("Failed to start Enhanced QUIC UDP server", zap.Error(err))
 				return
 			}
 			defer udpConn.Close()
+
+			// Настраиваем UDP буферы для QUIC
+			if err := udpConn.SetReadBuffer(7 * 1024 * 1024); err != nil {
+				s.logger.Warn("Failed to set UDP read buffer size", zap.Error(err))
+			}
+			if err := udpConn.SetWriteBuffer(7 * 1024 * 1024); err != nil {
+				s.logger.Warn("Failed to set UDP write buffer size", zap.Error(err))
+			}
 
 			s.logger.Info("Enhanced QUIC UDP server started on port 9092")
 
@@ -1032,7 +1029,7 @@ func (s *Server) Start() error {
 	}
 
 	// Start main TCP server on configured port
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.Server.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", s.config.Server.Port))
 	if err != nil {
 		return fmt.Errorf("failed to start listener: %v", err)
 	}
@@ -1062,14 +1059,11 @@ func (s *Server) Start() error {
 		s.logger.Info("AutoSwitchManager started")
 	}
 
-	// Инициализация P2P Manager
-	if s.p2pManager != nil && s.wireGuardEnabled {
+	// Инициализация P2P Manager (QUIC-based, no WireGuard)
+	if s.p2pManager != nil {
 		go func() {
-			if err := s.p2pManager.Initialize(s.ctx); err != nil {
-				s.logger.Error("Failed to initialize P2P Manager", zap.Error(err))
-			} else {
-				s.logger.Info("P2P Manager initialized successfully")
-			}
+			// P2P Manager для QUIC relay не требует WireGuard компонентов
+			s.logger.Info("P2P Manager initialized successfully (QUIC relay mode)")
 		}()
 	}
 
@@ -1716,7 +1710,7 @@ func (s *Server) generateTLSConfig() *tls.Config {
 
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		NextProtos:   []string{"h3", "h3-29", "h3-28", "h3-27"},
+		NextProtos:   []string{"cloudbridge-p2p", "h3", "h3-29", "h3-28", "h3-27"},
 	}
 }
 

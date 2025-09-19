@@ -146,3 +146,11 @@ spec:
           capabilities:
             drop:
             - ALL
+        volumeMounts:
+        - name: tls-certs
+          mountPath: /app/certs
+          readOnly: true
+      volumes:
+      - name: tls-certs
+        secret:
+          secretName: cloudbridge-tls

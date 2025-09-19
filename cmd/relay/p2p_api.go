@@ -133,7 +133,7 @@ func NewP2PAPIServerWithKeycloak(logger *zap.Logger, jwtSecret []byte, port int,
 
 	// Создание HTTP сервера
 	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", port),
+		Addr:         fmt.Sprintf("0.0.0.0:%d", port),
 		Handler:      router,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -213,7 +213,6 @@ func (s *P2PAPIServer) SetManagers(relayManager *p2p.RelayManager, heartbeatMana
 func (s *P2PAPIServer) GetTokenValidator() *token.Validator {
 	return s.tokenValidator
 }
-
 
 // P2PAPIServerConfig конфигурация P2P API сервера
 type P2PAPIServerConfig struct {
