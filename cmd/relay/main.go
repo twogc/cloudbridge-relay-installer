@@ -915,11 +915,11 @@ func (s *Server) Start() error {
 		}()
 	}
 
-	// Start P2P QUIC server on port 9090 for P2P relay
+	// Start P2P QUIC server on port 9091 for P2P relay
 	if s.quicRelayHandler != nil {
 		go func() {
 			// Создаем QUIC listener для P2P relay
-			udpAddr, err := net.ResolveUDPAddr("udp", ":9090")
+			udpAddr, err := net.ResolveUDPAddr("udp", ":9091")
 			if err != nil {
 				s.logger.Error("Failed to resolve UDP address for P2P QUIC", zap.Error(err))
 				return
@@ -943,7 +943,7 @@ func (s *Server) Start() error {
 			}
 			defer quicListener.Close()
 
-			s.logger.Info("P2P QUIC server started on port 9090")
+			s.logger.Info("P2P QUIC server started on port 9091")
 
 			// Запускаем QUIC Relay Handler
 			if err := s.quicRelayHandler.Start(quicListener); err != nil {
