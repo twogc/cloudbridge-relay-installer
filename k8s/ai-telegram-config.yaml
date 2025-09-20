@@ -96,6 +96,10 @@ data:
           anomaly_threshold: 0.8
           performance_threshold: 0.85
           health_threshold: 0.9
+          # Пороги для ресурсов
+          disk_usage_threshold: 0.8
+          cpu_usage_threshold: 0.8
+          memory_usage_threshold: 0.8
         slack:
           enabled: false
           webhook_url: ""

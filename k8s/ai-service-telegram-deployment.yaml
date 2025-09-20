@@ -91,6 +91,13 @@ spec:
           value: "0.85"
         - name: AI_HEALTH_THRESHOLD
           value: "0.9"
+        # Resource thresholds
+        - name: AI_DISK_USAGE_THRESHOLD
+          value: "0.8"
+        - name: AI_CPU_USAGE_THRESHOLD
+          value: "0.8"
+        - name: AI_MEMORY_USAGE_THRESHOLD
+          value: "0.8"
         
         # Kubernetes Integration
         - name: AI_KUBERNETES_NAMESPACE
