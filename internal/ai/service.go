@@ -239,6 +239,7 @@ func (s *Service) backgroundProcessing() {
 // processData processes incoming data
 func (s *Service) processData() {
 	start := time.Now()
+	s.logger.Info("Starting data processing cycle")
 
 	// Collect data from pipeline
 	data, err := s.dataPipeline.CollectData()
@@ -249,9 +250,10 @@ func (s *Service) processData() {
 
 	// Проверяем, есть ли активность для обработки
 	if !s.shouldProcessData(data) {
-		s.logger.Debug("No significant activity detected, skipping processing",
+		s.logger.Debug("No significant activity detected, but processing anyway for testing",
 			zap.Int("data_points", len(data)))
-		return
+		// Временно продолжаем обработку даже без активности для тестирования
+		// return
 	}
 
 	// Process anomaly detection

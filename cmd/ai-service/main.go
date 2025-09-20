@@ -15,7 +15,7 @@ func main() {
 	// Загружаем конфигурацию AI
 	configPath := os.Getenv("AI_CONFIG_PATH")
 	if configPath == "" {
-		configPath = "configs/ai-config.yaml" // Используем путь из ConfigMap
+		configPath = "configs/ai-config.yaml" // Относительный путь от /app
 	}
 
 	config, err := ai.LoadConfig(configPath)

@@ -124,6 +124,9 @@ func (ro *RouteOptimizer) OptimizeRoute(source, destination string) (*OptimizedR
 
 	// Обновляем метрики
 	ro.optimizationCount++
+	
+	// Обновляем средний gain на основе confidence
+	ro.updateAverageGain(confidence)
 
 	result := &OptimizedRoute{
 		Protocol:         protocol,
@@ -139,6 +142,17 @@ func (ro *RouteOptimizer) OptimizeRoute(source, destination string) (*OptimizedR
 		zap.Float64("confidence", confidence))
 
 	return result, nil
+}
+
+// updateAverageGain обновляет средний gain на основе confidence
+func (ro *RouteOptimizer) updateAverageGain(confidence float64) {
+	if ro.optimizationCount == 1 {
+		ro.averageGain = confidence
+	} else {
+		// Экспоненциальное скользящее среднее
+		alpha := 0.1 // Коэффициент сглаживания
+		ro.averageGain = alpha*confidence + (1-alpha)*ro.averageGain
+	}
 }
 
 // UpdateReward обновляет награду для выбранного протокола

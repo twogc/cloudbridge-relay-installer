@@ -54,7 +54,7 @@ spec:
             drop:
             - ALL
       - name: ai-service
-        image: ai-service:real-data-20250920-182719
+        image: ai-service:final-fixed-20250920-195457
         imagePullPolicy: IfNotPresent
         ports:
         - name: http

@@ -455,7 +455,7 @@ func NewRelayMetricsCollector(logger *zap.Logger) *RelayMetricsCollector {
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-		relayURL: "http://cloudbridge-relay.cloudbridge.svc.cluster.local:9090",
+		relayURL: "http://cloudbridge-relay.cloudbridge.svc.cluster.local:8080",
 	}
 }
 

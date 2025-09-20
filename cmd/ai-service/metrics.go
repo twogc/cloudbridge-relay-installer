@@ -19,13 +19,14 @@ type Metrics struct {
 	httpRequestsInFlight  prometheus.Gauge
 
 	// AI Service метрики
-	aiRequestsProcessed   prometheus.Counter
-	aiAnomaliesDetected   prometheus.Counter
-	aiPredictionsMade     prometheus.Counter
-	aiRoutesOptimized     prometheus.Counter
+	aiRequestsProcessed   prometheus.Gauge
+	aiAnomaliesDetected   prometheus.Gauge
+	aiPredictionsMade     prometheus.Gauge
+	aiRoutesOptimized     prometheus.Gauge
 	aiActiveAlerts        prometheus.Gauge
 	aiPredictionAccuracy  prometheus.Gauge
 	aiServiceUptime       prometheus.Gauge
+	aiProcessingTime      prometheus.Gauge
 
 	// Системные метрики
 	cpuUsage              prometheus.Gauge
@@ -63,26 +64,26 @@ func NewMetrics(aiService *ai.Service) *Metrics {
 		),
 
 		// AI Service метрики
-		aiRequestsProcessed: promauto.NewCounter(
-			prometheus.CounterOpts{
+		aiRequestsProcessed: promauto.NewGauge(
+			prometheus.GaugeOpts{
 				Name: "ai_requests_processed_total",
 				Help: "Total number of AI requests processed",
 			},
 		),
-		aiAnomaliesDetected: promauto.NewCounter(
-			prometheus.CounterOpts{
+		aiAnomaliesDetected: promauto.NewGauge(
+			prometheus.GaugeOpts{
 				Name: "ai_anomalies_detected_total",
 				Help: "Total number of anomalies detected",
 			},
 		),
-		aiPredictionsMade: promauto.NewCounter(
-			prometheus.CounterOpts{
+		aiPredictionsMade: promauto.NewGauge(
+			prometheus.GaugeOpts{
 				Name: "ai_predictions_made_total",
 				Help: "Total number of predictions made",
 			},
 		),
-		aiRoutesOptimized: promauto.NewCounter(
-			prometheus.CounterOpts{
+		aiRoutesOptimized: promauto.NewGauge(
+			prometheus.GaugeOpts{
 				Name: "ai_routes_optimized_total",
 				Help: "Total number of routes optimized",
 			},
@@ -103,6 +104,12 @@ func NewMetrics(aiService *ai.Service) *Metrics {
 			prometheus.GaugeOpts{
 				Name: "ai_service_uptime_seconds",
 				Help: "AI service uptime in seconds",
+			},
+		),
+		aiProcessingTime: promauto.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "ai_processing_time_milliseconds",
+				Help: "AI processing time in milliseconds",
 			},
 		),
 
@@ -184,14 +191,13 @@ func (m *Metrics) UpdateAIMetrics() {
 	// Обновляем метрики на основе реальных данных
 	if anomalyMetrics, ok := aiMetrics["anomaly_detection"].(map[string]interface{}); ok {
 		if totalDetections, ok := anomalyMetrics["total_detections"].(int64); ok {
-			// Для Counter используем Add с разностью
-			m.aiAnomaliesDetected.Add(float64(totalDetections))
+			m.aiAnomaliesDetected.Set(float64(totalDetections))
 		}
 	}
 
 	if loadPredictionMetrics, ok := aiMetrics["load_prediction"].(map[string]interface{}); ok {
 		if totalPredictions, ok := loadPredictionMetrics["total_predictions"].(int64); ok {
-			m.aiPredictionsMade.Add(float64(totalPredictions))
+			m.aiPredictionsMade.Set(float64(totalPredictions))
 		}
 		if accuracy, ok := loadPredictionMetrics["accuracy"].(float64); ok {
 			m.aiPredictionAccuracy.Set(accuracy)
@@ -200,13 +206,13 @@ func (m *Metrics) UpdateAIMetrics() {
 
 	if routeOptimizationMetrics, ok := aiMetrics["route_optimization"].(map[string]interface{}); ok {
 		if totalOptimizations, ok := routeOptimizationMetrics["total_optimizations"].(int64); ok {
-			m.aiRoutesOptimized.Add(float64(totalOptimizations))
+			m.aiRoutesOptimized.Set(float64(totalOptimizations))
 		}
 	}
 
 	if processingMetrics, ok := aiMetrics["processing"].(map[string]interface{}); ok {
 		if totalCount, ok := processingMetrics["total_count"].(int64); ok {
-			m.aiRequestsProcessed.Add(float64(totalCount))
+			m.aiRequestsProcessed.Set(float64(totalCount))
 		}
 	}
 
@@ -236,6 +242,13 @@ func (m *Metrics) UpdateAIMetrics() {
 
 	// Системные метрики диска (пока используем базовые значения)
 	m.diskUsage.Set(1024 * 1024 * 1024) // 1 GB диска
+
+	// Обновляем время обработки
+	if processingMetrics, ok := aiMetrics["processing"].(map[string]interface{}); ok {
+		if currentTime, ok := processingMetrics["current_time"].(int64); ok {
+			m.aiProcessingTime.Set(float64(currentTime))
+		}
+	}
 }
 
 // GetPrometheusHandler возвращает handler для Prometheus метрик

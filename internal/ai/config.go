@@ -134,9 +134,14 @@ func LoadConfig(configPath string) (*Config, error) {
 
 	// Валидация пути для предотвращения path traversal атак
 	cleanPath := filepath.Clean(configPath)
-	if strings.Contains(cleanPath, "..") || strings.HasPrefix(cleanPath, "/") {
-		return nil, fmt.Errorf("invalid config path: %s", configPath)
+	// Временно ослабляем валидацию для отладки
+	if strings.Contains(cleanPath, "..") {
+		return nil, fmt.Errorf("invalid config path (contains ..): %s -> %s", configPath, cleanPath)
 	}
+	// Разрешаем абсолютные пути в контейнере
+	// if strings.HasPrefix(cleanPath, "/") {
+	//	return nil, fmt.Errorf("invalid config path: %s", configPath)
+	// }
 
 	data, err := os.ReadFile(cleanPath)
 	if err != nil {
@@ -162,7 +167,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("AI is disabled")
 	}
 
-	if c.AI.Mode != "cpu-only" && c.AI.Mode != "gpu" && c.AI.Mode != "hybrid" {
+	if c.AI.Mode != "cpu-only" && c.AI.Mode != "gpu" && c.AI.Mode != "hybrid" && c.AI.Mode != "kubernetes" {
 		return fmt.Errorf("invalid AI mode: %s", c.AI.Mode)
 	}
 

@@ -1,0 +1,63 @@
+ai:
+  enabled: true
+  data_pipeline:
+    enabled: true
+    processing_interval: "30s"
+    collectors:
+      - name: "relay"
+        enabled: true
+        interval: "10s"
+      - name: "system"
+        enabled: true
+        interval: "5s"
+      - name: "network"
+        enabled: true
+        interval: "15s"
+    processors:
+      - name: "anomaly_detection"
+        enabled: true
+      - name: "load_prediction"
+        enabled: true
+      - name: "route_optimization"
+        enabled: true
+    storage:
+      type: "hybrid"
+      memory_limit: "100MB"
+      file_path: "/app/data/ai_metrics.json"
+  
+  anomaly_detection:
+    enabled: true
+    threshold: 0.8
+    learning_rate: 0.001
+    model_path: "/app/models/anomaly"
+    
+  load_prediction:
+    enabled: true
+    horizon: 24
+    confidence: 0.85
+    model_path: "/app/models/load"
+    
+  route_optimization:
+    enabled: true
+    algorithm: "multi_armed_bandit"
+    exploration_rate: 0.1
+    learning_rate: 0.05
+    update_interval: "60s"
+    
+  monitoring:
+    enabled: true
+    metrics_interval: "30s"
+    dashboard_url: "http://localhost:8083/metrics"
+    
+  behavior_analysis:
+    enabled: true
+    model_path: "/app/models/behavior"
+    threshold: 0.8
+    learning_rate: 0.001
+    
+  predictive_security:
+    enabled: true
+    confidence: 0.85
+    
+  automated_response:
+    enabled: true
