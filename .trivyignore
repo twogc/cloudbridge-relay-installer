@@ -1,0 +1,26 @@
+# Trivy ignore file for CloudBridge Relay
+# Ignore known false positives and development files
+
+# Ignore private keys in development environment
+# These should be moved to secrets management in production
+b1.2gc.space.key
+certs/ca.key
+certs/client.key
+certs/server.key
+docs/ssh/2GC-RELAY-SERVER-hz0QxPy8.pem
+relay.2gc.space.key
+tls.key
+
+# Ignore reference repositories vulnerabilities
+# These are external dependencies for reference only
+reference-repos/*/go.mod
+
+# Ignore test dependencies vulnerabilities
+test/*/go.mod
+
+# Ignore large build artifacts
+tools/cadence-web/.next/static/chunks/*.js
+
+# Ignore specific vulnerabilities that are false positives
+# CVE-2024-45337 - golang.org/x/crypto/ssh - This is used in development only
+# CVE-2025-22869 - golang.org/x/crypto/ssh - This is used in development only

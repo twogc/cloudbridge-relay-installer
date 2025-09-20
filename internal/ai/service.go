@@ -353,9 +353,38 @@ func (s *Service) getRelayMetrics() (*anomaly.NetworkMetrics, error) {
 	systemMetrics, err := s.getSystemMetrics()
 	if err != nil {
 		s.logger.Warn("Failed to get system metrics, using defaults", zap.Error(err))
-		systemMetrics = map[string]float64{
+		systemMetrics = map[string]interface{}{
 			"cpu_usage":    0.0,
 			"memory_usage": 0.0,
+		}
+	}
+
+	// Получаем реальные данные о протоколах от relay сервера
+	protocolDistribution := map[string]int{
+		"QUIC":      0,
+		"WireGuard": 0,
+		"TCP":       0,
+	}
+
+	// Попытка получить реальные данные о протоколах от relay
+	if protocolData, ok := relayData["protocol_distribution"].(map[string]interface{}); ok {
+		if quic, ok := protocolData["QUIC"].(int); ok {
+			protocolDistribution["QUIC"] = quic
+		}
+		if wireguard, ok := protocolData["WireGuard"].(int); ok {
+			protocolDistribution["WireGuard"] = wireguard
+		}
+		if tcp, ok := protocolData["TCP"].(int); ok {
+			protocolDistribution["TCP"] = tcp
+		}
+	} else {
+		// Если нет данных о протоколах, используем активные соединения для оценки
+		activeConnections := int(relayData["connections_active"].(int64))
+		if activeConnections > 0 {
+			// Распределяем активные соединения по протоколам на основе типичных паттернов
+			protocolDistribution["QUIC"] = activeConnections / 2
+			protocolDistribution["WireGuard"] = activeConnections / 3
+			protocolDistribution["TCP"] = activeConnections / 6
 		}
 	}
 
@@ -365,15 +394,11 @@ func (s *Service) getRelayMetrics() (*anomaly.NetworkMetrics, error) {
 		BytesPerSecond:       relayData["bytes_transferred"].(int64),
 		PacketLossRate:       relayData["error_rate"].(float64),
 		AverageLatency:       relayData["average_latency"].(float64),
-		CPUUsage:             systemMetrics["cpu_usage"],
-		MemoryUsage:          systemMetrics["memory_usage"],
+		CPUUsage:             systemMetrics["cpu_usage"].(float64),
+		MemoryUsage:          systemMetrics["memory_usage"].(float64),
 		ActiveConnections:    int(relayData["connections_active"].(int64)),
 		FailedConnections:    int(relayData["error_rate"].(float64) * float64(relayData["connections_total"].(int64))),
-		ProtocolDistribution: map[string]int{
-			"QUIC":      50, // Пока статичные значения
-			"WireGuard": 30,
-			"TCP":       20,
-		},
+		ProtocolDistribution: protocolDistribution,
 	}
 
 	return metrics, nil
@@ -427,7 +452,7 @@ func (s *Service) shouldProcessData(data []pipeline.DataPoint) bool {
 }
 
 // getSystemMetrics получает системные метрики от системного коллектора
-func (s *Service) getSystemMetrics() (map[string]float64, error) {
+func (s *Service) getSystemMetrics() (map[string]interface{}, error) {
 	if s.dataPipeline == nil {
 		return nil, fmt.Errorf("data pipeline not initialized")
 	}
@@ -448,7 +473,7 @@ func (s *Service) getSystemMetrics() (map[string]float64, error) {
 	}
 
 	// Извлекаем CPU и Memory метрики
-	metrics := make(map[string]float64)
+	metrics := make(map[string]interface{})
 
 	for _, dataPoint := range data {
 		if dataPoint.Type == "cpu" {
@@ -462,7 +487,68 @@ func (s *Service) getSystemMetrics() (map[string]float64, error) {
 		}
 	}
 
+	// Добавляем данные о протоколах от relay сервера
+	relayCollector, exists := s.dataPipeline.GetCollector("relay")
+	if exists {
+		relayData, err := relayCollector.Collect()
+		if err == nil && len(relayData) > 0 {
+			// Добавляем данные о протоколах
+			if protocolData, ok := relayData[0].Data["protocol_distribution"].(map[string]interface{}); ok {
+				metrics["protocol_distribution"] = protocolData
+			}
+
+			// Добавляем данные о переданных байтах
+			if bytesTransferred, ok := relayData[0].Data["bytes_transferred"].(int64); ok {
+				metrics["bytes_transferred"] = bytesTransferred
+			}
+		}
+	}
+
 	return metrics, nil
+}
+
+// DetectAnomaly detects anomalies in network metrics
+func (s *Service) DetectAnomaly(ctx context.Context, metrics *anomaly.NetworkMetrics) (*anomaly.AnomalyResult, error) {
+	if s.anomalyDetector == nil {
+		return nil, fmt.Errorf("anomaly detector not initialized")
+	}
+
+	return s.anomalyDetector.DetectAnomaly(metrics)
+}
+
+// PredictLoad predicts future load
+func (s *Service) PredictLoad(ctx context.Context, horizon int) (*predictive.LoadPrediction, error) {
+	if s.loadPredictor == nil {
+		return nil, fmt.Errorf("load predictor not initialized")
+	}
+
+	return s.loadPredictor.PredictLoad(horizon)
+}
+
+// OptimizeRoute optimizes network routes
+func (s *Service) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.Route, error) {
+	if s.routeOptimizer == nil {
+		return nil, fmt.Errorf("route optimizer not initialized")
+	}
+
+	optimizedRoute, err := s.routeOptimizer.OptimizeRoute(source, destination)
+	if err != nil {
+		return nil, err
+	}
+
+	// Конвертируем OptimizedRoute в Route
+	route := &routing.Route{
+		ID:           fmt.Sprintf("route_%d", time.Now().Unix()),
+		Source:       source,
+		Destination:  destination,
+		Nodes:        optimizedRoute.Path,
+		TotalLatency: optimizedRoute.PredictedLatency,
+		Reliability:  optimizedRoute.Confidence,
+		Score:        optimizedRoute.Confidence,
+		Algorithm:    "optimized",
+	}
+
+	return route, nil
 }
 
 // GetStatus returns the current status of the AI service

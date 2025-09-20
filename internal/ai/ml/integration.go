@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/anomaly"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ai/pipeline"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/predictive"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/routing"
 	"go.uber.org/zap"
@@ -13,15 +14,17 @@ import (
 
 // RealAIIntegration интегрирует реальные ML модели с существующим AI сервисом
 type RealAIIntegration struct {
-	realModels *RealMLModels
-	logger     *zap.Logger
+	realModels   *RealMLModels
+	dataPipeline *pipeline.DataPipeline
+	logger       *zap.Logger
 }
 
 // NewRealAIIntegration создает новую интеграцию реальных ML моделей
-func NewRealAIIntegration(logger *zap.Logger) *RealAIIntegration {
+func NewRealAIIntegration(dataPipeline *pipeline.DataPipeline, logger *zap.Logger) *RealAIIntegration {
 	return &RealAIIntegration{
-		realModels: NewRealMLModels(logger),
-		logger:     logger,
+		realModels:   NewRealMLModels(logger),
+		dataPipeline: dataPipeline,
+		logger:       logger,
 	}
 }
 
@@ -258,33 +261,103 @@ func (rai *RealAIIntegration) generateRecommendations(anomalyType, severity stri
 
 // getHistoricalLoadData получает исторические данные нагрузки
 func (rai *RealAIIntegration) getHistoricalLoadData() []float64 {
-	// В реальной системе это было бы из базы данных
-	// Для демонстрации генерируем синтетические данные
-	data := make([]float64, 100)
-	for i := 0; i < 100; i++ {
-		// Генерируем данные с трендом и сезонностью
-		trend := float64(i) * 0.1
-		seasonal := 10 * sin(2*3.14159*float64(i)/24) // 24-часовая сезонность
-		noise := (sin(float64(i)*0.5) * 2)            // Шум
-		data[i] = 50 + trend + seasonal + noise
+	// Получаем реальные исторические данные из data pipeline
+	if rai.dataPipeline == nil {
+		rai.logger.Warn("Data pipeline not available, using fallback data")
+		return rai.getFallbackLoadData()
 	}
+
+	// Запрашиваем данные за последние 24 часа
+	endTime := time.Now()
+	startTime := endTime.Add(-24 * time.Hour)
+	
+	timeRange := pipeline.TimeRange{
+		Start: startTime,
+		End:   endTime,
+	}
+
+	// Получаем данные о нагрузке
+	dataPoints, err := rai.dataPipeline.QueryData(timeRange, "load_metrics", 100)
+	if err != nil {
+		rai.logger.Warn("Failed to get historical load data from pipeline", zap.Error(err))
+		return rai.getFallbackLoadData()
+	}
+
+	// Преобразуем данные в массив float64
+	data := make([]float64, 0, len(dataPoints))
+	for _, dp := range dataPoints {
+		if loadValue, ok := dp.Data["cpu_usage_percent"].(float64); ok {
+			data = append(data, loadValue)
+		} else if loadValue, ok := dp.Data["load_average"].(float64); ok {
+			data = append(data, loadValue)
+		}
+	}
+
+	if len(data) == 0 {
+		rai.logger.Warn("No historical load data found, using fallback")
+		return rai.getFallbackLoadData()
+	}
+
+	rai.logger.Info("Retrieved historical load data", zap.Int("points", len(data)))
 	return data
+}
+
+// getFallbackLoadData возвращает базовые данные при отсутствии реальных
+func (rai *RealAIIntegration) getFallbackLoadData() []float64 {
+	// Минимальный набор данных для работы алгоритма
+	return []float64{30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0}
+}
+
+// getCurrentLoadMetrics получает текущие метрики нагрузки
+func (rai *RealAIIntegration) getCurrentLoadMetrics() float64 {
+	if rai.dataPipeline == nil {
+		return 50.0 // Fallback значение
+	}
+
+	// Получаем последние данные о нагрузке
+	endTime := time.Now()
+	startTime := endTime.Add(-5 * time.Minute) // Последние 5 минут
+	
+	timeRange := pipeline.TimeRange{
+		Start: startTime,
+		End:   endTime,
+	}
+
+	dataPoints, err := rai.dataPipeline.QueryData(timeRange, "system_metrics", 1)
+	if err != nil || len(dataPoints) == 0 {
+		rai.logger.Debug("Failed to get current load metrics, using fallback")
+		return 50.0
+	}
+
+	// Извлекаем CPU usage из последней точки данных
+	lastPoint := dataPoints[len(dataPoints)-1]
+	if cpuUsage, ok := lastPoint.Data["cpu_usage_percent"].(float64); ok {
+		return cpuUsage
+	}
+
+	return 50.0 // Fallback
 }
 
 // generateBasicLoadPrediction генерирует базовое предсказание нагрузки
 func (rai *RealAIIntegration) generateBasicLoadPrediction(horizon int) *predictive.LoadPrediction {
+	// Получаем текущие метрики для базового предсказания
+	currentLoad := rai.getCurrentLoadMetrics()
+	
 	predictions := make([]float64, horizon)
 	for i := 0; i < horizon; i++ {
-		predictions[i] = 50.0 // Базовое значение
+		// Используем текущую нагрузку как базовое значение
+		// Добавляем небольшой тренд на основе времени
+		trend := float64(i) * 0.1
+		predictions[i] = currentLoad + trend
 	}
 
 	return &predictive.LoadPrediction{
 		Timestamp:      time.Now(),
 		Horizon:        horizon,
 		Forecast:       predictions,
-		Confidence:     0.5,
-		ModelID:        "basic",
-		Features:       map[string]float64{"trend": 0.0, "seasonality": 0.0},
+		Confidence:     0.6, // Немного выше, так как используем реальные данные
+		ModelID:        "basic_with_real_data",
+		Features:       map[string]float64{"current_load": currentLoad, "trend": 0.1},
 		ProcessingTime: time.Since(time.Now()),
 		Seasonality:    0.0,
 		Trend:          0.0,

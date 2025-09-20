@@ -181,26 +181,34 @@ func (dpe *DataPipelineEndpoints) QueryData(c *gin.Context) {
 		End:   req.EndTime,
 	}
 
-	// Заглушка для запроса данных
-	data := []map[string]interface{}{
-		{
-			"timestamp": time.Now().Add(-1 * time.Hour),
-			"value":     42.5,
+	// Получаем реальные данные из pipeline
+	data, err := dpe.pipeline.QueryData(timeRange, req.DataType, req.Limit)
+	if err != nil {
+		dpe.logger.Error("Failed to query data from pipeline", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":    "error",
+			"message":   "Failed to query data from pipeline",
+			"timestamp": time.Now(),
+		})
+		return
+	}
+
+	// Преобразуем данные в нужный формат
+	responseData := make([]map[string]interface{}, 0, len(data))
+	for _, dataPoint := range data {
+		responseData = append(responseData, map[string]interface{}{
+			"timestamp": dataPoint.Timestamp,
+			"value":     dataPoint.Data,
 			"type":      req.DataType,
-		},
-		{
-			"timestamp": time.Now().Add(-30 * time.Minute),
-			"value":     38.2,
-			"type":      req.DataType,
-		},
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":     "success",
 		"data_type":  req.DataType,
 		"time_range": timeRange,
-		"data":       data,
-		"count":      len(data),
+		"data":       responseData,
+		"count":      len(responseData),
 		"timestamp":  time.Now(),
 	})
 }
@@ -218,40 +226,19 @@ func (dpe *DataPipelineEndpoints) GetPipelineMetrics(c *gin.Context) {
 		return
 	}
 
-	metrics := make(map[string]interface{})
-
-	// Метрики коллекторов (заглушка)
-	collectorMetrics := make(map[string]interface{})
-	collectorMetrics["prometheus"] = map[string]interface{}{
-		"status": "running",
-		"type":   "prometheus",
-	}
-	collectorMetrics["system"] = map[string]interface{}{
-		"status": "running",
-		"type":   "system",
-	}
-	metrics["collectors"] = collectorMetrics
-
-	// Метрики процессоров (заглушка)
-	processorMetrics := make(map[string]interface{})
-	processorMetrics["feature_extractor"] = map[string]interface{}{
-		"status": "running",
-		"type":   "feature_extractor",
-	}
-	processorMetrics["data_normalizer"] = map[string]interface{}{
-		"status": "running",
-		"type":   "data_normalizer",
-	}
-	metrics["processors"] = processorMetrics
-
-	// Метрики хранилища (заглушка)
-	metrics["storage"] = map[string]interface{}{
-		"status": "running",
-		"type":   "hybrid_storage",
+	// Получаем реальные метрики из pipeline
+	metrics, err := dpe.pipeline.GetMetrics()
+	if err != nil {
+		dpe.logger.Error("Failed to get pipeline metrics", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":    "error",
+			"message":   "Failed to get pipeline metrics",
+			"timestamp": time.Now(),
+		})
+		return
 	}
 
-	// Общие метрики
-	metrics["pipeline_status"] = "healthy"
+	// Добавляем timestamp
 	metrics["timestamp"] = time.Now()
 
 	c.JSON(http.StatusOK, gin.H{

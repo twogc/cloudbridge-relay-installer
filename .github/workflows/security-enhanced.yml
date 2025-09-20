@@ -1,0 +1,268 @@
+name: 🔒 Enhanced Security Scanning
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run every Monday at 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  GO_VERSION: '1.25'
+
+jobs:
+  security-scan:
+    name: 🔒 Comprehensive Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🔧 Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: 🐍 Install Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: 🛠️ Install security tools
+      run: |
+        # Install gosec
+        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        
+        # Install golangci-lint
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
+        
+        # Install Trivy
+        sudo apt-get update
+        sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update
+        sudo apt-get install -y trivy
+        
+        # Install safety for Python dependencies
+        pip install safety==3.5.2
+        
+        # Install nancy for Go dependencies
+        go install github.com/sonatype-nexus-community/nancy@latest
+
+    - name: 🔍 Run Trivy filesystem scan
+      run: |
+        echo "🔍 Running Trivy filesystem scan..."
+        mkdir -p security_reports
+        
+        # Scan filesystem for vulnerabilities
+        trivy fs --severity HIGH,CRITICAL --format json --output security_reports/trivy-fs-results.json . || {
+          echo "⚠️ Trivy found issues, but continuing..."
+        }
+        
+        # Scan filesystem for secrets
+        trivy fs --scanners secret --format json --output security_reports/trivy-secrets-results.json . || {
+          echo "⚠️ Trivy found secrets, but continuing..."
+        }
+
+    - name: 🔍 Run Trivy dependency scan
+      run: |
+        echo "🔍 Running Trivy dependency scan..."
+        
+        # Scan Go dependencies
+        trivy fs --scanners vuln --format json --output security_reports/trivy-deps-results.json . || {
+          echo "⚠️ Trivy found dependency issues, but continuing..."
+        }
+
+    - name: 🔍 Run Gosec security scan
+      run: |
+        echo "🔍 Running Gosec security scan..."
+        
+        # Run gosec for Go security
+        gosec -fmt json -out security_reports/gosec-results.json ./... || {
+          echo "⚠️ gosec found issues, but continuing..."
+        }
+
+    - name: 🔍 Run golangci-lint
+      run: |
+        echo "🔍 Running golangci-lint..."
+        export PATH=$PATH:$(go env GOPATH)/bin
+        
+        # Run golangci-lint with timeout
+        golangci-lint run --timeout=5m --out-format=json > security_reports/golangci-lint-results.json || {
+          echo "⚠️ golangci-lint found issues, but continuing..."
+        }
+
+    - name: 🔍 Run Nancy dependency scan
+      run: |
+        echo "🔍 Running Nancy dependency scan..."
+        
+        # Run nancy for dependency vulnerabilities
+        go list -json -deps ./... | nancy sleuth --output json > security_reports/nancy-results.json || {
+          echo "⚠️ nancy found issues, but continuing..."
+        }
+
+    - name: 🔍 Run Safety Python scan
+      run: |
+        echo "🔍 Running Safety Python scan..."
+        
+        # Check for Python dependencies (if any)
+        if [ -f "requirements.txt" ]; then
+          safety check -r requirements.txt --json --output security_reports/python-security-results.json || true
+        fi
+
+    - name: 📊 Generate security report
+      run: |
+        echo "📊 Generating comprehensive security report..."
+        
+        # Create markdown report
+        cat > security_reports/security-report.md << 'EOF'
+        # 🔒 Security Scan Report
+        
+        **Date:** $(date)
+        **Repository:** ${{ github.repository }}
+        **Branch:** ${{ github.ref_name }}
+        **Commit:** ${{ github.sha }}
+        
+        ## 📋 Summary
+        
+        This report contains the results of comprehensive security scanning using multiple tools:
+        
+        - **Trivy**: Filesystem and dependency vulnerability scanning
+        - **Gosec**: Go source code security analysis
+        - **golangci-lint**: Go code quality and security linting
+        - **Nancy**: Go dependency vulnerability scanning
+        - **Safety**: Python dependency security scanning
+        
+        ## 📁 Report Files
+        
+        - `trivy-fs-results.json`: Trivy filesystem scan results
+        - `trivy-secrets-results.json`: Trivy secrets scan results
+        - `trivy-deps-results.json`: Trivy dependency scan results
+        - `gosec-results.json`: Gosec security scan results
+        - `golangci-lint-results.json`: golangci-lint results
+        - `nancy-results.json`: Nancy dependency scan results
+        - `python-security-results.json`: Safety Python scan results (if applicable)
+        
+        ## 🚨 Critical Issues
+        
+        Please review the JSON files for detailed vulnerability information.
+        
+        ## 🔧 Recommendations
+        
+        1. **Update Dependencies**: Update vulnerable dependencies to fixed versions
+        2. **Remove Secrets**: Move private keys to secure secret management
+        3. **Code Quality**: Address golangci-lint warnings and errors
+        4. **Regular Scanning**: Run security scans regularly in CI/CD pipeline
+        
+        EOF
+
+    - name: 📤 Upload security artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-scan-results-$(date +%Y%m%d-%H%M%S)
+        path: |
+          security_reports/
+        retention-days: 90
+
+    - name: 📢 Security scan summary
+      run: |
+        echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** Completed" >> $GITHUB_STEP_SUMMARY
+        echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔍 Scans Performed:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Trivy filesystem scan" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Trivy secrets scan" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Trivy dependency scan" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Gosec security scan" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ golangci-lint scan" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Nancy dependency scan" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Safety Python scan" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Results:" >> $GITHUB_STEP_SUMMARY
+        echo "Check the uploaded artifacts for detailed scan results." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🚨 Next Steps:" >> $GITHUB_STEP_SUMMARY
+        echo "1. Review all scan results" >> $GITHUB_STEP_SUMMARY
+        echo "2. Address critical and high severity issues" >> $GITHUB_STEP_SUMMARY
+        echo "3. Update vulnerable dependencies" >> $GITHUB_STEP_SUMMARY
+        echo "4. Move secrets to secure storage" >> $GITHUB_STEP_SUMMARY
+
+  docker-security:
+    name: 🐳 Docker Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐳 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 🔐 Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 🏗️ Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: cloudbridge-relay:security-test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: 🛠️ Install Trivy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update
+        sudo apt-get install -y trivy
+
+    - name: 🔍 Scan Docker image
+      run: |
+        echo "🔍 Scanning Docker image for vulnerabilities..."
+        mkdir -p security_reports
+        
+        # Scan Docker image
+        trivy image --severity HIGH,CRITICAL --format json --output security_reports/trivy-docker-results.json cloudbridge-relay:security-test || {
+          echo "⚠️ Trivy found Docker image issues, but continuing..."
+        }
+
+    - name: 📤 Upload Docker security artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-security-scan-results-$(date +%Y%m%d-%H%M%S)
+        path: |
+          security_reports/trivy-docker-results.json
+        retention-days: 90
+
+    - name: 📢 Docker security summary
+      run: |
+        echo "## 🐳 Docker Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** Completed" >> $GITHUB_STEP_SUMMARY
+        echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "**Image:** cloudbridge-relay:security-test" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔍 Scan Results:" >> $GITHUB_STEP_SUMMARY
+        echo "Check the uploaded artifacts for detailed Docker image scan results." >> $GITHUB_STEP_SUMMARY

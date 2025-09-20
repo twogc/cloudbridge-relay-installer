@@ -644,6 +644,15 @@ func (mt *MeshTopology) RemovePeer(peerID string) error {
 	return mt.updateRoutingTable()
 }
 
+// GetPeer возвращает peer по ID
+func (mt *MeshTopology) GetPeer(peerID string) (*WireGuardPeer, bool) {
+	mt.mu.RLock()
+	defer mt.mu.RUnlock()
+	
+	peer, exists := mt.ConnectedPeers[peerID]
+	return peer, exists
+}
+
 func (mt *MeshTopology) GetOptimalRoute(destination string) ([]string, error) {
 	mt.mu.RLock()
 	defer mt.mu.RUnlock()

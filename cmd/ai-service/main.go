@@ -39,7 +39,7 @@ func main() {
 	defer aiService.Stop()
 
 	// Создаем метрики
-	metrics := NewMetrics()
+	metrics := NewMetrics(aiService)
 	metrics.StartMetricsUpdater()
 
 	// Настраиваем Gin router

@@ -430,13 +430,14 @@ type RelayMetricsCollector struct {
 
 // RelayStats содержит статистики Relay сервера
 type RelayStats struct {
-	ConnectionsTotal   int64     `json:"connections_total"`
-	ConnectionsActive  int64     `json:"connections_active"`
-	BytesTransferred   int64     `json:"bytes_transferred"`
-	PacketsTransferred int64     `json:"packets_transferred"`
-	AverageLatency     float64   `json:"average_latency"`
-	ErrorRate          float64   `json:"error_rate"`
-	LastUpdated        time.Time `json:"last_updated"`
+	ConnectionsTotal     int64          `json:"connections_total"`
+	ConnectionsActive    int64          `json:"connections_active"`
+	BytesTransferred     int64          `json:"bytes_transferred"`
+	PacketsTransferred   int64          `json:"packets_transferred"`
+	AverageLatency       float64        `json:"average_latency"`
+	ErrorRate            float64        `json:"error_rate"`
+	ProtocolDistribution map[string]int `json:"protocol_distribution"`
+	LastUpdated          time.Time      `json:"last_updated"`
 }
 
 // NewRelayMetricsCollector создает новый коллектор метрик Relay
@@ -445,6 +446,11 @@ func NewRelayMetricsCollector(logger *zap.Logger) *RelayMetricsCollector {
 		logger: logger,
 		relayStats: &RelayStats{
 			LastUpdated: time.Now(),
+			ProtocolDistribution: map[string]int{
+				"QUIC":      0,
+				"WireGuard": 0,
+				"TCP":       0,
+			},
 		},
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
@@ -478,12 +484,13 @@ func (rmc *RelayMetricsCollector) Collect() ([]DataPoint, error) {
 				Source:    "relay",
 				Type:      "metrics",
 				Data: map[string]interface{}{
-					"connections_total":   rmc.relayStats.ConnectionsTotal,
-					"connections_active":  rmc.relayStats.ConnectionsActive,
-					"bytes_transferred":   rmc.relayStats.BytesTransferred,
-					"packets_transferred": rmc.relayStats.PacketsTransferred,
-					"average_latency":     rmc.relayStats.AverageLatency,
-					"error_rate":          rmc.relayStats.ErrorRate,
+					"connections_total":     rmc.relayStats.ConnectionsTotal,
+					"connections_active":    rmc.relayStats.ConnectionsActive,
+					"bytes_transferred":     rmc.relayStats.BytesTransferred,
+					"packets_transferred":   rmc.relayStats.PacketsTransferred,
+					"average_latency":       rmc.relayStats.AverageLatency,
+					"error_rate":            rmc.relayStats.ErrorRate,
+					"protocol_distribution": rmc.relayStats.ProtocolDistribution,
 				},
 			},
 		}, nil
@@ -498,12 +505,13 @@ func (rmc *RelayMetricsCollector) Collect() ([]DataPoint, error) {
 			Source:    "relay",
 			Type:      "metrics",
 			Data: map[string]interface{}{
-				"connections_total":   realStats.ConnectionsTotal,
-				"connections_active":  realStats.ConnectionsActive,
-				"bytes_transferred":   realStats.BytesTransferred,
-				"packets_transferred": realStats.PacketsTransferred,
-				"average_latency":     realStats.AverageLatency,
-				"error_rate":          realStats.ErrorRate,
+				"connections_total":     realStats.ConnectionsTotal,
+				"connections_active":    realStats.ConnectionsActive,
+				"bytes_transferred":     realStats.BytesTransferred,
+				"packets_transferred":   realStats.PacketsTransferred,
+				"average_latency":       realStats.AverageLatency,
+				"error_rate":            realStats.ErrorRate,
+				"protocol_distribution": realStats.ProtocolDistribution,
 			},
 		},
 	}, nil
@@ -550,15 +558,56 @@ func (rmc *RelayMetricsCollector) fetchRelayStats() (*RelayStats, error) {
 	metricsURL := fmt.Sprintf("%s/metrics", rmc.relayURL)
 	metricsResp, err := rmc.httpClient.Get(metricsURL)
 	if err != nil {
-		// Если метрики недоступны, возвращаем базовые данные
-		rmc.logger.Warn("Failed to fetch relay metrics, using basic stats", zap.Error(err))
+		// Если метрики недоступны, попробуем получить данные через API
+		rmc.logger.Warn("Failed to fetch relay metrics, trying API endpoint", zap.Error(err))
+
+		// Попытка получить данные через API endpoint
+		apiURL := fmt.Sprintf("%s/api/v1/stats", rmc.relayURL)
+		apiResp, apiErr := rmc.httpClient.Get(apiURL)
+		if apiErr != nil {
+			rmc.logger.Warn("Failed to fetch relay API stats, using zero values", zap.Error(apiErr))
+			return &RelayStats{
+				ConnectionsTotal:   0,
+				ConnectionsActive:  0,
+				BytesTransferred:   0,
+				PacketsTransferred: 0,
+				AverageLatency:     0.0,
+				ErrorRate:          0.0,
+				LastUpdated:        time.Now(),
+			}, nil
+		}
+		defer apiResp.Body.Close()
+
+		// Парсим API ответ
+		var apiStats struct {
+			ConnectionsTotal   int64   `json:"connections_total"`
+			ConnectionsActive  int64   `json:"connections_active"`
+			BytesTransferred   int64   `json:"bytes_transferred"`
+			PacketsTransferred int64   `json:"packets_transferred"`
+			AverageLatency     float64 `json:"average_latency"`
+			ErrorRate          float64 `json:"error_rate"`
+		}
+
+		if err := json.NewDecoder(apiResp.Body).Decode(&apiStats); err != nil {
+			rmc.logger.Warn("Failed to decode API response, using zero values", zap.Error(err))
+			return &RelayStats{
+				ConnectionsTotal:   0,
+				ConnectionsActive:  0,
+				BytesTransferred:   0,
+				PacketsTransferred: 0,
+				AverageLatency:     0.0,
+				ErrorRate:          0.0,
+				LastUpdated:        time.Now(),
+			}, nil
+		}
+
 		return &RelayStats{
-			ConnectionsTotal:   0,
-			ConnectionsActive:  0,
-			BytesTransferred:   0,
-			PacketsTransferred: 0,
-			AverageLatency:     0.0,
-			ErrorRate:          0.0,
+			ConnectionsTotal:   apiStats.ConnectionsTotal,
+			ConnectionsActive:  apiStats.ConnectionsActive,
+			BytesTransferred:   apiStats.BytesTransferred,
+			PacketsTransferred: apiStats.PacketsTransferred,
+			AverageLatency:     apiStats.AverageLatency,
+			ErrorRate:          apiStats.ErrorRate,
 			LastUpdated:        time.Now(),
 		}, nil
 	}
@@ -567,6 +616,11 @@ func (rmc *RelayMetricsCollector) fetchRelayStats() (*RelayStats, error) {
 	// Парсим Prometheus метрики
 	stats := &RelayStats{
 		LastUpdated: time.Now(),
+		ProtocolDistribution: map[string]int{
+			"QUIC":      0,
+			"WireGuard": 0,
+			"TCP":       0,
+		},
 	}
 
 	// Читаем метрики построчно
@@ -597,6 +651,18 @@ func (rmc *RelayMetricsCollector) fetchRelayStats() (*RelayStats, error) {
 				if stats.ConnectionsTotal > 0 {
 					stats.ErrorRate = value / float64(stats.ConnectionsTotal)
 				}
+			}
+		} else if strings.Contains(line, "protocol=\"QUIC\"") {
+			if value := rmc.parseMetricValue(line); value > 0 {
+				stats.ProtocolDistribution["QUIC"] = int(value)
+			}
+		} else if strings.Contains(line, "protocol=\"WireGuard\"") {
+			if value := rmc.parseMetricValue(line); value > 0 {
+				stats.ProtocolDistribution["WireGuard"] = int(value)
+			}
+		} else if strings.Contains(line, "protocol=\"TCP\"") {
+			if value := rmc.parseMetricValue(line); value > 0 {
+				stats.ProtocolDistribution["TCP"] = int(value)
 			}
 		}
 	}

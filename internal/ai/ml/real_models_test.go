@@ -109,7 +109,7 @@ func TestRealRouteOptimizer_OptimizeRoute(t *testing.T) {
 
 func TestRealAIIntegration_DetectAnomalyReal(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	integration := NewRealAIIntegration(logger)
+	integration := NewRealAIIntegration(nil, logger)
 
 	// Создаем тестовые NetworkMetrics
 	metrics := &anomaly.NetworkMetrics{
@@ -142,7 +142,7 @@ func TestRealAIIntegration_DetectAnomalyReal(t *testing.T) {
 
 func TestRealAIIntegration_PredictLoadReal(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	integration := NewRealAIIntegration(logger)
+	integration := NewRealAIIntegration(nil, logger)
 
 	// Тестируем предсказание нагрузки
 	result, err := integration.PredictLoadReal(context.Background(), 24)
@@ -164,7 +164,7 @@ func TestRealAIIntegration_PredictLoadReal(t *testing.T) {
 
 func TestRealAIIntegration_OptimizeRouteReal(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	integration := NewRealAIIntegration(logger)
+	integration := NewRealAIIntegration(nil, logger)
 
 	// Тестируем оптимизацию маршрута
 	constraints := map[string]interface{}{

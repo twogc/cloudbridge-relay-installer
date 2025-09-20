@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: ai-service
-        image: cloudbridge-relay:cadence-p2p-v1
+        image: ai-service:telegram-fix-v2
         imagePullPolicy: Never
         ports:
         - containerPort: 8083
@@ -45,14 +45,12 @@ spec:
           value: "0"
         
         # Telegram Configuration
-        - name: AI_TELEGRAM_ENABLED
-          value: "true"
-        - name: AI_TELEGRAM_BOT_TOKEN
+        - name: TELEGRAM_BOT_TOKEN
           valueFrom:
             secretKeyRef:
               name: ai-telegram-secret
               key: TELEGRAM_BOT_TOKEN
-        - name: AI_TELEGRAM_CHAT_ID
+        - name: TELEGRAM_CHAT_ID
           valueFrom:
             secretKeyRef:
               name: ai-telegram-secret

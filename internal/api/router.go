@@ -2,10 +2,12 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/anomaly"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/pipeline"
@@ -475,63 +477,125 @@ func (r *APIRouter) GetMonitoringEndpoints() *MonitoringEndpoints {
 }
 
 // MockAIService заглушка для AI сервиса
-type MockAIService struct{}
+// RealAIServiceAdapter адаптер для реального AI Service
+type RealAIServiceAdapter struct {
+	aiService *ai.Service
+	logger    *zap.Logger
+}
 
-func (m *MockAIService) GetStatus() *ai.ServiceStatus {
-	return &ai.ServiceStatus{
-		Status: "running",
-		Components: map[string]bool{
-			"anomaly_detection":  true,
-			"load_prediction":    true,
-			"route_optimization": true,
-		},
+// NewRealAIServiceAdapter создает новый адаптер для реального AI Service
+func NewRealAIServiceAdapter(aiService *ai.Service, logger *zap.Logger) *RealAIServiceAdapter {
+	return &RealAIServiceAdapter{
+		aiService: aiService,
+		logger:    logger,
 	}
 }
 
-func (m *MockAIService) DetectAnomaly(ctx context.Context, metrics *anomaly.NetworkMetrics) (*anomaly.AnomalyResult, error) {
-	return &anomaly.AnomalyResult{
-		IsAnomaly:   false,
-		Score:       0.1,
-		AnomalyType: "normal",
-		Severity:    "low",
-	}, nil
+func (r *RealAIServiceAdapter) GetStatus() *ai.ServiceStatus {
+	if r.aiService == nil {
+		r.logger.Warn("AI Service not available")
+		return &ai.ServiceStatus{
+			Status: "unavailable",
+			Components: map[string]bool{
+				"anomaly_detection":  false,
+				"load_prediction":    false,
+				"route_optimization": false,
+			},
+		}
+	}
+	
+	return r.aiService.GetStatus()
 }
 
-func (m *MockAIService) PredictLoad(ctx context.Context, horizon int) (*predictive.LoadPrediction, error) {
-	return &predictive.LoadPrediction{
-		Forecast:   []float64{0.5, 0.6, 0.7},
-		Confidence: 0.85,
-	}, nil
+func (r *RealAIServiceAdapter) DetectAnomaly(ctx context.Context, metrics *anomaly.NetworkMetrics) (*anomaly.AnomalyResult, error) {
+	if r.aiService == nil {
+		return nil, fmt.Errorf("AI Service not available")
+	}
+	
+	// Получаем реальный результат детекции аномалий
+	return r.aiService.DetectAnomaly(ctx, metrics)
 }
 
-func (m *MockAIService) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.OptimizedRoute, error) {
-	return &routing.OptimizedRoute{
-		Path:             []string{source, destination},
-		PredictedLatency: 100.5,
-		Confidence:       0.9,
-		Protocol:         "QUIC",
-	}, nil
+func (r *RealAIServiceAdapter) PredictLoad(ctx context.Context, horizon int) (*predictive.LoadPrediction, error) {
+	if r.aiService == nil {
+		return nil, fmt.Errorf("AI Service not available")
+	}
+	
+	// Получаем реальное предсказание нагрузки
+	return r.aiService.PredictLoad(ctx, horizon)
 }
 
-// MockTokenValidator для тестирования
-type MockTokenValidator struct{}
+func (r *RealAIServiceAdapter) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.Route, error) {
+	if r.aiService == nil {
+		return nil, fmt.Errorf("AI Service not available")
+	}
+	
+	// Получаем реальную оптимизацию маршрута
+	return r.aiService.OptimizeRoute(ctx, source, destination, constraints)
+}
 
-// ValidateP2PToken валидирует P2P токен (mock реализация)
-func (m *MockTokenValidator) ValidateP2PToken(token string) (*P2PClaims, error) {
-	// Mock реализация - всегда возвращает успех
-	return &P2PClaims{
-		JTI:            "mock-jti",
-		Subject:        "mock-peer-id",
-		TenantID:       "mock-tenant-id",
-		ServerID:       "mock-server-id",
-		ConnectionType: "quic",
-		ProtocolType:   "p2p-mesh",
-		Permissions:    []string{"p2p_connect", "mesh_join"},
-		IssuedAt:       time.Now().Unix(),
-		NotBefore:      time.Now().Unix(),
-		Issuer:         "mock-issuer",
-		Audience:       "mock-audience",
-	}, nil
+// RealTokenValidator реальная валидация токенов
+type RealTokenValidator struct {
+	jwtSecret []byte
+	logger    *zap.Logger
+}
+
+// NewRealTokenValidator создает новый валидатор токенов
+func NewRealTokenValidator(jwtSecret []byte, logger *zap.Logger) *RealTokenValidator {
+	return &RealTokenValidator{
+		jwtSecret: jwtSecret,
+		logger:    logger,
+	}
+}
+
+// ValidateP2PToken валидирует P2P токен (реальная реализация)
+func (r *RealTokenValidator) ValidateP2PToken(token string) (*P2PClaims, error) {
+	// Парсим JWT токен
+	parsedToken, err := jwt.ParseWithClaims(token, &P2PClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Проверяем алгоритм подписи
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return r.jwtSecret, nil
+	})
+
+	if err != nil {
+		r.logger.Debug("Failed to parse JWT token", zap.Error(err))
+		return nil, fmt.Errorf("invalid token: %w", err)
+	}
+
+	// Проверяем валидность токена
+	if !parsedToken.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	// Извлекаем claims
+	claims, ok := parsedToken.Claims.(*P2PClaims)
+	if !ok {
+		return nil, fmt.Errorf("invalid token claims")
+	}
+
+	// Проверяем время действия
+	now := time.Now().Unix()
+	if claims.NotBefore > now {
+		return nil, fmt.Errorf("token not yet valid")
+	}
+
+	// Проверяем срок действия (если указан)
+	if claims.ExpiresAt != nil && claims.ExpiresAt.Unix() < now {
+		return nil, fmt.Errorf("token expired")
+	}
+
+	// Проверяем обязательные поля
+	if claims.Subject == "" || claims.TenantID == "" {
+		return nil, fmt.Errorf("missing required claims")
+	}
+
+	r.logger.Debug("Token validated successfully",
+		zap.String("subject", claims.Subject),
+		zap.String("tenant_id", claims.TenantID))
+
+	return claims, nil
 }
 
 // createDataPipeline создает и инициализирует реальный Data Pipeline

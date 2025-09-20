@@ -144,9 +144,16 @@ func (pm *P2PManager) processDiscoveredPeers(ctx context.Context) {
 func (pm *P2PManager) isPeerConnected(peerID string) bool {
 	// Проверяем в mesh topology
 	if pm.wireGuardMesh != nil {
-		// Используем публичные методы вместо прямого обращения к mu
-		// В реальной реализации здесь будет метод IsPeerConnected
-		return true // Временная заглушка
+		// Получаем реальный статус подключения peer из mesh topology
+		// Используем прямой доступ к ConnectedPeers через публичные методы
+		peer, exists := pm.wireGuardMesh.GetPeer(peerID)
+		if !exists {
+			pm.logger.Debug("Peer not found in mesh topology", zap.String("peer_id", peerID))
+			return false
+		}
+		
+		// Проверяем статус подключения
+		return peer.Status == wireguard.PeerStatusConnected
 	}
 	return false
 }
@@ -222,10 +229,12 @@ func (pm *P2PManager) HandleConnection(ctx context.Context, conn net.Conn, tenan
 
 	if err != nil {
 		pm.metrics.RecordConnection("p2p", "connection_error", tenantID, time.Since(start))
+		pm.metrics.RecordConnectionError("connection_failed", "p2p")
 		return fmt.Errorf("P2P connection failed: %w", err)
 	}
 
 	pm.metrics.RecordConnection("p2p", "success", tenantID, time.Since(start))
+	pm.metrics.IncrementTotalConnections()
 	pm.logger.Info("P2P connection handled successfully",
 		zap.String("route_type", route.Type),
 		zap.Duration("duration", time.Since(start)),
@@ -397,8 +406,18 @@ func (pm *P2PManager) determineOptimalRoute(ctx context.Context, clientIP, tenan
 
 // isDirectRouteAvailable проверяет доступность прямого маршрута
 func (pm *P2PManager) isDirectRouteAvailable(clientIP string, peer *wireguard.DiscoveredPeer) bool {
-	// В реальной реализации здесь будет проверка возможности прямого соединения
-	// Пока возвращаем true для симуляции
+	// Реальная проверка доступности прямого маршрута
+	conn, err := net.DialTimeout("tcp", peer.Endpoint, 5*time.Second)
+	if err != nil {
+		pm.logger.Debug("Direct route not available",
+			zap.String("peer_endpoint", peer.Endpoint),
+			zap.Error(err))
+		return false
+	}
+	conn.Close()
+
+	pm.logger.Debug("Direct route available",
+		zap.String("peer_endpoint", peer.Endpoint))
 	return true
 }
 
@@ -454,9 +473,15 @@ func (pm *P2PManager) handleMeshP2P(ctx context.Context, conn net.Conn, route *R
 func (pm *P2PManager) measureLatency(ctx context.Context, clientIP string) time.Duration {
 	start := time.Now()
 
-	// Простой ping для измерения задержки
-	// В реальной реализации здесь будет более сложная логика
-	time.Sleep(10 * time.Millisecond) // Симуляция
+	// Реальное измерение задержки через TCP соединение
+	conn, err := net.DialTimeout("tcp", clientIP+":9090", 5*time.Second)
+	if err != nil {
+		pm.logger.Debug("Failed to measure latency",
+			zap.String("client_ip", clientIP),
+			zap.Error(err))
+		return time.Hour // Ошибка соединения
+	}
+	conn.Close()
 
 	latency := time.Since(start)
 	pm.logger.Debug("Latency measurement completed",

@@ -1,193 +1,131 @@
-linters:
-  enable:
-    - gofmt
-    - govet
-    - errcheck
-    - staticcheck
-    - gosimple
-    - ineffassign
-    - gosec
-    - misspell
-    - whitespace
-    - goconst
-    - gocyclo
-    - dupl
-    - gocritic
-    - godot
-    - goimports
-    - revive
-    - stylecheck
-    - unused
-  disable:
-    # golint deprecated - removed
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+
+output:
+  format: colored-line-number
+  print-issued-line: true
+  print-linter-name: true
 
 linters-settings:
-  gocyclo:
-    min-complexity: 25  # Увеличено для текущего этапа
   dupl:
-    threshold: 150  # Увеличено для текущего этапа
+    threshold: 100
+  funlen:
+    lines: 100
+    statements: 50
+  gci:
+    local-prefixes: github.com/twogc/cloudbridge-relay-installer
   goconst:
-    min-len: 3
-    min-occurrences: 4
+    min-len: 2
+    min-occurrences: 2
   gocritic:
     enabled-tags:
       - diagnostic
+      - experimental
+      - opinionated
       - performance
       - style
     disabled-checks:
-      - hugeParam  # Отключено для текущего этапа
-      - paramTypeCombine  # Отключено для текущего этапа
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+  gocyclo:
+    min-complexity: 15
+  goimports:
+    local-prefixes: github.com/twogc/cloudbridge-relay-installer
+  golint:
+    min-confidence: 0
+  gomnd:
+    settings:
+      mnd:
+        checks: argument,case,condition,operation,return,assign
   govet:
-    enable:
-      - shadow
-  gosimple:
-    checks:
-      - all
-  staticcheck:
-    checks:
-      - all
-  stylecheck:
-    checks:
-      - all
-    initialisms:
-      - ACL
-      - API
-      - ASCII
-      - CPU
-      - CSS
-      - DNS
-      - EOF
-      - GUID
-      - HTML
-      - HTTP
-      - HTTPS
-      - ID
-      - IP
-      - JSON
-      - JWT
-      - QPS
-      - RAM
-      - RPC
-      - SLA
-      - SMTP
-      - SQL
-      - SSH
-      - TCP
-      - TLS
-      - TTL
-      - UDP
-      - UI
-      - UID
-      - UUID
-      - URI
-      - URL
-      - UTF8
-      - VM
-      - XML
-      - XMPP
-      - XSRF
-      - XSS
-  revive:
-    severity: warning
-    rules:
-      - name: unused-parameter
-        severity: warning
-        disabled: true  # Отключено временно
-      - name: exported
-        severity: warning
-        disabled: true  # Отключено временно
+    check-shadowing: true
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+  lll:
+    line-length: 140
+  maligned:
+    suggest-new: true
+  misspell:
+    locale: US
+  nolintlint:
+    allow-leading-space: true
+    allow-unused: false
+    require-explanation: false
+    require-specific: false
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - exportloopref
+    - exhaustive
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - golint
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - revive
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - dupl
+        - gomnd
+        - funlen
         - gocyclo
-        - gosec
-        - goconst
-        - gocritic
-        - stylecheck
-        - unused
-        - errcheck
-        - govet
-    - path: internal/integration/
-      linters:
-        - unused
-        - dupl
-    - path: cmd/relay/
-      linters:
-        - gocyclo  # Отключено для main.go
-    - path: internal/
-      linters:
-        - unused  # Временно отключено для internal пакетов
-        - dupl    # Временно отключено
-        - goconst # Временно отключено
-        - gosec   # Временно отключено
-        - gocritic # Временно отключено
-        - stylecheck # Временно отключено
-    - path: cmd/
-      linters:
-        - gosec   # Временно отключено для cmd
-        - gocritic # Временно отключено
-        - stylecheck # Временно отключено
-    - text: "shadow: declaration of"
-      linters:
-        - govet
-    - text: "Error return value of"
-      linters:
-        - errcheck
-    - text: "duplicate of"
-      linters:
-        - dupl
-    - text: "has [0-9]+ occurrences"
-      linters:
-        - goconst
-    - text: "cyclomatic complexity"
+    - path: internal/quic/
       linters:
         - gocyclo
-    - text: "unused"
+        - funlen
+    - path: reference-repos/
       linters:
-        - unused
-    - text: "commentedOutCode"
+        - gocyclo
+        - funlen
+        - gomnd
+    - path: test/
       linters:
-        - gocritic
-    - text: "elseif"
-      linters:
-        - gocritic
-    - text: "Comment should end in a period"
-      linters:
-        - godot
-    - text: "unnecessary assignment to the blank identifier"
-      linters:
-        - gosimple
-    - text: "assigning the result of this type assertion"
-      linters:
-        - gosimple
-    - text: "ineffectual assignment"
-      linters:
-        - ineffassign
-    - text: "this result of append is never used"
-      linters:
-        - staticcheck
-    - text: "possible nil pointer dereference"
-      linters:
-        - staticcheck
-    - text: "empty branch"
-      linters:
-        - staticcheck
-    - text: "error strings should not be capitalized"
-      linters:
-        - stylecheck
-  exclude-dirs:
-    - vendor
-    - build
-    - .git
-    - dist
-    - logs
-    - temp
-
-run:
-  timeout: 10m
-  modules-download-mode: readonly
-  allow-parallel-runners: true
-  go: '1.23'
+        - gocyclo
+        - funlen
+        - gomnd
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

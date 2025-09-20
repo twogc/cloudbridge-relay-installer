@@ -163,7 +163,7 @@ func (lp *LatencyPredictor) calculateDistance(source, destination string) float6
 // isLocalAddress проверяет, является ли адрес локальным
 func (lp *LatencyPredictor) isLocalAddress(address string) bool {
 	// Простая проверка на локальные адреса
-	return len(address) > 0 && (address[0] == '1' || address[0] == '1')
+	return len(address) > 0 && (address[0] == '1' || address[0] == '2')
 }
 
 // getTimeBasedLatency возвращает латентность на основе времени суток
@@ -194,4 +194,3 @@ func (lp *LatencyPredictor) getLoadBasedLatency() float64 {
 	// Корректируем латентность на основе нагрузки
 	return load * 10.0 // До +10ms при высокой нагрузке
 }
-

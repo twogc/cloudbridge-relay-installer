@@ -54,7 +54,7 @@ spec:
             drop:
             - ALL
       - name: ai-service
-        image: cloudbridge-ai:latest
+        image: ai-service:real-data-20250920-182719
         imagePullPolicy: IfNotPresent
         ports:
         - name: http

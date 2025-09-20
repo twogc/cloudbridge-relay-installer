@@ -395,9 +395,9 @@ func (n *NotificationSystem) formatResourceAlertMessage(alertType string, usage 
 
 	// Основная информация
 	message.WriteString(fmt.Sprintf("Resource usage exceeded threshold\n"))
-	message.WriteString(fmt.Sprintf("• <b>Current Usage:</b> %.1f%%\n", usage*100))
-	message.WriteString(fmt.Sprintf("• <b>Threshold:</b> %.1f%%\n", threshold*100))
-	message.WriteString(fmt.Sprintf("• <b>Excess:</b> %.1f%%\n\n", (usage-threshold)*100))
+	message.WriteString(fmt.Sprintf("• <b>Current Usage:</b> %.1f%%\n", usage))
+	message.WriteString(fmt.Sprintf("• <b>Threshold:</b> %.1f%%\n", threshold))
+	message.WriteString(fmt.Sprintf("• <b>Excess:</b> %.1f%%\n\n", usage-threshold))
 
 	// Детали
 	if len(details) > 0 {

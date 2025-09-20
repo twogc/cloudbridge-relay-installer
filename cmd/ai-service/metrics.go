@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
 )
 
 // Metrics структура для хранения Prometheus метрик
@@ -30,10 +31,13 @@ type Metrics struct {
 	cpuUsage              prometheus.Gauge
 	memoryUsage           prometheus.Gauge
 	diskUsage             prometheus.Gauge
+
+	// Ссылка на AI Service для получения реальных данных
+	aiService             *ai.Service
 }
 
 // NewMetrics создает новый экземпляр метрик
-func NewMetrics() *Metrics {
+func NewMetrics(aiService *ai.Service) *Metrics {
 	return &Metrics{
 		// HTTP метрики
 		httpRequestsTotal: promauto.NewCounterVec(
@@ -121,6 +125,9 @@ func NewMetrics() *Metrics {
 				Help: "AI service disk usage in bytes",
 			},
 		),
+
+		// Инициализируем ссылку на AI Service
+		aiService: aiService,
 	}
 }
 
@@ -155,21 +162,80 @@ func (m *Metrics) PrometheusMiddleware() gin.HandlerFunc {
 
 // UpdateAIMetrics обновляет AI метрики
 func (m *Metrics) UpdateAIMetrics() {
-	// Обновляем метрики AI сервиса
-	m.aiRequestsProcessed.Add(1000) // Симуляция обработанных запросов
-	m.aiAnomaliesDetected.Add(50)   // Симуляция обнаруженных аномалий
-	m.aiPredictionsMade.Add(200)    // Симуляция сделанных предсказаний
-	m.aiRoutesOptimized.Add(150)    // Симуляция оптимизированных маршрутов
-	
-	// Устанавливаем текущие значения
-	m.aiActiveAlerts.Set(2)           // 2 активных алерта
-	m.aiPredictionAccuracy.Set(0.85)  // 85% точность предсказаний
-	m.aiServiceUptime.Set(time.Since(time.Now().Add(-24 * time.Hour)).Seconds()) // 24 часа uptime
-	
-	// Системные метрики
-	m.cpuUsage.Set(51.3)              // 51.3% CPU
-	m.memoryUsage.Set(256 * 1024 * 1024) // 256 MB памяти
-	m.diskUsage.Set(1024 * 1024 * 1024)  // 1 GB диска
+	if m.aiService == nil {
+		// Fallback к базовым значениям если AI Service недоступен
+		m.aiRequestsProcessed.Add(0)
+		m.aiAnomaliesDetected.Add(0)
+		m.aiPredictionsMade.Add(0)
+		m.aiRoutesOptimized.Add(0)
+		m.aiActiveAlerts.Set(0)
+		m.aiPredictionAccuracy.Set(0.0)
+		m.aiServiceUptime.Set(0)
+		m.cpuUsage.Set(0)
+		m.memoryUsage.Set(0)
+		m.diskUsage.Set(0)
+		return
+	}
+
+	// Получаем реальные данные из AI Service
+	status := m.aiService.GetStatus()
+	aiMetrics := status.Performance["metrics"].(map[string]interface{})
+
+	// Обновляем метрики на основе реальных данных
+	if anomalyMetrics, ok := aiMetrics["anomaly_detection"].(map[string]interface{}); ok {
+		if totalDetections, ok := anomalyMetrics["total_detections"].(int64); ok {
+			// Для Counter используем Add с разностью
+			m.aiAnomaliesDetected.Add(float64(totalDetections))
+		}
+	}
+
+	if loadPredictionMetrics, ok := aiMetrics["load_prediction"].(map[string]interface{}); ok {
+		if totalPredictions, ok := loadPredictionMetrics["total_predictions"].(int64); ok {
+			m.aiPredictionsMade.Add(float64(totalPredictions))
+		}
+		if accuracy, ok := loadPredictionMetrics["accuracy"].(float64); ok {
+			m.aiPredictionAccuracy.Set(accuracy)
+		}
+	}
+
+	if routeOptimizationMetrics, ok := aiMetrics["route_optimization"].(map[string]interface{}); ok {
+		if totalOptimizations, ok := routeOptimizationMetrics["total_optimizations"].(int64); ok {
+			m.aiRoutesOptimized.Add(float64(totalOptimizations))
+		}
+	}
+
+	if processingMetrics, ok := aiMetrics["processing"].(map[string]interface{}); ok {
+		if totalCount, ok := processingMetrics["total_count"].(int64); ok {
+			m.aiRequestsProcessed.Add(float64(totalCount))
+		}
+	}
+
+	if systemMetrics, ok := aiMetrics["system"].(map[string]interface{}); ok {
+		if cpuUsage, ok := systemMetrics["cpu_usage"].(float64); ok {
+			m.cpuUsage.Set(cpuUsage)
+		}
+		if memoryUsage, ok := systemMetrics["memory_usage"].(int64); ok {
+			m.memoryUsage.Set(float64(memoryUsage))
+		}
+		if activeConnections, ok := systemMetrics["active_connections"].(int64); ok {
+			// Используем активные соединения как индикатор алертов
+			if activeConnections > 100 {
+				m.aiActiveAlerts.Set(1) // Высокая нагрузка
+			} else if activeConnections > 50 {
+				m.aiActiveAlerts.Set(0.5) // Средняя нагрузка
+			} else {
+				m.aiActiveAlerts.Set(0) // Низкая нагрузка
+			}
+		}
+	}
+
+	// Устанавливаем uptime на основе реального времени работы сервиса
+	if status.Uptime > 0 {
+		m.aiServiceUptime.Set(status.Uptime.Seconds())
+	}
+
+	// Системные метрики диска (пока используем базовые значения)
+	m.diskUsage.Set(1024 * 1024 * 1024) // 1 GB диска
 }
 
 // GetPrometheusHandler возвращает handler для Prometheus метрик

@@ -51,6 +51,7 @@ type DataProcessor interface {
 type DataStorage interface {
 	Store(data []DataPoint) error
 	Retrieve(timeRange TimeRange) ([]DataPoint, error)
+	Query(timeRange TimeRange, dataType string, limit int) ([]DataPoint, error)
 }
 
 // DataPoint представляет точку данных
@@ -538,4 +539,63 @@ func (fs *FileStorage) Retrieve(timeRange TimeRange) ([]DataPoint, error) {
 func (dp *DataPipeline) GetCollector(name string) (DataCollector, bool) {
 	collector, exists := dp.collectors[name]
 	return collector, exists
+}
+
+// QueryData запрашивает данные из pipeline
+func (dp *DataPipeline) QueryData(timeRange TimeRange, dataType string, limit int) ([]DataPoint, error) {
+	if !dp.started {
+		return nil, fmt.Errorf("data pipeline not started")
+	}
+
+	// Получаем данные из storage
+	if dp.storage == nil {
+		return nil, fmt.Errorf("storage not available")
+	}
+
+	// Запрашиваем данные из storage
+	data, err := dp.storage.Query(timeRange, dataType, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query data from storage: %w", err)
+	}
+
+	return data, nil
+}
+
+// GetMetrics возвращает метрики pipeline
+func (dp *DataPipeline) GetMetrics() (map[string]interface{}, error) {
+	metrics := make(map[string]interface{})
+
+	// Метрики коллекторов
+	collectorMetrics := make(map[string]interface{})
+	for name := range dp.collectors {
+		collectorMetrics[name] = map[string]interface{}{
+			"status": "running",
+			"type":   "collector",
+		}
+	}
+	metrics["collectors"] = collectorMetrics
+
+	// Метрики процессоров
+	processorMetrics := make(map[string]interface{})
+	for i := range dp.processors {
+		processorMetrics[fmt.Sprintf("processor_%d", i)] = map[string]interface{}{
+			"status": "running",
+			"type":   "processor",
+		}
+	}
+	metrics["processors"] = processorMetrics
+
+	// Метрики хранилища
+	metrics["storage"] = map[string]interface{}{
+		"status": "running",
+		"type":   "storage",
+	}
+
+	// Общие метрики
+	metrics["pipeline_status"] = "healthy"
+	if !dp.started {
+		metrics["pipeline_status"] = "stopped"
+	}
+
+	return metrics, nil
 }
