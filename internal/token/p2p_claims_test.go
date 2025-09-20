@@ -59,7 +59,7 @@ func TestP2PClaimsWithNewFields(t *testing.T) {
 		ConnectionType: "quic",
 		TenantID:       "test-tenant",
 		ServerID:       "test-server",
-		Permissions:    []string{"mesh_join", "quic_connect"},
+		Permissions:    []string{"mesh_join", "quic_connect", "p2p_connect"},
 	}
 
 	if err := claims.Validate(); err != nil {

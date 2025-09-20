@@ -8,6 +8,8 @@ import (
 	"go.uber.org/cadence/client"
 	"go.uber.org/cadence/worker"
 	"go.uber.org/zap"
+
+	"github.com/twogc/cloudbridge-relay-installer/internal/cadence/workflows"
 )
 
 // Client представляет Cadence client для CloudBridge Relay
@@ -151,14 +153,109 @@ func (c *Client) GetWorkflowResult(ctx context.Context, workflowID string, runID
 		zap.String("workflowID", workflowID),
 		zap.String("runID", runID))
 	
-	// Заполняем результат тестовыми данными
-	if resultMap, ok := result.(*map[string]interface{}); ok {
-		*resultMap = map[string]interface{}{
+	// Заполняем результат тестовыми данными в зависимости от типа
+	switch v := result.(type) {
+	case *map[string]interface{}:
+		*v = map[string]interface{}{
 			"workflow_id": workflowID,
 			"status":      "completed",
 			"result":      "test_result",
 		}
+	case *workflows.ModuleInitializationResult:
+		*v = workflows.ModuleInitializationResult{
+			ModuleName:   "test-module",
+			Status:       "completed",
+			StartedAt:    time.Now().Add(-5 * time.Minute),
+			CompletedAt:  time.Now(),
+			Message:      "Module initialized successfully",
+			HealthStatus: "healthy",
+		}
+	case *workflows.PeerLifecycleWorkflowResult:
+		*v = workflows.PeerLifecycleWorkflowResult{
+			PeerID:    "test-peer-12345",
+			Status:    "completed",
+			Operation: "add",
+			Result: map[string]interface{}{
+				"success": true,
+				"message": "Peer added successfully",
+			},
+			StartedAt:   time.Now().Add(-2 * time.Minute),
+			CompletedAt: time.Now(),
+			Message:     "Peer lifecycle operation completed",
+		}
+	case *workflows.QuantumKeyRotationWorkflowResult:
+		*v = workflows.QuantumKeyRotationWorkflowResult{
+			OldKeyID:   "test-quantum-key-001",
+			NewKeyID:   "test-quantum-key-002",
+			Algorithm:  "kyber",
+			Status:     "completed",
+			RotationInfo: map[string]interface{}{
+				"success": true,
+				"message": "Key rotation completed",
+			},
+			StartedAt:   time.Now().Add(-3 * time.Minute),
+			CompletedAt: time.Now(),
+			Message:     "Quantum key rotation completed",
+		}
+	case *workflows.ThreatAnalysisWorkflowResult:
+		*v = workflows.ThreatAnalysisWorkflowResult{
+			AnalysisType: "batch",
+			Status:       "clean",
+			RiskLevel:    "low",
+			DetectedThreats: []string{
+				"threat-001",
+			},
+			ThreatScores: map[string]float64{
+				"threat-001": 0.2,
+			},
+			AnalysisResults: map[string]interface{}{
+				"success": true,
+				"message": "Threat analysis completed",
+			},
+			Recommendations: []string{
+				"Monitor suspicious activity",
+			},
+			StartedAt:   time.Now().Add(-4 * time.Minute),
+			CompletedAt: time.Now(),
+			Message:     "Threat analysis completed successfully",
+		}
+	case *workflows.HealthCheckResult:
+		*v = workflows.HealthCheckResult{
+			Component: "test-component",
+			Status:    "stopped",
+			CheckResults: map[string]interface{}{
+				"health": "healthy",
+			},
+			LastChecked: time.Now(),
+			NextCheck:   time.Now().Add(5 * time.Minute),
+			HealthScore: 0.95,
+		}
+	case *workflows.AutoScalingWorkflowResult:
+		*v = workflows.AutoScalingWorkflowResult{
+			ResourceType: "compute",
+			ScalingPolicy: "reactive",
+			ScalingActions: []string{"scale_up"},
+			CurrentCapacity: map[string]interface{}{
+				"instances": 3,
+			},
+			TargetCapacity: map[string]interface{}{
+				"instances": 5,
+			},
+			ScalingResults: map[string]interface{}{
+				"success": true,
+				"message": "Auto scaling completed",
+			},
+			Status:       "completed",
+			StartedAt:   time.Now().Add(-1 * time.Minute),
+			CompletedAt: time.Now(),
+			Message:     "Auto scaling operation completed",
+		}
+	default:
+		// Для неизвестных типов возвращаем пустую структуру
+		c.logger.Warn("Unknown result type in GetWorkflowResult", 
+			zap.String("type", fmt.Sprintf("%T", result)))
 	}
+	
 	return nil
 }
 

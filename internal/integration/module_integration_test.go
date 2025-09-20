@@ -42,7 +42,7 @@ func TestWireGuardQuantumIntegration(t *testing.T) {
 	// Проверяем статус
 	status := wgInterface.GetStatus()
 	assert.NotNil(t, status)
-	
+
 	// Проверяем, что статус содержит "running" как строку
 	statusStr, ok := status["status"].(string)
 	if ok {
@@ -236,6 +236,6 @@ func TestModuleErrorHandling(t *testing.T) {
 		"ip_address": "192.168.1.100",
 	}
 
-	anomalyScore := behaviorAnalyzer.AnalyzeUserBehavior(userID, behaviorData)
-	assert.GreaterOrEqual(t, anomalyScore, 0.0)
+	err = behaviorAnalyzer.AnalyzeUserBehavior(userID, behaviorData)
+	assert.NoError(t, err)
 }
