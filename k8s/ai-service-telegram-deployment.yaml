@@ -1,0 +1,166 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/component: ai
+    app.kubernetes.io/name: ai-service
+    app.kubernetes.io/part-of: cloudbridge-relay
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: ai
+      app.kubernetes.io/name: ai-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: ai
+        app.kubernetes.io/name: ai-service
+        app.kubernetes.io/part-of: cloudbridge-relay
+    spec:
+      containers:
+      - name: ai-service
+        image: cloudbridge-relay:cadence-p2p-v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8083
+          name: http
+        - containerPort: 8080
+          name: metrics
+        env:
+        # AI Configuration
+        - name: AI_ENABLED
+          value: "true"
+        - name: AI_MODE
+          value: "kubernetes"
+        - name: AI_MODELS_PATH
+          value: "/app/models"
+        - name: AI_REDIS_ADDRESS
+          value: "redis-service:6379"
+        - name: AI_REDIS_PASSWORD
+          value: ""
+        - name: AI_REDIS_DB
+          value: "0"
+        
+        # Telegram Configuration
+        - name: AI_TELEGRAM_ENABLED
+          value: "true"
+        - name: AI_TELEGRAM_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ai-telegram-secret
+              key: TELEGRAM_BOT_TOKEN
+        - name: AI_TELEGRAM_CHAT_ID
+          valueFrom:
+            secretKeyRef:
+              name: ai-telegram-secret
+              key: TELEGRAM_CHAT_ID
+        - name: AI_TELEGRAM_PARSE_MODE
+          value: "HTML"
+        - name: AI_TELEGRAM_DISABLE_WEB_PAGE_PREVIEW
+          value: "true"
+        
+        # Notification Settings
+        - name: AI_NOTIFICATIONS_ENABLED
+          value: "true"
+        - name: AI_SEND_ANALYTICS_REPORTS
+          value: "true"
+        - name: AI_SEND_ANOMALY_ALERTS
+          value: "true"
+        - name: AI_SEND_PERFORMANCE_ALERTS
+          value: "true"
+        - name: AI_SEND_HEALTH_ALERTS
+          value: "true"
+        
+        # Intervals
+        - name: AI_ANALYTICS_REPORT_INTERVAL
+          value: "1h"
+        - name: AI_ANOMALY_CHECK_INTERVAL
+          value: "5m"
+        - name: AI_PERFORMANCE_CHECK_INTERVAL
+          value: "10m"
+        - name: AI_HEALTH_CHECK_INTERVAL
+          value: "30s"
+        
+        # Thresholds
+        - name: AI_ANOMALY_THRESHOLD
+          value: "0.8"
+        - name: AI_PERFORMANCE_THRESHOLD
+          value: "0.85"
+        - name: AI_HEALTH_THRESHOLD
+          value: "0.9"
+        
+        # Kubernetes Integration
+        - name: AI_KUBERNETES_NAMESPACE
+          value: "cloudbridge"
+        - name: AI_KUBERNETES_MONITORING_INTERVAL
+          value: "30s"
+        - name: AI_KUBERNETES_METRICS_COLLECTION
+          value: "true"
+        - name: AI_KUBERNETES_AUTO_SCALING
+          value: "true"
+        
+        # Prometheus Integration
+        - name: AI_PROMETHEUS_URL
+          value: "http://prometheus-service:9090"
+        
+        # Cadence Integration
+        - name: AI_CADENCE_INTEGRATION
+          value: "true"
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8083
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8083
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: ai-config
+          mountPath: /app/config
+          readOnly: true
+        - name: ai-models
+          mountPath: /app/models
+      volumes:
+      - name: ai-config
+        configMap:
+          name: ai-telegram-config
+      - name: ai-models
+        emptyDir: {}
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/component: ai
+    app.kubernetes.io/name: ai-service
+    app.kubernetes.io/part-of: cloudbridge-relay
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8083
+    targetPort: 8083
+    name: http
+  - port: 8080
+    targetPort: 8080
+    name: metrics
+  selector:
+    app.kubernetes.io/component: ai
+    app.kubernetes.io/name: ai-service

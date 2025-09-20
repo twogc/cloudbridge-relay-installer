@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/analytics"
 )
 
 // NotificationSystem система уведомлений
 type NotificationSystem struct {
-	slackWebhook string
-	emailConfig  *EmailConfig
-	webhooks     []string
+	slackWebhook   string
+	emailConfig    *EmailConfig
+	telegramConfig *TelegramConfig
+	webhooks       []string
 }
 
 // EmailConfig конфигурация Email
@@ -25,11 +27,20 @@ type EmailConfig struct {
 	Recipients []string
 }
 
+// TelegramConfig конфигурация Telegram
+type TelegramConfig struct {
+	BotToken              string `json:"bot_token"`
+	ChatID                string `json:"chat_id"`
+	ParseMode             string `json:"parse_mode"` // HTML, Markdown
+	DisableWebPagePreview bool   `json:"disable_web_page_preview"`
+}
+
 // NotificationConfig конфигурация уведомлений
 type NotificationConfig struct {
-	SlackWebhook string       `json:"slack_webhook"`
-	EmailConfig  *EmailConfig `json:"email_config"`
-	Webhooks     []string     `json:"webhooks"`
+	SlackWebhook   string          `json:"slack_webhook"`
+	EmailConfig    *EmailConfig    `json:"email_config"`
+	TelegramConfig *TelegramConfig `json:"telegram_config"`
+	Webhooks       []string        `json:"webhooks"`
 }
 
 // NewNotificationSystem создает новую систему уведомлений
@@ -44,10 +55,16 @@ func (n *NotificationSystem) AddSlackWebhook(webhook string) {
 	n.slackWebhook = webhook
 }
 
+// AddTelegramConfig добавляет Telegram конфигурацию
+func (n *NotificationSystem) AddTelegramConfig(config *TelegramConfig) {
+	n.telegramConfig = config
+}
+
 // Configure настраивает систему уведомлений
 func (n *NotificationSystem) Configure(config NotificationConfig) {
 	n.slackWebhook = config.SlackWebhook
 	n.emailConfig = config.EmailConfig
+	n.telegramConfig = config.TelegramConfig
 	n.webhooks = config.Webhooks
 }
 
@@ -57,6 +74,13 @@ func (n *NotificationSystem) SendReport(report *analytics.Report) error {
 	if n.slackWebhook != "" {
 		if err := n.sendSlackNotification(report); err != nil {
 			return fmt.Errorf("failed to send Slack notification: %w", err)
+		}
+	}
+
+	// Telegram уведомление
+	if n.telegramConfig != nil {
+		if err := n.sendTelegramNotification(report); err != nil {
+			return fmt.Errorf("failed to send Telegram notification: %w", err)
 		}
 	}
 
@@ -225,4 +249,98 @@ func (n *NotificationSystem) sendWebhookNotification(report *analytics.Report, w
 	}
 
 	return nil
+}
+
+// sendTelegramNotification отправляет уведомление в Telegram
+func (n *NotificationSystem) sendTelegramNotification(report *analytics.Report) error {
+	// Форматирование сообщения для Telegram
+	message := n.formatTelegramMessage(report)
+
+	// Подготовка запроса
+	payload := map[string]string{
+		"chat_id":    n.telegramConfig.ChatID,
+		"text":       message,
+		"parse_mode": n.telegramConfig.ParseMode,
+	}
+
+	if n.telegramConfig.DisableWebPagePreview {
+		payload["disable_web_page_preview"] = "true"
+	}
+
+	// Отправка запроса
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", n.telegramConfig.BotToken)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("telegram API error: status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// formatTelegramMessage форматирует сообщение для Telegram
+func (n *NotificationSystem) formatTelegramMessage(report *analytics.Report) string {
+	var message strings.Builder
+
+	// Заголовок
+	message.WriteString("<b>CloudBridge AI Analytics Report</b>\n")
+	message.WriteString(fmt.Sprintf("Timestamp: %s\n\n", report.Timestamp.Format("2006-01-02 15:04:05")))
+
+	// Краткое резюме
+	if report.Analysis.Summary != "" {
+		message.WriteString("<b>Summary:</b>\n")
+		message.WriteString(report.Analysis.Summary + "\n\n")
+	}
+
+	// Инсайты
+	if len(report.Analysis.Insights) > 0 {
+		message.WriteString("<b>Key Insights:</b>\n")
+		for _, insight := range report.Analysis.Insights {
+			message.WriteString(fmt.Sprintf("• %s\n", insight))
+		}
+		message.WriteString("\n")
+	}
+
+	// Критические проблемы
+	if len(report.Analysis.CriticalIssues) > 0 {
+		message.WriteString("<b>Critical Issues:</b>\n")
+		for _, issue := range report.Analysis.CriticalIssues {
+			message.WriteString(fmt.Sprintf("• %s\n", issue))
+		}
+		message.WriteString("\n")
+	}
+
+	// Рекомендации
+	if len(report.Analysis.Recommendations) > 0 {
+		message.WriteString("<b>Recommendations:</b>\n")
+		for _, rec := range report.Analysis.Recommendations {
+			message.WriteString(fmt.Sprintf("• %s\n", rec))
+		}
+		message.WriteString("\n")
+	}
+
+	// Производительность
+	if report.Analysis.Performance != "" {
+		message.WriteString(fmt.Sprintf("<b>Performance:</b> %s\n", report.Analysis.Performance))
+	}
+
+	// Здоровье системы
+	if report.Metrics.Health != nil {
+		message.WriteString(fmt.Sprintf("<b>Health Status:</b> %s (%.1f/100)\n",
+			report.Metrics.Health.Overall, report.Metrics.Health.Score))
+	}
+
+	// Footer
+	message.WriteString(fmt.Sprintf("\nReport ID: %s | Generated by CloudBridge AI Analytics", report.ID))
+
+	return message.String()
 }
