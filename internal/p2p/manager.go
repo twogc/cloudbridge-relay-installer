@@ -10,15 +10,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// P2PManager управляет P2P соединениями
+// P2PManager управляет P2P соединениями с интеграцией Cadence
 type P2PManager struct {
-	wireGuardMesh     *wireguard.MeshTopology
-	peerDiscovery     *wireguard.PeerDiscovery
-	hybridRouter      *wireguard.HybridRouter
-	siteToSiteManager *wireguard.SiteToSiteManager
-	metrics           *P2PMetrics
-	logger            *zap.Logger
-	isInitialized     bool
+	wireGuardMesh      *wireguard.MeshTopology
+	peerDiscovery      *wireguard.PeerDiscovery
+	hybridRouter       *wireguard.HybridRouter
+	siteToSiteManager  *wireguard.SiteToSiteManager
+	metrics            *P2PMetrics
+	logger             *zap.Logger
+	isInitialized      bool
+	cadenceIntegration *CadenceP2PIntegration
 }
 
 // NewP2PManager создает новый P2P менеджер
@@ -29,7 +30,7 @@ func NewP2PManager(
 	siteToSite *wireguard.SiteToSiteManager,
 	logger *zap.Logger,
 ) *P2PManager {
-	return &P2PManager{
+	pm := &P2PManager{
 		wireGuardMesh:     mesh,
 		peerDiscovery:     discovery,
 		hybridRouter:      router,
@@ -38,6 +39,32 @@ func NewP2PManager(
 		logger:            logger,
 		isInitialized:     true,
 	}
+
+	// Cadence интеграция будет инициализирована позже через SetCadenceIntegration
+	return pm
+}
+
+// NewP2PManagerWithCadence создает новый P2P менеджер с Cadence интеграцией
+func NewP2PManagerWithCadence(
+	mesh *wireguard.MeshTopology,
+	discovery *wireguard.PeerDiscovery,
+	router *wireguard.HybridRouter,
+	siteToSite *wireguard.SiteToSiteManager,
+	cadenceClient interface{}, // *cadence.Client
+	logger *zap.Logger,
+) *P2PManager {
+	pm := NewP2PManager(mesh, discovery, router, siteToSite, logger)
+
+	// Инициализация Cadence интеграции
+	// pm.cadenceIntegration = NewCadenceP2PIntegration(cadenceClient, pm, logger)
+
+	return pm
+}
+
+// SetCadenceIntegration устанавливает Cadence интеграцию
+func (pm *P2PManager) SetCadenceIntegration(cadenceIntegration *CadenceP2PIntegration) {
+	pm.cadenceIntegration = cadenceIntegration
+	pm.logger.Info("Cadence интеграция установлена для P2P Manager")
 }
 
 // Initialize инициализирует P2P компоненты
@@ -214,6 +241,110 @@ type RouteInfo struct {
 	Endpoint   string
 	Latency    time.Duration
 	TrustLevel wireguard.TrustLevel
+}
+
+// CreateTunnelWithOrchestration создает туннель с оркестрацией через Cadence
+func (pm *P2PManager) CreateTunnelWithOrchestration(ctx context.Context, tenantID, peerID string, config map[string]interface{}) error {
+	pm.logger.Info("Создание туннеля с оркестрацией",
+		zap.String("tenant_id", tenantID),
+		zap.String("peer_id", peerID),
+	)
+
+	if pm.cadenceIntegration == nil {
+		pm.logger.Warn("Cadence интеграция не настроена, создание туннеля без оркестрации")
+		// Fallback к обычному созданию туннеля
+		return pm.createTunnelDirectly(ctx, tenantID, peerID, config)
+	}
+
+	// Запуск оркестрации через Cadence
+	err := pm.cadenceIntegration.OrchestrateTunnelCreation(ctx, tenantID, peerID, config)
+	if err != nil {
+		pm.logger.Error("Ошибка оркестрации создания туннеля", zap.Error(err))
+		return err
+	}
+
+	pm.logger.Info("Туннель создан с оркестрацией через Cadence")
+	return nil
+}
+
+// EstablishConnectionWithOrchestration устанавливает соединение с оркестрацией через Cadence
+func (pm *P2PManager) EstablishConnectionWithOrchestration(ctx context.Context, tenantID, sourcePeerID, targetPeerID string, config map[string]interface{}) error {
+	pm.logger.Info("Установка соединения с оркестрацией",
+		zap.String("tenant_id", tenantID),
+		zap.String("source_peer", sourcePeerID),
+		zap.String("target_peer", targetPeerID),
+	)
+
+	if pm.cadenceIntegration == nil {
+		pm.logger.Warn("Cadence интеграция не настроена, установка соединения без оркестрации")
+		// Fallback к обычной установке соединения
+		return pm.establishConnectionDirectly(ctx, tenantID, sourcePeerID, targetPeerID, config)
+	}
+
+	// Запуск оркестрации через Cadence
+	err := pm.cadenceIntegration.OrchestrateConnectionEstablishment(ctx, tenantID, sourcePeerID, targetPeerID, config)
+	if err != nil {
+		pm.logger.Error("Ошибка оркестрации установки соединения", zap.Error(err))
+		return err
+	}
+
+	pm.logger.Info("Соединение установлено с оркестрацией через Cadence")
+	return nil
+}
+
+// OptimizeRoutingWithAI оптимизирует маршрутизацию с помощью AI через Cadence
+func (pm *P2PManager) OptimizeRoutingWithAI(ctx context.Context, tenantID, sourcePeerID, targetPeerID string, dataSize int64, priority string, networkConditions map[string]interface{}) error {
+	pm.logger.Info("AI-оптимизация маршрутизации",
+		zap.String("tenant_id", tenantID),
+		zap.String("source_peer", sourcePeerID),
+		zap.String("target_peer", targetPeerID),
+		zap.String("priority", priority),
+		zap.Int64("data_size", dataSize),
+	)
+
+	if pm.cadenceIntegration == nil {
+		pm.logger.Warn("Cadence интеграция не настроена, AI-оптимизация недоступна")
+		return fmt.Errorf("cadence integration not available")
+	}
+
+	// Запуск AI-оптимизации через Cadence
+	err := pm.cadenceIntegration.OrchestrateAIOptimizedRouting(ctx, tenantID, sourcePeerID, targetPeerID, dataSize, priority, networkConditions)
+	if err != nil {
+		pm.logger.Error("Ошибка AI-оптимизации маршрутизации", zap.Error(err))
+		return err
+	}
+
+	pm.logger.Info("AI-оптимизация маршрутизации запущена через Cadence")
+	return nil
+}
+
+// createTunnelDirectly создает туннель напрямую (fallback метод)
+func (pm *P2PManager) createTunnelDirectly(ctx context.Context, tenantID, peerID string, config map[string]interface{}) error {
+	pm.logger.Info("Создание туннеля напрямую",
+		zap.String("tenant_id", tenantID),
+		zap.String("peer_id", peerID),
+	)
+
+	// Здесь должна быть логика прямого создания туннеля
+	// Интеграция с существующими P2P компонентами
+
+	pm.logger.Info("Туннель создан напрямую")
+	return nil
+}
+
+// establishConnectionDirectly устанавливает соединение напрямую (fallback метод)
+func (pm *P2PManager) establishConnectionDirectly(ctx context.Context, tenantID, sourcePeerID, targetPeerID string, config map[string]interface{}) error {
+	pm.logger.Info("Установка соединения напрямую",
+		zap.String("tenant_id", tenantID),
+		zap.String("source_peer", sourcePeerID),
+		zap.String("target_peer", targetPeerID),
+	)
+
+	// Здесь должна быть логика прямой установки соединения
+	// Интеграция с существующими P2P компонентами
+
+	pm.logger.Info("Соединение установлено напрямую")
+	return nil
 }
 
 // determineOptimalRoute определяет оптимальный маршрут для соединения

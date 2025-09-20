@@ -198,11 +198,16 @@ func (cw *CadenceWorker) registerWorkflows() error {
 	// Security workflows
 	workflow.Register(workflows.SecurityComplianceWorkflow)
 	workflow.Register(workflows.AuditLoggingWorkflow)
+
+	// P2P QUIC workflows
+	workflow.Register(workflows.P2PQUICTunnelWorkflow)
+	workflow.Register(workflows.P2PConnectionOrchestrationWorkflow)
+	workflow.Register(workflows.AIOptimizedRoutingWorkflow)
 	workflow.Register(workflows.IncidentResponseWorkflow)
 	workflow.Register(workflows.BackupRecoveryWorkflow)
 
 	cw.logger.Info("Все workflows зарегистрированы",
-		zap.Int("workflow_count", 20), // Обновить при добавлении новых workflows
+		zap.Int("workflow_count", 23), // Обновлено с учетом P2P QUIC workflows
 	)
 
 	return nil
@@ -269,8 +274,21 @@ func (cw *CadenceWorker) registerActivities() error {
 	activity.RegisterWithOptions(cw.createSecurityActivity("AuditSecurityAreaActivity"), activity.RegisterOptions{Name: "AuditSecurityAreaActivity"})
 	activity.RegisterWithOptions(cw.createSecurityActivity("CalculateComplianceScoreActivity"), activity.RegisterOptions{Name: "CalculateComplianceScoreActivity"})
 
+	// P2P QUIC activities
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("CreateP2PQUICTunnelActivity"), activity.RegisterOptions{Name: "CreateP2PQUICTunnelActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("UpdateP2PQUICTunnelActivity"), activity.RegisterOptions{Name: "UpdateP2PQUICTunnelActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("DeleteP2PQUICTunnelActivity"), activity.RegisterOptions{Name: "DeleteP2PQUICTunnelActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("MonitorP2PQUICTunnelActivity"), activity.RegisterOptions{Name: "MonitorP2PQUICTunnelActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("CheckPeersAvailabilityActivity"), activity.RegisterOptions{Name: "CheckPeersAvailabilityActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("SelectOptimalConnectionTypeActivity"), activity.RegisterOptions{Name: "SelectOptimalConnectionTypeActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("EstablishP2PConnectionActivity"), activity.RegisterOptions{Name: "EstablishP2PConnectionActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("ValidateP2PConnectionActivity"), activity.RegisterOptions{Name: "ValidateP2PConnectionActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("AnalyzeNetworkConditionsActivity"), activity.RegisterOptions{Name: "AnalyzeNetworkConditionsActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("PredictOptimalRouteActivity"), activity.RegisterOptions{Name: "PredictOptimalRouteActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("GenerateAIRecommendationsActivity"), activity.RegisterOptions{Name: "GenerateAIRecommendationsActivity"})
+
 	cw.logger.Info("Все activities зарегистрированы",
-		zap.Int("activity_count", 35), // Примерное количество
+		zap.Int("activity_count", 46), // Обновлено с учетом P2P QUIC activities
 	)
 
 	return nil
@@ -374,6 +392,34 @@ func (cw *CadenceWorker) createSecurityActivity(activityName string) interface{}
 			"timestamp":      "2024-01-01T00:00:00Z", // Placeholder
 			"security_level": "high",
 			"compliance_met": true,
+		}
+
+		// Записываем завершение
+		cw.cadenceMetrics.RecordActivityCompleted(activityName, cw.config.Domain, 0)
+
+		return result, nil
+	}
+}
+
+// createP2PQUICActivity создает placeholder activity для P2P QUIC операций
+func (cw *CadenceWorker) createP2PQUICActivity(activityName string) interface{} {
+	return func(ctx context.Context, args ...interface{}) (map[string]interface{}, error) {
+		cw.logger.Info("Выполнение P2P QUIC activity",
+			zap.String("activity", activityName),
+			zap.Int("args_count", len(args)),
+		)
+
+		// Записываем метрику
+		cw.cadenceMetrics.RecordActivityStarted(activityName, cw.config.Domain)
+
+		// Симуляция выполнения P2P QUIC операции
+		result := map[string]interface{}{
+			"activity_name": activityName,
+			"status":        "completed",
+			"timestamp":     time.Now().Format(time.RFC3339),
+			"p2p_quic":      true,
+			"protocol":      "quic",
+			"tenant_id":     "default",
 		}
 
 		// Записываем завершение
