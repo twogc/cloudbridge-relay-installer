@@ -101,6 +101,32 @@ CloudBridge Relay решает проблему создания надежны�
 - **Connection migration** - стабильность при роуминге
 - **Грамотные fallback** - для блокирующих сетей
 
+## 🛡️ **Безопасность и устойчивость к атакам**
+
+### **Почему это спасает от zero-day в классических VPN**
+
+* **Убираем уязвимый периметр-шлюз.** Наиболее громкие инциденты последних лет били по **аппаратным/периметровым VPN-шлюзам** (Ivanti/Pulse, SonicWall, Fortinet) через 0-day/недавно закрытые RCE. Переход на ZTNA/HTTP-нативные туннели исключает экспонированный VPN-апплаенс, тем самым срезает класс атак по уязвимостям устройств. ([Google Cloud][1])
+
+* **Zero Trust вместо "широкого" VPN.** ZTNA даёт доступ «по приложению/идентичности» и скрывает внутренние сервисы от интернета, уменьшая площадь атаки и возможности латерального перемещения при компромиссе учётки. Это ровно то, к чему подталкивает CISA и что описано NIST 800-207. ([CISA][2])
+
+* **HTTP/3/MASQUE (CONNECT-UDP/IP)**: клиенты инициируют **исходящие** соединения на 443/QUIC→HTTP/3-прокси, вместо того чтобы держать публичный VPN-эндпойнт. Меньше экспозиции — меньше шанс стать целью периметровой RCE на «железке». ([datatracker.ietf.org][3])
+
+### **Почему это устойчиво к DDoS (а не «DDOS нет»)**
+
+* **Anycast + масштабирование.** Размещение релеев за anycast-адресами «распыляет» трафик по нескольким узлам/регионам и помогает переживать всплески и DDoS. ([cloudflare.com][4])
+
+* **Встроенные анти-амплификационные механизмы QUIC.** QUIC требует **валидации адреса** и накладывает **anti-amplification limit**; сервер может делать **Retry**, чтобы не стать «усилителем» при спуфинге. Эти механизмы снижает эффективность UDP-амплификаций на входе. ([datatracker.ietf.org][5])
+
+* **Политики/лимиты на уровне прокси.** На MASQUE-/HTTP-слое легко вводить rate-limit, токены/аутентификацию, фаервол правилом — и быстро «выселять» злоумышленника без влияния на остальных. (CONNECT-UDP/CONNECT-IP — стандартные методы). ([datatracker.ietf.org][3])
+
+### **Как корректно сформулировать обещания в презентации**
+
+* **Про zero-day:**
+  «Архитектура без периметровых VPN-шлюзов снижает риск атак класса 0-day на VPN-апплаенсы. Доступ строится по моделям Zero Trust и HTTP-нативных туннелей (MASQUE), без экспонированных VPN-порталов.» ([Google Cloud][1])
+
+* **Про DDoS:**
+  «Сеть спроектирована **DDoS-устойчивой**: anycast-рассеивание, QUIC-address-validation/Retry против амплификации, плюс лимиты и аутентификация на прокси-уровне.» ([cloudflare.com][4])
+
 ## ⚠️ **Риски и решения**
 
 ### **Блокировки UDP/QUIC в enterprise**
@@ -389,3 +415,13 @@ ICE/STUN/TURN слой:
 **🎯 Цель: Создать HTTP-нативную P2P mesh платформу для Zero-Trust оверлеев, где удаленные серверы могут общаться через современные протоколы QUIC + ICE/STUN/TURN + MASQUE с автоматическим fallback на WebSocket/TCP!**
 
 **Проект имеет высокий шанс занять нишу HTTP-нативного Zero-Trust-оверлея в enterprise/IoT/мульти-облаке, где классическим UDP-VPN тяжело проходить инфраструктурные фильтры.**
+
+---
+
+## 📚 **Ссылки и источники**
+
+[1]: https://cloud.google.com/blog/products/identity-security/zero-trust-architecture-design-principles "Google Cloud - Zero Trust Architecture Design Principles"
+[2]: https://www.cisa.gov/resources-tools/resources/zero-trust-maturity-model "CISA - Zero Trust Maturity Model"
+[3]: https://datatracker.ietf.org/doc/rfc9298/ "IETF RFC 9298 - MASQUE: CONNECT-UDP and CONNECT-IP"
+[4]: https://www.cloudflare.com/learning/ddos/what-is-anycast/ "Cloudflare - What is Anycast?"
+[5]: https://datatracker.ietf.org/doc/rfc9000/ "IETF RFC 9000 - QUIC: A UDP-Based Multiplexed and Secure Transport"
