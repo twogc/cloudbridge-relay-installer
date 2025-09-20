@@ -65,6 +65,8 @@ spec:
         # Notification Settings
         - name: AI_NOTIFICATIONS_ENABLED
           value: "true"
+        - name: RELAY_JWT_SECRET
+          value: "your-jwt-secret-key-here"
         - name: AI_SEND_ANALYTICS_REPORTS
           value: "true"
         - name: AI_SEND_ANOMALY_ALERTS
