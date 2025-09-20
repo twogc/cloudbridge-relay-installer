@@ -254,6 +254,25 @@ type configRaw struct {
 		Domain   string `json:"domain"`
 		TaskList string `json:"task_list"`
 	} `json:"cadence"`
+
+	// ICE/STUN/TURN Configuration
+	ICEStunTurn struct {
+		Enabled            bool     `json:"enabled"`
+		StunServers        []string `json:"stun_servers"`
+		TurnServers        []string `json:"turn_servers"`
+		ICETimeout         string   `json:"ice_timeout"`
+		ConnectionTimeout  string   `json:"connection_timeout"`
+		GatheringTimeout   string   `json:"gathering_timeout"`
+		CandidateTypes     []string `json:"candidate_types"`
+	} `json:"ice_stun_turn"`
+
+	// MASQUE Configuration
+	MASQUE struct {
+		Enabled         bool     `json:"enabled"`
+		ProxyURL        string   `json:"proxy_url"`
+		ALPNProtocols   []string `json:"alpn_protocols"`
+		FallbackEnabled bool     `json:"fallback_enabled"`
+	} `json:"masque"`
 }
 
 // Config represents the server configuration
@@ -573,6 +592,25 @@ type Config struct {
 		Domain   string `json:"domain"`
 		TaskList string `json:"task_list"`
 	} `json:"cadence"`
+
+	// ICE/STUN/TURN Configuration
+	ICEStunTurn struct {
+		Enabled            bool          `json:"enabled"`
+		StunServers        []string      `json:"stun_servers"`
+		TurnServers        []string      `json:"turn_servers"`
+		ICETimeout         time.Duration `json:"ice_timeout"`
+		ConnectionTimeout  time.Duration `json:"connection_timeout"`
+		GatheringTimeout   time.Duration `json:"gathering_timeout"`
+		CandidateTypes     []string      `json:"candidate_types"`
+	} `json:"ice_stun_turn"`
+
+	// MASQUE Configuration
+	MASQUE struct {
+		Enabled         bool     `json:"enabled"`
+		ProxyURL        string   `json:"proxy_url"`
+		ALPNProtocols   []string `json:"alpn_protocols"`
+		FallbackEnabled bool     `json:"fallback_enabled"`
+	} `json:"masque"`
 }
 
 // HealthCheckConfig represents a health check configuration
@@ -865,6 +903,21 @@ func Load(path string) (*Config, error) {
 	config.Cadence.HostPort = raw.Cadence.HostPort
 	config.Cadence.Domain = raw.Cadence.Domain
 	config.Cadence.TaskList = raw.Cadence.TaskList
+
+	// ICE/STUN/TURN
+	config.ICEStunTurn.Enabled = raw.ICEStunTurn.Enabled
+	config.ICEStunTurn.StunServers = raw.ICEStunTurn.StunServers
+	config.ICEStunTurn.TurnServers = raw.ICEStunTurn.TurnServers
+	config.ICEStunTurn.ICETimeout = parseDuration(raw.ICEStunTurn.ICETimeout, 30*time.Second)
+	config.ICEStunTurn.ConnectionTimeout = parseDuration(raw.ICEStunTurn.ConnectionTimeout, 10*time.Second)
+	config.ICEStunTurn.GatheringTimeout = parseDuration(raw.ICEStunTurn.GatheringTimeout, 5*time.Second)
+	config.ICEStunTurn.CandidateTypes = raw.ICEStunTurn.CandidateTypes
+
+	// MASQUE
+	config.MASQUE.Enabled = raw.MASQUE.Enabled
+	config.MASQUE.ProxyURL = raw.MASQUE.ProxyURL
+	config.MASQUE.ALPNProtocols = raw.MASQUE.ALPNProtocols
+	config.MASQUE.FallbackEnabled = raw.MASQUE.FallbackEnabled
 
 	return config, nil
 }

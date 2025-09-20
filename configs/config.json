@@ -92,7 +92,7 @@
   },
   "https_api": {
     "enabled": true,
-    "port": 9091,
+    "port": 5553,
     "host": "0.0.0.0",
     "tls": {
       "enabled": true,
@@ -251,6 +251,8 @@
   "ice_stun_turn": {
     "enabled": true,
     "stun_servers": [
+      "stun.l.google.com:19302",
+      "stun1.l.google.com:19302",
       "edge.2gc.ru:19302"
     ],
     "turn_servers": [],
@@ -268,7 +270,9 @@
     "proxy_url": "https://edge.2gc.ru:8443",
     "alpn_protocols": [
       "h3",
-      "h3-29"
+      "h3-29",
+      "h3-28",
+      "h3-27"
     ],
     "fallback_enabled": true
   },
@@ -328,9 +332,9 @@
     }
   },
   "cadence": {
-    "enabled": false,
-    "host_port": "localhost:7933",
-    "domain": "default",
-    "task_list": "relay-tasks"
+    "enabled": true,
+    "host_port": "cadence:7933",
+    "domain": "cloudbridge-p2p",
+    "task_list": "p2p-quic-tasks"
   }
 }

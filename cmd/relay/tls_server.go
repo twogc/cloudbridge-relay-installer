@@ -14,19 +14,19 @@ import (
 
 // TLSConfig represents TLS configuration
 type TLSConfig struct {
-	Enabled           bool     `json:"tls_enabled"`
-	CertFile          string   `json:"cert_file"`
-	KeyFile           string   `json:"key_file"`
-	CipherSuites      []string `json:"cipher_suites"`
-	MinTLSVersion     string   `json:"min_tls_version"`
-	MTLS              MTLSConfig `json:"mtls"`
+	Enabled       bool       `json:"tls_enabled"`
+	CertFile      string     `json:"cert_file"`
+	KeyFile       string     `json:"key_file"`
+	CipherSuites  []string   `json:"cipher_suites"`
+	MinTLSVersion string     `json:"min_tls_version"`
+	MTLS          MTLSConfig `json:"mtls"`
 }
 
 // MTLSConfig represents mutual TLS configuration
 type MTLSConfig struct {
-	Enabled              bool   `json:"enabled"`
-	CAFile               string `json:"ca_file"`
-	ClientCertRequired   bool   `json:"client_cert_required"`
+	Enabled            bool   `json:"enabled"`
+	CAFile             string `json:"ca_file"`
+	ClientCertRequired bool   `json:"client_cert_required"`
 }
 
 // TLSServer handles TLS server configuration and startup
@@ -46,11 +46,11 @@ func NewTLSServer(config TLSConfig, logger *zap.Logger) *TLSServer {
 // CreateTLSConfig creates TLS configuration based on the provided settings
 func (ts *TLSServer) CreateTLSConfig() (*tls.Config, error) {
 	tlsConfig := &tls.Config{
-		MinVersion: ts.getMinTLSVersion(),
-		CipherSuites: ts.getCipherSuites(),
+		MinVersion:               ts.getMinTLSVersion(), // #nosec G402 -- getMinTLSVersion() returns safe TLS version
+		CipherSuites:             ts.getCipherSuites(),
 		PreferServerCipherSuites: true,
-		SessionTicketsDisabled: false,
-		NextProtos: []string{"h2", "http/1.1"},
+		SessionTicketsDisabled:   false,
+		NextProtos:               []string{"h2", "http/1.1"},
 	}
 
 	// Configure mTLS if enabled
@@ -272,12 +272,12 @@ func (ts *TLSServer) validatePrivateKeyFile(filename string) error {
 // GetTLSInfo returns information about the TLS configuration
 func (ts *TLSServer) GetTLSInfo() map[string]interface{} {
 	info := map[string]interface{}{
-		"enabled":           ts.config.Enabled,
-		"cert_file":         ts.config.CertFile,
-		"key_file":          ts.config.KeyFile,
-		"min_tls_version":   ts.config.MinTLSVersion,
-		"cipher_suites":     ts.config.CipherSuites,
-		"mtls_enabled":      ts.config.MTLS.Enabled,
+		"enabled":              ts.config.Enabled,
+		"cert_file":            ts.config.CertFile,
+		"key_file":             ts.config.KeyFile,
+		"min_tls_version":      ts.config.MinTLSVersion,
+		"cipher_suites":        ts.config.CipherSuites,
+		"mtls_enabled":         ts.config.MTLS.Enabled,
 		"client_cert_required": ts.config.MTLS.ClientCertRequired,
 	}
 

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloudbridge-relay
-  namespace: cloudbridge-relay
+  namespace: cloudbridge
   labels:
     app: cloudbridge-relay
 spec:
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: cloudbridge-relay
-        image: cloudbridge-relay:p2p-routing-20250918-211004-53c7b168
+        image: cloudbridge-relay:cadence-p2p-v1
         imagePullPolicy: Never  # For minikube local images
         ports:
         - containerPort: 8080
@@ -119,6 +119,14 @@ spec:
             configMapKeyRef:
               name: cloudbridge-relay-config
               key: RELAY_JWT_SECRET
+        - name: CADENCE_ENABLED
+          value: "true"
+        - name: CADENCE_HOST_PORT
+          value: "cadence:7933"
+        - name: CADENCE_DOMAIN
+          value: "cloudbridge-p2p"
+        - name: CADENCE_TASK_LIST
+          value: "p2p-quic-tasks"
         resources:
           requests:
             memory: "256Mi"

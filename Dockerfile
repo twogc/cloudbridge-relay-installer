@@ -1,4 +1,4 @@
-# Multi-stage build for CloudBridge Relay
+# Multi-stage build for CloudBridge Relay with Enhanced Components
 FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
@@ -16,7 +16,7 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application (skip tests to speed up build)
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o cloudbridge-relay ./cmd/relay
 
 # Final stage
@@ -38,6 +38,10 @@ COPY --from=builder /app/cloudbridge-relay .
 # Copy config files
 COPY --from=builder /app/configs ./configs
 
+# Create directories for enhanced components
+RUN mkdir -p /app/data /app/certs && \
+    chown -R appuser:appgroup /app/data /app/certs
+
 # Change ownership
 RUN chown -R appuser:appgroup /app
 
@@ -45,7 +49,12 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # Expose ports
-EXPOSE 8080 8082 8443 9090/udp 19302/udp
+# 8080 - Main TCP server
+# 8082 - P2P API server  
+# 8443 - MASQUE HTTP/3 server
+# 5553 - P2P QUIC server
+# 19302 - STUN server
+EXPOSE 8080 8082 8443 5553/udp 19302/udp
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

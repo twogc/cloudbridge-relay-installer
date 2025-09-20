@@ -60,7 +60,7 @@ func (qrh *QUICRelayHandler) Start(quicServer *quic.Listener) error {
 // handleQUICConnections обрабатывает входящие QUIC соединения
 func (qrh *QUICRelayHandler) handleQUICConnections(quicServer *quic.Listener) {
 	qrh.logger.Info("Starting QUIC connection handler")
-	
+
 	for {
 		select {
 		case <-qrh.ctx.Done():
@@ -78,10 +78,14 @@ func (qrh *QUICRelayHandler) handleQUICConnections(quicServer *quic.Listener) {
 				continue
 			}
 
-			qrh.logger.Info("QUIC connection accepted", 
+			qrh.logger.Info("QUIC connection attempt received",
 				zap.String("remote_addr", conn.RemoteAddr().String()),
 				zap.String("local_addr", conn.LocalAddr().String()))
-			
+
+			qrh.logger.Info("QUIC connection accepted",
+				zap.String("remote_addr", conn.RemoteAddr().String()),
+				zap.String("local_addr", conn.LocalAddr().String()))
+
 			go qrh.handleQUICConnection(conn)
 		}
 	}
@@ -150,9 +154,19 @@ func (qrh *QUICRelayHandler) handleStreams(conn *quic.Conn, peerID string) {
 func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 	defer (*stream).Close()
 
+	streamID := (*stream).StreamID()
+	if streamID < 0 {
+		qrh.logger.Error("Invalid stream ID", zap.Int64("stream_id", int64(streamID)))
+		return
+	}
+	// Safe conversion for logging
+	var streamIDUint uint64
+	if streamID >= 0 {
+		streamIDUint = uint64(streamID) // #nosec G115 -- streamID is validated to be non-negative
+	}
 	qrh.logger.Debug("New stream accepted",
 		zap.String("peer_id", peerID),
-		zap.Uint64("stream_id", uint64((*stream).StreamID())))
+		zap.Uint64("stream_id", streamIDUint))
 
 	// Читаем данные из потока
 	buffer := make([]byte, 4096)
@@ -193,7 +207,7 @@ func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 // authenticateConnection аутентифицирует QUIC соединение через JWT токен
 func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, string, error) {
 	qrh.logger.Debug("Starting authentication process")
-	
+
 	// Принимаем первый поток для аутентификации
 	stream, err := conn.AcceptStream(qrh.ctx)
 	if err != nil {
@@ -203,7 +217,7 @@ func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, st
 	defer stream.Close()
 
 	qrh.logger.Debug("Auth stream accepted, waiting for token")
-	
+
 	// Читаем JWT токен из потока
 	buffer := make([]byte, 4096)
 	n, err := stream.Read(buffer)
@@ -215,7 +229,7 @@ func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, st
 	// Парсим токен (ожидаем формат: "AUTH <jwt_token>")
 	authData := string(buffer[:n])
 	qrh.logger.Debug("Received auth data", zap.String("data", authData))
-	
+
 	if len(authData) < 6 || authData[:5] != "AUTH " {
 		qrh.logger.Error("Invalid auth format", zap.String("received", authData))
 		return "", "", fmt.Errorf("invalid auth format, expected 'AUTH <token>'")
@@ -223,11 +237,11 @@ func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, st
 
 	tokenString := authData[5:]
 	qrh.logger.Debug("Extracted token", zap.String("token", tokenString[:min(20, len(tokenString))]+"..."))
-	
+
 	// Валидируем JWT токен (если tokenValidator доступен)
 	var claims *token.P2PClaims
 	var validationErr error
-	
+
 	if qrh.tokenValidator != nil {
 		qrh.logger.Debug("Validating JWT token")
 		claims, validationErr = qrh.tokenValidator.ValidateP2PToken(tokenString)
@@ -257,10 +271,10 @@ func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, st
 		qrh.logger.Debug("Auth confirmation sent")
 	}
 
-	qrh.logger.Info("Authentication completed successfully", 
-		zap.String("peer_id", peerID), 
+	qrh.logger.Info("Authentication completed successfully",
+		zap.String("peer_id", peerID),
 		zap.String("tenant_id", claims.TenantID))
-	
+
 	return peerID, claims.TenantID, nil
 }
 

@@ -27,7 +27,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/quic-go/quic-go"
 	"github.com/twogc/cloudbridge-relay-installer/config"
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
 	"github.com/twogc/cloudbridge-relay-installer/internal/balancer"
@@ -157,6 +156,7 @@ type Server struct {
 // NewServer creates a new relay server
 func NewServer(cfg *config.Config) (*Server, error) {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // Ensure context is cancelled on any return path
 
 	// Initialize logger
 	loggerConfig := logger.Config{
@@ -389,9 +389,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		quantumConfig = quantum.NewPQCConfig()
 
 		// Initialize quantum-resistant WireGuard
-		if wireGuardInterface != nil {
-			quantumWireGuard = quantum.NewQuantumWireGuardInterface(wireGuardInterface, quantumConfig)
-		}
+		// Note: wireGuardInterface is always nil in QUIC relay mode, so skip quantum WireGuard
 
 		// Initialize quantum-resistant Enhanced QUIC
 		if enhancedQUICManager != nil {
@@ -898,55 +896,10 @@ func (s *Server) Start() error {
 
 	// Start P2P QUIC server on port 5553 for P2P relay
 	if s.quicRelayHandler != nil {
-		go func() {
-			// Создаем QUIC listener для P2P relay
-			udpAddr, err := net.ResolveUDPAddr("udp4", "0.0.0.0:5553")
-			if err != nil {
-				s.logger.Error("Failed to resolve UDP address for P2P QUIC", zap.Error(err))
-				return
-			}
-
-			udpConn, err := net.ListenUDP("udp4", udpAddr)
-			if err != nil {
-				s.logger.Error("Failed to start P2P QUIC UDP server", zap.Error(err))
-				return
-			}
-
-			// Настраиваем UDP буферы для QUIC
-			if err := udpConn.SetReadBuffer(7 * 1024 * 1024); err != nil {
-				s.logger.Warn("Failed to set UDP read buffer size", zap.Error(err))
-			}
-			if err := udpConn.SetWriteBuffer(7 * 1024 * 1024); err != nil {
-				s.logger.Warn("Failed to set UDP write buffer size", zap.Error(err))
-			}
-
-			// Создаем QUIC listener
-			quicListener, err := quic.Listen(udpConn, s.generateTLSConfig(), &quic.Config{
-				MaxIdleTimeout:  30 * time.Second,
-				KeepAlivePeriod: 15 * time.Second,
-			})
-			if err != nil {
-				s.logger.Error("Failed to create QUIC listener for P2P relay", zap.Error(err))
-				udpConn.Close()
-				return
-			}
-
-			s.logger.Info("P2P QUIC server started on port 5553")
-
-			// Запускаем QUIC Relay Handler
-			if err := s.quicRelayHandler.Start(quicListener); err != nil {
-				s.logger.Error("Failed to start QUIC Relay Handler", zap.Error(err))
-				quicListener.Close()
-				udpConn.Close()
-				return
-			}
-
-			// Ждем завершения контекста сервера
-			<-s.ctx.Done()
-			s.logger.Info("Shutting down P2P QUIC server")
-			quicListener.Close()
-			udpConn.Close()
-		}()
+		p2pQUICServer := NewP2PQUICServerProper(s.logger, s.ctx, s.quicRelayHandler, s.config)
+		if err := p2pQUICServer.Start(); err != nil {
+			s.logger.Error("Failed to start P2P QUIC server", zap.Error(err))
+		}
 	}
 
 	// Start STUN UDP server on port 19302
@@ -1709,6 +1662,12 @@ func (s *Server) generateTLSConfig() *tls.Config {
 	}
 
 	return &tls.Config{
+		MinVersion: tls.VersionTLS12,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
 		Certificates: []tls.Certificate{cert},
 		NextProtos:   []string{"cloudbridge-p2p", "h3", "h3-29", "h3-28", "h3-27"},
 	}

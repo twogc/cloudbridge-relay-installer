@@ -117,11 +117,31 @@ func (s *Server) createSTUNBindingResponse(header *STUNHeader, addr *net.UDPAddr
 	software := []byte("CloudBridge-Relay/1.0")
 	softwareAttr := make([]byte, 4+len(software))
 	binary.BigEndian.PutUint16(softwareAttr[0:2], STUNAttrSoftware)
-	binary.BigEndian.PutUint16(softwareAttr[2:4], uint16(len(software)))
+	if len(software) > 65535 {
+		s.logger.Error("Software attribute too long", zap.Int("length", len(software)))
+		return nil
+	}
+	// Safe conversion with bounds check
+	softwareLen := len(software)
+	if softwareLen < 0 || softwareLen > 65535 {
+		s.logger.Error("Software length out of bounds", zap.Int("length", softwareLen))
+		return nil
+	}
+	binary.BigEndian.PutUint16(softwareAttr[2:4], uint16(softwareLen))
 	copy(softwareAttr[4:], software)
 
 	// Calculate total message length
-	messageLength := uint16(len(xorMappedAddr) + len(softwareAttr))
+	totalLen := len(xorMappedAddr) + len(softwareAttr)
+	if totalLen > 65535 {
+		s.logger.Error("Message too long", zap.Int("length", totalLen))
+		return nil
+	}
+	// Safe conversion with bounds check
+	if totalLen < 0 || totalLen > 65535 {
+		s.logger.Error("Message length out of bounds", zap.Int("length", totalLen))
+		return nil
+	}
+	messageLength := uint16(totalLen)
 
 	// Create response header
 	response := make([]byte, 20+messageLength)
@@ -179,12 +199,32 @@ func (s *Server) createXORMappedAddress(addr *net.UDPAddr) []byte {
 
 	// XOR with magic cookie
 	magicCookie := uint32(0x2112A442)
-	xorPort := uint16(addr.Port) ^ uint16(magicCookie>>16)
+	if addr.Port < 0 || addr.Port > 65535 {
+		s.logger.Error("Invalid port", zap.Int("port", addr.Port))
+		return nil
+	}
+	// Safe conversion with bounds check
+	port := addr.Port
+	if port < 0 || port > 65535 {
+		s.logger.Error("Port out of bounds", zap.Int("port", port))
+		return nil
+	}
+	xorPort := uint16(port) ^ uint16(magicCookie>>16) // #nosec G115 -- port is validated to be in range 0-65535
 
 	// Create attribute
-	attr := make([]byte, 4+2+len(address))
+	attrLen := 2 + len(address)
+	if attrLen > 65535 {
+		s.logger.Error("Attribute too long", zap.Int("length", attrLen))
+		return nil
+	}
+	attr := make([]byte, 4+attrLen)
 	binary.BigEndian.PutUint16(attr[0:2], STUNAttrXORMappedAddress)
-	binary.BigEndian.PutUint16(attr[2:4], uint16(2+len(address)))
+	// Safe conversion with bounds check
+	if attrLen < 0 || attrLen > 65535 {
+		s.logger.Error("Attribute length out of bounds", zap.Int("length", attrLen))
+		return nil
+	}
+	binary.BigEndian.PutUint16(attr[2:4], uint16(attrLen))
 	attr[4] = 0 // Reserved
 	attr[5] = byte(family)
 	binary.BigEndian.PutUint16(attr[6:8], xorPort)

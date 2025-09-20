@@ -82,11 +82,11 @@
   },
   "api": {
     "enabled": true,
-    "port": 9091,
+    "port": 5553,
     "version": "v1"
   },
   "logging": {
-    "level": "info",
+    "level": "debug",
     "format": "json",
     "output": "stdout",
     "file": "",

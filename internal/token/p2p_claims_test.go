@@ -54,13 +54,12 @@ func TestP2PClaimsWithNewFields(t *testing.T) {
 
 	// Test complete P2PClaims
 	claims := &P2PClaims{
-		ConnectionType:  "wireguard",
-		WireGuardConfig: wgConfig,
-		MeshConfig:      meshConfig,
-		NetworkConfig:   networkConfig,
-		PeerWhitelist:   []string{"peer-001", "peer-002"},
-		TenantID:        "test-tenant",
-		Permissions:     []string{"mesh_join", "wireguard_connect"},
+		ProtocolType:   "p2p-mesh",
+		Scope:          "relay",
+		ConnectionType: "quic",
+		TenantID:       "test-tenant",
+		ServerID:       "test-server",
+		Permissions:    []string{"mesh_join", "quic_connect"},
 	}
 
 	if err := claims.Validate(); err != nil {
@@ -68,20 +67,20 @@ func TestP2PClaimsWithNewFields(t *testing.T) {
 	}
 
 	// Test getters
-	if claims.GetConnectionType() != "wireguard" {
-		t.Errorf("Expected connection type 'wireguard', got '%s'", claims.GetConnectionType())
+	if claims.GetConnectionType() != "quic" {
+		t.Errorf("Expected connection type 'quic', got '%s'", claims.GetConnectionType())
 	}
 
-	if claims.GetWireGuardConfig().Endpoint != "192.168.1.100:51820" {
-		t.Errorf("Expected endpoint '192.168.1.100:51820', got '%s'", claims.GetWireGuardConfig().Endpoint)
+	if claims.ProtocolType != "p2p-mesh" {
+		t.Errorf("Expected protocol type 'p2p-mesh', got '%s'", claims.ProtocolType)
 	}
 
-	if claims.GetMeshConfig().NetworkID != "mesh-network-001" {
-		t.Errorf("Expected network_id 'mesh-network-001', got '%s'", claims.GetMeshConfig().NetworkID)
+	if claims.TenantID != "test-tenant" {
+		t.Errorf("Expected tenant ID 'test-tenant', got '%s'", claims.TenantID)
 	}
 
-	if claims.GetMeshConfig().Subnet != "10.0.0.0/16" {
-		t.Errorf("Expected subnet '10.0.0.0/16', got '%s'", claims.GetMeshConfig().Subnet)
+	if claims.ServerID != "test-server" {
+		t.Errorf("Expected server ID 'test-server', got '%s'", claims.ServerID)
 	}
 
 	if !claims.HasPermission("mesh_join") {
@@ -154,5 +153,3 @@ func TestMeshConfigNewFieldsValidation(t *testing.T) {
 		})
 	}
 }
-
-

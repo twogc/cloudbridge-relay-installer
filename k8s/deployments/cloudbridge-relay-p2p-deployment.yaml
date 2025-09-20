@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
       - name: cloudbridge-relay-p2p
-        image: cloudbridge-relay-p2p:20250918-232719-p2p-complete
+        image: cloudbridge-relay:enhanced-$(date +%Y%m%d-%H%M%S)
         imagePullPolicy: IfNotPresent
         ports:
         - name: http-api
@@ -36,9 +36,9 @@ spec:
           containerPort: 8082
           protocol: TCP
         - name: quic-p2p
-          containerPort: 9090
+          containerPort: 5553
           protocol: UDP
-        - name: https
+        - name: masque
           containerPort: 8443
           protocol: TCP
         - name: stun
@@ -48,7 +48,9 @@ spec:
         - name: CONFIG_PATH
           value: "/app/configs/config.json"
         - name: LOG_LEVEL
-          value: "info"
+          value: "debug"
+        - name: QUIC_GO_LOG_LEVEL
+          value: "debug"
         - name: GIN_MODE
           value: "release"
         - name: TZ
@@ -59,6 +61,12 @@ spec:
           value: "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
         - name: RELAY_JWT_SECRET
           value: "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
+        - name: ICE_STUN_ENABLED
+          value: "true"
+        - name: MASQUE_ENABLED
+          value: "true"
+        - name: STATELESS_RESET_ENABLED
+          value: "true"
         resources:
           requests:
             memory: "256Mi"
@@ -70,6 +78,10 @@ spec:
         - name: config
           mountPath: /app/configs
           readOnly: true
+        - name: data
+          mountPath: /app/data
+        - name: certs
+          mountPath: /app/certs
         livenessProbe:
           httpGet:
             path: /health
@@ -102,5 +114,9 @@ spec:
       - name: config
         configMap:
           name: cloudbridge-config
+      - name: data
+        emptyDir: {}
+      - name: certs
+        emptyDir: {}
       nodeSelector:
         kubernetes.io/os: linux

@@ -4,14 +4,12 @@ metadata:
   name: cloudbridge-relay-external
   namespace: cloudbridge
   labels:
-    app.kubernetes.io/component: relay
-    app.kubernetes.io/name: cloudbridge-relay
+    app: cloudbridge-relay
     app.kubernetes.io/part-of: cloudbridge-relay
 spec:
   type: NodePort
   selector:
-    app.kubernetes.io/component: relay
-    app.kubernetes.io/name: cloudbridge-relay
+    app: cloudbridge-relay
   ports:
     # HTTP API
     - name: http-api
@@ -23,7 +21,7 @@ spec:
     - name: p2p-api
       port: 8082
       targetPort: 8082
-      nodePort: 30082
+      nodePort: 32500
       protocol: TCP
     # STUN Server
     - name: stun-server
@@ -49,6 +47,12 @@ spec:
       targetPort: 9092
       nodePort: 30092
       protocol: UDP
+    # P2P QUIC Server
+    - name: p2p-quic
+      port: 5553
+      targetPort: 5553
+      nodePort: 30553
+      protocol: UDP
 ---
 apiVersion: v1
 kind: Service
@@ -56,14 +60,12 @@ metadata:
   name: cloudbridge-relay-loadbalancer
   namespace: cloudbridge
   labels:
-    app.kubernetes.io/component: relay
-    app.kubernetes.io/name: cloudbridge-relay
+    app: cloudbridge-relay
     app.kubernetes.io/part-of: cloudbridge-relay
 spec:
   type: LoadBalancer
   selector:
-    app.kubernetes.io/component: relay
-    app.kubernetes.io/name: cloudbridge-relay
+    app: cloudbridge-relay
   ports:
     # HTTP API
     - name: http-api
@@ -94,5 +96,10 @@ spec:
     - name: enhanced-quic
       port: 9092
       targetPort: 9092
+      protocol: UDP
+    # P2P QUIC Server
+    - name: p2p-quic
+      port: 5553
+      targetPort: 5553
       protocol: UDP
 

@@ -145,13 +145,14 @@ func TestHub_NotifyPeerJoined(t *testing.T) {
 
 	// Create a test peer
 	peer := &Peer{
-		PeerID: "test-peer-1",
-		WireGuardConfig: &WireGuardConfig{
-			PublicKey:  "test-public-key",
-			Endpoint:   "192.168.1.1:51820",
-			ListenPort: 51820,
-			AllowedIPs: []string{"10.0.1.0/24"},
-		},
+		PeerID:         "test-peer-1",
+		TenantID:       "test-tenant",
+		DeviceID:       "test-device",
+		ConnectionType: "quic",
+		IsOnline:       true,
+		LastSeen:       time.Now(),
+		RegisteredAt:   time.Now(),
+		MeshStatus:     "active",
 	}
 
 	// This test mainly verifies that the function doesn't panic
@@ -226,8 +227,8 @@ func TestHub_BroadcastToTenant(t *testing.T) {
 
 	// Create test message
 	message := WebSocketMessage{
-		Type: "test-message",
-		Data: "test-data",
+		Type:      "test-message",
+		Data:      "test-data",
 		Timestamp: time.Now(),
 	}
 
@@ -250,8 +251,8 @@ func TestHub_BroadcastToPeer(t *testing.T) {
 
 	// Create test message
 	message := WebSocketMessage{
-		Type: "test-message",
-		Data: "test-data",
+		Type:      "test-message",
+		Data:      "test-data",
 		Timestamp: time.Now(),
 	}
 
