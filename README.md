@@ -1,109 +1,129 @@
-# 🚀 **CloudBridge Relay**
+# 2GC CloudBridge Global Network
 
-**HTTP-нативная P2P mesh платформа для создания Zero-Trust оверлеев между удаленными серверами с поддержкой QUIC, ICE/STUN/TURN и MASQUE протоколов.**
+**2GC CloudBridge Global Network** — это глобальная Zero-Trust оверлейная сеть «**QUIC-first**» для безопасного объединения пользователей, серверов и облаков в единую L3-среду.
 
-## 🎯 **Цель проекта**
+## Ключевые принципы
 
-CloudBridge Relay решает проблему создания надежных P2P соединений между удаленными серверами, которые находятся за NAT/Firewall и не могут напрямую общаться друг с другом. Система обеспечивает:
+* **Data plane на QUIC/HTTP-3**: мультиплекс-потоки, 0-RTT, миграция соединений при смене IP, датаграммы для realtime-трафика. ([datatracker.ietf.org][1])
+* **HTTP-нативные туннели (MASQUE)**: проксирование UDP (**CONNECT-UDP**) и полного IP-трафика (**CONNECT-IP**) через 443/HTTP-3 — «как VPN по правилам HTTP», для обхода жёстких enterprise-сетей. ([datatracker.ietf.org][2])
+* **P2P-соединения с NAT-пробивкой**: ICE/STUN/TURN; при неудаче — автоматический relay. Возможна мультиплекс-работа ICE и QUIC на одном UDP-порту (RFC 9443).
+* **Zero-Trust-контроль**: доступ «по пользователю/устройству/приложению», а не «по сети», в русле NIST SP 800-207/207A и CISA ZT-моделей зрелости.
 
-- **HTTP-нативный подход** - работа через порт 443/HTTP-3 с поддержкой MASQUE (CONNECT-UDP/CONNECT-IP)
-- **P2P mesh сеть** - прямые соединения между пирами с автоматическим fallback на relay
-- **Современные протоколы** - QUIC + ICE/STUN/TURN для максимальной совместимости
-- **Корпоративная совместимость** - обход блокировок UDP через HTTP-туннели
-- **Kubernetes-native** - простое развертывание в современных инфраструктурах
+## Архитектура
 
-## 🌟 **Ключевые преимущества**
-
-### **HTTP-нативный подход**
-- **Работа через порт 443** - обходит корпоративные блокировки UDP
-- **MASQUE протокол** - CONNECT-UDP/CONNECT-IP для HTTP-туннелей
-- **Политик-ориентированное проксирование** - соответствует корпоративным стандартам
-
-### **Современные протоколы**
-- **QUIC с connection migration** - смена IP без разрыва соединения
-- **ICE/STUN/TURN** - проверенная модель NAT traversal (как в WebRTC)
-- **HTTP Datagrams** - быстрая доставка поверх QUIC DATAGRAM
-
-### **Корпоративная совместимость**
-- **Fallback на WebSocket/TCP** - для сетей с ограничениями UDP
-- **WireGuard опция** - для site-to-site/legacy соединений
-- **Kubernetes-native** - соответствует трендам CNCF
-
-## 🏗️ **Архитектура**
+### Data Plane
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    CloudBridge Relay                            │
+│                   2GC CloudBridge Global Network                │
 ├─────────────────────────────────────────────────────────────────┤
-│  Tenant A (tenant-216420165)                                   │
-│  Network: 10.100.77.0/24                                      │
+│  QUIC/HTTP-3 Transport Layer                                   │
 │  ┌─────────────────┐    ┌─────────────────┐                    │
-│  │   Server A1     │◄──►│   Server A2     │                    │
-│  │ 10.100.77.10    │    │ 10.100.77.11    │                    │
-│  │ QUIC + ICE      │    │ QUIC + ICE      │                    │
+│  │   Connection    │    │   Connection    │                    │
+│  │   Migration     │    │   Multiplexing  │                    │
+│  │   0-RTT Setup   │    │   Datagrams     │                    │
 │  └─────────────────┘    └─────────────────┘                    │
 ├─────────────────────────────────────────────────────────────────┤
-│  Tenant B (tenant-123456789)                                   │
-│  Network: 10.100.78.0/24                                      │
+│  MASQUE Tunneling (Port 443/HTTP-3)                           │
 │  ┌─────────────────┐    ┌─────────────────┐                    │
-│  │   Server B1     │◄──►│   Server B2     │                    │
-│  │ 10.100.78.10    │    │ 10.100.78.11    │                    │
-│  │ QUIC + ICE      │    │ QUIC + ICE      │                    │
+│  │   CONNECT-UDP   │    │   CONNECT-IP    │                    │
+│  │   UDP Proxy     │    │   Full IP VPN   │                    │
+│  └─────────────────┘    └─────────────────┘                    │
+├─────────────────────────────────────────────────────────────────┤
+│  P2P Layer (ICE/STUN/TURN)                                    │
+│  ┌─────────────────┐    ┌─────────────────┐                    │
+│  │   Direct P2P    │    │   Relay Fallback│                    │
+│  │   NAT Traversal │    │   TURN Server   │                    │
 │  └─────────────────┘    └─────────────────┘                    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 🔧 **Технологический стек**
+### Control Plane
 
-- **Backend:** Go 1.21+
-- **Протоколы:** 
-  - **QUIC** (RFC 9000/9001) - основной транспорт с connection migration
-  - **ICE/STUN/TURN** (RFC 8445/8489/5766) - NAT traversal для P2P соединений
-  - **MASQUE** (RFC 9298/9484) - HTTP-нативные туннели (CONNECT-UDP/CONNECT-IP)
-  - **HTTP Datagrams** (RFC 9297) - поверх QUIC DATAGRAM (RFC 9221)
-- **Аутентификация:** JWT токены с tenant изоляцией
-- **Контейнеризация:** Docker + Kubernetes
-- **Развертывание:** Minikube для разработки, Kubernetes для продакшена
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Zero-Trust Control Plane                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Identity & Access Management                                  │
+│  ┌─────────────────┐    ┌─────────────────┐                    │
+│  │   User/Device   │    │   Application   │                    │
+│  │   Authentication│    │   Authorization │                    │
+│  └─────────────────┘    └─────────────────┘                    │
+├─────────────────────────────────────────────────────────────────┤
+│  Policy Engine                                                 │
+│  ┌─────────────────┐    ┌─────────────────┐                    │
+│  │   Hostname      │    │   Network       │                    │
+│  │   Routing       │    │   Segmentation  │                    │
+│  └─────────────────┘    └─────────────────┘                    │
+├─────────────────────────────────────────────────────────────────┤
+│  Service Discovery & Routing                                   │
+│  ┌─────────────────┐    ┌─────────────────┐                    │
+│  │   Node          │    │   Route         │                    │
+│  │   Registration  │    │   Distribution  │                    │
+│  └─────────────────┘    └─────────────────┘                    │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### **Соответствие стандартам IETF:**
-- **RFC 9000/9001** - QUIC Transport и QUIC-TLS
-- **RFC 9114** - HTTP/3
-- **RFC 8445/8489/5766/6062** - ICE/STUN/TURN
-- **RFC 9298/9484** - MASQUE (CONNECT-UDP/CONNECT-IP)
-- **RFC 9220** - Extended CONNECT для WebSocket над HTTP/3
+## Технологический стек
 
-## 📋 **Порты и сервисы**
+* **QUIC/HTTP-3** как базовый транспорт: один UDP-сокет обслуживает множество соединений и потоков, быстрое установление (1 RTT; 0-RTT при резюме), «**connection migration**» при смене сети. ([datatracker.ietf.org][1])
+* **QUIC DATAGRAM** — для UDP-подобных нагрузок (игры/телеметрия/медиа) без надлишней надёжности на уровне транспорта. ([datatracker.ietf.org][3])
+* **MASQUE** для туннелей через 443/HTTP-3:
+  * **CONNECT-UDP** — проксирование UDP в HTTP. ([datatracker.ietf.org][2])
+  * **CONNECT-IP** — «полноценный IP-туннель» поверх HTTP (удобно для Remote-/Site-to-Site). ([datatracker.ietf.org][4])
+
+### NAT-traversal и P2P
+
+* **ICE (RFC 8445)** + **STUN (RFC 8489)** + **TURN (RFC 5766)** — стандартная связка для прямых P2P-линков.
+* **Мультиплекс на одном UDP-порту**: RFC 9443 описывает, как различать QUIC, STUN/TURN, DTLS/SRTP на одном сокете — удобно для клиентов и P2P-модели.
+* **Relay-fallback**: при симметричных NAT/CGNAT трафик уходит через собственные ретрансляторы (модель аналогична DERP в Tailscale).
+
+### Соответствие стандартам IETF
+
+* **RFC 9000/9001** - QUIC Transport и QUIC-TLS
+* **RFC 9114** - HTTP/3
+* **RFC 8445/8489/5766/6062** - ICE/STUN/TURN
+* **RFC 9298/9484** - MASQUE (CONNECT-UDP/CONNECT-IP)
+* **RFC 9220** - Extended CONNECT для WebSocket над HTTP/3
+
+## Порты и сервисы
 
 | Порт | Протокол | Назначение | Статус |
 |------|----------|------------|--------|
-| 8080 | TCP/HTTPS | HTTP API (Health, Registration) | ✅ Работает |
-| 8082 | TCP/HTTPS | P2P API (ICE signaling) | ✅ Работает |
-| 5553 | UDP | QUIC Transport (P2P mesh) | ✅ Работает |
-| 19302 | UDP | STUN Server (NAT traversal) | ✅ Работает |
-| 8443 | TCP/HTTPS | HTTPS/MASQUE (Corporate proxy) | ✅ Работает |
-| 9090 | UDP | QUIC Transport (Legacy) | ✅ Работает |
-| 9092 | UDP | Enhanced QUIC (Advanced features) | ✅ Работает |
+| 8080 | TCP/HTTPS | HTTP API (Health, Registration) | Работает |
+| 8082 | TCP/HTTPS | P2P API (ICE signaling) | Работает |
+| 5553 | UDP | QUIC Transport (P2P mesh) | Работает |
+| 19302 | UDP | STUN Server (NAT traversal) | Работает |
+| 8443 | TCP/HTTPS | HTTPS/MASQUE (Corporate proxy) | Работает |
+| 9090 | UDP | QUIC Transport (Legacy) | Работает |
+| 9092 | UDP | Enhanced QUIC (Advanced features) | Работает |
 
-## 🎯 **Применение**
+## Применение
 
-### **Enterprise ZT-доступ**
-- **Банки и финансы** - где UDP часто ограничен
-- **Госсектор** - соответствие корпоративным стандартам
-- **Межоблачные связи** - MASQUE через порт 443
+### Enterprise ZT-доступ и межоблачные связи
 
-### **IoT/Edge и филиалы**
-- **Прямые P2P соединения** - минимальная задержка
-- **Автоматический fallback** - при провале пробивки NAT
-- **Масштабируемость** - поддержка тысяч устройств
+* **Банки и финансы** - где UDP часто ограничен
+* **Госсектор** - соответствие корпоративным стандартам
+* **Межоблачные связи** - MASQUE через порт 443
+* «идём по 443/HTTP-3» без открытия входящего UDP; правила по пользователям и **hostname**, а не IP-листам.
 
-### **Медиа/Real-time/Гейминг**
-- **QUIC datagrams** - быстрая доставка
-- **Connection migration** - стабильность при роуминге
-- **Грамотные fallback** - для блокирующих сетей
+### IoT/Edge и филиалы
 
-## 🛡️ **Безопасность и устойчивость к атакам**
+* **Прямые P2P соединения** - минимальная задержка
+* **Автоматический fallback** - при провале пробивки NAT
+* **Масштабируемость** - поддержка тысяч устройств
+* ICE даёт шанс на прямой путь (меньше задержка), при провале — relay/TURN.
 
-### **Почему это спасает от zero-day в классических VPN**
+### Медиа/Real-time/DevOps
+
+* **QUIC datagrams** - быстрая доставка
+* **Connection migration** - стабильность при роуминге
+* **Грамотные fallback** - для блокирующих сетей
+* QUIC-датаграммы, 0-RTT, миграция соединений; меньше «ломкости» сессий при роуминге. ([datatracker.ietf.org][3])
+
+## Безопасность и устойчивость
+
+### Защита от zero-day атак в классических VPN
 
 * **Убираем уязвимый периметр-шлюз.** Наиболее громкие инциденты последних лет били по **аппаратным/периметровым VPN-шлюзам** (Ivanti/Pulse, SonicWall, Fortinet) через 0-day/недавно закрытые RCE. Переход на ZTNA/HTTP-нативные туннели исключает экспонированный VPN-апплаенс, тем самым срезает класс атак по уязвимостям устройств. ([Google Cloud][1])
 
@@ -111,7 +131,7 @@ CloudBridge Relay решает проблему создания надежны�
 
 * **HTTP/3/MASQUE (CONNECT-UDP/IP)**: клиенты инициируют **исходящие** соединения на 443/QUIC→HTTP/3-прокси, вместо того чтобы держать публичный VPN-эндпойнт. Меньше экспозиции — меньше шанс стать целью периметровой RCE на «железке». ([datatracker.ietf.org][3])
 
-### **Почему это устойчиво к DDoS (а не «DDOS нет»)**
+### DDoS-устойчивость
 
 * **Anycast + масштабирование.** Размещение релеев за anycast-адресами «распыляет» трафик по нескольким узлам/регионам и помогает переживать всплески и DDoS. ([cloudflare.com][4])
 
@@ -119,45 +139,68 @@ CloudBridge Relay решает проблему создания надежны�
 
 * **Политики/лимиты на уровне прокси.** На MASQUE-/HTTP-слое легко вводить rate-limit, токены/аутентификацию, фаервол правилом — и быстро «выселять» злоумышленника без влияния на остальных. (CONNECT-UDP/CONNECT-IP — стандартные методы). ([datatracker.ietf.org][3])
 
-### **Как корректно сформулировать обещания в презентации**
+### Криптографические гарантии
 
-* **Про zero-day:**
-  «Архитектура без периметровых VPN-шлюзов снижает риск атак класса 0-day на VPN-апплаенсы. Доступ строится по моделям Zero Trust и HTTP-нативных туннелей (MASQUE), без экспонированных VPN-порталов.» ([Google Cloud][1])
+* **Шифрование по умолчанию**: QUIC обязывает TLS 1.3; пер-стримовая криптография, защита метаданных, анти-ossification. ([datatracker.ietf.org][9])
+* **Zero-Trust-модель**: минимально необходимый доступ, проверка пользователя/устройства/контекста; рекомендации — NIST SP 800-207/207A, CISA ZT Maturity Model.
+* **DDoS-устойчивость на транспорте**: в QUIC предусмотрены **address validation**, **Retry** и **anti-amplification limit (×3 до валидации адреса)** — снижают риск усилительных атак и «дешёвых» отражений.
 
-* **Про DDoS:**
-  «Сеть спроектирована **DDoS-устойчивой**: anycast-рассеивание, QUIC-address-validation/Retry против амплификации, плюс лимиты и аутентификация на прокси-уровне.» ([cloudflare.com][4])
+## Конкурентная среда
 
-## ⚠️ **Риски и решения**
+### Позиционирование относительно конкурентов
 
-### **Блокировки UDP/QUIC в enterprise**
-**Проблема:** Корпоративные сети часто блокируют UDP/QUIC
-**Решение:** 
-- WebSocket (H2/H3) fallback
-- TCP туннель
-- MASQUE через порт 443
+* **Tailscale**: WireGuard-оверлей + собственные DERP-релеи; отличный UX, но UDP-зависимость WG и IP-ориентированность политик. 2GC делает ставку на HTTP-нативный стек (MASQUE) и политики по имени.
 
-### **Сложность P2P в реальном интернете**
-**Проблема:** CGNAT, асимметрия, симметричный NAT
-**Решение:**
-- Собственный TURN/relay пул
-- Телеметрия успеха пробивки
-- Метрики NAT-типов
+* **ZeroTier/Nebula**: UDP-оверлеи с агрессивной NAT-пробивкой; сильные P2P-возможности, но в enterprise-сетях порт 443/HTTP-3 зачастую «проходит лучше». (Здесь 2GC выигрывает HTTP-нативностью.) ([datatracker.ietf.org][2])
 
-### **L2-семантика**
-**Проблема:** По умолчанию L3 "как в одной VLAN"
-**Решение:**
-- Точечно добавлять L2-over-L3 (VXLAN)
-- Иначе держать L3
-- Не "утяжелять" всем
+* **Cloudflare One/Tunnel**: задал тренд **hostname-routing** и egress-политик «по имени»; 2GC рационально поддерживать совместимую модель политик и приватных имён.
 
-## 🚀 **Быстрый старт**
+## Соответствие и локализация данных
 
-### **Требования:**
-- Go 1.21+
-- Docker (опционально)
-- Kubernetes/Minikube (для развертывания)
+### Регуляторные требования
 
-### **1. Локальный запуск (Go)**
+* **Zero-Trust-подходы** NIST/CISA закрывают класс регуляторных требований к удалённому доступу (минимизация периметра, микросегментация).
+* **Локализация/суверенность**: индустрия движется к управлению местом обработки/хранения (пример — Data Localization Suite у Cloudflare). Для 2GC важно иметь аналогичные механизмы «где инспектировать/хранить метаданные».
+* **Пример РФ**: для проектов с персональными данными и КИИ — учитывать 152-ФЗ/187-ФЗ и, при необходимости, лицензирование в части ТЗКИ/СКЗИ (ФСТЭК/ФСБ).
+
+## Риски и ограничения
+
+### Технические ограничения
+
+* **Блокировки UDP/QUIC** в части корпоративных сетей → обязателен стек фолбэков: MASQUE → WebSocket(H2/H3) → TCP. ([datatracker.ietf.org][2])
+* **Сложность реального P2P** (CGNAT, асимметрия, политика провайдера) → держать собственный TURN/relay-пул и телеметрию успеха пробивки (как у Tailscale с DERP).
+* **L2-семантика**: оверлей по умолчанию L3; если нужен broadcast/multicast — добавлять L2-over-L3 точечно, чтобы не ухудшать масштабируемость.
+* **Безопасность реализаций QUIC**: анти-амплификация/Retry должны быть корректно реализованы в стеке (ошибки приводят к уязвимостям).
+
+## Дорожная карта
+
+### Этап А — транспорт/туннели (MVP)
+
+1. QUIC-first + **CONNECT-UDP**, HTTP Datagrams; фолбэки WS/TCP. ([datatracker.ietf.org][2])
+2. Базовый **ICE/STUN/TURN** + сбор метрик NAT/успеха.
+3. Политики Zero-Trust (по пользователю/устройству/hostname), аудит/логирование.
+
+### Этап B — enterprise-функции
+
+4. **CONNECT-IP** (IP-VPN поверх HTTP-3) для Site-to-Site/Remote-IP. ([datatracker.ietf.org][4])
+5. **Hostname-routing** и egress-политики «по имени» (совместимая модель с индустрией).
+6. Локализация данных/региональные домены обработки (аналог DLS).
+
+### Этап C — производительность и устойчивость
+
+7. Anycast-релеи, масштабирование, защита от DDoS на уровне QUIC (Retry/anti-amp) и на уровне прокси.
+8. Наблюдаемость by default (трассировка, SLO, активные пробы).
+9. R&D: **Multipath QUIC** (когда созреет экосистема) и адаптивный выбор пути.
+
+## Быстрый старт
+
+### Требования
+
+* Go 1.21+
+* Docker (опционально)
+* Kubernetes/Minikube (для развертывания)
+
+### Локальный запуск
 
 ```bash
 # Установить переменные окружения
@@ -171,7 +214,7 @@ go build -o ./bin/relay ./cmd/relay
 ./bin/relay -config configs/config.json -log-level debug
 ```
 
-### **2. Запуск через Docker**
+### Docker развертывание
 
 ```bash
 # Собрать Docker образ
@@ -187,15 +230,15 @@ docker run -d \
   cloudbridge-relay:latest
 ```
 
-### **3. Развертывание в Minikube**
+### Kubernetes развертывание
 
 ```bash
 # Запустить Minikube
 minikube start --driver=docker --memory=4096 --cpus=2
 
 # Собрать и загрузить образ
-docker build -t cloudbridge-relay:quic-ice-v2 .
-minikube image load cloudbridge-relay:quic-ice-v2
+docker build -t cloudbridge-relay:resource-monitoring-v1 .
+minikube image load cloudbridge-relay:resource-monitoring-v1
 
 # Применить конфигурации
 kubectl create namespace cloudbridge
@@ -207,221 +250,82 @@ kubectl get pods -n cloudbridge
 kubectl get services -n cloudbridge
 ```
 
-## 🧪 **Тестирование**
+## Текущее состояние разработки
 
-### **Проверка здоровья сервисов:**
+### Реализовано
 
-```bash
-# HTTP API
-curl http://localhost:8080/health
+* Базовая инфраструктура сервера
+* HTTP API и P2P API endpoints
+* JWT аутентификация с tenant изоляцией
+* STUN сервер для NAT traversal
+* QUIC Transport с connection migration
+* MASQUE proxy для корпоративных сетей (CONNECT-UDP/CONNECT-IP)
+* Docker контейнеризация
+* Kubernetes развертывание
+* HTTP-нативные туннели через порт 443
+* AI-мониторинг ресурсов с Telegram уведомлениями
+* Cadence workflow engine для P2P оркестрации
 
-# P2P API
-curl http://localhost:8082/health
+### В разработке
 
-# STUN сервер
-python3 -c "
-import socket
-import struct
+* P2P маршрутизация между клиентами
+* ICE кандидаты обмен для NAT traversal
+* TURN relay пул для сложных NAT
+* Автоматический fallback на WebSocket/TCP
+* Мультитунельность с полной изоляцией
 
-def test_stun():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.settimeout(3.0)
-    
-    try:
-        transaction_id = b'123456789012'
-        magic_cookie = 0x2112A442
-        stun_request = struct.pack('>HHI', 0x0001, 0x0000, magic_cookie) + transaction_id
-        
-        sock.sendto(stun_request, ('localhost', 19302))
-        response, addr = sock.recvfrom(1024)
-        
-        msg_type = struct.unpack('>H', response[0:2])[0]
-        if msg_type == 0x0101:
-            print('✅ STUN Server - WORKING')
-        else:
-            print(f'⚠️  STUN Server - Unexpected response: 0x{msg_type:04x}')
-        
-    except Exception as e:
-        print(f'❌ STUN Server - Error: {e}')
-    finally:
-        sock.close()
+## Структура проекта
 
-test_stun()
-"
-```
-
-### **Регистрация пира:**
-
-```bash
-# Использовать JWT токен из official-token.txt
-curl -X POST "http://localhost:8082/api/v1/tenants/tenant-216420165/peers/register" \
-  -H "Authorization: Bearer $(cat official-token.txt)" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "public_key": "test-peer-key",
-    "allowed_ips": ["10.100.77.10/32"],
-    "peer_info": {
-      "name": "Test Peer",
-      "location": "Test Location"
-    }
-  }'
-```
-
-## 📚 **Документация**
-
-### **Для разработчиков:**
-- **[DEVELOPER_BRIEFING.md](DEVELOPER_BRIEFING.md)** - Краткий брифинг с основными задачами
-- **[DEVELOPER_TECHNICAL_SPECIFICATION.md](DEVELOPER_TECHNICAL_SPECIFICATION.md)** - Полное техническое задание
-- **[MULTI_TENANT_ARCHITECTURE.md](MULTI_TENANT_ARCHITECTURE.md)** - Архитектура мультитунельности
-- **[MINIKUBE_BUILD_GUIDE.md](MINIKUBE_BUILD_GUIDE.md)** - Инструкция по сборке Minikube
-- **[P2P_ROUTING_DEVELOPMENT_PLAN.md](P2P_ROUTING_DEVELOPMENT_PLAN.md)** - План доработки P2P маршрутизации
-
-### **Структура проекта:**
 ```
 cloudbridge-relay-installer/
 ├── cmd/relay/                 # Основной сервер
 ├── internal/                  # Внутренние пакеты
 │   ├── api/                  # HTTP/P2P API
 │   ├── token/                # JWT токены
-│   └── p2p/                  # P2P маршрутизация
+│   ├── p2p/                  # P2P маршрутизация
+│   ├── cadence/              # Workflow engine
+│   └── ai/                   # AI мониторинг
 ├── k8s/                      # Kubernetes конфигурации
 ├── configs/                  # Конфигурационные файлы
-├── nginx/                    # Nginx конфигурации
-└── systemd/                  # Systemd сервисы
+├── docs/                     # Документация
+└── scripts/                  # Утилиты
 ```
 
-## 🔄 **Текущее состояние разработки**
+## Документация
 
-### **✅ Реализовано:**
-- ✅ Базовая инфраструктура сервера
-- ✅ HTTP API и P2P API endpoints
-- ✅ JWT аутентификация с tenant изоляцией
-- ✅ STUN сервер для NAT traversal
-- ✅ QUIC Transport с connection migration
-- ✅ MASQUE proxy для корпоративных сетей (CONNECT-UDP/CONNECT-IP)
-- ✅ Docker контейнеризация
-- ✅ Kubernetes развертывание
-- ✅ HTTP-нативные туннели через порт 443
+### Для разработчиков
 
-### **🚧 В разработке:**
-- 🚧 P2P маршрутизация между клиентами
-- 🚧 ICE кандидаты обмен для NAT traversal
-- 🚧 TURN relay пул для сложных NAT
-- 🚧 Автоматический fallback на WebSocket/TCP
-- 🚧 Мультитунельность с полной изоляцией
+* **[DEVELOPER_BRIEFING.md](DEVELOPER_BRIEFING.md)** - Краткий брифинг с основными задачами
+* **[DEVELOPER_TECHNICAL_SPECIFICATION.md](DEVELOPER_TECHNICAL_SPECIFICATION.md)** - Полное техническое задание
+* **[MULTI_TENANT_ARCHITECTURE.md](MULTI_TENANT_ARCHITECTURE.md)** - Архитектура мультитунельности
+* **[MINIKUBE_BUILD_GUIDE.md](MINIKUBE_BUILD_GUIDE.md)** - Инструкция по сборке Minikube
+* **[P2P_ROUTING_DEVELOPMENT_PLAN.md](P2P_ROUTING_DEVELOPMENT_PLAN.md)** - План доработки P2P маршрутизации
 
-### **📋 План разработки:**
-1. **Этап 1 (1-2 дня):** Базовая P2P маршрутизация
-2. **Этап 2 (1-2 дня):** ICE/STUN/TURN интеграция
-3. **Этап 3 (2-3 дня):** MASQUE CONNECT-UDP/CONNECT-IP
-4. **Этап 4 (1-2 дня):** Автоматический fallback на WebSocket/TCP
+### API документация
 
-## 🎯 **Цели проекта**
+* **[docs/api/AI_API_ENDPOINTS.md](docs/api/AI_API_ENDPOINTS.md)** - AI API endpoints
+* **[docs/api/P2P_API_ENDPOINTS.md](docs/api/P2P_API_ENDPOINTS.md)** - P2P API endpoints
+* **[docs/api/CADENCE_API_ENDPOINTS.md](docs/api/CADENCE_API_ENDPOINTS.md)** - Cadence API endpoints
 
-### **Краткосрочные (1-2 недели):**
-- Реализовать P2P маршрутизацию между клиентами
-- Добавить ICE/STUN/TURN для NAT traversal
-- Обеспечить MASQUE CONNECT-UDP/CONNECT-IP
-- Автоматический fallback на WebSocket/TCP
+## Вывод
 
-### **Долгосрочные (1-2 месяца):**
-- Поддержка 1000+ одновременных соединений
-- Собственный TURN relay пул
-- Мониторинг и метрики NAT-типов
-- Production-ready развертывание
-- HTTP-нативный Zero-Trust оверлей
+**2GC CloudBridge Global Network** — это современная **HTTP-нативная Zero-Trust сеть поверх QUIC**, сочетающая P2P (через ICE) и управляемые туннели (через MASQUE). Такой подход:
 
-## 🛠️ **Практические рекомендации для MVP/GA**
-
-### **Техническая реализация**
-```yaml
-QUIC-first + MASQUE:
-  - CONNECT-UDP (RFC 9298)
-  - CONNECT-IP (RFC 9484) 
-  - HTTP Datagrams (RFC 9297)
-  - Downgrade на WS/TCP
-
-ICE/STUN/TURN слой:
-  - Собственный STUN сервер
-  - Управляемый TURN пул
-  - TCP-alloc при необходимости
-  - Метрики NAT-типов/успеха
-```
-
-### **Продуктовые функции**
-```yaml
-"Сеть как продукт":
-  - Политики доступа (hostname/SNI/DNS)
-  - Observability и мониторинг
-  - Автодиагностика соединений
-  - HTTP-VPN подход
-```
-
-### **WireGuard интеграция**
-```yaml
-Профиль для site-to-site/legacy:
-  - Чёткие ограничения UDP
-  - Сценарии роуминга
-  - Собственные релеи как "последний шанс"
-```
-
-## 🤝 **Участие в разработке**
-
-### **Для разработчиков:**
-1. Изучите [DEVELOPER_BRIEFING.md](DEVELOPER_BRIEFING.md)
-2. Ознакомьтесь с [техническим заданием](DEVELOPER_TECHNICAL_SPECIFICATION.md)
-3. Следуйте [плану разработки](P2P_ROUTING_DEVELOPMENT_PLAN.md)
-
-### **Для DevOps:**
-1. Используйте [инструкцию по Minikube](MINIKUBE_BUILD_GUIDE.md)
-2. Настройте мониторинг и логирование
-3. Подготовьте production окружение
-
-## 📞 **Поддержка**
-
-- **Issues:** Создавайте issues для багов и feature requests
-- **Документация:** Все документы в корне проекта
-- **Тестирование:** Используйте скрипты в `test-*.sh`
-
-## 📄 **Лицензия**
-
-Проект распространяется под лицензией MIT. См. [LICENSE](LICENSE) для подробностей.
+* уменьшает площадь атаки (нет «VPN-шлюза-апплаенса» на периметре),
+* облегчает прохождение сложной корпоративной инфраструктуры (порт 443/HTTP-3, политики «по имени»),
+* даёт выигрыш по задержке/устойчивости (0-RTT, миграция путей, P2P где возможно)
+  — и опирается на текущие стандарты IETF и рекомендации по Zero-Trust. ([datatracker.ietf.org][1])
 
 ---
 
-## 🎯 **Потенциал проекта**
+## Ссылки и источники
 
-### **Техническая база: ⭐⭐⭐⭐⭐**
-- ✅ **QUIC + MASQUE** - современный HTTP-нативный подход
-- ✅ **ICE/STUN/TURN** - проверенная модель пробивки
-- ✅ **Kubernetes-native** - соответствует трендам CNCF
-- ✅ **Модульная архитектура** - гибкость развертывания
-
-### **Рыночный потенциал: ⭐⭐⭐⭐**
-**Ниша "HTTP-нативного Zero-Trust-оверлея":**
-- ✅ **Enterprise** - где UDP ограничен
-- ✅ **IoT/Edge** - нужна низкая задержка
-- ✅ **Мульти-облако** - межоблачная связность
-- ✅ **Корпоративные прокси** - прохождение "по правилам"
-
-### **Конкурентные преимущества: ⭐⭐⭐⭐**
-- ✅ **HTTP-нативность** - обходит блокировки
-- ✅ **P2P-mesh** - устойчивость к сбоям
-- ✅ **Connection migration** - мобильность
-- ✅ **Open source** - прозрачность и доверие
-
----
-
-**🎯 Цель: Создать HTTP-нативную P2P mesh платформу для Zero-Trust оверлеев, где удаленные серверы могут общаться через современные протоколы QUIC + ICE/STUN/TURN + MASQUE с автоматическим fallback на WebSocket/TCP!**
-
-**Проект имеет высокий шанс занять нишу HTTP-нативного Zero-Trust-оверлея в enterprise/IoT/мульти-облаке, где классическим UDP-VPN тяжело проходить инфраструктурные фильтры.**
-
----
-
-## 📚 **Ссылки и источники**
-
-[1]: https://cloud.google.com/blog/products/identity-security/zero-trust-architecture-design-principles "Google Cloud - Zero Trust Architecture Design Principles"
-[2]: https://www.cisa.gov/resources-tools/resources/zero-trust-maturity-model "CISA - Zero Trust Maturity Model"
-[3]: https://datatracker.ietf.org/doc/rfc9298/ "IETF RFC 9298 - MASQUE: CONNECT-UDP and CONNECT-IP"
-[4]: https://www.cloudflare.com/learning/ddos/what-is-anycast/ "Cloudflare - What is Anycast?"
-[5]: https://datatracker.ietf.org/doc/rfc9000/ "IETF RFC 9000 - QUIC: A UDP-Based Multiplexed and Secure Transport"
+[1]: https://datatracker.ietf.org/doc/rfc9000/ "IETF RFC 9000 - QUIC: A UDP-Based Multiplexed and Secure Transport"
+[2]: https://datatracker.ietf.org/doc/rfc9298/ "IETF RFC 9298 - MASQUE: CONNECT-UDP and CONNECT-IP"
+[3]: https://datatracker.ietf.org/doc/rfc9221/ "IETF RFC 9221 - An Unreliable Datagram Extension to QUIC"
+[4]: https://datatracker.ietf.org/doc/rfc9484/ "IETF RFC 9484 - MASQUE: CONNECT-IP"
+[5]: https://cloud.google.com/blog/products/identity-security/zero-trust-architecture-design-principles "Google Cloud - Zero Trust Architecture Design Principles"
+[6]: https://www.cisa.gov/resources-tools/resources/zero-trust-maturity-model "CISA - Zero Trust Maturity Model"
+[7]: https://www.cloudflare.com/learning/ddos/what-is-anycast/ "Cloudflare - What is Anycast?"
+[8]: https://datatracker.ietf.org/doc/rfc9000/ "IETF RFC 9000 - QUIC: A UDP-Based Multiplexed and Secure Transport"
+[9]: https://datatracker.ietf.org/doc/rfc9001/ "IETF RFC 9001 - Using TLS to Secure QUIC"
