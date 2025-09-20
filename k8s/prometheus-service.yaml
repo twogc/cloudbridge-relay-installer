@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: cloudbridge
+  labels:
+    app: prometheus
+spec:
+  type: ExternalName
+  externalName: prometheus.cloudbridge-monitoring.svc.cluster.local
+  ports:
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
