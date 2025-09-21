@@ -39,7 +39,7 @@
     }
   },
   "keycloak": {
-    "enabled": false,
+    "enabled": true,
     "server_url": "",
     "realm": "",
     "client_id": "",
@@ -110,12 +110,12 @@
     "handshake_timeout": "10s"
   },
   "zero_trust": {
-    "enabled": false,
+    "enabled": true,
     "client_daemon": false,
     "service_discovery": false,
     "auto_reconnect": false,
     "circuit_breaker": {
-      "enabled": false,
+      "enabled": true,
       "failure_threshold": 5,
       "success_threshold": 2,
       "timeout": "30s",
@@ -146,12 +146,12 @@
       ]
     },
     "rate_limit": {
-      "enabled": false,
+      "enabled": true,
       "requests_per": 1000,
       "window_size": 60
     },
     "authentication": {
-      "enabled": false,
+      "enabled": true,
       "type": "jwt",
       "jwt_secret": "",
       "keycloak_url": ""
@@ -188,12 +188,12 @@
       "routing_strategy": "hybrid"
     },
     "site_to_site": {
-      "enabled": false,
+      "enabled": true,
       "corporate_networks": []
     }
   },
   "quantum": {
-    "enabled": false,
+    "enabled": true,
     "algorithm": "kyber",
     "hybrid_mode": true,
     "key_size": 256,
@@ -201,29 +201,29 @@
     "fallback_enabled": true,
     "key_rotation_days": 30,
     "wireguard": {
-      "enabled": false
+      "enabled": true
     },
     "enhanced_quic": {
-      "enabled": false
+      "enabled": true
     }
   },
   "ai": {
-    "enabled": false,
+    "enabled": true,
     "behavior_analysis": {
-      "enabled": false,
+      "enabled": true,
       "model_path": "",
       "threshold": 0.8,
       "learning_rate": 0.01
     },
     "predictive_security": {
-      "enabled": false,
+      "enabled": true,
       "confidence": 0.9
     },
     "automated_response": {
-      "enabled": false
+      "enabled": true
     },
     "monitoring": {
-      "enabled": false,
+      "enabled": true,
       "dashboard_url": "",
       "refresh_rate": "30s"
     }

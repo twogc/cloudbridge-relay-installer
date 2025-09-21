@@ -39,6 +39,7 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
 	"go.uber.org/zap"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 var (
@@ -133,6 +134,9 @@ type Server struct {
 	p2cManager        *p2c.P2CManager
 	connectionHandler *protocol.UnifiedConnectionHandler
 	autoSwitchManager *protocol.AutoSwitchManager
+
+	// WireGuard Profile Manager
+	wgProfileManager *WGProfileManager
 
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -487,6 +491,19 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	loggerInstance.Info("P2P Relay components initialized successfully")
 
+	// Initialize WireGuard Profile Manager
+	var wgProfileManager *WGProfileManager
+	if cfg.WireGuard.Enabled {
+		wgProfileManager, err = NewWGProfileManager(cfg, loggerInstance.GetZapLogger())
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to initialize WG profile manager: %v", err)
+		}
+		loggerInstance.Info("WireGuard Profile Manager initialized successfully")
+	} else {
+		loggerInstance.Info("WireGuard disabled, skipping WG profile manager initialization")
+	}
+
 	return &Server{
 		config:               cfg,
 		logger:               loggerInstance,
@@ -518,6 +535,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		relayManager:         relayManager,
 		heartbeatManager:     heartbeatManager,
 		quicRelayHandler:     quicRelayHandler,
+		wgProfileManager:     wgProfileManager,
 		ctx:                  ctx,
 		cancel:               cancel,
 		startTime:            time.Now(),
@@ -757,6 +775,122 @@ func (s *Server) Start() error {
 			}
 		})
 
+		// WireGuard API endpoints
+		httpMux.HandleFunc("/api/v1/wireguard/status", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if s.wgProfileManager == nil {
+				http.Error(w, "WireGuard not enabled", http.StatusServiceUnavailable)
+				return
+			}
+
+			stats := s.wgProfileManager.GetStats()
+			response := map[string]interface{}{
+				"status": "enabled",
+				"stats":  stats,
+			}
+
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				s.logger.Error("Failed to encode WireGuard status response", zap.Error(err))
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				return
+			}
+		})
+
+		httpMux.HandleFunc("/api/v1/wireguard/peers", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if s.wgProfileManager == nil {
+				http.Error(w, "WireGuard not enabled", http.StatusServiceUnavailable)
+				return
+			}
+
+			switch r.Method {
+			case "GET":
+				// Get all peers
+				stats := s.wgProfileManager.GetStats()
+				if err := json.NewEncoder(w).Encode(stats); err != nil {
+					s.logger.Error("Failed to encode peers response", zap.Error(err))
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+
+			case "POST":
+				// Add new peer
+				var peerRequest struct {
+					InterfaceName string `json:"interface_name"`
+					PublicKey     string `json:"public_key"`
+					Endpoint      string `json:"endpoint"`
+					AllowedIPs    string `json:"allowed_ips"`
+				}
+
+				if err := json.NewDecoder(r.Body).Decode(&peerRequest); err != nil {
+					http.Error(w, "Invalid JSON", http.StatusBadRequest)
+					return
+				}
+
+				peerConfig, err := s.wgProfileManager.CreatePeerConfig(
+					peerRequest.PublicKey,
+					peerRequest.Endpoint,
+					peerRequest.AllowedIPs,
+				)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+
+				if err := s.wgProfileManager.AddPeer(peerRequest.InterfaceName, peerConfig); err != nil {
+					s.logger.Error("Failed to add peer", zap.Error(err))
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				response := map[string]interface{}{
+					"status":  "success",
+					"message": "Peer added successfully",
+				}
+				if err := json.NewEncoder(w).Encode(response); err != nil {
+					s.logger.Error("Failed to encode add peer response", zap.Error(err))
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+
+			case "DELETE":
+				// Remove peer
+				publicKeyStr := r.URL.Query().Get("public_key")
+				interfaceName := r.URL.Query().Get("interface")
+
+				if publicKeyStr == "" || interfaceName == "" {
+					http.Error(w, "public_key and interface parameters required", http.StatusBadRequest)
+					return
+				}
+
+				publicKey, err := wgtypes.ParseKey(publicKeyStr)
+				if err != nil {
+					http.Error(w, "Invalid public key", http.StatusBadRequest)
+					return
+				}
+
+				if err := s.wgProfileManager.RemovePeer(interfaceName, publicKey); err != nil {
+					s.logger.Error("Failed to remove peer", zap.Error(err))
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				response := map[string]interface{}{
+					"status":  "success",
+					"message": "Peer removed successfully",
+				}
+				if err := json.NewEncoder(w).Encode(response); err != nil {
+					s.logger.Error("Failed to encode remove peer response", zap.Error(err))
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+					return
+				}
+
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+		})
+
 		// Create TLS server instance
 		if s.config.Security.TLSEnabled {
 			if err := s.startTLSTunnelListener(); err != nil {
@@ -971,6 +1105,16 @@ func (s *Server) Start() error {
 	// Запуск QUIC Relay Handler
 	if s.quicRelayHandler != nil {
 		s.logger.Info("QUIC Relay Handler ready")
+	}
+
+	// Запуск WireGuard Profile Manager
+	if s.wgProfileManager != nil {
+		go func() {
+			if err := s.wgProfileManager.Start(); err != nil {
+				s.logger.Error("Failed to start WG Profile Manager", zap.Error(err))
+			}
+		}()
+		s.logger.Info("WireGuard Profile Manager started")
 	}
 
 	// Handle TCP connections
@@ -1533,6 +1677,13 @@ func (s *Server) Stop() {
 
 	if s.relayManager != nil {
 		s.relayManager.Shutdown()
+	}
+
+	// Stop WireGuard Profile Manager
+	if s.wgProfileManager != nil {
+		if err := s.wgProfileManager.Stop(); err != nil {
+			s.logger.Error("Error stopping WG Profile Manager", zap.Error(err))
+		}
 	}
 
 	// Stop additional server components

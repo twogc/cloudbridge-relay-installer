@@ -1,0 +1,340 @@
+{
+  "server": {
+    "address": "0.0.0.0",
+    "port": 8080,
+    "timeout": "30s",
+    "max_tunnels": 1000,
+    "ping_interval": "30s",
+    "cleanup_interval": "60s"
+  },
+  "django": {
+    "api_endpoint": "",
+    "jwt_secret": "${RELAY_JWT_SECRET}",
+    "jwt_expiry": "24h",
+    "rest_timeout": "5s",
+    "rest_cache_ttl": "5m",
+    "rest_max_retries": 3,
+    "rest_retry_delay": "100ms"
+  },
+  "keycloak": {
+    "enabled": false,
+    "server_url": "${KEYCLOAK_SERVER_URL}",
+    "realm": "${KEYCLOAK_REALM}",
+    "client_id": "${KEYCLOAK_CLIENT_ID}",
+    "client_secret": "${KEYCLOAK_CLIENT_SECRET}",
+    "public_key": "${KEYCLOAK_PUBLIC_KEY}",
+    "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+    "jwks_url": "",
+    "token_validation": {
+      "issuer": "${KEYCLOAK_ISSUER}",
+      "audience": "${KEYCLOAK_AUDIENCE}",
+      "clock_skew": "30s"
+    },
+    "jwks_cache_ttl": "1h",
+    "http_timeout": "30s"
+  },
+  "security": {
+    "tls_enabled": false,
+    "cert_file": "${RELAY_TLS_CERT_FILE}",
+    "key_file": "${RELAY_TLS_KEY_FILE}",
+    "allowed_ips": [],
+    "rate_limit": {
+      "enabled": false,
+      "requests_per_second": 100.0,
+      "burst": 1000
+    },
+    "mtls": {
+      "enabled": false,
+      "ca_file": "${RELAY_MTLS_CA_FILE}"
+    },
+    "cipher_suites": [],
+    "min_tls_version": "TLS1.3",
+    "audit": {
+      "enabled": false,
+      "log_file": "/var/log/relay_audit.log"
+    }
+  },
+  "metrics": {
+    "enabled": false,
+    "port": 9090,
+    "path": "/metrics"
+  },
+  "api": {
+    "enabled": false,
+    "port": 8082,
+    "version": "v1"
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "output": "stdout",
+    "file": "/var/log/relay.log",
+    "max_size": "100m",
+    "max_age": "720h",
+    "max_backups": 10
+  },
+  "protocol": {
+    "auto_select": true,
+    "preferred": "quic",
+    "fallback": "http",
+    "switch_threshold": 0.2,
+    "health_check_interval": "30s"
+  },
+  "http_api": {
+    "enabled": false,
+    "port": 9090,
+    "host": "0.0.0.0",
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": false,
+      "requests_per_minute": 100
+    }
+  },
+  "https_api": {
+    "enabled": false,
+    "port": 5553,
+    "host": "0.0.0.0",
+    "tls": {
+      "enabled": false,
+      "cert_file": "/app/certs/tls.crt",
+      "key_file": "/app/certs/tls.key"
+    },
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": false,
+      "requests_per_minute": 100
+    }
+  },
+  "quic": {
+    "enabled": false,
+    "max_streams": 100,
+    "keep_alive": true,
+    "idle_timeout": "30s",
+    "handshake_timeout": "10s",
+    "connection_migration": true,
+    "multiplexing": true
+  },
+  "zero_trust": {
+    "enabled": false,
+    "client_daemon": false,
+    "service_discovery": false,
+    "auto_reconnect": true,
+    "circuit_breaker": {
+      "enabled": false,
+      "failure_threshold": 5,
+      "success_threshold": 2,
+      "timeout": "30s",
+      "window_size": "60s"
+    },
+    "health_check": {
+      "enabled": false,
+      "interval": "30s",
+      "timeout": "10s",
+      "checks": []
+    },
+    "rate_limit": {
+      "enabled": false,
+      "requests_per": 100,
+      "window_size": 60
+    },
+    "authentication": {
+      "enabled": false,
+      "type": "jwt",
+      "jwt_secret": "",
+      "keycloak_url": ""
+    }
+  },
+  "ingress": {
+    "enabled": false,
+    "bastion_mode": false,
+    "ip_access_control": {
+      "enabled": false,
+      "default_allow": true,
+      "rules": []
+    },
+    "tls": {
+      "enabled": false,
+      "cert_file": "${RELAY_TLS_CERT_FILE}",
+      "key_file": "${RELAY_TLS_KEY_FILE}",
+      "min_version": "TLS1.3",
+      "cipher_suites": [],
+      "verify_client_cert": false,
+      "client_ca_file": "",
+      "insecure_skip_verify": false
+    },
+    "connection_pool": {
+      "max_size": 200,
+      "idle_timeout": "60s",
+      "max_idle": 50,
+      "max_lifetime": "10m",
+      "retry": {
+        "max_retries": 3,
+        "base_time": "100ms",
+        "max_delay": "2s",
+        "jitter": 0.1,
+        "retry_forever": false
+      },
+      "graceful_shutdown": {
+        "grace_period": "10s",
+        "max_wait_time": "20s"
+      },
+      "http2_reuse": {
+        "max_connections": 100,
+        "max_idle_time": "30s",
+        "cleanup_interval": "30s"
+      }
+    },
+    "rules": [],
+    "origin_request": {
+      "connect_timeout": "5s",
+      "tls_timeout": "5s",
+      "tcp_keep_alive": "30s",
+      "keep_alive_connections": 64,
+      "keep_alive_timeout": "30s",
+      "http_host_header": "",
+      "origin_server_name": "",
+      "no_tls_verify": false,
+      "ca_pool": "",
+      "disable_chunked_encoding": false,
+      "bastion_mode": false,
+      "proxy_address": "",
+      "proxy_port": 0,
+      "proxy_type": "",
+      "http2_origin": true
+    }
+  },
+  "enhanced_quic": {
+    "enabled": false,
+    "max_streams": 100,
+    "keep_alive": true,
+    "idle_timeout": "30s",
+    "handshake_timeout": "10s",
+    "ddos_protection": true,
+    "geographic_routing": false,
+    "keycloak_integration": false
+  },
+  "p2p_api": {
+    "enabled": false,
+    "port": 8082,
+    "host": "0.0.0.0",
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": false,
+      "requests_per_minute": 100
+    },
+    "endpoints": {
+      "register": "/api/v1/register",
+      "peers": "/api/v1/peers",
+      "health": "/api/v1/health"
+    }
+  },
+  "p2p_api_https": {
+    "enabled": false,
+    "port": 8083,
+    "host": "0.0.0.0",
+    "tls": {
+      "enabled": false,
+      "cert_file": "/app/certs/tls.crt",
+      "key_file": "/app/certs/tls.key"
+    },
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": false,
+      "requests_per_minute": 100
+    },
+    "endpoints": {
+      "register": "/api/v1/register",
+      "peers": "/api/v1/peers",
+      "health": "/api/v1/health"
+    }
+  },
+  "ice_stun_turn": {
+    "enabled": false,
+    "stun_servers": [
+      "stun.l.google.com:19302",
+      "stun1.l.google.com:19302",
+      "edge.2gc.ru:19302"
+    ],
+    "turn_servers": [],
+    "ice_timeout": "30s",
+    "connection_timeout": "10s",
+    "gathering_timeout": "5s",
+    "candidate_types": [
+      "host",
+      "srflx",
+      "relay"
+    ]
+  },
+  "masque": {
+    "enabled": false,
+    "proxy_url": "https://edge.2gc.ru:8443",
+    "alpn_protocols": [
+      "h3",
+      "h3-29",
+      "h3-28",
+      "h3-27"
+    ],
+    "fallback_enabled": true
+  },
+  "wireguard": {
+    "enabled": true,
+    "interface": {
+      "name": "wg0",
+      "listen_port": 51820,
+      "address": "10.100.1.1/24"
+    },
+    "discovery": {
+      "registry_url": "https://registry.cloudbridge.com",
+      "heartbeat_interval": "30s",
+      "max_peers": 50
+    },
+    "mesh": {
+      "enabled": false,
+      "auto_discovery": true,
+      "max_connections": 100,
+      "routing_strategy": "hybrid"
+    },
+    "site_to_site": {
+      "enabled": false,
+      "corporate_networks": []
+    }
+  },
+  "quantum": {
+    "enabled": false,
+    "algorithm": "kyber",
+    "hybrid_mode": true,
+    "key_size": 7680,
+    "signature_scheme": "dilithium3",
+    "fallback_enabled": true,
+    "key_rotation_days": 30,
+    "wireguard": { "enabled": true },
+    "enhanced_quic": { "enabled": true }
+  },
+  "ai": {
+    "enabled": false,
+    "behavior_analysis": {
+      "enabled": false,
+      "model_path": "",
+      "threshold": 0.8,
+      "learning_rate": 0.01
+    },
+    "predictive_security": {
+      "enabled": false,
+      "confidence": 0.9
+    },
+    "automated_response": {
+      "enabled": false
+    },
+    "monitoring": {
+      "enabled": false,
+      "dashboard_url": "http://localhost:3000",
+      "refresh_rate": "30s"
+    }
+  },
+  "cadence": {
+    "enabled": false,
+    "host_port": "cadence:7933",
+    "domain": "cloudbridge-p2p",
+    "task_list": "p2p-quic-tasks"
+  }
+}

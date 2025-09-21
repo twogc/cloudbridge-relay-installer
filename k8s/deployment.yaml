@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: cloudbridge-relay
-        image: cloudbridge-relay:real-data-20250920-182524
+        image: cloudbridge-relay:latest
         imagePullPolicy: Never  # For minikube local images
         ports:
         - containerPort: 8080

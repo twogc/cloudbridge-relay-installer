@@ -17,7 +17,7 @@
     "rest_retry_delay": "100ms"
   },
   "keycloak": {
-    "enabled": false,
+    "enabled": true,
     "server_url": "${KEYCLOAK_SERVER_URL}",
     "realm": "${KEYCLOAK_REALM}",
     "client_id": "${KEYCLOAK_CLIENT_ID}",
@@ -44,13 +44,13 @@
       "burst": 1000
     },
     "mtls": {
-      "enabled": false,
+      "enabled": true,
       "ca_file": "${RELAY_MTLS_CA_FILE}"
     },
     "cipher_suites": [],
     "min_tls_version": "TLS1.3",
     "audit": {
-      "enabled": false,
+      "enabled": true,
       "log_file": "/var/log/relay_audit.log"
     }
   },
@@ -115,45 +115,45 @@
     "multiplexing": true
   },
   "zero_trust": {
-    "enabled": false,
+    "enabled": true,
     "client_daemon": false,
     "service_discovery": false,
     "auto_reconnect": true,
     "circuit_breaker": {
-      "enabled": false,
+      "enabled": true,
       "failure_threshold": 5,
       "success_threshold": 2,
       "timeout": "30s",
       "window_size": "60s"
     },
     "health_check": {
-      "enabled": false,
+      "enabled": true,
       "interval": "30s",
       "timeout": "10s",
       "checks": []
     },
     "rate_limit": {
-      "enabled": false,
+      "enabled": true,
       "requests_per": 100,
       "window_size": 60
     },
     "authentication": {
-      "enabled": false,
+      "enabled": true,
       "type": "jwt",
       "jwt_secret": "",
       "keycloak_url": ""
     }
   },
   "ingress": {
-    "enabled": false,
+    "enabled": true,
     "bastion_mode": false,
     "ip_access_control": {
-      "enabled": false,
+      "enabled": true,
       "default_allow": true,
       "rules": []
     },
     "tls": {
-      "enabled": false,
+      "enabled": true,
       "cert_file": "${RELAY_TLS_CERT_FILE}",
       "key_file": "${RELAY_TLS_KEY_FILE}",
       "min_version": "TLS1.3",
@@ -277,7 +277,7 @@
     "fallback_enabled": true
   },
   "wireguard": {
-    "enabled": false,
+    "enabled": true,
     "interface": {
       "name": "wg0",
       "listen_port": 51820,
@@ -295,35 +295,35 @@
       "routing_strategy": "hybrid"
     },
     "site_to_site": {
-      "enabled": false,
+      "enabled": true,
       "corporate_networks": []
     }
   },
   "quantum": {
-    "enabled": false,
+    "enabled": true,
     "algorithm": "kyber",
     "hybrid_mode": true,
     "key_size": 7680,
     "signature_scheme": "dilithium3",
     "fallback_enabled": true,
     "key_rotation_days": 30,
-    "wireguard": { "enabled": false },
-    "enhanced_quic": { "enabled": false }
+    "wireguard": { "enabled": true },
+    "enhanced_quic": { "enabled": true }
   },
   "ai": {
-    "enabled": false,
+    "enabled": true,
     "behavior_analysis": {
-      "enabled": false,
+      "enabled": true,
       "model_path": "",
       "threshold": 0.8,
       "learning_rate": 0.01
     },
     "predictive_security": {
-      "enabled": false,
+      "enabled": true,
       "confidence": 0.9
     },
     "automated_response": {
-      "enabled": false
+      "enabled": true
     },
     "monitoring": {
       "enabled": true,
