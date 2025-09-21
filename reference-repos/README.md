@@ -1,6 +1,6 @@
-# 📚 Reference Repositories
+# 📚 **CloudBridge Relay - Референсные репозитории**
 
-Эта папка содержит скачанные репозитории, которые служат как шпаргалки и примеры для разработки P2P QUIC сервера.
+Эта папка содержит референсные реализации и примеры для построения QUIC-first + MASQUE relay системы. Все репозитории служат шпаргалкой для реализации нашего проекта.
 
 ## 📁 Содержимое
 
@@ -86,4 +86,31 @@
 
 ---
 
-**💡 Совет**: Начните с изучения `p2pquic/ice.go` для понимания базовой ICE реализации, затем переходите к более сложным примерам.
+## 🆕 **Новые репозитории (добавлены 21.09.2025)**
+
+### **MASQUE (RFC 9298, RFC 9484)**
+- **connect-ip-go**: CONNECT-IP реализация (IP over HTTP/3)
+- **masquerade**: Rust альтернатива MASQUE
+
+### **ICE/STUN/TURN + Метрики**
+- **ice**: Pion ICE реализация
+- **stun**: Pion STUN протокол  
+- **coturn**: TURN сервер с Prometheus метриками
+- **go-stun**: Альтернативная STUN/TURN/ICE реализация
+
+### **WireGuard**
+- **wireguard-go**: Userspace WireGuard
+- **wgctrl-go**: Управление WG интерфейсами
+
+### **Fallback механизмы**
+- **tailscale**: DERP релей (Designated Encrypted Relay for Packets)
+- **wstunnel**: WebSocket туннелирование
+- **websocket**: Gorilla WebSocket библиотека
+
+## 📋 **Подробный индекс**
+
+См. [REFERENCE_REPOSITORIES_INDEX.md](./REFERENCE_REPOSITORIES_INDEX.md) для детального описания всех репозиториев.
+
+---
+
+**💡 Совет**: Начните с изучения `masque-go` для понимания MASQUE, затем `pion/ice` для NAT traversal, и `tailscale` для fallback механизмов.

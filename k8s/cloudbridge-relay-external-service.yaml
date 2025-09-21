@@ -40,7 +40,7 @@ spec:
       port: 8443
       targetPort: 8443
       nodePort: 30443
-      protocol: UDP
+      protocol: TCP
     # Enhanced QUIC
     - name: enhanced-quic
       port: 9092
@@ -91,7 +91,7 @@ spec:
     - name: masque-proxy
       port: 8443
       targetPort: 8443
-      protocol: UDP
+      protocol: TCP
     # Enhanced QUIC
     - name: enhanced-quic
       port: 9092

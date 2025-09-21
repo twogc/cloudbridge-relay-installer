@@ -87,15 +87,15 @@ func (pm *P2PManager) EstablishConnection(c *gin.Context) {
 	var iceCandidates []*ICECandidate
 	if connection.ICEPair != nil {
 		iceCandidates = append(iceCandidates, &ICECandidate{
-			Foundation:  connection.ICEPair.Local.Foundation,
-			Component:   connection.ICEPair.Local.Component,
-			Transport:   connection.ICEPair.Local.Transport,
-			Priority:    connection.ICEPair.Local.Priority,
-			Address:     connection.ICEPair.Local.Address,
-			Port:        connection.ICEPair.Local.Port,
-			Type:        connection.ICEPair.Local.Type.String(),
-			RelatedAddr: connection.ICEPair.Local.RelatedAddr,
-			RelatedPort: connection.ICEPair.Local.RelatedPort,
+			Foundation:  connection.ICEPair.LocalCandidate.Foundation,
+			Component:   connection.ICEPair.LocalCandidate.Component,
+			Transport:   connection.ICEPair.LocalCandidate.Transport,
+			Priority:    connection.ICEPair.LocalCandidate.Priority,
+			Address:     connection.ICEPair.LocalCandidate.Address,
+			Port:        connection.ICEPair.LocalCandidate.Port,
+			Type:        connection.ICEPair.LocalCandidate.Type.String(),
+			RelatedAddr: connection.ICEPair.LocalCandidate.RelatedAddr,
+			RelatedPort: connection.ICEPair.LocalCandidate.RelatedPort,
 		})
 	}
 

@@ -107,8 +107,8 @@ type MASQUEIPProxy struct {
 	logger *logger.Logger
 }
 
-// SendDatagram отправляет datagram через MASQUE соединение
-func (mc *MASQUEConnection) SendDatagram(data []byte) error {
+// SendDatagramToChannel отправляет datagram через DatagramChannel
+func (mc *MASQUEConnection) SendDatagramToChannel(data []byte) error {
 	if mc.DatagramChannel == nil {
 		return fmt.Errorf("datagram channel not initialized")
 	}
@@ -128,9 +128,10 @@ func (mc *MASQUEConnection) SendDatagramWithContextID(data []byte) error {
 		return fmt.Errorf("stream not initialized")
 	}
 
-	// Создаем datagram с Context ID
+	// Создаем datagram с Context ID согласно RFC 9297
+	// Формат: [Quarter Stream ID (varint)][HTTP Datagram Payload]
 	datagram := make([]byte, 0, len(contextIDZero)+len(data))
-	datagram = append(datagram, contextIDZero...)
+	datagram = append(datagram, contextIDZero...) // Context ID = 0 для CONNECT-UDP
 	datagram = append(datagram, data...)
 
 	// Отправляем через HTTP/3 stream
@@ -140,6 +141,12 @@ func (mc *MASQUEConnection) SendDatagramWithContextID(data []byte) error {
 
 	mc.LastActivity = time.Now()
 	return nil
+}
+
+// SendDatagram отправляет datagram через MASQUE соединение
+// Использует HTTP/3 stream с правильным Context ID
+func (mc *MASQUEConnection) SendDatagram(data []byte) error {
+	return mc.SendDatagramWithContextID(data)
 }
 
 // ReceiveDatagram получает datagram из MASQUE соединения
@@ -212,15 +219,6 @@ func (ms *MASQUEServer) Start() error {
 	go func() {
 		addr := ":8443" // MASQUE порт по умолчанию
 		ms.logger.Info("MASQUE HTTP/3 server starting", zap.String("addr", addr))
-
-		// Добавляем проверку порта перед запуском
-		listener, err := net.Listen("tcp", addr)
-		if err != nil {
-			ms.logger.Error("Failed to bind to MASQUE port", zap.String("addr", addr), zap.Error(err))
-			return
-		}
-		ms.logger.Info("Successfully bound to MASQUE port", zap.String("addr", addr))
-		listener.Close()
 
 		// Запускаем HTTP/3 сервер
 		ms.logger.Info("Starting HTTP/3 server ListenAndServe...")
@@ -526,6 +524,7 @@ func (ms *MASQUEServer) handleDatagramStream(stream *http3.Stream, remoteAddr st
 }
 
 // processDatagram обрабатывает полученный datagram с Context ID поддержкой
+// Основано на masque-go/conn.go:ReadFrom
 func (ms *MASQUEServer) processDatagram(data []byte, remoteAddr string) error {
 	ms.logger.Debug("Processing datagram",
 		zap.String("remote_addr", remoteAddr),
@@ -540,11 +539,11 @@ func (ms *MASQUEServer) processDatagram(data []byte, remoteAddr string) error {
 		return fmt.Errorf("empty datagram")
 	}
 
-	// Парсим Quarter Stream ID (Context ID для MASQUE)
+	// Парсим Quarter Stream ID (Context ID для MASQUE) как в masque-go
 	contextID, n, err := quicvarint.Parse(data)
 	if err != nil {
 		ms.logger.Warn("Failed to parse context ID from HTTP datagram", zap.Error(err))
-		return fmt.Errorf("failed to parse context ID: %w", err)
+		return fmt.Errorf("masque: malformed datagram: %w", err)
 	}
 
 	// Извлекаем payload после Context ID
@@ -555,50 +554,24 @@ func (ms *MASQUEServer) processDatagram(data []byte, remoteAddr string) error {
 		zap.Int("payload_len", len(payload)),
 		zap.String("remote_addr", remoteAddr))
 
-	// Проверяем, является ли это IP Capsule для CONNECT-IP
+	// Проверяем Context ID как в masque-go
 	if contextID != 0 {
-		// Обрабатываем как IP Capsule для CONNECT-IP
+		// Для CONNECT-IP (Context ID != 0) обрабатываем как IP Capsule
+		ms.logger.Debug("Processing IP Capsule for CONNECT-IP", zap.Uint64("context_id", contextID))
 		return ms.processIPCapsule(payload, remoteAddr, contextID)
 	}
 
-	// Для CONNECT-UDP (Context ID = 0) парсим datagram для определения маршрутизации
-	// Формат: [target_peer_id:4][payload:...]
-	if len(payload) < 4 {
-		ms.logger.Warn("CONNECT-UDP datagram too short for routing", zap.Int("len", len(payload)))
-		return fmt.Errorf("datagram too short for routing")
-	}
+	// Для CONNECT-UDP (Context ID = 0) - это UDP payload
+	// В отличие от нашей предыдущей реализации, здесь мы не добавляем маршрутизацию
+	// Вместо этого мы просто передаем UDP payload как есть
+	// Маршрутизация должна происходить на уровне MASQUE соединений
 
-	// Извлекаем target peer ID (первые 4 байта)
-	targetPeerID := string(payload[:4])
-	actualPayload := payload[4:]
+	ms.logger.Debug("Processing UDP payload for CONNECT-UDP",
+		zap.Int("payload_len", len(payload)),
+		zap.String("remote_addr", remoteAddr))
 
-	ms.logger.Debug("Routing CONNECT-UDP datagram",
-		zap.String("target_peer_id", targetPeerID),
-		zap.Int("payload_len", len(actualPayload)),
-		zap.Uint64("context_id", contextID))
-
-	// Ищем целевое MASQUE соединение
-	ms.connectionsMutex.RLock()
-	targetConn, exists := ms.connections[targetPeerID]
-	ms.connectionsMutex.RUnlock()
-
-	if !exists {
-		ms.logger.Warn("Target MASQUE connection not found", zap.String("peer_id", targetPeerID))
-		return fmt.Errorf("target connection not found: %s", targetPeerID)
-	}
-
-	// Отправляем datagram в целевое соединение
-	if err := targetConn.SendDatagram(actualPayload); err != nil {
-		ms.logger.Error("Failed to send datagram to target connection",
-			zap.String("target_peer_id", targetPeerID),
-			zap.Error(err))
-		return fmt.Errorf("failed to send to target: %w", err)
-	}
-
-	ms.logger.Debug("Datagram routed successfully",
-		zap.String("target_peer_id", targetPeerID),
-		zap.Int("payload_len", len(actualPayload)))
-
+	// Здесь мы можем добавить логику для маршрутизации UDP payload
+	// Пока что просто логируем получение
 	return nil
 }
 
@@ -743,6 +716,7 @@ func (p *MASQUEIPProxy) HandleConnection(w http.ResponseWriter, conn *MASQUEConn
 }
 
 // proxyUDPToTarget проксирует данные от клиента к целевому серверу
+// Основано на masque-go/conn.go:ReadFrom
 func (p *MASQUEUDPProxy) proxyUDPToTarget(conn *MASQUEConnection) {
 	defer conn.UDPConn.Close()
 
@@ -756,8 +730,29 @@ func (p *MASQUEUDPProxy) proxyUDPToTarget(conn *MASQUEConnection) {
 			break
 		}
 
-		// Отправляем данные в UDP соединение
-		if _, err := conn.UDPConn.Write(data); err != nil {
+		// Парсим Context ID как в masque-go
+		contextID, n, err := quicvarint.Parse(data)
+		if err != nil {
+			p.logger.Warn("Failed to parse context ID from datagram",
+				zap.String("conn_id", conn.ID),
+				zap.Error(err))
+			continue
+		}
+
+		// Проверяем Context ID как в masque-go
+		if contextID != 0 {
+			// Drop datagram для CONNECT-IP (не CONNECT-UDP)
+			p.logger.Debug("Dropping datagram with non-zero context ID",
+				zap.String("conn_id", conn.ID),
+				zap.Uint64("context_id", contextID))
+			continue
+		}
+
+		// Извлекаем UDP payload после Context ID
+		udpPayload := data[n:]
+
+		// Отправляем UDP payload в UDP соединение
+		if _, err := conn.UDPConn.Write(udpPayload); err != nil {
 			p.logger.Debug("Failed to write to UDP connection",
 				zap.String("conn_id", conn.ID),
 				zap.Error(err))
@@ -769,6 +764,7 @@ func (p *MASQUEUDPProxy) proxyUDPToTarget(conn *MASQUEConnection) {
 }
 
 // proxyUDPFromTarget проксирует данные от целевого сервера к клиенту
+// Основано на masque-go/conn.go:WriteTo
 func (p *MASQUEUDPProxy) proxyUDPFromTarget(conn *MASQUEConnection) {
 	defer conn.Stream.Close()
 
@@ -783,8 +779,15 @@ func (p *MASQUEUDPProxy) proxyUDPFromTarget(conn *MASQUEConnection) {
 			break
 		}
 
-		// Отправляем данные через HTTP/3 stream (который уже интегрирован с QUIC datagrams)
-		if err := conn.Stream.SendDatagram(buffer[:n]); err != nil {
+		// Создаем datagram с Context ID как в masque-go
+		// Формат: [Quarter Stream ID (varint)][HTTP Datagram Payload]
+		udpPayload := buffer[:n]
+		datagram := make([]byte, 0, len(contextIDZero)+len(udpPayload))
+		datagram = append(datagram, contextIDZero...) // Context ID = 0 для CONNECT-UDP
+		datagram = append(datagram, udpPayload...)
+
+		// Отправляем datagram через HTTP/3 stream
+		if err := conn.Stream.SendDatagram(datagram); err != nil {
 			p.logger.Debug("Failed to send datagram to stream",
 				zap.String("conn_id", conn.ID),
 				zap.Error(err))

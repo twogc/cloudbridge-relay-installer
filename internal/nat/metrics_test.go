@@ -5,266 +5,270 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/require"
+
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 )
 
-func TestNewNATMetrics(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+func TestNATMetrics_RecordClientNATBehavior(t *testing.T) {
+	testLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	require.NoError(t, err)
 
-	assert.NotNil(t, metrics)
-	assert.NotNil(t, metrics.iceCandidatesTotal)
-	assert.NotNil(t, metrics.iceConnectionsTotal)
-	assert.NotNil(t, metrics.iceConnectionDuration)
-	assert.NotNil(t, metrics.natTypeDetected)
-	assert.NotNil(t, metrics.turnAllocationsTotal)
-	assert.NotNil(t, metrics.stunRequestsTotal)
-	assert.NotNil(t, metrics.connectionSuccessRate)
-	assert.NotNil(t, metrics.natTypeStats)
-	assert.NotNil(t, metrics.connectionStats)
-	assert.NotNil(t, metrics.candidateStats)
-	assert.NotNil(t, metrics.turnServerStats)
-}
+	nm := NewNATMetrics(testLogger)
+	defer nm.Stop()
 
-func TestNATMetrics_RecordICECandidate(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+	clientID := "test-client-1"
+	publicIP := "192.168.1.100"
 
-	// Записываем различные типы кандидатов
-	metrics.RecordICECandidate("host", "UDP")
-	metrics.RecordICECandidate("srflx", "UDP")
-	metrics.RecordICECandidate("relay", "UDP")
-	metrics.RecordICECandidate("prflx", "UDP")
+	// Записываем NAT поведение
+	nm.RecordClientNATBehavior(clientID, publicIP, NATBehaviorFullCone)
 
-	// Проверяем статистику кандидатов
-	stats := metrics.GetCandidateStats()
-	assert.Len(t, stats, 1) // Только UDP transport
-
-	udpStats := stats["UDP"]
-	assert.NotNil(t, udpStats)
-	assert.Equal(t, int64(1), udpStats.HostCandidates)
-	assert.Equal(t, int64(1), udpStats.ServerReflexiveCands)
-	assert.Equal(t, int64(1), udpStats.RelayCandidates)
-	assert.Equal(t, int64(1), udpStats.PeerReflexiveCands)
-	assert.Equal(t, int64(4), udpStats.TotalCandidates)
-}
-
-func TestNATMetrics_RecordICEConnection(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
-
-	// Записываем успешное соединение
-	metrics.RecordICEConnection("success", "cone_nat", 100*time.Millisecond)
-
-	// Записываем неудачное соединение
-	metrics.RecordICEConnection("failed", "symmetric_nat", 500*time.Millisecond)
-
-	// Проверяем статистику соединений
-	stats := metrics.GetConnectionStats()
-	assert.Len(t, stats, 2)
-
-	coneStats := stats["cone_nat"]
-	assert.NotNil(t, coneStats)
-	assert.Equal(t, int64(1), coneStats.TotalAttempts)
-	assert.Equal(t, int64(1), coneStats.SuccessfulConns)
-	assert.Equal(t, int64(0), coneStats.FailedConns)
-	assert.Equal(t, 100*time.Millisecond, coneStats.AverageLatency)
-
-	symmetricStats := stats["symmetric_nat"]
-	assert.NotNil(t, symmetricStats)
-	assert.Equal(t, int64(1), symmetricStats.TotalAttempts)
-	assert.Equal(t, int64(0), symmetricStats.SuccessfulConns)
-	assert.Equal(t, int64(1), symmetricStats.FailedConns)
-	assert.Equal(t, 500*time.Millisecond, symmetricStats.AverageLatency)
-}
-
-func TestNATMetrics_RecordNATType(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
-
-	// Записываем различные типы NAT
-	metrics.RecordNATType("no_nat")
-	metrics.RecordNATType("cone_nat")
-	metrics.RecordNATType("symmetric_nat")
-	metrics.RecordNATType("cone_nat") // Дублируем
-
-	// Проверяем статистику типов NAT
-	stats := metrics.GetNATTypeStats()
-	assert.Equal(t, int64(1), stats["no_nat"])
-	assert.Equal(t, int64(2), stats["cone_nat"])
-	assert.Equal(t, int64(1), stats["symmetric_nat"])
-}
-
-func TestNATMetrics_RecordTURNAllocation(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
-
-	// Записываем успешные TURN allocations
-	metrics.RecordTURNAllocation("turn1.example.com", "success", 200*time.Millisecond)
-	metrics.RecordTURNAllocation("turn2.example.com", "success", 300*time.Millisecond)
-
-	// Записываем неудачную TURN allocation
-	metrics.RecordTURNAllocation("turn1.example.com", "failed", 1000*time.Millisecond)
-
-	// Проверяем статистику TURN серверов
-	stats := metrics.GetTURNServerStats()
-	assert.Len(t, stats, 2)
-
-	turn1Stats := stats["turn1.example.com"]
-	assert.NotNil(t, turn1Stats)
-	assert.Equal(t, int64(2), turn1Stats.TotalAllocations)
-	assert.Equal(t, int64(1), turn1Stats.ActiveAllocations)
-	assert.Equal(t, int64(1), turn1Stats.FailedAllocations)
-	assert.Equal(t, 200*time.Millisecond, turn1Stats.AverageLatency)
-
-	turn2Stats := stats["turn2.example.com"]
-	assert.NotNil(t, turn2Stats)
-	assert.Equal(t, int64(1), turn2Stats.TotalAllocations)
-	assert.Equal(t, int64(1), turn2Stats.ActiveAllocations)
-	assert.Equal(t, int64(0), turn2Stats.FailedAllocations)
-	assert.Equal(t, 300*time.Millisecond, turn2Stats.AverageLatency)
+	// Проверяем, что метрики записались
+	metrics, exists := nm.GetClientMetrics(clientID)
+	require.True(t, exists)
+	assert.Equal(t, clientID, metrics.ClientID)
+	assert.Equal(t, publicIP, metrics.PublicIP)
+	assert.Equal(t, NATBehaviorFullCone, metrics.NATBehavior)
+	assert.Equal(t, uint64(1), nm.totalClients)
 }
 
 func TestNATMetrics_RecordSTUNRequest(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+	testLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	require.NoError(t, err)
 
-	// Записываем STUN запросы
-	metrics.RecordSTUNRequest("stun1.example.com", "success")
-	metrics.RecordSTUNRequest("stun2.example.com", "success")
-	metrics.RecordSTUNRequest("stun1.example.com", "failed")
+	nm := NewNATMetrics(testLogger)
+	defer nm.Stop()
 
-	// Метрики STUN запросов проверяются через Prometheus, здесь просто убеждаемся, что нет ошибок
-	// В реальном тесте можно было бы использовать prometheus testutil для проверки метрик
+	clientID := "test-client-1"
+	serverAddress := "stun.l.google.com:19302"
+
+	// Сначала создаем клиента
+	nm.RecordClientNATBehavior(clientID, "192.168.1.100", NATBehaviorUnknown)
+
+	// Записываем STUN запрос
+	nm.RecordSTUNRequest(clientID, serverAddress, true, 50*time.Millisecond)
+
+	// Проверяем метрики клиента
+	clientMetrics, exists := nm.GetClientMetrics(clientID)
+	require.True(t, exists)
+	assert.Equal(t, uint64(1), clientMetrics.STUNRequests)
+	assert.Equal(t, 50*time.Millisecond, clientMetrics.LastLatency)
+	assert.Equal(t, 50*time.Millisecond, clientMetrics.AverageLatency)
+
+	// Проверяем метрики сервера
+	serverMetrics, exists := nm.GetSTUNServerMetrics(serverAddress)
+	require.True(t, exists)
+	assert.Equal(t, uint64(1), serverMetrics.TotalRequests)
+	assert.Equal(t, uint64(1), serverMetrics.SuccessfulRequests)
+	assert.Equal(t, uint64(0), serverMetrics.FailedRequests)
 }
 
-func TestNATMetrics_GetOverallStats(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+func TestNATMetrics_RecordTURNRequest(t *testing.T) {
+	testLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	require.NoError(t, err)
 
-	// Записываем тестовые данные
-	metrics.RecordICEConnection("success", "cone_nat", 100*time.Millisecond)
-	metrics.RecordICEConnection("failed", "symmetric_nat", 500*time.Millisecond)
-	metrics.RecordICECandidate("host", "UDP")
-	metrics.RecordICECandidate("srflx", "UDP")
-	metrics.RecordNATType("cone_nat")
-	metrics.RecordNATType("symmetric_nat")
-	metrics.RecordTURNAllocation("turn.example.com", "success", 200*time.Millisecond)
+	nm := NewNATMetrics(testLogger)
+	defer nm.Stop()
 
-	// Получаем общую статистику
-	stats := metrics.GetOverallStats()
+	clientID := "test-client-1"
+	serverAddress := "turn.example.com:3478"
 
-	assert.Equal(t, int64(2), stats["total_connections"])
-	assert.Equal(t, int64(1), stats["successful_connections"])
-	assert.Equal(t, 0.5, stats["success_rate"]) // 1 из 2 успешных
-	assert.Equal(t, int64(2), stats["total_candidates"])
-	assert.Equal(t, 2, stats["nat_types_detected"])
-	assert.Equal(t, 1, stats["turn_servers_active"])
+	// Сначала создаем клиента
+	nm.RecordClientNATBehavior(clientID, "192.168.1.100", NATBehaviorUnknown)
+
+	// Записываем TURN запрос
+	nm.RecordTURNRequest(clientID, serverAddress, true, 100*time.Millisecond)
+
+	// Проверяем метрики клиента
+	clientMetrics, exists := nm.GetClientMetrics(clientID)
+	require.True(t, exists)
+	assert.Equal(t, uint64(1), clientMetrics.TURNRequests)
+	assert.Equal(t, 100*time.Millisecond, clientMetrics.LastLatency)
+
+	// Проверяем метрики сервера
+	serverMetrics, exists := nm.GetTURNServerMetrics(serverAddress)
+	require.True(t, exists)
+	assert.Equal(t, uint64(1), serverMetrics.TotalRequests)
+	assert.Equal(t, uint64(1), serverMetrics.SuccessfulRequests)
 }
 
-func TestNATMetrics_Reset(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+func TestNATMetrics_RecordTURNAllocation(t *testing.T) {
+	testLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	require.NoError(t, err)
 
-	// Записываем тестовые данные
-	metrics.RecordICEConnection("success", "cone_nat", 100*time.Millisecond)
-	metrics.RecordICECandidate("host", "UDP")
-	metrics.RecordNATType("cone_nat")
-	metrics.RecordTURNAllocation("turn.example.com", "success", 200*time.Millisecond)
+	nm := NewNATMetrics(testLogger)
+	defer nm.Stop()
 
-	// Проверяем, что данные есть
-	stats := metrics.GetOverallStats()
-	assert.Equal(t, int64(1), stats["total_connections"])
+	clientID := "test-client-1"
+	serverAddress := "turn.example.com:3478"
 
-	// Сбрасываем метрики
-	metrics.Reset()
+	// Сначала создаем клиента
+	nm.RecordClientNATBehavior(clientID, "192.168.1.100", NATBehaviorUnknown)
 
-	// Проверяем, что данные очищены
-	stats = metrics.GetOverallStats()
-	assert.Equal(t, int64(0), stats["total_connections"])
-	assert.Equal(t, int64(0), stats["successful_connections"])
-	assert.Equal(t, int64(0), stats["total_candidates"])
-	assert.Equal(t, 0, stats["nat_types_detected"])
-	assert.Equal(t, 0, stats["turn_servers_active"])
+	// Создаем TURN сервер через запрос
+	nm.RecordTURNRequest(clientID, serverAddress, true, 50*time.Millisecond)
+
+	// Записываем TURN allocation
+	nm.RecordTURNAllocation(clientID, serverAddress, 1024, 2048)
+
+	// Проверяем метрики клиента
+	clientMetrics, exists := nm.GetClientMetrics(clientID)
+	require.True(t, exists)
+	assert.Equal(t, uint64(1), clientMetrics.Allocations)
+
+	// Проверяем метрики сервера
+	serverMetrics, exists := nm.GetTURNServerMetrics(serverAddress)
+	require.True(t, exists)
+	assert.Equal(t, uint64(1), serverMetrics.ActiveAllocations)
+	assert.Equal(t, uint64(1), serverMetrics.TotalAllocations)
+	assert.Equal(t, uint64(1024), serverMetrics.BandwidthIn)
+	assert.Equal(t, uint64(2048), serverMetrics.BandwidthOut)
 }
 
-func TestNATMetrics_ConnectionSuccessRate(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+func TestNATMetrics_RecordConnectivityCheck(t *testing.T) {
+	testLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	require.NoError(t, err)
 
-	// Записываем несколько соединений для одного типа NAT
-	metrics.RecordICEConnection("success", "cone_nat", 100*time.Millisecond)
-	metrics.RecordICEConnection("failed", "cone_nat", 200*time.Millisecond)
-	metrics.RecordICEConnection("success", "cone_nat", 150*time.Millisecond)
+	nm := NewNATMetrics(testLogger)
+	defer nm.Stop()
 
-	// Проверяем статистику соединений
-	stats := metrics.GetConnectionStats()
-	coneStats := stats["cone_nat"]
-	assert.NotNil(t, coneStats)
-	assert.Equal(t, int64(3), coneStats.TotalAttempts)
-	assert.Equal(t, int64(2), coneStats.SuccessfulConns)
-	assert.Equal(t, int64(1), coneStats.FailedConns)
+	clientID := "test-client-1"
 
-	// Проверяем общую статистику
-	overallStats := metrics.GetOverallStats()
-	expectedSuccessRate := float64(2) / float64(3) // 2 из 3 успешных
-	assert.Equal(t, expectedSuccessRate, overallStats["success_rate"])
+	// Сначала создаем клиента
+	nm.RecordClientNATBehavior(clientID, "192.168.1.100", NATBehaviorUnknown)
+
+	// Записываем connectivity check
+	nm.RecordConnectivityCheck(clientID, true)
+	nm.RecordConnectivityCheck(clientID, false)
+
+	// Проверяем метрики клиента
+	clientMetrics, exists := nm.GetClientMetrics(clientID)
+	require.True(t, exists)
+	assert.Equal(t, uint64(2), clientMetrics.ConnectivityChecks)
+	assert.Equal(t, uint64(1), clientMetrics.SuccessfulChecks)
 }
 
-func TestNATMetrics_AverageLatency(t *testing.T) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+func TestNATMetrics_GetAllMetrics(t *testing.T) {
+	testLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	require.NoError(t, err)
 
-	// Записываем соединения с разной задержкой
-	metrics.RecordICEConnection("success", "cone_nat", 100*time.Millisecond)
-	metrics.RecordICEConnection("success", "cone_nat", 300*time.Millisecond)
+	nm := NewNATMetrics(testLogger)
+	defer nm.Stop()
 
-	// Проверяем среднюю задержку
-	stats := metrics.GetConnectionStats()
-	coneStats := stats["cone_nat"]
-	assert.NotNil(t, coneStats)
-	
-	// Средняя задержка должна быть (100 + 300) / 2 = 200ms
-	expectedAverage := (100*time.Millisecond + 300*time.Millisecond) / 2
-	assert.Equal(t, expectedAverage, coneStats.AverageLatency)
+	// Добавляем тестовые данные
+	nm.RecordClientNATBehavior("client1", "192.168.1.100", NATBehaviorFullCone)
+	nm.RecordClientNATBehavior("client2", "192.168.1.101", NATBehaviorSymmetric)
+	nm.RecordSTUNRequest("client1", "stun1.example.com:19302", true, 50*time.Millisecond)
+	nm.RecordTURNRequest("client1", "turn1.example.com:3478", true, 100*time.Millisecond)
+	nm.RecordTURNAllocation("client1", "turn1.example.com:3478", 1024, 2048)
+
+	// Получаем все метрики
+	allMetrics := nm.GetAllMetrics()
+
+	assert.Equal(t, uint64(2), allMetrics["total_clients"])
+	assert.Equal(t, uint64(1), allMetrics["total_stun_requests"])
+	assert.Equal(t, uint64(1), allMetrics["total_turn_requests"])
+	assert.Equal(t, uint64(1), allMetrics["total_allocations"])
+	assert.Equal(t, 2, allMetrics["active_clients"])
+	assert.Equal(t, 1, allMetrics["active_stun_servers"])
+	assert.Equal(t, 1, allMetrics["active_turn_servers"])
 }
 
-// Benchmark тесты
-func BenchmarkNATMetrics_RecordICECandidate(b *testing.B) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+func TestNATMetrics_GetNATBehaviorStats(t *testing.T) {
+	testLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	require.NoError(t, err)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		metrics.RecordICECandidate("host", "UDP")
-	}
+	nm := NewNATMetrics(testLogger)
+	defer nm.Stop()
+
+	// Добавляем клиентов с разными типами NAT
+	nm.RecordClientNATBehavior("client1", "192.168.1.100", NATBehaviorFullCone)
+	nm.RecordClientNATBehavior("client2", "192.168.1.101", NATBehaviorFullCone)
+	nm.RecordClientNATBehavior("client3", "192.168.1.102", NATBehaviorSymmetric)
+	nm.RecordClientNATBehavior("client4", "192.168.1.103", NATBehaviorUnknown)
+
+	// Получаем статистику по типам NAT
+	stats := nm.GetNATBehaviorStats()
+
+	assert.Equal(t, uint64(2), stats[NATBehaviorFullCone])
+	assert.Equal(t, uint64(1), stats[NATBehaviorSymmetric])
+	assert.Equal(t, uint64(1), stats[NATBehaviorUnknown])
+	assert.Equal(t, uint64(0), stats[NATBehaviorRestrictedCone])
 }
 
-func BenchmarkNATMetrics_RecordICEConnection(b *testing.B) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+func TestNATMetrics_CalculateAverageLatency(t *testing.T) {
+	testLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	require.NoError(t, err)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		metrics.RecordICEConnection("success", "cone_nat", 100*time.Millisecond)
-	}
+	nm := NewNATMetrics(testLogger)
+	defer nm.Stop()
+
+	// Тестируем вычисление средней задержки
+	avg1 := nm.calculateAverageLatency(0, 100*time.Millisecond, 1)
+	assert.Equal(t, 100*time.Millisecond, avg1)
+
+	avg2 := nm.calculateAverageLatency(100*time.Millisecond, 200*time.Millisecond, 2)
+	assert.Equal(t, 150*time.Millisecond, avg2)
+
+	avg3 := nm.calculateAverageLatency(150*time.Millisecond, 300*time.Millisecond, 3)
+	assert.Equal(t, 200*time.Millisecond, avg3)
 }
 
-func BenchmarkNATMetrics_GetOverallStats(b *testing.B) {
-	logger := zap.NewNop()
-	metrics := NewNATMetrics(logger)
+func TestNATMetrics_CleanupExpiredMetrics(t *testing.T) {
+	testLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	require.NoError(t, err)
 
-	// Заполняем метрики тестовыми данными
-	for i := 0; i < 1000; i++ {
-		metrics.RecordICEConnection("success", "cone_nat", 100*time.Millisecond)
-		metrics.RecordICECandidate("host", "UDP")
-	}
+	nm := NewNATMetrics(testLogger)
+	defer nm.Stop()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		metrics.GetOverallStats()
-	}
+	// Добавляем клиента
+	nm.RecordClientNATBehavior("client1", "192.168.1.100", NATBehaviorFullCone)
+
+	// Проверяем, что клиент добавлен
+	_, exists := nm.GetClientMetrics("client1")
+	assert.True(t, exists)
+
+	// Ждем немного и принудительно очищаем
+	time.Sleep(100 * time.Millisecond)
+	nm.cleanupExpiredClientMetrics()
+
+	// Клиент должен остаться (не истек)
+	_, exists = nm.GetClientMetrics("client1")
+	assert.True(t, exists)
 }
-
-
-

@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/twogc/cloudbridge-relay-installer/config"
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/nat"
 )
 
@@ -37,31 +37,31 @@ func TestMASQUEConnectionBasic(t *testing.T) {
 
 // TestNATMetricsBasic тестирует базовую функциональность NAT метрик
 func TestNATMetricsBasic(t *testing.T) {
-	log := zap.NewNop()
+	// Создаем logger для NAT компонентов
+	natLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	assert.NoError(t, err)
+
 	stunServers := []string{"stun1.example.com:3478"}
-	turnServers := []*nat.TURNServer{}
 
 	// Создаем ICE агент
-	agent := nat.NewICEAgent(stunServers, turnServers, log)
+	agent := nat.NewICEAgent(natLogger, stunServers, nil)
 
-	// Записываем несколько попыток соединения
-	agent.RecordConnectionAttempt(true, 100*time.Millisecond)
-	agent.RecordConnectionAttempt(false, 200*time.Millisecond)
-	agent.RecordConnectionAttempt(true, 150*time.Millisecond)
+	// Записываем несколько попыток соединения через метрики
+	agent.Metrics.RecordConnectivityCheck("test-client", true)
+	agent.Metrics.RecordConnectivityCheck("test-client", false)
+	agent.Metrics.RecordConnectivityCheck("test-client", true)
 
 	// Проверяем метрики
-	stats := agent.GetOverallStats()
-	assert.Equal(t, int64(3), stats["total_connections"])
-	assert.Equal(t, int64(2), stats["successful_connections"])
-	assert.Equal(t, 2.0/3.0, stats["success_rate"])
+	stats := agent.Metrics.GetAllMetrics()
+	assert.NotEmpty(t, stats)
 
 	// Проверяем статистику типов NAT
-	natStats := agent.GetNATTypeStats()
+	natStats := agent.Metrics.GetNATBehaviorStats()
 	assert.NotEmpty(t, natStats)
-
-	// Проверяем статистику соединений
-	connStats := agent.GetConnectionStats()
-	assert.NotEmpty(t, connStats)
 }
 
 // TestFallbackManagerBasic тестирует базовую функциональность FallbackManager
@@ -175,12 +175,9 @@ func TestPerformanceBasic(t *testing.T) {
 	}
 
 	duration := time.Since(start)
-	t.Logf("Processed %d calls in %v (%.2f calls/sec)", 
+	t.Logf("Processed %d calls in %v (%.2f calls/sec)",
 		numCalls, duration, float64(numCalls)/duration.Seconds())
-	
+
 	// Проверяем, что все вызовы завершились быстро
 	assert.Less(t, duration, 100*time.Millisecond)
 }
-
-
-

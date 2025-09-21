@@ -39,10 +39,10 @@ type CadenceP2PIntegrationInterface interface {
 // ICEAgentInterface defines the interface for ICE agent operations
 type ICEAgentInterface interface {
 	StartGathering() error
-	GetLocalCandidates() []*nat.Candidate
-	AddRemoteCandidate(candidate *nat.Candidate) error
+	GetLocalCandidates() []*nat.ICECandidate
+	AddRemoteCandidate(candidate *nat.ICECandidate) error
 	StartConnectivityChecks() error
 	GetState() nat.ICEState
-	GetSelectedPair() *nat.CandidatePair
+	GetSelectedPair() *nat.ICECandidatePair
 	Close() error
 }

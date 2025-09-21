@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/nat"
 	"go.uber.org/zap"
 )
@@ -40,7 +41,7 @@ type P2PConnection struct {
 	ConnectionType   string // "direct", "relay", "masque"
 	Protocol         string // "quic", "websocket", "tcp"
 	State            ConnectionState
-	ICEPair          *nat.CandidatePair
+	ICEPair          *nat.ICECandidatePair
 	EstablishedAt    time.Time
 	LastActivity     time.Time
 	BytesTransferred int64
@@ -115,7 +116,18 @@ func (pcm *P2PConnectionManager) RegisterPeer(peer *Peer) error {
 		}
 	}
 
-	iceAgent := nat.NewICEAgent(stunServers, nil, pcm.logger)
+	// Создаем logger для NAT компонентов
+	natLogger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		JSON:   true,
+		Output: "stdout",
+	})
+	if err != nil {
+		pcm.logger.Error("Failed to create NAT logger", zap.Error(err))
+		return err
+	}
+
+	iceAgent := nat.NewICEAgent(natLogger, stunServers, nil)
 	pcm.iceAgents[peer.PeerID] = iceAgent
 
 	if pcm.logger != nil {
@@ -374,22 +386,22 @@ func (pcm *P2PConnectionManager) getPeer(peerID string) (*Peer, error) {
 }
 
 // convertToNATCandidate конвертирует ICECandidate в NAT Candidate
-func convertToNATCandidate(apiCandidate *ICECandidate) *nat.Candidate {
-	var candidateType nat.CandidateType
+func convertToNATCandidate(apiCandidate *ICECandidate) *nat.ICECandidate {
+	var candidateType nat.ICECandidateType
 	switch apiCandidate.Type {
 	case "host":
-		candidateType = nat.CandidateTypeHost
+		candidateType = nat.ICECandidateTypeHost
 	case "srflx":
-		candidateType = nat.CandidateTypeServerReflexive
+		candidateType = nat.ICECandidateTypeServerReflexive
 	case "prflx":
-		candidateType = nat.CandidateTypePeerReflexive
+		candidateType = nat.ICECandidateTypePeerReflexive
 	case "relay":
-		candidateType = nat.CandidateTypeRelay
+		candidateType = nat.ICECandidateTypeRelay
 	default:
-		candidateType = nat.CandidateTypeHost
+		candidateType = nat.ICECandidateTypeHost
 	}
 
-	return &nat.Candidate{
+	return &nat.ICECandidate{
 		Foundation:  apiCandidate.Foundation,
 		Component:   apiCandidate.Component,
 		Transport:   apiCandidate.Transport,
@@ -399,22 +411,20 @@ func convertToNATCandidate(apiCandidate *ICECandidate) *nat.Candidate {
 		Type:        candidateType,
 		RelatedAddr: apiCandidate.RelatedAddr,
 		RelatedPort: apiCandidate.RelatedPort,
-		Username:    apiCandidate.Username,
-		Password:    apiCandidate.Password,
 	}
 }
 
 // convertToAPICandidate конвертирует NAT Candidate в ICECandidate
-func convertToAPICandidate(natCandidate *nat.Candidate) *ICECandidate {
+func convertToAPICandidate(natCandidate *nat.ICECandidate) *ICECandidate {
 	var candidateType string
 	switch natCandidate.Type {
-	case nat.CandidateTypeHost:
+	case nat.ICECandidateTypeHost:
 		candidateType = "host"
-	case nat.CandidateTypeServerReflexive:
+	case nat.ICECandidateTypeServerReflexive:
 		candidateType = "srflx"
-	case nat.CandidateTypePeerReflexive:
+	case nat.ICECandidateTypePeerReflexive:
 		candidateType = "prflx"
-	case nat.CandidateTypeRelay:
+	case nat.ICECandidateTypeRelay:
 		candidateType = "relay"
 	default:
 		candidateType = "host"
@@ -430,8 +440,8 @@ func convertToAPICandidate(natCandidate *nat.Candidate) *ICECandidate {
 		Type:        candidateType,
 		RelatedAddr: natCandidate.RelatedAddr,
 		RelatedPort: natCandidate.RelatedPort,
-		Username:    natCandidate.Username,
-		Password:    natCandidate.Password,
+		Username:    "", // Username не используется в NAT ICECandidate
+		Password:    "", // Password не используется в NAT ICECandidate
 	}
 }
 

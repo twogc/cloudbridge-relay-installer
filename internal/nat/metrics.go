@@ -1,324 +1,375 @@
 package nat
 
 import (
+	"context"
+	"fmt"
 	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 )
 
-// NATMetrics представляет метрики для NAT traversal
+// NATBehaviorType представляет тип NAT поведения согласно RFC 3489
+type NATBehaviorType string
+
+const (
+	NATBehaviorUnknown           NATBehaviorType = "unknown"
+	NATBehaviorFullCone          NATBehaviorType = "full_cone"
+	NATBehaviorRestrictedCone    NATBehaviorType = "restricted_cone"
+	NATBehaviorPortRestrictedCone NATBehaviorType = "port_restricted_cone"
+	NATBehaviorSymmetric         NATBehaviorType = "symmetric"
+	NATBehaviorNoNAT             NATBehaviorType = "no_nat"
+)
+
+// NATMetrics собирает метрики NAT поведения
 type NATMetrics struct {
-	logger *zap.Logger
+	logger *logger.Logger
 
-	// Prometheus метрики
-	iceCandidatesTotal    *prometheus.CounterVec
-	iceConnectionsTotal   *prometheus.CounterVec
-	iceConnectionDuration *prometheus.HistogramVec
-	natTypeDetected       *prometheus.CounterVec
-	turnAllocationsTotal  *prometheus.CounterVec
-	stunRequestsTotal     *prometheus.CounterVec
-	connectionSuccessRate *prometheus.GaugeVec
+	// Метрики по клиентам
+	clientMetrics      map[string]*ClientNATMetrics
+	clientMetricsMutex sync.RWMutex
 
-	// Внутренние метрики
-	mu              sync.RWMutex
-	natTypeStats    map[string]int64
-	connectionStats map[string]*ConnectionStats
-	candidateStats  map[string]*CandidateStats
-	turnServerStats map[string]*TURNServerStats
+	// Метрики по STUN серверам
+	stunServerMetrics      map[string]*STUNServerMetrics
+	stunServerMetricsMutex sync.RWMutex
+
+	// Метрики по TURN серверам
+	turnServerMetrics      map[string]*TURNServerMetrics
+	turnServerMetricsMutex sync.RWMutex
+
+	// Общие метрики
+	totalClients      uint64
+	totalSTUNRequests uint64
+	totalTURNRequests uint64
+	totalAllocations  uint64
+	totalErrors       uint64
+
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
-// ConnectionStats статистика соединений
-type ConnectionStats struct {
-	TotalAttempts   int64
-	SuccessfulConns int64
-	FailedConns     int64
-	AverageLatency  time.Duration
-	LastAttempt     time.Time
-	LastSuccess     time.Time
+// ClientNATMetrics метрики NAT поведения для клиента
+type ClientNATMetrics struct {
+	ClientID           string
+	PublicIP           string
+	NATBehavior        NATBehaviorType
+	LastSeen           time.Time
+	STUNRequests       uint64
+	TURNRequests       uint64
+	Allocations        uint64
+	Errors             uint64
+	AverageLatency     time.Duration
+	LastLatency        time.Duration
+	ConnectivityChecks uint64
+	SuccessfulChecks   uint64
 }
 
-// CandidateStats статистика кандидатов
-type CandidateStats struct {
-	HostCandidates       int64
-	ServerReflexiveCands int64
-	RelayCandidates      int64
-	PeerReflexiveCands   int64
-	TotalCandidates      int64
+// STUNServerMetrics метрики STUN сервера
+type STUNServerMetrics struct {
+	ServerAddress      string
+	TotalRequests      uint64
+	SuccessfulRequests uint64
+	FailedRequests     uint64
+	AverageLatency     time.Duration
+	LastRequest        time.Time
+	ActiveClients      uint64
 }
 
-// TURNServerStats статистика TURN серверов
-type TURNServerStats struct {
-	TotalAllocations  int64
-	ActiveAllocations int64
-	FailedAllocations int64
-	AverageLatency    time.Duration
-	LastAllocation    time.Time
+// TURNServerMetrics метрики TURN сервера
+type TURNServerMetrics struct {
+	ServerAddress      string
+	TotalRequests      uint64
+	SuccessfulRequests uint64
+	FailedRequests     uint64
+	ActiveAllocations  uint64
+	TotalAllocations   uint64
+	BandwidthIn        uint64
+	BandwidthOut       uint64
+	AverageLatency     time.Duration
+	LastRequest        time.Time
 }
 
-// NewNATMetrics создает новый экземпляр NAT метрик
-func NewNATMetrics(logger *zap.Logger) *NATMetrics {
-	return &NATMetrics{
-		logger: logger,
-		iceCandidatesTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "ice_candidates_total",
-				Help: "Total number of ICE candidates gathered",
-			},
-			[]string{"type", "transport"},
-		),
-		iceConnectionsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "ice_connections_total",
-				Help: "Total number of ICE connection attempts",
-			},
-			[]string{"status", "nat_type"},
-		),
-		iceConnectionDuration: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "ice_connection_duration_seconds",
-				Help:    "Duration of ICE connection establishment",
-				Buckets: prometheus.ExponentialBuckets(0.1, 2, 10),
-			},
-			[]string{"nat_type", "success"},
-		),
-		natTypeDetected: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "nat_type_detected_total",
-				Help: "Total number of NAT type detections",
-			},
-			[]string{"nat_type"},
-		),
-		turnAllocationsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "turn_allocations_total",
-				Help: "Total number of TURN allocations",
-			},
-			[]string{"server", "status"},
-		),
-		stunRequestsTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "stun_requests_total",
-				Help: "Total number of STUN requests",
-			},
-			[]string{"server", "status"},
-		),
-		connectionSuccessRate: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "ice_connection_success_rate",
-				Help: "ICE connection success rate by NAT type",
-			},
-			[]string{"nat_type"},
-		),
-		natTypeStats:    make(map[string]int64),
-		connectionStats: make(map[string]*ConnectionStats),
-		candidateStats:  make(map[string]*CandidateStats),
-		turnServerStats: make(map[string]*TURNServerStats),
+// NewNATMetrics создает новый экземпляр NATMetrics
+func NewNATMetrics(logger *logger.Logger) *NATMetrics {
+	ctx, cancel := context.WithCancel(context.Background())
+	nm := &NATMetrics{
+		logger:            logger,
+		clientMetrics:     make(map[string]*ClientNATMetrics),
+		stunServerMetrics: make(map[string]*STUNServerMetrics),
+		turnServerMetrics: make(map[string]*TURNServerMetrics),
+		ctx:               ctx,
+		cancel:            cancel,
 	}
+	go nm.cleanupExpiredMetrics()
+	return nm
 }
 
-// RecordICECandidate записывает метрику ICE кандидата
-func (nm *NATMetrics) RecordICECandidate(candidateType, transport string) {
-	nm.iceCandidatesTotal.WithLabelValues(candidateType, transport).Inc()
+// RecordClientNATBehavior записывает NAT поведение клиента
+func (nm *NATMetrics) RecordClientNATBehavior(clientID, publicIP string, behavior NATBehaviorType) {
+	nm.clientMetricsMutex.Lock()
+	defer nm.clientMetricsMutex.Unlock()
 
-	nm.mu.Lock()
-	defer nm.mu.Unlock()
-
-	stats, exists := nm.candidateStats[transport]
-	if !exists {
-		stats = &CandidateStats{}
-		nm.candidateStats[transport] = stats
-	}
-
-	stats.TotalCandidates++
-	switch candidateType {
-	case "host":
-		stats.HostCandidates++
-	case "srflx":
-		stats.ServerReflexiveCands++
-	case "relay":
-		stats.RelayCandidates++
-	case "prflx":
-		stats.PeerReflexiveCands++
-	}
-}
-
-// RecordICEConnection записывает метрику ICE соединения
-func (nm *NATMetrics) RecordICEConnection(status, natType string, duration time.Duration) {
-	nm.iceConnectionsTotal.WithLabelValues(status, natType).Inc()
-	nm.iceConnectionDuration.WithLabelValues(natType, status).Observe(duration.Seconds())
-
-	nm.mu.Lock()
-	defer nm.mu.Unlock()
-
-	stats, exists := nm.connectionStats[natType]
-	if !exists {
-		stats = &ConnectionStats{}
-		nm.connectionStats[natType] = stats
-	}
-
-	stats.TotalAttempts++
-	stats.LastAttempt = time.Now()
-
-	if status == "success" {
-		stats.SuccessfulConns++
-		stats.LastSuccess = time.Now()
-	} else {
-		stats.FailedConns++
-	}
-
-	// Обновляем среднюю задержку
-	if stats.AverageLatency == 0 {
-		stats.AverageLatency = duration
-	} else {
-		stats.AverageLatency = (stats.AverageLatency + duration) / 2
-	}
-
-	// Обновляем rate успешности
-	successRate := float64(stats.SuccessfulConns) / float64(stats.TotalAttempts)
-	nm.connectionSuccessRate.WithLabelValues(natType).Set(successRate)
-}
-
-// RecordNATType записывает метрику типа NAT
-func (nm *NATMetrics) RecordNATType(natType string) {
-	nm.natTypeDetected.WithLabelValues(natType).Inc()
-
-	nm.mu.Lock()
-	defer nm.mu.Unlock()
-
-	nm.natTypeStats[natType]++
-}
-
-// RecordTURNAllocation записывает метрику TURN allocation
-func (nm *NATMetrics) RecordTURNAllocation(server, status string, duration time.Duration) {
-	nm.turnAllocationsTotal.WithLabelValues(server, status).Inc()
-
-	nm.mu.Lock()
-	defer nm.mu.Unlock()
-
-	stats, exists := nm.turnServerStats[server]
-	if !exists {
-		stats = &TURNServerStats{}
-		nm.turnServerStats[server] = stats
-	}
-
-	stats.TotalAllocations++
-	stats.LastAllocation = time.Now()
-
-	if status == "success" {
-		stats.ActiveAllocations++
-		if stats.AverageLatency == 0 {
-			stats.AverageLatency = duration
-		} else {
-			stats.AverageLatency = (stats.AverageLatency + duration) / 2
+	if _, exists := nm.clientMetrics[clientID]; !exists {
+		nm.clientMetrics[clientID] = &ClientNATMetrics{
+			ClientID: clientID,
+			PublicIP: publicIP,
 		}
+		nm.totalClients++
+	}
+
+	nm.clientMetrics[clientID].NATBehavior = behavior
+	nm.clientMetrics[clientID].LastSeen = time.Now()
+
+	nm.logger.Debug("Recorded client NAT behavior",
+		zap.String("client_id", clientID),
+		zap.String("public_ip", publicIP),
+		zap.String("nat_behavior", string(behavior)),
+	)
+}
+
+// RecordSTUNRequest записывает STUN запрос
+func (nm *NATMetrics) RecordSTUNRequest(clientID, serverAddress string, success bool, latency time.Duration) {
+	nm.clientMetricsMutex.Lock()
+	if clientMetrics, exists := nm.clientMetrics[clientID]; exists {
+		clientMetrics.STUNRequests++
+		clientMetrics.LastLatency = latency
+		clientMetrics.AverageLatency = nm.calculateAverageLatency(clientMetrics.AverageLatency, latency, clientMetrics.STUNRequests)
+		if !success {
+			clientMetrics.Errors++
+		}
+	}
+	nm.clientMetricsMutex.Unlock()
+
+	nm.stunServerMetricsMutex.Lock()
+	defer nm.stunServerMetricsMutex.Unlock()
+
+	if _, exists := nm.stunServerMetrics[serverAddress]; !exists {
+		nm.stunServerMetrics[serverAddress] = &STUNServerMetrics{
+			ServerAddress: serverAddress,
+		}
+	}
+
+	serverMetrics := nm.stunServerMetrics[serverAddress]
+	serverMetrics.TotalRequests++
+	serverMetrics.LastRequest = time.Now()
+	serverMetrics.AverageLatency = nm.calculateAverageLatency(serverMetrics.AverageLatency, latency, serverMetrics.TotalRequests)
+
+	if success {
+		serverMetrics.SuccessfulRequests++
 	} else {
-		stats.FailedAllocations++
+		serverMetrics.FailedRequests++
+	}
+
+	nm.totalSTUNRequests++
+}
+
+// RecordTURNRequest записывает TURN запрос
+func (nm *NATMetrics) RecordTURNRequest(clientID, serverAddress string, success bool, latency time.Duration) {
+	nm.clientMetricsMutex.Lock()
+	if clientMetrics, exists := nm.clientMetrics[clientID]; exists {
+		clientMetrics.TURNRequests++
+		clientMetrics.LastLatency = latency
+		clientMetrics.AverageLatency = nm.calculateAverageLatency(clientMetrics.AverageLatency, latency, clientMetrics.TURNRequests)
+		if !success {
+			clientMetrics.Errors++
+		}
+	}
+	nm.clientMetricsMutex.Unlock()
+
+	nm.turnServerMetricsMutex.Lock()
+	defer nm.turnServerMetricsMutex.Unlock()
+
+	if _, exists := nm.turnServerMetrics[serverAddress]; !exists {
+		nm.turnServerMetrics[serverAddress] = &TURNServerMetrics{
+			ServerAddress: serverAddress,
+		}
+	}
+
+	serverMetrics := nm.turnServerMetrics[serverAddress]
+	serverMetrics.TotalRequests++
+	serverMetrics.LastRequest = time.Now()
+	serverMetrics.AverageLatency = nm.calculateAverageLatency(serverMetrics.AverageLatency, latency, serverMetrics.TotalRequests)
+
+	if success {
+		serverMetrics.SuccessfulRequests++
+	} else {
+		serverMetrics.FailedRequests++
+	}
+
+	nm.totalTURNRequests++
+}
+
+// RecordTURNAllocation записывает TURN allocation
+func (nm *NATMetrics) RecordTURNAllocation(clientID, serverAddress string, bandwidthIn, bandwidthOut uint64) {
+	nm.clientMetricsMutex.Lock()
+	if clientMetrics, exists := nm.clientMetrics[clientID]; exists {
+		clientMetrics.Allocations++
+	}
+	nm.clientMetricsMutex.Unlock()
+
+	nm.turnServerMetricsMutex.Lock()
+	defer nm.turnServerMetricsMutex.Unlock()
+
+	if serverMetrics, exists := nm.turnServerMetrics[serverAddress]; exists {
+		serverMetrics.ActiveAllocations++
+		serverMetrics.TotalAllocations++
+		serverMetrics.BandwidthIn += bandwidthIn
+		serverMetrics.BandwidthOut += bandwidthOut
+	}
+
+	nm.totalAllocations++
+}
+
+// RecordConnectivityCheck записывает ICE connectivity check
+func (nm *NATMetrics) RecordConnectivityCheck(clientID string, success bool) {
+	nm.clientMetricsMutex.Lock()
+	defer nm.clientMetricsMutex.Unlock()
+
+	if clientMetrics, exists := nm.clientMetrics[clientID]; exists {
+		clientMetrics.ConnectivityChecks++
+		if success {
+			clientMetrics.SuccessfulChecks++
+		}
 	}
 }
 
-// RecordSTUNRequest записывает метрику STUN запроса
-func (nm *NATMetrics) RecordSTUNRequest(server, status string) {
-	nm.stunRequestsTotal.WithLabelValues(server, status).Inc()
-}
-
-// GetNATTypeStats возвращает статистику типов NAT
-func (nm *NATMetrics) GetNATTypeStats() map[string]int64 {
-	nm.mu.RLock()
-	defer nm.mu.RUnlock()
-
-	result := make(map[string]int64)
-	for natType, count := range nm.natTypeStats {
-		result[natType] = count
-	}
-	return result
-}
-
-// GetConnectionStats возвращает статистику соединений
-func (nm *NATMetrics) GetConnectionStats() map[string]*ConnectionStats {
-	nm.mu.RLock()
-	defer nm.mu.RUnlock()
-
-	result := make(map[string]*ConnectionStats)
-	for natType, stats := range nm.connectionStats {
-		// Создаем копию для безопасности
-		statsCopy := *stats
-		result[natType] = &statsCopy
-	}
-	return result
-}
-
-// GetCandidateStats возвращает статистику кандидатов
-func (nm *NATMetrics) GetCandidateStats() map[string]*CandidateStats {
-	nm.mu.RLock()
-	defer nm.mu.RUnlock()
-
-	result := make(map[string]*CandidateStats)
-	for transport, stats := range nm.candidateStats {
-		// Создаем копию для безопасности
-		statsCopy := *stats
-		result[transport] = &statsCopy
-	}
-	return result
-}
-
-// GetTURNServerStats возвращает статистику TURN серверов
-func (nm *NATMetrics) GetTURNServerStats() map[string]*TURNServerStats {
-	nm.mu.RLock()
-	defer nm.mu.RUnlock()
-
-	result := make(map[string]*TURNServerStats)
-	for server, stats := range nm.turnServerStats {
-		// Создаем копию для безопасности
-		statsCopy := *stats
-		result[server] = &statsCopy
-	}
-	return result
-}
-
-// GetOverallStats возвращает общую статистику
-func (nm *NATMetrics) GetOverallStats() map[string]interface{} {
-	nm.mu.RLock()
-	defer nm.mu.RUnlock()
-
-	totalConnections := int64(0)
-	totalSuccessful := int64(0)
-	totalCandidates := int64(0)
-
-	for _, stats := range nm.connectionStats {
-		totalConnections += stats.TotalAttempts
-		totalSuccessful += stats.SuccessfulConns
-	}
-
-	for _, stats := range nm.candidateStats {
-		totalCandidates += stats.TotalCandidates
-	}
-
-	successRate := float64(0)
-	if totalConnections > 0 {
-		successRate = float64(totalSuccessful) / float64(totalConnections)
-	}
+// GetAllMetrics возвращает все метрики
+func (nm *NATMetrics) GetAllMetrics() map[string]interface{} {
+	nm.clientMetricsMutex.RLock()
+	nm.stunServerMetricsMutex.RLock()
+	nm.turnServerMetricsMutex.RLock()
+	defer nm.clientMetricsMutex.RUnlock()
+	defer nm.stunServerMetricsMutex.RUnlock()
+	defer nm.turnServerMetricsMutex.RUnlock()
 
 	return map[string]interface{}{
-		"total_connections":      totalConnections,
-		"successful_connections": totalSuccessful,
-		"success_rate":           successRate,
-		"total_candidates":       totalCandidates,
-		"nat_types_detected":     len(nm.natTypeStats),
-		"turn_servers_active":    len(nm.turnServerStats),
+		"total_clients":       nm.totalClients,
+		"total_stun_requests": nm.totalSTUNRequests,
+		"total_turn_requests": nm.totalTURNRequests,
+		"total_allocations":   nm.totalAllocations,
+		"total_errors":        nm.totalErrors,
+		"active_clients":      len(nm.clientMetrics),
+		"active_stun_servers": len(nm.stunServerMetrics),
+		"active_turn_servers": len(nm.turnServerMetrics),
 	}
 }
 
-// Reset сбрасывает все метрики
-func (nm *NATMetrics) Reset() {
-	nm.mu.Lock()
-	defer nm.mu.Unlock()
+// calculateAverageLatency вычисляет среднюю задержку
+func (nm *NATMetrics) calculateAverageLatency(current, new time.Duration, count uint64) time.Duration {
+	if count == 1 {
+		return new
+	}
+	return time.Duration((int64(current)*int64(count-1) + int64(new)) / int64(count))
+}
 
-	nm.natTypeStats = make(map[string]int64)
-	nm.connectionStats = make(map[string]*ConnectionStats)
-	nm.candidateStats = make(map[string]*CandidateStats)
-	nm.turnServerStats = make(map[string]*TURNServerStats)
+// cleanupExpiredMetrics очищает просроченные метрики
+func (nm *NATMetrics) cleanupExpiredMetrics() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
 
-	nm.logger.Info("NAT metrics reset")
+	for {
+		select {
+		case <-nm.ctx.Done():
+			return
+		case <-ticker.C:
+			nm.cleanupExpiredClientMetrics()
+			nm.cleanupExpiredServerMetrics()
+		}
+	}
+}
+
+// cleanupExpiredClientMetrics очищает просроченные метрики клиентов
+func (nm *NATMetrics) cleanupExpiredClientMetrics() {
+	nm.clientMetricsMutex.Lock()
+	defer nm.clientMetricsMutex.Unlock()
+
+	expiredTime := time.Now().Add(-1 * time.Hour) // Удаляем метрики старше 1 часа
+	for clientID, metrics := range nm.clientMetrics {
+		if metrics.LastSeen.Before(expiredTime) {
+			delete(nm.clientMetrics, clientID)
+			nm.logger.Debug("Cleaned up expired client metrics", zap.String("client_id", clientID))
+		}
+	}
+}
+
+// cleanupExpiredServerMetrics очищает просроченные метрики серверов
+func (nm *NATMetrics) cleanupExpiredServerMetrics() {
+	nm.stunServerMetricsMutex.Lock()
+	defer nm.stunServerMetricsMutex.Unlock()
+
+	nm.turnServerMetricsMutex.Lock()
+	defer nm.turnServerMetricsMutex.Unlock()
+
+	expiredTime := time.Now().Add(-1 * time.Hour) // Удаляем метрики старше 1 часа
+
+	// Очищаем STUN серверы
+	for serverAddress, metrics := range nm.stunServerMetrics {
+		if metrics.LastRequest.Before(expiredTime) {
+			delete(nm.stunServerMetrics, serverAddress)
+			nm.logger.Debug("Cleaned up expired STUN server metrics", zap.String("server", serverAddress))
+		}
+	}
+
+	// Очищаем TURN серверы
+	for serverAddress, metrics := range nm.turnServerMetrics {
+		if metrics.LastRequest.Before(expiredTime) {
+			delete(nm.turnServerMetrics, serverAddress)
+			nm.logger.Debug("Cleaned up expired TURN server metrics", zap.String("server", serverAddress))
+		}
+	}
+}
+
+// Stop останавливает NATMetrics
+func (nm *NATMetrics) Stop() {
+	nm.cancel()
+	nm.logger.Info("NAT metrics stopped")
+}
+
+// DetectNATBehavior определяет тип NAT поведения клиента
+func (nm *NATMetrics) DetectNATBehavior(clientID string, stunServers []string) (NATBehaviorType, error) {
+	// Здесь должна быть логика определения NAT поведения
+	// Пока возвращаем неизвестный тип
+	return NATBehaviorUnknown, fmt.Errorf("NAT behavior detection not implemented yet")
+}
+
+// GetNATBehaviorStats возвращает статистику по типам NAT поведения
+func (nm *NATMetrics) GetNATBehaviorStats() map[NATBehaviorType]uint64 {
+	nm.clientMetricsMutex.RLock()
+	defer nm.clientMetricsMutex.RUnlock()
+
+	stats := make(map[NATBehaviorType]uint64)
+	for _, metrics := range nm.clientMetrics {
+		stats[metrics.NATBehavior]++
+	}
+
+	return stats
+}
+
+// GetClientMetrics возвращает метрики клиента
+func (nm *NATMetrics) GetClientMetrics(clientID string) (*ClientNATMetrics, bool) {
+	nm.clientMetricsMutex.RLock()
+	defer nm.clientMetricsMutex.RUnlock()
+
+	metrics, exists := nm.clientMetrics[clientID]
+	return metrics, exists
+}
+
+// GetSTUNServerMetrics возвращает метрики STUN сервера
+func (nm *NATMetrics) GetSTUNServerMetrics(serverAddress string) (*STUNServerMetrics, bool) {
+	nm.stunServerMetricsMutex.RLock()
+	defer nm.stunServerMetricsMutex.RUnlock()
+
+	metrics, exists := nm.stunServerMetrics[serverAddress]
+	return metrics, exists
+}
+
+// GetTURNServerMetrics возвращает метрики TURN сервера
+func (nm *NATMetrics) GetTURNServerMetrics(serverAddress string) (*TURNServerMetrics, bool) {
+	nm.turnServerMetricsMutex.RLock()
+	defer nm.turnServerMetricsMutex.RUnlock()
+
+	metrics, exists := nm.turnServerMetrics[serverAddress]
+	return metrics, exists
 }

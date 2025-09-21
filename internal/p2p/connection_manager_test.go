@@ -22,15 +22,15 @@ func (m *MockICEAgent) StartGathering() error {
 	return args.Error(0)
 }
 
-func (m *MockICEAgent) GetLocalCandidates() []*nat.Candidate {
+func (m *MockICEAgent) GetLocalCandidates() []*nat.ICECandidate {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil
 	}
-	return args.Get(0).([]*nat.Candidate)
+	return args.Get(0).([]*nat.ICECandidate)
 }
 
-func (m *MockICEAgent) AddRemoteCandidate(candidate *nat.Candidate) error {
+func (m *MockICEAgent) AddRemoteCandidate(candidate *nat.ICECandidate) error {
 	args := m.Called(candidate)
 	return args.Error(0)
 }
@@ -45,12 +45,12 @@ func (m *MockICEAgent) GetState() nat.ICEState {
 	return args.Get(0).(nat.ICEState)
 }
 
-func (m *MockICEAgent) GetSelectedPair() *nat.CandidatePair {
+func (m *MockICEAgent) GetSelectedPair() *nat.ICECandidatePair {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil
 	}
-	return args.Get(0).(*nat.CandidatePair)
+	return args.Get(0).(*nat.ICECandidatePair)
 }
 
 func (m *MockICEAgent) Close() error {
@@ -165,22 +165,22 @@ func TestP2PConnectionManager_EstablishConnection(t *testing.T) {
 		manager.iceAgents["peer2"] = mockICE2
 
 		// Setup mocks for successful direct connection
-		candidate1 := &nat.Candidate{Address: "192.168.1.1", Port: 12345, Type: nat.CandidateTypeHost}
-		candidate2 := &nat.Candidate{Address: "192.168.1.2", Port: 54321, Type: nat.CandidateTypeHost}
+		candidate1 := &nat.ICECandidate{Address: "192.168.1.1", Port: 12345, Type: nat.ICECandidateTypeHost}
+		candidate2 := &nat.ICECandidate{Address: "192.168.1.2", Port: 54321, Type: nat.ICECandidateTypeHost}
 
 		mockICE1.On("StartGathering").Return(nil)
 		mockICE2.On("StartGathering").Return(nil)
-		mockICE1.On("GetLocalCandidates").Return([]*nat.Candidate{candidate1})
-		mockICE2.On("GetLocalCandidates").Return([]*nat.Candidate{candidate2})
-		mockICE1.On("AddRemoteCandidate", mock.AnythingOfType("*nat.Candidate")).Return(nil)
-		mockICE2.On("AddRemoteCandidate", mock.AnythingOfType("*nat.Candidate")).Return(nil)
+		mockICE1.On("GetLocalCandidates").Return([]*nat.ICECandidate{candidate1})
+		mockICE2.On("GetLocalCandidates").Return([]*nat.ICECandidate{candidate2})
+		mockICE1.On("AddRemoteCandidate", mock.AnythingOfType("*nat.ICECandidate")).Return(nil)
+		mockICE2.On("AddRemoteCandidate", mock.AnythingOfType("*nat.ICECandidate")).Return(nil)
 		mockICE1.On("StartConnectivityChecks").Return(nil)
 		mockICE2.On("StartConnectivityChecks").Return(nil)
 		mockICE1.On("GetState").Return(nat.ICEStateConnected)
 		mockICE2.On("GetState").Return(nat.ICEStateConnected)
-		mockICE1.On("GetSelectedPair").Return(&nat.CandidatePair{
-			Local:  candidate1,
-			Remote: candidate2,
+		mockICE1.On("GetSelectedPair").Return(&nat.ICECandidatePair{
+			LocalCandidate:  candidate1,
+			RemoteCandidate: candidate2,
 		})
 
 		ctx := context.Background()
@@ -485,7 +485,7 @@ func TestConvertToNATCandidate(t *testing.T) {
 
 		natCandidate := convertToNATCandidate(apiCandidate)
 
-		assert.Equal(t, nat.CandidateTypeHost, natCandidate.Type)
+		assert.Equal(t, nat.ICECandidateTypeHost, natCandidate.Type)
 		assert.Equal(t, "192.168.1.1", natCandidate.Address)
 		assert.Equal(t, 12345, natCandidate.Port)
 		assert.Equal(t, "UDP", natCandidate.Transport)
@@ -502,7 +502,7 @@ func TestConvertToNATCandidate(t *testing.T) {
 
 		natCandidate := convertToNATCandidate(apiCandidate)
 
-		assert.Equal(t, nat.CandidateTypeServerReflexive, natCandidate.Type)
+		assert.Equal(t, nat.ICECandidateTypeServerReflexive, natCandidate.Type)
 		assert.Equal(t, "1.2.3.4", natCandidate.Address)
 		assert.Equal(t, 54321, natCandidate.Port)
 		assert.Equal(t, "192.168.1.1", natCandidate.RelatedAddr)
@@ -518,7 +518,7 @@ func TestConvertToNATCandidate(t *testing.T) {
 
 		natCandidate := convertToNATCandidate(apiCandidate)
 
-		assert.Equal(t, nat.CandidateTypePeerReflexive, natCandidate.Type)
+		assert.Equal(t, nat.ICECandidateTypePeerReflexive, natCandidate.Type)
 		assert.Equal(t, "5.6.7.8", natCandidate.Address)
 		assert.Equal(t, 9876, natCandidate.Port)
 	})
@@ -532,7 +532,7 @@ func TestConvertToNATCandidate(t *testing.T) {
 
 		natCandidate := convertToNATCandidate(apiCandidate)
 
-		assert.Equal(t, nat.CandidateTypeRelay, natCandidate.Type)
+		assert.Equal(t, nat.ICECandidateTypeRelay, natCandidate.Type)
 		assert.Equal(t, "9.10.11.12", natCandidate.Address)
 		assert.Equal(t, 1111, natCandidate.Port)
 	})
@@ -546,7 +546,7 @@ func TestConvertToNATCandidate(t *testing.T) {
 
 		natCandidate := convertToNATCandidate(apiCandidate)
 
-		assert.Equal(t, nat.CandidateTypeHost, natCandidate.Type)
+		assert.Equal(t, nat.ICECandidateTypeHost, natCandidate.Type)
 		assert.Equal(t, "13.14.15.16", natCandidate.Address)
 		assert.Equal(t, 2222, natCandidate.Port)
 	})
@@ -554,8 +554,8 @@ func TestConvertToNATCandidate(t *testing.T) {
 
 func TestConvertToAPICandidate(t *testing.T) {
 	t.Run("converts host candidate", func(t *testing.T) {
-		natCandidate := &nat.Candidate{
-			Type:      nat.CandidateTypeHost,
+		natCandidate := &nat.ICECandidate{
+			Type:      nat.ICECandidateTypeHost,
 			Address:   "192.168.1.1",
 			Port:      12345,
 			Transport: "UDP",
@@ -570,8 +570,8 @@ func TestConvertToAPICandidate(t *testing.T) {
 	})
 
 	t.Run("converts server reflexive candidate", func(t *testing.T) {
-		natCandidate := &nat.Candidate{
-			Type:        nat.CandidateTypeServerReflexive,
+		natCandidate := &nat.ICECandidate{
+			Type:        nat.ICECandidateTypeServerReflexive,
 			Address:     "1.2.3.4",
 			Port:        54321,
 			RelatedAddr: "192.168.1.1",
@@ -588,8 +588,8 @@ func TestConvertToAPICandidate(t *testing.T) {
 	})
 
 	t.Run("converts peer reflexive candidate", func(t *testing.T) {
-		natCandidate := &nat.Candidate{
-			Type:    nat.CandidateTypePeerReflexive,
+		natCandidate := &nat.ICECandidate{
+			Type:    nat.ICECandidateTypePeerReflexive,
 			Address: "5.6.7.8",
 			Port:    9876,
 		}
@@ -602,8 +602,8 @@ func TestConvertToAPICandidate(t *testing.T) {
 	})
 
 	t.Run("converts relay candidate", func(t *testing.T) {
-		natCandidate := &nat.Candidate{
-			Type:    nat.CandidateTypeRelay,
+		natCandidate := &nat.ICECandidate{
+			Type:    nat.ICECandidateTypeRelay,
 			Address: "9.10.11.12",
 			Port:    1111,
 		}
@@ -616,8 +616,8 @@ func TestConvertToAPICandidate(t *testing.T) {
 	})
 
 	t.Run("defaults to host for unknown type", func(t *testing.T) {
-		natCandidate := &nat.Candidate{
-			Type:    nat.CandidateType(999),
+		natCandidate := &nat.ICECandidate{
+			Type:    nat.ICECandidateType(999),
 			Address: "13.14.15.16",
 			Port:    2222,
 		}
@@ -669,15 +669,15 @@ func TestP2PConnectionManager_EdgeCases(t *testing.T) {
 		manager.iceAgents["peer2"] = mockICE2
 
 		// Setup mocks
-		candidate1 := &nat.Candidate{Address: "192.168.1.1", Port: 12345, Type: nat.CandidateTypeHost}
-		candidate2 := &nat.Candidate{Address: "192.168.1.2", Port: 54321, Type: nat.CandidateTypeHost}
+		candidate1 := &nat.ICECandidate{Address: "192.168.1.1", Port: 12345, Type: nat.ICECandidateTypeHost}
+		candidate2 := &nat.ICECandidate{Address: "192.168.1.2", Port: 54321, Type: nat.ICECandidateTypeHost}
 
 		mockICE1.On("StartGathering").Return(nil)
 		mockICE2.On("StartGathering").Return(nil)
-		mockICE1.On("GetLocalCandidates").Return([]*nat.Candidate{candidate1})
-		mockICE2.On("GetLocalCandidates").Return([]*nat.Candidate{candidate2})
-		mockICE1.On("AddRemoteCandidate", mock.AnythingOfType("*nat.Candidate")).Return(nil)
-		mockICE2.On("AddRemoteCandidate", mock.AnythingOfType("*nat.Candidate")).Return(nil)
+		mockICE1.On("GetLocalCandidates").Return([]*nat.ICECandidate{candidate1})
+		mockICE2.On("GetLocalCandidates").Return([]*nat.ICECandidate{candidate2})
+		mockICE1.On("AddRemoteCandidate", mock.AnythingOfType("*nat.ICECandidate")).Return(nil)
+		mockICE2.On("AddRemoteCandidate", mock.AnythingOfType("*nat.ICECandidate")).Return(nil)
 		mockICE1.On("StartConnectivityChecks").Return(nil)
 		mockICE2.On("StartConnectivityChecks").Return(nil)
 		mockICE1.On("GetState").Return(nat.ICEStateGathering).Maybe()
