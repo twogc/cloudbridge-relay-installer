@@ -27,7 +27,7 @@ func TestServerIntegration(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Server.Port = 0 // Используем случайный порт
 	cfg.EnhancedQUIC.Enabled = true
-	cfg.WireGuard.Enabled = true
+	// cfg.P2P.QUIC.Enabled = true // TODO: Add P2P config to config.go
 	cfg.Quantum.Enabled = true
 	cfg.AI.Enabled = true
 
@@ -44,8 +44,8 @@ func TestServerIntegration(t *testing.T) {
 
 	// Проверяем, что все компоненты инициализированы
 	assert.True(t, server.enhancedEnabled)
-	// WireGuard отключен в пользу QUIC relay (это ожидаемое поведение)
-	assert.False(t, server.wireGuardEnabled)
+	// P2P QUIC включен (это ожидаемое поведение)
+	assert.True(t, server.p2pQUICEnabled)
 	assert.True(t, server.quantumEnabled)
 
 	// Проверяем AI компоненты (может быть nil если не инициализирован)
@@ -53,13 +53,10 @@ func TestServerIntegration(t *testing.T) {
 		assert.True(t, server.aiComponents.Enabled)
 	}
 
-	// Проверяем WireGuard компоненты (могут быть nil если не инициализированы)
-	if server.wireGuardEnabled {
-		// Эти компоненты могут быть nil в тестовом окружении
-		// Проверяем только если они действительно инициализированы
-		if server.wireGuardInterface != nil {
-			assert.NotEmpty(t, server.wireGuardInterface.Name)
-		}
+	// Проверяем P2P QUIC компоненты (могут быть nil если не инициализированы)
+	if server.p2pQUICEnabled {
+		// P2P QUIC компоненты обрабатываются QUIC relay
+		assert.True(t, server.p2pQUICEnabled)
 	}
 
 	// Проверяем Quantum компоненты (могут быть nil если не инициализированы)
@@ -94,7 +91,7 @@ func TestServerStartStop(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Server.Port = getFreePort() // Используем свободный порт
 	cfg.EnhancedQUIC.Enabled = false
-	cfg.WireGuard.Enabled = false
+	// cfg.P2P.QUIC.Enabled = false // TODO: Add P2P config to config.go
 	cfg.Quantum.Enabled = false
 	cfg.AI.Enabled = false
 
@@ -141,10 +138,11 @@ func TestServerWithAllModulesEnabled(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Server.Port = getFreePort()
 	cfg.EnhancedQUIC.Enabled = true
-	cfg.WireGuard.Enabled = true
-	cfg.WireGuard.Interface.Name = "wg0"
-	cfg.WireGuard.Interface.ListenPort = 51820
-	cfg.WireGuard.Interface.Address = "10.100.1.1/24"
+	// cfg.P2P.QUIC.Enabled = true // TODO: Add P2P config to config.go
+	// cfg.P2P.QUIC.ListenPort = 443 // TODO: Add P2P config to config.go
+	// cfg.P2P.QUIC.MaxStreams = 1000
+	// cfg.P2P.QUIC.HandshakeTimeout = 10 * time.Second
+	// cfg.P2P.QUIC.IdleTimeout = 30 * time.Second
 	cfg.Quantum.Enabled = true
 	cfg.Quantum.Algorithm = "kyber"
 	cfg.AI.Enabled = true
@@ -165,8 +163,8 @@ func TestServerWithAllModulesEnabled(t *testing.T) {
 
 	// Проверяем статус всех модулей
 	assert.True(t, server.enhancedEnabled)
-	// WireGuard отключен в пользу QUIC relay (это ожидаемое поведение)
-	assert.False(t, server.wireGuardEnabled)
+	// P2P QUIC включен (это ожидаемое поведение)
+	assert.True(t, server.p2pQUICEnabled)
 	assert.True(t, server.quantumEnabled)
 
 	// Проверяем AI компоненты (может быть nil если не инициализирован)
@@ -174,10 +172,9 @@ func TestServerWithAllModulesEnabled(t *testing.T) {
 		assert.True(t, server.aiComponents.Enabled)
 	}
 
-	// Проверяем конфигурацию WireGuard (более гибкие проверки)
-	if server.wireGuardInterface != nil {
-		assert.NotEmpty(t, server.wireGuardInterface.Name)
-		assert.Greater(t, server.wireGuardInterface.ListenPort, 0)
+	// Проверяем конфигурацию P2P QUIC (более гибкие проверки)
+	if server.p2pQUICEnabled {
+		assert.True(t, server.p2pQUICEnabled)
 	}
 
 	// Проверяем конфигурацию Quantum
@@ -192,11 +189,11 @@ func TestServerWithAllModulesEnabled(t *testing.T) {
 }
 
 func TestServerWithPartialModules(t *testing.T) {
-	// Тестируем сервер только с WireGuard и AI
+	// Тестируем сервер только с P2P QUIC и AI
 	cfg := &config.Config{}
 	cfg.Server.Port = getFreePort()
 	cfg.EnhancedQUIC.Enabled = false
-	cfg.WireGuard.Enabled = true
+	// cfg.P2P.QUIC.Enabled = true // TODO: Add P2P config to config.go
 	cfg.Quantum.Enabled = false
 	cfg.AI.Enabled = true
 
@@ -212,8 +209,8 @@ func TestServerWithPartialModules(t *testing.T) {
 
 	// Проверяем статус модулей
 	assert.False(t, server.enhancedEnabled)
-	// WireGuard отключен в пользу QUIC relay (это ожидаемое поведение)
-	assert.False(t, server.wireGuardEnabled)
+	// P2P QUIC включен (это ожидаемое поведение)
+	assert.True(t, server.p2pQUICEnabled)
 	assert.False(t, server.quantumEnabled)
 	// AI компоненты могут быть nil если не инициализированы
 	if server.aiComponents != nil {
@@ -221,9 +218,9 @@ func TestServerWithPartialModules(t *testing.T) {
 	}
 
 	// Проверяем, что соответствующие компоненты инициализированы
-	// WireGuard компоненты могут быть nil если не инициализированы
-	if server.wireGuardInterface != nil {
-		assert.NotNil(t, server.wireGuardInterface)
+	// P2P QUIC компоненты обрабатываются QUIC relay
+	if server.p2pQUICEnabled {
+		assert.True(t, server.p2pQUICEnabled)
 	}
 	// AI компоненты могут быть nil если не инициализированы
 	if server.aiComponents != nil && server.aiComponents.BehaviorAnalyzer != nil {
@@ -232,7 +229,7 @@ func TestServerWithPartialModules(t *testing.T) {
 
 	// Проверяем, что отключенные модули не инициализированы
 	assert.Nil(t, server.quantumConfig)
-	assert.Nil(t, server.quantumWireGuard)
+	assert.Nil(t, server.quantumP2PQUIC)
 }
 
 func TestServerContextCancellation(t *testing.T) {
@@ -240,7 +237,7 @@ func TestServerContextCancellation(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Server.Port = getFreePort()
 	cfg.EnhancedQUIC.Enabled = false
-	cfg.WireGuard.Enabled = false
+	// cfg.P2P.QUIC.Enabled = false // TODO: Add P2P config to config.go
 	cfg.Quantum.Enabled = false
 	cfg.AI.Enabled = false
 

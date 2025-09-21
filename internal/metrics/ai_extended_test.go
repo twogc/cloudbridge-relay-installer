@@ -30,8 +30,8 @@ func TestAIProcessingDuration(t *testing.T) {
 
 func TestAnomaliesDetected(t *testing.T) {
 	// Test incrementing anomalies detected
-	AnomaliesDetected.WithLabelValues("high", "network", "wireguard").Inc()
-	AnomaliesDetected.WithLabelValues("high", "network", "wireguard").Inc()
+	AnomaliesDetected.WithLabelValues("high", "network", "p2p_quic").Inc()
+	AnomaliesDetected.WithLabelValues("high", "network", "p2p_quic").Inc()
 	AnomaliesDetected.WithLabelValues("medium", "behavior", "user_activity").Inc()
 	AnomaliesDetected.WithLabelValues("critical", "security", "quic").Inc()
 
@@ -72,8 +72,8 @@ func TestLoadPredictionAccuracy(t *testing.T) {
 
 func TestRoutesOptimized(t *testing.T) {
 	// Test incrementing routes optimized
-	RoutesOptimized.WithLabelValues("wireguard", "latency").Inc()
-	RoutesOptimized.WithLabelValues("wireguard", "latency").Inc()
+	RoutesOptimized.WithLabelValues("p2p_quic", "latency").Inc()
+	RoutesOptimized.WithLabelValues("p2p_quic", "latency").Inc()
 	RoutesOptimized.WithLabelValues("quic", "bandwidth").Inc()
 	RoutesOptimized.WithLabelValues("tcp", "reliability").Inc()
 
@@ -83,8 +83,8 @@ func TestRoutesOptimized(t *testing.T) {
 
 func TestRouteOptimizationLatency(t *testing.T) {
 	// Test observing route optimization latency
-	RouteOptimizationLatency.WithLabelValues("wireguard").Observe(0.01)
-	RouteOptimizationLatency.WithLabelValues("wireguard").Observe(0.02)
+	RouteOptimizationLatency.WithLabelValues("p2p_quic").Observe(0.01)
+	RouteOptimizationLatency.WithLabelValues("p2p_quic").Observe(0.02)
 	RouteOptimizationLatency.WithLabelValues("quic").Observe(0.005)
 	RouteOptimizationLatency.WithLabelValues("tcp").Observe(0.1)
 
@@ -243,8 +243,8 @@ func TestAIExtendedMetrics_ConcurrentAccess(t *testing.T) {
 			AnomalyDetectionAccuracy.WithLabelValues("v1.0").Set(0.9)
 			LoadPredictionsMade.WithLabelValues("1h", "high").Inc()
 			LoadPredictionAccuracy.WithLabelValues("v1.0", "1h").Set(0.9)
-			RoutesOptimized.WithLabelValues("wireguard", "latency").Inc()
-			RouteOptimizationLatency.WithLabelValues("wireguard").Observe(0.01)
+			RoutesOptimized.WithLabelValues("p2p_quic", "latency").Inc()
+			RouteOptimizationLatency.WithLabelValues("p2p_quic").Observe(0.01)
 			AICacheHits.WithLabelValues("model_cache").Inc()
 			AICacheMisses.WithLabelValues("model_cache").Inc()
 			AICircuitBreakerState.WithLabelValues(service).Set(0)
@@ -302,8 +302,8 @@ func TestAIExtendedMetrics_IntegrationWorkflow(t *testing.T) {
 	LoadPredictionAccuracy.WithLabelValues(modelVersion, "1h").Set(0.92)
 
 	// 4. Optimize route
-	RoutesOptimized.WithLabelValues("wireguard", "latency").Inc()
-	RouteOptimizationLatency.WithLabelValues("wireguard").Observe(0.01)
+	RoutesOptimized.WithLabelValues("p2p_quic", "latency").Inc()
+	RouteOptimizationLatency.WithLabelValues("p2p_quic").Observe(0.01)
 
 	// 5. Cache operations
 	AICacheHits.WithLabelValues("model_cache").Inc()
@@ -360,8 +360,8 @@ func TestAIExtendedMetrics_Performance(t *testing.T) {
 		AnomalyDetectionAccuracy.WithLabelValues("v1.0").Set(float64(i%100) / 100.0)
 		LoadPredictionsMade.WithLabelValues("1h", "high").Inc()
 		LoadPredictionAccuracy.WithLabelValues("v1.0", "1h").Set(float64(i%100) / 100.0)
-		RoutesOptimized.WithLabelValues("wireguard", "latency").Inc()
-		RouteOptimizationLatency.WithLabelValues("wireguard").Observe(float64(i%100) / 1000.0)
+		RoutesOptimized.WithLabelValues("p2p_quic", "latency").Inc()
+		RouteOptimizationLatency.WithLabelValues("p2p_quic").Observe(float64(i%100) / 1000.0)
 		AICacheHits.WithLabelValues("model_cache").Inc()
 		AICacheMisses.WithLabelValues("model_cache").Inc()
 		AICircuitBreakerState.WithLabelValues(service).Set(float64(i % 3))

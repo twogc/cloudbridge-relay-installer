@@ -158,8 +158,8 @@ func (iv *IPValidator) IsIPAllowed(ip string) bool {
 	return false
 }
 
-// ValidateWireGuardEndpoint validates WireGuard endpoint IP
-func (iv *IPValidator) ValidateWireGuardEndpoint(endpoint string) error {
+// ValidateP2PQUICEndpoint validates P2P QUIC endpoint IP
+func (iv *IPValidator) ValidateP2PQUICEndpoint(endpoint string) error {
 	// Extract IP from endpoint (format: "ip:port")
 	parts := strings.Split(endpoint, ":")
 	if len(parts) != 2 {
@@ -180,7 +180,7 @@ func (iv *IPValidator) ValidateWireGuardEndpoint(endpoint string) error {
 	return nil
 }
 
-// ValidateAllowedIPs validates WireGuard allowed IPs
+// ValidateAllowedIPs validates P2P QUIC allowed IPs
 func (iv *IPValidator) ValidateAllowedIPs(allowedIPs []string) error {
 	for _, allowedIP := range allowedIPs {
 		// Check if it's a valid CIDR or IP

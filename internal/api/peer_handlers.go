@@ -41,7 +41,7 @@ type PeerStoreInterface interface {
 // IPValidatorInterface интерфейс для IPValidator
 type IPValidatorInterface interface {
 	IsIPAllowed(ip string) bool
-	ValidateWireGuardEndpoint(endpoint string) error
+	ValidateP2PQUICEndpoint(endpoint string) error
 	ValidateAllowedIPs(allowedIPs []string) error
 }
 

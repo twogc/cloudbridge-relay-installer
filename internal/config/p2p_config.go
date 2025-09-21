@@ -7,23 +7,20 @@ import (
 
 // P2PConfig represents P2P configuration
 type P2PConfig struct {
-	WireGuard WireGuardConfig `yaml:"wireguard"`
-	Mesh      MeshConfig      `yaml:"mesh"`
-	Security  SecurityConfig  `yaml:"security"`
+	QUIC     QUICConfig     `yaml:"quic"`
+	Mesh     MeshConfig     `yaml:"mesh"`
+	Security SecurityConfig `yaml:"security"`
 }
 
-// WireGuardConfig represents WireGuard configuration
-type WireGuardConfig struct {
-	Enabled   bool               `yaml:"enabled"`
-	Interface WireGuardInterface `yaml:"interface"`
-}
-
-// WireGuardInterface represents WireGuard interface configuration
-type WireGuardInterface struct {
-	Name       string `yaml:"name"`
-	ListenPort int    `yaml:"listen_port"`
-	Address    string `yaml:"address"`
-	MTU        int    `yaml:"mtu"`
+// QUICConfig represents QUIC configuration
+type QUICConfig struct {
+	Enabled             bool          `yaml:"enabled"`
+	ListenPort          int           `yaml:"listen_port"`
+	MaxStreams          int           `yaml:"max_streams"`
+	HandshakeTimeout    time.Duration `yaml:"handshake_timeout"`
+	IdleTimeout         time.Duration `yaml:"idle_timeout"`
+	ConnectionMigration bool          `yaml:"connection_migration"`
+	Multiplexing        bool          `yaml:"multiplexing"`
 }
 
 // MeshConfig represents mesh network configuration
@@ -45,15 +42,18 @@ type SecurityConfig struct {
 
 // Validate validates P2P configuration
 func (c *P2PConfig) Validate() error {
-	if c.WireGuard.Enabled {
-		if c.WireGuard.Interface.ListenPort == 0 {
-			return fmt.Errorf("wireguard listen_port is required when enabled")
+	if c.QUIC.Enabled {
+		if c.QUIC.ListenPort == 0 {
+			return fmt.Errorf("quic listen_port is required when enabled")
 		}
-		if c.WireGuard.Interface.Name == "" {
-			return fmt.Errorf("wireguard interface name is required when enabled")
+		if c.QUIC.MaxStreams <= 0 {
+			return fmt.Errorf("quic max_streams must be positive")
 		}
-		if c.WireGuard.Interface.Address == "" {
-			return fmt.Errorf("wireguard interface address is required when enabled")
+		if c.QUIC.HandshakeTimeout <= 0 {
+			return fmt.Errorf("quic handshake_timeout must be positive")
+		}
+		if c.QUIC.IdleTimeout <= 0 {
+			return fmt.Errorf("quic idle_timeout must be positive")
 		}
 	}
 
@@ -75,14 +75,14 @@ func (c *P2PConfig) Validate() error {
 // GetDefaultP2PConfig returns default P2P configuration
 func GetDefaultP2PConfig() *P2PConfig {
 	return &P2PConfig{
-		WireGuard: WireGuardConfig{
-			Enabled: true,
-			Interface: WireGuardInterface{
-				Name:       "wg0",
-				ListenPort: 51820,
-				Address:    "10.0.0.1/24",
-				MTU:        1420,
-			},
+		QUIC: QUICConfig{
+			Enabled:             true,
+			ListenPort:          443,
+			MaxStreams:          1000,
+			HandshakeTimeout:    10 * time.Second,
+			IdleTimeout:         30 * time.Second,
+			ConnectionMigration: true,
+			Multiplexing:        true,
 		},
 		Mesh: MeshConfig{
 			Enabled:             true,
@@ -99,11 +99,3 @@ func GetDefaultP2PConfig() *P2PConfig {
 		},
 	}
 }
-
-
-
-
-
-
-
-

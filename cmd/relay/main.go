@@ -109,9 +109,7 @@ type Server struct {
 	ipRateLimit          *ratelimit.IPLimiter
 	enhancedKeycloakAuth *auth.EnhancedKeycloakAuth
 	enhancedEnabled      bool
-	wireGuardEnabled     bool
-	wireGuardInterface   *wireguard.WireGuardInterface
-	wireGuardMesh        *wireguard.MeshTopology
+	p2pQUICEnabled       bool
 
 	// P2P Relay components
 	relayManager     *p2p.RelayManager
@@ -119,19 +117,15 @@ type Server struct {
 	quicRelayHandler *QUICRelayHandler
 
 	// Cadence Workflow Engine
-	cadenceClient          *cadence.Client
-	wireGuardPeerDiscovery *wireguard.PeerDiscovery
+	cadenceClient *cadence.Client
 
 	// P2P API Server
-	p2pAPIServer      *P2PAPIServer
-	quicOverWireGuard *wireguard.QUICOverWireGuard
-	hybridRouter      *wireguard.HybridRouter
-	siteToSiteManager *wireguard.SiteToSiteManager
+	p2pAPIServer *P2PAPIServer
 
 	// Post-Quantum Cryptography components
 	quantumEnabled      bool
 	quantumConfig       *quantum.PQCConfig
-	quantumWireGuard    *quantum.QuantumWireGuardInterface
+	quantumP2PQUIC      *quantum.QuantumEnhancedQUIC
 	quantumEnhancedQUIC *quantum.QuantumEnhancedQUIC
 
 	// AI Analytics components
@@ -301,14 +295,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 	// P2P is now enabled by default for QUIC relay functionality
 	p2pEnabled := true // Always enable P2P for QUIC relay
-	var wireGuardInterface *wireguard.WireGuardInterface
-	var wireGuardMesh *wireguard.MeshTopology
-	var wireGuardPeerDiscovery *wireguard.PeerDiscovery
-	var quicOverWireGuard *wireguard.QUICOverWireGuard
-	var hybridRouter *wireguard.HybridRouter
-	var siteToSiteManager *wireguard.SiteToSiteManager
 	// P2P functionality is handled by QUIC relay instead
-	loggerInstance.Info("P2P QUIC relay mode enabled, WireGuard disabled")
+	loggerInstance.Info("P2P QUIC relay mode enabled")
 
 	// Initialize P2P API Server
 	loggerInstance.Info("Starting P2P API Server initialization...")
@@ -374,7 +362,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize Post-Quantum Cryptography components
 	quantumEnabled := cfg.Quantum.Enabled
 	var quantumConfig *quantum.PQCConfig
-	var quantumWireGuard *quantum.QuantumWireGuardInterface
+	var quantumP2PQUIC *quantum.QuantumEnhancedQUIC
 	var quantumEnhancedQUIC *quantum.QuantumEnhancedQUIC
 
 	if quantumEnabled {
@@ -435,8 +423,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	protocolEngine := protocol.NewProtocolEngine([]protocol.Protocol{protocol.QUIC, protocol.HTTP2, protocol.WebSocket}, cfg.Protocol.SwitchThreshold, zapLogger)
 	p2pManager := p2p.NewP2PManager(
-		nil, // wireGuardMesh - not needed for QUIC relay
-		nil, // wireGuardPeerDiscovery - not needed for QUIC relay
+		nil, // P2P mesh handled by QUIC relay
+		nil, // P2P peer discovery handled by QUIC relay
 		nil, // hybridRouter - not needed for QUIC relay
 		nil, // siteToSiteManager - not needed for QUIC relay
 		zapLogger,
@@ -505,45 +493,39 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	loggerInstance.Info("P2P Relay components initialized successfully")
 
 	return &Server{
-		config:                 cfg,
-		logger:                 loggerInstance,
-		tunnelManager:          tunnelManager,
-		metricsServer:          metricsServer,
-		authAdapter:            authAdapter,
-		circuitBreaker:         circuitBreaker,
-		healthChecker:          healthChecker,
-		enhancedQUICManager:    enhancedQUICManager,
-		tenantManager:          tenantMgr,
-		loadBalancer:           loadBal,
-		ipRateLimit:            ipRateLimit,
-		enhancedKeycloakAuth:   enhancedKeycloakAuth,
-		enhancedEnabled:        enhancedEnabled,
-		wireGuardEnabled:       false, // WireGuard disabled, using QUIC relay
-		wireGuardInterface:     wireGuardInterface,
-		wireGuardMesh:          wireGuardMesh,
-		wireGuardPeerDiscovery: wireGuardPeerDiscovery,
-		p2pAPIServer:           p2pAPIServer,
-		quicOverWireGuard:      quicOverWireGuard,
-		hybridRouter:           hybridRouter,
-		siteToSiteManager:      siteToSiteManager,
-		quantumEnabled:         quantumEnabled,
-		quantumConfig:          quantumConfig,
-		quantumWireGuard:       quantumWireGuard,
-		quantumEnhancedQUIC:    quantumEnhancedQUIC,
-		aiComponents:           aiComponents,
-		protocolSelector:       protocolSelector,
-		protocolEngine:         protocolEngine,
-		p2pManager:             p2pManager,
-		p2cManager:             p2cManager,
-		connectionHandler:      connectionHandler,
-		autoSwitchManager:      autoSwitchManager,
-		cadenceClient:          cadenceClient,
-		relayManager:           relayManager,
-		heartbeatManager:       heartbeatManager,
-		quicRelayHandler:       quicRelayHandler,
-		ctx:                    ctx,
-		cancel:                 cancel,
-		startTime:              time.Now(),
+		config:               cfg,
+		logger:               loggerInstance,
+		tunnelManager:        tunnelManager,
+		metricsServer:        metricsServer,
+		authAdapter:          authAdapter,
+		circuitBreaker:       circuitBreaker,
+		healthChecker:        healthChecker,
+		enhancedQUICManager:  enhancedQUICManager,
+		tenantManager:        tenantMgr,
+		loadBalancer:         loadBal,
+		ipRateLimit:          ipRateLimit,
+		enhancedKeycloakAuth: enhancedKeycloakAuth,
+		enhancedEnabled:      enhancedEnabled,
+		p2pQUICEnabled:       true, // P2P QUIC enabled
+		p2pAPIServer:         p2pAPIServer,
+		quantumEnabled:       quantumEnabled,
+		quantumConfig:        quantumConfig,
+		quantumP2PQUIC:       quantumP2PQUIC,
+		quantumEnhancedQUIC:  quantumEnhancedQUIC,
+		aiComponents:         aiComponents,
+		protocolSelector:     protocolSelector,
+		protocolEngine:       protocolEngine,
+		p2pManager:           p2pManager,
+		p2cManager:           p2cManager,
+		connectionHandler:    connectionHandler,
+		autoSwitchManager:    autoSwitchManager,
+		cadenceClient:        cadenceClient,
+		relayManager:         relayManager,
+		heartbeatManager:     heartbeatManager,
+		quicRelayHandler:     quicRelayHandler,
+		ctx:                  ctx,
+		cancel:               cancel,
+		startTime:            time.Now(),
 	}, nil
 }
 
@@ -625,10 +607,10 @@ func (s *Server) Start() error {
 			response := map[string]interface{}{
 				"status": "ready",
 				"services": map[string]interface{}{
-					"http":      true,
-					"wireguard": s.wireGuardEnabled,
-					"quic":      s.enhancedQUICManager != nil,
-					"metrics":   s.metricsServer != nil,
+					"http":     true,
+					"p2p_quic": s.p2pQUICEnabled,
+					"quic":     s.enhancedQUICManager != nil,
+					"metrics":  s.metricsServer != nil,
 				},
 			}
 			if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -684,11 +666,11 @@ func (s *Server) Start() error {
 			}
 
 			var req struct {
-				Config          map[string]interface{} `json:"config"`
-				WireGuardConfig map[string]interface{} `json:"wireguard_config"`
-				QUICConfig      map[string]interface{} `json:"quic_config"`
-				Services        []string               `json:"services"`
-				Timeout         string                 `json:"timeout"`
+				Config        map[string]interface{} `json:"config"`
+				P2PQUICConfig map[string]interface{} `json:"p2p_quic_config"`
+				QUICConfig    map[string]interface{} `json:"quic_config"`
+				Services      []string               `json:"services"`
+				Timeout       string                 `json:"timeout"`
 			}
 
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -803,37 +785,7 @@ func (s *Server) Start() error {
 			}()
 		}
 	}()
-	if s.wireGuardEnabled {
-		go func() {
-			udpAddr, err := net.ResolveUDPAddr("udp", ":51820")
-			if err != nil {
-				s.logger.Error("Failed to resolve UDP address for WireGuard", zap.Error(err))
-				return
-			}
-
-			udpConn, err := net.ListenUDP("udp", udpAddr)
-			if err != nil {
-				s.logger.Error("Failed to start WireGuard UDP server", zap.Error(err))
-				return
-			}
-			defer udpConn.Close()
-
-			s.logger.Info("WireGuard UDP server started on port 51820")
-
-			buffer := make([]byte, 4096)
-			for {
-				n, addr, err := udpConn.ReadFromUDP(buffer)
-				if err != nil {
-					if s.ctx.Err() != nil {
-						return // Server is shutting down
-					}
-					s.logger.Error("Failed to read from WireGuard UDP", zap.Error(err))
-					continue
-				}
-				go s.handleWireGuardPacket(udpConn, addr, buffer[:n])
-			}
-		}()
-	}
+	// P2P QUIC functionality is handled by the QUIC relay server
 
 	// Start QUIC UDP server on port 9090
 	if s.enhancedQUICManager != nil {
@@ -975,7 +927,7 @@ func (s *Server) Start() error {
 	s.logger.Info("Relay server started",
 		zap.Int("tcp_port", s.config.Server.Port),
 		zap.Int("http_port", 80),
-		zap.Int("wireguard_port", 51820),
+		zap.Int("p2p_quic_port", 443),
 		zap.Int("quic_port", 9090),
 		zap.Int("stun_port", 19302),
 		zap.Int("enhanced_quic_port", 9092),

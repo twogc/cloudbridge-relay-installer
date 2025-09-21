@@ -176,7 +176,7 @@ func (h *Hub) NotifyPeerJoined(tenantID string, peer *Peer) {
 		Type: "peer_joined",
 		Data: PeerJoinedData{
 			PeerID: peer.PeerID,
-			// WireGuardConfig removed from simplified Peer structure
+			// P2P QUIC configuration integrated into simplified Peer structure
 			Timestamp: time.Now(),
 		},
 		Timestamp: time.Now(),

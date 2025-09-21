@@ -617,9 +617,9 @@ func (rmc *RelayMetricsCollector) fetchRelayStats() (*RelayStats, error) {
 	stats := &RelayStats{
 		LastUpdated: time.Now(),
 		ProtocolDistribution: map[string]int{
-			"QUIC":      0,
-			"WireGuard": 0,
-			"TCP":       0,
+			"QUIC":     0,
+			"P2P_QUIC": 0,
+			"TCP":      0,
 		},
 	}
 

@@ -172,7 +172,7 @@ func TestIPValidator_ValidateAllowedIPs(t *testing.T) {
 	}
 }
 
-func TestIPValidator_ValidateWireGuardEndpoint(t *testing.T) {
+func TestIPValidator_ValidateP2PQUICEndpoint(t *testing.T) {
 	logger := zap.NewNop()
 	validator := NewIPValidator(logger)
 
@@ -224,7 +224,7 @@ func TestIPValidator_ValidateWireGuardEndpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.ValidateWireGuardEndpoint(tt.endpoint)
+			err := validator.ValidateP2PQUICEndpoint(tt.endpoint)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {

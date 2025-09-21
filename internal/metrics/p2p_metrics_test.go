@@ -152,9 +152,9 @@ func TestP2PMetrics_IncFallbackEvent(t *testing.T) {
 	metrics := NewP2PMetrics(reg)
 
 	// Increment fallback events
-	metrics.IncFallbackEvent("wireguard", "quic", "timeout")
+	metrics.IncFallbackEvent("quic", "tcp", "timeout")
 	metrics.IncFallbackEvent("quic", "tcp", "connection_failed")
-	metrics.IncFallbackEvent("wireguard", "quic", "rate_limit")
+	metrics.IncFallbackEvent("quic", "tcp", "rate_limit")
 	metrics.IncFallbackEvent("tcp", "udp", "packet_loss")
 
 	// Verify metric was incremented
@@ -237,7 +237,7 @@ func TestP2PMetrics_ConcurrentAccess(t *testing.T) {
 			metrics.ObserveHandshakeDuration(float64(id))
 			metrics.SetMeshRoutes(id)
 			metrics.IncPeerDiscoveryEvent("peer_found")
-			metrics.IncFallbackEvent("wireguard", "quic", "timeout")
+			metrics.IncFallbackEvent("quic", "quic", "timeout")
 			metrics.IncWhitelistViolation("unauthorized_peer")
 		}(i)
 	}
@@ -279,7 +279,7 @@ func TestP2PMetrics_IntegrationWorkflow(t *testing.T) {
 	metrics.SetMeshRoutes(3)
 
 	// 7. Fallback scenario
-	metrics.IncFallbackEvent("wireguard", "quic", "timeout")
+	metrics.IncFallbackEvent("quic", "quic", "timeout")
 
 	// 8. Security violation
 	metrics.IncWhitelistViolation("unauthorized_peer")
@@ -313,7 +313,7 @@ func TestP2PMetrics_Performance(t *testing.T) {
 		metrics.ObserveHandshakeDuration(float64(i%100) / 10.0)
 		metrics.SetMeshRoutes(i % 50)
 		metrics.IncPeerDiscoveryEvent("peer_found")
-		metrics.IncFallbackEvent("wireguard", "quic", "timeout")
+		metrics.IncFallbackEvent("quic", "quic", "timeout")
 		metrics.IncWhitelistViolation("unauthorized_peer")
 	}
 
@@ -426,7 +426,7 @@ func TestP2PMetrics_MetricValues(t *testing.T) {
 	metrics.IncP2PTraffic("download", "peer_1", 2048)
 	metrics.IncPeerDiscoveryEvent("peer_found")
 	metrics.IncPeerDiscoveryEvent("peer_lost")
-	metrics.IncFallbackEvent("wireguard", "quic", "timeout")
+	metrics.IncFallbackEvent("quic", "quic", "timeout")
 	metrics.IncWhitelistViolation("unauthorized_peer")
 
 	// Verify that metrics were recorded
@@ -456,7 +456,7 @@ func TestP2PMetrics_LabelValues(t *testing.T) {
 	metrics.IncPeerDiscoveryEvent("peer_disconnected")
 
 	// Test different fallback scenarios
-	metrics.IncFallbackEvent("wireguard", "quic", "timeout")
+	metrics.IncFallbackEvent("quic", "quic", "timeout")
 	metrics.IncFallbackEvent("quic", "tcp", "connection_failed")
 	metrics.IncFallbackEvent("tcp", "udp", "packet_loss")
 	metrics.IncFallbackEvent("udp", "http", "rate_limit")

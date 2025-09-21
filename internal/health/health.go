@@ -22,7 +22,7 @@ type Status struct {
 // ModuleStatus represents the status of individual modules
 type ModuleStatus struct {
 	EnhancedQUIC EnhancedQUICStatus `json:"enhanced_quic"`
-	WireGuard    WireGuardStatus    `json:"wireguard"`
+	P2PQUIC      P2PQUICStatus      `json:"p2p_quic"`
 	Quantum      QuantumStatus      `json:"quantum"`
 	AI           AIStatus           `json:"ai"`
 }
@@ -34,8 +34,8 @@ type EnhancedQUICStatus struct {
 	Details string `json:"details,omitempty"`
 }
 
-// WireGuardStatus represents WireGuard module status
-type WireGuardStatus struct {
+// P2PQUICStatus represents P2P QUIC module status
+type P2PQUICStatus struct {
 	Enabled bool   `json:"enabled"`
 	Status  string `json:"status"`
 	Details string `json:"details,omitempty"`
@@ -64,7 +64,7 @@ type Checker struct {
 
 	// Module health check functions
 	enhancedQUICHealth func() EnhancedQUICStatus
-	wireGuardHealth    func() WireGuardStatus
+	p2pQUICHealth      func() P2PQUICStatus
 	quantumHealth      func() QuantumStatus
 	aiHealth           func() AIStatus
 }
@@ -82,7 +82,7 @@ func NewChecker(version string) *Checker {
 			Version:   version,
 			Modules: ModuleStatus{
 				EnhancedQUIC: EnhancedQUICStatus{Enabled: false, Status: "unknown"},
-				WireGuard:    WireGuardStatus{Enabled: false, Status: "unknown"},
+				P2PQUIC:      P2PQUICStatus{Enabled: false, Status: "unknown"},
 				Quantum:      QuantumStatus{Enabled: false, Status: "unknown"},
 				AI:           AIStatus{Enabled: false, Status: "unknown"},
 			},
@@ -98,7 +98,7 @@ type Handler struct {
 
 	// Module health check functions
 	enhancedQUICHealth func() EnhancedQUICStatus
-	wireGuardHealth    func() WireGuardStatus
+	p2pQUICHealth      func() P2PQUICStatus
 	quantumHealth      func() QuantumStatus
 	aiHealth           func() AIStatus
 }
@@ -117,9 +117,9 @@ func (h *Handler) SetEnhancedQUICHealthCheck(healthFunc func() EnhancedQUICStatu
 	h.enhancedQUICHealth = healthFunc
 }
 
-// SetWireGuardHealthCheck sets the WireGuard health check function
-func (h *Handler) SetWireGuardHealthCheck(healthFunc func() WireGuardStatus) {
-	h.wireGuardHealth = healthFunc
+// SetP2PQUICHealthCheck sets the P2P QUIC health check function
+func (h *Handler) SetP2PQUICHealthCheck(healthFunc func() P2PQUICStatus) {
+	h.p2pQUICHealth = healthFunc
 }
 
 // SetQuantumHealthCheck sets the Post-Quantum Cryptography health check function
@@ -141,7 +141,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Metrics: make(map[string]int64),
 		Modules: ModuleStatus{
 			EnhancedQUIC: EnhancedQUICStatus{Enabled: false, Status: "unknown"},
-			WireGuard:    WireGuardStatus{Enabled: false, Status: "unknown"},
+			P2PQUIC:      P2PQUICStatus{Enabled: false, Status: "unknown"},
 			Quantum:      QuantumStatus{Enabled: false, Status: "unknown"},
 			AI:           AIStatus{Enabled: false, Status: "unknown"},
 		},
@@ -156,8 +156,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.enhancedQUICHealth != nil {
 		status.Modules.EnhancedQUIC = h.enhancedQUICHealth()
 	}
-	if h.wireGuardHealth != nil {
-		status.Modules.WireGuard = h.wireGuardHealth()
+	if h.p2pQUICHealth != nil {
+		status.Modules.P2PQUIC = h.p2pQUICHealth()
 	}
 	if h.quantumHealth != nil {
 		status.Modules.Quantum = h.quantumHealth()
@@ -171,7 +171,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if status.Modules.EnhancedQUIC.Enabled && status.Modules.EnhancedQUIC.Status != "ok" {
 		overallStatus = "degraded"
 	}
-	if status.Modules.WireGuard.Enabled && status.Modules.WireGuard.Status != "ok" {
+	if status.Modules.P2PQUIC.Enabled && status.Modules.P2PQUIC.Status != "ok" {
 		overallStatus = "degraded"
 	}
 	if status.Modules.Quantum.Enabled && status.Modules.Quantum.Status != "ok" {
@@ -220,11 +220,11 @@ func (c *Checker) SetEnhancedQUICHealthCheck(healthFunc func() EnhancedQUICStatu
 	c.enhancedQUICHealth = healthFunc
 }
 
-// SetWireGuardHealthCheck sets the WireGuard health check function
-func (c *Checker) SetWireGuardHealthCheck(healthFunc func() WireGuardStatus) {
+// SetP2PQUICHealthCheck sets the P2P QUIC health check function
+func (c *Checker) SetP2PQUICHealthCheck(healthFunc func() P2PQUICStatus) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.wireGuardHealth = healthFunc
+	c.p2pQUICHealth = healthFunc
 }
 
 // SetQuantumHealthCheck sets the Post-Quantum Cryptography health check function
@@ -258,9 +258,9 @@ func (c *Checker) UpdateModuleStatus() {
 		c.status.Modules.EnhancedQUIC = c.enhancedQUICHealth()
 	}
 
-	// Update WireGuard status
-	if c.wireGuardHealth != nil {
-		c.status.Modules.WireGuard = c.wireGuardHealth()
+	// Update P2P QUIC status
+	if c.p2pQUICHealth != nil {
+		c.status.Modules.P2PQUIC = c.p2pQUICHealth()
 	}
 
 	// Update Quantum status
@@ -285,7 +285,7 @@ func (c *Checker) updateOverallStatus() {
 	if c.status.Modules.EnhancedQUIC.Enabled && c.status.Modules.EnhancedQUIC.Status != "ok" {
 		overallStatus = "degraded"
 	}
-	if c.status.Modules.WireGuard.Enabled && c.status.Modules.WireGuard.Status != "ok" {
+	if c.status.Modules.P2PQUIC.Enabled && c.status.Modules.P2PQUIC.Status != "ok" {
 		overallStatus = "degraded"
 	}
 	if c.status.Modules.Quantum.Enabled && c.status.Modules.Quantum.Status != "ok" {
