@@ -1,8 +1,10 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -379,4 +381,40 @@ func (iv *InputValidator) CreateValidationMiddleware(validationFunc func(*gin.Co
 
 		c.Next()
 	}
+}
+
+// ValidateJSON валидирует JSON строку
+func (iv *InputValidator) ValidateJSON(jsonStr string) bool {
+	if jsonStr == "" {
+		return false
+	}
+
+	var js json.RawMessage
+	return json.Unmarshal([]byte(jsonStr), &js) == nil
+}
+
+// ValidateEmail валидирует email адрес
+func (iv *InputValidator) ValidateEmail(email string) bool {
+	if email == "" {
+		return false
+	}
+
+	// Простая валидация email с помощью regex
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	return emailRegex.MatchString(email)
+}
+
+// ValidateURL валидирует URL
+func (iv *InputValidator) ValidateURL(urlStr string) bool {
+	if urlStr == "" {
+		return false
+	}
+
+	_, err := url.ParseRequestURI(urlStr)
+	return err == nil
+}
+
+// SanitizeString санитизирует строку (публичная версия sanitizeString)
+func (iv *InputValidator) SanitizeString(s string) string {
+	return iv.sanitizeString(s)
 }

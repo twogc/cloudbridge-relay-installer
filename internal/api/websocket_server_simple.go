@@ -23,22 +23,30 @@ type WebSocketConnection struct {
 
 // Hub управляет WebSocket соединениями
 type Hub struct {
-	Connections map[string]*WebSocketConnection
-	Register    chan *WebSocketConnection
-	Unregister  chan *WebSocketConnection
-	Broadcast   chan []byte
-	upgrader    websocket.Upgrader
-	mu          sync.RWMutex
-	logger      *zap.Logger
+	Connections    map[string]*WebSocketConnection
+	Register       chan *WebSocketConnection
+	Unregister     chan *WebSocketConnection
+	Broadcast      chan []byte
+	upgrader       websocket.Upgrader
+	mu             sync.RWMutex
+	logger         *zap.Logger
+	peers          map[string]*PeerConnection // Добавляем поле peers
+	peerRegister   chan *PeerConnection       // Канал для регистрации пиров
+	peerUnregister chan *PeerConnection       // Канал для отмены регистрации пиров
+	peerBroadcast  chan []byte                // Канал для broadcast сообщений
 }
 
 // NewHub создает новый Hub
 func NewHub(logger *zap.Logger) *Hub {
 	return &Hub{
-		Connections: make(map[string]*WebSocketConnection),
-		Register:    make(chan *WebSocketConnection),
-		Unregister:  make(chan *WebSocketConnection),
-		Broadcast:   make(chan []byte),
+		Connections:    make(map[string]*WebSocketConnection),
+		Register:       make(chan *WebSocketConnection),
+		Unregister:     make(chan *WebSocketConnection),
+		Broadcast:      make(chan []byte),
+		peers:          make(map[string]*PeerConnection),
+		peerRegister:   make(chan *PeerConnection),
+		peerUnregister: make(chan *PeerConnection),
+		peerBroadcast:  make(chan []byte),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				return true // В production здесь должна быть проверка origin
@@ -256,6 +264,41 @@ func (h *Hub) GetTenantConnectionCount(tenantID string) int {
 		}
 	}
 	return count
+}
+
+// GetPeerConnections возвращает соединения пиров
+func (h *Hub) GetPeerConnections() map[string]*PeerConnection {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.peers
+}
+
+// register регистрирует пира
+func (h *Hub) register(peer *PeerConnection) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.peers[peer.ID] = peer
+}
+
+// unregister отменяет регистрацию пира
+func (h *Hub) unregister(peerID string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	delete(h.peers, peerID)
+}
+
+// broadcast отправляет сообщение всем пирам
+func (h *Hub) broadcast(message []byte) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for _, conn := range h.Connections {
+		select {
+		case conn.Send <- message:
+		default:
+			close(conn.Send)
+			delete(h.Connections, conn.PeerID)
+		}
+	}
 }
 
 // readPump читает сообщения из WebSocket соединения

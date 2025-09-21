@@ -10,10 +10,20 @@ import (
 	"go.uber.org/zap"
 )
 
+// P2PConnectionManagerInterface интерфейс для управления P2P соединениями
+type P2PConnectionManagerInterface interface {
+	RegisterPeer(peer *Peer) error
+	EstablishConnection(ctx context.Context, sessionID, peer1ID, peer2ID, protocol string) (*P2PConnection, error)
+	GetConnection(sessionID string) (*P2PConnection, bool)
+	CloseConnection(sessionID string) error
+	GetActiveConnections() []*P2PConnection
+	Close() error
+}
+
 // P2PConnectionManager управляет P2P соединениями
 type P2PConnectionManager struct {
 	activeConnections map[string]*P2PConnection
-	iceAgents         map[string]*nat.ICEAgent
+	iceAgents         map[string]ICEAgentInterface
 	relayConnections  map[string]*RelayConnection
 	peerStore         *PeerStore
 	mu                sync.RWMutex
@@ -80,7 +90,7 @@ func NewP2PConnectionManager(logger *zap.Logger) *P2PConnectionManager {
 
 	return &P2PConnectionManager{
 		activeConnections: make(map[string]*P2PConnection),
-		iceAgents:         make(map[string]*nat.ICEAgent),
+		iceAgents:         make(map[string]ICEAgentInterface),
 		relayConnections:  make(map[string]*RelayConnection),
 		peerStore:         &PeerStore{peers: make(map[string]*Peer)},
 		logger:            logger,
@@ -108,10 +118,12 @@ func (pcm *P2PConnectionManager) RegisterPeer(peer *Peer) error {
 	iceAgent := nat.NewICEAgent(stunServers, nil, pcm.logger)
 	pcm.iceAgents[peer.PeerID] = iceAgent
 
-	pcm.logger.Info("Peer registered in P2P Connection Manager",
-		zap.String("peer_id", peer.PeerID),
-		zap.Strings("stun_servers", stunServers),
-		zap.Bool("masque_support", peer.MASQUESupport))
+	if pcm.logger != nil {
+		pcm.logger.Info("Peer registered in P2P Connection Manager",
+			zap.String("peer_id", peer.PeerID),
+			zap.Strings("stun_servers", stunServers),
+			zap.Bool("masque_support", peer.MASQUESupport))
+	}
 
 	return nil
 }
@@ -158,9 +170,11 @@ func (pcm *P2PConnectionManager) EstablishConnection(
 
 	// Пытаемся установить прямое соединение
 	if err := pcm.establishDirectConnection(ctx, connection, peer1, peer2); err != nil {
-		pcm.logger.Warn("Failed to establish direct connection, trying relay",
-			zap.String("session_id", sessionID),
-			zap.Error(err))
+		if pcm.logger != nil {
+			pcm.logger.Warn("Failed to establish direct connection, trying relay",
+				zap.String("session_id", sessionID),
+				zap.Error(err))
+		}
 
 		// Fallback на relay соединение
 		if err := pcm.establishRelayConnection(ctx, connection, peer1, peer2); err != nil {
@@ -172,10 +186,12 @@ func (pcm *P2PConnectionManager) EstablishConnection(
 	connection.State = ConnectionStateConnected
 	connection.LastActivity = time.Now()
 
-	pcm.logger.Info("P2P connection established",
-		zap.String("session_id", sessionID),
-		zap.String("connection_type", connection.ConnectionType),
-		zap.String("protocol", protocol))
+	if pcm.logger != nil {
+		pcm.logger.Info("P2P connection established",
+			zap.String("session_id", sessionID),
+			zap.String("connection_type", connection.ConnectionType),
+			zap.String("protocol", protocol))
+	}
 
 	return connection, nil
 }
@@ -283,9 +299,11 @@ func (pcm *P2PConnectionManager) establishRelayConnection(
 
 	connection.ConnectionType = "relay"
 
-	pcm.logger.Info("Relay connection established",
-		zap.String("session_id", connection.SessionID),
-		zap.String("protocol", connection.Protocol))
+	if pcm.logger != nil {
+		pcm.logger.Info("Relay connection established",
+			zap.String("session_id", connection.SessionID),
+			zap.String("protocol", connection.Protocol))
+	}
 
 	return nil
 }
@@ -319,8 +337,10 @@ func (pcm *P2PConnectionManager) CloseConnection(sessionID string) error {
 
 	delete(pcm.activeConnections, sessionID)
 
-	pcm.logger.Info("P2P connection closed",
-		zap.String("session_id", sessionID))
+	if pcm.logger != nil {
+		pcm.logger.Info("P2P connection closed",
+			zap.String("session_id", sessionID))
+	}
 
 	return nil
 }
@@ -429,7 +449,9 @@ func (pcm *P2PConnectionManager) Close() error {
 		pcm.CloseConnection(sessionID)
 	}
 
-	pcm.logger.Info("P2P Connection Manager closed")
+	if pcm.logger != nil {
+		pcm.logger.Info("P2P Connection Manager closed")
+	}
 	return nil
 }
 

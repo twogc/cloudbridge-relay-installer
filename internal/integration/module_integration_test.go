@@ -96,7 +96,7 @@ func TestAIWireGuardIntegration(t *testing.T) {
 	// Проверяем, есть ли аномалия
 	isAnomaly, err := behaviorAnalyzer.DetectAnomaly(userID)
 	require.NoError(t, err)
-	assert.IsType(t, bool(false), isAnomaly)
+	assert.IsType(t, float64(0.0), isAnomaly)
 
 	// Проверяем, что компоненты работают
 	assert.True(t, behaviorAnalyzer.Enabled)
@@ -141,7 +141,7 @@ func TestAIQuantumIntegration(t *testing.T) {
 	// Проверяем аномалию
 	isAnomaly, err := behaviorAnalyzer.DetectAnomaly(userID)
 	require.NoError(t, err)
-	assert.IsType(t, bool(false), isAnomaly)
+	assert.IsType(t, float64(0.0), isAnomaly)
 }
 
 func TestFullModuleIntegration(t *testing.T) {

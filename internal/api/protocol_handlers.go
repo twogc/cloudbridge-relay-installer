@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
+	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"go.uber.org/zap"
 )
 
@@ -61,20 +63,38 @@ type ProtocolPeer struct {
 	PublicKey string `json:"public_key"`
 }
 
+// PeerManagerInterface интерфейс для PeerManager
+type PeerManagerInterface interface {
+	RegisterPeerDirect(peer *p2p.Peer) error
+	GetPeer(peerID string) (*p2p.Peer, error)
+}
+
+// KeycloakValidatorInterface интерфейс для KeycloakValidator
+type KeycloakValidatorInterface interface {
+	ValidateQuickToken(token string) (*keycloak.QuickTokenClaims, error)
+	ValidateP2PMeshToken(token string) (*keycloak.P2PMeshTokenClaims, error)
+}
+
+// ProtocolRelayManagerInterface интерфейс для RelayManager в протоколах
+type ProtocolRelayManagerInterface interface {
+	RegisterClient(clientID, protocol string) error
+	GetClientStatus(clientID string) (string, error)
+}
+
 // ProtocolHandler обработчик протоколов
 type ProtocolHandler struct {
-	keycloakValidator *keycloak.KeycloakValidator
+	keycloakValidator KeycloakValidatorInterface
 	logger            *zap.Logger
-	peerManager       *PeerManager
-	relayManager      *RelayManager
+	peerManager       PeerManagerInterface
+	relayManager      ProtocolRelayManagerInterface
 }
 
 // NewProtocolHandler создает новый обработчик протоколов
 func NewProtocolHandler(
-	keycloakValidator *keycloak.KeycloakValidator,
+	keycloakValidator KeycloakValidatorInterface,
 	logger *zap.Logger,
-	peerManager *PeerManager,
-	relayManager *RelayManager,
+	peerManager PeerManagerInterface,
+	relayManager ProtocolRelayManagerInterface,
 ) *ProtocolHandler {
 	return &ProtocolHandler{
 		keycloakValidator: keycloakValidator,
@@ -321,4 +341,177 @@ type P2PMesh struct {
 	ID     string         `json:"id"`
 	Peers  []ProtocolPeer `json:"peers"`
 	Config interface{}    `json:"config"`
+}
+
+// RegisterQuickClient регистрирует клиента для Quick протокола
+func (ph *ProtocolHandler) RegisterQuickClient(c *gin.Context) {
+	var req struct {
+		ClientID string `json:"client_id" binding:"required"`
+		Protocol string `json:"protocol" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ph.logger.Warn("Invalid request body", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	if req.ClientID == "" || req.Protocol == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+		return
+	}
+
+	// Извлечение токена из Authorization header
+	authHeader := c.GetHeader("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		ph.logger.Warn("Missing or invalid authorization header")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+
+	// Валидация Quick токена
+	claims, err := ph.keycloakValidator.ValidateQuickToken(token)
+	if err != nil {
+		ph.logger.Warn("Quick token validation failed", zap.Error(err))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Создание пира
+	peer := &p2p.Peer{
+		ID:       req.ClientID,
+		TenantID: claims.TenantID,
+		IsOnline: true,
+	}
+
+	// Регистрация пира
+	if err := ph.peerManager.RegisterPeerDirect(peer); err != nil {
+		ph.logger.Error("Failed to register peer", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	// Регистрация клиента в relay
+	if err := ph.relayManager.RegisterClient(req.ClientID, req.Protocol); err != nil {
+		ph.logger.Error("Failed to register client in relay", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Quick client registered successfully"})
+}
+
+// RegisterP2PMeshClient регистрирует клиента для P2P Mesh протокола
+func (ph *ProtocolHandler) RegisterP2PMeshClient(c *gin.Context) {
+	var req struct {
+		ClientID string `json:"client_id" binding:"required"`
+		Protocol string `json:"protocol" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ph.logger.Warn("Invalid request body", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	if req.ClientID == "" || req.Protocol == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+		return
+	}
+
+	// Извлечение токена из Authorization header
+	authHeader := c.GetHeader("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		ph.logger.Warn("Missing or invalid authorization header")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+
+	// Валидация P2P Mesh токена
+	claims, err := ph.keycloakValidator.ValidateP2PMeshToken(token)
+	if err != nil {
+		ph.logger.Warn("P2P Mesh token validation failed", zap.Error(err))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Создание пира
+	peer := &p2p.Peer{
+		ID:       req.ClientID,
+		TenantID: claims.TenantID,
+		IsOnline: true,
+	}
+
+	// Регистрация пира
+	if err := ph.peerManager.RegisterPeerDirect(peer); err != nil {
+		ph.logger.Error("Failed to register peer", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	// Регистрация клиента в relay
+	if err := ph.relayManager.RegisterClient(req.ClientID, req.Protocol); err != nil {
+		ph.logger.Error("Failed to register client in relay", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "P2P Mesh client registered successfully"})
+}
+
+// GetClientStatus возвращает статус клиента
+func (ph *ProtocolHandler) GetClientStatus(c *gin.Context) {
+	clientID := c.Param("client_id")
+	if clientID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing client_id"})
+		return
+	}
+
+	// Извлечение токена из Authorization header
+	authHeader := c.GetHeader("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		ph.logger.Warn("Missing or invalid authorization header")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+
+	// Валидация токена
+	_, err := ph.keycloakValidator.ValidateQuickToken(token)
+	if err != nil {
+		ph.logger.Warn("Token validation failed", zap.Error(err))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Получение пира
+	peer, err := ph.peerManager.GetPeer(clientID)
+	if err != nil {
+		ph.logger.Warn("Peer not found", zap.String("client_id", clientID), zap.Error(err))
+		c.JSON(http.StatusNotFound, gin.H{"error": "Client not found"})
+		return
+	}
+
+	// Получение статуса соединения
+	connectionStatus, err := ph.relayManager.GetClientStatus(clientID)
+	if err != nil {
+		ph.logger.Warn("Failed to get client status", zap.String("client_id", clientID), zap.Error(err))
+		connectionStatus = "unknown"
+	}
+
+	status := "inactive"
+	if peer.IsOnline {
+		status = "active"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"client_id":         clientID,
+		"status":            status,
+		"connection_status": connectionStatus,
+	})
 }

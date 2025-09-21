@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-// Connection представляет соединение для AI анализа
-type Connection struct {
+// AIConnection представляет соединение для AI анализа
+type AIConnection struct {
 	ID               string
 	RemoteAddr       string
 	Source           string
@@ -21,9 +21,9 @@ type Connection struct {
 	Timestamp        time.Time
 }
 
-// NewConnection создает новое соединение
-func NewConnection(id, remoteAddr, source, destination, protocol string) *Connection {
-	return &Connection{
+// NewAIConnection создает новое AI соединение
+func NewAIConnection(id, remoteAddr, source, destination, protocol string) *AIConnection {
+	return &AIConnection{
 		ID:          id,
 		RemoteAddr:  remoteAddr,
 		Source:      source,
@@ -34,7 +34,7 @@ func NewConnection(id, remoteAddr, source, destination, protocol string) *Connec
 }
 
 // SetMetrics устанавливает метрики соединения
-func (c *Connection) SetMetrics(packetsPerSecond int, bytesPerSecond int64, connectionCount int, latency, bandwidth float64) {
+func (c *AIConnection) SetMetrics(packetsPerSecond int, bytesPerSecond int64, connectionCount int, latency, bandwidth float64) {
 	c.PacketsPerSecond = packetsPerSecond
 	c.BytesPerSecond = bytesPerSecond
 	c.ConnectionCount = connectionCount
@@ -43,27 +43,27 @@ func (c *Connection) SetMetrics(packetsPerSecond int, bytesPerSecond int64, conn
 }
 
 // SetRoute устанавливает маршрут соединения
-func (c *Connection) SetRoute(route []string) {
+func (c *AIConnection) SetRoute(route []string) {
 	c.Route = route
 }
 
 // SetThrottleFactor устанавливает коэффициент ограничения
-func (c *Connection) SetThrottleFactor(factor float64) {
+func (c *AIConnection) SetThrottleFactor(factor float64) {
 	c.ThrottleFactor = factor
 }
 
 // GetAge возвращает возраст соединения
-func (c *Connection) GetAge() time.Duration {
+func (c *AIConnection) GetAge() time.Duration {
 	return time.Since(c.Timestamp)
 }
 
 // IsExpired проверяет, истекло ли соединение
-func (c *Connection) IsExpired(maxAge time.Duration) bool {
+func (c *AIConnection) IsExpired(maxAge time.Duration) bool {
 	return c.GetAge() > maxAge
 }
 
 // GetMetrics возвращает метрики соединения в виде карты
-func (c *Connection) GetMetrics() map[string]interface{} {
+func (c *AIConnection) GetMetrics() map[string]interface{} {
 	return map[string]interface{}{
 		"id":                 c.ID,
 		"remote_addr":        c.RemoteAddr,

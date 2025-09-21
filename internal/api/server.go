@@ -134,8 +134,8 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	// Add metrics if available
 	if s.metrics != nil {
 		status["metrics"] = map[string]interface{}{
-			"active_connections": s.metrics.GetActiveConnections(),
-			"active_tunnels":     s.metrics.GetActiveTunnels(),
+			"active_connections": s.getActiveConnections(),
+			"active_tunnels":     s.getActiveTunnels(),
 		}
 	}
 
@@ -172,9 +172,9 @@ relay_connections_total %d
 # TYPE relay_active_tunnels gauge
 relay_active_tunnels %d
 `,
-			s.metrics.GetActiveConnections(),
-			s.metrics.GetActiveConnections(), // This should be total connections
-			s.metrics.GetActiveTunnels(),
+			s.getActiveConnections(),
+			s.getTotalConnections(),
+			s.getActiveTunnels(),
 		)
 
 		if _, err := w.Write([]byte(metrics)); err != nil {
@@ -197,14 +197,14 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 
 	stats := map[string]interface{}{
 		"connections": map[string]interface{}{
-			"active":   s.metrics.GetActiveConnections(),
-			"total":    s.metrics.GetActiveConnections(), // This should be total
-			"rejected": 0,                                // This should be from metrics
+			"active":   s.getActiveConnections(),
+			"total":    s.getTotalConnections(),
+			"rejected": 0, // This should be from metrics
 		},
 		"tunnels": map[string]interface{}{
-			"active": s.metrics.GetActiveTunnels(),
-			"total":  s.metrics.GetActiveTunnels(), // This should be total
-			"failed": 0,                            // This should be from metrics
+			"active": s.getActiveTunnels(),
+			"total":  s.getTotalTunnels(),
+			"failed": 0, // This should be from metrics
 		},
 		"performance": map[string]interface{}{
 			"avg_response_time":   0.15,
@@ -333,4 +333,36 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode root info", http.StatusInternalServerError)
 		return
 	}
+}
+
+// getActiveConnections возвращает количество активных соединений
+func (s *Server) getActiveConnections() int {
+	if s.metrics != nil {
+		return int(s.metrics.GetActiveConnections())
+	}
+	return 0
+}
+
+// getTotalConnections возвращает общее количество соединений
+func (s *Server) getTotalConnections() int {
+	if s.metrics != nil {
+		return int(s.metrics.GetActiveConnections()) // Fallback to active for now
+	}
+	return 0
+}
+
+// getActiveTunnels возвращает количество активных туннелей
+func (s *Server) getActiveTunnels() int {
+	if s.metrics != nil {
+		return int(s.metrics.GetActiveTunnels())
+	}
+	return 0
+}
+
+// getTotalTunnels возвращает общее количество туннелей
+func (s *Server) getTotalTunnels() int {
+	if s.metrics != nil {
+		return int(s.metrics.GetActiveTunnels()) // Fallback to active for now
+	}
+	return 0
 }

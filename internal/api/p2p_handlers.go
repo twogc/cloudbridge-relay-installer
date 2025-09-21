@@ -11,7 +11,7 @@ import (
 
 // P2PManager управляет P2P соединениями через API
 type P2PManager struct {
-	connectionManager *p2p.P2PConnectionManager
+	connectionManager p2p.P2PConnectionManagerInterface
 	logger            *zap.Logger
 }
 

@@ -3,14 +3,18 @@ package auth
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/config"
-	"github.com/twogc/cloudbridge-relay-installer/internal/django"
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 )
+
+// KeycloakClientInterface defines the interface for Keycloak client
+type KeycloakClientInterface interface {
+	ValidateToken(ctx context.Context, token string) (*keycloak.TokenInfo, error)
+	CheckPermission(tokenInfo *keycloak.TokenInfo, resource, action string) bool
+}
 
 // Provider represents authentication provider interface
 type Provider interface {
@@ -51,8 +55,7 @@ type UserInfo struct {
 
 // Adapter represents authentication adapter
 type Adapter struct {
-	keycloakProvider *keycloak.Client
-	djangoProvider   *django.Client
+	keycloakProvider KeycloakClientInterface
 	config           *config.Config
 	logger           *logger.Logger
 	provider         Provider
@@ -94,22 +97,7 @@ func NewAdapter(cfg *config.Config, logger *logger.Logger) (*Adapter, error) {
 		adapter.keycloakProvider = keycloakClient
 		adapter.provider = &KeycloakProvider{client: keycloakClient}
 	} else {
-		// Initialize Django provider
-		// Get JWT secret from environment variable instead of config
-		jwtSecret := os.Getenv("JWT_SECRET")
-		if jwtSecret == "" {
-			jwtSecret = cfg.Django.JWTSecret // Fallback to config if env var not set
-		}
-		
-		djangoConfig := django.Config{
-			APIEndpoint: cfg.Django.APIEndpoint,
-			JWTSecret:   jwtSecret,
-			Timeout:     cfg.Django.RESTTimeout,
-		}
-
-		djangoClient := django.NewClient(djangoConfig)
-		adapter.djangoProvider = djangoClient
-		adapter.provider = &DjangoProvider{client: djangoClient}
+		return nil, fmt.Errorf("no authentication provider enabled - Keycloak must be enabled")
 	}
 
 	return adapter, nil
@@ -135,12 +123,12 @@ func (a *Adapter) GetProvider() string {
 	if a.config.Keycloak.Enabled {
 		return "keycloak"
 	}
-	return "django"
+	return "none"
 }
 
 // KeycloakProvider implements Provider interface for Keycloak
 type KeycloakProvider struct {
-	client *keycloak.Client
+	client KeycloakClientInterface
 }
 
 // ValidateToken validates token using Keycloak
@@ -209,30 +197,4 @@ func (p *KeycloakProvider) CheckPermission(ctx context.Context, token string, re
 		Claims:    tokenInfo.Claims,
 	}
 	return p.client.CheckPermission(kt, resource, action), nil
-}
-
-// DjangoProvider implements Provider interface for Django
-type DjangoProvider struct {
-	client *django.Client
-}
-
-// ValidateToken validates token using Django
-func (p *DjangoProvider) ValidateToken(ctx context.Context, token string) (*TokenInfo, error) {
-	// This would need to be implemented based on your Django token validation
-	// For now, returning a placeholder implementation
-	return nil, fmt.Errorf("Django token validation not implemented")
-}
-
-// GetUserInfo gets user information from Django
-func (p *DjangoProvider) GetUserInfo(ctx context.Context, token string) (*UserInfo, error) {
-	// This would need to be implemented based on your Django API
-	// For now, returning a placeholder implementation
-	return nil, fmt.Errorf("Django user info not implemented")
-}
-
-// CheckPermission checks permission using Django
-func (p *DjangoProvider) CheckPermission(ctx context.Context, token string, resource, action string) (bool, error) {
-	// This would need to be implemented based on your Django permission system
-	// For now, returning a placeholder implementation
-	return false, fmt.Errorf("Django permission check not implemented")
 }

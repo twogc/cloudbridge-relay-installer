@@ -1,20 +1,17 @@
 package token
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/twogc/cloudbridge-relay-installer/internal/django"
 )
 
 // Config represents the token validator configuration
 type Config struct {
-	DjangoClient *django.Client
-	JWTSecret    string
-	CacheTTL     time.Duration
+	JWTSecret string
+	CacheTTL  time.Duration
 }
 
 // TokenInfo represents cached token information
@@ -65,12 +62,7 @@ func (v *Validator) ValidateToken(token string) (string, error) {
 	var clientID string
 	var err error
 
-	if v.config.DjangoClient != nil {
-		clientID, err = v.config.DjangoClient.ValidateToken(context.Background(), token)
-		if err != nil {
-			return "", fmt.Errorf("Django validation error: %v", err)
-		}
-	} else if v.config.JWTSecret != "" {
+	if v.config.JWTSecret != "" {
 		clientID, err = v.validateJWT(token)
 		if err != nil {
 			return "", fmt.Errorf("JWT validation error: %v", err)
@@ -127,41 +119,40 @@ func (v *Validator) ValidateP2PToken(token string) (*P2PClaims, error) {
 	tokenObj, err := jwt.ParseWithClaims(token, &P2PClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return v.jwtKey, nil
 	})
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("invalid token: %v", err)
 	}
-	
+
 	claims, ok := tokenObj.Claims.(*P2PClaims)
 	if !ok || !tokenObj.Valid {
 		return nil, fmt.Errorf("invalid token claims")
 	}
-	
+
 	// 2. Проверить обязательные поля
 	if claims.ProtocolType != "p2p-mesh" {
 		return nil, fmt.Errorf("unsupported protocol: %s", claims.ProtocolType)
 	}
-	
+
 	if claims.ConnectionType != "quic" {
 		return nil, fmt.Errorf("unsupported connection type: %s", claims.ConnectionType)
 	}
-	
+
 	if claims.TenantID == "" {
 		return nil, fmt.Errorf("missing tenant_id")
 	}
-	
+
 	if claims.ServerID == "" {
 		return nil, fmt.Errorf("missing server_id")
 	}
-	
+
 	// 3. Проверить разрешения
 	if !contains(claims.Permissions, "p2p_connect") {
 		return nil, fmt.Errorf("missing p2p_connect permission")
 	}
-	
+
 	return claims, nil
 }
-
 
 // Cleanup removes expired tokens from the cache
 func (v *Validator) Cleanup() {

@@ -147,7 +147,12 @@ func (dp *DataPipeline) Stop() error {
 
 	// Останавливаем обработку данных
 	dp.cancel()
-	close(dp.stopCh)
+	select {
+	case <-dp.stopCh:
+		// Канал уже закрыт
+	default:
+		close(dp.stopCh)
+	}
 	dp.wg.Wait()
 
 	dp.started = false

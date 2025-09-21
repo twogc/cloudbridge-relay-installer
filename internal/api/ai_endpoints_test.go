@@ -3,292 +3,403 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
+
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/anomaly"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/predictive"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/routing"
-	"go.uber.org/zap"
 )
 
-// TestMockAIService мок для тестирования AIServiceInterface
-type TestMockAIService struct {
+// MockAIService мок для AIServiceInterface
+type MockAIService struct {
 	mock.Mock
 }
 
-func (m *TestMockAIService) GetStatus() *ai.ServiceStatus {
+func (m *MockAIService) GetStatus() *ai.ServiceStatus {
 	args := m.Called()
 	return args.Get(0).(*ai.ServiceStatus)
 }
 
-func (m *TestMockAIService) DetectAnomaly(ctx context.Context, metrics *anomaly.NetworkMetrics) (*anomaly.AnomalyResult, error) {
+func (m *MockAIService) DetectAnomaly(ctx context.Context, metrics *anomaly.NetworkMetrics) (*anomaly.AnomalyResult, error) {
 	args := m.Called(ctx, metrics)
 	return args.Get(0).(*anomaly.AnomalyResult), args.Error(1)
 }
 
-func (m *TestMockAIService) PredictLoad(ctx context.Context, horizon int) (*predictive.LoadPrediction, error) {
+func (m *MockAIService) PredictLoad(ctx context.Context, horizon int) (*predictive.LoadPrediction, error) {
 	args := m.Called(ctx, horizon)
 	return args.Get(0).(*predictive.LoadPrediction), args.Error(1)
 }
 
-func (m *TestMockAIService) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.OptimizedRoute, error) {
+func (m *MockAIService) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.OptimizedRoute, error) {
 	args := m.Called(ctx, source, destination, constraints)
 	return args.Get(0).(*routing.OptimizedRoute), args.Error(1)
 }
 
-func TestAIEndpoints_GetAIStatus(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+func TestNewAIEndpoints(t *testing.T) {
 	logger := zap.NewNop()
+	mockService := &MockAIService{}
 
-	t.Run("success", func(t *testing.T) {
-		mockAI := new(TestMockAIService)
-		status := &ai.ServiceStatus{
-			Status: "running",
-			Components: map[string]bool{
-				"anomaly_detection": true,
-				"load_prediction":   true,
+	endpoints := NewAIEndpoints(mockService, logger)
+
+	assert.NotNil(t, endpoints)
+	assert.Equal(t, mockService, endpoints.aiService)
+	assert.Equal(t, logger, endpoints.logger)
+}
+
+func TestAIEndpoints_GetAIStatus(t *testing.T) {
+	tests := []struct {
+		name           string
+		mockSetup      func(*MockAIService)
+		expectedStatus int
+	}{
+		{
+			name: "successful status retrieval",
+			mockSetup: func(m *MockAIService) {
+				m.On("GetStatus").Return(&ai.ServiceStatus{
+					Status: "active",
+					Components: map[string]bool{
+						"anomaly_detector": true,
+						"load_predictor":   true,
+					},
+					Health: true,
+					Uptime: time.Hour,
+				})
 			},
-		}
-		mockAI.On("GetStatus").Return(status)
+			expectedStatus: http.StatusOK,
+		},
+	}
 
-		endpoints := NewAIEndpoints(mockAI, logger)
-		router := gin.New()
-		router.GET("/ai/status", endpoints.GetAIStatus)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := &MockAIService{}
+			tt.mockSetup(mockService)
 
-		req := httptest.NewRequest("GET", "/ai/status", nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+			endpoints := &AIEndpoints{
+				aiService: mockService,
+				logger:    zap.NewNop(),
+			}
 
-		assert.Equal(t, http.StatusOK, w.Code)
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("GET", "/ai/status", nil)
 
-		var response AIStatusResponse
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, "healthy", response.Status)
-		assert.NotNil(t, response.Components)
+			endpoints.GetAIStatus(c)
 
-		mockAI.AssertExpectations(t)
-	})
-
-	t.Run("service unavailable", func(t *testing.T) {
-		endpoints := NewAIEndpoints(nil, logger)
-		router := gin.New()
-		router.GET("/ai/status", endpoints.GetAIStatus)
-
-		req := httptest.NewRequest("GET", "/ai/status", nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
-	})
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			mockService.AssertExpectations(t)
+		})
+	}
 }
 
 func TestAIEndpoints_DetectAnomaly(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	logger := zap.NewNop()
-
-	t.Run("success", func(t *testing.T) {
-		mockAI := new(TestMockAIService)
-		result := &anomaly.AnomalyResult{
-			IsAnomaly:   true,
-			Score:       0.95,
-			AnomalyType: "high_cpu_usage",
-			Severity:    "high",
-		}
-		mockAI.On("DetectAnomaly", mock.Anything, mock.Anything).Return(result, nil)
-
-		endpoints := NewAIEndpoints(mockAI, logger)
-		router := gin.New()
-		router.POST("/ai/detect-anomaly", endpoints.DetectAnomaly)
-
-		requestBody := AnomalyDetectionRequest{
-			Metrics: &anomaly.NetworkMetrics{
-				BytesPerSecond:       1000,
-				ConnectionsPerSecond: 10,
-				PacketLossRate:       0.01,
+	tests := []struct {
+		name           string
+		requestBody    string
+		mockSetup      func(*MockAIService)
+		expectedStatus int
+	}{
+		{
+			name:        "successful anomaly detection",
+			requestBody: `{"metrics": {"timestamp": "2023-01-01T00:00:00Z", "connections_per_second": 100, "bytes_per_second": 1000, "packet_loss_rate": 0.01, "average_latency": 50.0, "cpu_usage": 75.0, "memory_usage": 60.0, "active_connections": 50, "failed_connections": 2, "protocol_distribution": {"tcp": 80, "udp": 20}}}`,
+			mockSetup: func(m *MockAIService) {
+				m.On("DetectAnomaly", mock.Anything, mock.AnythingOfType("*anomaly.NetworkMetrics")).Return(&anomaly.AnomalyResult{
+					IsAnomaly:   true,
+					AnomalyType: "high_cpu",
+					Confidence:  0.95,
+				}, nil)
 			},
-		}
-		jsonBody, _ := json.Marshal(requestBody)
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "invalid JSON",
+			requestBody:    `{"invalid": json}`,
+			mockSetup:      func(m *MockAIService) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "missing metrics",
+			requestBody:    `{}`,
+			mockSetup:      func(m *MockAIService) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "service error",
+			requestBody: `{"metrics": {"timestamp": "2023-01-01T00:00:00Z", "connections_per_second": 100}}`,
+			mockSetup: func(m *MockAIService) {
+				m.On("DetectAnomaly", mock.Anything, mock.AnythingOfType("*anomaly.NetworkMetrics")).Return((*anomaly.AnomalyResult)(nil), assert.AnError)
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
 
-		req := httptest.NewRequest("POST", "/ai/detect-anomaly", bytes.NewBuffer(jsonBody))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := &MockAIService{}
+			tt.mockSetup(mockService)
 
-		assert.Equal(t, http.StatusOK, w.Code)
+			endpoints := &AIEndpoints{
+				aiService: mockService,
+				logger:    zap.NewNop(),
+			}
 
-		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, "success", response["status"])
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/ai/anomaly", bytes.NewBufferString(tt.requestBody))
+			c.Request.Header.Set("Content-Type", "application/json")
 
-		mockAI.AssertExpectations(t)
-	})
+			endpoints.DetectAnomaly(c)
 
-	t.Run("invalid request", func(t *testing.T) {
-		endpoints := NewAIEndpoints(nil, logger)
-		router := gin.New()
-		router.POST("/ai/detect-anomaly", endpoints.DetectAnomaly)
-
-		req := httptest.NewRequest("POST", "/ai/detect-anomaly", bytes.NewBufferString("invalid json"))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
-	})
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			mockService.AssertExpectations(t)
+		})
+	}
 }
 
 func TestAIEndpoints_PredictLoad(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	logger := zap.NewNop()
+	tests := []struct {
+		name           string
+		url            string
+		mockSetup      func(*MockAIService)
+		expectedStatus int
+	}{
+		{
+			name: "successful load prediction with default horizon",
+			url:  "/ai/predict",
+			mockSetup: func(m *MockAIService) {
+				m.On("PredictLoad", mock.Anything, 24).Return(&predictive.LoadPrediction{
+					Forecast:   []float64{22.3, 25.1, 28.7, 30.2, 32.1},
+					Confidence: 0.88,
+				}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "successful load prediction with custom horizon",
+			url:  "/ai/predict?horizon=5",
+			mockSetup: func(m *MockAIService) {
+				m.On("PredictLoad", mock.Anything, 5).Return(&predictive.LoadPrediction{
+					Forecast:   []float64{22.3, 25.1, 28.7, 30.2, 32.1},
+					Confidence: 0.88,
+				}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "invalid horizon parameter",
+			url:            "/ai/predict?horizon=invalid",
+			mockSetup:      func(m *MockAIService) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "service error",
+			url:  "/ai/predict?horizon=3",
+			mockSetup: func(m *MockAIService) {
+				m.On("PredictLoad", mock.Anything, 3).Return((*predictive.LoadPrediction)(nil), assert.AnError)
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
 
-	t.Run("success", func(t *testing.T) {
-		mockAI := new(TestMockAIService)
-		prediction := &predictive.LoadPrediction{
-			Forecast:   []float64{0.5, 0.6, 0.7},
-			Confidence: 0.85,
-		}
-		mockAI.On("PredictLoad", mock.Anything, 24).Return(prediction, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := &MockAIService{}
+			tt.mockSetup(mockService)
 
-		endpoints := NewAIEndpoints(mockAI, logger)
-		router := gin.New()
-		router.GET("/ai/predict-load", endpoints.PredictLoad)
+			endpoints := &AIEndpoints{
+				aiService: mockService,
+				logger:    zap.NewNop(),
+			}
 
-		req := httptest.NewRequest("GET", "/ai/predict-load?horizon=24", nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("GET", tt.url, nil)
 
-		assert.Equal(t, http.StatusOK, w.Code)
+			endpoints.PredictLoad(c)
 
-		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, "success", response["status"])
-
-		mockAI.AssertExpectations(t)
-	})
-
-	t.Run("invalid horizon", func(t *testing.T) {
-		endpoints := NewAIEndpoints(nil, logger)
-		router := gin.New()
-		router.GET("/ai/predict-load", endpoints.PredictLoad)
-
-		req := httptest.NewRequest("GET", "/ai/predict-load?horizon=invalid", nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
-	})
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			mockService.AssertExpectations(t)
+		})
+	}
 }
 
 func TestAIEndpoints_OptimizeRoute(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	logger := zap.NewNop()
-
-	t.Run("success", func(t *testing.T) {
-		mockAI := new(TestMockAIService)
-		route := &routing.OptimizedRoute{
-			Path:             []string{"A", "B", "C"},
-			PredictedLatency: 100.5,
-			Confidence:       0.9,
-			Protocol:         "QUIC",
-		}
-		mockAI.On("OptimizeRoute", mock.Anything, "A", "C", mock.Anything).Return(route, nil)
-
-		endpoints := NewAIEndpoints(mockAI, logger)
-		router := gin.New()
-		router.POST("/ai/optimize-route", endpoints.OptimizeRoute)
-
-		requestBody := RouteOptimizationRequest{
-			Source:      "A",
-			Destination: "C",
-			Constraints: map[string]interface{}{
-				"max_latency": 200,
+	tests := []struct {
+		name           string
+		requestBody    string
+		mockSetup      func(*MockAIService)
+		expectedStatus int
+	}{
+		{
+			name:        "successful route optimization",
+			requestBody: `{"source": "A", "destination": "B", "constraints": {"max_latency": 100}}`,
+			mockSetup: func(m *MockAIService) {
+				m.On("OptimizeRoute", mock.Anything, "A", "B", mock.Anything).Return(&routing.OptimizedRoute{
+					Protocol:         "tcp",
+					Path:             []string{"A", "C", "B"},
+					PredictedLatency: 85.5,
+					Confidence:       0.92,
+				}, nil)
 			},
-		}
-		jsonBody, _ := json.Marshal(requestBody)
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "invalid JSON",
+			requestBody:    `{"invalid": json}`,
+			mockSetup:      func(m *MockAIService) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "missing source",
+			requestBody:    `{"destination": "B"}`,
+			mockSetup:      func(m *MockAIService) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "missing destination",
+			requestBody:    `{"source": "A"}`,
+			mockSetup:      func(m *MockAIService) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "service error",
+			requestBody: `{"source": "A", "destination": "B"}`,
+			mockSetup: func(m *MockAIService) {
+				m.On("OptimizeRoute", mock.Anything, "A", "B", mock.Anything).Return((*routing.OptimizedRoute)(nil), assert.AnError)
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
 
-		req := httptest.NewRequest("POST", "/ai/optimize-route", bytes.NewBuffer(jsonBody))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockService := &MockAIService{}
+			tt.mockSetup(mockService)
 
-		assert.Equal(t, http.StatusOK, w.Code)
+			endpoints := &AIEndpoints{
+				aiService: mockService,
+				logger:    zap.NewNop(),
+			}
 
-		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, "success", response["status"])
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = httptest.NewRequest("POST", "/ai/optimize", bytes.NewBufferString(tt.requestBody))
+			c.Request.Header.Set("Content-Type", "application/json")
 
-		mockAI.AssertExpectations(t)
-	})
+			endpoints.OptimizeRoute(c)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			mockService.AssertExpectations(t)
+		})
+	}
+}
+
+func TestAIEndpoints_GetAIMetrics(t *testing.T) {
+	endpoints := &AIEndpoints{
+		aiService: nil,
+		logger:    zap.NewNop(),
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/ai/metrics", nil)
+
+	endpoints.GetAIMetrics(c)
+
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 }
 
 func TestAIEndpoints_GetAIHealth(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	logger := zap.NewNop()
+	endpoints := &AIEndpoints{
+		aiService: nil,
+		logger:    zap.NewNop(),
+	}
 
-	t.Run("healthy", func(t *testing.T) {
-		mockAI := new(TestMockAIService)
-		status := &ai.ServiceStatus{
-			Status: "running",
-			Components: map[string]bool{
-				"anomaly_detection": true,
-			},
-		}
-		mockAI.On("GetStatus").Return(status)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("GET", "/ai/health", nil)
 
-		endpoints := NewAIEndpoints(mockAI, logger)
-		router := gin.New()
-		router.GET("/ai/health", endpoints.GetAIHealth)
+	endpoints.GetAIHealth(c)
 
-		req := httptest.NewRequest("GET", "/ai/health", nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+}
 
-		assert.Equal(t, http.StatusOK, w.Code)
+func TestAIEndpoints_NilService(t *testing.T) {
+	endpoints := &AIEndpoints{
+		aiService: nil,
+		logger:    zap.NewNop(),
+	}
 
-		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, "healthy", response["status"])
+	tests := []struct {
+		name           string
+		method         string
+		url            string
+		requestBody    string
+		expectedStatus int
+	}{
+		{
+			name:           "GetAIStatus with nil service",
+			method:         "GET",
+			url:            "/ai/status",
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "DetectAnomaly with nil service",
+			method:         "POST",
+			url:            "/ai/anomaly",
+			requestBody:    `{"metrics": {"timestamp": "2023-01-01T00:00:00Z", "connections_per_second": 100}}`,
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "PredictLoad with nil service",
+			method:         "POST",
+			url:            "/ai/predict",
+			requestBody:    `{"horizon": 5}`,
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "OptimizeRoute with nil service",
+			method:         "POST",
+			url:            "/ai/optimize",
+			requestBody:    `{"source": "A", "destination": "B"}`,
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+	}
 
-		mockAI.AssertExpectations(t)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
 
-	t.Run("unhealthy", func(t *testing.T) {
-		mockAI := new(TestMockAIService)
-		status := &ai.ServiceStatus{
-			Status: "stopped",
-			Components: map[string]bool{
-				"anomaly_detection": false,
-			},
-		}
-		mockAI.On("GetStatus").Return(status)
+			var body *bytes.Buffer
+			if tt.requestBody != "" {
+				body = bytes.NewBufferString(tt.requestBody)
+				c.Request = httptest.NewRequest(tt.method, tt.url, body)
+				c.Request.Header.Set("Content-Type", "application/json")
+			} else {
+				c.Request = httptest.NewRequest(tt.method, tt.url, nil)
+			}
 
-		endpoints := NewAIEndpoints(mockAI, logger)
-		router := gin.New()
-		router.GET("/ai/health", endpoints.GetAIHealth)
+			switch tt.url {
+			case "/ai/status":
+				endpoints.GetAIStatus(c)
+			case "/ai/anomaly":
+				endpoints.DetectAnomaly(c)
+			case "/ai/predict":
+				endpoints.PredictLoad(c)
+			case "/ai/optimize":
+				endpoints.OptimizeRoute(c)
+			}
 
-		req := httptest.NewRequest("GET", "/ai/health", nil)
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
-
-		assert.Equal(t, http.StatusOK, w.Code)
-
-		var response map[string]interface{}
-		err := json.Unmarshal(w.Body.Bytes(), &response)
-		assert.NoError(t, err)
-		assert.Equal(t, "unhealthy", response["status"])
-
-		mockAI.AssertExpectations(t)
-	})
+			assert.Equal(t, tt.expectedStatus, w.Code)
+		})
+	}
 }

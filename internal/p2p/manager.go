@@ -12,22 +12,22 @@ import (
 
 // P2PManager управляет P2P соединениями с интеграцией Cadence
 type P2PManager struct {
-	wireGuardMesh      *wireguard.MeshTopology
-	peerDiscovery      *wireguard.PeerDiscovery
-	hybridRouter       *wireguard.HybridRouter
-	siteToSiteManager  *wireguard.SiteToSiteManager
+	wireGuardMesh      WireGuardMeshTopologyInterface
+	peerDiscovery      PeerDiscoveryInterface
+	hybridRouter       HybridRouterInterface
+	siteToSiteManager  SiteToSiteManagerInterface
 	metrics            *P2PMetrics
 	logger             *zap.Logger
 	isInitialized      bool
-	cadenceIntegration *CadenceP2PIntegration
+	cadenceIntegration CadenceP2PIntegrationInterface
 }
 
 // NewP2PManager создает новый P2P менеджер
 func NewP2PManager(
-	mesh *wireguard.MeshTopology,
-	discovery *wireguard.PeerDiscovery,
-	router *wireguard.HybridRouter,
-	siteToSite *wireguard.SiteToSiteManager,
+	mesh WireGuardMeshTopologyInterface,
+	discovery PeerDiscoveryInterface,
+	router HybridRouterInterface,
+	siteToSite SiteToSiteManagerInterface,
 	logger *zap.Logger,
 ) *P2PManager {
 	pm := &P2PManager{
@@ -46,10 +46,10 @@ func NewP2PManager(
 
 // NewP2PManagerWithCadence создает новый P2P менеджер с Cadence интеграцией
 func NewP2PManagerWithCadence(
-	mesh *wireguard.MeshTopology,
-	discovery *wireguard.PeerDiscovery,
-	router *wireguard.HybridRouter,
-	siteToSite *wireguard.SiteToSiteManager,
+	mesh WireGuardMeshTopologyInterface,
+	discovery PeerDiscoveryInterface,
+	router HybridRouterInterface,
+	siteToSite SiteToSiteManagerInterface,
 	cadenceClient interface{}, // *cadence.Client
 	logger *zap.Logger,
 ) *P2PManager {
@@ -62,7 +62,7 @@ func NewP2PManagerWithCadence(
 }
 
 // SetCadenceIntegration устанавливает Cadence интеграцию
-func (pm *P2PManager) SetCadenceIntegration(cadenceIntegration *CadenceP2PIntegration) {
+func (pm *P2PManager) SetCadenceIntegration(cadenceIntegration CadenceP2PIntegrationInterface) {
 	pm.cadenceIntegration = cadenceIntegration
 	pm.logger.Info("Cadence интеграция установлена для P2P Manager")
 }
@@ -151,7 +151,7 @@ func (pm *P2PManager) isPeerConnected(peerID string) bool {
 			pm.logger.Debug("Peer not found in mesh topology", zap.String("peer_id", peerID))
 			return false
 		}
-		
+
 		// Проверяем статус подключения
 		return peer.Status == wireguard.PeerStatusConnected
 	}

@@ -31,6 +31,12 @@ func TestServerIntegration(t *testing.T) {
 	cfg.Quantum.Enabled = true
 	cfg.AI.Enabled = true
 
+	// Включаем Keycloak для тестов
+	cfg.Keycloak.Enabled = true
+	cfg.Keycloak.ServerURL = "https://test-keycloak.example.com"
+	cfg.Keycloak.Realm = "test-realm"
+	cfg.Keycloak.ClientID = "test-client"
+
 	// Создаем сервер
 	server, err := NewServer(cfg)
 	require.NoError(t, err)
@@ -92,6 +98,12 @@ func TestServerStartStop(t *testing.T) {
 	cfg.Quantum.Enabled = false
 	cfg.AI.Enabled = false
 
+	// Включаем Keycloak для тестов
+	cfg.Keycloak.Enabled = true
+	cfg.Keycloak.ServerURL = "https://test-keycloak.example.com"
+	cfg.Keycloak.Realm = "test-realm"
+	cfg.Keycloak.ClientID = "test-client"
+
 	// Создаем сервер
 	server, err := NewServer(cfg)
 	require.NoError(t, err)
@@ -141,6 +153,12 @@ func TestServerWithAllModulesEnabled(t *testing.T) {
 	cfg.AI.BehaviorAnalysis.Threshold = 0.8
 	cfg.AI.BehaviorAnalysis.LearningRate = 0.001
 
+	// Включаем Keycloak для тестов
+	cfg.Keycloak.Enabled = true
+	cfg.Keycloak.ServerURL = "https://test-keycloak.example.com"
+	cfg.Keycloak.Realm = "test-realm"
+	cfg.Keycloak.ClientID = "test-client"
+
 	// Создаем сервер
 	server, err := NewServer(cfg)
 	require.NoError(t, err)
@@ -182,6 +200,12 @@ func TestServerWithPartialModules(t *testing.T) {
 	cfg.Quantum.Enabled = false
 	cfg.AI.Enabled = true
 
+	// Включаем Keycloak для тестов
+	cfg.Keycloak.Enabled = true
+	cfg.Keycloak.ServerURL = "https://test-keycloak.example.com"
+	cfg.Keycloak.Realm = "test-realm"
+	cfg.Keycloak.ClientID = "test-client"
+
 	// Создаем сервер
 	server, err := NewServer(cfg)
 	require.NoError(t, err)
@@ -219,6 +243,12 @@ func TestServerContextCancellation(t *testing.T) {
 	cfg.WireGuard.Enabled = false
 	cfg.Quantum.Enabled = false
 	cfg.AI.Enabled = false
+
+	// Включаем Keycloak для тестов
+	cfg.Keycloak.Enabled = true
+	cfg.Keycloak.ServerURL = "https://test-keycloak.example.com"
+	cfg.Keycloak.Realm = "test-realm"
+	cfg.Keycloak.ClientID = "test-client"
 
 	// Создаем сервер
 	server, err := NewServer(cfg)

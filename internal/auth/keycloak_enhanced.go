@@ -25,7 +25,7 @@ type EnhancedKeycloakAuth struct {
 	logger *zap.Logger
 
 	// Новое поле для Enhanced QUIC
-	enhancedKeycloakAuth *quic.KeycloakAuth
+	enhancedKeycloakAuth KeycloakAuthInterface
 	enhancedEnabled      bool
 }
 
@@ -66,16 +66,20 @@ func (eka *EnhancedKeycloakAuth) AuthenticateEnhanced(ctx context.Context, token
 	if eka.enhancedEnabled && eka.enhancedKeycloakAuth != nil {
 		isValid, err := eka.enhancedKeycloakAuth.AuthenticateUser(token)
 		if err != nil {
-			eka.logger.Error("Enhanced Keycloak authentication failed",
-				zap.Error(err),
-				zap.String("token_prefix", token[:min(len(token), 10)]+"..."),
-			)
+			if eka.logger != nil {
+				eka.logger.Error("Enhanced Keycloak authentication failed",
+					zap.Error(err),
+					zap.String("token_prefix", token[:min(len(token), 10)]+"..."),
+				)
+			}
 			return false, err
 		}
 
-		eka.logger.Info("Enhanced Keycloak authentication successful",
-			zap.Bool("is_valid", isValid),
-		)
+		if eka.logger != nil {
+			eka.logger.Info("Enhanced Keycloak authentication successful",
+				zap.Bool("is_valid", isValid),
+			)
+		}
 
 		return isValid, nil
 	}
@@ -92,9 +96,11 @@ func (eka *EnhancedKeycloakAuth) AuthenticateBasic(ctx context.Context, token st
 	}
 
 	// В реальной реализации здесь будет полноценная аутентификация
-	eka.logger.Debug("Basic authentication (fallback)",
-		zap.String("token_prefix", token[:min(len(token), 10)]+"..."),
-	)
+	if eka.logger != nil {
+		eka.logger.Debug("Basic authentication (fallback)",
+			zap.String("token_prefix", token[:min(len(token), 10)]+"..."),
+		)
+	}
 
 	return len(token) > 10, nil // Простая проверка для примера
 }
@@ -157,7 +163,9 @@ func (eka *EnhancedKeycloakAuth) EnableEnhanced(config *KeycloakConfig) error {
 	eka.enhancedKeycloakAuth = quic.NewKeycloakAuth(enhancedConfig)
 	eka.enhancedEnabled = true
 
-	eka.logger.Info("Enhanced Keycloak Auth enabled")
+	if eka.logger != nil {
+		eka.logger.Info("Enhanced Keycloak Auth enabled")
+	}
 	return nil
 }
 
@@ -166,7 +174,9 @@ func (eka *EnhancedKeycloakAuth) DisableEnhanced() {
 	eka.enhancedEnabled = false
 	eka.enhancedKeycloakAuth = nil
 
-	eka.logger.Info("Enhanced Keycloak Auth disabled")
+	if eka.logger != nil {
+		eka.logger.Info("Enhanced Keycloak Auth disabled")
+	}
 }
 
 // IsEnhancedEnabled проверяет, включен ли Enhanced режим
@@ -175,7 +185,7 @@ func (eka *EnhancedKeycloakAuth) IsEnhancedEnabled() bool {
 }
 
 // GetEnhancedKeycloakAuth возвращает Enhanced Keycloak Auth
-func (eka *EnhancedKeycloakAuth) GetEnhancedKeycloakAuth() *quic.KeycloakAuth {
+func (eka *EnhancedKeycloakAuth) GetEnhancedKeycloakAuth() KeycloakAuthInterface {
 	if eka.enhancedEnabled {
 		return eka.enhancedKeycloakAuth
 	}

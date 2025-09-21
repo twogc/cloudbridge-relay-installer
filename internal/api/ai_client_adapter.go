@@ -13,12 +13,12 @@ import (
 
 // AIClientAdapter адаптер для ai.Client, реализующий AIServiceInterface
 type AIClientAdapter struct {
-	client *ai.Client
+	client ai.AIClientInterface
 	logger *zap.Logger
 }
 
 // NewAIClientAdapter создает новый адаптер для AI клиента
-func NewAIClientAdapter(client *ai.Client, logger *zap.Logger) *AIClientAdapter {
+func NewAIClientAdapter(client ai.AIClientInterface, logger *zap.Logger) *AIClientAdapter {
 	return &AIClientAdapter{
 		client: client,
 		logger: logger,

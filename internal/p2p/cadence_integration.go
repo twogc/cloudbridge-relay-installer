@@ -12,13 +12,13 @@ import (
 
 // CadenceP2PIntegration интеграция P2P Manager с Cadence
 type CadenceP2PIntegration struct {
-	cadenceClient *cadence.Client
+	cadenceClient cadence.CadenceClientInterface
 	p2pManager    *P2PManager
 	logger        *zap.Logger
 }
 
 // NewCadenceP2PIntegration создает новую интеграцию
-func NewCadenceP2PIntegration(cadenceClient *cadence.Client, p2pManager *P2PManager, logger *zap.Logger) *CadenceP2PIntegration {
+func NewCadenceP2PIntegration(cadenceClient cadence.CadenceClientInterface, p2pManager *P2PManager, logger *zap.Logger) *CadenceP2PIntegration {
 	return &CadenceP2PIntegration{
 		cadenceClient: cadenceClient,
 		p2pManager:    p2pManager,

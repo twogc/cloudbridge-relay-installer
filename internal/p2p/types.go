@@ -26,6 +26,7 @@ type Peer struct {
 	ActiveConnections int
 	MeshStatus        string
 	LatencyMS         int
+	AllocatedIP       string
 }
 
 // WireGuardConfig конфигурация WireGuard
@@ -71,4 +72,3 @@ type ICECandidate struct {
 	Username    string `json:"username,omitempty"`
 	Password    string `json:"password,omitempty"`
 }
-

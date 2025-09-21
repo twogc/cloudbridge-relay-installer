@@ -14,6 +14,12 @@ import (
 func TestMultiprotocolIntegration(t *testing.T) {
 	// Создание тестовой конфигурации
 	cfg := createTestConfig()
+	// Включаем Keycloak для тестов
+	cfg.Keycloak.Enabled = true
+	cfg.Keycloak.ServerURL = "https://test-keycloak.example.com"
+	cfg.Keycloak.Realm = "test-realm"
+	cfg.Keycloak.ClientID = "test-client"
+
 	server, err := NewServer(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, server)

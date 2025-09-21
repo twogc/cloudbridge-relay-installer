@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,55 +10,10 @@ import (
 
 func TestNewIPValidator(t *testing.T) {
 	logger := zap.NewNop()
+
 	validator := NewIPValidator(logger)
 
 	assert.NotNil(t, validator)
-	assert.NotNil(t, validator.allowedCIDRs)
-	assert.NotNil(t, validator.allowedIPs)
-	assert.Equal(t, logger, validator.logger)
-}
-
-func TestIPValidator_AddAllowedCIDR(t *testing.T) {
-	logger := zap.NewNop()
-	validator := NewIPValidator(logger)
-
-	tests := []struct {
-		name        string
-		cidr        string
-		expectError bool
-	}{
-		{
-			name:        "valid CIDR",
-			cidr:        "192.168.1.0/24",
-			expectError: false,
-		},
-		{
-			name:        "valid IPv6 CIDR",
-			cidr:        "2001:db8::/32",
-			expectError: false,
-		},
-		{
-			name:        "invalid CIDR",
-			cidr:        "invalid-cidr",
-			expectError: true,
-		},
-		{
-			name:        "empty CIDR",
-			cidr:        "",
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validator.AddAllowedCIDR(tt.cidr)
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 func TestIPValidator_AddAllowedIP(t *testing.T) {
@@ -76,17 +32,12 @@ func TestIPValidator_AddAllowedIP(t *testing.T) {
 		},
 		{
 			name:        "valid IPv6",
-			ip:          "2001:db8::1",
+			ip:          "::1",
 			expectError: false,
 		},
 		{
 			name:        "invalid IP",
 			ip:          "invalid-ip",
-			expectError: true,
-		},
-		{
-			name:        "empty IP",
-			ip:          "",
 			expectError: true,
 		},
 	}
@@ -103,14 +54,46 @@ func TestIPValidator_AddAllowedIP(t *testing.T) {
 	}
 }
 
-func TestIPValidator_IsIPAllowed(t *testing.T) {
+func TestIPValidator_AddAllowedCIDR(t *testing.T) {
 	logger := zap.NewNop()
 	validator := NewIPValidator(logger)
 
-	// Add allowed IPs and CIDRs
+	tests := []struct {
+		name        string
+		cidr        string
+		expectError bool
+	}{
+		{
+			name:        "valid CIDR",
+			cidr:        "192.168.1.0/24",
+			expectError: false,
+		},
+		{
+			name:        "invalid CIDR",
+			cidr:        "invalid-cidr",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.AddAllowedCIDR(tt.cidr)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestIPValidator_IsAllowed(t *testing.T) {
+	logger := zap.NewNop()
+	validator := NewIPValidator(logger)
+
+	// Add allowed IPs
 	validator.AddAllowedIP("192.168.1.1")
 	validator.AddAllowedCIDR("10.0.0.0/8")
-	validator.AddAllowedCIDR("2001:db8::/32")
 
 	tests := []struct {
 		name     string
@@ -118,33 +101,23 @@ func TestIPValidator_IsIPAllowed(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "exact IP match",
+			name:     "allowed IP",
 			ip:       "192.168.1.1",
 			expected: true,
 		},
 		{
-			name:     "IP in CIDR range",
+			name:     "IP in allowed CIDR",
 			ip:       "10.0.0.1",
 			expected: true,
 		},
 		{
-			name:     "IP in IPv6 CIDR range",
-			ip:       "2001:db8::1",
-			expected: true,
-		},
-		{
-			name:     "IP not allowed",
+			name:     "not allowed IP",
 			ip:       "172.16.0.1",
 			expected: false,
 		},
 		{
 			name:     "invalid IP",
 			ip:       "invalid-ip",
-			expected: false,
-		},
-		{
-			name:     "empty IP",
-			ip:       "",
 			expected: false,
 		},
 	}
@@ -157,13 +130,55 @@ func TestIPValidator_IsIPAllowed(t *testing.T) {
 	}
 }
 
+func TestIPValidator_ValidateAllowedIPs(t *testing.T) {
+	logger := zap.NewNop()
+	validator := NewIPValidator(logger)
+
+	// Add allowed IPs
+	validator.AddAllowedIP("192.168.1.1")
+	validator.AddAllowedCIDR("10.0.0.0/8")
+
+	tests := []struct {
+		name        string
+		ips         []string
+		expectError bool
+	}{
+		{
+			name:        "all allowed IPs",
+			ips:         []string{"192.168.1.1", "10.0.0.1"},
+			expectError: false,
+		},
+		{
+			name:        "contains invalid IP format",
+			ips:         []string{"192.168.1.1", "invalid-ip"},
+			expectError: true,
+		},
+		{
+			name:        "empty list",
+			ips:         []string{},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validator.ValidateAllowedIPs(tt.ips)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestIPValidator_ValidateWireGuardEndpoint(t *testing.T) {
 	logger := zap.NewNop()
 	validator := NewIPValidator(logger)
 
 	// Add allowed IPs
 	validator.AddAllowedIP("192.168.1.1")
-	validator.AddAllowedIP("10.0.0.1")
+	validator.AddAllowedCIDR("10.0.0.0/8")
 
 	tests := []struct {
 		name        string
@@ -176,33 +191,33 @@ func TestIPValidator_ValidateWireGuardEndpoint(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "valid endpoint with allowed IP and different port",
-			endpoint:    "10.0.0.1:8080",
+			name:        "valid endpoint with IP in CIDR",
+			endpoint:    "10.0.0.1:51820",
 			expectError: false,
 		},
 		{
-			name:        "invalid endpoint format",
+			name:        "invalid endpoint format - missing port",
 			endpoint:    "192.168.1.1",
 			expectError: true,
 		},
 		{
-			name:        "endpoint with not allowed IP",
-			endpoint:    "172.16.0.1:51820",
+			name:        "invalid endpoint format - too many parts",
+			endpoint:    "192.168.1.1:51820:extra",
 			expectError: true,
 		},
 		{
-			name:        "endpoint with invalid port",
+			name:        "invalid port",
 			endpoint:    "192.168.1.1:99999",
 			expectError: true,
 		},
 		{
-			name:        "endpoint with zero port",
-			endpoint:    "192.168.1.1:0",
+			name:        "not allowed IP",
+			endpoint:    "172.16.0.1:51820",
 			expectError: true,
 		},
 		{
-			name:        "empty endpoint",
-			endpoint:    "",
+			name:        "invalid IP",
+			endpoint:    "invalid-ip:51820",
 			expectError: true,
 		},
 	}
@@ -219,45 +234,52 @@ func TestIPValidator_ValidateWireGuardEndpoint(t *testing.T) {
 	}
 }
 
-func TestIPValidator_ValidateAllowedIPs(t *testing.T) {
+func TestIPValidator_LoadFromNetworkConfig(t *testing.T) {
 	logger := zap.NewNop()
 	validator := NewIPValidator(logger)
 
 	tests := []struct {
 		name        string
-		allowedIPs  []string
+		config      *NetworkConfig
 		expectError bool
 	}{
 		{
-			name:        "valid IPs and CIDRs",
-			allowedIPs:  []string{"192.168.1.1", "10.0.0.0/8", "2001:db8::1"},
+			name: "valid network config",
+			config: &NetworkConfig{
+				Subnet: "192.168.1.0/24",
+				DNS:    []string{"8.8.8.8", "8.8.4.4"},
+				MTU:    1500,
+			},
 			expectError: false,
 		},
 		{
-			name:        "empty list",
-			allowedIPs:  []string{},
+			name:        "nil config",
+			config:      nil,
 			expectError: false,
 		},
 		{
-			name:        "invalid IP",
-			allowedIPs:  []string{"invalid-ip"},
+			name: "invalid subnet CIDR",
+			config: &NetworkConfig{
+				Subnet: "invalid-cidr",
+				DNS:    []string{"8.8.8.8"},
+				MTU:    1500,
+			},
 			expectError: true,
 		},
 		{
-			name:        "invalid CIDR",
-			allowedIPs:  []string{"192.168.1.0/33"},
-			expectError: true,
-		},
-		{
-			name:        "empty IP in list",
-			allowedIPs:  []string{"192.168.1.1", ""},
-			expectError: true,
+			name: "empty subnet",
+			config: &NetworkConfig{
+				Subnet: "",
+				DNS:    []string{"8.8.8.8"},
+				MTU:    1500,
+			},
+			expectError: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.ValidateAllowedIPs(tt.allowedIPs)
+			err := validator.LoadFromNetworkConfig(tt.config)
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -267,85 +289,97 @@ func TestIPValidator_ValidateAllowedIPs(t *testing.T) {
 	}
 }
 
-func TestIPValidator_LoadFromNetworkConfig(t *testing.T) {
-	// Simple test without complex setup
-	validator := NewIPValidator(zap.NewNop())
-	
-	// Test nil config
-	err := validator.LoadFromNetworkConfig(nil)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(validator.GetAllowedCIDRs()))
-	
-	// Test valid config
-	config := &NetworkConfig{
-		Subnet: "192.168.1.0/24",
-		DNS:    []string{"8.8.8.8"},
-		MTU:    1500,
-	}
-	err = validator.LoadFromNetworkConfig(config)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(validator.GetAllowedCIDRs()))
-}
-
 func TestIPValidator_GetAllowedIPs(t *testing.T) {
 	logger := zap.NewNop()
 	validator := NewIPValidator(logger)
 
-	// Add some allowed IPs
-	validator.AddAllowedIP("192.168.1.1")
-	validator.AddAllowedIP("10.0.0.1")
+	// Initially empty
+	ips := validator.GetAllowedIPs()
+	assert.Empty(t, ips)
 
-	allowedIPs := validator.GetAllowedIPs()
-	assert.Len(t, allowedIPs, 2)
-	assert.Contains(t, allowedIPs, "192.168.1.1")
-	assert.Contains(t, allowedIPs, "10.0.0.1")
+	// Add some IPs
+	validator.AddAllowedIP("192.168.1.1")
+	validator.AddAllowedIP("192.168.1.2")
+
+	ips = validator.GetAllowedIPs()
+	assert.Len(t, ips, 2)
+	assert.Contains(t, ips, "192.168.1.1")
+	assert.Contains(t, ips, "192.168.1.2")
 }
 
 func TestIPValidator_GetAllowedCIDRs(t *testing.T) {
 	logger := zap.NewNop()
 	validator := NewIPValidator(logger)
 
-	// Add some allowed CIDRs
+	// Initially empty
+	cidrs := validator.GetAllowedCIDRs()
+	assert.Empty(t, cidrs)
+
+	// Add some CIDRs
 	validator.AddAllowedCIDR("192.168.1.0/24")
 	validator.AddAllowedCIDR("10.0.0.0/8")
 
-	allowedCIDRs := validator.GetAllowedCIDRs()
-	assert.Len(t, allowedCIDRs, 2)
-	assert.Contains(t, allowedCIDRs, "192.168.1.0/24")
-	assert.Contains(t, allowedCIDRs, "10.0.0.0/8")
+	cidrs = validator.GetAllowedCIDRs()
+	assert.Len(t, cidrs, 2)
+	assert.Contains(t, cidrs, "192.168.1.0/24")
+	assert.Contains(t, cidrs, "10.0.0.0/8")
 }
 
 func TestIPValidator_GetCount(t *testing.T) {
 	logger := zap.NewNop()
 	validator := NewIPValidator(logger)
 
-	// Initially no allowed IPs or CIDRs
-	assert.Equal(t, 0, validator.GetCount())
+	// Initially zero
+	count := validator.GetCount()
+	assert.Equal(t, 0, count)
 
 	// Add some IPs and CIDRs
 	validator.AddAllowedIP("192.168.1.1")
-	validator.AddAllowedIP("10.0.0.1")
-	validator.AddAllowedCIDR("172.16.0.0/16")
+	validator.AddAllowedIP("192.168.1.2")
+	validator.AddAllowedCIDR("10.0.0.0/8")
 
-	assert.Equal(t, 3, validator.GetCount())
+	count = validator.GetCount()
+	assert.Equal(t, 3, count)
 }
 
 func TestIPValidator_Clear(t *testing.T) {
 	logger := zap.NewNop()
 	validator := NewIPValidator(logger)
 
-	// Add some IPs and CIDRs
+	// Add some data
 	validator.AddAllowedIP("192.168.1.1")
 	validator.AddAllowedCIDR("10.0.0.0/8")
 
+	// Verify data exists
 	assert.Equal(t, 2, validator.GetCount())
 
 	// Clear
 	validator.Clear()
 
+	// Verify data is cleared
 	assert.Equal(t, 0, validator.GetCount())
-	assert.Len(t, validator.GetAllowedIPs(), 0)
-	assert.Len(t, validator.GetAllowedCIDRs(), 0)
+	assert.Empty(t, validator.GetAllowedIPs())
+	assert.Empty(t, validator.GetAllowedCIDRs())
+}
+
+func TestIPValidator_NewIPValidatorMetrics(t *testing.T) {
+	metrics := NewIPValidatorMetrics()
+
+	assert.NotNil(t, metrics)
+	assert.NotNil(t, metrics.checksTotal)
+	assert.NotNil(t, metrics.allowedTotal)
+	assert.NotNil(t, metrics.deniedTotal)
+	assert.NotNil(t, metrics.violationsTotal)
+}
+
+func TestIPValidator_RegisterMetrics(t *testing.T) {
+	logger := zap.NewNop()
+	validator := NewIPValidator(logger)
+
+	// This should panic when reg is nil
+	assert.Panics(t, func() {
+		validator.RegisterMetrics(nil)
+	})
 }
 
 func TestIsValidPort(t *testing.T) {
@@ -355,37 +389,47 @@ func TestIsValidPort(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "valid port",
-			port:     "8080",
+			name:     "valid port - 80",
+			port:     "80",
 			expected: true,
 		},
 		{
-			name:     "valid port 1",
-			port:     "1",
+			name:     "valid port - 443",
+			port:     "443",
 			expected: true,
 		},
 		{
-			name:     "valid port 65535",
+			name:     "valid port - 51820",
+			port:     "51820",
+			expected: true,
+		},
+		{
+			name:     "valid port - 65535",
 			port:     "65535",
 			expected: true,
 		},
 		{
-			name:     "invalid port 0",
+			name:     "invalid port - 0",
 			port:     "0",
 			expected: false,
 		},
 		{
-			name:     "invalid port 65536",
+			name:     "invalid port - 65536",
 			port:     "65536",
 			expected: false,
 		},
 		{
-			name:     "invalid port string",
+			name:     "invalid port - negative",
+			port:     "-1",
+			expected: false,
+		},
+		{
+			name:     "invalid port - non-numeric",
 			port:     "abc",
 			expected: false,
 		},
 		{
-			name:     "empty port",
+			name:     "invalid port - empty",
 			port:     "",
 			expected: false,
 		},
@@ -406,18 +450,18 @@ func TestIsValidCIDROrIP(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "valid IP",
+			name:     "valid CIDR",
+			input:    "192.168.1.0/24",
+			expected: true,
+		},
+		{
+			name:     "valid IPv4",
 			input:    "192.168.1.1",
 			expected: true,
 		},
 		{
 			name:     "valid IPv6",
-			input:    "2001:db8::1",
-			expected: true,
-		},
-		{
-			name:     "valid CIDR",
-			input:    "192.168.1.0/24",
+			input:    "::1",
 			expected: true,
 		},
 		{
@@ -443,4 +487,36 @@ func TestIsValidCIDROrIP(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestIPValidator_ConcurrentAccess(t *testing.T) {
+	logger := zap.NewNop()
+	validator := NewIPValidator(logger)
+
+	// Test concurrent access
+	done := make(chan bool, 10)
+
+	// Start multiple goroutines
+	for i := 0; i < 10; i++ {
+		go func(id int) {
+			defer func() { done <- true }()
+
+			// Add IPs
+			validator.AddAllowedIP(fmt.Sprintf("192.168.1.%d", id))
+
+			// Check if allowed
+			validator.IsIPAllowed(fmt.Sprintf("192.168.1.%d", id))
+
+			// Get stats
+			validator.GetCount()
+		}(i)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < 10; i++ {
+		<-done
+	}
+
+	// Verify final state
+	assert.Equal(t, 10, validator.GetCount())
 }

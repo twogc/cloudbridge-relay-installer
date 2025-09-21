@@ -88,9 +88,11 @@ func (iv *IPValidator) AddAllowedCIDR(cidr string) error {
 	defer iv.mu.Unlock()
 
 	iv.allowedCIDRs = append(iv.allowedCIDRs, ipNet)
-	iv.logger.Info("CIDR added to allowed list",
-		zap.String("cidr", cidr),
-	)
+	if iv.logger != nil {
+		iv.logger.Info("CIDR added to allowed list",
+			zap.String("cidr", cidr),
+		)
+	}
 	return nil
 }
 
@@ -105,9 +107,11 @@ func (iv *IPValidator) AddAllowedIP(ip string) error {
 	defer iv.mu.Unlock()
 
 	iv.allowedIPs[ip] = true
-	iv.logger.Info("IP added to allowed list",
-		zap.String("ip", ip),
-	)
+	if iv.logger != nil {
+		iv.logger.Info("IP added to allowed list",
+			zap.String("ip", ip),
+		)
+	}
 	return nil
 }
 
@@ -122,9 +126,11 @@ func (iv *IPValidator) IsIPAllowed(ip string) bool {
 	if parsedIP == nil {
 		iv.metrics.deniedTotal.Inc()
 		iv.metrics.violationsTotal.WithLabelValues("invalid_ip").Inc()
-		iv.logger.Warn("Invalid IP address",
-			zap.String("ip", ip),
-		)
+		if iv.logger != nil {
+			iv.logger.Warn("Invalid IP address",
+				zap.String("ip", ip),
+			)
+		}
 		return false
 	}
 
@@ -144,9 +150,11 @@ func (iv *IPValidator) IsIPAllowed(ip string) bool {
 
 	iv.metrics.deniedTotal.Inc()
 	iv.metrics.violationsTotal.WithLabelValues("ip_not_allowed").Inc()
-	iv.logger.Warn("IP not in allowed list",
-		zap.String("ip", ip),
-	)
+	if iv.logger != nil {
+		iv.logger.Warn("IP not in allowed list",
+			zap.String("ip", ip),
+		)
+	}
 	return false
 }
 
@@ -196,16 +204,25 @@ func (iv *IPValidator) LoadFromNetworkConfig(networkConfig *NetworkConfig) error
 		return nil
 	}
 
-	// Add subnet to allowed CIDRs
+	// Add subnet to allowed CIDRs (without taking lock again)
 	if networkConfig.Subnet != "" {
-		if err := iv.AddAllowedCIDR(networkConfig.Subnet); err != nil {
-			return fmt.Errorf("failed to add subnet: %w", err)
+		_, ipNet, err := net.ParseCIDR(networkConfig.Subnet)
+		if err != nil {
+			return fmt.Errorf("invalid subnet CIDR: %s", networkConfig.Subnet)
+		}
+		iv.allowedCIDRs = append(iv.allowedCIDRs, ipNet)
+		if iv.logger != nil {
+			iv.logger.Info("CIDR added to allowed list",
+				zap.String("cidr", networkConfig.Subnet),
+			)
 		}
 	}
 
-	iv.logger.Info("IP validator loaded from network config",
-		zap.String("subnet", networkConfig.Subnet),
-	)
+	if iv.logger != nil {
+		iv.logger.Info("IP validator loaded from network config",
+			zap.String("subnet", networkConfig.Subnet),
+		)
+	}
 	return nil
 }
 
@@ -248,7 +265,9 @@ func (iv *IPValidator) Clear() {
 
 	iv.allowedIPs = make(map[string]bool)
 	iv.allowedCIDRs = make([]*net.IPNet, 0)
-	iv.logger.Info("IP validator cleared")
+	if iv.logger != nil {
+		iv.logger.Info("IP validator cleared")
+	}
 }
 
 // isValidPort checks if a port is valid

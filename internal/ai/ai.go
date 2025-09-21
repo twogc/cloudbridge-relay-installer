@@ -465,3 +465,69 @@ func (aim *AIMonitoring) GetDashboard() *AIDashboard {
 	// Заглушка для получения дашборда
 	return aim.Dashboard
 }
+
+// String methods for enums
+
+func (tt ThreatType) String() string {
+	switch tt {
+	case ThreatTypeDDoS:
+		return "DDoS"
+	case ThreatTypeBruteForce:
+		return "BruteForce"
+	case ThreatTypeDataExfiltration:
+		return "DataExfiltration"
+	case ThreatTypePrivilegeEscalation:
+		return "PrivilegeEscalation"
+	case ThreatTypeMalware:
+		return "Malware"
+	default:
+		return "Unknown"
+	}
+}
+
+func (rl RiskLevel) String() string {
+	switch rl {
+	case RiskLevelLow:
+		return "Low"
+	case RiskLevelMedium:
+		return "Medium"
+	case RiskLevelHigh:
+		return "High"
+	case RiskLevelCritical:
+		return "Critical"
+	default:
+		return "Unknown"
+	}
+}
+
+func (at ActionType) String() string {
+	switch at {
+	case ActionTypeBlock:
+		return "Block"
+	case ActionTypeAlert:
+		return "Alert"
+	case ActionTypeQuarantine:
+		return "Quarantine"
+	case ActionTypeRateLimit:
+		return "RateLimit"
+	case ActionTypeLog:
+		return "Log"
+	default:
+		return "Unknown"
+	}
+}
+
+func (as AlertSeverity) String() string {
+	switch as {
+	case AlertSeverityInfo:
+		return "Info"
+	case AlertSeverityWarning:
+		return "Warning"
+	case AlertSeverityError:
+		return "Error"
+	case AlertSeverityCritical:
+		return "Critical"
+	default:
+		return "Unknown"
+	}
+}

@@ -358,6 +358,28 @@ func (rm *RelayManager) UpdateConnection(connID string, bytesTransferred int64, 
 	)
 }
 
+// RegisterClient регистрирует клиента (для интерфейса ProtocolRelayManagerInterface)
+func (rm *RelayManager) RegisterClient(clientID, protocol string) error {
+	// Простая реализация - создаем запись о клиенте
+	rm.logger.Info("Client registered",
+		zap.String("client_id", clientID),
+		zap.String("protocol", protocol))
+	return nil
+}
+
+// GetClientStatus возвращает статус клиента (для интерфейса ProtocolRelayManagerInterface)
+func (rm *RelayManager) GetClientStatus(clientID string) (string, error) {
+	// Простая реализация - проверяем, есть ли активные соединения для клиента
+	for _, conn := range rm.connections {
+		if conn.FromPeerID == clientID || conn.ToPeerID == clientID {
+			if conn.IsActive {
+				return "connected", nil
+			}
+		}
+	}
+	return "disconnected", nil
+}
+
 // CloseConnection закрывает соединение
 func (rm *RelayManager) CloseConnection(connID string) {
 	conn, exists := rm.connections[connID]

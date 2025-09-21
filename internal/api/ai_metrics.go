@@ -7,15 +7,15 @@ import (
 
 // AIMetrics собирает метрики AI обработки
 type AIMetrics struct {
-	requestsProcessed int64
-	anomaliesDetected int64
-	predictionsMade   int64
-	routesOptimized   int64
-	processingTime    time.Duration
-	cacheHits         int64
-	cacheMisses       int64
-	errors            int64
-	mu                sync.RWMutex
+	requestsProcessed   int64
+	anomaliesDetected   int64
+	predictionsMade     int64
+	routesOptimized     int64
+	totalProcessingTime time.Duration
+	cacheHits           int64
+	cacheMisses         int64
+	errors              int64
+	mu                  sync.RWMutex
 }
 
 // NewAIMetrics создает новые AI метрики
@@ -76,7 +76,7 @@ func (m *AIMetrics) IncrementErrors() {
 func (m *AIMetrics) RecordProcessingTime(duration time.Duration) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.processingTime += duration
+	m.totalProcessingTime += duration
 }
 
 // GetRequestsProcessed возвращает количество обработанных запросов
@@ -132,7 +132,7 @@ func (m *AIMetrics) GetErrors() int64 {
 func (m *AIMetrics) GetProcessingTime() time.Duration {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	return m.processingTime
+	return m.totalProcessingTime
 }
 
 // GetAverageProcessingTime возвращает среднее время обработки
@@ -144,7 +144,7 @@ func (m *AIMetrics) GetAverageProcessingTime() time.Duration {
 		return 0
 	}
 
-	return m.processingTime / time.Duration(m.requestsProcessed)
+	return m.totalProcessingTime / time.Duration(m.requestsProcessed)
 }
 
 // GetCacheHitRate возвращает процент попаданий в кэш
@@ -174,7 +174,7 @@ func (m *AIMetrics) GetStats() map[string]interface{} {
 		"cache_misses":            m.cacheMisses,
 		"cache_hit_rate":          m.GetCacheHitRate(),
 		"errors":                  m.errors,
-		"total_processing_time":   m.processingTime.String(),
+		"total_processing_time":   m.totalProcessingTime.String(),
 		"average_processing_time": m.GetAverageProcessingTime().String(),
 	}
 }
@@ -191,5 +191,5 @@ func (m *AIMetrics) Reset() {
 	m.cacheHits = 0
 	m.cacheMisses = 0
 	m.errors = 0
-	m.processingTime = 0
+	m.totalProcessingTime = 0
 }

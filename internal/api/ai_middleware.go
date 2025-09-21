@@ -15,7 +15,7 @@ import (
 
 // AIMiddleware обеспечивает интеграцию AI с Relay Server
 type AIMiddleware struct {
-	aiClient       *ai.Client
+	aiClient       ai.AIClientInterface
 	config         *ai.Config
 	logger         *zap.Logger
 	cache          *AICache
@@ -24,7 +24,7 @@ type AIMiddleware struct {
 }
 
 // NewAIMiddleware создает новый AI middleware
-func NewAIMiddleware(aiClient *ai.Client, config *ai.Config, logger *zap.Logger) *AIMiddleware {
+func NewAIMiddleware(aiClient ai.AIClientInterface, config *ai.Config, logger *zap.Logger) *AIMiddleware {
 	return &AIMiddleware{
 		aiClient:       aiClient,
 		config:         config,
@@ -33,6 +33,22 @@ func NewAIMiddleware(aiClient *ai.Client, config *ai.Config, logger *zap.Logger)
 		metrics:        NewAIMetrics(),
 		circuitBreaker: NewAICircuitBreaker(),
 	}
+}
+
+// Connection представляет соединение для AI обработки
+type Connection struct {
+	ID               string
+	RemoteAddr       string
+	Source           string
+	Destination      string
+	Protocol         string
+	Route            string
+	Timestamp        time.Time
+	PacketsPerSecond int
+	BytesPerSecond   int64
+	Latency          time.Duration
+	ConnectionCount  int
+	ThrottleFactor   float64
 }
 
 // ProcessConnection обрабатывает соединение через AI
@@ -103,7 +119,7 @@ func (m *AIMiddleware) analyzeAnomalies(ctx context.Context, conn *Connection) (
 		ConnectionsPerSecond: conn.PacketsPerSecond,
 		BytesPerSecond:       conn.BytesPerSecond,
 		PacketLossRate:       0.01,
-		AverageLatency:       conn.Latency,
+		AverageLatency:       float64(conn.Latency.Milliseconds()),
 		CPUUsage:             50.0,
 		MemoryUsage:          45.0,
 		ActiveConnections:    conn.ConnectionCount,
@@ -216,7 +232,7 @@ func (m *AIMiddleware) applyAIResults(ctx context.Context, conn *Connection,
 
 	// 3. Применение оптимизированного маршрута
 	if optimizedRoute != nil {
-		conn.Route = optimizedRoute.Path
+		conn.Route = fmt.Sprintf("%v", optimizedRoute.Path)
 		conn.Protocol = optimizedRoute.Protocol
 	}
 

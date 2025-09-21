@@ -2,27 +2,30 @@ package api
 
 import (
 	"time"
+
+	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 )
 
 // Peer представляет зарегистрированный пир
 type Peer struct {
-	ID                string    `json:"id" db:"id"`
-	PeerID            string    `json:"peer_id" db:"peer_id"`
-	TenantID          string    `json:"tenant_id" db:"tenant_id"`
-	DeviceID          string    `json:"device_id" db:"device_id"`
-	ConnectionType    string    `json:"connection_type" db:"connection_type"`
-	RelaySessionID    string    `json:"relay_session_id" db:"relay_session_id"`
-	IsOnline          bool      `json:"is_online" db:"is_online"`
-	LastSeen          time.Time `json:"last_seen" db:"last_seen"`
-	RegisteredAt      time.Time `json:"registered_at" db:"registered_at"`
-	MeshStatus        string    `json:"mesh_status" db:"mesh_status"`
-	AllocatedIP       string    `json:"allocated_ip" db:"allocated_ip"`
+	ID             string    `json:"id" db:"id"`
+	PeerID         string    `json:"peer_id" db:"peer_id"`
+	TenantID       string    `json:"tenant_id" db:"tenant_id"`
+	DeviceID       string    `json:"device_id" db:"device_id"`
+	ConnectionType string    `json:"connection_type" db:"connection_type"`
+	RelaySessionID string    `json:"relay_session_id" db:"relay_session_id"`
+	IsOnline       bool      `json:"is_online" db:"is_online"`
+	LastSeen       time.Time `json:"last_seen" db:"last_seen"`
+	RegisteredAt   time.Time `json:"registered_at" db:"registered_at"`
+	MeshStatus     string    `json:"mesh_status" db:"mesh_status"`
+	AllocatedIP    string    `json:"allocated_ip" db:"allocated_ip"`
 }
-
 
 // PeerConnection представляет соединение между пирами
 type PeerConnection struct {
 	ID               string    `json:"id" db:"id"`
+	PeerID           string    `json:"peer_id" db:"peer_id"` // Добавляем поле PeerID
+	Status           string    `json:"status" db:"status"`   // Добавляем поле Status
 	FromPeerID       string    `json:"from_peer_id" db:"from_peer_id"`
 	ToPeerID         string    `json:"to_peer_id" db:"to_peer_id"`
 	ConnectionType   string    `json:"connection_type" db:"connection_type"`
@@ -72,8 +75,8 @@ type PeerStatusResponse struct {
 
 // PeerInfoResponse ответ с информацией о пире
 type PeerInfoResponse struct {
-	Success bool  `json:"success"`
-	Peer    *Peer `json:"peer"`
+	Success bool      `json:"success"`
+	Peer    *p2p.Peer `json:"peer"`
 }
 
 // RelayRouteRequest запрос на маршрутизацию через relay
@@ -194,7 +197,28 @@ type RelayAssistedStatusUpdateRequest struct {
 
 // RelayAssistedDiscoveryResponse ответ на discovery запрос для relay-assisted режима
 type RelayAssistedDiscoveryResponse struct {
-	Success  bool    `json:"success"`
-	TenantID string  `json:"tenant_id"`
-	Peers    []*Peer `json:"peers"`
+	Success  bool        `json:"success"`
+	TenantID string      `json:"tenant_id"`
+	Peers    []*p2p.Peer `json:"peers"`
+}
+
+// DirectPeerRegistrationRequest запрос на прямую регистрацию пира
+type DirectPeerRegistrationRequest struct {
+	PeerID   string `json:"peer_id" binding:"required"`
+	TenantID string `json:"tenant_id" binding:"required"`
+	DeviceID string `json:"device_id" binding:"required"`
+}
+
+// DirectPeerRegistrationResponse ответ на прямую регистрацию пира
+type DirectPeerRegistrationResponse struct {
+	Success      bool      `json:"success"`
+	PeerID       string    `json:"peer_id"`
+	RegisteredAt time.Time `json:"registered_at"`
+	AllocatedIP  string    `json:"allocated_ip"`
+}
+
+// PeerStatusUpdateResponse ответ на обновление статуса пира
+type PeerStatusUpdateResponse struct {
+	Success   bool      `json:"success"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
