@@ -1,0 +1,96 @@
+{
+  "server": {
+    "address": "0.0.0.0",
+    "port": 8080,
+    "timeout": "30s",
+    "max_tunnels": 1000,
+    "ping_interval": "30s",
+    "cleanup_interval": "60s"
+  },
+  "django": {
+    "api_endpoint": "",
+    "jwt_secret": "test-secret",
+    "jwt_expiry": "24h",
+    "rest_timeout": "5s",
+    "rest_cache_ttl": "5m",
+    "rest_max_retries": 3,
+    "rest_retry_delay": "100ms"
+  },
+  "keycloak": {
+    "enabled": true,
+    "server_url": "https://10.0.0.73:443",
+    "realm": "cloudbridge",
+    "client_id": "relay-client",
+    "client_secret": "YbUqdiZvJU4zNFVd5JRqaTc9tL9iHwAa",
+    "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAved8rIY8GR+BBEsqmiW1TtAM/g1FS2GyZMOmXn9C+YeaTD2zVh3JUfm/7FKOr05DwjceWKZHGLBaErf3rdAewEjd9yYOzfWeRo4E8tB95/qq4fWcAj3VYXv+8xvIjtk12qGGhtCKDRCzHGrUZCGM9kA8buAXNuw7bIEmwrXOMHGLU2qLFZC6P/ih8VFiVWcxhYJ8sFZ5WsC4QHzotmNB03in5Zrg/v9vpyG23tFvtuD8NKWsbfiqFIN7q+IQFmCru3fjWErDDM536PjQ2j5WPT9xVMvCd6vJUazpKc8NEyIivGpL1MmPZBrG7PN4Yx9inzXnbgXjGQ9/d0likEab3QIDAQAB\n-----END PUBLIC KEY-----",
+    "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+    "jwks_url": "",
+    "token_validation": {
+      "issuer": "https://10.0.0.73:443/realms/cloudbridge",
+      "audience": "relay-client",
+      "clock_skew": "30s"
+    },
+    "jwks_cache_ttl": "1h",
+    "http_timeout": "30s"
+  },
+  "security": {
+    "tls_enabled": false,
+    "cert_file": "",
+    "key_file": "",
+    "allowed_ips": [],
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_second": 100.0,
+      "burst": 1000
+    },
+    "mtls": {
+      "enabled": false,
+      "ca_file": ""
+    },
+    "cipher_suites": [],
+    "min_tls_version": "TLS1.3",
+    "audit": {
+      "enabled": true,
+      "log_file": "/var/log/relay_audit.log"
+    }
+  },
+  "metrics": {
+    "enabled": true,
+    "port": 9090,
+    "path": "/metrics"
+  },
+  "api": {
+    "enabled": true,
+    "port": 8082,
+    "version": "v1"
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "output": "stdout",
+    "file": "/var/log/relay.log",
+    "max_size": "100m",
+    "max_age": "720h",
+    "max_backups": 10
+  },
+  "protocol": {
+    "auto_select": true,
+    "preferred": "quic",
+    "fallback": "http",
+    "switch_threshold": 0.2,
+    "health_check_interval": "30s"
+  },
+  "http_api": {
+    "enabled": true,
+    "port": 9091,
+    "version": "v1"
+  },
+  "wireguard": {
+    "enabled": true,
+    "interface": {
+      "name": "wg0",
+      "port": 51820
+    },
+    "peers": []
+  }
+}
