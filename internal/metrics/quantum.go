@@ -91,44 +91,44 @@ var (
 		[]string{"classical_algorithm", "quantum_algorithm", "error_type"},
 	)
 
-	// Quantum WireGuard Metrics
-	QuantumWireGuardConnections = promauto.NewGaugeVec(
+	// Quantum QUIC Metrics
+	QuantumQUICConnections = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "quantum_wireguard_connections",
-			Help: "Number of active quantum-secured WireGuard connections",
+			Name: "quantum_quic_connections",
+			Help: "Number of active quantum-secured QUIC connections",
 		},
 		[]string{"interface", "algorithm"},
 	)
 
-	QuantumWireGuardKeyExchanges = promauto.NewCounterVec(
+	QuantumQUICKeyExchanges = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "quantum_wireguard_key_exchanges_total",
-			Help: "Total number of quantum key exchanges in WireGuard",
+			Name: "quantum_quic_key_exchanges_total",
+			Help: "Total number of quantum key exchanges in QUIC",
 		},
 		[]string{"interface", "algorithm", "status"},
 	)
 
-	QuantumWireGuardKeyExchangeDuration = promauto.NewHistogramVec(
+	QuantumQUICKeyExchangeDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "quantum_wireguard_key_exchange_duration_seconds",
-			Help:    "Time taken for quantum key exchange in WireGuard",
+			Name:    "quantum_quic_key_exchange_duration_seconds",
+			Help:    "Time taken for quantum key exchange in QUIC",
 			Buckets: prometheus.DefBuckets,
 		},
 		[]string{"interface", "algorithm"},
 	)
 
-	QuantumWireGuardSignatureValidations = promauto.NewCounterVec(
+	QuantumQUICSignatureValidations = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "quantum_wireguard_signature_validations_total",
-			Help: "Total number of quantum signature validations in WireGuard",
+			Name: "quantum_quic_signature_validations_total",
+			Help: "Total number of quantum signature validations in QUIC",
 		},
 		[]string{"interface", "algorithm", "status"},
 	)
 
-	QuantumWireGuardErrors = promauto.NewCounterVec(
+	QuantumQUICErrors = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "quantum_wireguard_errors_total",
-			Help: "Total number of quantum WireGuard errors",
+			Name: "quantum_quic_errors_total",
+			Help: "Total number of quantum QUIC errors",
 		},
 		[]string{"interface", "error_type"},
 	)
@@ -304,29 +304,29 @@ func (qm *QuantumMetrics) IncrementHybridKeyValidationErrors(classicalAlg, quant
 	HybridKeyValidationErrors.WithLabelValues(classicalAlg, quantumAlg, errorType).Inc()
 }
 
-// UpdateQuantumWireGuardConnections обновляет количество квантовых WireGuard соединений
-func (qm *QuantumMetrics) UpdateQuantumWireGuardConnections(interfaceName, algorithm string, count int) {
-	QuantumWireGuardConnections.WithLabelValues(interfaceName, algorithm).Set(float64(count))
+// UpdateQuantumQUICConnections обновляет количество квантовых QUIC соединений
+func (qm *QuantumMetrics) UpdateQuantumQUICConnections(interfaceName, algorithm string, count int) {
+	QuantumQUICConnections.WithLabelValues(interfaceName, algorithm).Set(float64(count))
 }
 
-// IncrementQuantumWireGuardKeyExchanges увеличивает счетчик квантовых обменов ключей
-func (qm *QuantumMetrics) IncrementQuantumWireGuardKeyExchanges(interfaceName, algorithm, status string) {
-	QuantumWireGuardKeyExchanges.WithLabelValues(interfaceName, algorithm, status).Inc()
+// IncrementQuantumQUICKeyExchanges увеличивает счетчик квантовых обменов ключей
+func (qm *QuantumMetrics) IncrementQuantumQUICKeyExchanges(interfaceName, algorithm, status string) {
+	QuantumQUICKeyExchanges.WithLabelValues(interfaceName, algorithm, status).Inc()
 }
 
-// ObserveQuantumWireGuardKeyExchangeDuration наблюдает время квантового обмена ключей
-func (qm *QuantumMetrics) ObserveQuantumWireGuardKeyExchangeDuration(interfaceName, algorithm string, duration float64) {
-	QuantumWireGuardKeyExchangeDuration.WithLabelValues(interfaceName, algorithm).Observe(duration)
+// ObserveQuantumQUICKeyExchangeDuration наблюдает время квантового обмена ключей
+func (qm *QuantumMetrics) ObserveQuantumQUICKeyExchangeDuration(interfaceName, algorithm string, duration float64) {
+	QuantumQUICKeyExchangeDuration.WithLabelValues(interfaceName, algorithm).Observe(duration)
 }
 
-// IncrementQuantumWireGuardSignatureValidations увеличивает счетчик валидаций подписей
-func (qm *QuantumMetrics) IncrementQuantumWireGuardSignatureValidations(interfaceName, algorithm, status string) {
-	QuantumWireGuardSignatureValidations.WithLabelValues(interfaceName, algorithm, status).Inc()
+// IncrementQuantumQUICSignatureValidations увеличивает счетчик валидаций подписей
+func (qm *QuantumMetrics) IncrementQuantumQUICSignatureValidations(interfaceName, algorithm, status string) {
+	QuantumQUICSignatureValidations.WithLabelValues(interfaceName, algorithm, status).Inc()
 }
 
-// IncrementQuantumWireGuardErrors увеличивает счетчик ошибок квантового WireGuard
-func (qm *QuantumMetrics) IncrementQuantumWireGuardErrors(interfaceName, errorType string) {
-	QuantumWireGuardErrors.WithLabelValues(interfaceName, errorType).Inc()
+// IncrementQuantumQUICErrors увеличивает счетчик ошибок квантового QUIC
+func (qm *QuantumMetrics) IncrementQuantumQUICErrors(interfaceName, errorType string) {
+	QuantumQUICErrors.WithLabelValues(interfaceName, errorType).Inc()
 }
 
 // UpdateQuantumEnhancedQUICConnections обновляет количество квантовых Enhanced QUIC соединений

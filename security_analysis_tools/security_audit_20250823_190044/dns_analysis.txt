@@ -1,8 +1,0 @@
-# DNS анализ для applications.iidf.ru
-Дата проверки: Sat Aug 23 19:00:44 MSK 2025
-
-A запись: aspid.iidf.ru.
-MX записи:
-aspid.iidf.ru.
-TXT записи:
-aspid.iidf.ru.

@@ -168,7 +168,7 @@ func TestMeshConfig_Validate(t *testing.T) {
 				RegistryURL:       "https://registry.example.com",
 				HeartbeatInterval: 30 * time.Second,
 				MaxPeers:          5,
-				RoutingStrategy:   "wireguard_first",
+				RoutingStrategy:   "quic_first",
 			},
 			wantErr: false,
 		},

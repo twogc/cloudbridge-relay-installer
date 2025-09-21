@@ -202,14 +202,6 @@ var (
 	)
 
 	// AI Integration Metrics
-	AIIntegrationWireGuardAnalysis = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "ai_integration_wireguard_analysis_total",
-			Help: "Total number of WireGuard behavior analyses",
-		},
-		[]string{"analysis_type", "status"},
-	)
-
 	AIIntegrationQUICAnalysis = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "ai_integration_quic_analysis_total",
@@ -224,14 +216,6 @@ var (
 			Help: "Total number of quantum threat analyses",
 		},
 		[]string{"analysis_type", "status"},
-	)
-
-	AIIntegrationWireGuardThreats = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "ai_integration_wireguard_threats_total",
-			Help: "Total number of WireGuard threat responses",
-		},
-		[]string{"threat_type", "response_type"},
 	)
 
 	AIIntegrationQUICThreats = promauto.NewCounterVec(
@@ -420,11 +404,6 @@ func (am *AIMetrics) ObserveMonitoringDataProcessingDuration(dataType string, du
 	AIMonitoringDataProcessingDuration.WithLabelValues(dataType).Observe(duration)
 }
 
-// IncrementIntegrationWireGuardAnalysis увеличивает счетчик анализа WireGuard
-func (am *AIMetrics) IncrementIntegrationWireGuardAnalysis(analysisType, status string) {
-	AIIntegrationWireGuardAnalysis.WithLabelValues(analysisType, status).Inc()
-}
-
 // IncrementIntegrationQUICAnalysis увеличивает счетчик анализа QUIC
 func (am *AIMetrics) IncrementIntegrationQUICAnalysis(analysisType, status string) {
 	AIIntegrationQUICAnalysis.WithLabelValues(analysisType, status).Inc()
@@ -433,11 +412,6 @@ func (am *AIMetrics) IncrementIntegrationQUICAnalysis(analysisType, status strin
 // IncrementIntegrationQuantumAnalysis увеличивает счетчик анализа квантовых угроз
 func (am *AIMetrics) IncrementIntegrationQuantumAnalysis(analysisType, status string) {
 	AIIntegrationQuantumAnalysis.WithLabelValues(analysisType, status).Inc()
-}
-
-// IncrementIntegrationWireGuardThreats увеличивает счетчик ответов на угрозы WireGuard
-func (am *AIMetrics) IncrementIntegrationWireGuardThreats(threatType, responseType string) {
-	AIIntegrationWireGuardThreats.WithLabelValues(threatType, responseType).Inc()
 }
 
 // IncrementIntegrationQUICThreats увеличивает счетчик ответов на угрозы QUIC

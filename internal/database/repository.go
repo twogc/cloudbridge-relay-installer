@@ -31,11 +31,11 @@ func (r *Repository) CreatePeer(peer *Peer) error {
 	query := `
 		INSERT INTO peers (
 			peer_id, tenant_id, org_id, device_id, connection_type,
-			wireguard_config, mesh_config, peer_whitelist, network_config,
+			quic_config, mesh_config, peer_whitelist, network_config,
 			is_online, last_seen, registered_at, active_connections, mesh_status, latency_ms
 		) VALUES (
 			:peer_id, :tenant_id, :org_id, :device_id, :connection_type,
-			:wireguard_config, :mesh_config, :peer_whitelist, :network_config,
+			:quic_config, :mesh_config, :peer_whitelist, :network_config,
 			:is_online, :last_seen, :registered_at, :active_connections, :mesh_status, :latency_ms
 		) RETURNING id, created_at, updated_at`
 
@@ -64,7 +64,7 @@ func (r *Repository) CreatePeer(peer *Peer) error {
 // GetPeer retrieves a peer by ID
 func (r *Repository) GetPeer(peerID string) (*Peer, error) {
 	query := `SELECT * FROM peers WHERE peer_id = $1`
-	
+
 	var peer Peer
 	err := r.db.Get(&peer, query, peerID)
 	if err != nil {
@@ -80,7 +80,7 @@ func (r *Repository) GetPeer(peerID string) (*Peer, error) {
 // GetPeersByTenant retrieves all peers for a tenant
 func (r *Repository) GetPeersByTenant(tenantID string) ([]*Peer, error) {
 	query := `SELECT * FROM peers WHERE tenant_id = $1 ORDER BY registered_at DESC`
-	
+
 	var peers []*Peer
 	err := r.db.Select(&peers, query, tenantID)
 	if err != nil {
@@ -124,7 +124,7 @@ func (r *Repository) UpdatePeerStatus(peerID string, isOnline bool, latencyMS in
 // DeletePeer deletes a peer from the database
 func (r *Repository) DeletePeer(peerID string) error {
 	query := `DELETE FROM peers WHERE peer_id = $1`
-	
+
 	result, err := r.db.Exec(query, peerID)
 	if err != nil {
 		return fmt.Errorf("failed to delete peer: %w", err)
@@ -188,7 +188,7 @@ func (r *Repository) GetPeerConnections(peerID string) ([]*PeerConnection, error
 		SELECT * FROM peer_connections 
 		WHERE from_peer_id = $1 OR to_peer_id = $1 
 		ORDER BY established_at DESC`
-	
+
 	var connections []*PeerConnection
 	err := r.db.Select(&connections, query, peerID)
 	if err != nil {
@@ -225,7 +225,7 @@ func (r *Repository) UpdatePeerConnection(connID uuid.UUID, bytesTransferred int
 // ClosePeerConnection closes a peer connection
 func (r *Repository) ClosePeerConnection(connID uuid.UUID) error {
 	query := `UPDATE peer_connections SET is_active = false, last_activity = $2, updated_at = NOW() WHERE id = $1`
-	
+
 	result, err := r.db.Exec(query, connID, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to close peer connection: %w", err)
@@ -280,7 +280,7 @@ func (r *Repository) GetPeerMetrics(peerID string, metricType string, since time
 		SELECT * FROM peer_metrics 
 		WHERE peer_id = $1 AND metric_type = $2 AND timestamp >= $3 
 		ORDER BY timestamp DESC`
-	
+
 	var metrics []*PeerMetric
 	err := r.db.Select(&metrics, query, peerID, metricType, since)
 	if err != nil {
@@ -326,7 +326,7 @@ func (r *Repository) CreateWebSocketConnection(conn *WebSocketConnection) error 
 // UpdateWebSocketConnectionPing updates WebSocket connection ping time
 func (r *Repository) UpdateWebSocketConnectionPing(connectionID string) error {
 	query := `UPDATE websocket_connections SET last_ping = $2, updated_at = NOW() WHERE connection_id = $1`
-	
+
 	result, err := r.db.Exec(query, connectionID, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to update websocket connection ping: %w", err)
@@ -347,7 +347,7 @@ func (r *Repository) UpdateWebSocketConnectionPing(connectionID string) error {
 // CloseWebSocketConnection closes a WebSocket connection
 func (r *Repository) CloseWebSocketConnection(connectionID string) error {
 	query := `UPDATE websocket_connections SET is_active = false, updated_at = NOW() WHERE connection_id = $1`
-	
+
 	result, err := r.db.Exec(query, connectionID)
 	if err != nil {
 		return fmt.Errorf("failed to close websocket connection: %w", err)
@@ -402,7 +402,7 @@ func (r *Repository) GetRelayMessages(peerID string, since time.Time) ([]*RelayM
 		SELECT * FROM relay_messages 
 		WHERE (from_peer_id = $1 OR to_peer_id = $1) AND timestamp >= $2 
 		ORDER BY timestamp DESC`
-	
+
 	var messages []*RelayMessage
 	err := r.db.Select(&messages, query, peerID, since)
 	if err != nil {
@@ -417,7 +417,7 @@ func (r *Repository) GetRelayMessages(peerID string, since time.Time) ([]*RelayM
 // CleanupOldData removes old data from the database
 func (r *Repository) CleanupOldData() error {
 	query := `SELECT cleanup_old_data()`
-	
+
 	_, err := r.db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("failed to cleanup old data: %w", err)

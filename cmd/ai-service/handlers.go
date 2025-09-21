@@ -292,9 +292,9 @@ func (s *AIService) GetRouteRecommendations(c *gin.Context) {
 			"score":    0.9,
 		},
 		{
-			"protocol": "WireGuard",
-			"latency":  30.2,
-			"score":    0.8,
+			"protocol": "QUIC-Enhanced",
+			"latency":  15.1,
+			"score":    0.95,
 		},
 		{
 			"protocol": "TCP",
@@ -519,11 +519,11 @@ func (s *AIService) GetRouteHistory(c *gin.Context) {
 		},
 		{
 			"timestamp":      time.Now().Add(-2 * time.Hour),
-			"protocol":       "WireGuard",
-			"latency_before": 38.7,
-			"latency_after":  30.2,
-			"improvement":    0.22,
-			"confidence":     0.8,
+			"protocol":       "QUIC-Enhanced",
+			"latency_before": 25.7,
+			"latency_after":  15.1,
+			"improvement":    0.41,
+			"confidence":     0.9,
 			"path":           []string{"node1", "node4", "node3"},
 		},
 	}
@@ -583,9 +583,9 @@ func (s *AIService) GetRealtimeConnections(c *gin.Context) {
 
 	// Получаем данные о протоколах из реальных метрик AI Service
 	protocols := map[string]int{
-		"QUIC":      0,
-		"WireGuard": 0,
-		"TCP":       0,
+		"QUIC":          0,
+		"QUIC-Enhanced": 0,
+		"TCP":           0,
 	}
 
 	// Получаем реальные данные о протоколах от AI Service
@@ -598,8 +598,8 @@ func (s *AIService) GetRealtimeConnections(c *gin.Context) {
 				if quic, ok := protocolData["QUIC"].(int); ok {
 					protocols["QUIC"] = quic
 				}
-				if wireguard, ok := protocolData["WireGuard"].(int); ok {
-					protocols["WireGuard"] = wireguard
+				if quicEnhanced, ok := protocolData["QUIC-Enhanced"].(int); ok {
+					protocols["QUIC-Enhanced"] = quicEnhanced
 				}
 				if tcp, ok := protocolData["TCP"].(int); ok {
 					protocols["TCP"] = tcp

@@ -36,11 +36,11 @@ type CadenceMetrics struct {
 	ClientErrors   *prometheus.CounterVec
 
 	// Специфичные метрики для CloudBridge
-	WireGuardWorkflows *prometheus.CounterVec
-	QuantumWorkflows   *prometheus.CounterVec
-	AIWorkflows        *prometheus.CounterVec
-	ScalingWorkflows   *prometheus.CounterVec
-	SecurityWorkflows  *prometheus.CounterVec
+	QUICWorkflows     *prometheus.CounterVec
+	QuantumWorkflows  *prometheus.CounterVec
+	AIWorkflows       *prometheus.CounterVec
+	ScalingWorkflows  *prometheus.CounterVec
+	SecurityWorkflows *prometheus.CounterVec
 
 	// Здоровье системы
 	HealthChecks        *prometheus.CounterVec
@@ -226,12 +226,12 @@ func NewCadenceMetrics(logger *zap.Logger) *CadenceMetrics {
 		),
 
 		// Специфичные метрики для CloudBridge
-		WireGuardWorkflows: promauto.NewCounterVec(
+		QUICWorkflows: promauto.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: "cloudbridge",
 				Subsystem: "cadence",
-				Name:      "wireguard_workflows_total",
-				Help:      "Общее количество WireGuard workflow",
+				Name:      "quic_workflows_total",
+				Help:      "Общее количество QUIC workflow",
 			},
 			[]string{"workflow_subtype", "status", "peer_id"},
 		),
@@ -444,9 +444,9 @@ func (cm *CadenceMetrics) RecordClientError(operation, errorType, domain string)
 
 // CloudBridge специфичные методы
 
-// RecordWireGuardWorkflow записывает WireGuard workflow
-func (cm *CadenceMetrics) RecordWireGuardWorkflow(subtype, status, peerID string) {
-	cm.WireGuardWorkflows.WithLabelValues(subtype, status, peerID).Inc()
+// RecordQUICWorkflow записывает QUIC workflow
+func (cm *CadenceMetrics) RecordQUICWorkflow(subtype, status, peerID string) {
+	cm.QUICWorkflows.WithLabelValues(subtype, status, peerID).Inc()
 }
 
 // RecordQuantumWorkflow записывает Quantum workflow

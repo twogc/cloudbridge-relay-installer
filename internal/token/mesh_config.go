@@ -50,7 +50,7 @@ func (m *MeshConfig) Validate() error {
 	}
 
 	validStrategies := map[string]bool{
-		"wireguard_first":     true,
+		"quic_first":          true,
 		"performance_optimal": true,
 		"geographic_optimal":  true,
 		"hybrid":              true,

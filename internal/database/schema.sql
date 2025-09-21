@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS peers (
     device_id VARCHAR(255) NOT NULL,
     connection_type VARCHAR(50) NOT NULL DEFAULT 'p2p-mesh',
     
-    -- WireGuard configuration (JSON)
-    wireguard_config JSONB,
+    -- QUIC configuration (JSON)
+    quic_config JSONB,
     
     -- Mesh configuration (JSON)
     mesh_config JSONB,

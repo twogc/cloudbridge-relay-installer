@@ -73,11 +73,6 @@ func TestMultiprotocolConfiguration(t *testing.T) {
 	assert.Equal(t, 0.8, cfg.Protocol.SwitchThreshold, "Switch threshold should be 0.8")
 	assert.Equal(t, 30*time.Second, cfg.Protocol.HealthCheckInterval, "Health check interval should be 30s")
 
-	// Проверка настроек WireGuard
-	assert.True(t, cfg.WireGuard.Enabled, "WireGuard should be enabled")
-	assert.True(t, cfg.WireGuard.Mesh.Enabled, "WireGuard mesh should be enabled")
-	assert.True(t, cfg.WireGuard.Mesh.AutoDiscovery, "Auto discovery should be enabled")
-
 	// Проверка настроек Enhanced QUIC
 	assert.True(t, cfg.EnhancedQUIC.Enabled, "Enhanced QUIC should be enabled")
 	assert.True(t, cfg.EnhancedQUIC.DDoSProtection, "DDoS protection should be enabled")
@@ -110,55 +105,6 @@ func createTestConfig() *config.Config {
 			Fallback:            "http2",
 			SwitchThreshold:     0.8,
 			HealthCheckInterval: 30 * time.Second,
-		},
-		WireGuard: struct {
-			Enabled   bool `json:"enabled"`
-			Interface struct {
-				Name       string `json:"name"`
-				ListenPort int    `json:"listen_port"`
-				Address    string `json:"address"`
-			} `json:"interface"`
-			Discovery struct {
-				RegistryURL       string        `json:"registry_url"`
-				HeartbeatInterval time.Duration `json:"heartbeat_interval"`
-				MaxPeers          int           `json:"max_peers"`
-			} `json:"discovery"`
-			Mesh struct {
-				Enabled         bool   `json:"enabled"`
-				AutoDiscovery   bool   `json:"auto_discovery"`
-				MaxConnections  int    `json:"max_connections"`
-				RoutingStrategy string `json:"routing_strategy"`
-			} `json:"mesh"`
-			SiteToSite struct {
-				Enabled           bool `json:"enabled"`
-				CorporateNetworks []struct {
-					NetworkID string `json:"network_id"`
-					CIDR      string `json:"cidr"`
-					TenantID  string `json:"tenant_id"`
-				} `json:"corporate_networks"`
-			} `json:"site_to_site"`
-		}{
-			Enabled: true,
-			Interface: struct {
-				Name       string `json:"name"`
-				ListenPort int    `json:"listen_port"`
-				Address    string `json:"address"`
-			}{
-				Name:       "wg-test",
-				ListenPort: 51820,
-				Address:    "10.100.1.1/24",
-			},
-			Mesh: struct {
-				Enabled         bool   `json:"enabled"`
-				AutoDiscovery   bool   `json:"auto_discovery"`
-				MaxConnections  int    `json:"max_connections"`
-				RoutingStrategy string `json:"routing_strategy"`
-			}{
-				Enabled:         true,
-				AutoDiscovery:   true,
-				MaxConnections:  10,
-				RoutingStrategy: "hybrid",
-			},
 		},
 		EnhancedQUIC: struct {
 			Enabled             bool          `json:"enabled"`

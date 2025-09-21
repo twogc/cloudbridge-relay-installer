@@ -70,9 +70,9 @@ type ClassicalKeyPair struct {
 	Algorithm  string
 }
 
-// QuantumWireGuardInterface квантово-устойчивый WireGuard интерфейс
-type QuantumWireGuardInterface struct {
-	WgInterface   interface{} // *wireguard.WireGuardInterface
+// QuantumQUICInterface квантово-устойчивый QUIC интерфейс
+type QuantumQUICInterface struct {
+	QuicInterface interface{} // *quic.QUICInterface
 	PQCConfig     *PQCConfig
 	HybridKeyPair *HybridKeyPair
 	PeerKeys      map[string]*HybridKeyPair
@@ -134,12 +134,12 @@ func NewPQCConfig() *PQCConfig {
 	}
 }
 
-// NewQuantumWireGuardInterface создает новый квантово-устойчивый WireGuard интерфейс
-func NewQuantumWireGuardInterface(wgInterface interface{}, pqcConfig *PQCConfig) *QuantumWireGuardInterface {
-	return &QuantumWireGuardInterface{
-		WgInterface: wgInterface,
-		PQCConfig:   pqcConfig,
-		PeerKeys:    make(map[string]*HybridKeyPair),
+// NewQuantumQUICInterface создает новый квантово-устойчивый QUIC интерфейс
+func NewQuantumQUICInterface(quicInterface interface{}, pqcConfig *PQCConfig) *QuantumQUICInterface {
+	return &QuantumQUICInterface{
+		QuicInterface: quicInterface,
+		PQCConfig:     pqcConfig,
+		PeerKeys:      make(map[string]*HybridKeyPair),
 		KeyExchange: &QuantumKeyExchange{
 			PeerHybridKeys: make(map[string]*HybridKeyPair),
 			SessionKeys:    make(map[string]*QuantumSessionKey),
@@ -247,34 +247,34 @@ func (hkp *HybridKeyPair) Validate() error {
 	return nil
 }
 
-// QuantumWireGuardInterface методы
-func (qwg *QuantumWireGuardInterface) Start() error {
-	// Заглушка для запуска квантово-устойчивого WireGuard
-	if err := qwg.PQCConfig.Validate(); err != nil {
+// QuantumQUICInterface методы
+func (qqi *QuantumQUICInterface) Start() error {
+	// Заглушка для запуска квантово-устойчивого QUIC
+	if err := qqi.PQCConfig.Validate(); err != nil {
 		return err
 	}
 
-	qwg.HybridKeyPair = &HybridKeyPair{}
-	return qwg.HybridKeyPair.Generate()
+	qqi.HybridKeyPair = &HybridKeyPair{}
+	return qqi.HybridKeyPair.Generate()
 }
 
-func (qwg *QuantumWireGuardInterface) Stop() error {
-	// Заглушка для остановки квантово-устойчивого WireGuard
+func (qqi *QuantumQUICInterface) Stop() error {
+	// Заглушка для остановки квантово-устойчивого QUIC
 	return nil
 }
 
-func (qwg *QuantumWireGuardInterface) ExchangeKeys(peerID string) error {
+func (qqi *QuantumQUICInterface) ExchangeKeys(peerID string) error {
 	// Заглушка для обмена ключами
 	peerKey := &HybridKeyPair{}
 	if err := peerKey.Generate(); err != nil {
 		return err
 	}
 
-	qwg.PeerKeys[peerID] = peerKey
+	qqi.PeerKeys[peerID] = peerKey
 	return nil
 }
 
-func (qwg *QuantumWireGuardInterface) ValidateQuantumSignature(data, signature []byte) error {
+func (qqi *QuantumQUICInterface) ValidateQuantumSignature(data, signature []byte) error {
 	// Заглушка для валидации квантовой подписи
 	if len(signature) == 0 {
 		return fmt.Errorf("invalid signature")
