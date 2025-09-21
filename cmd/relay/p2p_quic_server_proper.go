@@ -415,37 +415,6 @@ func (pqs *P2PQUICServerProper) Dial(ctx context.Context, addr string) (*quic.Co
 	return conn, nil
 }
 
-// tempQUICListener - временный listener для совместимости с QUICRelayHandler
-type tempQUICListener struct {
-	conn *quic.Conn
-}
-
-func (t *tempQUICListener) Accept(ctx context.Context) (*quic.Conn, error) {
-	// Возвращаем единственное соединение
-	if t.conn != nil {
-		conn := t.conn
-		t.conn = nil // Предотвращаем повторное использование
-		return conn, nil
-	}
-	// Блокируемся, чтобы не завершать горутину
-	<-ctx.Done()
-	return nil, ctx.Err()
-}
-
-func (t *tempQUICListener) Addr() net.Addr {
-	if t.conn != nil {
-		return t.conn.LocalAddr()
-	}
-	return &net.UDPAddr{IP: net.IPv4zero, Port: 5553}
-}
-
-func (t *tempQUICListener) Close() error {
-	if t.conn != nil {
-		return t.conn.CloseWithError(0, "listener closed")
-	}
-	return nil
-}
-
 // generateTLSConfig генерирует TLS конфигурацию для P2P QUIC
 func (pqs *P2PQUICServerProper) generateTLSConfig() *tls.Config {
 	// Создаем самоподписанный сертификат для QUIC

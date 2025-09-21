@@ -1,0 +1,481 @@
+package main
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/twogc/cloudbridge-relay-installer/config"
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
+)
+
+func TestNewWebSocketFallback(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+	assert.NotNil(t, fallback)
+	assert.NotNil(t, fallback.upgrader)
+	assert.NotNil(t, fallback.connections)
+	assert.NotNil(t, fallback.ctx)
+	assert.NotNil(t, fallback.cancel)
+}
+
+func TestWebSocketFallback_HandleWebSocket(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Создаем тестовый HTTP сервер
+	server := httptest.NewServer(http.HandlerFunc(fallback.handleWebSocket))
+	defer server.Close()
+
+	// Создаем WebSocket соединение
+	wsURL := "ws" + server.URL[4:] + "/ws"
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// Проверяем, что соединение добавлено
+	time.Sleep(100 * time.Millisecond) // Даем время на обработку
+	count := fallback.GetConnectionCount()
+	assert.Greater(t, count, 0)
+}
+
+func TestWebSocketFallback_HandleMASQUEWebSocket(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Создаем тестовый HTTP сервер
+	server := httptest.NewServer(http.HandlerFunc(fallback.handleMASQUEWebSocket))
+	defer server.Close()
+
+	// Создаем WebSocket соединение с Capsule-Protocol заголовком
+	wsURL := "ws" + server.URL[4:] + "/ws/masque"
+	headers := http.Header{}
+	headers.Set("Capsule-Protocol", "?1")
+	
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, headers)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	// Проверяем, что соединение добавлено
+	time.Sleep(100 * time.Millisecond) // Даем время на обработку
+	count := fallback.GetConnectionCount()
+	assert.Greater(t, count, 0)
+}
+
+func TestWebSocketFallback_HandleMASQUEWebSocket_MissingHeader(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Создаем тестовый HTTP запрос без Capsule-Protocol заголовка
+	req := httptest.NewRequest("GET", "/ws/masque", nil)
+	w := httptest.NewRecorder()
+
+	// Вызываем обработчик
+	fallback.handleMASQUEWebSocket(w, req)
+
+	// Проверяем ошибку
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "Capsule-Protocol header required")
+}
+
+func TestWebSocketFallback_ProcessWebSocketMessage(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Создаем тестовое соединение
+	conn := &WebSocketConnection{
+		ID:           "test_conn",
+		RemoteAddr:   "127.0.0.1:8080",
+		CreatedAt:    time.Now(),
+		LastActivity: time.Now(),
+		IsActive:     true,
+	}
+
+	// Создаем mock WebSocket соединение
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upgrader := websocket.Upgrader{}
+		wsConn, err := upgrader.Upgrade(w, r, nil)
+		require.NoError(t, err)
+		conn.Conn = wsConn
+	}))
+	defer server.Close()
+
+	// Подключаемся к WebSocket
+	wsURL := "ws" + server.URL[4:]
+	wsConn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	require.NoError(t, err)
+	defer wsConn.Close()
+
+	conn.Conn = wsConn
+
+	// Тест обработки текстового сообщения
+	err = fallback.processWebSocketMessage(conn, websocket.TextMessage, []byte("test message"))
+	assert.NoError(t, err)
+
+	// Тест обработки бинарного сообщения
+	err = fallback.processWebSocketMessage(conn, websocket.BinaryMessage, []byte{0x01, 0x02, 0x03})
+	assert.NoError(t, err)
+}
+
+func TestWebSocketFallback_ProcessMASQUEMessage(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Создаем тестовое соединение
+	conn := &WebSocketConnection{
+		ID:           "test_conn",
+		RemoteAddr:   "127.0.0.1:8080",
+		CreatedAt:    time.Now(),
+		LastActivity: time.Now(),
+		IsActive:     true,
+	}
+
+	// Тест обработки MASQUE сообщения
+	err := fallback.processMASQUEMessage(conn, websocket.BinaryMessage, []byte("masque datagram"))
+	assert.NoError(t, err)
+}
+
+func TestWebSocketFallback_RemoveConnection(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Добавляем тестовое соединение
+	conn := &WebSocketConnection{
+		ID:           "test_conn",
+		RemoteAddr:   "127.0.0.1:8080",
+		CreatedAt:    time.Now(),
+		LastActivity: time.Now(),
+		IsActive:     true,
+	}
+
+	fallback.mu.Lock()
+	fallback.connections[conn.ID] = conn
+	fallback.mu.Unlock()
+
+	// Проверяем, что соединение добавлено
+	count := fallback.GetConnectionCount()
+	assert.Equal(t, 1, count)
+
+	// Удаляем соединение
+	fallback.removeConnection(conn.ID)
+
+	// Проверяем, что соединение удалено
+	count = fallback.GetConnectionCount()
+	assert.Equal(t, 0, count)
+}
+
+func TestWebSocketFallback_GetConnectionInfo(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Добавляем тестовое соединение
+	conn := &WebSocketConnection{
+		ID:           "test_conn",
+		RemoteAddr:   "127.0.0.1:8080",
+		CreatedAt:    time.Now(),
+		LastActivity: time.Now(),
+		IsActive:     true,
+	}
+
+	fallback.mu.Lock()
+	fallback.connections[conn.ID] = conn
+	fallback.mu.Unlock()
+
+	// Получаем информацию о соединениях
+	info := fallback.GetConnectionInfo()
+	
+	assert.Equal(t, 1, info["total_connections"])
+	
+	connections, ok := info["connections"].([]map[string]interface{})
+	require.True(t, ok)
+	require.Len(t, connections, 1)
+	
+	assert.Equal(t, "test_conn", connections[0]["id"])
+	assert.Equal(t, "127.0.0.1:8080", connections[0]["remote_addr"])
+	assert.Equal(t, true, connections[0]["is_active"])
+}
+
+func TestWebSocketFallback_HandleHealth(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Создаем тестовый HTTP запрос
+	req := httptest.NewRequest("GET", "/health", nil)
+	w := httptest.NewRecorder()
+
+	// Вызываем обработчик
+	fallback.handleHealth(w, req)
+
+	// Проверяем ответ
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+	assert.Contains(t, w.Body.String(), "healthy")
+	assert.Contains(t, w.Body.String(), "websocket_fallback_enabled")
+	assert.Contains(t, w.Body.String(), "connections")
+}
+
+func TestWebSocketFallback_Close(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Добавляем тестовое соединение
+	conn := &WebSocketConnection{
+		ID:           "test_conn",
+		RemoteAddr:   "127.0.0.1:8080",
+		CreatedAt:    time.Now(),
+		LastActivity: time.Now(),
+		IsActive:     true,
+	}
+
+	fallback.mu.Lock()
+	fallback.connections[conn.ID] = conn
+	fallback.mu.Unlock()
+
+	// Закрываем fallback
+	err := fallback.Close()
+	assert.NoError(t, err)
+
+	// Проверяем, что соединения очищены
+	count := fallback.GetConnectionCount()
+	assert.Equal(t, 0, count)
+}
+
+func TestWebSocketConnection_ActivityTracking(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Создаем тестовое соединение
+	conn := &WebSocketConnection{
+		ID:           "test_conn",
+		RemoteAddr:   "127.0.0.1:8080",
+		CreatedAt:    time.Now(),
+		LastActivity: time.Now(),
+		IsActive:     true,
+	}
+
+	initialActivity := conn.LastActivity
+
+	// Обрабатываем сообщение (должно обновить LastActivity)
+	err := fallback.processWebSocketMessage(conn, websocket.TextMessage, []byte("test"))
+	assert.NoError(t, err)
+
+	// Проверяем, что активность обновилась
+	assert.True(t, conn.LastActivity.After(initialActivity))
+}
+
+// Benchmark тесты
+func BenchmarkWebSocketFallback_ProcessWebSocketMessage(b *testing.B) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Создаем тестовое соединение
+	conn := &WebSocketConnection{
+		ID:           "bench_conn",
+		RemoteAddr:   "127.0.0.1:8080",
+		CreatedAt:    time.Now(),
+		LastActivity: time.Now(),
+		IsActive:     true,
+	}
+
+	testData := []byte("benchmark message")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		fallback.processWebSocketMessage(conn, websocket.TextMessage, testData)
+	}
+}
+
+func BenchmarkWebSocketFallback_ProcessMASQUEMessage(b *testing.B) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+	}
+
+	fallback := NewWebSocketFallback(testLogger, cfg)
+
+	// Создаем тестовое соединение
+	conn := &WebSocketConnection{
+		ID:           "bench_conn",
+		RemoteAddr:   "127.0.0.1:8080",
+		CreatedAt:    time.Now(),
+		LastActivity: time.Now(),
+		IsActive:     true,
+	}
+
+	testData := []byte("benchmark masque datagram")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		fallback.processMASQUEMessage(conn, websocket.BinaryMessage, testData)
+	}
+}

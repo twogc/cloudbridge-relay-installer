@@ -144,7 +144,7 @@ func (eqm *EnhancedQUICManager) SetupIntegrations(
 // CreateConnection создает Enhanced соединение
 func (eqm *EnhancedQUICManager) CreateConnection(network, address, tenantID string) (*quic.EnhancedConnection, error) {
 	if !eqm.enabled {
-		return nil, fmt.Errorf("Enhanced QUIC Manager is not enabled")
+		return nil, fmt.Errorf("enhanced QUIC manager is not enabled")
 	}
 
 	eqm.logger.Debug("Creating Enhanced QUIC connection",
@@ -159,7 +159,7 @@ func (eqm *EnhancedQUICManager) CreateConnection(network, address, tenantID stri
 // ValidateConnection проверяет соединение через все интегрированные компоненты
 func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token string) error {
 	if !eqm.enabled {
-		return fmt.Errorf("Enhanced QUIC Manager is not enabled")
+		return fmt.Errorf("enhanced QUIC manager is not enabled")
 	}
 
 	// Проверяем DDoS Protection
@@ -212,7 +212,7 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 // GetServerByGeo возвращает сервер на основе географического маршрута
 func (eqm *EnhancedQUICManager) GetServerByGeo(clientIP string) (string, error) {
 	if !eqm.enabled {
-		return "", fmt.Errorf("Enhanced QUIC Manager is not enabled")
+		return "", fmt.Errorf("enhanced QUIC manager is not enabled")
 	}
 
 	if eqm.config.EnableGeographicRouting && eqm.geoRouter != nil {
@@ -322,7 +322,7 @@ func (eqm *EnhancedQUICManager) loadTenantsFromConfig() error {
 
 	// Путь к конфигурационному файлу
 	configPath := "configs/enhanced_quic.yaml"
-	
+
 	// Читаем файл конфигурации
 	data, err := os.ReadFile(configPath)
 	if err != nil {
@@ -332,12 +332,12 @@ func (eqm *EnhancedQUICManager) loadTenantsFromConfig() error {
 	// Парсим YAML
 	var config struct {
 		Tenants map[string]struct {
-			BandwidthLimit   int64   `yaml:"bandwidth_limit"`
-			ConnectionLimit  int     `yaml:"connection_limit"`
-			AllowedIPs       []string `yaml:"allowed_ips"`
-			AllowedPorts     []int    `yaml:"allowed_ports"`
-			RateLimit        int     `yaml:"rate_limit"`
-			Burst           int     `yaml:"burst"`
+			BandwidthLimit  int64    `yaml:"bandwidth_limit"`
+			ConnectionLimit int      `yaml:"connection_limit"`
+			AllowedIPs      []string `yaml:"allowed_ips"`
+			AllowedPorts    []int    `yaml:"allowed_ports"`
+			RateLimit       int      `yaml:"rate_limit"`
+			Burst           int      `yaml:"burst"`
 		} `yaml:"tenants"`
 	}
 

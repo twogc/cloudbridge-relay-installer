@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pion/ice/v2"
+	"github.com/pion/stun"
 	"github.com/quic-go/quic-go"
 	"go.uber.org/zap"
 
@@ -40,13 +41,13 @@ type ICESupport struct {
 func NewICESupport(logger *logger.Logger, config *config.Config) (*ICESupport, error) {
 	iceConfig := &ice.AgentConfig{
 		NetworkTypes: []ice.NetworkType{ice.NetworkTypeUDP4},
-		Urls:         []*ice.URL{},
+		Urls:         []*stun.URI{},
 	}
 
 	// Добавляем STUN серверы из конфигурации
 	if config.ICEStunTurn.Enabled {
 		for _, stunServer := range config.ICEStunTurn.StunServers {
-			url, err := ice.ParseURL(fmt.Sprintf("stun:%s", stunServer))
+			url, err := stun.ParseURI(fmt.Sprintf("stun:%s", stunServer))
 			if err != nil {
 				logger.Warn("Failed to parse STUN server URL", zap.String("server", stunServer), zap.Error(err))
 				continue
@@ -56,7 +57,7 @@ func NewICESupport(logger *logger.Logger, config *config.Config) (*ICESupport, e
 
 		// Добавляем TURN серверы
 		for _, turnServer := range config.ICEStunTurn.TurnServers {
-			url, err := ice.ParseURL(fmt.Sprintf("turn:%s", turnServer))
+			url, err := stun.ParseURI(fmt.Sprintf("turn:%s", turnServer))
 			if err != nil {
 				logger.Warn("Failed to parse TURN server URL", zap.String("server", turnServer), zap.Error(err))
 				continue

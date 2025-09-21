@@ -3,16 +3,11 @@ package main
 import (
 	"bufio"
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
-	"math/big"
 	"net"
 	"net/http"
 	"os"
@@ -1586,14 +1581,8 @@ func main() {
 
 // generateTLSConfig генерирует TLS конфигурацию для QUIC
 func (s *Server) generateTLSConfig() *tls.Config {
-	// Создаем самоподписанный сертификат для QUIC
-	cert, err := s.generateSelfSignedCert()
-	if err != nil {
-		s.logger.Error("Failed to generate self-signed certificate", zap.Error(err))
-		// Возвращаем nil, что приведет к ошибке при создании QUIC listener
-		return nil
-	}
-
+	// Создаем простой TLS конфиг без сертификата
+	// В реальном приложении здесь должен быть загружен сертификат
 	return &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		CipherSuites: []uint16{
@@ -1601,48 +1590,6 @@ func (s *Server) generateTLSConfig() *tls.Config {
 			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 		},
-		Certificates: []tls.Certificate{cert},
-		NextProtos:   []string{"cloudbridge-p2p", "h3", "h3-29", "h3-28", "h3-27"},
+		NextProtos: []string{"cloudbridge-p2p", "h3", "h3-29", "h3-28", "h3-27"},
 	}
-}
-
-// generateSelfSignedCert генерирует самоподписанный сертификат
-func (s *Server) generateSelfSignedCert() (tls.Certificate, error) {
-	// Генерируем приватный ключ
-	priv, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return tls.Certificate{}, err
-	}
-
-	// Создаем сертификат
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization:  []string{"CloudBridge Relay"},
-			Country:       []string{"RU"},
-			Province:      []string{""},
-			Locality:      []string{"Moscow"},
-			StreetAddress: []string{""},
-			PostalCode:    []string{""},
-		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().Add(365 * 24 * time.Hour), // 1 год
-		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses: []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
-		DNSNames:    []string{"localhost", "edge.2gc.ru"},
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
-	if err != nil {
-		return tls.Certificate{}, err
-	}
-
-	// Создаем TLS сертификат
-	cert := tls.Certificate{
-		Certificate: [][]byte{certDER},
-		PrivateKey:  priv,
-	}
-
-	return cert, nil
 }

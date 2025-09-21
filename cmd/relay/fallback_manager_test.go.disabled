@@ -1,0 +1,523 @@
+package main
+
+import (
+	"context"
+	"net"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/twogc/cloudbridge-relay-installer/config"
+	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
+)
+
+func TestNewFallbackManager(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+	assert.NotNil(t, manager)
+	assert.NotNil(t, manager.ctx)
+	assert.NotNil(t, manager.cancel)
+	assert.False(t, manager.isRunning)
+}
+
+func TestFallbackManager_Start(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		MASQUE: struct {
+			Enabled         bool     `json:"enabled"`
+			ProxyURL        string   `json:"proxy_url"`
+			ALPNProtocols   []string `json:"alpn_protocols"`
+			FallbackEnabled bool     `json:"fallback_enabled"`
+		}{
+			Enabled: true,
+		},
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+		TCPFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8081",
+		},
+	}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Запускаем manager
+	err := manager.Start()
+	assert.NoError(t, err)
+	assert.True(t, manager.isRunning)
+	assert.NotNil(t, manager.masqueServer)
+	assert.NotNil(t, manager.websocketFallback)
+	assert.NotNil(t, manager.tcpFallback)
+
+	// Очищаем ресурсы
+	manager.Close()
+}
+
+func TestFallbackManager_Start_AlreadyRunning(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		MASQUE: struct {
+			Enabled         bool     `json:"enabled"`
+			ProxyURL        string   `json:"proxy_url"`
+			ALPNProtocols   []string `json:"alpn_protocols"`
+			FallbackEnabled bool     `json:"fallback_enabled"`
+		}{
+			Enabled: true,
+		},
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+		TCPFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8081",
+		},
+	}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Запускаем manager первый раз
+	err := manager.Start()
+	assert.NoError(t, err)
+
+	// Пытаемся запустить второй раз
+	err = manager.Start()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "already running")
+
+	// Очищаем ресурсы
+	manager.Close()
+}
+
+func TestFallbackManager_HandleConnection(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		MASQUE: struct {
+			Enabled         bool     `json:"enabled"`
+			ProxyURL        string   `json:"proxy_url"`
+			ALPNProtocols   []string `json:"alpn_protocols"`
+			FallbackEnabled bool     `json:"fallback_enabled"`
+		}{
+			Enabled: true,
+		},
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+		TCPFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8081",
+		},
+	}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Запускаем manager
+	err := manager.Start()
+	require.NoError(t, err)
+	defer manager.Close()
+
+	// Создаем тестовое соединение
+	conn := &mockConn{
+		remoteAddr: "127.0.0.1:8080",
+	}
+
+	ctx := context.Background()
+	tenantID := "test-tenant"
+
+	// Обрабатываем соединение
+	result, err := manager.HandleConnection(ctx, conn, tenantID)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.Success)
+	assert.True(t, result.FallbackUsed)
+}
+
+func TestFallbackManager_HandleConnection_NotRunning(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Создаем тестовое соединение
+	conn := &mockConn{
+		remoteAddr: "127.0.0.1:8080",
+	}
+
+	ctx := context.Background()
+	tenantID := "test-tenant"
+
+	// Пытаемся обработать соединение без запуска manager
+	result, err := manager.HandleConnection(ctx, conn, tenantID)
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "not running")
+}
+
+func TestFallbackManager_DetermineFallbackStrategy(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Тестируем определение стратегии
+	strategy := manager.determineFallbackStrategy("127.0.0.1:8080")
+	assert.Equal(t, FallbackStrategyQUICFirst, strategy)
+}
+
+func TestFallbackManager_DetectBlockingNetwork(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Тест 1: Публичный IP - не блокирующий
+	isBlocking := manager.DetectBlockingNetwork("8.8.8.8:8080")
+	assert.False(t, isBlocking)
+
+	// Тест 2: Приватный IP - блокирующий
+	isBlocking = manager.DetectBlockingNetwork("192.168.1.1:8080")
+	assert.True(t, isBlocking)
+
+	// Тест 3: Локальный IP - блокирующий
+	isBlocking = manager.DetectBlockingNetwork("127.0.0.1:8080")
+	assert.True(t, isBlocking)
+}
+
+func TestFallbackManager_IsBlockingIPPattern(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Тест 1: Публичный IP
+	isBlocking := manager.isBlockingIPPattern("8.8.8.8:8080")
+	assert.False(t, isBlocking)
+
+	// Тест 2: Приватный IP
+	isBlocking = manager.isBlockingIPPattern("192.168.1.1:8080")
+	assert.True(t, isBlocking)
+
+	// Тест 3: Локальный IP
+	isBlocking = manager.isBlockingIPPattern("127.0.0.1:8080")
+	assert.True(t, isBlocking)
+
+	// Тест 4: Невалидный IP
+	isBlocking = manager.isBlockingIPPattern("invalid:8080")
+	assert.False(t, isBlocking)
+}
+
+func TestFallbackManager_AttemptQUICFirst(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Создаем тестовое соединение
+	conn := &mockConn{
+		remoteAddr: "127.0.0.1:8080",
+	}
+
+	ctx := context.Background()
+	tenantID := "test-tenant"
+	start := time.Now()
+
+	// Тестируем QUIC-first стратегию
+	result, err := manager.attemptQUICFirst(ctx, conn, tenantID, start)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.Success)
+	assert.True(t, result.FallbackUsed)
+	assert.Equal(t, "TCP", result.Protocol) // Должен дойти до TCP fallback
+}
+
+func TestFallbackManager_AttemptWebSocketFirst(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Создаем тестовое соединение
+	conn := &mockConn{
+		remoteAddr: "127.0.0.1:8080",
+	}
+
+	ctx := context.Background()
+	tenantID := "test-tenant"
+	start := time.Now()
+
+	// Тестируем WebSocket-first стратегию
+	result, err := manager.attemptWebSocketFirst(ctx, conn, tenantID, start)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.Success)
+	assert.Equal(t, "WebSocket", result.Protocol)
+}
+
+func TestFallbackManager_AttemptTCPOnly(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Создаем тестовое соединение
+	conn := &mockConn{
+		remoteAddr: "127.0.0.1:8080",
+	}
+
+	ctx := context.Background()
+	tenantID := "test-tenant"
+	start := time.Now()
+
+	// Тестируем TCP-only стратегию
+	result, err := manager.attemptTCPOnly(ctx, conn, tenantID, start)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.Success)
+	assert.Equal(t, "TCP", result.Protocol)
+}
+
+func TestFallbackManager_GetConnectionStats(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		MASQUE: struct {
+			Enabled         bool     `json:"enabled"`
+			ProxyURL        string   `json:"proxy_url"`
+			ALPNProtocols   []string `json:"alpn_protocols"`
+			FallbackEnabled bool     `json:"fallback_enabled"`
+		}{
+			Enabled: true,
+		},
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+		TCPFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8081",
+		},
+	}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Получаем статистику до запуска
+	stats := manager.GetConnectionStats()
+	assert.NotNil(t, stats)
+	assert.False(t, stats["is_running"].(bool))
+
+	// Запускаем manager
+	err := manager.Start()
+	require.NoError(t, err)
+	defer manager.Close()
+
+	// Получаем статистику после запуска
+	stats = manager.GetConnectionStats()
+	assert.NotNil(t, stats)
+	assert.True(t, stats["is_running"].(bool))
+	assert.Contains(t, stats, "masque")
+	assert.Contains(t, stats, "websocket")
+	assert.Contains(t, stats, "tcp")
+}
+
+func TestFallbackManager_Close(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{
+		MASQUE: struct {
+			Enabled         bool     `json:"enabled"`
+			ProxyURL        string   `json:"proxy_url"`
+			ALPNProtocols   []string `json:"alpn_protocols"`
+			FallbackEnabled bool     `json:"fallback_enabled"`
+		}{
+			Enabled: true,
+		},
+		WebSocketFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8080",
+		},
+		TCPFallback: struct {
+			Enabled    bool   `json:"enabled"`
+			ListenAddr string `json:"listen_addr"`
+		}{
+			Enabled:    true,
+			ListenAddr: ":8081",
+		},
+	}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Запускаем manager
+	err := manager.Start()
+	require.NoError(t, err)
+	assert.True(t, manager.isRunning)
+
+	// Закрываем manager
+	err = manager.Close()
+	assert.NoError(t, err)
+	assert.False(t, manager.isRunning)
+}
+
+func TestFallbackManager_Close_NotRunning(t *testing.T) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	// Закрываем manager без запуска
+	err := manager.Close()
+	assert.NoError(t, err)
+}
+
+// Mock соединение для тестов
+type mockConn struct {
+	remoteAddr string
+}
+
+func (m *mockConn) Read(b []byte) (n int, err error) {
+	return 0, nil
+}
+
+func (m *mockConn) Write(b []byte) (n int, err error) {
+	return len(b), nil
+}
+
+func (m *mockConn) Close() error {
+	return nil
+}
+
+func (m *mockConn) LocalAddr() net.Addr {
+	return &mockAddr{addr: "127.0.0.1:8080"}
+}
+
+func (m *mockConn) RemoteAddr() net.Addr {
+	return &mockAddr{addr: m.remoteAddr}
+}
+
+func (m *mockConn) SetDeadline(t time.Time) error {
+	return nil
+}
+
+func (m *mockConn) SetReadDeadline(t time.Time) error {
+	return nil
+}
+
+func (m *mockConn) SetWriteDeadline(t time.Time) error {
+	return nil
+}
+
+type mockAddr struct {
+	addr string
+}
+
+func (m *mockAddr) Network() string {
+	return "tcp"
+}
+
+func (m *mockAddr) String() string {
+	return m.addr
+}
+
+// Benchmark тесты
+func BenchmarkFallbackManager_DetectBlockingNetwork(b *testing.B) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		manager.DetectBlockingNetwork("192.168.1.1:8080")
+	}
+}
+
+func BenchmarkFallbackManager_DetermineFallbackStrategy(b *testing.B) {
+	var testLogger *logger.Logger
+	var err error
+	testLogger, err = logger.New(logger.Config{Level: logger.DEBUG, JSON: true})
+	require.NoError(t, err)
+	cfg := &config.Config{}
+
+	manager := NewFallbackManager(testLogger, cfg)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		manager.determineFallbackStrategy("127.0.0.1:8080")
+	}
+}

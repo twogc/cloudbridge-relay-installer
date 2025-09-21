@@ -68,7 +68,12 @@ func NewAdapter(cfg *config.Config, logger *logger.Logger) (*Adapter, error) {
 		logger: logger,
 	}
 
-	if cfg.Keycloak.Enabled {
+	// Проверяем, включена ли аутентификация
+	if !cfg.ZeroTrust.Authentication.Enabled {
+		// Аутентификация отключена - создаем no-op provider
+		adapter.provider = &NoOpProvider{}
+		logger.Info("Authentication disabled - using no-op provider")
+	} else if cfg.Keycloak.Enabled {
 		// Initialize Keycloak provider
 		keycloakConfig := &keycloak.Config{
 			ServerURL:    cfg.Keycloak.ServerURL,
@@ -97,7 +102,7 @@ func NewAdapter(cfg *config.Config, logger *logger.Logger) (*Adapter, error) {
 		adapter.keycloakProvider = keycloakClient
 		adapter.provider = &KeycloakProvider{client: keycloakClient}
 	} else {
-		return nil, fmt.Errorf("no authentication provider enabled - Keycloak must be enabled")
+		return nil, fmt.Errorf("authentication enabled but no provider configured - Keycloak must be enabled")
 	}
 
 	return adapter, nil
@@ -197,4 +202,46 @@ func (p *KeycloakProvider) CheckPermission(ctx context.Context, token string, re
 		Claims:    tokenInfo.Claims,
 	}
 	return p.client.CheckPermission(kt, resource, action), nil
+}
+
+// NoOpProvider представляет провайдер аутентификации без проверки
+type NoOpProvider struct{}
+
+// ValidateToken всегда возвращает успешную валидацию
+func (p *NoOpProvider) ValidateToken(ctx context.Context, token string) (*TokenInfo, error) {
+	return &TokenInfo{
+		Subject:   "anonymous",
+		Issuer:    "no-op",
+		Audience:  []string{"cloudbridge-relay"},
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+		IssuedAt:  time.Now(),
+		NotBefore: time.Now(),
+		Username:  "anonymous",
+		Email:     "anonymous@cloudbridge.local",
+		FullName:  "Anonymous User",
+		Groups:    []string{"users"},
+		Roles:     []string{"user"},
+		Claims:    make(map[string]interface{}),
+		Provider:  "no-op",
+	}, nil
+}
+
+// GetUserInfo возвращает информацию о пользователе
+func (p *NoOpProvider) GetUserInfo(ctx context.Context, token string) (*UserInfo, error) {
+	return &UserInfo{
+		ID:       "anonymous",
+		Username: "anonymous",
+		Email:    "anonymous@cloudbridge.local",
+		FullName: "Anonymous User",
+		Groups:   []string{"users"},
+		Roles:    []string{"user"},
+		Active:   true,
+		Claims:   make(map[string]interface{}),
+		Provider: "no-op",
+	}, nil
+}
+
+// CheckPermission всегда возвращает true
+func (p *NoOpProvider) CheckPermission(ctx context.Context, token string, resource, action string) (bool, error) {
+	return true, nil
 }

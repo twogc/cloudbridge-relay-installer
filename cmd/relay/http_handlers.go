@@ -13,10 +13,6 @@ import (
 
 // handleHTTPRequest обрабатывает HTTP запросы
 func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufio.Reader) error {
-	// Read the rest of the HTTP request headers
-	var lines []string
-	lines = append(lines, firstLine)
-
 	// Read headers until empty line
 	for {
 		line, err := reader.ReadString('\n')
@@ -24,7 +20,6 @@ func (s *Server) handleHTTPRequest(conn net.Conn, firstLine string, reader *bufi
 			// If we can't read more, just proceed with what we have
 			break
 		}
-		lines = append(lines, line)
 		if line == "\r\n" || line == "\n" {
 			break // End of headers
 		}

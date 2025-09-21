@@ -611,6 +611,18 @@ type Config struct {
 		ALPNProtocols   []string `json:"alpn_protocols"`
 		FallbackEnabled bool     `json:"fallback_enabled"`
 	} `json:"masque"`
+
+	// WebSocket Fallback Configuration
+	WebSocketFallback struct {
+		Enabled    bool   `json:"enabled"`
+		ListenAddr string `json:"listen_addr"`
+	} `json:"websocket_fallback"`
+
+	// TCP Fallback Configuration
+	TCPFallback struct {
+		Enabled    bool   `json:"enabled"`
+		ListenAddr string `json:"listen_addr"`
+	} `json:"tcp_fallback"`
 }
 
 // HealthCheckConfig represents a health check configuration

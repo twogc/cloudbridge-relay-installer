@@ -24,6 +24,9 @@ type STUNMessage struct {
 	MagicCookie   uint32
 	TransactionID [12]byte
 	Attributes    []STUNAttribute
+	Username      string
+	Realm         string
+	Nonce         string
 }
 
 // STUNAttribute представляет STUN атрибут
@@ -45,22 +48,47 @@ const (
 	STUNSharedSecretResponse = 0x0102
 	STUNSharedSecretError    = 0x0112
 
+	// TURN Message Types
+	STUNAllocateRequest          = 0x0003
+	STUNAllocateResponse         = 0x0103
+	STUNAllocateError            = 0x0113
+	STUNRefreshRequest           = 0x0004
+	STUNRefreshResponse          = 0x0104
+	STUNRefreshError             = 0x0114
+	STUNCreatePermissionRequest  = 0x0008
+	STUNCreatePermissionResponse = 0x0108
+	STUNCreatePermissionError    = 0x0118
+	STUNChannelBindRequest       = 0x0009
+	STUNChannelBindResponse      = 0x0109
+	STUNChannelBindError         = 0x0119
+	STUNSendIndication           = 0x0016
+	STUNDataIndication           = 0x0017
+	STUNUnauthorized             = 0x0141
+	STUNServerError              = 0x0500
+
 	// STUN Attribute Types
-	STUNAttrMappedAddress     = 0x0001
-	STUNAttrResponseAddress   = 0x0002
-	STUNAttrChangeRequest     = 0x0003
-	STUNAttrSourceAddress     = 0x0004
-	STUNAttrChangedAddress    = 0x0005
-	STUNAttrUsername          = 0x0006
-	STUNAttrPassword          = 0x0007
-	STUNAttrMessageIntegrity  = 0x0008
-	STUNAttrErrorCode         = 0x0009
-	STUNAttrUnknownAttributes = 0x000A
-	STUNAttrReflectedFrom     = 0x000B
-	STUNAttrXORMappedAddress  = 0x0020
-	STUNAttrXOROnly           = 0x0021
-	STUNAttrServerName        = 0x8022
-	STUNAttrSecondaryAddress  = 0x8050
+	STUNAttrMappedAddress      = 0x0001
+	STUNAttrResponseAddress    = 0x0002
+	STUNAttrChangeRequest      = 0x0003
+	STUNAttrSourceAddress      = 0x0004
+	STUNAttrChangedAddress     = 0x0005
+	STUNAttrUsername           = 0x0006
+	STUNAttrPassword           = 0x0007
+	STUNAttrMessageIntegrity   = 0x0008
+	STUNAttrErrorCode          = 0x0009
+	STUNAttrUnknownAttributes  = 0x000A
+	STUNAttrReflectedFrom      = 0x000B
+	STUNAttrRealm              = 0x0014
+	STUNAttrNonce              = 0x0015
+	STUNAttrXORMappedAddress   = 0x0020
+	STUNAttrXORPeerAddress     = 0x0012
+	STUNAttrData               = 0x0013
+	STUNAttrLifetime           = 0x000D
+	STUNAttrBandwidth          = 0x0010
+	STUNAttrDestinationAddress = 0x0011
+	STUNAttrXOROnly            = 0x0021
+	STUNAttrServerName         = 0x8022
+	STUNAttrSecondaryAddress   = 0x8050
 )
 
 // NewSTUNClient создает новый STUN клиент
@@ -106,15 +134,33 @@ func (sc *STUNClient) GetExternalAddress() (*net.UDPAddr, error) {
 	return nil, fmt.Errorf("no mapped address found in STUN response")
 }
 
-// GetServerReflexiveCandidate получает server reflexive candidate
+// GetServerReflexiveCandidate получает server reflexive candidate (улучшенная версия)
 func (sc *STUNClient) GetServerReflexiveCandidate(localAddr string, localPort int) (*Candidate, error) {
-	externalAddr, err := sc.GetExternalAddress()
+	// Создаем временное соединение для STUN запроса
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{
+		IP:   net.ParseIP(localAddr),
+		Port: 0, // Система выберет свободный порт
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create UDP connection: %w", err)
+	}
+	defer conn.Close()
+
+	// Создаем STUN клиент с конкретным соединением
+	stunClient := &STUNClient{
+		serverAddr: sc.serverAddr,
+		conn:       conn,
+		logger:     sc.logger,
 	}
 
-	return &Candidate{
-		Foundation:  fmt.Sprintf("srflx-%s", localAddr),
+	externalAddr, err := stunClient.GetExternalAddress()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get external address: %w", err)
+	}
+
+	// Создаем server reflexive candidate
+	candidate := &Candidate{
+		Foundation:  fmt.Sprintf("srflx-%s-%d", externalAddr.IP.String(), externalAddr.Port),
 		Component:   1,
 		Transport:   "UDP",
 		Priority:    0, // Will be calculated by ICE agent
@@ -123,7 +169,13 @@ func (sc *STUNClient) GetServerReflexiveCandidate(localAddr string, localPort in
 		Type:        CandidateTypeServerReflexive,
 		RelatedAddr: localAddr,
 		RelatedPort: localPort,
-	}, nil
+	}
+
+	sc.logger.Debug("Got server reflexive candidate",
+		zap.String("external_address", externalAddr.String()),
+		zap.String("local_address", fmt.Sprintf("%s:%d", localAddr, localPort)))
+
+	return candidate, nil
 }
 
 // SendBindingRequest отправляет STUN binding request

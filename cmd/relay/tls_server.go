@@ -5,8 +5,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
@@ -109,7 +109,7 @@ func (ts *TLSServer) configureMTLS(tlsConfig *tls.Config) error {
 	}
 
 	// Load CA certificate
-	caCert, err := ioutil.ReadFile(ts.config.MTLS.CAFile)
+	caCert, err := os.ReadFile(ts.config.MTLS.CAFile)
 	if err != nil {
 		return fmt.Errorf("failed to read CA certificate from %s: %v", ts.config.MTLS.CAFile, err)
 	}
@@ -217,7 +217,7 @@ func (ts *TLSServer) ValidateTLSConfig() error {
 
 // validateCertificateFile validates a certificate file
 func (ts *TLSServer) validateCertificateFile(filename string) error {
-	certPEM, err := ioutil.ReadFile(filename)
+	certPEM, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("failed to read certificate file: %v", err)
 	}
@@ -241,7 +241,7 @@ func (ts *TLSServer) validateCertificateFile(filename string) error {
 
 // validatePrivateKeyFile validates a private key file
 func (ts *TLSServer) validatePrivateKeyFile(filename string) error {
-	keyPEM, err := ioutil.ReadFile(filename)
+	keyPEM, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("failed to read private key file: %v", err)
 	}

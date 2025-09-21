@@ -158,7 +158,14 @@ spec:
         - name: tls-certs
           mountPath: /app/certs
           readOnly: true
+        - name: letsencrypt-certs
+          mountPath: /etc/letsencrypt
+          readOnly: true
       volumes:
       - name: tls-certs
         secret:
           secretName: cloudbridge-tls
+      - name: letsencrypt-certs
+        hostPath:
+          path: /etc/letsencrypt
+          type: Directory

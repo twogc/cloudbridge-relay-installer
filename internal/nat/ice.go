@@ -14,6 +14,7 @@ import (
 type ICEAgent struct {
 	stunServers      []string
 	turnServers      []*TURNServer
+	turnRelayServer  *TURNRelayServer
 	localCandidates  []*Candidate
 	remoteCandidates []*Candidate
 	selectedPair     *CandidatePair
@@ -22,6 +23,7 @@ type ICEAgent struct {
 	logger           *zap.Logger
 	ctx              context.Context
 	cancel           context.CancelFunc
+	metrics          *NATMetrics
 }
 
 // ICEState представляет состояние ICE агента
@@ -93,15 +95,22 @@ type TURNServer struct {
 func NewICEAgent(stunServers []string, turnServers []*TURNServer, logger *zap.Logger) *ICEAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Создаем TURN relay сервер
+	// TODO: Создать адаптер для zap.Logger -> logger.Logger
+	// turnRelayServer := NewTURNRelayServer(logger, nil)
+	var turnRelayServer *TURNRelayServer
+
 	return &ICEAgent{
 		stunServers:      stunServers,
 		turnServers:      turnServers,
+		turnRelayServer:  turnRelayServer,
 		localCandidates:  make([]*Candidate, 0),
 		remoteCandidates: make([]*Candidate, 0),
 		state:            ICEStateNew,
 		logger:           logger,
 		ctx:              ctx,
 		cancel:           cancel,
+		metrics:          NewNATMetrics(logger),
 	}
 }
 
@@ -138,6 +147,38 @@ func (ia *ICEAgent) StartGathering() error {
 	return nil
 }
 
+// StartTURNServer запускает TURN relay сервер
+func (ia *ICEAgent) StartTURNServer() error {
+	if ia.turnRelayServer == nil {
+		return fmt.Errorf("TURN relay server not initialized")
+	}
+
+	ia.logger.Info("Starting TURN relay server")
+
+	if err := ia.turnRelayServer.Start(); err != nil {
+		return fmt.Errorf("failed to start TURN relay server: %w", err)
+	}
+
+	ia.logger.Info("TURN relay server started successfully")
+	return nil
+}
+
+// StopTURNServer останавливает TURN relay сервер
+func (ia *ICEAgent) StopTURNServer() error {
+	if ia.turnRelayServer == nil {
+		return nil
+	}
+
+	ia.logger.Info("Stopping TURN relay server")
+
+	if err := ia.turnRelayServer.Close(); err != nil {
+		return fmt.Errorf("failed to stop TURN relay server: %w", err)
+	}
+
+	ia.logger.Info("TURN relay server stopped")
+	return nil
+}
+
 // gatherHostCandidates собирает host candidates
 func (ia *ICEAgent) gatherHostCandidates() error {
 	interfaces, err := net.Interfaces()
@@ -146,32 +187,94 @@ func (ia *ICEAgent) gatherHostCandidates() error {
 	}
 
 	for _, iface := range interfaces {
-		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+		// Пропускаем неактивные интерфейсы
+		if iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		// Пропускаем loopback интерфейсы (кроме случаев, когда они явно разрешены)
+		if iface.Flags&net.FlagLoopback != 0 {
+			// Можно добавить конфигурацию для включения loopback
 			continue
 		}
 
 		addrs, err := iface.Addrs()
 		if err != nil {
+			ia.logger.Warn("Failed to get addresses for interface",
+				zap.String("interface", iface.Name),
+				zap.Error(err))
 			continue
 		}
 
 		for _, addr := range addrs {
-			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-				if ipnet.IP.To4() != nil { // IPv4 only for now
-					candidate := &Candidate{
-						Foundation: fmt.Sprintf("%d", iface.Index),
-						Component:  1,
-						Transport:  "UDP",
-						Priority:   ia.calculatePriority(CandidateTypeHost, 0),
-						Address:    ipnet.IP.String(),
-						Port:       0, // Will be set by QUIC connection
-						Type:       CandidateTypeHost,
-					}
-					ia.localCandidates = append(ia.localCandidates, candidate)
-				}
+			ipNet, ok := addr.(*net.IPNet)
+			if !ok {
+				continue
 			}
+
+			ip := ipNet.IP
+
+			// Пропускаем невалидные IP адреса
+			if ip == nil || ip.IsLoopback() || ip.IsMulticast() || ip.IsUnspecified() {
+				continue
+			}
+
+			// Пропускаем IPv6 link-local адреса для избежания location tracking
+			if ip.To4() == nil && (ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast()) {
+				ia.logger.Debug("Skipping IPv6 link-local address for location tracking",
+					zap.String("address", ip.String()))
+				continue
+			}
+
+			// Создаем UDP соединение для host candidate
+			conn, err := net.ListenUDP("udp", &net.UDPAddr{
+				IP:   ip,
+				Port: 0, // Система выберет свободный порт
+			})
+			if err != nil {
+				ia.logger.Warn("Failed to create UDP connection for host candidate",
+					zap.String("address", ip.String()),
+					zap.Error(err))
+				continue
+			}
+
+			// Получаем реальный адрес соединения
+			localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+			// Создаем host candidate
+			candidate := &Candidate{
+				Foundation:  fmt.Sprintf("host-%s-%d", ip.String(), localAddr.Port),
+				Component:   1,
+				Transport:   "UDP",
+				Priority:    ia.calculatePriority(CandidateTypeHost, 1),
+				Address:     localAddr.IP.String(),
+				Port:        localAddr.Port,
+				Type:        CandidateTypeHost,
+				RelatedAddr: "",
+				RelatedPort: 0,
+			}
+
+			ia.mu.Lock()
+			ia.localCandidates = append(ia.localCandidates, candidate)
+			ia.mu.Unlock()
+
+			ia.logger.Debug("Added host candidate",
+				zap.String("address", candidate.Address),
+				zap.Int("port", candidate.Port),
+				zap.Uint32("priority", candidate.Priority),
+				zap.String("interface", iface.Name))
+
+			// Записываем метрику кандидата
+			ia.metrics.RecordICECandidate("host", "UDP")
+
+			// Закрываем соединение после создания candidate
+			// В реальной реализации соединение должно храниться для использования
+			conn.Close()
 		}
 	}
+
+	ia.logger.Info("Host candidates gathering completed",
+		zap.Int("candidates_count", len(ia.localCandidates)))
 
 	return nil
 }
@@ -197,6 +300,10 @@ func (ia *ICEAgent) gatherServerReflexiveCandidates() error {
 				srCandidate.RelatedAddr = hostCandidate.Address
 				srCandidate.RelatedPort = hostCandidate.Port
 				ia.localCandidates = append(ia.localCandidates, srCandidate)
+
+				// Записываем метрику server reflexive кандидата
+				ia.metrics.RecordICECandidate("srflx", "UDP")
+				ia.metrics.RecordSTUNRequest(stunServer, "success")
 			}
 		}
 	}
@@ -337,24 +444,6 @@ func (ia *ICEAgent) Close() error {
 	return nil
 }
 
-// calculatePriority вычисляет приоритет candidate
-func (ia *ICEAgent) calculatePriority(candidateType CandidateType, localPref int) uint32 {
-	// RFC 5245 priority formula
-	var typePref uint32
-	switch candidateType {
-	case CandidateTypeHost:
-		typePref = 126
-	case CandidateTypeServerReflexive:
-		typePref = 100
-	case CandidateTypePeerReflexive:
-		typePref = 110
-	case CandidateTypeRelay:
-		typePref = 0
-	}
-
-	return (typePref << 24) | (uint32(localPref) << 8) | (256 - 1)
-}
-
 // sortCandidatesByPriority сортирует candidates по приоритету
 func (ia *ICEAgent) sortCandidatesByPriority() {
 	// Простая сортировка по убыванию приоритета
@@ -407,3 +496,110 @@ func (t CandidateType) String() string {
 	}
 }
 
+// GetMetrics возвращает метрики ICE агента
+func (ia *ICEAgent) GetMetrics() *NATMetrics {
+	return ia.metrics
+}
+
+// RecordConnectionAttempt записывает попытку соединения
+func (ia *ICEAgent) RecordConnectionAttempt(success bool, duration time.Duration) {
+	natType := ia.detectNATType()
+	status := "failed"
+	if success {
+		status = "success"
+	}
+
+	ia.metrics.RecordICEConnection(status, natType, duration)
+	ia.metrics.RecordNATType(natType)
+}
+
+// detectNATType определяет тип NAT на основе собранных кандидатов
+func (ia *ICEAgent) detectNATType() string {
+	ia.mu.RLock()
+	defer ia.mu.RUnlock()
+
+	hasHost := false
+	hasServerReflexive := false
+	hasRelay := false
+
+	for _, candidate := range ia.localCandidates {
+		switch candidate.Type {
+		case CandidateTypeHost:
+			hasHost = true
+		case CandidateTypeServerReflexive:
+			hasServerReflexive = true
+		case CandidateTypeRelay:
+			hasRelay = true
+		}
+	}
+
+	// Определяем тип NAT на основе доступных кандидатов
+	if hasHost && !hasServerReflexive && !hasRelay {
+		return "no_nat" // Прямое соединение
+	} else if hasHost && hasServerReflexive && !hasRelay {
+		return "cone_nat" // Cone NAT
+	} else if hasHost && hasServerReflexive && hasRelay {
+		return "symmetric_nat" // Symmetric NAT
+	} else if !hasHost && hasServerReflexive {
+		return "restricted_nat" // Restricted NAT
+	} else if !hasHost && !hasServerReflexive && hasRelay {
+		return "blocked_nat" // Полностью заблокированный NAT
+	}
+
+	return "unknown"
+}
+
+// GetNATTypeStats возвращает статистику типов NAT
+func (ia *ICEAgent) GetNATTypeStats() map[string]int64 {
+	return ia.metrics.GetNATTypeStats()
+}
+
+// GetConnectionStats возвращает статистику соединений
+func (ia *ICEAgent) GetConnectionStats() map[string]*ConnectionStats {
+	return ia.metrics.GetConnectionStats()
+}
+
+// GetOverallStats возвращает общую статистику
+func (ia *ICEAgent) GetOverallStats() map[string]interface{} {
+	return ia.metrics.GetOverallStats()
+}
+
+// calculatePriority рассчитывает приоритет кандидата согласно RFC 8445
+func (ia *ICEAgent) calculatePriority(candidateType CandidateType, componentID int) uint32 {
+	// Приоритет рассчитывается по формуле: priority = (2^24)*(type preference) + (2^8)*(local preference) + (2^0)*(256 - component ID)
+
+	var typePreference uint32
+	switch candidateType {
+	case CandidateTypeHost:
+		typePreference = 126 // Host candidates имеют наивысший приоритет
+	case CandidateTypePeerReflexive:
+		typePreference = 110 // Peer reflexive candidates
+	case CandidateTypeServerReflexive:
+		typePreference = 100 // Server reflexive candidates
+	case CandidateTypeRelay:
+		typePreference = 0 // Relay candidates имеют наименьший приоритет
+	default:
+		typePreference = 0
+	}
+
+	localPreference := uint32(65535) // Максимальное значение local preference
+
+	priority := (typePreference << 24) + (localPreference << 8) + uint32(256-componentID)
+	return priority
+}
+
+// AddLocalCandidate добавляет локальный кандидат
+func (ia *ICEAgent) AddLocalCandidate(candidate *Candidate) {
+	ia.mu.Lock()
+	defer ia.mu.Unlock()
+
+	ia.localCandidates = append(ia.localCandidates, candidate)
+
+	// Записываем метрику
+	ia.metrics.RecordICECandidate(candidate.Type.String(), candidate.Transport)
+}
+
+// DetectNATType определяет тип NAT (публичный метод)
+func (ia *ICEAgent) DetectNATType() string {
+	return ia.detectNATType()
+}

@@ -7,7 +7,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"net"
 	"net/http"
@@ -16,11 +18,47 @@ import (
 
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
+	"github.com/quic-go/quic-go/quicvarint"
 	"go.uber.org/zap"
 
 	"github.com/twogc/cloudbridge-relay-installer/config"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 )
+
+// Context ID для MASQUE datagrams (из masque-go)
+var contextIDZero = quicvarint.Append([]byte{}, 0)
+
+// proxyEntry представляет запись прокси для Context ID управления
+type proxyEntry struct {
+	str  *http3.Stream
+	conn *net.UDPConn
+}
+
+// Close закрывает proxy entry
+func (e proxyEntry) Close() error {
+	e.str.CancelRead(quic.StreamErrorCode(http3.ErrCodeConnectError))
+	return errors.Join(e.str.Close(), e.conn.Close())
+}
+
+// errToStatus конвертирует ошибку в HTTP статус код (из masque-go)
+func errToStatus(err error) int {
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		// Consistent with RFC 9209 Section 2.3.1.
+		return http.StatusGatewayTimeout
+	}
+	var dnsError *net.DNSError
+	if errors.As(err, &dnsError) {
+		// Recommended by RFC 9209 Section 2.3.2.
+		return http.StatusBadGateway
+	}
+	var addrErr *net.AddrError
+	var parseError *net.ParseError
+	if errors.As(err, &addrErr) || errors.As(err, &parseError) {
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
+}
 
 // MASQUEServer представляет MASQUE сервер для обхода корпоративных сетей
 type MASQUEServer struct {
@@ -30,23 +68,33 @@ type MASQUEServer struct {
 	udpProxy    *MASQUEUDPProxy
 	ipProxy     *MASQUEIPProxy
 
+	// IP Capsule поддержка
+	ipCapsuleManager *IPCapsuleManager
+
 	// Управление соединениями
 	connections      map[string]*MASQUEConnection
 	connectionsMutex sync.RWMutex
 
+	// Context ID управление (из masque-go)
+	proxyEntries      map[io.Closer]struct{}
+	proxyEntriesMutex sync.Mutex
+	refCount          sync.WaitGroup
+
 	// Состояние
 	isRunning bool
+	closed    bool
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
 
 // MASQUEConnection представляет MASQUE соединение
 type MASQUEConnection struct {
-	ID           string
-	Stream       *http3.Stream
-	UDPConn      *net.UDPConn
-	CreatedAt    time.Time
-	LastActivity time.Time
+	ID              string
+	Stream          *http3.Stream
+	UDPConn         *net.UDPConn
+	DatagramChannel chan []byte
+	CreatedAt       time.Time
+	LastActivity    time.Time
 }
 
 // MASQUEUDPProxy представляет UDP прокси для CONNECT-UDP
@@ -59,18 +107,70 @@ type MASQUEIPProxy struct {
 	logger *logger.Logger
 }
 
+// SendDatagram отправляет datagram через MASQUE соединение
+func (mc *MASQUEConnection) SendDatagram(data []byte) error {
+	if mc.DatagramChannel == nil {
+		return fmt.Errorf("datagram channel not initialized")
+	}
+
+	select {
+	case mc.DatagramChannel <- data:
+		mc.LastActivity = time.Now()
+		return nil
+	default:
+		return fmt.Errorf("datagram channel is full")
+	}
+}
+
+// SendDatagramWithContextID отправляет datagram с Context ID (из masque-go)
+func (mc *MASQUEConnection) SendDatagramWithContextID(data []byte) error {
+	if mc.Stream == nil {
+		return fmt.Errorf("stream not initialized")
+	}
+
+	// Создаем datagram с Context ID
+	datagram := make([]byte, 0, len(contextIDZero)+len(data))
+	datagram = append(datagram, contextIDZero...)
+	datagram = append(datagram, data...)
+
+	// Отправляем через HTTP/3 stream
+	if err := mc.Stream.SendDatagram(datagram); err != nil {
+		return fmt.Errorf("failed to send datagram: %w", err)
+	}
+
+	mc.LastActivity = time.Now()
+	return nil
+}
+
+// ReceiveDatagram получает datagram из MASQUE соединения
+func (mc *MASQUEConnection) ReceiveDatagram(ctx context.Context) ([]byte, error) {
+	if mc.DatagramChannel == nil {
+		return nil, fmt.Errorf("datagram channel not initialized")
+	}
+
+	select {
+	case data := <-mc.DatagramChannel:
+		mc.LastActivity = time.Now()
+		return data, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
 // NewMASQUEServer создает новый MASQUE сервер
 func NewMASQUEServer(logger *logger.Logger, config *config.Config) *MASQUEServer {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &MASQUEServer{
-		logger:      logger,
-		config:      config,
-		udpProxy:    &MASQUEUDPProxy{logger: logger},
-		ipProxy:     &MASQUEIPProxy{logger: logger},
-		connections: make(map[string]*MASQUEConnection),
-		ctx:         ctx,
-		cancel:      cancel,
+		logger:           logger,
+		config:           config,
+		udpProxy:         &MASQUEUDPProxy{logger: logger},
+		ipProxy:          &MASQUEIPProxy{logger: logger},
+		ipCapsuleManager: NewIPCapsuleManager(logger),
+		connections:      make(map[string]*MASQUEConnection),
+		proxyEntries:     make(map[io.Closer]struct{}),
+		ctx:              ctx,
+		cancel:           cancel,
 	}
 }
 
@@ -86,27 +186,55 @@ func (ms *MASQUEServer) Start() error {
 		zap.Strings("alpn_protocols", ms.config.MASQUE.ALPNProtocols))
 
 	// Создаем TLS конфигурацию
+	ms.logger.Info("Creating TLS configuration...")
 	tlsConfig, err := ms.createTLSConfig()
 	if err != nil {
+		ms.logger.Error("Failed to create TLS config", zap.Error(err))
 		return fmt.Errorf("failed to create TLS config: %v", err)
 	}
+	ms.logger.Info("TLS configuration created successfully")
 
 	// Создаем HTTP/3 сервер
+	ms.logger.Info("Creating HTTP/3 server...")
 	ms.http3Server = &http3.Server{
-		Handler:   ms.createHTTPHandler(),
-		TLSConfig: tlsConfig,
+		Addr:            ":8443",
+		Handler:         ms.createHTTPHandler(),
+		TLSConfig:       tlsConfig,
+		EnableDatagrams: true, // Критично для MASQUE HTTP Datagrams
 		QUICConfig: &quic.Config{
-			MaxIdleTimeout: 30 * time.Second,
+			MaxIdleTimeout:  30 * time.Second,
+			EnableDatagrams: true, // Включаем QUIC datagrams
 		},
 	}
+	ms.logger.Info("HTTP/3 server created successfully")
 
 	// Запускаем сервер
 	go func() {
 		addr := ":8443" // MASQUE порт по умолчанию
 		ms.logger.Info("MASQUE HTTP/3 server starting", zap.String("addr", addr))
 
+		// Добавляем проверку порта перед запуском
+		listener, err := net.Listen("tcp", addr)
+		if err != nil {
+			ms.logger.Error("Failed to bind to MASQUE port", zap.String("addr", addr), zap.Error(err))
+			return
+		}
+		ms.logger.Info("Successfully bound to MASQUE port", zap.String("addr", addr))
+		listener.Close()
+
+		// Запускаем HTTP/3 сервер
+		ms.logger.Info("Starting HTTP/3 server ListenAndServe...")
+		ms.logger.Info("HTTP/3 server configuration",
+			zap.String("addr", addr),
+			zap.Bool("tls_config_present", ms.http3Server.TLSConfig != nil),
+			zap.Bool("handler_present", ms.http3Server.Handler != nil))
+
+		// Используем ListenAndServe с явным указанием адреса
 		if err := ms.http3Server.ListenAndServe(); err != nil {
 			ms.logger.Error("MASQUE HTTP/3 server error", zap.Error(err))
+			ms.isRunning = false
+		} else {
+			ms.logger.Info("HTTP/3 server ListenAndServe completed without error")
 		}
 	}()
 
@@ -118,14 +246,27 @@ func (ms *MASQUEServer) Start() error {
 
 // createTLSConfig создает TLS конфигурацию для MASQUE
 func (ms *MASQUEServer) createTLSConfig() (*tls.Config, error) {
-	// Для демонстрации используем самоподписанный сертификат
-	// В продакшене следует использовать реальные сертификаты
-	cert, err := ms.generateSelfSignedCert()
+	ms.logger.Info("Creating TLS config for MASQUE server...")
+
+	// Пытаемся загрузить реальный сертификат Let's Encrypt
+	ms.logger.Info("Attempting to load Let's Encrypt certificate...")
+	cert, err := ms.loadLetsEncryptCert()
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate certificate: %v", err)
+		ms.logger.Warn("Failed to load Let's Encrypt certificate, falling back to self-signed", zap.Error(err))
+		// Fallback к самоподписанному сертификату
+		ms.logger.Info("Generating self-signed certificate...")
+		cert, err = ms.generateSelfSignedCert()
+		if err != nil {
+			ms.logger.Error("Failed to generate self-signed certificate", zap.Error(err))
+			return nil, fmt.Errorf("failed to generate certificate: %v", err)
+		}
+		ms.logger.Info("Self-signed certificate generated successfully")
+	} else {
+		ms.logger.Info("Let's Encrypt certificate loaded successfully")
 	}
 
-	return &tls.Config{
+	ms.logger.Info("Creating TLS configuration...")
+	tlsConfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		CipherSuites: []uint16{
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
@@ -134,17 +275,51 @@ func (ms *MASQUEServer) createTLSConfig() (*tls.Config, error) {
 		},
 		Certificates: []tls.Certificate{cert},
 		NextProtos:   ms.config.MASQUE.ALPNProtocols,
-	}, nil
+	}
+
+	ms.logger.Info("TLS configuration created successfully",
+		zap.Strings("alpn_protocols", ms.config.MASQUE.ALPNProtocols),
+		zap.Int("cipher_suites_count", len(tlsConfig.CipherSuites)),
+		zap.Int("certificates_count", len(tlsConfig.Certificates)))
+
+	return tlsConfig, nil
+}
+
+// loadLetsEncryptCert загружает сертификат Let's Encrypt
+func (ms *MASQUEServer) loadLetsEncryptCert() (tls.Certificate, error) {
+	ms.logger.Info("Loading Let's Encrypt certificate for edge.2gc.ru...")
+
+	// Пути к сертификатам Let's Encrypt
+	certFile := "/etc/letsencrypt/live/edge.2gc.ru/fullchain.pem"
+	keyFile := "/etc/letsencrypt/live/edge.2gc.ru/privkey.pem"
+
+	ms.logger.Info("Certificate paths",
+		zap.String("cert_file", certFile),
+		zap.String("key_file", keyFile))
+
+	// Загружаем сертификат
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		ms.logger.Error("Failed to load Let's Encrypt certificate", zap.Error(err))
+		return tls.Certificate{}, fmt.Errorf("failed to load certificate: %v", err)
+	}
+
+	ms.logger.Info("Let's Encrypt certificate loaded successfully")
+	return cert, nil
 }
 
 // generateSelfSignedCert генерирует самоподписанный сертификат
 func (ms *MASQUEServer) generateSelfSignedCert() (tls.Certificate, error) {
+	ms.logger.Info("Generating RSA private key (2048 bits)...")
 	// Генерируем приватный ключ
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
+		ms.logger.Error("Failed to generate RSA private key", zap.Error(err))
 		return tls.Certificate{}, fmt.Errorf("failed to generate private key: %v", err)
 	}
+	ms.logger.Info("RSA private key generated successfully")
 
+	ms.logger.Info("Creating X.509 certificate template...")
 	// Создаем сертификат
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(1),
@@ -163,33 +338,54 @@ func (ms *MASQUEServer) generateSelfSignedCert() (tls.Certificate, error) {
 		IPAddresses: []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
 		DNSNames:    []string{"localhost", "b1.2gc.space"},
 	}
+	ms.logger.Info("X.509 certificate template created",
+		zap.Strings("dns_names", template.DNSNames),
+		zap.Strings("ip_addresses", []string{"127.0.0.1", "::1"}))
 
+	ms.logger.Info("Signing X.509 certificate...")
 	// Подписываем сертификат
 	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
+		ms.logger.Error("Failed to sign X.509 certificate", zap.Error(err))
 		return tls.Certificate{}, fmt.Errorf("failed to create certificate: %v", err)
 	}
+	ms.logger.Info("X.509 certificate signed successfully")
 
+	ms.logger.Info("Creating TLS certificate...")
 	// Создаем TLS сертификат
-	return tls.Certificate{
+	tlsCert := tls.Certificate{
 		Certificate: [][]byte{certDER},
 		PrivateKey:  priv,
-	}, nil
+	}
+	ms.logger.Info("TLS certificate created successfully",
+		zap.Int("certificate_chain_length", len(tlsCert.Certificate)),
+		zap.Bool("private_key_present", tlsCert.PrivateKey != nil))
+
+	return tlsCert, nil
 }
 
 // createHTTPHandler создает HTTP обработчик для MASQUE
 func (ms *MASQUEServer) createHTTPHandler() http.Handler {
+	ms.logger.Info("Creating HTTP handler for MASQUE server...")
 	mux := http.NewServeMux()
 
 	// CONNECT-UDP обработчик
 	mux.HandleFunc("/.well-known/masque/udp/", ms.handleConnectUDP)
+	ms.logger.Info("CONNECT-UDP handler registered", zap.String("path", "/.well-known/masque/udp/"))
 
 	// CONNECT-IP обработчик
 	mux.HandleFunc("/.well-known/masque/ip/", ms.handleConnectIP)
+	ms.logger.Info("CONNECT-IP handler registered", zap.String("path", "/.well-known/masque/ip/"))
+
+	// HTTP Datagrams обработчик
+	mux.HandleFunc("/.well-known/masque/datagrams/", ms.handleHTTPDatagrams)
+	ms.logger.Info("HTTP Datagrams handler registered", zap.String("path", "/.well-known/masque/datagrams/"))
 
 	// Health check
 	mux.HandleFunc("/health", ms.handleHealth)
+	ms.logger.Info("Health check handler registered", zap.String("path", "/health"))
 
+	ms.logger.Info("HTTP handler created successfully")
 	return mux
 }
 
@@ -261,6 +457,189 @@ func (ms *MASQUEServer) handleConnectIP(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// handleHTTPDatagrams обрабатывает HTTP Datagrams запросы
+func (ms *MASQUEServer) handleHTTPDatagrams(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("HTTP Datagrams request received",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()),
+		zap.String("remote_addr", r.RemoteAddr))
+
+	// Проверяем Capsule-Protocol заголовок
+	if r.Header.Get("Capsule-Protocol") != "?1" {
+		http.Error(w, "Capsule-Protocol header required", http.StatusBadRequest)
+		return
+	}
+
+	// Получаем HTTP/3 stream из контекста запроса
+	// Используем правильный способ получения stream для HTTP/3
+	streamer, ok := r.Context().Value("http3.streamer").(http3.HTTPStreamer)
+	if !ok {
+		// Альтернативный способ получения stream
+		if stream, exists := r.Context().Value("http3.stream").(*http3.Stream); exists {
+			// Устанавливаем заголовки ответа
+			w.Header().Set("Capsule-Protocol", "?1")
+			w.WriteHeader(http.StatusOK)
+
+			// Запускаем обработку datagrams
+			go ms.handleDatagramStream(stream, r.RemoteAddr)
+			return
+		}
+		http.Error(w, "Not an HTTP/3 stream", http.StatusBadRequest)
+		return
+	}
+
+	stream := streamer.HTTPStream()
+
+	// Устанавливаем заголовки ответа
+	w.Header().Set("Capsule-Protocol", "?1")
+	w.WriteHeader(http.StatusOK)
+
+	// Запускаем обработку datagrams
+	go ms.handleDatagramStream(stream, r.RemoteAddr)
+}
+
+// handleDatagramStream обрабатывает поток datagrams
+func (ms *MASQUEServer) handleDatagramStream(stream *http3.Stream, remoteAddr string) {
+	defer stream.Close()
+
+	ms.logger.Info("Starting datagram stream processing", zap.String("remote_addr", remoteAddr))
+
+	for {
+		// Читаем datagram из HTTP/3 stream (который уже интегрирован с QUIC datagrams)
+		data, err := stream.ReceiveDatagram(context.Background())
+		if err != nil {
+			ms.logger.Debug("Failed to receive datagram from stream",
+				zap.String("remote_addr", remoteAddr),
+				zap.Error(err))
+			break
+		}
+
+		// Обрабатываем datagram
+		if err := ms.processDatagram(data, remoteAddr); err != nil {
+			ms.logger.Error("Failed to process datagram",
+				zap.String("remote_addr", remoteAddr),
+				zap.Error(err))
+		}
+	}
+
+	ms.logger.Info("Datagram stream processing ended", zap.String("remote_addr", remoteAddr))
+}
+
+// processDatagram обрабатывает полученный datagram с Context ID поддержкой
+func (ms *MASQUEServer) processDatagram(data []byte, remoteAddr string) error {
+	ms.logger.Debug("Processing datagram",
+		zap.String("remote_addr", remoteAddr),
+		zap.Int("data_len", len(data)))
+
+	// HTTP Datagrams согласно RFC 9297 имеют формат:
+	// [Quarter Stream ID (varint)][HTTP Datagram Payload]
+	// Для MASQUE Context ID может быть 0 (CONNECT-UDP) или != 0 (CONNECT-IP)
+
+	if len(data) == 0 {
+		ms.logger.Warn("Empty datagram received")
+		return fmt.Errorf("empty datagram")
+	}
+
+	// Парсим Quarter Stream ID (Context ID для MASQUE)
+	contextID, n, err := quicvarint.Parse(data)
+	if err != nil {
+		ms.logger.Warn("Failed to parse context ID from HTTP datagram", zap.Error(err))
+		return fmt.Errorf("failed to parse context ID: %w", err)
+	}
+
+	// Извлекаем payload после Context ID
+	payload := data[n:]
+
+	ms.logger.Debug("Processing HTTP datagram",
+		zap.Uint64("context_id", contextID),
+		zap.Int("payload_len", len(payload)),
+		zap.String("remote_addr", remoteAddr))
+
+	// Проверяем, является ли это IP Capsule для CONNECT-IP
+	if contextID != 0 {
+		// Обрабатываем как IP Capsule для CONNECT-IP
+		return ms.processIPCapsule(payload, remoteAddr, contextID)
+	}
+
+	// Для CONNECT-UDP (Context ID = 0) парсим datagram для определения маршрутизации
+	// Формат: [target_peer_id:4][payload:...]
+	if len(payload) < 4 {
+		ms.logger.Warn("CONNECT-UDP datagram too short for routing", zap.Int("len", len(payload)))
+		return fmt.Errorf("datagram too short for routing")
+	}
+
+	// Извлекаем target peer ID (первые 4 байта)
+	targetPeerID := string(payload[:4])
+	actualPayload := payload[4:]
+
+	ms.logger.Debug("Routing CONNECT-UDP datagram",
+		zap.String("target_peer_id", targetPeerID),
+		zap.Int("payload_len", len(actualPayload)),
+		zap.Uint64("context_id", contextID))
+
+	// Ищем целевое MASQUE соединение
+	ms.connectionsMutex.RLock()
+	targetConn, exists := ms.connections[targetPeerID]
+	ms.connectionsMutex.RUnlock()
+
+	if !exists {
+		ms.logger.Warn("Target MASQUE connection not found", zap.String("peer_id", targetPeerID))
+		return fmt.Errorf("target connection not found: %s", targetPeerID)
+	}
+
+	// Отправляем datagram в целевое соединение
+	if err := targetConn.SendDatagram(actualPayload); err != nil {
+		ms.logger.Error("Failed to send datagram to target connection",
+			zap.String("target_peer_id", targetPeerID),
+			zap.Error(err))
+		return fmt.Errorf("failed to send to target: %w", err)
+	}
+
+	ms.logger.Debug("Datagram routed successfully",
+		zap.String("target_peer_id", targetPeerID),
+		zap.Int("payload_len", len(actualPayload)))
+
+	return nil
+}
+
+// processIPCapsule обрабатывает IP Capsule для CONNECT-IP
+func (ms *MASQUEServer) processIPCapsule(data []byte, remoteAddr string, contextID uint64) error {
+	ms.logger.Debug("Processing IP Capsule",
+		zap.String("remote_addr", remoteAddr),
+		zap.Uint64("context_id", contextID),
+		zap.Int("data_len", len(data)))
+
+	// Проверяем, инициализирован ли IP Capsule Manager
+	if ms.ipCapsuleManager == nil {
+		ms.logger.Warn("IP Capsule Manager not initialized, skipping IP capsule processing")
+		return fmt.Errorf("IP Capsule Manager not initialized")
+	}
+
+	// Обрабатываем IP Capsule
+	capsule, err := ms.ipCapsuleManager.ProcessCapsule(data)
+	if err != nil {
+		ms.logger.Error("Failed to process IP capsule", zap.Error(err))
+		return fmt.Errorf("failed to process IP capsule: %w", err)
+	}
+
+	// Валидируем IP пакет
+	if err := capsule.Validate(); err != nil {
+		ms.logger.Error("Invalid IP packet in capsule", zap.Error(err))
+		return fmt.Errorf("invalid IP packet: %w", err)
+	}
+
+	ms.logger.Debug("IP Capsule processed successfully",
+		zap.String("remote_addr", remoteAddr),
+		zap.Uint64("context_id", contextID),
+		zap.Int("ip_packet_len", len(capsule.IPPacket)),
+		zap.Uint16("checksum", capsule.Checksum))
+
+	// Здесь можно добавить логику маршрутизации IP пакетов
+	// Например, отправка в соответствующий туннель или обработка локально
+
+	return nil
+}
+
 // handleHealth обрабатывает health check запросы
 func (ms *MASQUEServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -283,13 +662,22 @@ func (ms *MASQUEServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 // createMASQUEConnection создает новое MASQUE соединение
 func (ms *MASQUEServer) createMASQUEConnection(r *http.Request, target, protocol string) (*MASQUEConnection, error) {
 	// Получаем HTTP/3 stream из контекста запроса
+	// Используем правильный способ получения stream для HTTP/3
 	streamer, ok := r.Context().Value("http3.streamer").(http3.HTTPStreamer)
 	if !ok {
+		// Альтернативный способ получения stream
+		if stream, exists := r.Context().Value("http3.stream").(*http3.Stream); exists {
+			return ms.createConnectionWithStream(stream, target, protocol)
+		}
 		return nil, fmt.Errorf("not an HTTP/3 stream")
 	}
 
 	stream := streamer.HTTPStream()
+	return ms.createConnectionWithStream(stream, target, protocol)
+}
 
+// createConnectionWithStream создает MASQUE соединение с переданным stream
+func (ms *MASQUEServer) createConnectionWithStream(stream *http3.Stream, target, protocol string) (*MASQUEConnection, error) {
 	// Создаем UDP соединение к целевому адресу
 	udpAddr, err := net.ResolveUDPAddr("udp", target)
 	if err != nil {
@@ -303,11 +691,12 @@ func (ms *MASQUEServer) createMASQUEConnection(r *http.Request, target, protocol
 
 	// Создаем MASQUE соединение
 	conn := &MASQUEConnection{
-		ID:           fmt.Sprintf("masque_%d", time.Now().UnixNano()),
-		Stream:       stream,
-		UDPConn:      udpConn,
-		CreatedAt:    time.Now(),
-		LastActivity: time.Now(),
+		ID:              fmt.Sprintf("masque_%d", time.Now().UnixNano()),
+		Stream:          stream,
+		UDPConn:         udpConn,
+		DatagramChannel: make(chan []byte, 100), // Буфер на 100 datagrams
+		CreatedAt:       time.Now(),
+		LastActivity:    time.Now(),
 	}
 
 	// Сохраняем соединение
@@ -332,8 +721,8 @@ func (p *MASQUEUDPProxy) HandleConnection(w http.ResponseWriter, conn *MASQUECon
 	w.WriteHeader(http.StatusOK)
 
 	// Запускаем проксирование данных
-	go p.proxyToTarget(conn)
-	go p.proxyFromTarget(conn)
+	go p.proxyUDPToTarget(conn)
+	go p.proxyUDPFromTarget(conn)
 
 	return nil
 }
@@ -347,18 +736,18 @@ func (p *MASQUEIPProxy) HandleConnection(w http.ResponseWriter, conn *MASQUEConn
 	w.WriteHeader(http.StatusOK)
 
 	// Запускаем проксирование данных
-	go p.proxyToTarget(conn)
-	go p.proxyFromTarget(conn)
+	go p.proxyIPToTarget(conn)
+	go p.proxyIPFromTarget(conn)
 
 	return nil
 }
 
-// proxyToTarget проксирует данные от клиента к целевому серверу
-func (p *MASQUEUDPProxy) proxyToTarget(conn *MASQUEConnection) {
+// proxyUDPToTarget проксирует данные от клиента к целевому серверу
+func (p *MASQUEUDPProxy) proxyUDPToTarget(conn *MASQUEConnection) {
 	defer conn.UDPConn.Close()
 
 	for {
-		// Читаем данные из HTTP/3 stream
+		// Читаем данные из HTTP/3 stream (который уже интегрирован с QUIC datagrams)
 		data, err := conn.Stream.ReceiveDatagram(context.Background())
 		if err != nil {
 			p.logger.Debug("Failed to receive datagram from stream",
@@ -379,8 +768,8 @@ func (p *MASQUEUDPProxy) proxyToTarget(conn *MASQUEConnection) {
 	}
 }
 
-// proxyFromTarget проксирует данные от целевого сервера к клиенту
-func (p *MASQUEUDPProxy) proxyFromTarget(conn *MASQUEConnection) {
+// proxyUDPFromTarget проксирует данные от целевого сервера к клиенту
+func (p *MASQUEUDPProxy) proxyUDPFromTarget(conn *MASQUEConnection) {
 	defer conn.Stream.Close()
 
 	buffer := make([]byte, 1500)
@@ -394,7 +783,7 @@ func (p *MASQUEUDPProxy) proxyFromTarget(conn *MASQUEConnection) {
 			break
 		}
 
-		// Отправляем данные в HTTP/3 stream
+		// Отправляем данные через HTTP/3 stream (который уже интегрирован с QUIC datagrams)
 		if err := conn.Stream.SendDatagram(buffer[:n]); err != nil {
 			p.logger.Debug("Failed to send datagram to stream",
 				zap.String("conn_id", conn.ID),
@@ -406,53 +795,57 @@ func (p *MASQUEUDPProxy) proxyFromTarget(conn *MASQUEConnection) {
 	}
 }
 
-// proxyToTarget проксирует данные от клиента к целевому серверу (IP)
-func (p *MASQUEIPProxy) proxyToTarget(conn *MASQUEConnection) {
-	// Аналогично UDP прокси, но для IP туннелирования
-	p.proxyToTarget(conn)
-}
+// proxyIPToTarget проксирует данные от клиента к целевому серверу (IP)
+func (p *MASQUEIPProxy) proxyIPToTarget(conn *MASQUEConnection) {
+	defer conn.UDPConn.Close()
 
-// proxyFromTarget проксирует данные от целевого сервера к клиенту (IP)
-func (p *MASQUEIPProxy) proxyFromTarget(conn *MASQUEConnection) {
-	// Аналогично UDP прокси, но для IP туннелирования
-	p.proxyFromTarget(conn)
-}
-
-// Close закрывает MASQUE сервер
-func (ms *MASQUEServer) Close() error {
-	ms.logger.Info("Closing MASQUE server")
-
-	ms.cancel()
-
-	// Закрываем все соединения
-	ms.connectionsMutex.Lock()
-	for connID, conn := range ms.connections {
-		conn.Stream.Close()
-		conn.UDPConn.Close()
-		ms.logger.Debug("Closed MASQUE connection", zap.String("conn_id", connID))
-	}
-	ms.connections = make(map[string]*MASQUEConnection)
-	ms.connectionsMutex.Unlock()
-
-	// Закрываем HTTP/3 сервер
-	if ms.http3Server != nil {
-		if err := ms.http3Server.Close(); err != nil {
-			ms.logger.Warn("Failed to close HTTP/3 server", zap.Error(err))
+	for {
+		// Читаем данные из HTTP/3 stream (который уже интегрирован с QUIC datagrams)
+		data, err := conn.Stream.ReceiveDatagram(context.Background())
+		if err != nil {
+			p.logger.Debug("Failed to receive datagram from stream",
+				zap.String("conn_id", conn.ID),
+				zap.Error(err))
+			break
 		}
+
+		// Отправляем данные в UDP соединение
+		if _, err := conn.UDPConn.Write(data); err != nil {
+			p.logger.Debug("Failed to write to UDP connection",
+				zap.String("conn_id", conn.ID),
+				zap.Error(err))
+			break
+		}
+
+		conn.LastActivity = time.Now()
 	}
-
-	ms.isRunning = false
-	ms.logger.Info("MASQUE server closed successfully")
-
-	return nil
 }
 
-// GetConnectionCount возвращает количество активных соединений
-func (ms *MASQUEServer) GetConnectionCount() int {
-	ms.connectionsMutex.RLock()
-	defer ms.connectionsMutex.RUnlock()
+// proxyIPFromTarget проксирует данные от целевого сервера к клиенту (IP)
+func (p *MASQUEIPProxy) proxyIPFromTarget(conn *MASQUEConnection) {
+	defer conn.Stream.Close()
 
-	return len(ms.connections)
+	buffer := make([]byte, 1500)
+	for {
+		// Читаем данные из UDP соединения
+		n, err := conn.UDPConn.Read(buffer)
+		if err != nil {
+			p.logger.Debug("Failed to read from UDP connection",
+				zap.String("conn_id", conn.ID),
+				zap.Error(err))
+			break
+		}
+
+		// Отправляем данные через HTTP/3 stream (который уже интегрирован с QUIC datagrams)
+		if err := conn.Stream.SendDatagram(buffer[:n]); err != nil {
+			p.logger.Debug("Failed to send datagram to stream",
+				zap.String("conn_id", conn.ID),
+				zap.Error(err))
+			break
+		}
+
+		conn.LastActivity = time.Now()
+	}
 }
 
 // GetConnectionInfo возвращает информацию о соединениях
@@ -462,11 +855,15 @@ func (ms *MASQUEServer) GetConnectionInfo() map[string]interface{} {
 
 	connections := make([]map[string]interface{}, 0, len(ms.connections))
 	for connID, conn := range ms.connections {
+		target := ""
+		if conn.UDPConn != nil {
+			target = conn.UDPConn.RemoteAddr().String()
+		}
 		connections = append(connections, map[string]interface{}{
 			"id":            connID,
 			"created_at":    conn.CreatedAt,
 			"last_activity": conn.LastActivity,
-			"target":        conn.UDPConn.RemoteAddr().String(),
+			"target":        target,
 		})
 	}
 
@@ -475,4 +872,55 @@ func (ms *MASQUEServer) GetConnectionInfo() map[string]interface{} {
 		"is_running":        ms.isRunning,
 		"connections":       connections,
 	}
+}
+
+// Close закрывает MASQUE сервер с поддержкой Context ID управления (из masque-go)
+func (ms *MASQUEServer) Close() error {
+	ms.proxyEntriesMutex.Lock()
+	ms.closed = true
+	var errs []error
+
+	// Закрываем все proxy entries
+	for closer := range ms.proxyEntries {
+		errs = append(errs, closer.Close())
+	}
+	ms.proxyEntriesMutex.Unlock()
+
+	// Ждем завершения всех горутин
+	ms.refCount.Wait()
+
+	// Отменяем контекст
+	ms.cancel()
+
+	// Закрываем HTTP/3 сервер
+	if ms.http3Server != nil {
+		if err := ms.http3Server.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	// Закрываем все соединения
+	ms.connectionsMutex.Lock()
+	for _, conn := range ms.connections {
+		if conn.Stream != nil {
+			conn.Stream.Close()
+		}
+		if conn.UDPConn != nil {
+			conn.UDPConn.Close()
+		}
+	}
+	ms.connections = make(map[string]*MASQUEConnection)
+	ms.connectionsMutex.Unlock()
+
+	ms.isRunning = false
+	ms.proxyEntries = nil
+
+	return errors.Join(errs...)
+}
+
+// GetConnectionCount возвращает количество активных соединений
+func (ms *MASQUEServer) GetConnectionCount() int {
+	ms.connectionsMutex.RLock()
+	defer ms.connectionsMutex.RUnlock()
+	return len(ms.connections)
 }
