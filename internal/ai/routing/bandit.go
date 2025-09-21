@@ -33,7 +33,7 @@ func (mab *MultiArmedBandit) Initialize() {
 	defer mab.mu.Unlock()
 
 	// Инициализируем доступные протоколы
-	protocols := []string{"QUIC", "WireGuard", "TCP", "UDP"}
+	protocols := []string{"QUIC", "P2P_QUIC", "TCP", "UDP"}
 
 	for _, protocol := range protocols {
 		mab.arms[protocol] = &Arm{
@@ -144,4 +144,3 @@ func (mab *MultiArmedBandit) GetStats() map[string]interface{} {
 
 	return stats
 }
-

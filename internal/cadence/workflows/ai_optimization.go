@@ -56,6 +56,7 @@ func AIOptimizedRoutingWorkflow(ctx workflow.Context, input AIOptimizedRoutingWo
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 3 * time.Minute,
 		HeartbeatTimeout:    30 * time.Second,
 		RetryPolicy: &workflow.RetryPolicy{

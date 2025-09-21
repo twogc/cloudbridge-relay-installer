@@ -223,9 +223,9 @@ func (nad *NetworkAnomalyDetector) extractProtocolFeatures(protocols map[string]
 		quicPercent := float64(protocols["QUIC"]) / float64(total)
 		features["quic_percentage"] = quicPercent
 
-		// WireGuard процент
-		wgPercent := float64(protocols["WireGuard"]) / float64(total)
-		features["wireguard_percentage"] = wgPercent
+		// P2P QUIC процент
+		p2pQuicPercent := float64(protocols["P2P_QUIC"]) / float64(total)
+		features["p2p_quic_percentage"] = p2pQuicPercent
 
 		// TCP процент
 		tcpPercent := float64(protocols["TCP"]) / float64(total)
@@ -237,7 +237,7 @@ func (nad *NetworkAnomalyDetector) extractProtocolFeatures(protocols map[string]
 	} else {
 		// Если нет данных, используем нули
 		features["quic_percentage"] = 0.0
-		features["wireguard_percentage"] = 0.0
+		features["p2p_quic_percentage"] = 0.0
 		features["tcp_percentage"] = 0.0
 		features["udp_percentage"] = 0.0
 	}
@@ -471,7 +471,7 @@ func (nad *NetworkAnomalyDetector) loadBaselineFromPipeline() ([][]float64, erro
 	// Получаем данные за последние 24 часа для создания базовой линии
 	endTime := time.Now()
 	startTime := endTime.Add(-24 * time.Hour)
-	
+
 	timeRange := pipeline.TimeRange{
 		Start: startTime,
 		End:   endTime,
@@ -507,7 +507,7 @@ func (nad *NetworkAnomalyDetector) loadBaselineFromPipeline() ([][]float64, erro
 func (nad *NetworkAnomalyDetector) loadBaselineFromSystem() ([][]float64, error) {
 	// Получаем текущие системные метрики
 	baselineData := make([][]float64, 0, 10)
-	
+
 	for i := 0; i < 10; i++ {
 		// Генерируем вариации на основе текущих системных метрик
 		features := nad.generateSystemBaselineFeatures(i)
@@ -520,7 +520,7 @@ func (nad *NetworkAnomalyDetector) loadBaselineFromSystem() ([][]float64, error)
 // extractFeaturesFromDataPoint извлекает признаки из точки данных
 func (nad *NetworkAnomalyDetector) extractFeaturesFromDataPoint(dp pipeline.DataPoint) []float64 {
 	features := make([]float64, 8)
-	
+
 	// Извлекаем признаки в том же порядке, что ожидает модель
 	if val, ok := dp.Data["connections_per_second"].(int64); ok {
 		features[0] = float64(val)
@@ -578,9 +578,9 @@ func (nad *NetworkAnomalyDetector) generateSystemBaselineFeatures(variation int)
 func (nad *NetworkAnomalyDetector) initializeWithFallbackBaselineData() error {
 	// Fallback базовые данные (минимальный набор для работы)
 	baselineData := [][]float64{
-		{10, 1000000, 0.01, 50, 30, 40, 100, 5},   // Нормальная нагрузка
-		{20, 2000000, 0.02, 60, 35, 45, 150, 8},   // Средняя нагрузка
-		{5, 500000, 0.005, 40, 25, 35, 80, 2},     // Низкая нагрузка
+		{10, 1000000, 0.01, 50, 30, 40, 100, 5}, // Нормальная нагрузка
+		{20, 2000000, 0.02, 60, 35, 45, 150, 8}, // Средняя нагрузка
+		{5, 500000, 0.005, 40, 25, 35, 80, 2},   // Низкая нагрузка
 	}
 
 	// Добавляем fallback данные
@@ -630,7 +630,7 @@ func (nad *NetworkAnomalyDetector) convertFeaturesToArray(features map[string]fl
 		"is_business_hours",
 		"is_weekend",
 		"quic_percentage",
-		"wireguard_percentage",
+		"p2p_quic_percentage",
 		"tcp_percentage",
 		"udp_percentage",
 		"connection_variation",

@@ -4,13 +4,11 @@ import (
 	"context"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/nat"
-	"github.com/twogc/cloudbridge-relay-installer/internal/wireguard"
 )
 
-// WireGuardMeshTopologyInterface defines the interface for WireGuard mesh topology operations
-type WireGuardMeshTopologyInterface interface {
-	AddPeer(peerID string, peer *wireguard.WireGuardPeer) error
-	GetPeer(peerID string) (*wireguard.WireGuardPeer, bool)
+type P2PMeshTopologyInterface interface {
+	AddPeer(peerID string, peer *Peer) error
+	GetPeer(peerID string) (*Peer, bool)
 	GetOptimalRoute(clientIP string) ([]string, error)
 }
 
@@ -18,7 +16,7 @@ type WireGuardMeshTopologyInterface interface {
 type PeerDiscoveryInterface interface {
 	Start() error
 	Stop() error
-	DiscoverPeers() ([]*wireguard.DiscoveredPeer, error)
+	DiscoverPeers() ([]*DiscoveredPeer, error)
 }
 
 // HybridRouterInterface defines the interface for hybrid routing operations

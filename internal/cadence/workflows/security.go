@@ -120,6 +120,7 @@ func SecurityComplianceWorkflow(ctx workflow.Context, input SecurityComplianceWo
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 30 * time.Minute,
 		HeartbeatTimeout:    3 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -319,6 +320,7 @@ func AuditLoggingWorkflow(ctx workflow.Context, input AuditLoggingWorkflowInput)
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 25 * time.Minute,
 		HeartbeatTimeout:    2 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -524,6 +526,7 @@ func IncidentResponseWorkflow(ctx workflow.Context, input IncidentResponseWorkfl
 
 	// Настройки для activities (инциденты требуют быстрого реагирования)
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 15 * time.Minute,
 		HeartbeatTimeout:    1 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -755,6 +758,7 @@ func BackupRecoveryWorkflow(ctx workflow.Context, input BackupRecoveryWorkflowIn
 
 	// Настройки для activities (бэкапы могут занимать много времени)
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 2 * time.Hour,
 		HeartbeatTimeout:    5 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{

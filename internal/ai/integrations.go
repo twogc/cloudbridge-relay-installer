@@ -4,21 +4,30 @@ import (
 	"time"
 )
 
-// Интеграция с WireGuard
-func (ba *BehaviorAnalyzer) AnalyzeWireGuardBehavior(peerID string, event interface{}) error {
-	// Анализ поведения WireGuard peers
-	userID := "wireguard-peer-" + peerID
+// Интеграция с P2P QUIC
+func (ba *BehaviorAnalyzer) AnalyzeP2PQUICBehavior(peerID string, event interface{}) error {
+	// Анализ поведения P2P QUIC peers
+	userID := "p2p-quic-peer-" + peerID
 
 	// Создаем событие для анализа
-	wireguardEvent := map[string]interface{}{
+	p2pQuicEvent := map[string]interface{}{
 		"peer_id":     peerID,
-		"event_type":  "wireguard_connection",
+		"event_type":  "p2p_quic_connection",
 		"timestamp":   time.Now(),
 		"data_volume": 0,
-		"protocol":    "wireguard",
+		"protocol":    "p2p_quic",
 	}
 
-	return ba.AnalyzeUserBehavior(userID, wireguardEvent)
+	// Добавляем данные события если они есть
+	if event != nil {
+		if eventMap, ok := event.(map[string]interface{}); ok {
+			for key, value := range eventMap {
+				p2pQuicEvent[key] = value
+			}
+		}
+	}
+
+	return ba.AnalyzeUserBehavior(userID, p2pQuicEvent)
 }
 
 // Интеграция с Enhanced QUIC
@@ -89,13 +98,13 @@ func (ps *PredictiveSecurity) PredictQuantumThreats() error {
 }
 
 // Интеграция с автоматическим реагированием
-func (ar *AutomatedResponse) RespondToWireGuardThreat(threat *ThreatPrediction) error {
-	// Автоматическое реагирование на угрозы WireGuard
+func (ar *AutomatedResponse) RespondToP2PQUICThreat(threat *ThreatPrediction) error {
+	// Автоматическое реагирование на угрозы P2P QUIC
 
-	// Создаем правило реагирования для WireGuard
+	// Создаем правило реагирования для P2P QUIC
 	rule := &ResponseRule{
-		RuleID:   "wireguard-threat-response",
-		Name:     "WireGuard Threat Response",
+		RuleID:   "p2p-quic-threat-response",
+		Name:     "P2P QUIC Threat Response",
 		Priority: 1,
 		Enabled:  true,
 		Conditions: []ResponseCondition{
@@ -110,6 +119,7 @@ func (ar *AutomatedResponse) RespondToWireGuardThreat(threat *ThreatPrediction) 
 			"block_suspicious_peer",
 			"increase_monitoring",
 			"notify_admin",
+			"isolate_peer",
 		},
 	}
 
@@ -120,11 +130,18 @@ func (ar *AutomatedResponse) RespondToWireGuardThreat(threat *ThreatPrediction) 
 
 	// Создаем событие для срабатывания
 	threatEvent := map[string]interface{}{
-		"threat_id":   threat.ThreatID,
-		"probability": threat.Probability,
-		"confidence":  threat.Confidence,
-		"module":      "wireguard",
-		"timestamp":   time.Now(),
+		"module":    "p2p_quic",
+		"timestamp": time.Now(),
+	}
+
+	// Добавляем данные угрозы если они есть
+	if threat != nil {
+		threatEvent["threat_id"] = threat.ThreatID
+		threatEvent["probability"] = threat.Probability
+		threatEvent["confidence"] = threat.Confidence
+		threatEvent["threat_level"] = "high" // Устанавливаем высокий уровень угрозы
+	} else {
+		threatEvent["threat_level"] = "medium" // Устанавливаем средний уровень для nil угрозы
 	}
 
 	// Срабатываем реагирование
@@ -132,30 +149,30 @@ func (ar *AutomatedResponse) RespondToWireGuardThreat(threat *ThreatPrediction) 
 }
 
 // Интеграция с мониторингом
-func (aim *AIMonitoring) MonitorWireGuardMetrics() error {
-	// Мониторинг метрик WireGuard
+func (aim *AIMonitoring) MonitorP2PQUICMetrics() error {
+	// Мониторинг метрик P2P QUIC
 
-	// Создаем метрики для WireGuard
-	wireguardMetrics := []*AIMetric{
+	// Создаем метрики для P2P QUIC
+	p2pQuicMetrics := []*AIMetric{
 		{
-			Name:        "wireguard_peers_active",
-			Value:       25.0,
+			Name:        "p2p_quic_peers_active",
+			Value:       30.0,
 			Unit:        "peers",
-			Trend:       TrendStable,
+			Trend:       TrendUp,
 			Threshold:   50.0,
 			LastUpdated: time.Now(),
 		},
 		{
-			Name:        "wireguard_bandwidth_usage",
-			Value:       1024.0, // MB/s
+			Name:        "p2p_quic_bandwidth_usage",
+			Value:       1500.0, // MB/s
 			Unit:        "MB/s",
 			Trend:       TrendUp,
-			Threshold:   2048.0,
+			Threshold:   3000.0,
 			LastUpdated: time.Now(),
 		},
 		{
-			Name:        "wireguard_anomaly_score",
-			Value:       0.15,
+			Name:        "p2p_quic_anomaly_score",
+			Value:       0.12,
 			Unit:        "score",
 			Trend:       TrendStable,
 			Threshold:   0.8,
@@ -164,19 +181,19 @@ func (aim *AIMonitoring) MonitorWireGuardMetrics() error {
 	}
 
 	// Добавляем метрики
-	for _, metric := range wireguardMetrics {
+	for _, metric := range p2pQuicMetrics {
 		if err := aim.AddMetric(metric); err != nil {
 			return err
 		}
 	}
 
 	// Создаем алерт если аномалия превышает порог
-	if wireguardMetrics[2].Value > wireguardMetrics[2].Threshold {
+	if p2pQuicMetrics[2].Value > p2pQuicMetrics[2].Threshold {
 		alert := &AIAlert{
-			AlertID:      "wireguard-anomaly-001",
+			AlertID:      "p2p-quic-anomaly-001",
 			Type:         AlertTypeAnomaly,
 			Severity:     AlertSeverityWarning,
-			Message:      "High anomaly score detected in WireGuard traffic",
+			Message:      "High anomaly score detected in P2P QUIC traffic",
 			Timestamp:    time.Now(),
 			Acknowledged: false,
 			Resolved:     false,

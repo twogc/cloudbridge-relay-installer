@@ -188,9 +188,9 @@ func TestOptimizedService_DetectAnomaly(t *testing.T) {
 		ActiveConnections:    50,
 		FailedConnections:    5,
 		ProtocolDistribution: map[string]int{
-			"QUIC":      30,
-			"WireGuard": 20,
-			"TCP":       0,
+			"QUIC":     30,
+			"P2P_QUIC": 20,
+			"TCP":      0,
 		},
 	}
 
@@ -413,9 +413,9 @@ func TestOptimizedService_ConcurrentAccess(t *testing.T) {
 		ActiveConnections:    50,
 		FailedConnections:    5,
 		ProtocolDistribution: map[string]int{
-			"QUIC":      30,
-			"WireGuard": 20,
-			"TCP":       0,
+			"QUIC":     30,
+			"P2P_QUIC": 20,
+			"TCP":      0,
 		},
 	}
 
@@ -517,7 +517,7 @@ func TestOptimizedService_EdgeCases(t *testing.T) {
 	_, err = service.PredictLoad(ctx, -1)
 	// This should handle negative horizon gracefully
 	if err != nil {
-		assert.Contains(t, err.Error(), "invalid")
+		assert.Contains(t, err.Error(), "positive")
 	}
 
 	// Test with empty strings
@@ -660,9 +660,9 @@ func TestOptimizedService_Integration(t *testing.T) {
 		ActiveConnections:    50,
 		FailedConnections:    5,
 		ProtocolDistribution: map[string]int{
-			"QUIC":      30,
-			"WireGuard": 20,
-			"TCP":       0,
+			"QUIC":     30,
+			"P2P_QUIC": 20,
+			"TCP":      0,
 		},
 	}
 
@@ -719,9 +719,9 @@ func TestOptimizedService_PerformanceMetrics(t *testing.T) {
 		ActiveConnections:    50,
 		FailedConnections:    5,
 		ProtocolDistribution: map[string]int{
-			"QUIC":      30,
-			"WireGuard": 20,
-			"TCP":       0,
+			"QUIC":     30,
+			"P2P_QUIC": 20,
+			"TCP":      0,
 		},
 	}
 

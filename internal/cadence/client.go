@@ -31,7 +31,7 @@ type Config struct {
 func NewClient(config Config, logger *zap.Logger) (*Client, error) {
 	// В реальной реализации здесь должен быть создан настоящий Cadence client
 	// Пока создаем заглушку для компиляции
-	logger.Info("Creating Cadence client stub", 
+	logger.Info("Creating Cadence client stub",
 		zap.String("domain", config.Domain),
 		zap.String("taskList", config.TaskList))
 
@@ -40,7 +40,7 @@ func NewClient(config Config, logger *zap.Logger) (*Client, error) {
 	var workerInstance worker.Worker = nil
 
 	return &Client{
-		client: nil, // Заглушка
+		client: nil,            // Заглушка
 		worker: workerInstance, // Заглушка
 		logger: logger,
 	}, nil
@@ -58,7 +58,6 @@ func (c *Client) Stop() {
 	c.logger.Info("Stopping Cadence worker (stub)")
 	// В реальной реализации здесь должен быть остановка worker
 }
-
 
 // GetClient возвращает Cadence client
 func (c *Client) GetClient() client.Client {
@@ -97,8 +96,8 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 // ExecuteWorkflow выполняет workflow и возвращает workflow ID
 func (c *Client) ExecuteWorkflow(ctx context.Context, workflowType string, input interface{}) (string, error) {
 	workflowID := fmt.Sprintf("%s-%d", workflowType, time.Now().UnixNano())
-	
-	c.logger.Info("Executing workflow (stub)", 
+
+	c.logger.Info("Executing workflow (stub)",
 		zap.String("workflowType", workflowType),
 		zap.String("workflowID", workflowID))
 
@@ -110,7 +109,7 @@ func (c *Client) ExecuteWorkflow(ctx context.Context, workflowType string, input
 // GetWorkflowStatus получает статус workflow
 func (c *Client) GetWorkflowStatus(ctx context.Context, workflowID string) (string, error) {
 	c.logger.Info("Getting workflow status (stub)", zap.String("workflowID", workflowID))
-	
+
 	// В реальной реализации здесь должен быть вызов DescribeWorkflowExecution
 	// Пока возвращаем заглушку
 	return "RUNNING", nil
@@ -137,7 +136,7 @@ type WorkflowExecution struct {
 func (c *Client) StartWorkflow(ctx context.Context, workflowType string, input interface{}) (*WorkflowExecution, error) {
 	workflowID := fmt.Sprintf("%s-%d", workflowType, time.Now().UnixNano())
 	runID := fmt.Sprintf("run-%d", time.Now().UnixNano())
-	c.logger.Info("Starting workflow (stub)", 
+	c.logger.Info("Starting workflow (stub)",
 		zap.String("workflowType", workflowType),
 		zap.String("workflowID", workflowID),
 		zap.String("runID", runID))
@@ -149,10 +148,10 @@ func (c *Client) StartWorkflow(ctx context.Context, workflowType string, input i
 
 // GetWorkflowResult получает результат workflow (заглушка для тестов)
 func (c *Client) GetWorkflowResult(ctx context.Context, workflowID string, runID string, result interface{}) error {
-	c.logger.Info("Getting workflow result (stub)", 
+	c.logger.Info("Getting workflow result (stub)",
 		zap.String("workflowID", workflowID),
 		zap.String("runID", runID))
-	
+
 	// Заполняем результат тестовыми данными в зависимости от типа
 	switch v := result.(type) {
 	case *map[string]interface{}:
@@ -170,25 +169,28 @@ func (c *Client) GetWorkflowResult(ctx context.Context, workflowID string, runID
 			Message:      "Module initialized successfully",
 			HealthStatus: "healthy",
 		}
-	case *workflows.PeerLifecycleWorkflowResult:
-		*v = workflows.PeerLifecycleWorkflowResult{
-			PeerID:    "test-peer-12345",
-			Status:    "completed",
-			Operation: "add",
+	case *workflows.P2PConnectionOrchestrationWorkflowResult:
+		*v = workflows.P2PConnectionOrchestrationWorkflowResult{
+			TenantID:       "test-tenant",
+			SourcePeerID:   "peer-001",
+			TargetPeerID:   "peer-002",
+			ConnectionID:   "test-conn-12345",
+			Status:         "completed",
+			ConnectionType: "direct",
+			Protocol:       "quic",
+			Latency:        50 * time.Millisecond,
+			Throughput:     1000000, // 1MB/s
 			Result: map[string]interface{}{
 				"success": true,
-				"message": "Peer added successfully",
+				"message": "P2P connection established successfully",
 			},
-			StartedAt:   time.Now().Add(-2 * time.Minute),
-			CompletedAt: time.Now(),
-			Message:     "Peer lifecycle operation completed",
 		}
 	case *workflows.QuantumKeyRotationWorkflowResult:
 		*v = workflows.QuantumKeyRotationWorkflowResult{
-			OldKeyID:   "test-quantum-key-001",
-			NewKeyID:   "test-quantum-key-002",
-			Algorithm:  "kyber",
-			Status:     "completed",
+			OldKeyID:  "test-quantum-key-001",
+			NewKeyID:  "test-quantum-key-002",
+			Algorithm: "kyber",
+			Status:    "completed",
 			RotationInfo: map[string]interface{}{
 				"success": true,
 				"message": "Key rotation completed",
@@ -232,8 +234,8 @@ func (c *Client) GetWorkflowResult(ctx context.Context, workflowID string, runID
 		}
 	case *workflows.AutoScalingWorkflowResult:
 		*v = workflows.AutoScalingWorkflowResult{
-			ResourceType: "compute",
-			ScalingPolicy: "reactive",
+			ResourceType:   "compute",
+			ScalingPolicy:  "reactive",
 			ScalingActions: []string{"scale_up"},
 			CurrentCapacity: map[string]interface{}{
 				"instances": 3,
@@ -245,23 +247,23 @@ func (c *Client) GetWorkflowResult(ctx context.Context, workflowID string, runID
 				"success": true,
 				"message": "Auto scaling completed",
 			},
-			Status:       "completed",
+			Status:      "completed",
 			StartedAt:   time.Now().Add(-1 * time.Minute),
 			CompletedAt: time.Now(),
 			Message:     "Auto scaling operation completed",
 		}
 	default:
 		// Для неизвестных типов возвращаем пустую структуру
-		c.logger.Warn("Unknown result type in GetWorkflowResult", 
+		c.logger.Warn("Unknown result type in GetWorkflowResult",
 			zap.String("type", fmt.Sprintf("%T", result)))
 	}
-	
+
 	return nil
 }
 
 // SignalWorkflow отправляет сигнал workflow (заглушка для тестов)
 func (c *Client) SignalWorkflow(ctx context.Context, workflowID string, runID string, signalName string, signalValue interface{}) error {
-	c.logger.Info("Signaling workflow (stub)", 
+	c.logger.Info("Signaling workflow (stub)",
 		zap.String("workflowID", workflowID),
 		zap.String("runID", runID),
 		zap.String("signalName", signalName))

@@ -37,7 +37,7 @@ func (lp *LatencyPredictor) Initialize() error {
 	lp.logger.Info("Initializing Latency Predictor...")
 
 	// Инициализируем модели для различных протоколов
-	protocols := []string{"QUIC", "WireGuard", "TCP", "UDP"}
+	protocols := []string{"QUIC", "P2P_QUIC", "TCP", "UDP"}
 
 	for _, protocol := range protocols {
 		lp.models[protocol] = &LatencyModel{
@@ -113,8 +113,8 @@ func (lp *LatencyPredictor) getBaseLatency(protocol string) float64 {
 	switch protocol {
 	case "QUIC":
 		return 10.0 // QUIC обычно быстрее
-	case "WireGuard":
-		return 15.0 // WireGuard быстрый
+	case "P2P_QUIC":
+		return 12.0 // P2P QUIC быстрый
 	case "TCP":
 		return 25.0 // TCP стандартная латентность
 	case "UDP":
@@ -129,8 +129,8 @@ func (lp *LatencyPredictor) getVariation(protocol string) float64 {
 	switch protocol {
 	case "QUIC":
 		return 2.0 // QUIC стабильный
-	case "WireGuard":
-		return 3.0 // WireGuard стабильный
+	case "P2P_QUIC":
+		return 2.5 // P2P QUIC стабильный
 	case "TCP":
 		return 5.0 // TCP может иметь вариации
 	case "UDP":

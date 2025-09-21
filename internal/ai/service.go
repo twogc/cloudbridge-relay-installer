@@ -38,11 +38,12 @@ func NewService(config *Config, logger *zap.Logger) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Service{
-		config: config,
-		logger: logger,
-		stopCh: make(chan struct{}),
-		ctx:    ctx,
-		cancel: cancel,
+		config:  config,
+		logger:  logger,
+		metrics: NewAIMetrics(),
+		stopCh:  make(chan struct{}),
+		ctx:     ctx,
+		cancel:  cancel,
 	}
 }
 
@@ -363,9 +364,9 @@ func (s *Service) getRelayMetrics() (*anomaly.NetworkMetrics, error) {
 
 	// Получаем реальные данные о протоколах от relay сервера
 	protocolDistribution := map[string]int{
-		"QUIC":      0,
-		"WireGuard": 0,
-		"TCP":       0,
+		"QUIC":     0,
+		"P2P_QUIC": 0,
+		"TCP":      0,
 	}
 
 	// Попытка получить реальные данные о протоколах от relay
@@ -373,8 +374,8 @@ func (s *Service) getRelayMetrics() (*anomaly.NetworkMetrics, error) {
 		if quic, ok := protocolData["QUIC"].(int); ok {
 			protocolDistribution["QUIC"] = quic
 		}
-		if wireguard, ok := protocolData["WireGuard"].(int); ok {
-			protocolDistribution["WireGuard"] = wireguard
+		if p2pQuic, ok := protocolData["P2P_QUIC"].(int); ok {
+			protocolDistribution["P2P_QUIC"] = p2pQuic
 		}
 		if tcp, ok := protocolData["TCP"].(int); ok {
 			protocolDistribution["TCP"] = tcp
@@ -385,7 +386,7 @@ func (s *Service) getRelayMetrics() (*anomaly.NetworkMetrics, error) {
 		if activeConnections > 0 {
 			// Распределяем активные соединения по протоколам на основе типичных паттернов
 			protocolDistribution["QUIC"] = activeConnections / 2
-			protocolDistribution["WireGuard"] = activeConnections / 3
+			protocolDistribution["P2P_QUIC"] = activeConnections / 3
 			protocolDistribution["TCP"] = activeConnections / 6
 		}
 	}

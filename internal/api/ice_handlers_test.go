@@ -291,7 +291,7 @@ func TestICEManager_ExchangeCandidates(t *testing.T) {
 				// No mock setup needed for nonexistent session
 			},
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":"Session not found"}`,
+			expectedBody:   `{"code":404,"error":"Session not found","message":"Session not found"}`,
 		},
 		{
 			name: "candidate exchange error",
@@ -303,7 +303,7 @@ func TestICEManager_ExchangeCandidates(t *testing.T) {
 				s.On("AddCandidate", "invalid candidate").Return(assert.AnError)
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   `{"error":"Internal server error"}`,
+			expectedBody:   `{"code":500,"error":"Internal server error","message":"assert.AnError general error for testing"}`,
 		},
 	}
 
@@ -363,7 +363,7 @@ func TestICEManager_HandleOffer(t *testing.T) {
 				// No mock setup needed for nonexistent session
 			},
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":"Session not found"}`,
+			expectedBody:   `{"code":404,"error":"Session not found","message":"Session not found"}`,
 		},
 	}
 
@@ -423,7 +423,7 @@ func TestICEManager_HandleAnswer(t *testing.T) {
 				// No mock setup needed for nonexistent session
 			},
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":"Session not found"}`,
+			expectedBody:   `{"code":404,"error":"Session not found","message":"Session not found"}`,
 		},
 	}
 
@@ -471,7 +471,7 @@ func TestICEManager_GetSessionStatus(t *testing.T) {
 				s.On("GetAnswer").Return("v=0\r\no=- 123456789 123456789 IN IP4 192.168.1.2\r\ns=-\r\nt=0 0\r\n")
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   `{"session_id":"session1","status":"connected","candidates":["candidate:1 1 UDP 2113667326 192.168.1.1 54400 typ host"],"offer":"v=0\\r\\no=- 123456789 123456789 IN IP4 192.168.1.1\\r\\ns=-\\r\\nt=0 0\\r\\n","answer":"v=0\\r\\no=- 123456789 123456789 IN IP4 192.168.1.2\\r\\ns=-\\r\\nt=0 0\\r\\n"}`,
+			expectedBody:   `{"session_id":"session1","status":"connected","candidates":["candidate:1 1 UDP 2113667326 192.168.1.1 54400 typ host"],"offer":"v=0\r\no=- 123456789 123456789 IN IP4 192.168.1.1\r\ns=-\r\nt=0 0\r\n","answer":"v=0\r\no=- 123456789 123456789 IN IP4 192.168.1.2\r\ns=-\r\nt=0 0\r\n"}`,
 		},
 		{
 			name:      "session not found",
@@ -480,7 +480,7 @@ func TestICEManager_GetSessionStatus(t *testing.T) {
 				// No mock setup needed for nonexistent session
 			},
 			expectedStatus: http.StatusNotFound,
-			expectedBody:   `{"error":"Session not found"}`,
+			expectedBody:   `{"code":404,"error":"Session not found","message":"Session not found"}`,
 		},
 	}
 
@@ -568,7 +568,7 @@ func TestICEManager_InvalidInput(t *testing.T) {
 	manager.ExchangeCandidates(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.JSONEq(t, `{"error":"Invalid input"}`, w.Body.String())
+	assert.JSONEq(t, `{"code":400,"error":"Invalid input","message":"unexpected EOF"}`, w.Body.String())
 }
 
 func TestICEManager_MissingFields(t *testing.T) {
@@ -584,7 +584,7 @@ func TestICEManager_MissingFields(t *testing.T) {
 	manager.ExchangeCandidates(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.JSONEq(t, `{"error":"Missing required fields"}`, w.Body.String())
+	assert.JSONEq(t, `{"code":400,"error":"Invalid input","message":"Key: 'Candidate' Error:Field validation for 'Candidate' failed on the 'required' tag"}`, w.Body.String())
 }
 
 func TestICEManager_SessionExpiration(t *testing.T) {
@@ -592,22 +592,21 @@ func TestICEManager_SessionExpiration(t *testing.T) {
 
 	// Create a session
 	session := &MockICESession{}
-	session.On("IsExpired").Return(false)
+	// Устанавливаем ожидание, что IsExpired будет вызван и вернет true
+	session.On("IsExpired").Return(true).Once()
 	manager.sessions["test_session"] = session
 
 	// Verify session exists
 	_, exists := manager.sessions["test_session"]
 	assert.True(t, exists)
 
-	// Mark session as expired
-	session.On("IsExpired").Return(true)
-
 	// Run cleanup
 	manager.CleanupInactiveSessions()
 
 	// Verify session was removed
 	_, exists = manager.sessions["test_session"]
-	assert.False(t, exists)
+	assert.False(t, exists, "Session should be removed after cleanup")
 
+	// Verify mock expectations were met
 	session.AssertExpectations(t)
 }

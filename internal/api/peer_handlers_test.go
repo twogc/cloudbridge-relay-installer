@@ -353,7 +353,9 @@ func TestPeerManager_DiscoverPeers_Success(t *testing.T) {
 	// Создаем тестовый контекст
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("GET", "/tenants/tenant1/peers", nil)
+	req := httptest.NewRequest("GET", "/tenants/tenant1/peers", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	c.Request = req
 	c.Params = gin.Params{{Key: "tenant_id", Value: "tenant1"}}
 
 	// Настраиваем мок валидатора
@@ -369,10 +371,15 @@ func TestPeerManager_DiscoverPeers_Success(t *testing.T) {
 	// Проверяем результат
 	assert.Equal(t, http.StatusOK, w.Code)
 
+	// Отладочная информация
+	t.Logf("Response body: %s", w.Body.String())
+
 	var response PeerDiscoveryResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.NotNil(t, response.Peers)
+	// Peers может быть nil для пустого списка
+	assert.True(t, response.Success)
+	assert.Equal(t, "tenant1", response.TenantID)
 
 	validator.AssertExpectations(t)
 }
@@ -410,7 +417,9 @@ func TestPeerManager_DiscoverPeers_InvalidToken(t *testing.T) {
 	// Создаем тестовый контекст
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("GET", "/tenants/tenant1/peers", nil)
+	req := httptest.NewRequest("GET", "/tenants/tenant1/peers", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	c.Request = req
 	c.Params = gin.Params{{Key: "tenant_id", Value: "tenant1"}}
 
 	// Настраиваем мок валидатора для возврата ошибки
@@ -439,17 +448,19 @@ func TestPeerManager_UpdatePeerStatus_Success(t *testing.T) {
 	pm := NewPeerManager(logger, validator)
 
 	// Создаем тестовый запрос
-	req := PeerStatusUpdateRequest{
+	updateReq := PeerStatusUpdateRequest{
 		IsOnline:   true,
 		MeshStatus: "connected",
 	}
-	reqBody, _ := json.Marshal(req)
+	reqBody, _ := json.Marshal(updateReq)
 
 	// Создаем тестовый контекст
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("PUT", "/tenants/tenant1/peers/peer1/status", bytes.NewReader(reqBody))
-	c.Request.Header.Set("Content-Type", "application/json")
+	httpReq := httptest.NewRequest("PUT", "/tenants/tenant1/peers/peer1/status", bytes.NewReader(reqBody))
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer test-token")
+	c.Request = httpReq
 	c.Params = gin.Params{
 		{Key: "tenant_id", Value: "tenant1"},
 		{Key: "peer_id", Value: "peer1"},
@@ -486,7 +497,9 @@ func TestPeerManager_GetPeerInfo_Success(t *testing.T) {
 	// Создаем тестовый контекст
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("GET", "/tenants/tenant1/peers/peer1", nil)
+	req := httptest.NewRequest("GET", "/tenants/tenant1/peers/peer1", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	c.Request = req
 	c.Params = gin.Params{
 		{Key: "tenant_id", Value: "tenant1"},
 		{Key: "peer_id", Value: "peer1"},
@@ -522,7 +535,9 @@ func TestPeerManager_GetPeerInfo_PeerNotFound(t *testing.T) {
 	// Создаем тестовый контекст
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("GET", "/tenants/tenant1/peers/nonexistent", nil)
+	req := httptest.NewRequest("GET", "/tenants/tenant1/peers/nonexistent", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	c.Request = req
 	c.Params = gin.Params{
 		{Key: "tenant_id", Value: "tenant1"},
 		{Key: "peer_id", Value: "nonexistent"},

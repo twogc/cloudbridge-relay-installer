@@ -28,8 +28,7 @@ type CadenceWorker struct {
 	cadenceMetrics *metrics.CadenceMetrics
 
 	// Activities
-	commonActivities    *activities.CommonActivityContext
-	wireguardActivities *activities.WireGuardActivities
+	commonActivities *activities.CommonActivityContext
 
 	// Управление жизненным циклом
 	ctx    context.Context
@@ -67,17 +66,15 @@ func NewCadenceWorker(client *cadence.Client, config *cadence.CadenceConfig, log
 	}
 
 	commonActivities := activities.NewCommonActivityContext(logger, activityConfig)
-	wireguardActivities := activities.NewWireGuardActivities(logger, activityConfig)
 
 	return &CadenceWorker{
-		client:              client,
-		config:              config,
-		logger:              logger,
-		cadenceMetrics:      cadenceMetrics,
-		commonActivities:    commonActivities,
-		wireguardActivities: wireguardActivities,
-		ctx:                 ctx,
-		cancel:              cancel,
+		client:           client,
+		config:           config,
+		logger:           logger,
+		cadenceMetrics:   cadenceMetrics,
+		commonActivities: commonActivities,
+		ctx:              ctx,
+		cancel:           cancel,
 	}, nil
 }
 
@@ -171,11 +168,9 @@ func (cw *CadenceWorker) registerWorkflows() error {
 	workflow.Register(workflows.ModuleInitializationWorkflow)
 	workflow.Register(workflows.HealthCheckWorkflow)
 
-	// WireGuard workflows
-	workflow.Register(workflows.PeerLifecycleWorkflow)
-	workflow.Register(workflows.MeshTopologyWorkflow)
-	workflow.Register(workflows.ConnectionRecoveryWorkflow)
-	workflow.Register(workflows.LoadBalancingWorkflow)
+	// P2P QUIC workflows (заменяют WireGuard)
+	workflow.Register(workflows.P2PQUICTunnelWorkflow)
+	workflow.Register(workflows.P2PConnectionOrchestrationWorkflow)
 
 	// Quantum workflows
 	workflow.Register(workflows.QuantumKeyRotationWorkflow)
@@ -207,7 +202,7 @@ func (cw *CadenceWorker) registerWorkflows() error {
 	workflow.Register(workflows.BackupRecoveryWorkflow)
 
 	cw.logger.Info("Все workflows зарегистрированы",
-		zap.Int("workflow_count", 23), // Обновлено с учетом P2P QUIC workflows
+		zap.Int("workflow_count", 21), // Обновлено после удаления WireGuard workflows
 	)
 
 	return nil
@@ -229,19 +224,19 @@ func (cw *CadenceWorker) registerActivities() error {
 	activity.Register(cw.commonActivities.ExecuteCommandActivity)
 	activity.Register(cw.commonActivities.WaitForConditionActivity)
 
-	// WireGuard activities
-	activity.Register(cw.wireguardActivities.ValidatePeerConfigActivity)
-	activity.Register(cw.wireguardActivities.CreateWireGuardInterfaceActivity)
-	activity.Register(cw.wireguardActivities.RegisterPeerActivity)
-	activity.Register(cw.wireguardActivities.DisconnectPeerActivity)
-	activity.Register(cw.wireguardActivities.RemoveWireGuardInterfaceActivity)
-	activity.Register(cw.wireguardActivities.UnregisterPeerActivity)
-	activity.Register(cw.wireguardActivities.UpdateWireGuardConfigActivity)
-	activity.Register(cw.wireguardActivities.MonitorPeerActivity)
-	activity.Register(cw.wireguardActivities.AnalyzeMeshTopologyActivity)
-	activity.Register(cw.wireguardActivities.PlanMeshTopologyActivity)
-	activity.Register(cw.wireguardActivities.BuildMeshTopologyActivity)
-	activity.Register(cw.wireguardActivities.ValidateMeshTopologyActivity)
+	// P2P QUIC activities (заменяют WireGuard)
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("ValidateP2PConfigActivity"), activity.RegisterOptions{Name: "ValidateP2PConfigActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("CreateP2PConnectionActivity"), activity.RegisterOptions{Name: "CreateP2PConnectionActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("RegisterP2PPeerActivity"), activity.RegisterOptions{Name: "RegisterP2PPeerActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("DisconnectP2PPeerActivity"), activity.RegisterOptions{Name: "DisconnectP2PPeerActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("RemoveP2PConnectionActivity"), activity.RegisterOptions{Name: "RemoveP2PConnectionActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("UnregisterP2PPeerActivity"), activity.RegisterOptions{Name: "UnregisterP2PPeerActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("UpdateP2PConfigActivity"), activity.RegisterOptions{Name: "UpdateP2PConfigActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("MonitorP2PPeerActivity"), activity.RegisterOptions{Name: "MonitorP2PPeerActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("AnalyzeP2PTopologyActivity"), activity.RegisterOptions{Name: "AnalyzeP2PTopologyActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("PlanP2PTopologyActivity"), activity.RegisterOptions{Name: "PlanP2PTopologyActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("BuildP2PTopologyActivity"), activity.RegisterOptions{Name: "BuildP2PTopologyActivity"})
+	activity.RegisterWithOptions(cw.createP2PQUICActivity("ValidateP2PTopologyActivity"), activity.RegisterOptions{Name: "ValidateP2PTopologyActivity"})
 
 	// Здесь должны быть зарегистрированы activities для:
 	// - Quantum криптографии
@@ -288,7 +283,7 @@ func (cw *CadenceWorker) registerActivities() error {
 	activity.RegisterWithOptions(cw.createP2PQUICActivity("GenerateAIRecommendationsActivity"), activity.RegisterOptions{Name: "GenerateAIRecommendationsActivity"})
 
 	cw.logger.Info("Все activities зарегистрированы",
-		zap.Int("activity_count", 46), // Обновлено с учетом P2P QUIC activities
+		zap.Int("activity_count", 45), // Обновлено после замены WireGuard activities на P2P QUIC
 	)
 
 	return nil
@@ -618,11 +613,9 @@ func (cw *CadenceWorker) handleWorkflowsDebug(w http.ResponseWriter, r *http.Req
 			"ModuleInitializationWorkflow",
 			"HealthCheckWorkflow",
 		},
-		"wireguard_workflows": []string{
-			"PeerLifecycleWorkflow",
-			"MeshTopologyWorkflow",
-			"ConnectionRecoveryWorkflow",
-			"LoadBalancingWorkflow",
+		"p2p_quic_workflows": []string{
+			"P2PQUICTunnelWorkflow",
+			"P2PConnectionOrchestrationWorkflow",
 		},
 		"quantum_workflows": []string{
 			"QuantumKeyRotationWorkflow",
@@ -667,11 +660,11 @@ func (cw *CadenceWorker) handleActivitiesDebug(w http.ResponseWriter, r *http.Re
 			"CheckModuleHealthActivity",
 			"PerformHealthCheckActivity",
 		},
-		"wireguard_activities": []string{
-			"ValidatePeerConfigActivity",
-			"CreateWireGuardInterfaceActivity",
-			"RegisterPeerActivity",
-			"DisconnectPeerActivity",
+		"p2p_quic_activities": []string{
+			"ValidateP2PConfigActivity",
+			"CreateP2PConnectionActivity",
+			"RegisterP2PPeerActivity",
+			"DisconnectP2PPeerActivity",
 		},
 		"quantum_activities": []string{
 			"CheckKeyRotationNeedActivity",

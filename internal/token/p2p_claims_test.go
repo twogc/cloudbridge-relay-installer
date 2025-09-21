@@ -6,20 +6,17 @@ import (
 )
 
 func TestP2PClaimsWithNewFields(t *testing.T) {
-	// Test WireGuardConfig with endpoint
-	wgConfig := &WireGuardConfig{
-		InterfaceName: "wg0",
-		ListenPort:    51820,
-		Address:       "10.0.0.100/24",
-		MTU:           1420,
-		AllowedIPs:    []string{"10.0.0.0/24", "192.168.1.0/24"},
-		PrivateKey:    "test-private-key",
-		PublicKey:     "test-public-key",
-		Endpoint:      "192.168.1.100:51820",
+	// Test QuicConfig
+	quicConfig := &QuicConfig{
+		MaxStreams:          100,
+		HandshakeTimeout:    "10s",
+		IdleTimeout:         "60s",
+		ConnectionMigration: true,
+		Multiplexing:        true,
 	}
 
-	if err := wgConfig.Validate(); err != nil {
-		t.Errorf("WireGuardConfig validation failed: %v", err)
+	if err := quicConfig.Validate(); err != nil {
+		t.Errorf("QuicConfig validation failed: %v", err)
 	}
 
 	// Test MeshConfig with network_id and subnet
@@ -92,32 +89,33 @@ func TestP2PClaimsWithNewFields(t *testing.T) {
 	}
 }
 
-func TestWireGuardConfigEndpointValidation(t *testing.T) {
+func TestQuicConfigTimeoutValidation(t *testing.T) {
 	tests := []struct {
-		name     string
-		endpoint string
-		wantErr  bool
+		name             string
+		handshakeTimeout string
+		idleTimeout      string
+		wantErr          bool
 	}{
-		{"valid endpoint", "192.168.1.100:51820", false},
-		{"valid endpoint with domain", "example.com:51820", false},
-		{"invalid short endpoint", "1:1", true},
-		{"empty endpoint", "", false}, // empty is allowed (omitempty)
+		{"valid timeouts", "10s", "60s", false},
+		{"valid timeouts with minutes", "1m", "5m", false},
+		{"invalid handshake timeout", "invalid", "60s", true},
+		{"invalid idle timeout", "10s", "invalid", true},
+		{"empty timeouts", "", "", false}, // empty is allowed
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config := &WireGuardConfig{
-				InterfaceName: "wg0",
-				ListenPort:    51820,
-				Address:       "10.0.0.100/24",
-				MTU:           1420,
-				AllowedIPs:    []string{"10.0.0.0/24"},
-				Endpoint:      tt.endpoint,
+			config := &QuicConfig{
+				MaxStreams:          100,
+				HandshakeTimeout:    tt.handshakeTimeout,
+				IdleTimeout:         tt.idleTimeout,
+				ConnectionMigration: true,
+				Multiplexing:        true,
 			}
 
 			err := config.Validate()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("WireGuardConfig.Validate() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("QuicConfig.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

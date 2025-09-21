@@ -111,6 +111,7 @@ func QuantumKeyRotationWorkflow(ctx workflow.Context, input QuantumKeyRotationWo
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 5 * time.Minute,
 		HeartbeatTimeout:    30 * time.Second,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -294,6 +295,7 @@ func KeyValidationWorkflow(ctx workflow.Context, input KeyValidationWorkflowInpu
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 10 * time.Minute,
 		HeartbeatTimeout:    1 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -412,6 +414,7 @@ func AlgorithmMigrationWorkflow(ctx workflow.Context, input AlgorithmMigrationWo
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 15 * time.Minute,
 		HeartbeatTimeout:    1 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -678,6 +681,7 @@ func SecurityAuditWorkflow(ctx workflow.Context, input SecurityAuditWorkflowInpu
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 20 * time.Minute,
 		HeartbeatTimeout:    2 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{

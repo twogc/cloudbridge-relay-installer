@@ -13,7 +13,8 @@ type Peer struct {
 	DeviceID          string
 	ConnectionType    string
 	RelaySessionID    string
-	WireGuardConfig   *WireGuardConfig
+	Endpoint          string
+	QuicConfig        *QuicConfig
 	MeshConfig        *MeshConfig
 	PeerWhitelist     *PeerWhitelist
 	NetworkConfig     *NetworkConfig
@@ -27,14 +28,17 @@ type Peer struct {
 	MeshStatus        string
 	LatencyMS         int
 	AllocatedIP       string
+	Status            string
 }
 
-// WireGuardConfig конфигурация WireGuard
-type WireGuardConfig struct {
-	PublicKey  string   `json:"public_key"`
-	Endpoint   string   `json:"endpoint"`
-	ListenPort int      `json:"listen_port"`
-	AllowedIPs []string `json:"allowed_ips"`
+// QuicConfig конфигурация QUIC
+type QuicConfig struct {
+	Endpoint            string `json:"endpoint"`
+	MaxStreams          int    `json:"max_streams"`
+	HandshakeTimeout    string `json:"handshake_timeout"`
+	IdleTimeout         string `json:"idle_timeout"`
+	ConnectionMigration bool   `json:"connection_migration"`
+	Multiplexing        bool   `json:"multiplexing"`
 }
 
 // MeshConfig конфигурация mesh сети
@@ -71,4 +75,19 @@ type ICECandidate struct {
 	RelatedPort int    `json:"related_port,omitempty"`
 	Username    string `json:"username,omitempty"`
 	Password    string `json:"password,omitempty"`
+}
+
+// DiscoveredPeer представляет обнаруженного пира
+type DiscoveredPeer struct {
+	ID           string    `json:"id"`
+	PeerID       string    `json:"peer_id"`
+	TenantID     string    `json:"tenant_id"`
+	Endpoint     string    `json:"endpoint"`
+	Protocol     string    `json:"protocol"`
+	LastSeen     time.Time `json:"last_seen"`
+	Latency      int       `json:"latency_ms"`
+	IsOnline     bool      `json:"is_online"`
+	Capabilities []string  `json:"capabilities"`
+	Region       string    `json:"region"`
+	TrustLevel   string    `json:"trust_level"`
 }

@@ -345,8 +345,9 @@ func ModuleInitializationWorkflow(ctx workflow.Context, input ModuleInitializati
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
-		StartToCloseTimeout: 5 * time.Minute,
-		HeartbeatTimeout:    30 * time.Second,
+		ScheduleToStartTimeout: 1 * time.Minute,
+		StartToCloseTimeout:    5 * time.Minute,
+		HeartbeatTimeout:       30 * time.Second,
 		RetryPolicy: &workflow.RetryPolicy{
 			InitialInterval:    time.Second,
 			BackoffCoefficient: 2.0,
@@ -446,8 +447,9 @@ func HealthCheckWorkflow(ctx workflow.Context, input HealthCheckInput) (*HealthC
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
-		StartToCloseTimeout: 2 * time.Minute,
-		HeartbeatTimeout:    15 * time.Second,
+		ScheduleToStartTimeout: 30 * time.Second,
+		StartToCloseTimeout:    2 * time.Minute,
+		HeartbeatTimeout:       15 * time.Second,
 		RetryPolicy: &workflow.RetryPolicy{
 			InitialInterval:    time.Second,
 			BackoffCoefficient: 1.5,

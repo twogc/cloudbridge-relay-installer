@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -79,9 +80,9 @@ func TestClient_DetectAnomaly_Success(t *testing.T) {
 		ActiveConnections:    50,
 		FailedConnections:    5,
 		ProtocolDistribution: map[string]int{
-			"QUIC":      30,
-			"WireGuard": 20,
-			"TCP":       0,
+			"QUIC":     30,
+			"P2P_QUIC": 20,
+			"TCP":      0,
 		},
 	}
 
@@ -522,9 +523,9 @@ func TestClient_ConcurrentRequests(t *testing.T) {
 				ActiveConnections:    50,
 				FailedConnections:    5,
 				ProtocolDistribution: map[string]int{
-					"QUIC":      30,
-					"WireGuard": 20,
-					"TCP":       0,
+					"QUIC":     30,
+					"P2P_QUIC": 20,
+					"TCP":      0,
 				},
 			}
 
@@ -576,7 +577,8 @@ func TestClient_RequestTimeout(t *testing.T) {
 	result, err := client.DetectAnomaly(ctx, metrics)
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "timeout")
+	// Проверяем что ошибка связана с таймаутом (может быть "timeout" или "deadline exceeded")
+	assert.True(t, strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "deadline exceeded"))
 }
 
 func TestClient_EdgeCases(t *testing.T) {
@@ -594,10 +596,9 @@ func TestClient_EdgeCases(t *testing.T) {
 	client = NewClient("http://localhost:8083", logger)
 	metrics := &anomaly.NetworkMetrics{}
 
-	// This should panic or handle gracefully
-	assert.Panics(t, func() {
-		client.DetectAnomaly(nil, metrics)
-	})
+	// This should return an error for nil context
+	_, err := client.DetectAnomaly(nil, metrics)
+	assert.Error(t, err)
 }
 
 func TestClient_ResponseParsing(t *testing.T) {

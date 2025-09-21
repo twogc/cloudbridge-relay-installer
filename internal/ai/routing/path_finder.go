@@ -130,7 +130,7 @@ func (pf *PathFinder) initializeTopology() error {
 		{From: "node1", To: "node2", Latency: 50, Bandwidth: 1000, Protocol: "QUIC"},
 		{From: "node1", To: "node5", Latency: 30, Bandwidth: 1000, Protocol: "QUIC"},
 		{From: "node2", To: "node3", Latency: 100, Bandwidth: 800, Protocol: "TCP"},
-		{From: "node3", To: "node4", Latency: 80, Bandwidth: 900, Protocol: "WireGuard"},
+		{From: "node3", To: "node4", Latency: 80, Bandwidth: 900, Protocol: "P2P_QUIC"},
 		{From: "node4", To: "node5", Latency: 120, Bandwidth: 700, Protocol: "TCP"},
 		{From: "node5", To: "node1", Latency: 30, Bandwidth: 1000, Protocol: "QUIC"},
 	}
@@ -211,8 +211,8 @@ func (pf *PathFinder) calculateEdgeWeight(edge *Edge, protocol string) float64 {
 	switch protocol {
 	case "QUIC":
 		weight *= 0.8 // QUIC быстрее
-	case "WireGuard":
-		weight *= 0.9 // WireGuard быстрый
+	case "P2P_QUIC":
+		weight *= 0.85 // P2P QUIC быстрый
 	case "TCP":
 		weight *= 1.0 // TCP стандартный
 	case "UDP":
@@ -270,7 +270,7 @@ func (pf *PathFinder) calculateEdgeLatency(edge *Edge) float64 {
 	switch edge.Protocol {
 	case "QUIC":
 		baseLatency *= 0.8
-	case "WireGuard":
+	case "P2P_QUIC":
 		baseLatency *= 0.9
 	case "TCP":
 		baseLatency *= 1.0
@@ -280,4 +280,3 @@ func (pf *PathFinder) calculateEdgeLatency(edge *Edge) float64 {
 
 	return baseLatency
 }
-

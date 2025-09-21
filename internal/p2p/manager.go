@@ -6,13 +6,12 @@ import (
 	"net"
 	"time"
 
-	"github.com/twogc/cloudbridge-relay-installer/internal/wireguard"
 	"go.uber.org/zap"
 )
 
 // P2PManager управляет P2P соединениями с интеграцией Cadence
 type P2PManager struct {
-	wireGuardMesh      WireGuardMeshTopologyInterface
+	p2pMesh            P2PMeshTopologyInterface
 	peerDiscovery      PeerDiscoveryInterface
 	hybridRouter       HybridRouterInterface
 	siteToSiteManager  SiteToSiteManagerInterface
@@ -24,14 +23,14 @@ type P2PManager struct {
 
 // NewP2PManager создает новый P2P менеджер
 func NewP2PManager(
-	mesh WireGuardMeshTopologyInterface,
+	mesh P2PMeshTopologyInterface,
 	discovery PeerDiscoveryInterface,
 	router HybridRouterInterface,
 	siteToSite SiteToSiteManagerInterface,
 	logger *zap.Logger,
 ) *P2PManager {
 	pm := &P2PManager{
-		wireGuardMesh:     mesh,
+		p2pMesh:           mesh,
 		peerDiscovery:     discovery,
 		hybridRouter:      router,
 		siteToSiteManager: siteToSite,
@@ -46,7 +45,7 @@ func NewP2PManager(
 
 // NewP2PManagerWithCadence создает новый P2P менеджер с Cadence интеграцией
 func NewP2PManagerWithCadence(
-	mesh WireGuardMeshTopologyInterface,
+	mesh P2PMeshTopologyInterface,
 	discovery PeerDiscoveryInterface,
 	router HybridRouterInterface,
 	siteToSite SiteToSiteManagerInterface,
@@ -106,19 +105,27 @@ func (pm *P2PManager) processDiscoveredPeers(ctx context.Context) {
 				if pm.isPeerConnected(peer.PeerID) {
 					continue
 				}
-
-				// Создаем WireGuard peer
-				wgPeer := &wireguard.WireGuardPeer{
-					PublicKey:     peer.PublicKey,
-					Endpoint:      peer.Endpoint,
-					AllowedIPs:    []string{fmt.Sprintf("10.100.%s.0/24", peer.Region)},
-					LastHandshake: peer.LastSeen,
-					Status:        wireguard.PeerStatusConnecting,
-					Latency:       peer.Latency,
+				p2pPeer := &Peer{
+					ID:             peer.PeerID,
+					PeerID:         peer.PeerID,
+					TenantID:       peer.TenantID,
+					Endpoint:       peer.Endpoint,
+					ConnectionType: "quic",
+					IsOnline:       true,
+					LastSeen:       peer.LastSeen,
+					LatencyMS:      peer.Latency,
+					QuicConfig: &QuicConfig{
+						Endpoint:            peer.Endpoint,
+						MaxStreams:          100,
+						HandshakeTimeout:    "10s",
+						IdleTimeout:         "60s",
+						ConnectionMigration: true,
+						Multiplexing:        true,
+					},
 				}
 
 				// Добавляем в mesh topology
-				if err := pm.wireGuardMesh.AddPeer(peer.PeerID, wgPeer); err != nil {
+				if err := pm.p2pMesh.AddPeer(peer.PeerID, p2pPeer); err != nil {
 					pm.logger.Error("Failed to add peer to mesh",
 						zap.String("peer_id", peer.PeerID),
 						zap.Error(err))
@@ -126,7 +133,7 @@ func (pm *P2PManager) processDiscoveredPeers(ctx context.Context) {
 				}
 
 				// Обновляем статус peer
-				wgPeer.Status = wireguard.PeerStatusConnected
+				p2pPeer.Status = "connected"
 				pm.logger.Info("Peer added to P2P mesh",
 					zap.String("peer_id", peer.PeerID),
 					zap.String("endpoint", peer.Endpoint),
@@ -143,17 +150,17 @@ func (pm *P2PManager) processDiscoveredPeers(ctx context.Context) {
 // isPeerConnected проверяет, подключен ли peer
 func (pm *P2PManager) isPeerConnected(peerID string) bool {
 	// Проверяем в mesh topology
-	if pm.wireGuardMesh != nil {
+	if pm.p2pMesh != nil {
 		// Получаем реальный статус подключения peer из mesh topology
 		// Используем прямой доступ к ConnectedPeers через публичные методы
-		peer, exists := pm.wireGuardMesh.GetPeer(peerID)
+		peer, exists := pm.p2pMesh.GetPeer(peerID)
 		if !exists {
 			pm.logger.Debug("Peer not found in mesh topology", zap.String("peer_id", peerID))
 			return false
 		}
 
 		// Проверяем статус подключения
-		return peer.Status == wireguard.PeerStatusConnected
+		return peer.Status == "connected"
 	}
 	return false
 }
@@ -178,8 +185,8 @@ func (pm *P2PManager) IsAvailable(ctx context.Context, clientIP string, tenantID
 	}
 
 	// Проверяем, есть ли подходящий маршрут
-	if pm.wireGuardMesh != nil {
-		routes, err := pm.wireGuardMesh.GetOptimalRoute(clientIP)
+	if pm.p2pMesh != nil {
+		routes, err := pm.p2pMesh.GetOptimalRoute(clientIP)
 		if err == nil && len(routes) > 0 {
 			pm.logger.Debug("P2P route available",
 				zap.String("client_ip", clientIP),
@@ -249,7 +256,7 @@ type RouteInfo struct {
 	PeerID     string
 	Endpoint   string
 	Latency    time.Duration
-	TrustLevel wireguard.TrustLevel
+	TrustLevel string
 }
 
 // CreateTunnelWithOrchestration создает туннель с оркестрацией через Cadence
@@ -369,18 +376,18 @@ func (pm *P2PManager) determineOptimalRoute(ctx context.Context, clientIP, tenan
 	}
 
 	// Выбираем лучшего пира на основе задержки и доверия
-	var bestPeer *wireguard.DiscoveredPeer
+	var bestPeer *DiscoveredPeer
 	var bestLatency time.Duration = time.Hour // Максимальная задержка
 
 	for _, peer := range peers {
 		// Проверяем доверие
-		if peer.TrustLevel < wireguard.TrustBasic {
+		if peer.TrustLevel != "basic" && peer.TrustLevel != "high" {
 			continue
 		}
 
 		// Проверяем задержку
-		if peer.Latency < bestLatency {
-			bestLatency = peer.Latency
+		if time.Duration(peer.Latency)*time.Millisecond < bestLatency {
+			bestLatency = time.Duration(peer.Latency) * time.Millisecond
 			bestPeer = peer
 		}
 	}
@@ -399,13 +406,13 @@ func (pm *P2PManager) determineOptimalRoute(ctx context.Context, clientIP, tenan
 		Type:       routeType,
 		PeerID:     bestPeer.PeerID,
 		Endpoint:   bestPeer.Endpoint,
-		Latency:    bestPeer.Latency,
+		Latency:    time.Duration(bestPeer.Latency) * time.Millisecond,
 		TrustLevel: bestPeer.TrustLevel,
 	}, nil
 }
 
 // isDirectRouteAvailable проверяет доступность прямого маршрута
-func (pm *P2PManager) isDirectRouteAvailable(clientIP string, peer *wireguard.DiscoveredPeer) bool {
+func (pm *P2PManager) isDirectRouteAvailable(clientIP string, peer *DiscoveredPeer) bool {
 	// Реальная проверка доступности прямого маршрута
 	conn, err := net.DialTimeout("tcp", peer.Endpoint, 5*time.Second)
 	if err != nil {
@@ -427,10 +434,7 @@ func (pm *P2PManager) handleDirectP2P(ctx context.Context, conn net.Conn, route 
 		zap.String("peer_id", route.PeerID),
 		zap.String("endpoint", route.Endpoint),
 	)
-
-	// В реальной реализации здесь будет установка прямого WireGuard соединения
-	// Создаем QUIC соединение поверх WireGuard
-	if pm.wireGuardMesh != nil {
+	if pm.p2pMesh != nil {
 		// В реальной реализации здесь будет получение peer через публичный метод
 		// Пока используем симуляцию
 		pm.logger.Info("Direct P2P connection established",
@@ -452,8 +456,8 @@ func (pm *P2PManager) handleMeshP2P(ctx context.Context, conn net.Conn, route *R
 
 	// В реальной реализации здесь будет установка mesh соединения через несколько пиров
 	// Получаем оптимальный mesh маршрут
-	if pm.wireGuardMesh != nil {
-		routes, err := pm.wireGuardMesh.GetOptimalRoute(conn.RemoteAddr().String())
+	if pm.p2pMesh != nil {
+		routes, err := pm.p2pMesh.GetOptimalRoute(conn.RemoteAddr().String())
 		if err != nil {
 			return fmt.Errorf("failed to get mesh route: %w", err)
 		}
@@ -510,7 +514,7 @@ func (pm *P2PManager) GetStatus() map[string]interface{} {
 	}
 
 	// Добавляем информацию о mesh topology
-	if pm.wireGuardMesh != nil {
+	if pm.p2pMesh != nil {
 		// В реальной реализации здесь будет получение статуса через публичные методы
 		status["mesh_peers"] = 0 // Временная заглушка
 		status["local_peer_id"] = "peer-local"

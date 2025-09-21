@@ -66,9 +66,12 @@ func (s *Server) Start(ctx context.Context) error {
 	// Root endpoint
 	mux.HandleFunc("/", s.handleRoot)
 
+	// Apply security headers middleware
+	handler := s.securityHeadersMiddleware(mux)
+
 	s.server = &http.Server{
 		Addr:         s.port,
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -365,4 +368,19 @@ func (s *Server) getTotalTunnels() int {
 		return int(s.metrics.GetActiveTunnels()) // Fallback to active for now
 	}
 	return 0
+}
+
+// securityHeadersMiddleware добавляет заголовки безопасности к HTTP ответам
+func (s *Server) securityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Добавляем заголовки безопасности
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'")
+
+		// Передаем управление следующему обработчику
+		next.ServeHTTP(w, r)
+	})
 }

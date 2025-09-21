@@ -49,6 +49,7 @@ func P2PQUICTunnelWorkflow(ctx workflow.Context, input P2PQUICTunnelWorkflowInpu
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 5 * time.Minute,
 		HeartbeatTimeout:    30 * time.Second,
 		RetryPolicy: &workflow.RetryPolicy{

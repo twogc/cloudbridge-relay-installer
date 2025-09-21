@@ -103,7 +103,10 @@ func TestHub_UnregisterPeer(t *testing.T) {
 		PeerID: "peer1",
 		Status: "connected",
 	}
-	hub.Register <- &WebSocketConnection{PeerID: peer.PeerID}
+	hub.Register <- &WebSocketConnection{
+		PeerID: peer.PeerID,
+		Send:   make(chan []byte, 256), // Add Send channel
+	}
 
 	// Wait for registration
 	time.Sleep(10 * time.Millisecond)
@@ -112,7 +115,10 @@ func TestHub_UnregisterPeer(t *testing.T) {
 	assert.Equal(t, 1, hub.GetConnectionCount())
 
 	// Unregister the peer
-	hub.Unregister <- &WebSocketConnection{PeerID: peer.PeerID}
+	hub.Unregister <- &WebSocketConnection{
+		PeerID: peer.PeerID,
+		Send:   make(chan []byte, 256), // Add Send channel
+	}
 
 	// Wait for unregistration
 	time.Sleep(10 * time.Millisecond)

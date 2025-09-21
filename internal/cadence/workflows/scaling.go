@@ -121,6 +121,7 @@ func AutoScalingWorkflow(ctx workflow.Context, input AutoScalingWorkflowInput) (
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 10 * time.Minute,
 		HeartbeatTimeout:    1 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -433,6 +434,7 @@ func ResourceOptimizationWorkflow(ctx workflow.Context, input ResourceOptimizati
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 15 * time.Minute,
 		HeartbeatTimeout:    2 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -618,6 +620,7 @@ func PerformanceMonitoringWorkflow(ctx workflow.Context, input PerformanceMonito
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 5 * time.Minute,
 		HeartbeatTimeout:    30 * time.Second,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -858,6 +861,7 @@ func CapacityPlanningWorkflow(ctx workflow.Context, input CapacityPlanningWorkfl
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 20 * time.Minute,
 		HeartbeatTimeout:    2 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{

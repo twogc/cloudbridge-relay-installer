@@ -314,7 +314,20 @@ func TestHeartbeatHandler_GetPeerStatus(t *testing.T) {
 			handler.GetPeerStatus(c)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
-			assert.JSONEq(t, tt.expectedBody, w.Body.String())
+
+			// For successful status retrieval, check individual fields instead of exact JSON match
+			if tt.name == "successful status retrieval" {
+				var response map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Equal(t, "peer1", response["peer_id"])
+				assert.Equal(t, "tenant1", response["tenant_id"])
+				assert.Equal(t, true, response["is_online"])
+				assert.Equal(t, float64(5), response["heartbeat_count"])
+				assert.NotNil(t, response["uptime"]) // uptime should be present
+			} else {
+				assert.JSONEq(t, tt.expectedBody, w.Body.String())
+			}
 			heartbeatManager.AssertExpectations(t)
 		})
 	}

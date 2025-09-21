@@ -43,7 +43,6 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
-	"github.com/twogc/cloudbridge-relay-installer/internal/wireguard"
 	"go.uber.org/zap"
 )
 
@@ -110,11 +109,9 @@ type Server struct {
 	ipRateLimit          *ratelimit.IPLimiter
 	enhancedKeycloakAuth *auth.EnhancedKeycloakAuth
 	enhancedEnabled      bool
-
-	// WireGuard P2P Mesh components
-	wireGuardEnabled   bool
-	wireGuardInterface *wireguard.WireGuardInterface
-	wireGuardMesh      *wireguard.MeshTopology
+	wireGuardEnabled     bool
+	wireGuardInterface   *wireguard.WireGuardInterface
+	wireGuardMesh        *wireguard.MeshTopology
 
 	// P2P Relay components
 	relayManager     *p2p.RelayManager
@@ -302,8 +299,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			Realm:     "cloudbridge",
 		}, zap.NewNop())
 	}
-
-	// Initialize P2P components (QUIC-based, no WireGuard)
 	// P2P is now enabled by default for QUIC relay functionality
 	p2pEnabled := true // Always enable P2P for QUIC relay
 	var wireGuardInterface *wireguard.WireGuardInterface
@@ -312,8 +307,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	var quicOverWireGuard *wireguard.QUICOverWireGuard
 	var hybridRouter *wireguard.HybridRouter
 	var siteToSiteManager *wireguard.SiteToSiteManager
-
-	// WireGuard components are now optional and disabled by default
 	// P2P functionality is handled by QUIC relay instead
 	loggerInstance.Info("P2P QUIC relay mode enabled, WireGuard disabled")
 
@@ -388,9 +381,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		// Create PQC configuration
 		quantumConfig = quantum.NewPQCConfig()
 
-		// Initialize quantum-resistant WireGuard
-		// Note: wireGuardInterface is always nil in QUIC relay mode, so skip quantum WireGuard
-
 		// Initialize quantum-resistant Enhanced QUIC
 		if enhancedQUICManager != nil {
 			quantumEnhancedQUIC = quantum.NewQuantumEnhancedQUIC(enhancedQUICManager, quantumConfig)
@@ -444,8 +434,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	})
 
 	protocolEngine := protocol.NewProtocolEngine([]protocol.Protocol{protocol.QUIC, protocol.HTTP2, protocol.WebSocket}, cfg.Protocol.SwitchThreshold, zapLogger)
-
-	// Initialize P2P Manager (QUIC-based, no WireGuard dependencies)
 	p2pManager := p2p.NewP2PManager(
 		nil, // wireGuardMesh - not needed for QUIC relay
 		nil, // wireGuardPeerDiscovery - not needed for QUIC relay
@@ -815,8 +803,6 @@ func (s *Server) Start() error {
 			}()
 		}
 	}()
-
-	// Start WireGuard UDP server on port 51820
 	if s.wireGuardEnabled {
 		go func() {
 			udpAddr, err := net.ResolveUDPAddr("udp", ":51820")
@@ -844,8 +830,6 @@ func (s *Server) Start() error {
 					s.logger.Error("Failed to read from WireGuard UDP", zap.Error(err))
 					continue
 				}
-
-				// Handle WireGuard packet
 				go s.handleWireGuardPacket(udpConn, addr, buffer[:n])
 			}
 		}()
@@ -1011,11 +995,8 @@ func (s *Server) Start() error {
 		}()
 		s.logger.Info("AutoSwitchManager started")
 	}
-
-	// Инициализация P2P Manager (QUIC-based, no WireGuard)
 	if s.p2pManager != nil {
 		go func() {
-			// P2P Manager для QUIC relay не требует WireGuard компонентов
 			s.logger.Info("P2P Manager initialized successfully (QUIC relay mode)")
 		}()
 	}

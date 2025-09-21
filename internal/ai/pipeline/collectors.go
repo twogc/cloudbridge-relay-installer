@@ -447,9 +447,9 @@ func NewRelayMetricsCollector(logger *zap.Logger) *RelayMetricsCollector {
 		relayStats: &RelayStats{
 			LastUpdated: time.Now(),
 			ProtocolDistribution: map[string]int{
-				"QUIC":      0,
-				"WireGuard": 0,
-				"TCP":       0,
+				"QUIC":     0,
+				"P2P_QUIC": 0,
+				"TCP":      0,
 			},
 		},
 		httpClient: &http.Client{
@@ -656,9 +656,9 @@ func (rmc *RelayMetricsCollector) fetchRelayStats() (*RelayStats, error) {
 			if value := rmc.parseMetricValue(line); value > 0 {
 				stats.ProtocolDistribution["QUIC"] = int(value)
 			}
-		} else if strings.Contains(line, "protocol=\"WireGuard\"") {
+		} else if strings.Contains(line, "protocol=\"P2P_QUIC\"") {
 			if value := rmc.parseMetricValue(line); value > 0 {
-				stats.ProtocolDistribution["WireGuard"] = int(value)
+				stats.ProtocolDistribution["P2P_QUIC"] = int(value)
 			}
 		} else if strings.Contains(line, "protocol=\"TCP\"") {
 			if value := rmc.parseMetricValue(line); value > 0 {

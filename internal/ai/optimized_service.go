@@ -151,6 +151,14 @@ type ResourceLimits struct {
 
 // NewOptimizedService создает новый оптимизированный AI сервис
 func NewOptimizedService(config *Config, logger *zap.Logger) (*OptimizedService, error) {
+	// Проверяем конфигурацию и logger
+	if config == nil {
+		return nil, fmt.Errorf("config cannot be nil")
+	}
+	if logger == nil {
+		return nil, fmt.Errorf("logger cannot be nil")
+	}
+
 	service := &OptimizedService{
 		config:          config,
 		logger:          logger,
@@ -292,6 +300,11 @@ func (s *OptimizedService) DetectAnomaly(ctx context.Context, metrics *anomaly.N
 		s.recordRequest("detect_anomaly", time.Since(start), nil)
 	}()
 
+	// Проверяем входные параметры
+	if metrics == nil {
+		return nil, errors.New("metrics cannot be nil")
+	}
+
 	// Проверяем circuit breaker
 	if !s.circuitBreaker.CanExecute() {
 		return nil, errors.New("circuit breaker is open")
@@ -329,6 +342,11 @@ func (s *OptimizedService) PredictLoad(ctx context.Context, horizon int) (*predi
 	defer func() {
 		s.recordRequest("predict_load", time.Since(start), nil)
 	}()
+
+	// Проверяем входные параметры
+	if horizon <= 0 {
+		return nil, errors.New("horizon must be positive")
+	}
 
 	// Проверяем circuit breaker
 	if !s.circuitBreaker.CanExecute() {

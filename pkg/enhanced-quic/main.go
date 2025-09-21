@@ -148,6 +148,9 @@ func main() {
 		}
 	})
 
+	// Apply security headers middleware
+	handler := SecurityHeaders()(mux)
+
 	// Generate self-signed certificate if not exists
 	if _, err := os.Stat(config.CertFile); os.IsNotExist(err) {
 		logger.Info("Generating self-signed certificate...")
@@ -159,7 +162,7 @@ func main() {
 	// Start Enhanced QUIC server with HTTP/2 support
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", config.Host, config.Port),
-		Handler:      mux,
+		Handler:      handler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  120 * time.Second,

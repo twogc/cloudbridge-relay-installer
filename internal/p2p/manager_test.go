@@ -8,29 +8,27 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/twogc/cloudbridge-relay-installer/internal/wireguard"
 	"go.uber.org/zap"
 )
 
-// MockWireGuardMeshTopology is a mock for WireGuardMeshTopologyInterface
-type MockWireGuardMeshTopology struct {
+type MockP2PMeshTopology struct {
 	mock.Mock
 }
 
-func (m *MockWireGuardMeshTopology) AddPeer(peerID string, peer *wireguard.WireGuardPeer) error {
+func (m *MockP2PMeshTopology) AddPeer(peerID string, peer *Peer) error {
 	args := m.Called(peerID, peer)
 	return args.Error(0)
 }
 
-func (m *MockWireGuardMeshTopology) GetPeer(peerID string) (*wireguard.WireGuardPeer, bool) {
+func (m *MockP2PMeshTopology) GetPeer(peerID string) (*Peer, bool) {
 	args := m.Called(peerID)
 	if args.Get(0) == nil {
 		return nil, args.Bool(1)
 	}
-	return args.Get(0).(*wireguard.WireGuardPeer), args.Bool(1)
+	return args.Get(0).(*Peer), args.Bool(1)
 }
 
-func (m *MockWireGuardMeshTopology) GetOptimalRoute(clientIP string) ([]string, error) {
+func (m *MockP2PMeshTopology) GetOptimalRoute(clientIP string) ([]string, error) {
 	args := m.Called(clientIP)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -53,12 +51,12 @@ func (m *MockPeerDiscovery) Stop() error {
 	return args.Error(0)
 }
 
-func (m *MockPeerDiscovery) DiscoverPeers() ([]*wireguard.DiscoveredPeer, error) {
+func (m *MockPeerDiscovery) DiscoverPeers() ([]*DiscoveredPeer, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*wireguard.DiscoveredPeer), args.Error(1)
+	return args.Get(0).([]*DiscoveredPeer), args.Error(1)
 }
 
 // MockHybridRouter is a mock for HybridRouterInterface
@@ -101,7 +99,7 @@ func (m *MockCadenceP2PIntegration) OrchestrateAIOptimizedRouting(ctx context.Co
 
 func TestNewP2PManager(t *testing.T) {
 	t.Run("creates P2P manager with all components", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -110,7 +108,7 @@ func TestNewP2PManager(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		assert.NotNil(t, manager)
-		assert.Equal(t, mockMesh, manager.wireGuardMesh)
+		assert.Equal(t, mockMesh, manager.p2pMesh)
 		assert.Equal(t, mockDiscovery, manager.peerDiscovery)
 		assert.Equal(t, mockRouter, manager.hybridRouter)
 		assert.Equal(t, mockSiteToSite, manager.siteToSiteManager)
@@ -123,7 +121,7 @@ func TestNewP2PManager(t *testing.T) {
 
 func TestNewP2PManagerWithCadence(t *testing.T) {
 	t.Run("creates P2P manager with Cadence integration", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -140,7 +138,7 @@ func TestNewP2PManagerWithCadence(t *testing.T) {
 
 func TestP2PManager_SetCadenceIntegration(t *testing.T) {
 	t.Run("sets Cadence integration", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -157,7 +155,7 @@ func TestP2PManager_SetCadenceIntegration(t *testing.T) {
 
 func TestP2PManager_Initialize(t *testing.T) {
 	t.Run("initializes successfully", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -166,7 +164,7 @@ func TestP2PManager_Initialize(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		mockDiscovery.On("Start").Return(nil)
-		mockDiscovery.On("DiscoverPeers").Return([]*wireguard.DiscoveredPeer{}, nil).Maybe()
+		mockDiscovery.On("DiscoverPeers").Return([]*DiscoveredPeer{}, nil).Maybe()
 
 		ctx := context.Background()
 		err := manager.Initialize(ctx)
@@ -176,7 +174,7 @@ func TestP2PManager_Initialize(t *testing.T) {
 	})
 
 	t.Run("fails when not initialized", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -193,7 +191,7 @@ func TestP2PManager_Initialize(t *testing.T) {
 	})
 
 	t.Run("fails when peer discovery start fails", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -214,7 +212,7 @@ func TestP2PManager_Initialize(t *testing.T) {
 
 func TestP2PManager_IsAvailable(t *testing.T) {
 	t.Run("returns true when peers are available", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -223,15 +221,15 @@ func TestP2PManager_IsAvailable(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock discovered peers
-		peers := []*wireguard.DiscoveredPeer{
+		peers := []*DiscoveredPeer{
 			{
 				PeerID:     "peer1",
-				PublicKey:  "key1",
+				ID:         "key1",
 				Endpoint:   "192.168.1.1:51820",
 				Region:     "us-east",
 				LastSeen:   time.Now(),
-				Latency:    time.Millisecond * 10,
-				TrustLevel: wireguard.TrustBasic,
+				Latency:    10,
+				TrustLevel: "basic",
 			},
 		}
 
@@ -247,7 +245,7 @@ func TestP2PManager_IsAvailable(t *testing.T) {
 	})
 
 	t.Run("returns false when no peers available", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -255,7 +253,7 @@ func TestP2PManager_IsAvailable(t *testing.T) {
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
-		mockDiscovery.On("DiscoverPeers").Return([]*wireguard.DiscoveredPeer{}, nil)
+		mockDiscovery.On("DiscoverPeers").Return([]*DiscoveredPeer{}, nil)
 
 		ctx := context.Background()
 		available := manager.IsAvailable(ctx, "192.168.1.100", "tenant-123")
@@ -265,7 +263,7 @@ func TestP2PManager_IsAvailable(t *testing.T) {
 	})
 
 	t.Run("returns false when not initialized", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -283,7 +281,7 @@ func TestP2PManager_IsAvailable(t *testing.T) {
 
 func TestP2PManager_HandleConnection(t *testing.T) {
 	t.Run("handles connection successfully", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -295,15 +293,15 @@ func TestP2PManager_HandleConnection(t *testing.T) {
 		conn := &mockConn{remoteAddr: "192.168.1.100:12345"}
 
 		// Mock discovered peers
-		peers := []*wireguard.DiscoveredPeer{
+		peers := []*DiscoveredPeer{
 			{
 				PeerID:     "peer1",
-				PublicKey:  "key1",
+				ID:         "key1",
 				Endpoint:   "192.168.1.1:51820",
 				Region:     "us-east",
 				LastSeen:   time.Now(),
-				Latency:    time.Millisecond * 10,
-				TrustLevel: wireguard.TrustBasic,
+				Latency:    10,
+				TrustLevel: "basic",
 			},
 		}
 
@@ -320,7 +318,7 @@ func TestP2PManager_HandleConnection(t *testing.T) {
 	})
 
 	t.Run("fails when not initialized", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -341,7 +339,7 @@ func TestP2PManager_HandleConnection(t *testing.T) {
 
 func TestP2PManager_GetMetrics(t *testing.T) {
 	t.Run("returns metrics", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -358,7 +356,7 @@ func TestP2PManager_GetMetrics(t *testing.T) {
 
 func TestP2PManager_UpdatePeerCount(t *testing.T) {
 	t.Run("updates peer count", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -376,7 +374,7 @@ func TestP2PManager_UpdatePeerCount(t *testing.T) {
 
 func TestP2PManager_GetStatus(t *testing.T) {
 	t.Run("returns status information", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -385,7 +383,7 @@ func TestP2PManager_GetStatus(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock peer discovery
-		peers := []*wireguard.DiscoveredPeer{
+		peers := []*DiscoveredPeer{
 			{PeerID: "peer1"},
 			{PeerID: "peer2"},
 		}
@@ -412,7 +410,7 @@ func TestP2PManager_GetStatus(t *testing.T) {
 
 func TestP2PManager_Shutdown(t *testing.T) {
 	t.Run("shuts down gracefully", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -430,7 +428,7 @@ func TestP2PManager_Shutdown(t *testing.T) {
 	})
 
 	t.Run("handles stop error gracefully", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -501,7 +499,7 @@ func (m *mockAddr) String() string {
 
 func TestP2PManager_IsPeerConnected(t *testing.T) {
 	t.Run("returns true when peer is connected", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -510,9 +508,9 @@ func TestP2PManager_IsPeerConnected(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock connected peer
-		peer := &wireguard.WireGuardPeer{
-			PublicKey: "peer1",
-			Status:    wireguard.PeerStatusConnected,
+		peer := &Peer{
+			ID:     "peer1",
+			Status: "connected",
 		}
 
 		mockMesh.On("GetPeer", "peer1").Return(peer, true)
@@ -524,7 +522,7 @@ func TestP2PManager_IsPeerConnected(t *testing.T) {
 	})
 
 	t.Run("returns false when peer is not connected", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -533,9 +531,9 @@ func TestP2PManager_IsPeerConnected(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock disconnected peer
-		peer := &wireguard.WireGuardPeer{
-			PublicKey: "peer1",
-			Status:    wireguard.PeerStatusDisconnected,
+		peer := &Peer{
+			ID:     "peer1",
+			Status: "disconnected",
 		}
 
 		mockMesh.On("GetPeer", "peer1").Return(peer, true)
@@ -547,7 +545,7 @@ func TestP2PManager_IsPeerConnected(t *testing.T) {
 	})
 
 	t.Run("returns false when peer not found", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -555,7 +553,7 @@ func TestP2PManager_IsPeerConnected(t *testing.T) {
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
-		mockMesh.On("GetPeer", "nonexistent").Return((*wireguard.WireGuardPeer)(nil), false)
+		mockMesh.On("GetPeer", "nonexistent").Return((*Peer)(nil), false)
 
 		connected := manager.isPeerConnected("nonexistent")
 
@@ -566,7 +564,7 @@ func TestP2PManager_IsPeerConnected(t *testing.T) {
 
 func TestP2PManager_CreateTunnelWithOrchestration(t *testing.T) {
 	t.Run("creates tunnel with cadence integration", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -590,7 +588,7 @@ func TestP2PManager_CreateTunnelWithOrchestration(t *testing.T) {
 	})
 
 	t.Run("falls back to direct creation when cadence not available", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -616,7 +614,7 @@ func TestP2PManager_CreateTunnelWithOrchestration(t *testing.T) {
 
 func TestP2PManager_EstablishConnectionWithOrchestration(t *testing.T) {
 	t.Run("establishes connection with cadence integration", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -627,7 +625,7 @@ func TestP2PManager_EstablishConnectionWithOrchestration(t *testing.T) {
 		manager.SetCadenceIntegration(mockCadence)
 
 		config := map[string]interface{}{
-			"protocol": "wireguard",
+			"protocol": "p2p",
 		}
 
 		mockCadence.On("OrchestrateConnectionEstablishment", mock.Anything, "tenant1", "peer1", "peer2", config).Return(nil)
@@ -640,7 +638,7 @@ func TestP2PManager_EstablishConnectionWithOrchestration(t *testing.T) {
 	})
 
 	t.Run("falls back to direct connection when cadence not available", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -650,7 +648,7 @@ func TestP2PManager_EstablishConnectionWithOrchestration(t *testing.T) {
 		// Don't set cadence integration
 
 		config := map[string]interface{}{
-			"protocol": "wireguard",
+			"protocol": "p2p",
 		}
 
 		ctx := context.Background()
@@ -663,7 +661,7 @@ func TestP2PManager_EstablishConnectionWithOrchestration(t *testing.T) {
 
 func TestP2PManager_OptimizeRoutingWithAI(t *testing.T) {
 	t.Run("optimizes routing with cadence integration", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -687,7 +685,7 @@ func TestP2PManager_OptimizeRoutingWithAI(t *testing.T) {
 	})
 
 	t.Run("returns error when cadence not available", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -711,7 +709,7 @@ func TestP2PManager_OptimizeRoutingWithAI(t *testing.T) {
 // TestP2PManager_handleDirectP2P тестирует handleDirectP2P
 func TestP2PManager_handleDirectP2P(t *testing.T) {
 	t.Run("handles direct P2P connection successfully", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -727,8 +725,8 @@ func TestP2PManager_handleDirectP2P(t *testing.T) {
 			Type:       "direct",
 			PeerID:     "peer-123",
 			Endpoint:   "192.168.1.1:51820",
-			Latency:    time.Millisecond * 10,
-			TrustLevel: wireguard.TrustBasic,
+			Latency:    10,
+			TrustLevel: "basic",
 		}
 
 		ctx := context.Background()
@@ -739,22 +737,22 @@ func TestP2PManager_handleDirectP2P(t *testing.T) {
 	})
 
 	t.Run("fails when mesh topology not available", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
 		logger := zap.NewNop()
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
-		manager.wireGuardMesh = nil // Set to nil to simulate unavailable mesh
+		manager.p2pMesh = nil // Set to nil to simulate unavailable mesh
 
 		conn := &mockConn{remoteAddr: "192.168.1.100:12345"}
 		route := &RouteInfo{
 			Type:       "direct",
 			PeerID:     "peer-123",
 			Endpoint:   "192.168.1.1:51820",
-			Latency:    time.Millisecond * 10,
-			TrustLevel: wireguard.TrustBasic,
+			Latency:    10,
+			TrustLevel: "basic",
 		}
 
 		ctx := context.Background()
@@ -768,7 +766,7 @@ func TestP2PManager_handleDirectP2P(t *testing.T) {
 // TestP2PManager_measureLatency тестирует measureLatency
 func TestP2PManager_measureLatency(t *testing.T) {
 	t.Run("measures latency successfully", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -787,7 +785,7 @@ func TestP2PManager_measureLatency(t *testing.T) {
 	})
 
 	t.Run("returns high latency for unreachable IP", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -805,7 +803,7 @@ func TestP2PManager_measureLatency(t *testing.T) {
 	})
 
 	t.Run("measures latency with different IPs", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -832,7 +830,7 @@ func TestP2PManager_measureLatency(t *testing.T) {
 // TestP2PManager_processDiscoveredPeers тестирует processDiscoveredPeers
 func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 	t.Run("processes discovered peers successfully", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -841,24 +839,24 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock discovered peers
-		peers := []*wireguard.DiscoveredPeer{
+		peers := []*DiscoveredPeer{
 			{
 				PeerID:     "peer1",
-				PublicKey:  "key1",
+				ID:         "key1",
 				Endpoint:   "192.168.1.1:51820",
 				Region:     "us-east",
 				LastSeen:   time.Now(),
-				Latency:    time.Millisecond * 10,
-				TrustLevel: wireguard.TrustBasic,
+				Latency:    10,
+				TrustLevel: "basic",
 			},
 			{
 				PeerID:     "peer2",
-				PublicKey:  "key2",
+				ID:         "key2",
 				Endpoint:   "192.168.1.2:51820",
 				Region:     "us-west",
 				LastSeen:   time.Now(),
-				Latency:    time.Millisecond * 20,
-				TrustLevel: wireguard.TrustBasic,
+				Latency:    20,
+				TrustLevel: "basic",
 			},
 		}
 
@@ -866,10 +864,10 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 		mockDiscovery.On("DiscoverPeers").Return(peers, nil)
 
 		// Mock mesh operations
-		mockMesh.On("GetPeer", "peer1").Return((*wireguard.WireGuardPeer)(nil), false)
-		mockMesh.On("GetPeer", "peer2").Return((*wireguard.WireGuardPeer)(nil), false)
-		mockMesh.On("AddPeer", "peer1", mock.AnythingOfType("*wireguard.WireGuardPeer")).Return(nil)
-		mockMesh.On("AddPeer", "peer2", mock.AnythingOfType("*wireguard.WireGuardPeer")).Return(nil)
+		mockMesh.On("GetPeer", "peer1").Return((*Peer)(nil), false)
+		mockMesh.On("GetPeer", "peer2").Return((*Peer)(nil), false)
+		mockMesh.On("AddPeer", "peer1", mock.AnythingOfType("*Peer")).Return(nil)
+		mockMesh.On("AddPeer", "peer2", mock.AnythingOfType("*Peer")).Return(nil)
 
 		// Create a context with timeout to prevent infinite loop
 		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
@@ -896,7 +894,7 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 	})
 
 	t.Run("handles peer discovery errors", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -905,7 +903,7 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock peer discovery error
-		mockDiscovery.On("DiscoverPeers").Return([]*wireguard.DiscoveredPeer{}, assert.AnError)
+		mockDiscovery.On("DiscoverPeers").Return([]*DiscoveredPeer{}, assert.AnError)
 
 		// Create a context with timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
@@ -932,7 +930,7 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 	})
 
 	t.Run("skips already connected peers", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -941,15 +939,15 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock discovered peers
-		peers := []*wireguard.DiscoveredPeer{
+		peers := []*DiscoveredPeer{
 			{
 				PeerID:     "peer1",
-				PublicKey:  "key1",
+				ID:         "key1",
 				Endpoint:   "192.168.1.1:51820",
 				Region:     "us-east",
 				LastSeen:   time.Now(),
-				Latency:    time.Millisecond * 10,
-				TrustLevel: wireguard.TrustBasic,
+				Latency:    10,
+				TrustLevel: "basic",
 			},
 		}
 
@@ -957,9 +955,9 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 		mockDiscovery.On("DiscoverPeers").Return(peers, nil)
 
 		// Mock already connected peer
-		connectedPeer := &wireguard.WireGuardPeer{
-			PublicKey: "key1",
-			Status:    wireguard.PeerStatusConnected,
+		connectedPeer := &Peer{
+			ID:     "key1",
+			Status: "connected",
 		}
 		mockMesh.On("GetPeer", "peer1").Return(connectedPeer, true)
 
@@ -988,7 +986,7 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 	})
 
 	t.Run("handles mesh add peer errors", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -997,15 +995,15 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock discovered peers
-		peers := []*wireguard.DiscoveredPeer{
+		peers := []*DiscoveredPeer{
 			{
 				PeerID:     "peer1",
-				PublicKey:  "key1",
+				ID:         "key1",
 				Endpoint:   "192.168.1.1:51820",
 				Region:     "us-east",
 				LastSeen:   time.Now(),
-				Latency:    time.Millisecond * 10,
-				TrustLevel: wireguard.TrustBasic,
+				Latency:    10,
+				TrustLevel: "basic",
 			},
 		}
 
@@ -1013,8 +1011,8 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 		mockDiscovery.On("DiscoverPeers").Return(peers, nil)
 
 		// Mock mesh operations - peer not found initially, then add fails
-		mockMesh.On("GetPeer", "peer1").Return((*wireguard.WireGuardPeer)(nil), false)
-		mockMesh.On("AddPeer", "peer1", mock.AnythingOfType("*wireguard.WireGuardPeer")).Return(assert.AnError)
+		mockMesh.On("GetPeer", "peer1").Return((*Peer)(nil), false)
+		mockMesh.On("AddPeer", "peer1", mock.AnythingOfType("*Peer")).Return(assert.AnError)
 
 		// Create a context with timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
@@ -1044,7 +1042,7 @@ func TestP2PManager_processDiscoveredPeers(t *testing.T) {
 // TestP2PManager_determineOptimalRoute тестирует determineOptimalRoute
 func TestP2PManager_determineOptimalRoute(t *testing.T) {
 	t.Run("determines optimal route successfully", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -1053,24 +1051,24 @@ func TestP2PManager_determineOptimalRoute(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock discovered peers
-		peers := []*wireguard.DiscoveredPeer{
+		peers := []*DiscoveredPeer{
 			{
 				PeerID:     "peer1",
-				PublicKey:  "key1",
+				ID:         "key1",
 				Endpoint:   "192.168.1.1:51820",
 				Region:     "us-east",
 				LastSeen:   time.Now(),
-				Latency:    time.Millisecond * 10,
-				TrustLevel: wireguard.TrustBasic,
+				Latency:    10,
+				TrustLevel: "basic",
 			},
 			{
 				PeerID:     "peer2",
-				PublicKey:  "key2",
+				ID:         "key2",
 				Endpoint:   "192.168.1.2:51820",
 				Region:     "us-west",
 				LastSeen:   time.Now(),
-				Latency:    time.Millisecond * 5, // Lower latency
-				TrustLevel: wireguard.TrustBasic,
+				Latency:    5, // Lower latency
+				TrustLevel: "basic",
 			},
 		}
 
@@ -1084,13 +1082,13 @@ func TestP2PManager_determineOptimalRoute(t *testing.T) {
 		assert.Equal(t, "peer2", route.PeerID) // Should select peer with lower latency
 		assert.Equal(t, "192.168.1.2:51820", route.Endpoint)
 		assert.Equal(t, time.Millisecond*5, route.Latency)
-		assert.Equal(t, wireguard.TrustBasic, route.TrustLevel)
+		assert.Equal(t, "basic", route.TrustLevel)
 
 		mockDiscovery.AssertExpectations(t)
 	})
 
 	t.Run("fails when no peers available", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -1098,7 +1096,7 @@ func TestP2PManager_determineOptimalRoute(t *testing.T) {
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
-		mockDiscovery.On("DiscoverPeers").Return([]*wireguard.DiscoveredPeer{}, nil)
+		mockDiscovery.On("DiscoverPeers").Return([]*DiscoveredPeer{}, nil)
 
 		ctx := context.Background()
 		route, err := manager.determineOptimalRoute(ctx, "192.168.1.100", "tenant-123")
@@ -1111,7 +1109,7 @@ func TestP2PManager_determineOptimalRoute(t *testing.T) {
 	})
 
 	t.Run("fails when peer discovery fails", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -1119,7 +1117,7 @@ func TestP2PManager_determineOptimalRoute(t *testing.T) {
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
-		mockDiscovery.On("DiscoverPeers").Return([]*wireguard.DiscoveredPeer{}, assert.AnError)
+		mockDiscovery.On("DiscoverPeers").Return([]*DiscoveredPeer{}, assert.AnError)
 
 		ctx := context.Background()
 		route, err := manager.determineOptimalRoute(ctx, "192.168.1.100", "tenant-123")
@@ -1132,7 +1130,7 @@ func TestP2PManager_determineOptimalRoute(t *testing.T) {
 	})
 
 	t.Run("fails when no suitable peer found", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -1141,15 +1139,15 @@ func TestP2PManager_determineOptimalRoute(t *testing.T) {
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
 		// Mock peers with low trust level
-		peers := []*wireguard.DiscoveredPeer{
+		peers := []*DiscoveredPeer{
 			{
 				PeerID:     "peer1",
-				PublicKey:  "key1",
+				ID:         "key1",
 				Endpoint:   "192.168.1.1:51820",
 				Region:     "us-east",
 				LastSeen:   time.Now(),
-				Latency:    time.Millisecond * 10,
-				TrustLevel: wireguard.TrustNone, // Low trust level
+				Latency:    10,
+				TrustLevel: "none", // Low trust level
 			},
 		}
 
@@ -1169,7 +1167,7 @@ func TestP2PManager_determineOptimalRoute(t *testing.T) {
 // TestP2PManager_isDirectRouteAvailable тестирует isDirectRouteAvailable
 func TestP2PManager_isDirectRouteAvailable(t *testing.T) {
 	t.Run("returns true for reachable endpoint", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -1177,14 +1175,14 @@ func TestP2PManager_isDirectRouteAvailable(t *testing.T) {
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
-		peer := &wireguard.DiscoveredPeer{
+		peer := &DiscoveredPeer{
 			PeerID:     "peer1",
-			PublicKey:  "key1",
+			ID:         "key1",
 			Endpoint:   "127.0.0.1:8080", // Use localhost for testing
 			Region:     "us-east",
 			LastSeen:   time.Now(),
-			Latency:    time.Millisecond * 10,
-			TrustLevel: wireguard.TrustBasic,
+			Latency:    10,
+			TrustLevel: "basic",
 		}
 
 		// This will likely fail in test environment, but we test the method exists
@@ -1197,7 +1195,7 @@ func TestP2PManager_isDirectRouteAvailable(t *testing.T) {
 	})
 
 	t.Run("returns false for unreachable endpoint", func(t *testing.T) {
-		mockMesh := new(MockWireGuardMeshTopology)
+		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
 		mockSiteToSite := new(MockSiteToSiteManager)
@@ -1205,14 +1203,14 @@ func TestP2PManager_isDirectRouteAvailable(t *testing.T) {
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
 
-		peer := &wireguard.DiscoveredPeer{
+		peer := &DiscoveredPeer{
 			PeerID:     "peer1",
-			PublicKey:  "key1",
+			ID:         "key1",
 			Endpoint:   "192.168.999.999:8080", // Unreachable IP
 			Region:     "us-east",
 			LastSeen:   time.Now(),
-			Latency:    time.Millisecond * 10,
-			TrustLevel: wireguard.TrustBasic,
+			Latency:    10,
+			TrustLevel: "basic",
 		}
 
 		available := manager.isDirectRouteAvailable("192.168.1.100", peer)

@@ -122,9 +122,9 @@ func TestAIClientInterface_DetectAnomaly(t *testing.T) {
 		ActiveConnections:    50,
 		FailedConnections:    5,
 		ProtocolDistribution: map[string]int{
-			"QUIC":      30,
-			"WireGuard": 20,
-			"TCP":       0,
+			"QUIC":     30,
+			"P2P_QUIC": 20,
+			"TCP":      0,
 		},
 	}
 

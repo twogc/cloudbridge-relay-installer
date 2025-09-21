@@ -124,8 +124,9 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
-		StartToCloseTimeout: 15 * time.Minute,
-		HeartbeatTimeout:    1 * time.Minute,
+		ScheduleToStartTimeout: 2 * time.Minute,
+		StartToCloseTimeout:    15 * time.Minute,
+		HeartbeatTimeout:       1 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
 			InitialInterval:    time.Second,
 			BackoffCoefficient: 2.0,
@@ -378,6 +379,7 @@ func BehaviorMonitoringWorkflow(ctx workflow.Context, input BehaviorMonitoringWo
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 10 * time.Minute,
 		HeartbeatTimeout:    1 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -604,6 +606,7 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 5 * time.Minute,
 		HeartbeatTimeout:    30 * time.Second,
 		RetryPolicy: &workflow.RetryPolicy{
@@ -870,6 +873,7 @@ func ModelTrainingWorkflow(ctx workflow.Context, input ModelTrainingWorkflowInpu
 
 	// Настройки для activities (обучение может занимать много времени)
 	activityOptions := workflow.ActivityOptions{
+		ScheduleToStartTimeout: 1 * time.Minute,
 		StartToCloseTimeout: 2 * time.Hour,
 		HeartbeatTimeout:    5 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
