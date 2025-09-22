@@ -49,16 +49,18 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # Expose ports
-# 8080 - Main TCP server
-# 8082 - P2P API server  
-# 8443 - MASQUE HTTP/3 server
+# 9091 - Health/HTTP endpoints
+# 8082 - P2P API server
+# 8443 - MASQUE HTTP/3 server (if enabled)
 # 5553 - P2P QUIC server
 # 19302 - STUN server
-EXPOSE 8080 8082 8443 5553/udp 19302/udp
+# 9090 - QUIC UDP server (if enabled)
+# 9092 - Enhanced QUIC UDP server (if enabled)
+EXPOSE 9091 8082 8443 5553/udp 19302/udp 9090/udp 9092/udp
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:9091/health || exit 1
 
 # Run the application
 CMD ["./cloudbridge-relay"]

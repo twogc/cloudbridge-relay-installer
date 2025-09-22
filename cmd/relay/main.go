@@ -263,7 +263,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 		// Инициализируем Enhanced Keycloak Auth
 		keycloakConfig := &auth.KeycloakConfig{
-			ServerURL:    "https://edge.2gc.ru",
+			ServerURL:    "https://auth.2gc.ru",
 			Realm:        "cloudbridge",
 			ClientID:     "quic-client",
 			ClientSecret: "secret",
@@ -288,7 +288,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		loadBal = balancer.NewBalancer()
 		ipRateLimit = ratelimit.NewIPLimiter(100.0, 1000)
 		enhancedKeycloakAuth = auth.NewKeycloakAuthCompatible(&auth.KeycloakConfig{
-			ServerURL: "https://edge.2gc.ru",
+			ServerURL: "https://auth.2gc.ru",
 			Realm:     "cloudbridge",
 		}, zap.NewNop())
 	}
@@ -553,7 +553,7 @@ func (s *Server) Start() error {
 		}()
 	}
 
-	// Start HTTP server on port 80 for health checks
+    // Start HTTP server on port 9091 for health checks
 	go func() {
 		httpMux := http.NewServeMux()
 
@@ -898,15 +898,15 @@ func (s *Server) Start() error {
 			}
 		} else {
 			// Fallback to HTTP for development only when TLS is disabled
-			httpServer := &http.Server{
-				Addr:              "0.0.0.0:9091",
+            httpServer := &http.Server{
+                Addr:              "0.0.0.0:9091",
 				Handler:           httpMux,
 				ReadHeaderTimeout: 30 * time.Second,
 				ReadTimeout:       30 * time.Second,
 				WriteTimeout:      30 * time.Second,
 			}
 			s.httpServer = httpServer
-			s.logger.Warn("HTTP server started on port 9091 without TLS (development mode)")
+            s.logger.Warn("HTTP server started on port 9091 without TLS (development mode)")
 			go func() {
 				if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 					s.logger.Error("HTTP server error", zap.Error(err))
@@ -1055,8 +1055,8 @@ func (s *Server) Start() error {
 
 	s.logger.Info("Relay server started",
 		zap.Int("tcp_port", s.config.Server.Port),
-		zap.Int("http_port", 80),
-		zap.Int("p2p_quic_port", 443),
+        zap.Int("http_port", 9091),
+        zap.Int("p2p_quic_port", 5553),
 		zap.Int("quic_port", 9090),
 		zap.Int("stun_port", 19302),
 		zap.Int("enhanced_quic_port", 9092),
