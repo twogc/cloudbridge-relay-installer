@@ -273,6 +273,33 @@ type configRaw struct {
 		ALPNProtocols   []string `json:"alpn_protocols"`
 		FallbackEnabled bool     `json:"fallback_enabled"`
 	} `json:"masque"`
+
+	HTTPAPI struct {
+		Enabled bool   `json:"enabled"`
+		Port    int    `json:"port"`
+		Host    string `json:"host"`
+		CORSEnabled bool `json:"cors_enabled"`
+		RateLimit struct {
+			Enabled           bool `json:"enabled"`
+			RequestsPerMinute int  `json:"requests_per_minute"`
+		} `json:"rate_limit"`
+	} `json:"http_api"`
+
+	HTTPSAPI struct {
+		Enabled bool   `json:"enabled"`
+		Port    int    `json:"port"`
+		Host    string `json:"host"`
+		TLS struct {
+			Enabled  bool   `json:"enabled"`
+			CertFile string `json:"cert_file"`
+			KeyFile  string `json:"key_file"`
+		} `json:"tls"`
+		CORSEnabled bool `json:"cors_enabled"`
+		RateLimit struct {
+			Enabled           bool `json:"enabled"`
+			RequestsPerMinute int  `json:"requests_per_minute"`
+		} `json:"rate_limit"`
+	} `json:"https_api"`
 }
 
 // Config represents the server configuration
@@ -618,6 +645,35 @@ type Config struct {
 		ListenAddr string `json:"listen_addr"`
 	} `json:"websocket_fallback"`
 
+	// HTTP API Configuration
+	HTTPAPI struct {
+		Enabled bool   `json:"enabled"`
+		Port    int    `json:"port"`
+		Host    string `json:"host"`
+		CORSEnabled bool `json:"cors_enabled"`
+		RateLimit struct {
+			Enabled           bool `json:"enabled"`
+			RequestsPerMinute int  `json:"requests_per_minute"`
+		} `json:"rate_limit"`
+	} `json:"http_api"`
+
+	// HTTPS API Configuration
+	HTTPSAPI struct {
+		Enabled bool   `json:"enabled"`
+		Port    int    `json:"port"`
+		Host    string `json:"host"`
+		TLS struct {
+			Enabled  bool   `json:"enabled"`
+			CertFile string `json:"cert_file"`
+			KeyFile  string `json:"key_file"`
+		} `json:"tls"`
+		CORSEnabled bool `json:"cors_enabled"`
+		RateLimit struct {
+			Enabled           bool `json:"enabled"`
+			RequestsPerMinute int  `json:"requests_per_minute"`
+		} `json:"rate_limit"`
+	} `json:"https_api"`
+
 	// TCP Fallback Configuration
 	TCPFallback struct {
 		Enabled    bool   `json:"enabled"`
@@ -717,6 +773,8 @@ func Load(path string) (*Config, error) {
 	config.Keycloak.ClientID = raw.Keycloak.ClientID
 	config.Keycloak.ClientSecret = raw.Keycloak.ClientSecret
 	config.Keycloak.PublicKey = raw.Keycloak.PublicKey
+	// Assign JWKS URL from raw JSON if provided
+	config.Keycloak.JWKSURL = raw.Keycloak.JWKSURL
 	config.Keycloak.FallbackSecret = raw.Keycloak.FallbackSecret
 	config.Keycloak.TokenValidation.Issuer = raw.Keycloak.TokenValidation.Issuer
 	config.Keycloak.TokenValidation.Audience = raw.Keycloak.TokenValidation.Audience
@@ -740,6 +798,12 @@ func Load(path string) (*Config, error) {
 
 	// API
 	config.API = raw.API
+
+	// HTTP API
+	config.HTTPAPI = raw.HTTPAPI
+
+	// HTTPS API
+	config.HTTPSAPI = raw.HTTPSAPI
 
 	// Logging
 	config.Logging = raw.Logging
@@ -832,6 +896,9 @@ func Load(path string) (*Config, error) {
 		if config.Keycloak.PublicKey == "${KEYCLOAK_PUBLIC_KEY}" {
 			if key := os.Getenv("KEYCLOAK_PUBLIC_KEY"); key != "" {
 				config.Keycloak.PublicKey = key
+			} else {
+				// If env var is not provided, clear placeholder to avoid PEM parsing on a literal placeholder
+				config.Keycloak.PublicKey = ""
 			}
 		}
 		if config.Keycloak.TokenValidation.Issuer == "${KEYCLOAK_ISSUER}" {
@@ -842,6 +909,12 @@ func Load(path string) (*Config, error) {
 		if config.Keycloak.TokenValidation.Audience == "${KEYCLOAK_AUDIENCE}" {
 			if audience := os.Getenv("KEYCLOAK_AUDIENCE"); audience != "" {
 				config.Keycloak.TokenValidation.Audience = audience
+			}
+		}
+		// Load JWKS URL from environment if set
+		if config.Keycloak.JWKSURL == "" || config.Keycloak.JWKSURL == "${KEYCLOAK_JWKS_URL}" {
+			if jwksURL := os.Getenv("KEYCLOAK_JWKS_URL"); jwksURL != "" {
+				config.Keycloak.JWKSURL = jwksURL
 			}
 		}
 	}

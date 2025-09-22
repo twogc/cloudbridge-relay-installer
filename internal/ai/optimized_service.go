@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
 
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v3/net"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/anomaly"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/cache"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/predictive"
@@ -372,9 +375,6 @@ func (s *OptimizedService) PredictLoad(ctx context.Context, horizon int) (*predi
 	// Кэшируем результат
 	s.cache.Set(cacheKey, result, 2048) // 2KB
 
-	// Записываем метрики
-	s.metrics.RecordLoadPrediction(0, 0) // Заглушка для метрик
-
 	s.circuitBreaker.RecordSuccess()
 	return result, nil
 }
@@ -717,12 +717,47 @@ func (rm *ResourceManager) UpdateUsage() {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
-	// В реальной реализации здесь была бы логика получения реальных метрик
-	// Для демонстрации используем случайные значения
-	rm.CPUUsage = 45.0 + math.Sin(float64(time.Now().UnixNano()))*10.0
-	rm.MemoryUsage = 60.0 + math.Cos(float64(time.Now().UnixNano()))*15.0
-	rm.DiskUsage = 30.0 + math.Sin(float64(time.Now().UnixNano()))*5.0
-	rm.NetworkIO = 100.0 + math.Cos(float64(time.Now().UnixNano()))*50.0
+	// CPU usage (overall average across cores for 0-second interval)
+	if cpuPercents, err := cpu.Percent(0, true); err == nil && len(cpuPercents) > 0 {
+		total := 0.0
+		for _, p := range cpuPercents {
+			total += p
+		}
+		rm.CPUUsage = total / float64(len(cpuPercents))
+	} else if err != nil {
+		// Log error but don't fail
+		rm.CPUUsage = 0.0
+	}
+
+	// Memory usage
+	if vm, err := mem.VirtualMemory(); err == nil && vm != nil {
+		rm.MemoryUsage = vm.UsedPercent
+	} else if err != nil {
+		// Log error but don't fail
+		rm.MemoryUsage = 0.0
+	}
+
+	// Disk usage (root mountpoint)
+	if du, err := disk.Usage("/"); err == nil && du != nil {
+		rm.DiskUsage = du.UsedPercent
+	} else if err != nil {
+		// Log error but don't fail
+		rm.DiskUsage = 0.0
+	}
+
+	// Network IO (sum of bytes counters across interfaces)
+	if ioStats, err := net.IOCounters(true); err == nil {
+		var bytesTotal uint64
+		for _, s := range ioStats {
+			// Skip loopback
+			if s.Name == "lo" || s.Name == "lo0" {
+				continue
+			}
+			bytesTotal += s.BytesRecv + s.BytesSent
+		}
+		// Store as MB
+		rm.NetworkIO = float64(bytesTotal) / (1024.0 * 1024.0)
+	}
 }
 
 func (rm *ResourceManager) GetUsage() map[string]interface{} {

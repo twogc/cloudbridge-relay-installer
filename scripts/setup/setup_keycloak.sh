@@ -512,7 +512,7 @@ fi
 # Напоминание о KC_HOSTNAME
 if [[ -z "$KC_HOSTNAME" || "$KC_HOSTNAME" == "localhost" ]]; then
     echo -e "${YELLOW}[WARNING] Переменная KC_HOSTNAME не задана или равна 'localhost'."
-    echo -e "${YELLOW}[WARNING] Для корректных редиректов укажите внешний домен, например: edge.2gc.ru${NC}"
+    echo -e "${YELLOW}[WARNING] Для корректных редиректов укажите внешний домен, например: auth.2gc.ru${NC}"
 else
     echo -e "${GREEN}[INFO] KC_HOSTNAME: $KC_HOSTNAME${NC}"
 fi

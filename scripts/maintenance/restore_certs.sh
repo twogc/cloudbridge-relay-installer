@@ -31,7 +31,7 @@ log_error() {
 
 # Восстановление сертификатов
 restore_certificates() {
-    local domain=${1:-edge.2gc.ru}
+    local domain=${1:-auth.2gc.ru}
     
     log_info "Восстановление сертификатов для домена: $domain"
     
@@ -58,7 +58,7 @@ restore_certificates() {
 
 # Основная функция
 main() {
-    local domain=${1:-edge.2gc.ru}
+    local domain=${1:-auth.2gc.ru}
     
     log_info "Восстановление сертификатов CloudBridge Relay"
     
@@ -82,10 +82,10 @@ case "${1:-}" in
         echo "Использование: $0 [домен]"
         echo
         echo "Аргументы:"
-        echo "  домен    Домен для восстановления сертификатов (по умолчанию: edge.2gc.ru)"
+        echo "  домен    Домен для восстановления сертификатов (по умолчанию: auth.2gc.ru)"
         echo
         echo "Примеры:"
-        echo "  $0                    Восстановить сертификаты для edge.2gc.ru"
+        echo "  $0                    Восстановить сертификаты для auth.2gc.ru"
         echo "  $0 example.com        Восстановить сертификаты для example.com"
         echo
         echo "Опции:"

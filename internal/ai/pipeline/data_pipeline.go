@@ -303,21 +303,8 @@ func NewPrometheusCollector(logger *zap.Logger) *PrometheusCollector {
 
 // Collect собирает данные из Prometheus
 func (pc *PrometheusCollector) Collect() ([]DataPoint, error) {
-	// Заглушка для сбора данных из Prometheus
-	data := []DataPoint{
-		{
-			Timestamp: time.Now(),
-			Source:    "prometheus",
-			Type:      "metrics",
-			Data: map[string]interface{}{
-				"cpu_usage":    45.5,
-				"memory_usage": 60.2,
-				"connections":  150,
-			},
-		},
-	}
-
-	return data, nil
+	// Используйте RealPrometheusCollector через initializeCollectors
+	return []DataPoint{}, nil
 }
 
 // Start запускает коллектор
@@ -346,21 +333,8 @@ func NewSystemCollector(logger *zap.Logger) *SystemCollector {
 
 // Collect собирает системные данные
 func (sc *SystemCollector) Collect() ([]DataPoint, error) {
-	// Заглушка для сбора системных данных
-	data := []DataPoint{
-		{
-			Timestamp: time.Now(),
-			Source:    "system",
-			Type:      "system_metrics",
-			Data: map[string]interface{}{
-				"load_average": 1.2,
-				"disk_usage":   75.8,
-				"network_io":   1024000,
-			},
-		},
-	}
-
-	return data, nil
+	// Используйте RealSystemCollector через initializeCollectors
+	return []DataPoint{}, nil
 }
 
 // Start запускает коллектор
@@ -389,23 +363,8 @@ func NewNetworkCollector(logger *zap.Logger) *NetworkCollector {
 
 // Collect собирает сетевые данные
 func (nc *NetworkCollector) Collect() ([]DataPoint, error) {
-	// Заглушка для сбора сетевых данных
-	data := []DataPoint{
-		{
-			Timestamp: time.Now(),
-			Source:    "network",
-			Type:      "network_metrics",
-			Data: map[string]interface{}{
-				"packets_in":  1000000,
-				"packets_out": 950000,
-				"bytes_in":    50000000,
-				"bytes_out":   45000000,
-				"latency":     25.5,
-			},
-		},
-	}
-
-	return data, nil
+	// Используйте RealNetworkCollector через initializeCollectors
+	return []DataPoint{}, nil
 }
 
 // Start запускает коллектор
@@ -434,22 +393,8 @@ func NewFeatureExtractor(logger *zap.Logger) *FeatureExtractor {
 
 // Process обрабатывает данные и извлекает признаки
 func (fe *FeatureExtractor) Process(data []DataPoint) ([]DataPoint, error) {
-	// Заглушка для извлечения признаков
-	processedData := make([]DataPoint, len(data))
-
-	for i, point := range data {
-		processedData[i] = DataPoint{
-			Timestamp: point.Timestamp,
-			Source:    point.Source,
-			Type:      "features",
-			Data: map[string]interface{}{
-				"original_data": point.Data,
-				"features":      fe.extractFeatures(point.Data),
-			},
-		}
-	}
-
-	return processedData, nil
+	// Используйте RealFeatureExtractor через initializeProcessors
+	return data, nil
 }
 
 // extractFeatures извлекает признаки из данных
@@ -482,19 +427,8 @@ func NewDataNormalizer(logger *zap.Logger) *DataNormalizer {
 
 // Process нормализует данные
 func (dn *DataNormalizer) Process(data []DataPoint) ([]DataPoint, error) {
-	// Заглушка для нормализации данных
-	normalizedData := make([]DataPoint, len(data))
-
-	for i, point := range data {
-		normalizedData[i] = DataPoint{
-			Timestamp: point.Timestamp,
-			Source:    point.Source,
-			Type:      "normalized",
-			Data:      dn.normalizeData(point.Data),
-		}
-	}
-
-	return normalizedData, nil
+	// Используйте RealDataNormalizer через initializeProcessors
+	return data, nil
 }
 
 // normalizeData нормализует данные
@@ -529,14 +463,13 @@ func NewFileStorage(config *Config, logger *zap.Logger) *FileStorage {
 
 // Store сохраняет данные
 func (fs *FileStorage) Store(data []DataPoint) error {
-	// Заглушка для сохранения данных
-	fs.logger.Debug("Storing data", zap.Int("points", len(data)))
+	// Используйте HybridStorage/RealFileStorage в initializeStorage
 	return nil
 }
 
 // Retrieve извлекает данные
 func (fs *FileStorage) Retrieve(timeRange TimeRange) ([]DataPoint, error) {
-	// Заглушка для извлечения данных
+	// Используйте HybridStorage/RealFileStorage в initializeStorage
 	return []DataPoint{}, nil
 }
 

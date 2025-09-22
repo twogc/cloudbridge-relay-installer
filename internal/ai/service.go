@@ -573,12 +573,21 @@ func (s *Service) GetStatus() *ServiceStatus {
 		"metrics": s.metrics.GetMetrics(),
 	}
 
+	// Собираем реальные системные ресурсы из ResourceManager OptimizedService отсутствует здесь,
+	// поэтому возвращаем данные из мониторинга метрик, если доступны
+	resources := map[string]interface{}{}
+	if s.dataPipeline != nil {
+		if sys, err := s.getSystemMetrics(); err == nil {
+			resources = sys
+		}
+	}
+
 	return &ServiceStatus{
 		Status:      status,
 		Components:  components,
 		Performance: performance,
 		Health:      s.started && s.anomalyDetector != nil && s.loadPredictor != nil && s.routeOptimizer != nil,
-		Resources:   map[string]interface{}{}, // Заглушка для ресурсов
+		Resources:   resources,
 		Uptime:      time.Since(s.startTime),
 		LastUpdate:  time.Now(),
 	}

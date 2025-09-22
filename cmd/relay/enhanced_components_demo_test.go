@@ -68,7 +68,7 @@ func createDemoConfig() *config.Config {
 
 	// MASQUE конфигурация
 	cfg.MASQUE.Enabled = true
-	cfg.MASQUE.ProxyURL = "https://edge.2gc.ru:8443"
+	cfg.MASQUE.ProxyURL = "https://auth.2gc.ru:8443"
 	cfg.MASQUE.ALPNProtocols = []string{"h3", "h3-29", "h3-28", "h3-27"}
 	cfg.MASQUE.FallbackEnabled = true
 

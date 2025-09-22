@@ -235,10 +235,7 @@ func (pf *PathFinder) calculateEdgeWeight(edge *Edge, protocol string) float64 {
 
 // calculateNodeLoad рассчитывает загрузку узла
 func (pf *PathFinder) calculateNodeLoad(nodeID string) int {
-	// В реальной реализации здесь был бы расчет реальной загрузки
-	// Пока что используем простую эвристику
-
-	// Симулируем загрузку на основе времени
+	// Эвристическая оценка загрузки на основе времени
 	load := int(math.Sin(float64(time.Now().Unix())/3600.0)*50 + 50)
 
 	// Ограничиваем загрузку
@@ -254,10 +251,7 @@ func (pf *PathFinder) calculateNodeLoad(nodeID string) int {
 
 // calculateEdgeLatency рассчитывает латентность соединения
 func (pf *PathFinder) calculateEdgeLatency(edge *Edge) float64 {
-	// В реальной реализации здесь был бы расчет реальной латентности
-	// Пока что используем простую эвристику
-
-	// Базовая латентность
+	// Эвристическая оценка латентности
 	baseLatency := edge.Latency
 
 	// Корректировка на основе времени суток

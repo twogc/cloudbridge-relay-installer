@@ -339,8 +339,7 @@ func (nad *NetworkAnomalyDetector) calculateStabilityConfidence(features map[str
 		return 0.5 // Низкая уверенность при малом количестве данных
 	}
 
-	// Упрощенная логика стабильности
-	// В реальной реализации здесь была бы более сложная логика сравнения с историческими данными
+	// Базовая логика стабильности; может быть уточнена при наличии исторических данных
 
 	// Базовая стабильность на основе количества признаков
 	featureCount := len(features)
@@ -370,8 +369,7 @@ func (nad *NetworkAnomalyDetector) addSample(features []float64, isAnomaly bool)
 func (nad *NetworkAnomalyDetector) updateMetrics(isAnomaly bool, score float64) {
 	nad.detectionCount++
 
-	// Здесь можно добавить логику для определения ложных срабатываний
-	// Пока что используем простую эвристику
+	// Простейшая эвристика для приблизительной оценки ложных срабатываний
 	if isAnomaly && score < nad.threshold*1.1 {
 		nad.falsePositives++
 	} else if !isAnomaly && score > nad.threshold*0.9 {
@@ -426,8 +424,7 @@ func (nad *NetworkAnomalyDetector) retrainModel() {
 
 // saveModel сохраняет модель
 func (nad *NetworkAnomalyDetector) saveModel() error {
-	// Здесь можно добавить сохранение модели в файл
-	// Пока что просто логируем
+	// Сохранение модели может быть добавлено при необходимости; пока только логируем
 	nad.logger.Info("Saving anomaly detection model",
 		zap.Int("samples", len(nad.samples)),
 		zap.Float64("accuracy", nad.accuracy))

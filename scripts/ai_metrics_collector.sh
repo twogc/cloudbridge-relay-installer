@@ -1,7 +1,7 @@
 #!/bin/bash
 # Надёжный сбор AI-метрик для Zabbix: безопасные fallback при недоступном API
 # По умолчанию используем NodePort релэя
-AI_API_URL="${AI_API_URL:-https://edge.2gc.ru:30082}"
+AI_API_URL="${AI_API_URL:-https://auth.2gc.ru:30082}"
 AI_METRICS_URL="${AI_METRICS_URL:-http://192.168.49.2:30083/metrics}"
 METRIC_TYPE="$1"
 

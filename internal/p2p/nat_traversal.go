@@ -79,7 +79,7 @@ func NewNATTraversalManager(logger *logger.Logger) *NATTraversalManager {
 			"stun2.l.google.com:19302",
 			"stun3.l.google.com:19302",
 			"stun4.l.google.com:19302",
-			"edge.2gc.ru:19302",
+			"auth.2gc.ru:19302",
 		},
 		holePunchers:  make(map[string]*HolePuncher),
 		logger:        logger,

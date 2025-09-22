@@ -13,7 +13,7 @@ fi
 # Check if domain is provided
 if [ -z "$1" ]; then
     echo "Usage: $0 <domain>"
-    echo "Example: $0 edge.2gc.ru"
+    echo "Example: $0 auth.2gc.ru"
     exit 1
 fi
 

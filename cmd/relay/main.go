@@ -553,7 +553,7 @@ func (s *Server) Start() error {
 		}()
 	}
 
-    // Start HTTP server on port 9091 for health checks
+    // Start HTTP server on configured port for health checks
 	go func() {
 		httpMux := http.NewServeMux()
 
@@ -899,14 +899,14 @@ func (s *Server) Start() error {
 		} else {
 			// Fallback to HTTP for development only when TLS is disabled
             httpServer := &http.Server{
-                Addr:              "0.0.0.0:9091",
+                Addr:              fmt.Sprintf("0.0.0.0:%d", s.config.HTTPSAPI.Port),
 				Handler:           httpMux,
 				ReadHeaderTimeout: 30 * time.Second,
 				ReadTimeout:       30 * time.Second,
 				WriteTimeout:      30 * time.Second,
 			}
 			s.httpServer = httpServer
-            s.logger.Warn("HTTP server started on port 9091 without TLS (development mode)")
+            s.logger.Warn("HTTP server started without TLS (development mode)", zap.Int("port", s.config.HTTPSAPI.Port))
 			go func() {
 				if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 					s.logger.Error("HTTP server error", zap.Error(err))
@@ -1055,8 +1055,8 @@ func (s *Server) Start() error {
 
 	s.logger.Info("Relay server started",
 		zap.Int("tcp_port", s.config.Server.Port),
-        zap.Int("http_port", 9091),
-        zap.Int("p2p_quic_port", 5553),
+        zap.Int("http_port", s.config.HTTPSAPI.Port),
+        zap.Int("p2p_quic_port", s.config.API.Port),
 		zap.Int("quic_port", 9090),
 		zap.Int("stun_port", 19302),
 		zap.Int("enhanced_quic_port", 9092),

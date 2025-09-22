@@ -39,7 +39,7 @@ check_root() {
 
 # Обновление сертификатов
 update_certificates() {
-    local domain=${1:-edge.2gc.ru}
+    local domain=${1:-auth.2gc.ru}
     
     log_info "Обновление сертификатов для домена: $domain"
     
@@ -117,7 +117,7 @@ restart_services() {
 
 # Основная функция
 main() {
-    local domain=${1:-edge.2gc.ru}
+    local domain=${1:-auth.2gc.ru}
     
     log_info "Начало обновления сертификатов CloudBridge Relay"
     
@@ -144,10 +144,10 @@ case "${1:-}" in
         echo "Использование: $0 [домен]"
         echo
         echo "Аргументы:"
-        echo "  домен    Домен для обновления сертификатов (по умолчанию: edge.2gc.ru)"
+        echo "  домен    Домен для обновления сертификатов (по умолчанию: auth.2gc.ru)"
         echo
         echo "Примеры:"
-        echo "  sudo $0                    Обновить сертификаты для edge.2gc.ru"
+        echo "  sudo $0                    Обновить сертификаты для auth.2gc.ru"
         echo "  sudo $0 example.com        Обновить сертификаты для example.com"
         echo
         echo "Опции:"

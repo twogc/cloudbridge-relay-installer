@@ -1,9 +1,9 @@
-# Конфигурация для интеграции с Keycloak на edge.2gc.ru
-# Configuration for Keycloak integration with edge.2gc.ru
+# Конфигурация для интеграции с Keycloak на auth.2gc.ru
+# Configuration for Keycloak integration with auth.2gc.ru
 
 keycloak:
   # Основные настройки подключения к Keycloak
-  server_url: "https://edge.2gc.ru"
+  server_url: "https://auth.2gc.ru"
   realm: "cloudbridge"
   
   # Клиент для Enhanced QUIC
@@ -27,7 +27,7 @@ keycloak:
     # Настройки JWT
     jwt:
       algorithm: "RS256"
-      issuer: "https://edge.2gc.ru/realms/cloudbridge"
+      issuer: "https://auth.2gc.ru/realms/cloudbridge"
       audience: "enhanced-quic-client"
       
     # Обновление токенов
@@ -116,7 +116,7 @@ env_variables:
 examples:
   # Базовая аутентификация
   basic_auth: |
-    curl -X POST "https://edge.2gc.ru/realms/cloudbridge/protocol/openid-connect/token" \
+    curl -X POST "https://auth.2gc.ru/realms/cloudbridge/protocol/openid-connect/token" \
       -H "Content-Type: application/x-www-form-urlencoded" \
       -d "grant_type=client_credentials" \
       -d "client_id=enhanced-quic-client" \
@@ -124,17 +124,17 @@ examples:
       
   # Проверка конфигурации
   check_config: |
-    curl -s "https://edge.2gc.ru/realms/cloudbridge/.well-known/openid_configuration" | jq .
+    curl -s "https://auth.2gc.ru/realms/cloudbridge/.well-known/openid_configuration" | jq .
     
   # Проверка здоровья
   health_check: |
-    curl -s "https://edge.2gc.ru/realms/cloudbridge" -o /dev/null -w "%{http_code}"
+    curl -s "https://auth.2gc.ru/realms/cloudbridge" -o /dev/null -w "%{http_code}"
 
 # Troubleshooting
 troubleshooting:
   common_issues:
     - issue: "Connection timeout"
-      solution: "Проверьте доступность edge.2gc.ru и настройки firewall"
+      solution: "Проверьте доступность auth.2gc.ru и настройки firewall"
       
     - issue: "Invalid client credentials"
       solution: "Проверьте KEYCLOAK_ENHANCED_QUIC_CLIENT_SECRET в переменных окружения"
@@ -143,7 +143,7 @@ troubleshooting:
       solution: "Проверьте настройки realm и client_id в Keycloak"
       
     - issue: "Certificate verification failed"
-      solution: "Убедитесь что SSL сертификат edge.2gc.ru валиден"
+      solution: "Убедитесь что SSL сертификат auth.2gc.ru валиден"
 
 # Рекомендации по безопасности
 security_recommendations:

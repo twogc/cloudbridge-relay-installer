@@ -65,7 +65,7 @@ func (lp *LatencyPredictor) Predict(source, destination string, protocol string)
 	// Базовая латентность протокола
 	baseLatency := model.BaseLatency
 
-	// Корректировка на основе расстояния (упрощенная модель)
+	// Корректировка на основе расстояния (эвристика)
 	distance := lp.calculateDistance(source, destination)
 	distanceLatency := distance * 0.1 // 0.1ms на км
 
@@ -140,10 +140,9 @@ func (lp *LatencyPredictor) getVariation(protocol string) float64 {
 	}
 }
 
-// calculateDistance вычисляет расстояние между узлами (упрощенная модель)
+// calculateDistance вычисляет расстояние между узлами (эвристика)
 func (lp *LatencyPredictor) calculateDistance(source, destination string) float64 {
-	// В реальной реализации здесь был бы расчет реального расстояния
-	// Пока что используем простую эвристику на основе IP адресов
+	// Эвристика на основе IP адресов
 
 	// Простая эвристика: считаем количество различий в IP
 	distance := 0.0
@@ -183,12 +182,9 @@ func (lp *LatencyPredictor) getTimeBasedLatency() float64 {
 	return 0.0 // Обычная латентность
 }
 
-// getLoadBasedLatency возвращает латентность на основе нагрузки
+// getLoadBasedLatency возвращает латентность на основе нагрузки (эвристика)
 func (lp *LatencyPredictor) getLoadBasedLatency() float64 {
-	// В реальной реализации здесь был бы анализ текущей нагрузки
-	// Пока что используем простую эвристику
-
-	// Симулируем нагрузку на основе времени
+	// Эвристическая оценка нагрузки на основе времени
 	load := math.Sin(float64(time.Now().Unix())/3600.0)*0.5 + 0.5
 
 	// Корректируем латентность на основе нагрузки

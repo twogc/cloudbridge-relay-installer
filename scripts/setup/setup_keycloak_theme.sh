@@ -158,8 +158,8 @@ create_client_if_not_exists() {
                 \"standardFlowEnabled\": true,
                 \"directAccessGrantsEnabled\": true,
                 \"serviceAccountsEnabled\": true,
-                \"redirectUris\": [\"http://localhost:8082/*\", \"https://edge.2gc.ru/*\"],
-                \"webOrigins\": [\"http://localhost:8082\", \"https://edge.2gc.ru\"],
+                \"redirectUris\": [\"http://localhost:8082/*\", \"https://auth.2gc.ru/*\"],
+                \"webOrigins\": [\"http://localhost:8082\", \"https://auth.2gc.ru\"],
                 \"attributes\": {
                     \"saml.assertion.signature\": \"false\",
                     \"saml.force.post.binding\": \"false\",

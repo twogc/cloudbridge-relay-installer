@@ -12,7 +12,7 @@ wireguard:
     listen_port: 51820
     address: "10.100.1.1/24"
   discovery:
-    registry_url: "https://edge.2gc.ru/wg/peers"
+    registry_url: "https://auth.2gc.ru/wg/peers"
     heartbeat_interval: "25s"
     max_peers: 50
   mesh:

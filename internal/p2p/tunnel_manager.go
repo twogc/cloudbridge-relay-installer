@@ -385,7 +385,7 @@ func NewNATDetector(logger *logger.Logger) *NATDetector {
 		stunServers: []string{
 			"stun.l.google.com:19302",
 			"stun1.l.google.com:19302",
-			"edge.2gc.ru:19302",
+			"auth.2gc.ru:19302",
 		},
 		logger: logger,
 	}

@@ -61,7 +61,7 @@ enhanced_quic:
     # Интеграция с Keycloak
     keycloak_integration:
       enabled: false  # По умолчанию отключено
-      server_url: "https://edge.2gc.ru"
+      server_url: "https://auth.2gc.ru"
       realm: "cloudbridge"
       client_id: "quic-client"
       client_secret: "${KEYCLOAK_CLIENT_SECRET}"

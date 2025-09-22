@@ -74,7 +74,7 @@ func RunServer(addr string, keycloakClient *keycloak.Client, logger *logger.Logg
 
 	// CORS: разрешаем только UI-админку (замените origin на ваш реальный)
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "https://edge.2gc.ru:5173"}, // Добавляем production origin
+		AllowOrigins:     []string{"http://localhost:5173", "https://auth.2gc.ru:5173"}, // Добавляем production origin
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type"},
 		ExposeHeaders:    []string{"Content-Length"},

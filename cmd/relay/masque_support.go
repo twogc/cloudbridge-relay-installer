@@ -285,11 +285,11 @@ func (ms *MASQUEServer) createTLSConfig() (*tls.Config, error) {
 
 // loadLetsEncryptCert загружает сертификат Let's Encrypt
 func (ms *MASQUEServer) loadLetsEncryptCert() (tls.Certificate, error) {
-	ms.logger.Info("Loading Let's Encrypt certificate for edge.2gc.ru...")
+	ms.logger.Info("Loading Let's Encrypt certificate for auth.2gc.ru...")
 
 	// Пути к сертификатам Let's Encrypt
-	certFile := "/etc/letsencrypt/live/edge.2gc.ru/fullchain.pem"
-	keyFile := "/etc/letsencrypt/live/edge.2gc.ru/privkey.pem"
+	certFile := "/etc/letsencrypt/live/auth.2gc.ru/fullchain.pem"
+	keyFile := "/etc/letsencrypt/live/auth.2gc.ru/privkey.pem"
 
 	ms.logger.Info("Certificate paths",
 		zap.String("cert_file", certFile),

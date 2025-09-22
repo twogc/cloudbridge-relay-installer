@@ -183,8 +183,8 @@ func (c *OptimizedCache) cleanup() {
 
 // calculateHitRate вычисляет коэффициент попаданий (заглушка)
 func (c *OptimizedCache) calculateHitRate() float64 {
-	// В реальной реализации здесь была бы логика подсчета попаданий/промахов
-	return 0.85 // Заглушка для демонстрации
+	// TODO: implement precise hit/miss accounting; currently returns a static estimate
+	return 0.85
 }
 
 // BatchGet получает несколько значений за один раз

@@ -18,7 +18,7 @@
   },
   "keycloak": {
     "enabled": false,
-    "server_url": "https://10.0.0.73:443",
+    "server_url": "https://auth.2gc.ru:443",
     "realm": "cloudbridge",
     "client_id": "relay-client",
     "client_secret": "YbUqdiZvJU4zNFVd5JRqaTc9tL9iHwAa",
@@ -26,7 +26,7 @@
     "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
     "jwks_url": "",
     "token_validation": {
-      "issuer": "https://10.0.0.73:443/realms/cloudbridge",
+      "issuer": "https://auth.2gc.ru:443/realms/cloudbridge",
       "audience": "relay-client",
       "clock_skew": "30s"
     },
