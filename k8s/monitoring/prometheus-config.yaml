@@ -6,8 +6,8 @@ metadata:
 data:
   prometheus.yml: |
     global:
-      scrape_interval: 15s
-      evaluation_interval: 15s
+      scrape_interval: 30s
+      evaluation_interval: 30s
 
     rule_files:
       # - "first_rules.yml"
@@ -18,76 +18,53 @@ data:
       - job_name: 'prometheus'
         static_configs:
           - targets: ['localhost:9090']
+        scrape_interval: 30s
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: '(up|process_cpu_seconds_total|process_memory_bytes|go_goroutines)'
+            action: keep
 
-      # CloudBridge Relay
+      # CloudBridge Relay - only essential metrics
       - job_name: 'cloudbridge-relay'
         static_configs:
-          - targets: ['cloudbridge-relay.cloudbridge.svc.cluster.local:8084']
+          - targets: ['cloudbridge-relay.cloudbridge.svc.cluster.local:5551']
         metrics_path: '/metrics'
-        scrape_interval: 10s
+        scrape_interval: 30s
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'relay_(active_connections|requests_total|bandwidth_bytes|latency_seconds|errors_total|connections_total)'
+            action: keep
 
-      # Cassandra
-      - job_name: 'cassandra'
+      # AI Service - only AI metrics
+      - job_name: 'ai-service'
         static_configs:
-          - targets: ['cassandra-service.cloudbridge.svc.cluster.local:9500']
+          - targets: ['ai-service.cloudbridge.svc.cluster.local:8083']
         metrics_path: '/metrics'
-        scrape_interval: 15s
+        scrape_interval: 30s
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'ai_(anomalies_detected_total|predictions_made_total|processing_time_milliseconds|requests_processed_total|routes_optimized_total|service_uptime_seconds)'
+            action: keep
 
-      # Cadence
+      # Cadence - only workflow metrics
       - job_name: 'cadence'
         static_configs:
           - targets: ['cadence-service.cloudbridge.svc.cluster.local:7934']
         metrics_path: '/metrics'
-        scrape_interval: 15s
+        scrape_interval: 30s
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'cadence_(workflow_executions_total|workflow_failures_total|activity_executions_total)'
+            action: keep
 
-      # Kubernetes API server
-      - job_name: 'kubernetes-apiservers'
-        kubernetes_sd_configs:
-        - role: endpoints
-        scheme: https
-        tls_config:
-          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        relabel_configs:
-        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
-          action: keep
-          regex: default;kubernetes;https
-
-      # Kubernetes nodes
-      - job_name: 'kubernetes-nodes'
-        kubernetes_sd_configs:
-        - role: node
-        scheme: https
-        tls_config:
-          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        relabel_configs:
-        - action: labelmap
-          regex: __meta_kubernetes_node_label_(.+)
-
-      # Kubernetes pods
-      - job_name: 'kubernetes-pods'
-        kubernetes_sd_configs:
-        - role: pod
-        relabel_configs:
-        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-          action: keep
-          regex: true
-        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-          action: replace
-          target_label: __metrics_path__
-          regex: (.+)
-        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-          action: replace
-          regex: ([^:]+)(?::\d+)?;(\d+)
-          replacement: $1:$2
-          target_label: __address__
-        - action: labelmap
-          regex: __meta_kubernetes_pod_label_(.+)
-        - source_labels: [__meta_kubernetes_namespace]
-          action: replace
-          target_label: kubernetes_namespace
-        - source_labels: [__meta_kubernetes_pod_name]
-          action: replace
-          target_label: kubernetes_pod_name
+      # System metrics - only basic ones
+      - job_name: 'system-metrics'
+        static_configs:
+          - targets: ['localhost:9090']
+        metrics_path: '/metrics'
+        scrape_interval: 60s
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: '(up|process_cpu_seconds_total|process_memory_bytes|go_goroutines)'
+            action: keep
 

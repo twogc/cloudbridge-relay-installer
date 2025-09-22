@@ -33,21 +33,21 @@ spec:
           - '--storage.tsdb.path=/prometheus/'
           - '--web.console.libraries=/etc/prometheus/console_libraries'
           - '--web.console.templates=/etc/prometheus/consoles'
-          - '--storage.tsdb.retention.time=200h'
+          - '--storage.tsdb.retention.time=24h'
           - '--web.enable-lifecycle'
-          - '--query.max-concurrency=0'
-          - '--query.max-samples=0'
+          - '--query.max-concurrency=10'
+          - '--query.max-samples=100000'
           - '--query.lookback-delta=5m'
-          - '--query.timeout=2m'
+          - '--query.timeout=15s'
         ports:
         - containerPort: 9090
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
             cpu: 500m
-            memory: 512Mi
+            memory: 1Gi
+          limits:
+            cpu: 2
+            memory: 4Gi
         securityContext:
           runAsUser: 0
         volumeMounts:
