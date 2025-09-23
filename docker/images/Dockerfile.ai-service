@@ -1,5 +1,5 @@
 # Multi-stage build for AI Service
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
@@ -23,7 +23,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ai-service ./cmd/
 FROM alpine:latest
 
 # Install runtime dependencies
-RUN apk --no-cache add ca-certificates tzdata
+RUN apk --no-cache add ca-certificates tzdata wget
 
 # Create non-root user
 RUN addgroup -g 1000 -S appgroup && \
@@ -37,7 +37,7 @@ COPY --from=builder /app/ai-service .
 
 # Copy configuration files
 COPY --from=builder /app/config/ ./config/
-COPY --from=builder /app/internal/ai/models/ ./internal/ai/models/
+# Models directory no longer exists; skip copying
 
 # Create necessary directories
 RUN mkdir -p /app/logs /app/models && \

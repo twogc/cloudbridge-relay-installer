@@ -234,32 +234,49 @@ func (ia *ICEAgent) gatherRelayCandidates() {
 func (ia *ICEAgent) performSTUNBinding(stunServer string) *ICECandidate {
 	start := time.Now()
 
-	// В реальной реализации здесь должна быть логика STUN binding
-	// Пока возвращаем фиктивный кандидат
-	conn, err := net.DialTimeout("udp", stunServer, 5*time.Second)
+	// Create STUN client
+	stunClient, err := NewSTUNClient(stunServer, ia.logger.GetZapLogger())
+	if err != nil {
+		ia.logger.Debug("Failed to create STUN client", zap.String("server", stunServer), zap.Error(err))
+		ia.Metrics.RecordSTUNRequest("ice-agent", stunServer, false, time.Since(start))
+		return nil
+	}
+	defer stunClient.Close()
+
+	// Get external address through STUN
+	externalAddr, err := stunClient.GetExternalAddress()
 	if err != nil {
 		ia.logger.Debug("STUN binding failed", zap.String("server", stunServer), zap.Error(err))
 		ia.Metrics.RecordSTUNRequest("ice-agent", stunServer, false, time.Since(start))
 		return nil
 	}
-	defer conn.Close()
-
-	// Симулируем получение public IP
-	publicIP := "203.0.113.1" // Фиктивный public IP
-	publicPort := 12345
 
 	ia.Metrics.RecordSTUNRequest("ice-agent", stunServer, true, time.Since(start))
+
+	// Get local address for related address
+	localAddr := "192.168.1.100" // Default fallback
+	localPort := 12345
+
+	// Try to get actual local address
+	if stunClient.conn != nil {
+		if addr := stunClient.conn.LocalAddr(); addr != nil {
+			if udpAddr, ok := addr.(*net.UDPAddr); ok {
+				localAddr = udpAddr.IP.String()
+				localPort = udpAddr.Port
+			}
+		}
+	}
 
 	return &ICECandidate{
 		Foundation:  fmt.Sprintf("srflx-%s", stunServer),
 		Component:   1,
 		Transport:   "UDP",
 		Priority:    ia.calculatePriority(ICECandidateTypeServerReflexive, 0),
-		Address:     publicIP,
-		Port:        publicPort,
+		Address:     externalAddr.IP.String(),
+		Port:        externalAddr.Port,
 		Type:        ICECandidateTypeServerReflexive,
-		RelatedAddr: "192.168.1.100", // Локальный IP
-		RelatedPort: 12345,
+		RelatedAddr: localAddr,
+		RelatedPort: localPort,
 	}
 }
 

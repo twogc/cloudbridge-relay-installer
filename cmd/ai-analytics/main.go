@@ -68,6 +68,33 @@ func main() {
 		}
 	}
 
+	// Инициализация Telegram из переменных окружения (секретов)
+	if botToken := os.Getenv("TELEGRAM_BOT_TOKEN"); botToken != "" {
+		chatID := os.Getenv("TELEGRAM_CHAT_ID")
+		parseMode := os.Getenv("TELEGRAM_PARSE_MODE")
+		if parseMode == "" {
+			parseMode = "HTML"
+		}
+		disablePreview := os.Getenv("TELEGRAM_DISABLE_WEB_PAGE_PREVIEW") == "true"
+		notificationSystem.AddTelegramConfig(&notifications.TelegramConfig{
+			BotToken:              botToken,
+			ChatID:                chatID,
+			ParseMode:             parseMode,
+			DisableWebPagePreview: disablePreview,
+		})
+		masked := ""
+		if len(botToken) > 8 {
+			masked = botToken[:4] + "***" + botToken[len(botToken)-4:]
+		}
+		logger.Info("Telegram notifications enabled",
+			zap.String("chat_id", chatID),
+			zap.String("bot_token_masked", masked),
+			zap.String("parse_mode", parseMode),
+			zap.Bool("disable_web_page_preview", disablePreview))
+	} else {
+		logger.Info("Telegram not configured (TELEGRAM_BOT_TOKEN is empty)")
+	}
+
 	engine.SetNotificationSystem(notificationSystem)
 
 	// Настройка генератора отчетов
@@ -120,13 +147,19 @@ func loadConfig() (*analytics.AnalyticsConfig, error) {
 		return nil, err
 	}
 
-	var config struct {
-		AIAnalytics analytics.AnalyticsConfig `yaml:"ai_analytics"`
-	}
+    // Пытаемся распарсить два возможных формата:
+    // 1) С корневым ключом ai_analytics
+    // 2) Плоский (поля на верхнем уровне)
+    var withRoot struct {
+        AIAnalytics analytics.AnalyticsConfig `yaml:"ai_analytics"`
+    }
+    if err := yaml.Unmarshal(data, &withRoot); err == nil && (withRoot.AIAnalytics.CloudflareAI.AccountID != "" || withRoot.AIAnalytics.Enabled) {
+        return &withRoot.AIAnalytics, nil
+    }
 
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, err
-	}
-
-	return &config.AIAnalytics, nil
+    var flat analytics.AnalyticsConfig
+    if err := yaml.Unmarshal(data, &flat); err != nil {
+        return nil, err
+    }
+    return &flat, nil
 }

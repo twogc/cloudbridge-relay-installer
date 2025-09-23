@@ -28,12 +28,26 @@ spec:
         - name: AI_ANALYTICS_PORT
           value: "8084"
         - name: AI_ANALYTICS_CONFIG_PATH
-          value: "/root/config/ai-analytics.yaml"
+          value: "/app/config/ai-analytics.yaml"
         - name: SLACK_WEBHOOK_URL
           valueFrom:
             secretKeyRef:
               name: ai-analytics-secrets
               key: slack-webhook-url
+        - name: TELEGRAM_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ai-telegram-secret
+              key: TELEGRAM_BOT_TOKEN
+        - name: TELEGRAM_CHAT_ID
+          valueFrom:
+            secretKeyRef:
+              name: ai-telegram-secret
+              key: TELEGRAM_CHAT_ID
+        - name: TELEGRAM_PARSE_MODE
+          value: "HTML"
+        - name: TELEGRAM_DISABLE_WEB_PAGE_PREVIEW
+          value: "true"
         - name: EMAIL_USERNAME
           valueFrom:
             secretKeyRef:
@@ -67,7 +81,7 @@ spec:
           periodSeconds: 5
         volumeMounts:
         - name: config
-          mountPath: /root/config
+          mountPath: /app/config
           readOnly: true
         - name: analytics-data
           mountPath: /var/lib/cloudbridge/analytics

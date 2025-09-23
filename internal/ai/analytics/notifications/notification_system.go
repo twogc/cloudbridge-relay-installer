@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -69,12 +70,84 @@ func (n *NotificationSystem) Configure(config NotificationConfig) {
 	n.webhooks = config.Webhooks
 }
 
+// ConfigureFromMap настраивает систему уведомлений из произвольной карты (для runtime API)
+func (n *NotificationSystem) ConfigureFromMap(m map[string]interface{}) {
+	cfg := NotificationConfig{}
+	if v, ok := m["slack_webhook"].(string); ok {
+		cfg.SlackWebhook = v
+	}
+	if v, ok := m["webhooks"].([]interface{}); ok {
+		cfg.Webhooks = make([]string, 0, len(v))
+		for _, it := range v {
+			// поддержка как строк, так и объектов {url, enabled}
+			if s, ok := it.(string); ok {
+				cfg.Webhooks = append(cfg.Webhooks, s)
+				continue
+			}
+			if obj, ok := it.(map[string]interface{}); ok {
+				if u, ok := obj["url"].(string); ok {
+					// если есть enabled=false — пропускаем
+					if en, ok := obj["enabled"].(bool); ok && !en {
+						continue
+					}
+					cfg.Webhooks = append(cfg.Webhooks, u)
+				}
+			}
+		}
+	}
+	if v, ok := m["email_config"].(map[string]interface{}); ok {
+		ec := &EmailConfig{}
+		if s, ok := v["smtp_host"].(string); ok {
+			ec.SMTPHost = s
+		}
+		if f, ok := v["smtp_port"].(float64); ok {
+			ec.SMTPPort = int(f)
+		}
+		if s, ok := v["username"].(string); ok {
+			ec.Username = s
+		}
+		if s, ok := v["password"].(string); ok {
+			ec.Password = s
+		}
+		if arr, ok := v["recipients"].([]interface{}); ok {
+			ec.Recipients = make([]string, 0, len(arr))
+			for _, it := range arr {
+				if s, ok := it.(string); ok {
+					ec.Recipients = append(ec.Recipients, s)
+				}
+			}
+		}
+		cfg.EmailConfig = ec
+	}
+	if v, ok := m["telegram_config"].(map[string]interface{}); ok {
+		tc := &TelegramConfig{}
+		if s, ok := v["bot_token"].(string); ok {
+			tc.BotToken = s
+		}
+		if s, ok := v["chat_id"].(string); ok {
+			tc.ChatID = s
+		}
+		if s, ok := v["parse_mode"].(string); ok {
+			tc.ParseMode = s
+		}
+		if b, ok := v["disable_web_page_preview"].(bool); ok {
+			tc.DisableWebPagePreview = b
+		}
+		cfg.TelegramConfig = tc
+	}
+	n.Configure(cfg)
+}
+
 // SendReport отправляет отчет через все настроенные каналы
 func (n *NotificationSystem) SendReport(report *analytics.Report) error {
+	if n.telegramConfig == nil && n.slackWebhook == "" && len(n.webhooks) == 0 {
+		fmt.Println("NotificationSystem: no channels configured; skipping send")
+	}
 	// Slack уведомление
 	if n.slackWebhook != "" {
 		if err := n.sendSlackNotification(report); err != nil {
-			return fmt.Errorf("failed to send Slack notification: %w", err)
+			// Не прерываем цепочку уведомлений, логируем и продолжаем (чтобы Telegram не блокировался Slack'ом)
+			fmt.Printf("Slack notification failed: %v\n", err)
 		}
 	}
 
@@ -275,6 +348,11 @@ func (n *NotificationSystem) sendTelegramNotification(report *analytics.Report) 
 	}
 
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", n.telegramConfig.BotToken)
+	// Логи до запроса (маскируем токен)
+	fmt.Printf("Telegram: sending message to chat_id=%s parse_mode=%s url=...%s\n",
+		n.telegramConfig.ChatID,
+		n.telegramConfig.ParseMode,
+		maskTokenTail(url, 8))
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
@@ -282,8 +360,12 @@ func (n *NotificationSystem) sendTelegramNotification(report *analytics.Report) 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		fmt.Printf("Telegram: non-200 response status=%d body=%s\n", resp.StatusCode, string(body))
 		return fmt.Errorf("telegram API error: status %d", resp.StatusCode)
 	}
+
+	fmt.Println("Telegram: message sent successfully (HTTP 200)")
 
 	return nil
 }
@@ -372,6 +454,10 @@ func (n *NotificationSystem) SendResourceAlert(alertType string, usage float64, 
 	}
 
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", n.telegramConfig.BotToken)
+	fmt.Printf("Telegram: sending resource alert to chat_id=%s parse_mode=%s url=...%s\n",
+		n.telegramConfig.ChatID,
+		n.telegramConfig.ParseMode,
+		maskTokenTail(url, 8))
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
@@ -379,6 +465,8 @@ func (n *NotificationSystem) SendResourceAlert(alertType string, usage float64, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		fmt.Printf("Telegram: non-200 response status=%d body=%s\n", resp.StatusCode, string(body))
 		return fmt.Errorf("telegram API error: status %d", resp.StatusCode)
 	}
 
@@ -437,4 +525,52 @@ func (n *NotificationSystem) formatResourceAlertMessage(alertType string, usage 
 		strings.ToLower(strings.ReplaceAll(alertType, " ", "_")), time.Now().Unix()))
 
 	return message.String()
+}
+
+// SendTelegramText отправляет произвольный текст в Telegram (для теста)
+func (n *NotificationSystem) SendTelegramText(text string) error {
+	if n.telegramConfig == nil {
+		return fmt.Errorf("telegram config not set")
+	}
+
+	payload := map[string]string{
+		"chat_id":    n.telegramConfig.ChatID,
+		"text":       text,
+		"parse_mode": n.telegramConfig.ParseMode,
+	}
+	if n.telegramConfig.DisableWebPagePreview {
+		payload["disable_web_page_preview"] = "true"
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", n.telegramConfig.BotToken)
+	fmt.Printf("Telegram: sending TEST message to chat_id=%s url=...%s\n",
+		n.telegramConfig.ChatID,
+		maskTokenTail(url, 8))
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		fmt.Printf("Telegram: non-200 response (test) status=%d body=%s\n", resp.StatusCode, string(body))
+		return fmt.Errorf("telegram API error: status %d", resp.StatusCode)
+	}
+
+	fmt.Println("Telegram: test message sent successfully (HTTP 200)")
+	return nil
+}
+
+// maskTokenTail маскирует секрет, оставляя хвост последних n символов
+func maskTokenTail(s string, tail int) string {
+	if len(s) <= tail {
+		return "***"
+	}
+	return "***" + s[len(s)-tail:]
 }

@@ -238,7 +238,7 @@ func (dp *DataPipeline) initializeCollectors() error {
 	// Real Prometheus коллектор
 	prometheusURL := dp.config.PrometheusURL
 	if prometheusURL == "" {
-		prometheusURL = "http://localhost:9090"
+		prometheusURL = "http://prometheus.cloudbridge-monitoring.svc.cluster.local:9090"
 	}
 	prometheusCollector := NewRealPrometheusCollector(dp.logger, prometheusURL)
 	dp.collectors["prometheus"] = prometheusCollector

@@ -2,7 +2,6 @@ package predictive
 
 import (
 	"fmt"
-	"math"
 )
 
 // ARIMAModel реализует ARIMA модель для прогнозирования временных рядов
@@ -44,9 +43,12 @@ func (am *ARIMAModel) Forecast(data []float64, horizon int) ([]float64, error) {
 	for i := 0; i < horizon; i++ {
 		forecast[i] = lastValue + trend*float64(i+1)
 
-		// Добавляем небольшую случайную вариацию
-		variation := math.Sin(float64(i)) * 0.1
-		forecast[i] += variation
+		// Добавляем небольшую случайную вариацию на основе исторических данных
+		if len(am.residuals) > 0 {
+			avgResidual := am.calculateAverageResidual()
+			variation := avgResidual * 0.1
+			forecast[i] += variation
+		}
 
 		// Ограничиваем значения
 		if forecast[i] < 0 {
@@ -123,4 +125,18 @@ func (am *ARIMAModel) GetCoefficients() []float64 {
 // IsTrained проверяет, обучена ли модель
 func (am *ARIMAModel) IsTrained() bool {
 	return am.trained
+}
+
+// calculateAverageResidual вычисляет среднее значение остатков
+func (am *ARIMAModel) calculateAverageResidual() float64 {
+	if len(am.residuals) == 0 {
+		return 0
+	}
+
+	sum := 0.0
+	for _, residual := range am.residuals {
+		sum += residual
+	}
+
+	return sum / float64(len(am.residuals))
 }

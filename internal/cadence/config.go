@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"go.uber.org/cadence/worker"
 	"gopkg.in/yaml.v2"
 )
 
@@ -63,6 +64,19 @@ type ClientConfig struct {
 	TLSCertPath   string `yaml:"tlsCertPath"`
 	TLSKeyPath    string `yaml:"tlsKeyPath"`
 	TLSCAPath     string `yaml:"tlsCAPath"`
+
+	// Настройки service client
+	ServiceClient ServiceClientConfig `yaml:"serviceClient"`
+}
+
+// ServiceClientConfig настройки для service client
+type ServiceClientConfig struct {
+	Timeout     time.Duration `yaml:"timeout"`
+	ServiceName string        `yaml:"serviceName"`
+	EnableTLS   bool          `yaml:"enableTLS"`
+	TLSCertPath string        `yaml:"tlsCertPath"`
+	TLSKeyPath  string        `yaml:"tlsKeyPath"`
+	TLSCAPath   string        `yaml:"tlsCAPath"`
 }
 
 // WorkerConfig настройки Cadence worker
@@ -474,4 +488,35 @@ func (c *CadenceConfig) GetActivityTimeout(workflowType string) time.Duration {
 	}
 
 	return duration
+}
+
+// ToServiceClientOptions преобразует ClientConfig в ServiceClientOptions
+func (c *ClientConfig) ToServiceClientOptions() ServiceClientOptions {
+	return ServiceClientOptions{
+		Timeout:     c.ServiceClient.Timeout,
+		ServiceName: c.ServiceClient.ServiceName,
+		EnableTLS:   c.ServiceClient.EnableTLS,
+		TLSCertPath: c.ServiceClient.TLSCertPath,
+		TLSKeyPath:  c.ServiceClient.TLSKeyPath,
+		TLSCAPath:   c.ServiceClient.TLSCAPath,
+	}
+}
+
+// ToClientConfig преобразует CadenceConfig в Config для client
+func (c *CadenceConfig) ToClientConfig() Config {
+	// Создаем worker.Options из WorkerConfig
+	workerOptions := worker.Options{
+		MaxConcurrentActivityExecutionSize:      c.Worker.MaxConcurrentActivityExecutionSize,
+		MaxConcurrentLocalActivityExecutionSize: c.Worker.MaxConcurrentLocalActivityExecutionSize,
+		WorkerActivitiesPerSecond:               float64(c.Worker.WorkerActivitiesPerSecond),
+		Identity:                                c.Worker.Identity,
+	}
+
+	return Config{
+		HostPort:       c.Client.HostPort,
+		Domain:         c.Client.Domain,
+		TaskList:       c.Worker.TaskListName,
+		WorkerOptions:  workerOptions,
+		ServiceOptions: c.Client.ToServiceClientOptions(),
+	}
 }

@@ -1,0 +1,58 @@
+# Multi-stage build for AI Analytics Service
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build AI Analytics Service
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ai-analytics ./cmd/ai-analytics
+
+# Final stage
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk --no-cache add ca-certificates tzdata wget
+
+# Create non-root user
+RUN addgroup -g 1000 -S appgroup && \
+    adduser -u 1000 -S appuser -G appgroup
+
+# Set working directory
+WORKDIR /app
+
+# Copy binary from builder stage
+COPY --from=builder /app/ai-analytics .
+
+# Copy configuration files
+COPY --from=builder /app/config/ ./config/
+COPY --from=builder /app/internal/ai/analytics/ ./internal/ai/analytics/
+
+# Create necessary directories and fix permissions
+RUN mkdir -p /app/logs /app/reports && \
+    chown -R appuser:appgroup /app && \
+    chmod -R 755 /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose ports
+EXPOSE 8084
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8084/health || exit 1
+
+# Run the application
+CMD ["./ai-analytics"]

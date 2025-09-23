@@ -1,0 +1,22 @@
+auth:
+  username: zitadel
+  database: zitadel
+  existingSecret: pg-auth
+  secretKeys:
+    adminPasswordKey: postgres-password
+    userPasswordKey: password
+primary:
+  persistence:
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+  livenessProbe:
+    enabled: true
+  readinessProbe:
+    enabled: true
+

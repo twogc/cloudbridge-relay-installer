@@ -25,10 +25,12 @@ type AI struct {
 	CacheTTL              time.Duration `yaml:"cache_ttl"`
 	Models                Models        `yaml:"models"`
 	DataPipeline          DataPipeline  `yaml:"data_pipeline"`
+	DataSources           DataSources   `yaml:"data_sources"`
 	Monitoring            Monitoring    `yaml:"monitoring"`
 	Storage               Storage       `yaml:"storage"`
 	API                   API           `yaml:"api"`
 	Development           Development   `yaml:"development"`
+	Cadence               Cadence       `yaml:"cadence"`
 }
 
 // Models configuration
@@ -80,6 +82,18 @@ type DataPipeline struct {
 	ProcessingInterval time.Duration `yaml:"processing_interval"`
 	RetentionDays      int           `yaml:"retention_days"`
 	Features           Features      `yaml:"features"`
+}
+
+// DataSources configuration
+type DataSources struct {
+	PrometheusURL   string `yaml:"prometheus_url"`
+	CloudBridgeURL  string `yaml:"cloudbridge_url"`
+	CadenceURL      string `yaml:"cadence_url"`
+}
+
+// Cadence configuration
+type Cadence struct {
+	Domain string `yaml:"domain"`
 }
 
 // Features configuration

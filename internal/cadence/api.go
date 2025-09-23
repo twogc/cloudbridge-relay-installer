@@ -247,10 +247,7 @@ func (h *APIHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := h.client.HealthCheck(ctx)
+	err := h.client.HealthCheck()
 	if err != nil {
 		h.logger.Error("Cadence health check failed", zap.Error(err))
 		http.Error(w, "Cadence is not healthy", http.StatusServiceUnavailable)
@@ -258,7 +255,7 @@ func (h *APIHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-		"status": "healthy",
+		"status":    "healthy",
 		"timestamp": time.Now().UTC(),
 	}
 

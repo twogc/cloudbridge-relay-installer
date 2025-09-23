@@ -1,0 +1,37 @@
+zitadel:
+  masterkeySecretName: zitadel-masterkey
+  configmapConfig:
+    ExternalDomain: zitadel.local
+    ExternalSecure: true
+  secretConfig:
+    Database:
+      Postgres:
+        Host: pg-postgresql.zitadel.svc.cluster.local
+        Port: 5432
+        Database: zitadel
+        User:
+          Username: zitadel
+          Password: ""
+        SSL:
+          Mode: disable
+    TLS:
+      Enabled: false
+      Mode: external
+  init:
+    activeDeadlineSeconds: 1800
+    backoffLimit: 1
+  setup:
+    activeDeadlineSeconds: 1800
+    backoffLimit: 1
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+
+login:
+  enabled: false
+

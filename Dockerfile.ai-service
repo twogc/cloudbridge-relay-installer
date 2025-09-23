@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ai-service ./cmd/
 
 FROM alpine:3.18
 
-RUN apk update && apk --no-cache add ca-certificates tzdata
+RUN apk update && apk --no-cache add ca-certificates tzdata wget
 
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup

@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-backup
+  namespace: zitadel
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: pg-backup
+            image: bitnami/postgresql:16
+            env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pg-auth
+                  key: password
+            command:
+            - /bin/sh
+            - -c
+            - |
+              ts=$(date +%Y%m%d-%H%M%S);
+              pg_dump -h pg-postgresql.zitadel.svc.cluster.local -U zitadel -d zitadel \
+                -F c -f /backup/zitadel-$ts.dump;
+            volumeMounts:
+            - name: backup
+              mountPath: /backup
+          restartPolicy: OnFailure
+          volumes:
+          - name: backup
+            persistentVolumeClaim:
+              claimName: zitadel-backup-pvc
+
+
+
+
+
+

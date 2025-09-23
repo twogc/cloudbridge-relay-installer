@@ -56,10 +56,15 @@ data:
         enabled: true
         batch_size: 100
         processing_interval: "10s"
-        prometheus_url: "http://prometheus.cloudbridge-monitoring.svc.cluster.local:9090"
         retention_days: 30
         kubernetes_metrics: true
         prometheus_metrics: true
+      data_sources:
+        prometheus_url: "http://prometheus.cloudbridge-monitoring.svc.cluster.local:9090"
+        cloudbridge_url: "http://cloudbridge-relay.cloudbridge.svc.cluster.local:5553"
+        cadence_url: "http://cadence-web-service.cloudbridge.svc.cluster.local:8088"
+      cadence:
+        domain: "cloudbridge"
       monitoring:
         enabled: true
         metrics_endpoint: "/metrics"

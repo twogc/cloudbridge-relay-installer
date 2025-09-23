@@ -112,9 +112,9 @@ type CloudflareAIConfig struct {
 
 // NotificationConfig конфигурация уведомлений
 type NotificationConfig struct {
-	Slack    SlackConfig `yaml:"slack"`
-	Email    EmailConfig `yaml:"email"`
-	Webhooks []string    `yaml:"webhooks"`
+	Slack    SlackConfig     `yaml:"slack"`
+	Email    EmailConfig     `yaml:"email"`
+	Webhooks []WebhookConfig `yaml:"webhooks"`
 }
 
 // SlackConfig конфигурация Slack
@@ -132,6 +132,12 @@ type EmailConfig struct {
 	Username   string   `yaml:"username"`
 	Password   string   `yaml:"password"`
 	Recipients []string `yaml:"recipients"`
+}
+
+// WebhookConfig конфигурация отдельного webhook-а в YAML
+type WebhookConfig struct {
+	URL     string `yaml:"url"`
+	Enabled bool   `yaml:"enabled"`
 }
 
 // DataSourcesConfig конфигурация источников данных
@@ -348,6 +354,7 @@ func (e *AIAnalyticsEngine) SetupRoutes(router *gin.Engine) {
 		api.GET("/reports/:id", e.handleGetReport)
 		api.GET("/insights", e.handleGetInsights)
 		api.POST("/configure-notifications", e.handleConfigureNotifications)
+		api.POST("/notifications/test/telegram", e.handleTestTelegram)
 		api.GET("/status", e.handleGetStatus)
 	}
 }
@@ -403,15 +410,15 @@ func (e *AIAnalyticsEngine) handleGetInsights(c *gin.Context) {
 
 // handleConfigureNotifications обрабатывает запрос на настройку уведомлений
 func (e *AIAnalyticsEngine) handleConfigureNotifications(c *gin.Context) {
-	var config NotificationConfig
+	var config map[string]interface{}
 	if err := c.ShouldBindJSON(&config); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
 	if e.notificationSystem != nil {
-		if notifier, ok := e.notificationSystem.(interface{ Configure(NotificationConfig) }); ok {
-			notifier.Configure(config)
+		if notifier, ok := e.notificationSystem.(interface{ ConfigureFromMap(map[string]interface{}) }); ok {
+			notifier.ConfigureFromMap(config)
 			c.JSON(200, gin.H{"message": "Notifications configured successfully"})
 		} else {
 			c.JSON(500, gin.H{"error": "Notification system does not support configuration"})
@@ -419,6 +426,36 @@ func (e *AIAnalyticsEngine) handleConfigureNotifications(c *gin.Context) {
 	} else {
 		c.JSON(500, gin.H{"error": "Notification system not initialized"})
 	}
+}
+
+// handleTestTelegram отправляет тестовое сообщение в Telegram
+func (e *AIAnalyticsEngine) handleTestTelegram(c *gin.Context) {
+	var body struct {
+		Message string `json:"message"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		body.Message = "ping"
+	}
+
+	if body.Message == "" {
+		body.Message = "ping"
+	}
+
+	if e.notificationSystem == nil {
+		c.JSON(500, gin.H{"error": "Notification system not initialized"})
+		return
+	}
+
+	if tester, ok := e.notificationSystem.(interface{ SendTelegramText(string) error }); ok {
+		if err := tester.SendTelegramText(body.Message); err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Test message sent"})
+		return
+	}
+
+	c.JSON(500, gin.H{"error": "Notification system does not support Telegram test"})
 }
 
 // handleGetStatus обрабатывает запрос на получение статуса

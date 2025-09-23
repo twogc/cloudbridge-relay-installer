@@ -107,9 +107,8 @@ type Server struct {
 	enhancedEnabled      bool
 	p2pQUICEnabled       bool
 
-	// P2P Relay components
-	relayManager     *p2p.RelayManager
-	heartbeatManager *p2p.HeartbeatManager
+	// P2P Integration
+	p2pIntegration   *P2PIntegration
 	quicRelayHandler *QUICRelayHandler
 
 	// Cadence Workflow Engine
@@ -137,6 +136,9 @@ type Server struct {
 
 	// WireGuard Profile Manager
 	wgProfileManager *WGProfileManager
+
+	// MASQUE Integration
+	masqueIntegration *MASQUEIntegration
 
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -461,35 +463,34 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		zap.Bool("auto_switch_enabled", cfg.Protocol.AutoSelect),
 	)
 
-	// Initialize P2P Relay components
-	loggerInstance.Info("Initializing P2P Relay components...")
+	// Initialize P2P Integration
+	loggerInstance.Info("Initializing P2P Integration...")
 
-	// Create Relay Manager
-	relayManager := p2p.NewRelayManager(loggerInstance.GetZapLogger())
-
-	// Create Heartbeat Manager
-	heartbeatManager := p2p.NewHeartbeatManager(relayManager, loggerInstance.GetZapLogger())
-
-	// Create QUIC Relay Handler (independent of p2pAPIServer)
+	var p2pIntegration *P2PIntegration
 	var quicRelayHandler *QUICRelayHandler
+
 	if p2pEnabled {
-		// Create QUIC Relay Handler with basic components
-		// We'll create a minimal peer manager and token validator for QUIC relay
+		p2pIntegration, err = NewP2PIntegration(loggerInstance, cfg, jwtSecret)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to initialize P2P integration: %v", err)
+		}
+
+		// Create QUIC Relay Handler with P2P components
 		quicRelayHandler = NewQUICRelayHandler(
-			relayManager,
-			nil, // peerManager - will be set up later if needed
-			nil, // tokenValidator - will be set up later if needed
+			p2pIntegration.GetRelayManager(),
+			p2pIntegration.GetPeerManager(),
+			p2pIntegration.GetTokenValidator(),
 			loggerInstance.GetZapLogger(),
 		)
-		loggerInstance.Info("QUIC Relay Handler created successfully")
-	}
 
-	// Set managers for P2P API Server
-	if p2pAPIServer != nil {
-		p2pAPIServer.SetManagers(relayManager, heartbeatManager)
-	}
+		// Set managers for P2P API Server
+		if p2pAPIServer != nil {
+			p2pAPIServer.SetManagers(p2pIntegration.GetRelayManager(), p2pIntegration.GetHeartbeatManager())
+		}
 
-	loggerInstance.Info("P2P Relay components initialized successfully")
+		loggerInstance.Info("P2P Integration initialized successfully")
+	}
 
 	// Initialize WireGuard Profile Manager
 	var wgProfileManager *WGProfileManager
@@ -502,6 +503,19 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		loggerInstance.Info("WireGuard Profile Manager initialized successfully")
 	} else {
 		loggerInstance.Info("WireGuard disabled, skipping WG profile manager initialization")
+	}
+
+	// Initialize MASQUE Integration
+	var masqueIntegration *MASQUEIntegration
+	if cfg.MASQUE.Enabled {
+		masqueIntegration, err = NewMASQUEIntegration(loggerInstance, cfg)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to initialize MASQUE integration: %v", err)
+		}
+		loggerInstance.Info("MASQUE Integration initialized successfully")
+	} else {
+		loggerInstance.Info("MASQUE disabled, skipping MASQUE integration initialization")
 	}
 
 	return &Server{
@@ -532,10 +546,10 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		connectionHandler:    connectionHandler,
 		autoSwitchManager:    autoSwitchManager,
 		cadenceClient:        cadenceClient,
-		relayManager:         relayManager,
-		heartbeatManager:     heartbeatManager,
+		p2pIntegration:       p2pIntegration,
 		quicRelayHandler:     quicRelayHandler,
 		wgProfileManager:     wgProfileManager,
+		masqueIntegration:    masqueIntegration,
 		ctx:                  ctx,
 		cancel:               cancel,
 		startTime:            time.Now(),
@@ -553,7 +567,7 @@ func (s *Server) Start() error {
 		}()
 	}
 
-    // Start HTTP server on configured port for health checks
+	// Start HTTP server on configured port for health checks
 	go func() {
 		httpMux := http.NewServeMux()
 
@@ -898,15 +912,15 @@ func (s *Server) Start() error {
 			}
 		} else {
 			// Fallback to HTTP for development only when TLS is disabled
-            httpServer := &http.Server{
-                Addr:              fmt.Sprintf("0.0.0.0:%d", s.config.HTTPSAPI.Port),
+			httpServer := &http.Server{
+				Addr:              fmt.Sprintf("0.0.0.0:%d", s.config.HTTPSAPI.Port),
 				Handler:           httpMux,
 				ReadHeaderTimeout: 30 * time.Second,
 				ReadTimeout:       30 * time.Second,
 				WriteTimeout:      30 * time.Second,
 			}
 			s.httpServer = httpServer
-            s.logger.Warn("HTTP server started without TLS (development mode)", zap.Int("port", s.config.HTTPSAPI.Port))
+			s.logger.Warn("HTTP server started without TLS (development mode)", zap.Int("port", s.config.HTTPSAPI.Port))
 			go func() {
 				if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 					s.logger.Error("HTTP server error", zap.Error(err))
@@ -1055,8 +1069,8 @@ func (s *Server) Start() error {
 
 	s.logger.Info("Relay server started",
 		zap.Int("tcp_port", s.config.Server.Port),
-        zap.Int("http_port", s.config.HTTPSAPI.Port),
-        zap.Int("p2p_quic_port", s.config.API.Port),
+		zap.Int("http_port", s.config.HTTPSAPI.Port),
+		zap.Int("p2p_quic_port", s.config.API.Port),
 		zap.Int("quic_port", 9090),
 		zap.Int("stun_port", 19302),
 		zap.Int("enhanced_quic_port", 9092),
@@ -1092,14 +1106,14 @@ func (s *Server) Start() error {
 		s.logger.Info("P2P API Server started")
 	}
 
-	// Запуск P2P Relay компонентов
-	if s.heartbeatManager != nil {
+	// Запуск P2P Integration
+	if s.p2pIntegration != nil {
 		go func() {
-			if err := s.heartbeatManager.Start(); err != nil {
-				s.logger.Error("Failed to start Heartbeat Manager", zap.Error(err))
+			if err := s.p2pIntegration.Start(); err != nil {
+				s.logger.Error("Failed to start P2P Integration", zap.Error(err))
 			}
 		}()
-		s.logger.Info("Heartbeat Manager started")
+		s.logger.Info("P2P Integration started")
 	}
 
 	// Запуск QUIC Relay Handler
@@ -1115,6 +1129,16 @@ func (s *Server) Start() error {
 			}
 		}()
 		s.logger.Info("WireGuard Profile Manager started")
+	}
+
+	// Запуск MASQUE Integration
+	if s.masqueIntegration != nil {
+		go func() {
+			if err := s.masqueIntegration.Start(); err != nil {
+				s.logger.Error("Failed to start MASQUE Integration", zap.Error(err))
+			}
+		}()
+		s.logger.Info("MASQUE Integration started")
 	}
 
 	// Handle TCP connections
@@ -1666,23 +1690,28 @@ func (s *Server) Stop() {
 		}
 	}
 
-	// Stop P2P Relay components
-	if s.heartbeatManager != nil {
-		s.heartbeatManager.Stop()
+	// Stop P2P Integration
+	if s.p2pIntegration != nil {
+		if err := s.p2pIntegration.Stop(); err != nil {
+			s.logger.Error("Error stopping P2P Integration", zap.Error(err))
+		}
 	}
 
 	if s.quicRelayHandler != nil {
 		s.quicRelayHandler.Stop()
 	}
 
-	if s.relayManager != nil {
-		s.relayManager.Shutdown()
-	}
-
 	// Stop WireGuard Profile Manager
 	if s.wgProfileManager != nil {
 		if err := s.wgProfileManager.Stop(); err != nil {
 			s.logger.Error("Error stopping WG Profile Manager", zap.Error(err))
+		}
+	}
+
+	// Stop MASQUE Integration
+	if s.masqueIntegration != nil {
+		if err := s.masqueIntegration.Stop(); err != nil {
+			s.logger.Error("Error stopping MASQUE Integration", zap.Error(err))
 		}
 	}
 

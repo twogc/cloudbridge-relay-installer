@@ -6,9 +6,7 @@ import (
 	"io"
 
 	"github.com/quic-go/quic-go"
-	"github.com/twogc/cloudbridge-relay-installer/internal/api"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
-	"github.com/twogc/cloudbridge-relay-installer/internal/token"
 	"go.uber.org/zap"
 )
 
@@ -23,15 +21,15 @@ func min(a, b int) int {
 // QUICRelayHandler обрабатывает QUIC соединения для P2P relay
 type QUICRelayHandler struct {
 	relayManager   *p2p.RelayManager
-	peerManager    *api.PeerManager
-	tokenValidator *token.Validator
+	peerManager    *p2p.SimplePeerManager
+	tokenValidator *p2p.TokenValidator
 	logger         *zap.Logger
 	ctx            context.Context
 	cancel         context.CancelFunc
 }
 
 // NewQUICRelayHandler создает новый QUIC Relay Handler
-func NewQUICRelayHandler(relayManager *p2p.RelayManager, peerManager *api.PeerManager, tokenValidator *token.Validator, logger *zap.Logger) *QUICRelayHandler {
+func NewQUICRelayHandler(relayManager *p2p.RelayManager, peerManager *p2p.SimplePeerManager, tokenValidator *p2p.TokenValidator, logger *zap.Logger) *QUICRelayHandler {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &QUICRelayHandler{
@@ -239,29 +237,32 @@ func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, st
 	qrh.logger.Debug("Extracted token", zap.String("token", tokenString[:min(20, len(tokenString))]+"..."))
 
 	// Валидируем JWT токен (если tokenValidator доступен)
-	var claims *token.P2PClaims
-	var validationErr error
+	var peerID, tenantID string
 
 	if qrh.tokenValidator != nil {
 		qrh.logger.Debug("Validating JWT token")
-		claims, validationErr = qrh.tokenValidator.ValidateP2PToken(tokenString)
+		result, validationErr := qrh.tokenValidator.ValidateP2PToken(tokenString, "", "")
 		if validationErr != nil {
 			qrh.logger.Error("JWT token validation failed", zap.Error(validationErr))
 			return "", "", fmt.Errorf("invalid JWT token: %v", validationErr)
 		}
+
+		if !result.Valid {
+			qrh.logger.Error("Token validation failed", zap.String("error", result.Error))
+			return "", "", fmt.Errorf("invalid JWT token: %s", result.Error)
+		}
+
+		peerID = result.PeerID
+		tenantID = result.TenantID
 		qrh.logger.Debug("JWT token validated successfully")
 	} else {
-		// Fallback: создаем простые claims для тестирования
-		claims = &token.P2PClaims{
-			ServerID: "test-server",
-			TenantID: "test-tenant",
-		}
-		qrh.logger.Warn("Token validator not available, using test claims")
+		// Fallback: создаем простые значения для тестирования
+		peerID = "test-peer"
+		tenantID = "test-tenant"
+		qrh.logger.Warn("Token validator not available, using test values")
 	}
 
-	// Генерируем peer ID из server_id
-	peerID := fmt.Sprintf("peer_%s", claims.ServerID)
-	qrh.logger.Debug("Generated peer ID", zap.String("peer_id", peerID), zap.String("tenant_id", claims.TenantID))
+	qrh.logger.Debug("Generated peer ID", zap.String("peer_id", peerID), zap.String("tenant_id", tenantID))
 
 	// Отправляем подтверждение
 	_, err = stream.Write([]byte("AUTH_OK"))
@@ -273,9 +274,9 @@ func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, st
 
 	qrh.logger.Info("Authentication completed successfully",
 		zap.String("peer_id", peerID),
-		zap.String("tenant_id", claims.TenantID))
+		zap.String("tenant_id", tenantID))
 
-	return peerID, claims.TenantID, nil
+	return peerID, tenantID, nil
 }
 
 // Stop останавливает QUIC Relay Handler

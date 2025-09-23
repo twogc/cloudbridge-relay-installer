@@ -53,7 +53,7 @@ func NewCloudflareAIClient(accountID, apiToken, model string, maxTokens int) *Cl
 		model:     model,
 		maxTokens: maxTokens,
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 90 * time.Second,
 		},
 		baseURL: fmt.Sprintf("https://api.cloudflare.com/client/v4/accounts/%s/ai/run", accountID),
 	}
@@ -91,7 +91,13 @@ func (c *CloudflareAIClient) GenerateAnalysis(data *MetricsData) (*AnalysisResul
 func (c *CloudflareAIClient) buildPrompt(data *MetricsData) string {
 	var prompt strings.Builder
 
-	prompt.WriteString("Проанализируй следующие метрики CloudBridge Relay и предоставь инсайты:\n\n")
+	// System-style guardrails
+	prompt.WriteString("Ты эксперт по SRE/NetOps и MLOps. Анализируй метрики CloudBridge Relay, AI-сервиса и Cadence. ")
+	prompt.WriteString("Пиши по-русски, чётко и кратко, без выдумок. При нехватке данных — укажи это явно. ")
+	prompt.WriteString("Сначала критические риски и их причины, затем рекомендации с приоритетами (P0..P2). Отвечай строго в указанном формате секций.\n\n")
+
+	prompt.WriteString("Контекст системы:\n- Relay: транспорт/маршрутизация трафика\n- AI: предсказания/анализ, RT метрики и история аномалий\n- Cadence: фоновые воркфлоу/ретраи/ошибки задач\n\n")
+	prompt.WriteString("Данные метрик (агрегировано):\n")
 
 	// AI метрики
 	if aiMetrics, exists := data.Metrics["ai"]; exists {
@@ -122,6 +128,22 @@ func (c *CloudflareAIClient) buildPrompt(data *MetricsData) string {
 	if relayMetrics, exists := data.Metrics["relay"]; exists {
 		if relayMap, ok := relayMetrics.(map[string]interface{}); ok {
 			prompt.WriteString("\n🌐 Relay Service Metrics:\n")
+			// Cadence метрики
+			if cadenceMetrics, exists := data.Metrics["cadence"]; exists {
+				if cadenceMap, ok := cadenceMetrics.(map[string]interface{}); ok {
+					prompt.WriteString("\n🕒 Cadence Workflow Metrics:\n")
+					if q, ok := cadenceMap["queue_depth"].(float64); ok {
+						prompt.WriteString(fmt.Sprintf("- Глубина очередей: %.0f\n", q))
+					}
+					if r, ok := cadenceMap["retries"].(float64); ok {
+						prompt.WriteString(fmt.Sprintf("- Ретраи задач: %.0f\n", r))
+					}
+					if f, ok := cadenceMap["failures"].(float64); ok {
+						prompt.WriteString(fmt.Sprintf("- Ошибки задач: %.0f\n", f))
+					}
+				}
+			}
+
 			if activeConnections, ok := relayMap["active_connections"].(float64); ok {
 				prompt.WriteString(fmt.Sprintf("- Активные соединения: %.0f\n", activeConnections))
 			}
@@ -153,17 +175,22 @@ func (c *CloudflareAIClient) buildPrompt(data *MetricsData) string {
 
 	prompt.WriteString(`
 Пожалуйста, предоставь:
-1. Краткое резюме (2-3 предложения)
+1. Краткое резюме (2–3 предложения)
 2. Ключевые инсайты и паттерны
-3. Критические проблемы, требующие внимания
-4. Практические рекомендации
-5. Оценку производительности
+3. Критические проблемы с вероятными причинами
+4. Практические рекомендации с приоритетами (P0..P2)
+5. Оценку производительности (узкие места, тренды)
 
 Формат ответа:
 **Резюме:** [краткое описание]
-**Инсайты:** [список ключевых наблюдений]
-**Критические проблемы:** [список проблем]
-**Рекомендации:** [список действий]
+**Инсайты:**
+- пункт 1
+- пункт 2
+**Критические проблемы:**
+- описание (влияние, возможная причина)
+**Рекомендации:**
+- [P0] действие — ожидаемый эффект
+- [P1] действие — ожидаемый эффект
 **Производительность:** [оценка]
 `)
 
@@ -177,6 +204,7 @@ func (c *CloudflareAIClient) makeRequest(request CloudflareAIRequest) (*Cloudfla
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	// Используем название модели без кодирования (Cloudflare AI принимает @ в URL)
 	req, err := http.NewRequest("POST", c.baseURL+"/"+c.model, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
