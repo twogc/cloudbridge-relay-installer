@@ -40,18 +40,198 @@
 - ✅ **Go 1.25 совместимость** - обновлены все компоненты
 - ✅ **Dependency conflicts resolved** - исправлены конфликты с google.golang.org/genproto
 
-### 🔧 **Текущая архитектура:**
+### 🏗️ **Полная архитектура системы:**
+
+#### **🌐 Высокоуровневая архитектура:**
+```
+                    ┌─────────────────────────────────────────────┐
+                    │              CloudBridge Relay              │
+                    │            (Kubernetes/Minikube)            │
+                    └─────────────────────────────────────────────┘
+                                           │
+                    ┌─────────────────────────────────────────────┐
+                    │                Load Balancer                │
+                    │        (NodePort/LoadBalancer Services)     │
+                    └─────────────────────────────────────────────┘
+                                           │
+        ┌──────────────────┬──────────────────┬──────────────────┐
+        │                  │                  │                  │
+   ┌─────────┐      ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+   │ Clients │      │   P2P Mesh  │    │   Corporate │    │  Monitoring │
+   │         │      │   Network   │    │   Networks  │    │   Systems   │
+   └─────────┘      └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+#### **🔧 Детальная архитектура компонентов:**
 
 ```
-CloudBridge Relay (Minikube)
-├── Zitadel Integration ✅
-│   ├── ZitadelValidator (fallback + JWT)
-│   ├── TenantManager (кэшированный)
-│   └── Auth Provider (интегрированный)
-├── P2P API Server (порт 9091) ✅
-├── QUIC Server (порт 5553) ✅
-├── STUN Server (порт 19302) ✅
-└── Health Monitoring ✅
+CloudBridge Relay Pod (Kubernetes)
+├── 🔐 Authentication Layer
+│   ├── Zitadel Integration ✅
+│   │   ├── ZitadelValidator (JWT + JWKS)
+│   │   ├── TenantManager (кэшированный)
+│   │   └── Auth Provider (интегрированный)
+│   └── Fallback JWT Authentication ✅
+│
+├── 🌐 Network Layer
+│   ├── QUIC Servers ✅
+│   │   ├── Main QUIC Server (порт 9090 UDP)
+│   │   ├── P2P QUIC Server (порт 5553 UDP) 
+│   │   └── Enhanced QUIC Server (порт 9092 UDP)
+│   │
+│   ├── MASQUE Protocol Stack ✅
+│   │   ├── CONNECT-UDP Proxy
+│   │   ├── CONNECT-IP Proxy
+│   │   └── HTTP/3 over QUIC
+│   │
+│   ├── NAT Traversal ✅
+│   │   ├── STUN Server (порт 19302 UDP)
+│   │   ├── TURN Server (relay mode)
+│   │   └── ICE Agent (connectivity)
+│   │
+│   └── VPN Integration ✅
+│       ├── WireGuard Server (порт 51820 UDP)
+│       ├── Site-to-Site VPN
+│       └── Legacy VPN Support
+│
+├── 🔗 P2P Layer
+│   ├── Peer Management ✅
+│   │   ├── SimplePeerManager
+│   │   ├── Peer Discovery
+│   │   └── Connection State
+│   │
+│   ├── Relay Management ✅
+│   │   ├── RelayManager
+│   │   ├── Traffic Routing
+│   │   └── Load Balancing
+│   │
+│   └── Heartbeat System ✅
+│       ├── HeartbeatManager  
+│       ├── Health Monitoring
+│       └── Auto-reconnection
+│
+├── 🔄 Workflow Engine
+│   ├── Cadence Integration ✅
+│   │   ├── Workflow Registration (thread-safe)
+│   │   ├── Activity Execution
+│   │   └── Stub Mode Support
+│   │
+│   └── Workflow Types ✅
+│       ├── Deployment Workflows
+│       ├── Certificate Management
+│       ├── P2P QUIC Tunneling
+│       ├── Quantum Security
+│       ├── AI Analytics
+│       └── Backup/Recovery
+│
+├── 📊 API Layer
+│   ├── P2P API Server (порт 9091 HTTP) ✅
+│   │   ├── REST Endpoints
+│   │   ├── WebSocket Hub
+│   │   └── Health Checks
+│   │
+│   ├── Prometheus Metrics (порт 8084) ✅
+│   │   ├── Connection Metrics
+│   │   ├── Performance Stats
+│   │   └── Custom Metrics
+│   │
+│   └── Admin API ✅
+│       ├── Configuration Management
+│       ├── Peer Administration
+│       └── Monitoring Dashboard
+│
+├── 🛡️ Security Layer
+│   ├── TLS/mTLS Encryption ✅
+│   ├── Post-Quantum Cryptography (готово)
+│   ├── Certificate Management ✅
+│   └── Rate Limiting ✅
+│
+├── 🧠 AI Analytics (готово)
+│   ├── Behavioral Analysis
+│   ├── Predictive Security
+│   ├── Automated Response
+│   └── Model Training
+│
+└── 📈 Monitoring & Logging
+    ├── Structured Logging (JSON) ✅
+    ├── Health Monitoring ✅
+    ├── Performance Metrics ✅
+    └── Audit Logging ✅
+```
+
+#### **🌊 Потоки данных и сетевая архитектура:**
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Kubernetes Cluster                          │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                CloudBridge Relay Pod                        │   │
+│  │                                                             │   │
+│  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │   │
+│  │  │    QUIC     │    │   MASQUE    │    │   WireGuard │     │   │
+│  │  │   Servers   │    │   Proxies   │    │     VPN     │     │   │
+│  │  │  9090/5553  │    │   HTTP/3    │    │    51820    │     │   │
+│  │  │    9092     │    │             │    │             │     │   │
+│  │  └─────────────┘    └─────────────┘    └─────────────┘     │   │
+│  │          │                   │                   │         │   │
+│  │  ┌─────────────────────────────────────────────────────┐   │   │
+│  │  │              Traffic Router & Load Balancer        │   │   │
+│  │  └─────────────────────────────────────────────────────┘   │   │
+│  │          │                                                 │   │
+│  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │   │
+│  │  │    STUN     │    │    P2P      │    │   Metrics   │     │   │
+│  │  │   Server    │    │ API Server  │    │  Exporter   │     │   │
+│  │  │   19302     │    │    9091     │    │    8084     │     │   │
+│  │  └─────────────┘    └─────────────┘    └─────────────┘     │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                              │                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │                    Kubernetes Services                     │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │   │
+│  │  │  NodePort   │  │LoadBalancer │  │    ClusterIP        │ │   │
+│  │  │  Services   │  │  Services   │  │    Services         │ │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────────────┘ │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────────────────────────────────────────┐
+        │                External Networks                        │
+        │                                                         │
+        │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │
+        │  │   Client    │  │   P2P Mesh  │  │   Corporate     │ │
+        │  │  Networks   │  │   Peers     │  │   Networks      │ │
+        │  └─────────────┘  └─────────────┘  └─────────────────┘ │
+        └─────────────────────────────────────────────────────────┘
+```
+
+#### **📡 Протоколы и коммуникация:**
+
+```
+Protocol Stack:
+┌─────────────────────────────────────────────────────────────────┐
+│ Application Layer                                               │
+├─────────────────────────────────────────────────────────────────┤
+│ CloudBridge API │ P2P Mesh Protocol │ Admin Interface        │
+├─────────────────────────────────────────────────────────────────┤
+│ HTTP/3 │ WebSocket │ MASQUE CONNECT-UDP │ MASQUE CONNECT-IP  │
+├─────────────────────────────────────────────────────────────────┤
+│ QUIC (RFC 9000) │ TLS 1.3 │ Post-Quantum Crypto             │
+├─────────────────────────────────────────────────────────────────┤
+│ UDP │ TCP │ WireGuard │ ICE/STUN/TURN                        │
+├─────────────────────────────────────────────────────────────────┤
+│ IPv4/IPv6 Network Layer                                        │
+└─────────────────────────────────────────────────────────────────┘
+
+Traffic Flow:
+┌─────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────┐
+│ Client  │───▶│Load Balancer│───▶│ CloudBridge │───▶│  Target │
+│         │    │  (K8s SVC)  │    │    Relay    │    │ Network │
+└─────────┘    └─────────────┘    └─────────────┘    └─────────┘
+     │                                   │                 ▲
+     │         ┌─────────────────────────┘                 │
+     │         │                                           │
+     └─────────▼─────────────────────────────────────────────┘
+              Direct P2P Connection (NAT Traversal)
 ```
 
 ### 📋 **Готово к использованию:**
@@ -84,6 +264,51 @@ CloudBridge Relay (Minikube)
   "tenant_management": true,
   "fallback_secret": "configured"
 }
+```
+
+#### **🚀 Kubernetes развертывание:**
+
+```yaml
+# Основные ресурсы Kubernetes
+├── Deployments
+│   ├── cloudbridge-relay (3 replicas)
+│   │   ├── Image: cloudbridge-relay:zitadel
+│   │   ├── Resources: CPU/Memory limits
+│   │   └── Health checks: liveness/readiness
+│   └── Resource limits: Optimized for production
+│
+├── Services
+│   ├── ClusterIP Services (internal)
+│   │   ├── cloudbridge-relay (5550-5555/TCP, 9090/UDP, 51820/UDP)
+│   │   └── cloudbridge-relay-headless (9090/TCP+UDP, 51820/UDP, 8084/TCP)
+│   │
+│   ├── NodePort Services (external access)
+│   │   ├── cloudbridge-relay-external (multiple ports)
+│   │   └── cloudbridge-relay-nodeport (9090/TCP+UDP, 51820/UDP, etc.)
+│   │
+│   └── LoadBalancer Services (cloud integration)
+│       ├── cloudbridge-relay-loadbalancer (all protocols)
+│       ├── cloudbridge-relay-lb-tcp (TCP services)
+│       └── cloudbridge-relay-lb-udp (UDP services)
+│
+├── ConfigMaps
+│   ├── cloudbridge-config (main configuration)
+│   │   ├── Zitadel settings ✅
+│   │   ├── Network configuration
+│   │   ├── Security settings
+│   │   └── Feature flags
+│   │
+│   └── cassandra-config (database settings)
+│
+├── Secrets (managed externally)
+│   ├── TLS certificates
+│   ├── JWT secrets
+│   └── API keys
+│
+└── RBAC
+    ├── ServiceAccount: cloudbridge-relay
+    ├── Role: cloudbridge-relay (namespace permissions)
+    └── RoleBinding: cloudbridge-relay
 ```
 
 ### 📝 **Git История:**
