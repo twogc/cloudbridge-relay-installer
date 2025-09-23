@@ -170,3 +170,4 @@ kubectl
 minikube-linux-amd64
 documentation/docs-public/
 reference-repos/
+tools/cadence-web/
