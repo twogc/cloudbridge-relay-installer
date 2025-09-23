@@ -193,9 +193,8 @@ func TestClient_HealthCheck(t *testing.T) {
 	client, err := NewClient(config, logger)
 	assert.NoError(t, err)
 
-	ctx := context.Background()
 	// Test health check
-	err = client.HealthCheck(ctx)
+	err = client.HealthCheck()
 	assert.NoError(t, err)
 }
 
