@@ -54,7 +54,7 @@ spec:
             drop:
             - ALL
       - name: cloudbridge-relay
-        image: cloudbridge-relay:latest
+        image: cloudbridge-relay:zitadel
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
