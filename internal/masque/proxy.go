@@ -289,7 +289,7 @@ func (mp *MASQUEProxy) handleQUICConnections() {
 }
 
 // handleQUICConnection обрабатывает QUIC соединение
-func (mp *MASQUEProxy) handleQUICConnection(conn quic.Connection) {
+func (mp *MASQUEProxy) handleQUICConnection(conn *quic.Conn) {
 	defer conn.CloseWithError(0, "connection closed")
 
 	mp.logger.Info("New QUIC connection",

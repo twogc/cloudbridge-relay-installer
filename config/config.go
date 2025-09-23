@@ -64,6 +64,36 @@ type configRaw struct {
 		HTTPTimeout  string `json:"http_timeout"`
 	} `json:"keycloak"`
 
+	Zitadel struct {
+		Enabled      bool   `json:"enabled"`
+		Domain       string `json:"domain"`
+		ProjectID    string `json:"project_id"`
+		ClientID     string `json:"client_id"`
+		ClientSecret string `json:"client_secret"`
+		
+		FallbackSecret string `json:"fallback_secret"`
+		
+		TokenValidation struct {
+			Audience   string `json:"audience"`
+			ClockSkew  string `json:"clock_skew"`
+		} `json:"token_validation"`
+		
+		CacheTTL    string `json:"cache_ttl"`
+		HTTPTimeout string `json:"http_timeout"`
+		
+		TenantManagement struct {
+			Enabled       bool `json:"enabled"`
+			AutoCreate    bool `json:"auto_create"`
+			DefaultQuotas struct {
+				MaxPeers       int    `json:"max_peers"`
+				MaxConnections int    `json:"max_connections"`
+				MaxTunnels     int    `json:"max_tunnels"`
+				BandwidthLimit string `json:"bandwidth_limit"`
+				StorageLimit   string `json:"storage_limit"`
+			} `json:"default_quotas"`
+		} `json:"tenant_management"`
+	} `json:"zitadel"`
+
 	Security struct {
 		TLSEnabled bool     `json:"tls_enabled"`
 		CertFile   string   `json:"cert_file"`
@@ -341,6 +371,37 @@ type Config struct {
 		JWKSCacheTTL time.Duration `json:"jwks_cache_ttl"`
 		HTTPTimeout  time.Duration `json:"http_timeout"`
 	} `json:"keycloak"`
+
+	// Новый блок конфигурации для Zitadel
+	Zitadel struct {
+		Enabled      bool   `json:"enabled"`
+		Domain       string `json:"domain"`
+		ProjectID    string `json:"project_id"`
+		ClientID     string `json:"client_id"`
+		ClientSecret string `json:"client_secret"`
+		
+		FallbackSecret string `json:"fallback_secret"`
+		
+		TokenValidation struct {
+			Audience   string        `json:"audience"`
+			ClockSkew  time.Duration `json:"clock_skew"`
+		} `json:"token_validation"`
+		
+		CacheTTL    time.Duration `json:"cache_ttl"`
+		HTTPTimeout time.Duration `json:"http_timeout"`
+		
+		TenantManagement struct {
+			Enabled       bool `json:"enabled"`
+			AutoCreate    bool `json:"auto_create"`
+			DefaultQuotas struct {
+				MaxPeers       int    `json:"max_peers"`
+				MaxConnections int    `json:"max_connections"`
+				MaxTunnels     int    `json:"max_tunnels"`
+				BandwidthLimit string `json:"bandwidth_limit"`
+				StorageLimit   string `json:"storage_limit"`
+			} `json:"default_quotas"`
+		} `json:"tenant_management"`
+	} `json:"zitadel"`
 
 	Security struct {
 		TLSEnabled bool     `json:"tls_enabled"`
@@ -781,6 +842,19 @@ func Load(path string) (*Config, error) {
 	config.Keycloak.TokenValidation.ClockSkew = parseDuration(raw.Keycloak.TokenValidation.ClockSkew, 30*time.Second)
 	config.Keycloak.JWKSCacheTTL = parseDuration(raw.Keycloak.JWKSCacheTTL, time.Hour)
 	config.Keycloak.HTTPTimeout = parseDuration(raw.Keycloak.HTTPTimeout, 30*time.Second)
+
+	// Zitadel
+	config.Zitadel.Enabled = raw.Zitadel.Enabled
+	config.Zitadel.Domain = raw.Zitadel.Domain
+	config.Zitadel.ProjectID = raw.Zitadel.ProjectID
+	config.Zitadel.ClientID = raw.Zitadel.ClientID
+	config.Zitadel.ClientSecret = raw.Zitadel.ClientSecret
+	config.Zitadel.FallbackSecret = raw.Zitadel.FallbackSecret
+	config.Zitadel.TokenValidation.Audience = raw.Zitadel.TokenValidation.Audience
+	config.Zitadel.TokenValidation.ClockSkew = parseDuration(raw.Zitadel.TokenValidation.ClockSkew, 30*time.Second)
+	config.Zitadel.CacheTTL = parseDuration(raw.Zitadel.CacheTTL, 5*time.Minute)
+	config.Zitadel.HTTPTimeout = parseDuration(raw.Zitadel.HTTPTimeout, 30*time.Second)
+	config.Zitadel.TenantManagement = raw.Zitadel.TenantManagement
 
 	// Security
 	config.Security.TLSEnabled = raw.Security.TLSEnabled

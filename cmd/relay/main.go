@@ -140,6 +140,9 @@ type Server struct {
 	// MASQUE Integration
 	masqueIntegration *MASQUEIntegration
 
+	// Zitadel Integration
+	zitadelIntegration *ZitadelIntegration
+
 	ctx       context.Context
 	cancel    context.CancelFunc
 	startTime time.Time
@@ -518,6 +521,56 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		loggerInstance.Info("MASQUE disabled, skipping MASQUE integration initialization")
 	}
 
+	// Initialize Zitadel Integration
+	var zitadelIntegration *ZitadelIntegration
+	if cfg.Zitadel.Enabled {
+		// Конвертируем конфигурацию
+		zitadelConfig := &ZitadelConfig{
+			Enabled:        cfg.Zitadel.Enabled,
+			Domain:         cfg.Zitadel.Domain,
+			ProjectID:      cfg.Zitadel.ProjectID,
+			ClientID:       cfg.Zitadel.ClientID,
+			ClientSecret:   cfg.Zitadel.ClientSecret,
+			FallbackSecret: cfg.Zitadel.FallbackSecret,
+			TenantManagement: struct {
+				Enabled       bool `json:"enabled"`
+				AutoCreate    bool `json:"auto_create"`
+				DefaultQuotas struct {
+					MaxPeers       int    `json:"max_peers"`
+					MaxConnections int    `json:"max_connections"`
+					MaxTunnels     int    `json:"max_tunnels"`
+					BandwidthLimit string `json:"bandwidth_limit"`
+					StorageLimit   string `json:"storage_limit"`
+				} `json:"default_quotas"`
+			}{
+				Enabled:    cfg.Zitadel.TenantManagement.Enabled,
+				AutoCreate: cfg.Zitadel.TenantManagement.AutoCreate,
+				DefaultQuotas: struct {
+					MaxPeers       int    `json:"max_peers"`
+					MaxConnections int    `json:"max_connections"`
+					MaxTunnels     int    `json:"max_tunnels"`
+					BandwidthLimit string `json:"bandwidth_limit"`
+					StorageLimit   string `json:"storage_limit"`
+				}{
+					MaxPeers:       cfg.Zitadel.TenantManagement.DefaultQuotas.MaxPeers,
+					MaxConnections: cfg.Zitadel.TenantManagement.DefaultQuotas.MaxConnections,
+					MaxTunnels:     cfg.Zitadel.TenantManagement.DefaultQuotas.MaxTunnels,
+					BandwidthLimit: cfg.Zitadel.TenantManagement.DefaultQuotas.BandwidthLimit,
+					StorageLimit:   cfg.Zitadel.TenantManagement.DefaultQuotas.StorageLimit,
+				},
+			},
+		}
+
+		zitadelIntegration, err = NewZitadelIntegration(zitadelConfig, loggerInstance.GetZapLogger())
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to initialize Zitadel integration: %v", err)
+		}
+		loggerInstance.Info("Zitadel Integration initialized successfully")
+	} else {
+		loggerInstance.Info("Zitadel disabled, skipping Zitadel integration initialization")
+	}
+
 	return &Server{
 		config:               cfg,
 		logger:               loggerInstance,
@@ -550,6 +603,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		quicRelayHandler:     quicRelayHandler,
 		wgProfileManager:     wgProfileManager,
 		masqueIntegration:    masqueIntegration,
+		zitadelIntegration:   zitadelIntegration,
 		ctx:                  ctx,
 		cancel:               cancel,
 		startTime:            time.Now(),
@@ -1141,6 +1195,16 @@ func (s *Server) Start() error {
 		s.logger.Info("MASQUE Integration started")
 	}
 
+	// Запуск Zitadel Integration
+	if s.zitadelIntegration != nil {
+		go func() {
+			if err := s.zitadelIntegration.Start(s.ctx); err != nil {
+				s.logger.Error("Failed to start Zitadel Integration", zap.Error(err))
+			}
+		}()
+		s.logger.Info("Zitadel Integration started")
+	}
+
 	// Handle TCP connections
 	for {
 		conn, err := listener.Accept()
@@ -1712,6 +1776,13 @@ func (s *Server) Stop() {
 	if s.masqueIntegration != nil {
 		if err := s.masqueIntegration.Stop(); err != nil {
 			s.logger.Error("Error stopping MASQUE Integration", zap.Error(err))
+		}
+	}
+
+	// Stop Zitadel Integration
+	if s.zitadelIntegration != nil {
+		if err := s.zitadelIntegration.Stop(context.Background()); err != nil {
+			s.logger.Error("Error stopping Zitadel Integration", zap.Error(err))
 		}
 	}
 

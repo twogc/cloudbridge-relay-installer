@@ -1,0 +1,27 @@
+{
+  "zitadel": {
+    "enabled": true,
+    "domain": "${ZITADEL_DOMAIN}",
+    "project_id": "${ZITADEL_PROJECT_ID}",
+    "client_id": "${ZITADEL_CLIENT_ID}",
+    "client_secret": "${ZITADEL_CLIENT_SECRET}",
+    "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+    "token_validation": {
+      "audience": "cloudbridge-relay",
+      "clock_skew": "30s"
+    },
+    "cache_ttl": "5m",
+    "http_timeout": "30s",
+    "tenant_management": {
+      "enabled": true,
+      "auto_create": false,
+      "default_quotas": {
+        "max_peers": 10,
+        "max_connections": 100,
+        "max_tunnels": 20,
+        "bandwidth_limit": "1GB",
+        "storage_limit": "10GB"
+      }
+    }
+  }
+}
