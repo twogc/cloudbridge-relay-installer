@@ -1,0 +1,42 @@
+zitadel:
+  masterkeySecretName: zitadel-masterkey
+  configmapConfig:
+    ExternalDomain: edge.2gc.ru
+    ExternalSecure: true
+    ExternalPort: 443
+  secretConfig:
+    Database:
+      Postgres:
+        Host: pg-postgresql.zitadel.svc.cluster.local
+        Port: 5432
+        Database: zitadel
+        User:
+          Username: zitadel
+          Password: "bd94d943179bac151890531e0631cbc7"
+        Admin:
+          Username: postgres
+          Password: "bd94d943179bac151890531e0631cbc7"
+        SSL:
+          Mode: disable  # Временно отключаем для запуска, потом включим
+    TLS:
+      Enabled: false
+      Mode: external
+  init:
+    activeDeadlineSeconds: 3600
+    backoffLimit: 3
+  setup:
+    activeDeadlineSeconds: 3600
+    backoffLimit: 3
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+
+login:
+  enabled: false
+
+

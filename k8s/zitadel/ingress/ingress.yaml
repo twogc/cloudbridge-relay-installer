@@ -10,10 +10,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - zitadel.local
-    secretName: zitadel-tls
+    - edge.2gc.ru
+    secretName: edge-2gc-ru-tls
   rules:
-  - host: zitadel.local
+  - host: edge.2gc.ru
     http:
       paths:
       - path: /
