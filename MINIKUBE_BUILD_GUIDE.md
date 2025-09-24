@@ -1,187 +1,110 @@
-# 🐳 **CloudBridge Relay - Быстрая сборка в Minikube**
+# 🛡️ **CloudBridge Relay - Безопасная сборка в Minikube**
 
-## ⚠️ **ВАЖНО: Уникальные теги образов**
+## ⚠️ **ВАЖНО: Проблемы при обычной сборке**
 
-**ОБЯЗАТЕЛЬНО** используйте уникальный тег для каждого Docker образа! Kubernetes не будет использовать новый образ, если тег не изменился.
+При сборке Docker образов в Minikube **падают другие поды** (Zitadel → 503 ошибки) из-за перегрузки ресурсов.
 
+## ✅ **Решение: Безопасная сборка**
+
+### **1. Запуск Minikube с достаточными ресурсами:**
 ```bash
-# Всегда создавайте уникальный тег
-TAG="mvp-$(date +%Y%m%d-%H%M%S)"
-echo "Используем тег: $TAG"
-```
+# Остановить если запущен
+minikube stop
 
-## 🎯 **Цель**
-
-Быстро развернуть CloudBridge Relay в Minikube для разработки и тестирования QUIC-first + MASQUE архитектуры.
-
-## ⚡ **Быстрый старт**
-
-### **1. Установка Minikube (если не установлен):**
-```bash
-# Установить kubectl
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-# Установить Minikube
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-sudo install minikube-linux-amd64 /usr/local/bin/minikube
-```
-
-### **2. Запуск Minikube:**
-```bash
-# Запустить Minikube
-minikube start --driver=docker --memory=4096 --cpus=2
+# Запустить с увеличенными ресурсами
+minikube start --driver=docker --memory=8192 --cpus=4 --disk-size=50g
 
 # Проверить статус
 minikube status
 ```
 
-## 🏗️ **Сборка и развертывание**
-
-### **⚠️ ВАЖНО: Уникальный тег образа**
-
-**ОБЯЗАТЕЛЬНО** используйте уникальный тег для каждого образа, иначе Kubernetes не будет использовать новый образ!
-
+### **2. Проверка нагрузки перед сборкой:**
 ```bash
-# Создать уникальный тег (например, с датой и временем)
-TAG="mvp-$(date +%Y%m%d-%H%M%S)"
-echo "Используем тег: $TAG"
+# Проверить текущую нагрузку (должна быть < 2.0)
+uptime
+
+# Если нагрузка высокая - ждать снижения
+watch uptime
 ```
 
-### **1. Сборка Docker образа:**
+## 🏗️ **Безопасная сборка**
 
+### **Метод 1: Автоматический скрипт (рекомендуется)**
 ```bash
-# Перейти в директорию проекта
+# Использовать готовый безопасный скрипт
+/home/ubuntu/safe-build.sh
+
+# Что делает скрипт:
+# - Проверяет нагрузку системы
+# - Ждет снижения нагрузки если нужно
+# - Собирает с ограничением ресурсов (2GB RAM, 2 CPU)
+# - Создает уникальный тег автоматически
+# - Обновляет deployment
+```
+
+### **Метод 2: Ручная безопасная сборка**
+```bash
+# 1. Проверить нагрузку
+uptime  # Load average должен быть < 2.0
+
+# 2. Настроить Docker для Minikube
+eval $(minikube docker-env)
+
+# 3. Создать уникальный тег
+TAG="build-$(date +%Y%m%d-%H%M%S)"
+echo "Тег: $TAG"
+
+# 4. Собрать с ограничениями ресурсов
 cd /home/ubuntu/cloudbridge-relay-installer
+docker build --memory=2g --cpus=2 -t cloudbridge-relay:$TAG .
 
-# Собрать образ с уникальным тегом
-docker build -t cloudbridge-relay:$TAG .
-
-# Проверить собранный образ
-docker images | grep cloudbridge-relay
+# 5. Обновить deployment
+kubectl set image deployment/cloudbridge-relay cloudbridge-relay=cloudbridge-relay:$TAG -n cloudbridge
 ```
 
-### **2. Загрузка в Minikube:**
+## 🔍 **Мониторинг во время сборки**
 
 ```bash
-# Загрузить образ в Minikube
-minikube image load cloudbridge-relay:$TAG
+# Мониторить нагрузку в реальном времени
+watch -n 5 'uptime && kubectl get pods -n zitadel | grep -v Running || echo "Все поды работают"'
 
-# Проверить загруженные образы
-minikube image ls | grep cloudbridge-relay
-```
-
-### **3. Развертывание в Kubernetes:**
-
-```bash
-# Создать namespace
-kubectl create namespace cloudbridge
-
-# Обновить deployment с новым тегом
-sed "s|image: cloudbridge-relay:.*|image: cloudbridge-relay:$TAG|g" k8s/deployment.yaml | kubectl apply -f - -n cloudbridge
-
-# Применить service
-kubectl apply -f k8s/cloudbridge-relay-external-service.yaml -n cloudbridge
-
-# Проверить статус
-kubectl get pods -n cloudbridge
-kubectl get services -n cloudbridge
+# Проверить статус после сборки
+kubectl get pods --all-namespaces | grep -v Running
 ```
 
 ## 🚀 **Тестирование**
 
-### **1. Port forwarding для тестирования:**
-
 ```bash
-# Port forwarding для HTTP API
-kubectl port-forward service/cloudbridge-relay-external 8080:8080 -n cloudbridge &
-
-# Port forwarding для P2P API  
-kubectl port-forward service/cloudbridge-relay-external 8082:8082 -n cloudbridge &
-
-# Port forwarding для MASQUE
-kubectl port-forward service/cloudbridge-relay-external 8443:8443 -n cloudbridge &
-```
-
-### **2. Проверка работы:**
-
-```bash
-# Тестировать HTTP API
-curl http://localhost:8080/health
-
-# Тестировать P2P API
-curl http://localhost:8082/health
-
-# Тестировать MASQUE
-curl -k https://localhost:8443/.well-known/masque/udp/127.0.0.1:8080
-```
-
-### **3. Проверка логов:**
-
-```bash
-# Следить за логами в реальном времени
-kubectl logs -f deployment/cloudbridge-relay -n cloudbridge
-```
-
-## 🔄 **Обновление образа**
-
-```bash
-# Создать новый уникальный тег
-NEW_TAG="mvp-$(date +%Y%m%d-%H%M%S)"
-echo "Новый тег: $NEW_TAG"
-
-# Пересобрать образ
-docker build -t cloudbridge-relay:$NEW_TAG .
-
-# Загрузить в Minikube
-minikube image load cloudbridge-relay:$NEW_TAG
-
-# Обновить deployment
-kubectl set image deployment/cloudbridge-relay cloudbridge-relay=cloudbridge-relay:$NEW_TAG -n cloudbridge
-
-# Проверить обновление
-kubectl rollout status deployment/cloudbridge-relay -n cloudbridge
-```
-
-## 🐛 **Отладка**
-
-```bash
-# Проверить статус pods
+# Проверить что поды запущены
 kubectl get pods -n cloudbridge
 
-# Проверить события
-kubectl get events -n cloudbridge --sort-by='.lastTimestamp'
+# Port forwarding для тестов
+kubectl port-forward service/cloudbridge-relay-external 8080:8080 -n cloudbridge &
 
-# Проверить логи
-kubectl logs deployment/cloudbridge-relay -n cloudbridge --tail=50
+# Тест API
+curl http://localhost:8080/health
 ```
 
-## 🧹 **Очистка**
+## ⚠️ **Признаки проблем**
 
 ```bash
-# Удалить namespace
-kubectl delete namespace cloudbridge
+# Проверить нагрузку (должна быть < 5.0)
+uptime
 
-# Остановить Minikube
-minikube stop
+# Проверить падающие поды
+kubectl get pods --all-namespaces | grep -E "(Error|CrashLoop|ImagePull)"
 
-# Очистить образы
-docker rmi cloudbridge-relay:$TAG
-minikube image rm cloudbridge-relay:$TAG
+# Если Zitadel падает - перезапустить сборку позже
+kubectl get pods -n zitadel
 ```
 
-## 📋 **Быстрый чек-лист**
-
-### **✅ Основные проверки:**
-- [ ] Minikube запущен
-- [ ] Уникальный тег образа создан
-- [ ] Docker образ собран
-- [ ] Образ загружен в Minikube
-- [ ] Deployment применен
-- [ ] Pods работают
-- [ ] Port forwarding настроен
-- [ ] API endpoints отвечают
+## **Быстрый чек-лист безопасной сборки:**
+- [ ] Minikube запущен с 8GB+ RAM
+- [ ] Load average < 2.0 перед сборкой  
+- [ ] Используется `/home/ubuntu/safe-build.sh`
+- [ ] Мониторинг во время сборки
+- [ ] Все поды остались работать
 
 ---
 
-**🎯 Результат: CloudBridge Relay развернут в Minikube с QUIC-first + MASQUE архитектурой!**
+**🛡️ Результат: Безопасная сборка без падения других подов!**

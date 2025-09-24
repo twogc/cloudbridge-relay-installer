@@ -172,13 +172,13 @@ func (n *NotificationSystem) SendReport(report *analytics.Report) error {
 // sendSlackNotification отправляет уведомление в Slack
 func (n *NotificationSystem) sendSlackNotification(report *analytics.Report) error {
 	payload := map[string]interface{}{
-		"text": "🤖 CloudBridge AI Analytics Report",
+		"text": " CloudBridge AI Analytics Report",
 		"blocks": []map[string]interface{}{
 			{
 				"type": "header",
 				"text": map[string]interface{}{
 					"type": "plain_text",
-					"text": "🤖 CloudBridge AI Analytics Report",
+					"text": " CloudBridge AI Analytics Report",
 				},
 			},
 			{
@@ -214,7 +214,7 @@ func (n *NotificationSystem) sendSlackNotification(report *analytics.Report) err
 
 	// Добавление критических проблем
 	if len(report.Analysis.CriticalIssues) > 0 {
-		issuesText := "*🚨 Критические проблемы:*\n"
+		issuesText := "*Критические проблемы:*\n"
 		for _, issue := range report.Analysis.CriticalIssues {
 			issuesText += fmt.Sprintf("• %s\n", issue)
 		}
@@ -230,7 +230,7 @@ func (n *NotificationSystem) sendSlackNotification(report *analytics.Report) err
 
 	// Добавление рекомендаций
 	if len(report.Analysis.Recommendations) > 0 {
-		recommendationsText := "*💡 Рекомендации:*\n"
+		recommendationsText := "*Рекомендации:*\n"
 		for _, rec := range report.Analysis.Recommendations {
 			recommendationsText += fmt.Sprintf("• %s\n", rec)
 		}
@@ -370,60 +370,138 @@ func (n *NotificationSystem) sendTelegramNotification(report *analytics.Report) 
 	return nil
 }
 
-// formatTelegramMessage форматирует сообщение для Telegram
+// formatTelegramMessage форматирует сообщение для Telegram (профессиональный стиль)
 func (n *NotificationSystem) formatTelegramMessage(report *analytics.Report) string {
 	var message strings.Builder
 
 	// Заголовок
-	message.WriteString("<b>CloudBridge AI Analytics Report</b>\n")
-	message.WriteString(fmt.Sprintf("Timestamp: %s\n\n", report.Timestamp.Format("2006-01-02 15:04:05")))
+	message.WriteString("<b>CloudBridge AI Analytics</b>\n")
+	message.WriteString(fmt.Sprintf("Время: %s\n\n", report.Timestamp.Format("15:04, 02.01.2006")))
+
+	// Статус системы (используем аномалии если Health недоступен)
+	if report.Metrics.Health != nil {
+		var statusText string
+		switch {
+		case report.Metrics.Health.Score >= 80:
+			statusText = "НОРМА"
+		case report.Metrics.Health.Score >= 60:
+			statusText = "ВНИМАНИЕ"
+		default:
+			statusText = "КРИТИЧНО"
+		}
+		message.WriteString(fmt.Sprintf("<b>Статус системы:</b> %s (%.0f/100)\n\n",
+			statusText, report.Metrics.Health.Score))
+	} else {
+		// Определяем статус по аномалиям
+		criticalCount := 0
+		warningCount := 0
+		for _, anomaly := range report.Metrics.Anomalies {
+			if anomaly.Severity == "critical" {
+				criticalCount++
+			} else if anomaly.Severity == "warning" {
+				warningCount++
+			}
+		}
+		
+		var statusText string
+		if criticalCount > 0 {
+			statusText = "КРИТИЧНО"
+		} else if warningCount > 0 {
+			statusText = "ВНИМАНИЕ"
+		} else {
+			statusText = "НОРМА"
+		}
+		
+		totalAnomalies := len(report.Metrics.Anomalies)
+		message.WriteString(fmt.Sprintf("<b>Статус системы:</b> %s (аномалий: %d)\n\n",
+			statusText, totalAnomalies))
+	}
 
 	// Краткое резюме
 	if report.Analysis.Summary != "" {
-		message.WriteString("<b>Summary:</b>\n")
-		message.WriteString(report.Analysis.Summary + "\n\n")
+		lines := strings.Split(report.Analysis.Summary, "\n")
+		for _, line := range lines {
+			if strings.HasPrefix(strings.TrimSpace(line), "**Резюме:**") {
+				summary := strings.TrimPrefix(strings.TrimSpace(line), "**Резюме:**")
+				summary = strings.TrimSpace(summary)
+				if len(summary) > 150 {
+					summary = summary[:150] + "..."
+				}
+				if summary != "" {
+					message.WriteString(fmt.Sprintf("<b>Анализ:</b> %s\n\n", summary))
+				}
+				break
+			}
+		}
 	}
 
-	// Инсайты
-	if len(report.Analysis.Insights) > 0 {
-		message.WriteString("<b>Key Insights:</b>\n")
-		for _, insight := range report.Analysis.Insights {
-			message.WriteString(fmt.Sprintf("• %s\n", insight))
+	// Критические проблемы (максимум 3) - используем аномалии если анализ пустой
+	criticalIssues := report.Analysis.CriticalIssues
+	if len(criticalIssues) == 0 && len(report.Metrics.Anomalies) > 0 {
+		// Если нет критических проблем в анализе, используем аномалии
+		for _, anomaly := range report.Metrics.Anomalies {
+			if anomaly.Severity == "critical" || anomaly.Severity == "warning" {
+				criticalIssues = append(criticalIssues, anomaly.Description)
+			}
+		}
+	}
+	
+	if len(criticalIssues) > 0 {
+		message.WriteString("<b>Критические проблемы:</b>\n")
+		count := 0
+		for _, issue := range criticalIssues {
+			if count >= 3 {
+				message.WriteString(fmt.Sprintf("• ... и еще %d\n", len(criticalIssues)-3))
+				break
+			}
+			// Сокращаем длинные описания
+			shortIssue := issue
+			if len(shortIssue) > 80 {
+				shortIssue = shortIssue[:80] + "..."
+			}
+			message.WriteString(fmt.Sprintf("• %s\n", shortIssue))
+			count++
 		}
 		message.WriteString("\n")
 	}
 
-	// Критические проблемы
-	if len(report.Analysis.CriticalIssues) > 0 {
-		message.WriteString("<b>Critical Issues:</b>\n")
-		for _, issue := range report.Analysis.CriticalIssues {
-			message.WriteString(fmt.Sprintf("• %s\n", issue))
+	// Приоритетные рекомендации - добавляем базовые если нет анализа
+	recommendations := report.Analysis.Recommendations
+	if len(recommendations) == 0 && len(report.Metrics.Anomalies) > 0 {
+		// Генерируем базовые рекомендации на основе аномалий
+		for _, anomaly := range report.Metrics.Anomalies {
+			if strings.Contains(anomaly.Description, "prediction accuracy") {
+				recommendations = append(recommendations, "Улучшить качество обучающих данных")
+			} else if strings.Contains(anomaly.Description, "no active connections") {
+				recommendations = append(recommendations, "Проверить конфигурацию relay сервиса")
+			} else if strings.Contains(anomaly.Description, "anomalies detected") {
+				recommendations = append(recommendations, "Проанализировать источники аномалий")
+			}
+		}
+	}
+	
+	if len(recommendations) > 0 {
+		message.WriteString("<b>Рекомендации:</b>\n")
+		count := 0
+		for _, rec := range recommendations {
+			if count >= 2 {
+				break
+			}
+			// Убираем теги приоритета и сокращаем
+			cleanRec := strings.ReplaceAll(rec, "[P0]", "")
+			cleanRec = strings.ReplaceAll(cleanRec, "[P1]", "")
+			cleanRec = strings.TrimSpace(cleanRec)
+			if len(cleanRec) > 70 {
+				cleanRec = cleanRec[:70] + "..."
+			}
+			message.WriteString(fmt.Sprintf("• %s\n", cleanRec))
+			count++
 		}
 		message.WriteString("\n")
-	}
-
-	// Рекомендации
-	if len(report.Analysis.Recommendations) > 0 {
-		message.WriteString("<b>Recommendations:</b>\n")
-		for _, rec := range report.Analysis.Recommendations {
-			message.WriteString(fmt.Sprintf("• %s\n", rec))
-		}
-		message.WriteString("\n")
-	}
-
-	// Производительность
-	if report.Analysis.Performance != "" {
-		message.WriteString(fmt.Sprintf("<b>Performance:</b> %s\n", report.Analysis.Performance))
-	}
-
-	// Здоровье системы
-	if report.Metrics.Health != nil {
-		message.WriteString(fmt.Sprintf("<b>Health Status:</b> %s (%.1f/100)\n",
-			report.Metrics.Health.Overall, report.Metrics.Health.Score))
 	}
 
 	// Footer
-	message.WriteString(fmt.Sprintf("\nReport ID: %s | Generated by CloudBridge AI Analytics", report.ID))
+	message.WriteString(fmt.Sprintf("Отчет: <code>%s</code>", report.ID))
 
 	return message.String()
 }

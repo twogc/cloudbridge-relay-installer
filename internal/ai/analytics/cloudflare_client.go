@@ -102,7 +102,7 @@ func (c *CloudflareAIClient) buildPrompt(data *MetricsData) string {
 	// AI метрики
 	if aiMetrics, exists := data.Metrics["ai"]; exists {
 		if aiMap, ok := aiMetrics.(map[string]interface{}); ok {
-			prompt.WriteString("🤖 AI Service Metrics:\n")
+			prompt.WriteString(" AI Service Metrics:\n")
 			if anomalies, ok := aiMap["anomalies_detected"].(float64); ok {
 				prompt.WriteString(fmt.Sprintf("- Обнаружено аномалий: %.0f\n", anomalies))
 			}
@@ -158,40 +158,38 @@ func (c *CloudflareAIClient) buildPrompt(data *MetricsData) string {
 
 	// Аномалии
 	if len(data.Anomalies) > 0 {
-		prompt.WriteString("\n🚨 Обнаруженные аномалии:\n")
+		prompt.WriteString("\nОбнаруженные аномалии:\n")
 		for _, anomaly := range data.Anomalies {
 			prompt.WriteString(fmt.Sprintf("- %s (%s): %s\n",
 				anomaly.Type, anomaly.Severity, anomaly.Description))
 		}
 	} else {
-		prompt.WriteString("\n🚨 Обнаруженные аномалии: Аномалий не обнаружено\n")
+		prompt.WriteString("\nОбнаруженные аномалии: Аномалий не обнаружено\n")
 	}
 
 	// Статус здоровья
 	if data.Health != nil {
-		prompt.WriteString(fmt.Sprintf("\n📊 Статус здоровья: %s (оценка: %.1f/100)\n",
+		prompt.WriteString(fmt.Sprintf("\nСтатус здоровья: %s (оценка: %.1f/100)\n",
 			data.Health.Overall, data.Health.Score))
 	}
 
 	prompt.WriteString(`
-Пожалуйста, предоставь:
-1. Краткое резюме (2–3 предложения)
-2. Ключевые инсайты и паттерны
-3. Критические проблемы с вероятными причинами
-4. Практические рекомендации с приоритетами (P0..P2)
-5. Оценку производительности (узкие места, тренды)
+ВАЖНО: Отвечай КРАТКО на русском языке. Максимум 1-2 предложения на пункт.
 
 Формат ответа:
-**Резюме:** [краткое описание]
+**Резюме:** [1-2 предложения о текущем состоянии системы]
 **Инсайты:**
-- пункт 1
-- пункт 2
+- краткий инсайт 1 (до 50 символов)
+- краткий инсайт 2 (до 50 символов)
 **Критические проблемы:**
-- описание (влияние, возможная причина)
+- проблема и причина (до 80 символов)
+- проблема и причина (до 80 символов)
 **Рекомендации:**
-- [P0] действие — ожидаемый эффект
-- [P1] действие — ожидаемый эффект
-**Производительность:** [оценка]
+- [P0] действие (до 60 символов)
+- [P1] действие (до 60 символов)
+**Производительность:** [краткая оценка до 100 символов]
+
+Пиши максимально сжато, без лишних слов!
 `)
 
 	return prompt.String()
