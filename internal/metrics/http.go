@@ -28,8 +28,14 @@ func NewServer(port, path string) *Server {
 func (s *Server) Start() error {
 	mux := http.NewServeMux()
 
+	// Set default path if empty
+	path := s.path
+	if path == "" {
+		path = "/metrics"
+	}
+
 	// Prometheus metrics endpoint
-	mux.Handle(s.path, promhttp.Handler())
+	mux.Handle(path, promhttp.Handler())
 
 	// Health check endpoint
 	mux.HandleFunc("/health", s.handleHealth)
