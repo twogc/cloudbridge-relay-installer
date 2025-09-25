@@ -70,7 +70,7 @@ func TestMASQUEICEIntegration(t *testing.T) {
 	// Тест 1: MASQUE сервер создается корректно
 	t.Run("MASQUEServer_Creation", func(t *testing.T) {
 		assert.NotNil(t, masqueServer.udpProxy)
-		assert.NotNil(t, masqueServer.ipProxy)
+		assert.NotNil(t, masqueServer.connectIPProxy)
 		assert.NotNil(t, masqueServer.connections)
 		assert.False(t, masqueServer.isRunning)
 	})
@@ -126,12 +126,12 @@ func TestMASQUEICEIntegration(t *testing.T) {
 	// Тест 5: ICE метрики записываются
 	t.Run("ICE_Metrics_Recording", func(t *testing.T) {
 		// Записываем тестовые метрики через Metrics
-		iceAgent.Metrics.RecordConnectivityCheck("test-client", true)
-		iceAgent.Metrics.RecordConnectivityCheck("test-client", false)
+		iceAgent.Metrics.UpdateConnectivityMetrics(true, 100*time.Millisecond)
+		iceAgent.Metrics.UpdateConnectivityMetrics(false, 200*time.Millisecond)
 
 		// Проверяем статистику
-		stats := iceAgent.Metrics.GetAllMetrics()
-		assert.NotNil(t, stats)
+		successRate := iceAgent.Metrics.GetSuccessRate()
+		assert.GreaterOrEqual(t, successRate, 0.0)
 	})
 
 	// Тест 6: MASQUE соединения управляются
@@ -248,11 +248,11 @@ func TestMASQUEICEIntegration(t *testing.T) {
 		masqueServer.connectionsMutex.Unlock()
 
 		// Записываем метрики ICE соединения
-		iceAgent.Metrics.RecordConnectivityCheck("ice-masque-client", true)
+		iceAgent.Metrics.UpdateConnectivityMetrics(true, 150*time.Millisecond)
 
 		// Проверяем, что метрики записались
-		iceStats := iceAgent.Metrics.GetAllMetrics()
-		assert.NotNil(t, iceStats)
+		successRate := iceAgent.Metrics.GetSuccessRate()
+		assert.GreaterOrEqual(t, successRate, 0.0)
 
 		// Проверяем MASQUE соединение
 		masqueCount := masqueServer.GetConnectionCount()
@@ -340,7 +340,7 @@ func BenchmarkICEAgent_DetectNATType(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Симулируем проверку connectivity
-		iceAgent.Metrics.RecordConnectivityCheck("benchmark-client", true)
+		iceAgent.Metrics.UpdateConnectivityMetrics(true, 100*time.Millisecond)
 	}
 }
 

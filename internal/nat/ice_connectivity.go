@@ -60,7 +60,7 @@ type ConnectivityResult struct {
 	Error          string
 	CompletedAt    time.Time
 	PublicIP       string
-	NATBehavior    NATBehaviorType
+	NATBehavior    string
 }
 
 // CheckType тип проверки connectivity

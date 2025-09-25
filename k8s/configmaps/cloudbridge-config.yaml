@@ -271,6 +271,18 @@ data:
         "host_port": "cadence-service:7933",
         "domain": "cloudbridge",
         "task_list": "relay-task-list"
+      },
+      "grpc": {
+        "enabled": true,
+        "port": 8444,
+        "tls_enabled": true,
+        "cert_file": "/app/certs/tls.crt",
+        "key_file": "/app/certs/tls.key",
+        "mtls_enabled": false,
+        "keepalive_ping": "15s",
+        "keepalive_timeout": "10s",
+        "max_recv_msg_size": 4194304,
+        "max_send_msg_size": 4194304
       }
     }
 ---

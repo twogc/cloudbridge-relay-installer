@@ -33,4 +33,9 @@ spec:
     targetPort: 8082
     protocol: TCP
     nodePort: 30882
+  - name: grpc-tcp
+    port: 8444
+    targetPort: 8444
+    protocol: TCP
+    nodePort: 30844
 

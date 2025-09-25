@@ -330,6 +330,20 @@ type configRaw struct {
 			RequestsPerMinute int  `json:"requests_per_minute"`
 		} `json:"rate_limit"`
 	} `json:"https_api"`
+
+	// gRPC Configuration
+	GRPC struct {
+		Enabled          bool   `json:"enabled"`
+		Port             int    `json:"port"`
+		TLSEnabled       bool   `json:"tls_enabled"`
+		CertFile         string `json:"cert_file"`
+		KeyFile          string `json:"key_file"`
+		MTLSEnabled      bool   `json:"mtls_enabled"`
+		KeepalivePing    string `json:"keepalive_ping"`
+		KeepaliveTimeout string `json:"keepalive_timeout"`
+		MaxRecvMsgSize   int    `json:"max_recv_msg_size"`
+		MaxSendMsgSize   int    `json:"max_send_msg_size"`
+	} `json:"grpc"`
 }
 
 // Config represents the server configuration
@@ -776,6 +790,20 @@ type Config struct {
 		Enabled    bool   `json:"enabled"`
 		ListenAddr string `json:"listen_addr"`
 	} `json:"tcp_fallback"`
+
+	// gRPC Configuration
+	GRPC struct {
+		Enabled          bool          `json:"enabled"`
+		Port             int           `json:"port"`
+		TLSEnabled       bool          `json:"tls_enabled"`
+		CertFile         string        `json:"cert_file"`
+		KeyFile          string        `json:"key_file"`
+		MTLSEnabled      bool          `json:"mtls_enabled"`
+		KeepalivePing    time.Duration `json:"keepalive_ping"`
+		KeepaliveTimeout time.Duration `json:"keepalive_timeout"`
+		MaxRecvMsgSize   int           `json:"max_recv_msg_size"`
+		MaxSendMsgSize   int           `json:"max_send_msg_size"`
+	} `json:"grpc"`
 }
 
 // HealthCheckConfig represents a health check configuration
@@ -1113,6 +1141,29 @@ func Load(path string) (*Config, error) {
 	config.MASQUE.ProxyURL = raw.MASQUE.ProxyURL
 	config.MASQUE.ALPNProtocols = raw.MASQUE.ALPNProtocols
 	config.MASQUE.FallbackEnabled = raw.MASQUE.FallbackEnabled
+
+	// gRPC
+	config.GRPC.Enabled = raw.GRPC.Enabled
+	config.GRPC.Port = raw.GRPC.Port
+	config.GRPC.TLSEnabled = raw.GRPC.TLSEnabled
+	config.GRPC.CertFile = raw.GRPC.CertFile
+	config.GRPC.KeyFile = raw.GRPC.KeyFile
+	config.GRPC.MTLSEnabled = raw.GRPC.MTLSEnabled
+	config.GRPC.KeepalivePing = parseDuration(raw.GRPC.KeepalivePing, 15*time.Second)
+	config.GRPC.KeepaliveTimeout = parseDuration(raw.GRPC.KeepaliveTimeout, 10*time.Second)
+	config.GRPC.MaxRecvMsgSize = raw.GRPC.MaxRecvMsgSize
+	config.GRPC.MaxSendMsgSize = raw.GRPC.MaxSendMsgSize
+
+	// Set defaults for gRPC if not specified
+	if config.GRPC.Port == 0 {
+		config.GRPC.Port = 8444 // Default gRPC port as specified
+	}
+	if config.GRPC.MaxRecvMsgSize == 0 {
+		config.GRPC.MaxRecvMsgSize = 4 * 1024 * 1024 // 4MB default
+	}
+	if config.GRPC.MaxSendMsgSize == 0 {
+		config.GRPC.MaxSendMsgSize = 4 * 1024 * 1024 // 4MB default
+	}
 
 	return config, nil
 }

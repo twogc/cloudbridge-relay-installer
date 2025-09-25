@@ -1,0 +1,101 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cloudbridge-grpc-ingress
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: networking
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cloudbridge-relay
+      app.kubernetes.io/component: relay
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow gRPC traffic on port 8444 from anywhere within cluster
+  - from:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8444
+  # Allow existing ports for backward compatibility
+  - from:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 9090
+    - protocol: UDP
+      port: 9090
+    - protocol: TCP
+      port: 8082
+    - protocol: TCP
+      port: 8084
+  # Allow inter-pod communication for P2P mesh
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: cloudbridge-relay
+    ports:
+    - protocol: TCP
+      port: 8444
+    - protocol: TCP
+      port: 9090
+    - protocol: UDP
+      port: 9090
+  egress:
+  # Allow outgoing connections to Cadence
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: cadence
+    ports:
+    - protocol: TCP
+      port: 7933
+  # Allow outgoing connections to Prometheus
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: cloudbridge-monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+  # Allow DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow HTTPS to external services (Keycloak, etc)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cloudbridge-grpc-client-access
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: networking
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  # Allow clients to connect to gRPC port
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: cloudbridge-relay
+          app.kubernetes.io/component: relay
+    ports:
+    - protocol: TCP
+      port: 8444

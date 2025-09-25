@@ -1,0 +1,326 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-grpc-dashboard
+  namespace: cloudbridge-monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: dashboard
+    grafana_dashboard: "1"
+data:
+  relay-grpc-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "CloudBridge Relay gRPC",
+        "tags": ["cloudbridge", "grpc", "relay"],
+        "style": "dark",
+        "timezone": "browser",
+        "refresh": "30s",
+        "schemaVersion": 27,
+        "version": 1,
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "panels": [
+          {
+            "id": 1,
+            "title": "gRPC Request Rate",
+            "type": "stat",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "custom": {"displayMode": "list", "orientation": "horizontal"},
+                "mappings": [],
+                "thresholds": {"steps": [{"color": "green", "value": null}]},
+                "unit": "reqps"
+              }
+            },
+            "options": {
+              "reduceOptions": {
+                "values": false,
+                "calcs": ["lastNotNull"],
+                "fields": ""
+              },
+              "orientation": "auto",
+              "textMode": "auto",
+              "colorMode": "value",
+              "graphMode": "area",
+              "justifyMode": "auto"
+            },
+            "pluginVersion": "8.5.0",
+            "targets": [
+              {
+                "expr": "rate(grpc_server_started_total{job=\"cloudbridge-relay\"}[5m])",
+                "interval": "",
+                "legendFormat": "{{grpc_service}}.{{grpc_method}}",
+                "refId": "A"
+              }
+            ],
+            "transformations": []
+          },
+          {
+            "id": 2,
+            "title": "gRPC Success Rate",
+            "type": "stat",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "thresholds"},
+                "custom": {"displayMode": "list", "orientation": "horizontal"},
+                "decimals": 2,
+                "mappings": [],
+                "max": 100,
+                "min": 0,
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": null},
+                    {"color": "yellow", "value": 95},
+                    {"color": "green", "value": 99}
+                  ]
+                },
+                "unit": "percent"
+              }
+            },
+            "options": {
+              "reduceOptions": {
+                "values": false,
+                "calcs": ["lastNotNull"],
+                "fields": ""
+              },
+              "orientation": "auto",
+              "textMode": "auto",
+              "colorMode": "value",
+              "graphMode": "area",
+              "justifyMode": "auto"
+            },
+            "pluginVersion": "8.5.0",
+            "targets": [
+              {
+                "expr": "(\n  sum(rate(grpc_server_handled_total{job=\"cloudbridge-relay\",grpc_code=\"OK\"}[5m]))\n  /\n  sum(rate(grpc_server_handled_total{job=\"cloudbridge-relay\"}[5m]))\n) * 100",
+                "interval": "",
+                "legendFormat": "Success Rate",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "gRPC Request Duration (P95)",
+            "type": "timeseries",
+            "gridPos": {"h": 9, "w": 24, "x": 0, "y": 8},
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "custom": {
+                  "axisLabel": "",
+                  "axisPlacement": "auto",
+                  "barAlignment": 0,
+                  "drawStyle": "line",
+                  "fillOpacity": 10,
+                  "gradientMode": "none",
+                  "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "pointSize": 5,
+                  "scaleDistribution": {"type": "linear"},
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "stacking": {"group": "A", "mode": "none"},
+                  "thresholdsStyle": {"mode": "off"}
+                },
+                "decimals": 2,
+                "mappings": [],
+                "thresholds": {"steps": [{"color": "green", "value": null}]},
+                "unit": "ms"
+              }
+            },
+            "options": {
+              "legend": {"calcs": [], "displayMode": "list", "placement": "bottom"},
+              "tooltip": {"mode": "single", "sort": "none"}
+            },
+            "pluginVersion": "8.5.0",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(grpc_server_handling_seconds_bucket{job=\"cloudbridge-relay\"}[5m])) by (grpc_service, grpc_method, le)) * 1000",
+                "interval": "",
+                "legendFormat": "{{grpc_service}}.{{grpc_method}} P95",
+                "refId": "A"
+              },
+              {
+                "expr": "histogram_quantile(0.50, sum(rate(grpc_server_handling_seconds_bucket{job=\"cloudbridge-relay\"}[5m])) by (grpc_service, grpc_method, le)) * 1000",
+                "interval": "",
+                "legendFormat": "{{grpc_service}}.{{grpc_method}} P50",
+                "refId": "B"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "gRPC Error Rate by Code",
+            "type": "timeseries",
+            "gridPos": {"h": 9, "w": 12, "x": 0, "y": 17},
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "custom": {
+                  "axisLabel": "",
+                  "axisPlacement": "auto",
+                  "barAlignment": 0,
+                  "drawStyle": "line",
+                  "fillOpacity": 10,
+                  "gradientMode": "none",
+                  "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "pointSize": 5,
+                  "scaleDistribution": {"type": "linear"},
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "stacking": {"group": "A", "mode": "none"},
+                  "thresholdsStyle": {"mode": "off"}
+                },
+                "decimals": 2,
+                "mappings": [],
+                "thresholds": {"steps": [{"color": "green", "value": null}]},
+                "unit": "reqps"
+              }
+            },
+            "options": {
+              "legend": {"calcs": [], "displayMode": "list", "placement": "bottom"},
+              "tooltip": {"mode": "single", "sort": "none"}
+            },
+            "pluginVersion": "8.5.0",
+            "targets": [
+              {
+                "expr": "rate(grpc_server_handled_total{job=\"cloudbridge-relay\",grpc_code!=\"OK\"}[5m])",
+                "interval": "",
+                "legendFormat": "{{grpc_code}} - {{grpc_service}}.{{grpc_method}}",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "gRPC Active Connections",
+            "type": "timeseries",
+            "gridPos": {"h": 9, "w": 12, "x": 12, "y": 17},
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "custom": {
+                  "axisLabel": "",
+                  "axisPlacement": "auto",
+                  "barAlignment": 0,
+                  "drawStyle": "line",
+                  "fillOpacity": 10,
+                  "gradientMode": "none",
+                  "hideFrom": {"legend": false, "tooltip": false, "vis": false},
+                  "lineInterpolation": "linear",
+                  "lineWidth": 1,
+                  "pointSize": 5,
+                  "scaleDistribution": {"type": "linear"},
+                  "showPoints": "never",
+                  "spanNulls": false,
+                  "stacking": {"group": "A", "mode": "none"},
+                  "thresholdsStyle": {"mode": "off"}
+                },
+                "decimals": 0,
+                "mappings": [],
+                "thresholds": {"steps": [{"color": "green", "value": null}]},
+                "unit": "short"
+              }
+            },
+            "options": {
+              "legend": {"calcs": [], "displayMode": "list", "placement": "bottom"},
+              "tooltip": {"mode": "single", "sort": "none"}
+            },
+            "pluginVersion": "8.5.0",
+            "targets": [
+              {
+                "expr": "grpc_server_started_total{job=\"cloudbridge-relay\"} - grpc_server_handled_total{job=\"cloudbridge-relay\"}",
+                "interval": "",
+                "legendFormat": "{{grpc_service}}.{{grpc_method}}",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "title": "gRPC Service Breakdown",
+            "type": "piechart",
+            "gridPos": {"h": 9, "w": 12, "x": 0, "y": 26},
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "custom": {
+                  "hideFrom": {"legend": false, "tooltip": false, "vis": false}
+                },
+                "mappings": []
+              }
+            },
+            "options": {
+              "reduceOptions": {
+                "values": false,
+                "calcs": ["lastNotNull"],
+                "fields": ""
+              },
+              "pieType": "pie",
+              "tooltip": {"mode": "single", "sort": "none"},
+              "legend": {"displayMode": "list", "placement": "bottom"},
+              "displayLabels": ["name"]
+            },
+            "pluginVersion": "8.5.0",
+            "targets": [
+              {
+                "expr": "sum by (grpc_service) (rate(grpc_server_handled_total{job=\"cloudbridge-relay\"}[5m]))",
+                "interval": "",
+                "legendFormat": "{{grpc_service}}",
+                "refId": "A"
+              }
+            ]
+          },
+          {
+            "id": 7,
+            "title": "gRPC Method Latency Heatmap",
+            "type": "heatmap",
+            "gridPos": {"h": 9, "w": 12, "x": 12, "y": 26},
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "spectrum"
+                },
+                "custom": {
+                  "hideFrom": {"legend": false, "tooltip": false, "vis": false}
+                },
+                "mappings": []
+              }
+            },
+            "options": {
+              "calculate": false,
+              "cellGap": 2,
+              "cellValues": {},
+              "color": {"exponent": 0.5, "fill": "dark-orange", "mode": "spectrum", "reverse": false, "scale": "exponential", "scheme": "Oranges", "steps": 64},
+              "exemplars": {"color": "rgba(255,0,255,0.7)"},
+              "filterValues": {"le": 1e-9},
+              "legend": {"show": true},
+              "rowsFrame": {"layout": "auto"},
+              "tooltip": {"show": true, "yHistogram": false},
+              "yAxis": {"axisPlacement": "left", "reverse": false, "unit": "ms"}
+            },
+            "pluginVersion": "8.5.0",
+            "targets": [
+              {
+                "expr": "sum(rate(grpc_server_handling_seconds_bucket{job=\"cloudbridge-relay\"}[5m])) by (le)",
+                "format": "heatmap",
+                "interval": "",
+                "legendFormat": "{{le}}",
+                "refId": "A"
+              }
+            ]
+          }
+        ]
+      }
+    }

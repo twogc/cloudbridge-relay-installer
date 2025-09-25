@@ -69,6 +69,9 @@ spec:
         - name: metrics
           containerPort: 8084
           protocol: TCP
+        - name: grpc
+          containerPort: 8444
+          protocol: TCP
         env:
         - name: CONFIG_PATH
           value: "/app/configs/config.json"
@@ -125,6 +128,16 @@ spec:
             secretKeyRef:
               name: cloudbridge-secrets
               key: jwt-secret
+        - name: GRPC_ENABLED
+          value: "true"
+        - name: GRPC_PORT
+          value: "8444"
+        - name: GRPC_TLS_ENABLED
+          value: "true"
+        - name: GRPC_CERT_FILE
+          value: "/app/certs/tls.crt"
+        - name: GRPC_KEY_FILE
+          value: "/app/certs/tls.key"
         resources:
           requests:
             memory: "512Mi"
@@ -140,6 +153,9 @@ spec:
           mountPath: /app/logs
         - name: wireguard-config
           mountPath: /etc/wireguard
+          readOnly: true
+        - name: tls-certs
+          mountPath: /app/certs
           readOnly: true
         livenessProbe:
           httpGet:
@@ -179,6 +195,9 @@ spec:
       - name: wireguard-config
         secret:
           secretName: wireguard-keys
+      - name: tls-certs
+        secret:
+          secretName: cloudbridge-tls
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:

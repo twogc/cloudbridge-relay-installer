@@ -1,0 +1,126 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cloudbridge-grpc-alerts
+  namespace: cloudbridge-monitoring
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: monitoring
+    prometheus: kube-prometheus
+spec:
+  groups:
+  - name: cloudbridge.grpc.rules
+    rules:
+    
+    # gRPC Error Rate Alert
+    - alert: CloudBridgeGrpcHighErrorRate
+      expr: |
+        (
+          sum(rate(grpc_server_handled_total{job="cloudbridge-relay",grpc_code!="OK"}[5m]))
+          /
+          sum(rate(grpc_server_handled_total{job="cloudbridge-relay"}[5m]))
+        ) * 100 > 0.1
+      for: 5m
+      labels:
+        severity: critical
+        service: cloudbridge-relay
+        component: grpc
+      annotations:
+        summary: "CloudBridge gRPC high error rate detected"
+        description: "gRPC error rate is {{ $value }}% which is above 0.1% threshold for 5 minutes"
+        runbook_url: "https://docs.cloudbridge.local/runbooks/grpc-high-error-rate"
+        
+    # gRPC High Latency Alert  
+    - alert: CloudBridgeGrpcHighLatency
+      expr: |
+        histogram_quantile(0.95, 
+          sum(rate(grpc_server_handling_seconds_bucket{job="cloudbridge-relay"}[5m])) 
+          by (grpc_service, grpc_method, le)
+        ) * 1000 > 1000
+      for: 3m
+      labels:
+        severity: warning
+        service: cloudbridge-relay
+        component: grpc
+      annotations:
+        summary: "CloudBridge gRPC high latency detected"
+        description: "gRPC P95 latency is {{ $value }}ms for {{ $labels.grpc_service }}.{{ $labels.grpc_method }}"
+        runbook_url: "https://docs.cloudbridge.local/runbooks/grpc-high-latency"
+        
+    # gRPC Service Down Alert
+    - alert: CloudBridgeGrpcServiceDown
+      expr: |
+        up{job="cloudbridge-relay"} == 0
+        or
+        absent(grpc_server_started_total{job="cloudbridge-relay"})
+      for: 1m
+      labels:
+        severity: critical
+        service: cloudbridge-relay
+        component: grpc
+      annotations:
+        summary: "CloudBridge gRPC service is down"
+        description: "gRPC service has been down for more than 1 minute"
+        runbook_url: "https://docs.cloudbridge.local/runbooks/grpc-service-down"
+        
+    # gRPC Connection Saturation Alert
+    - alert: CloudBridgeGrpcConnectionSaturation
+      expr: |
+        sum(grpc_server_started_total{job="cloudbridge-relay"} - grpc_server_handled_total{job="cloudbridge-relay"}) > 1000
+      for: 5m
+      labels:
+        severity: warning
+        service: cloudbridge-relay
+        component: grpc
+      annotations:
+        summary: "CloudBridge gRPC connection saturation"
+        description: "Number of active gRPC connections ({{ $value }}) is high"
+        runbook_url: "https://docs.cloudbridge.local/runbooks/grpc-connection-saturation"
+        
+    # Canary Deployment Error Rate Alert
+    - alert: CloudBridgeCanaryHighErrorRate
+      expr: |
+        (
+          sum(rate(grpc_server_handled_total{job="cloudbridge-relay",deployment_type="canary",grpc_code!="OK"}[5m]))
+          /
+          sum(rate(grpc_server_handled_total{job="cloudbridge-relay",deployment_type="canary"}[5m]))
+        ) * 100 > 0.05
+      for: 2m
+      labels:
+        severity: critical
+        service: cloudbridge-relay
+        component: grpc
+        deployment_type: canary
+      annotations:
+        summary: "CloudBridge Canary deployment high error rate"
+        description: "Canary deployment error rate is {{ $value }}% which exceeds 0.05% threshold"
+        runbook_url: "https://docs.cloudbridge.local/runbooks/canary-high-error-rate"
+        
+    # gRPC Method Specific Alerts
+    - alert: CloudBridgeGrpcAuthFailures
+      expr: |
+        rate(grpc_server_handled_total{job="cloudbridge-relay",grpc_method="Authenticate",grpc_code!="OK"}[5m]) > 0.1
+      for: 2m
+      labels:
+        severity: warning
+        service: cloudbridge-relay
+        component: grpc
+        method: authenticate
+      annotations:
+        summary: "CloudBridge gRPC authentication failures"
+        description: "High rate of gRPC authentication failures: {{ $value }} failures/sec"
+        runbook_url: "https://docs.cloudbridge.local/runbooks/grpc-auth-failures"
+        
+    - alert: CloudBridgeGrpcTunnelFailures
+      expr: |
+        rate(grpc_server_handled_total{job="cloudbridge-relay",grpc_method="CreateTunnel",grpc_code!="OK"}[5m]) > 0.05
+      for: 2m
+      labels:
+        severity: warning
+        service: cloudbridge-relay
+        component: grpc
+        method: create_tunnel
+      annotations:
+        summary: "CloudBridge gRPC tunnel creation failures"
+        description: "High rate of gRPC tunnel creation failures: {{ $value }} failures/sec"
+        runbook_url: "https://docs.cloudbridge.local/runbooks/grpc-tunnel-failures"

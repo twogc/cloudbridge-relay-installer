@@ -61,6 +61,26 @@
 - Fallback механизмов (DERP, WebSocket)
 - Comprehensive monitoring и observability
 
+### 🆕 ДОБАВЛЕНО (Q3-2025)
+
+8. **gRPC Control Plane** ✅
+   - Реализован полноценный gRPC-API (Hello / Auth / Tunnel / Heartbeat)
+   - Порт :8444/TCP, TLS 1.3 + ALPN h2
+   - Unary и bi-di streaming, Prometheus `grpc_server_*` метрики
+
+9. **WireGuard Auto-Switch** ✅
+   - Клиент автоматически переключается QUIC ↔ WG при блокировке UDP
+   - Полный teardown интерфейса при возврате к QUIC
+   - Метрика `transport_mode` и счётчик `autoswitch_total`
+
+10. **Hot-Reload & Pushgateway** ✅
+    - Watcher fsnotify: моментальный reload log-level, TLS, endpoints
+    - Метрики клиента пушатся в Prom-Pushgateway с back-off
+
+11. **SDK gRPC Transport** ✅
+    - Клиент по умолчанию использует gRPC (флаг `--transport grpc`)
+    - JSON API помечен deprecated (ещё работает как fallback)
+
 ### 🚀 **MINIKUBE РАЗВЕРТЫВАНИЕ УСПЕШНО ЗАВЕРШЕНО**
 
 #### **✅ Результаты развертывания:**

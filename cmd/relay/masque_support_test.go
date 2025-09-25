@@ -33,7 +33,7 @@ func TestMASQUEServer_Creation(t *testing.T) {
 	server := NewMASQUEServer(testLogger, cfg)
 	assert.NotNil(t, server)
 	assert.NotNil(t, server.udpProxy)
-	assert.NotNil(t, server.ipProxy)
+	assert.NotNil(t, server.connectIPProxy)
 	assert.NotNil(t, server.connections)
 }
 

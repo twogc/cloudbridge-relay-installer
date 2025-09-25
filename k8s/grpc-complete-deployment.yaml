@@ -1,0 +1,177 @@
+# Complete gRPC Deployment for CloudBridge Relay
+# This file contains all necessary resources for gRPC deployment
+
+---
+# ServiceMonitor for Prometheus to scrape gRPC metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor  
+metadata:
+  name: cloudbridge-relay-grpc
+  namespace: cloudbridge-monitoring
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudbridge-relay
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - cloudbridge
+
+---
+# HorizontalPodAutoscaler for gRPC-enabled deployment
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cloudbridge-relay-hpa
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: autoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cloudbridge-relay
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  # Scale based on gRPC request rate
+  - type: Pods
+    pods:
+      metric:
+        name: grpc_server_started_total_rate
+      target:
+        type: AverageValue
+        averageValue: "100"  # 100 RPS per pod
+
+---
+# PodDisruptionBudget to ensure availability during updates
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cloudbridge-relay-pdb
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: availability
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudbridge-relay
+      app.kubernetes.io/component: relay
+
+---  
+# VirtualService for Istio (if using service mesh)
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: cloudbridge-relay-grpc-vs
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: routing
+spec:
+  hosts:
+  - grpc.cloudbridge.local
+  gateways:
+  - cloudbridge-grpc-gateway
+  http:
+  - match:
+    - headers:
+        content-type:
+          regex: "application/grpc.*"
+    route:
+    - destination:
+        host: cloudbridge-relay-nodeport
+        port:
+          number: 8444
+      weight: 90
+    - destination:
+        host: cloudbridge-relay-canary
+        port:
+          number: 8444
+      weight: 10
+    fault:
+      abort:
+        percentage:
+          value: 0.1
+        httpStatus: 503
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: 5xx,reset,connect-failure,refused-stream
+
+---
+# Gateway for Istio gRPC traffic
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway  
+metadata:
+  name: cloudbridge-grpc-gateway
+  namespace: cloudbridge
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 8444
+      name: grpc
+      protocol: GRPC
+    hosts:
+    - grpc.cloudbridge.local
+    tls:
+      mode: SIMPLE
+      credentialName: cloudbridge-tls
+
+---
+# DestinationRule for gRPC traffic management
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: cloudbridge-relay-grpc-dr
+  namespace: cloudbridge
+spec:
+  host: cloudbridge-relay-nodeport
+  trafficPolicy:
+    connectionPool:
+      http:
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 100
+        maxRetries: 3
+        consecutiveGatewayErrors: 5
+        h2UpgradePolicy: UPGRADE
+    loadBalancer:
+      simple: LEAST_CONN
+    outlierDetection:
+      consecutiveGatewayErrors: 5
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  subsets:
+  - name: canary
+    labels:
+      deployment-type: canary
+  - name: stable
+    labels:
+      deployment-type: stable

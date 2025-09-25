@@ -38,6 +38,7 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/quantum"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
+	grpcTransport "github.com/twogc/cloudbridge-relay-installer/internal/transport/grpc"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
 	"go.uber.org/zap"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -157,6 +158,9 @@ type Server struct {
 	// TURN Pool Manager
 	turnPoolManager *nat.TURNPoolManager
 
+	// gRPC Integration
+	grpcIntegration *grpcTransport.Integration
+
 	ctx       context.Context
 	cancel    context.CancelFunc
 	startTime time.Time
@@ -165,7 +169,7 @@ type Server struct {
 // NewServer creates a new relay server
 func NewServer(cfg *config.Config) (*Server, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel() // Ensure context is cancelled on any return path
+	// NOTE: Do not defer cancel() here - context should remain active until server is stopped
 
 	// Initialize logger
 	loggerConfig := logger.Config{
@@ -715,6 +719,51 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		loggerInstance.Info("TURN Pool disabled, skipping TURN Pool Manager initialization")
 	}
 
+	// Initialize gRPC Integration
+	var grpcIntegration *grpcTransport.Integration
+	if cfg.GRPC.Enabled {
+		grpcConfig := grpcTransport.Config{
+			Port:             cfg.GRPC.Port,
+			TLSEnabled:       cfg.GRPC.TLSEnabled,
+			CertFile:         cfg.GRPC.CertFile,
+			KeyFile:          cfg.GRPC.KeyFile,
+			MTLSEnabled:      cfg.GRPC.MTLSEnabled,
+			KeepalivePing:    cfg.GRPC.KeepalivePing,
+			KeepaliveTimeout: cfg.GRPC.KeepaliveTimeout,
+			MaxRecvMsgSize:   cfg.GRPC.MaxRecvMsgSize,
+			MaxSendMsgSize:   cfg.GRPC.MaxSendMsgSize,
+		}
+
+		// Use existing heartbeat manager if available, otherwise create a minimal one
+		var heartbeatMgr *p2p.HeartbeatManager
+		if p2pIntegration != nil {
+			heartbeatMgr = p2pIntegration.GetHeartbeatManager()
+		} else {
+			// Create a basic heartbeat manager for gRPC
+			heartbeatMgr = p2p.NewHeartbeatManager(nil, loggerInstance.GetZapLogger())
+		}
+
+		grpcIntegration, err = grpcTransport.NewIntegration(
+			grpcConfig,
+			loggerInstance,
+			authAdapter,
+			tunnelManager,
+			heartbeatMgr,
+		)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to initialize gRPC integration: %v", err)
+		}
+
+		loggerInstance.Info("gRPC Integration initialized",
+			zap.Int("port", cfg.GRPC.Port),
+			zap.Bool("tls_enabled", cfg.GRPC.TLSEnabled),
+			zap.Bool("mtls_enabled", cfg.GRPC.MTLSEnabled),
+		)
+	} else {
+		loggerInstance.Info("gRPC disabled, skipping gRPC integration initialization")
+	}
+
 	return &Server{
 		config:               cfg,
 		logger:               loggerInstance,
@@ -753,6 +802,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		masqueIntegration:    masqueIntegration,
 		zitadelIntegration:   zitadelIntegration,
 		turnPoolManager:      turnPoolManager,
+		grpcIntegration:      grpcIntegration,
 		ctx:                  ctx,
 		cancel:               cancel,
 		startTime:            time.Now(),
@@ -1379,6 +1429,18 @@ func (s *Server) Start() error {
 		s.logger.Info("Zitadel Integration started")
 	}
 
+	// Запуск gRPC Integration
+	if s.grpcIntegration != nil {
+		go func() {
+			if err := s.grpcIntegration.Start(s.ctx); err != nil {
+				s.logger.Error("Failed to start gRPC Integration", zap.Error(err))
+			}
+		}()
+		s.logger.Info("gRPC Integration started",
+			zap.String("address", s.grpcIntegration.GetAddr()),
+		)
+	}
+
 	// Handle TCP connections
 	for {
 		conn, err := listener.Accept()
@@ -1963,6 +2025,13 @@ func (s *Server) Stop() {
 	if s.zitadelIntegration != nil {
 		if err := s.zitadelIntegration.Stop(context.Background()); err != nil {
 			s.logger.Error("Error stopping Zitadel Integration", zap.Error(err))
+		}
+	}
+
+	// Stop gRPC Integration
+	if s.grpcIntegration != nil {
+		if err := s.grpcIntegration.Stop(); err != nil {
+			s.logger.Error("Error stopping gRPC Integration", zap.Error(err))
 		}
 	}
 

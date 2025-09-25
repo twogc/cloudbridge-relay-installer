@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -11,7 +12,7 @@ import (
 
 // ZitadelIntegration интеграция с Zitadel
 type ZitadelIntegration struct {
-	validator     *zitadel.ZitadelValidator
+	client        *zitadel.Client
 	tenantManager *zitadel.TenantManager
 	logger        *zap.Logger
 	enabled       bool
@@ -19,13 +20,13 @@ type ZitadelIntegration struct {
 
 // ZitadelConfig конфигурация Zitadel
 type ZitadelConfig struct {
-	Enabled      bool   `json:"enabled"`
-	Domain       string `json:"domain"`
-	ProjectID    string `json:"project_id"`
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-
-	FallbackSecret string `json:"fallback_secret"`
+	Enabled        bool               `json:"enabled"`
+	Domain         string             `json:"domain"`
+	ProjectID      string             `json:"project_id"`
+	ClientID       string             `json:"client_id"`
+	ClientSecret   string             `json:"client_secret"`
+	FallbackSecret string             `json:"fallback_secret"`
+	K8sConfig      *zitadel.K8sConfig `json:"k8s_config,omitempty"`
 
 	TokenValidation struct {
 		Audience  string `json:"audience"`
@@ -57,33 +58,63 @@ func NewZitadelIntegration(config *ZitadelConfig, logger *zap.Logger) (*ZitadelI
 		}, nil
 	}
 
-	// Создание конфигурации валидатора
-	validatorConfig := &zitadel.Config{
-		Domain:         config.Domain,
-		ProjectID:      config.ProjectID,
-		ClientID:       config.ClientID,
-		ClientSecret:   config.ClientSecret,
-		FallbackSecret: config.FallbackSecret,
+	ctx := context.Background()
+
+	// Check if running in k8s environment
+	var client *zitadel.Client
+	var err error
+
+	if config.K8sConfig != nil {
+		// Use k8s-specific client
+		logger.Info("Creating Zitadel client for k8s environment")
+		client, err = zitadel.NewK8sClient(ctx, config.K8sConfig, logger)
+	} else {
+		// Use standard client
+		logger.Info("Creating standard Zitadel client")
+		baseConfig := &zitadel.Config{
+			Domain:         config.Domain,
+			ProjectID:      config.ProjectID,
+			ClientID:       config.ClientID,
+			ClientSecret:   config.ClientSecret,
+			FallbackSecret: config.FallbackSecret,
+			Scopes:         []string{"openid", "profile", "email"},
+			HTTPTimeout:    30 * time.Second,
+		}
+		client, err = zitadel.NewClient(ctx, baseConfig, logger)
 	}
 
-	// Создание валидатора
-	validator, err := zitadel.NewZitadelValidator(validatorConfig, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Zitadel validator: %w", err)
+		return nil, fmt.Errorf("failed to create Zitadel client: %w", err)
 	}
 
-	// Создание менеджера тенантов
-	tenantManager := zitadel.NewTenantManager(validator, logger)
+	// Get tenant manager from client
+	tenantManager := client.GetTenantManager()
+
+	// Configure tenant management
+	if config.TenantManagement.Enabled {
+		tenantManager.SetAutoCreate(config.TenantManagement.AutoCreate)
+		// Проверяем, есть ли настройки квот (проверка на ненулевые значения)
+		if config.TenantManagement.DefaultQuotas.MaxPeers > 0 {
+			quotas := &zitadel.TenantQuotas{
+				MaxPeers:       config.TenantManagement.DefaultQuotas.MaxPeers,
+				MaxConnections: config.TenantManagement.DefaultQuotas.MaxConnections,
+				MaxTunnels:     config.TenantManagement.DefaultQuotas.MaxTunnels,
+				BandwidthLimit: config.TenantManagement.DefaultQuotas.BandwidthLimit,
+				StorageLimit:   config.TenantManagement.DefaultQuotas.StorageLimit,
+			}
+			tenantManager.SetDefaultQuotas(quotas)
+		}
+	}
 
 	logger.Info("Zitadel integration initialized successfully",
 		zap.String("domain", config.Domain),
 		zap.String("project_id", config.ProjectID),
 		zap.String("client_id", config.ClientID),
 		zap.Bool("tenant_management", config.TenantManagement.Enabled),
-	)
+		zap.Bool("k8s_mode", config.K8sConfig != nil))
 
 	return &ZitadelIntegration{
-		validator:     validator,
+		client:        client,
 		tenantManager: tenantManager,
 		logger:        logger,
 		enabled:       true,
@@ -117,9 +148,9 @@ func (zi *ZitadelIntegration) Stop(ctx context.Context) error {
 	zi.logger.Info("Stopping Zitadel integration")
 
 	// Закрытие соединений
-	if zi.validator != nil {
-		if err := zi.validator.Close(); err != nil {
-			zi.logger.Warn("Failed to close Zitadel validator", zap.Error(err))
+	if zi.client != nil {
+		if err := zi.client.Close(); err != nil {
+			zi.logger.Warn("Failed to close Zitadel client", zap.Error(err))
 		}
 	}
 
@@ -127,9 +158,9 @@ func (zi *ZitadelIntegration) Stop(ctx context.Context) error {
 	return nil
 }
 
-// GetValidator возвращает валидатор Zitadel
-func (zi *ZitadelIntegration) GetValidator() *zitadel.ZitadelValidator {
-	return zi.validator
+// GetClient возвращает Zitadel клиент
+func (zi *ZitadelIntegration) GetClient() *zitadel.Client {
+	return zi.client
 }
 
 // GetTenantManager возвращает менеджер тенантов
@@ -144,18 +175,17 @@ func (zi *ZitadelIntegration) IsEnabled() bool {
 
 // healthCheck проверяет доступность Zitadel
 func (zi *ZitadelIntegration) healthCheck(ctx context.Context) error {
-	if zi.validator == nil {
-		return fmt.Errorf("validator not initialized")
+	if zi.client == nil {
+		return fmt.Errorf("client not initialized")
 	}
 
-	// Попытка получить информацию о текущей организации
-	_, err := zi.validator.GetTenantInfo(ctx, "")
-	if err != nil {
-		// Это нормально, если организация не найдена
-		// Главное, что соединение работает
-		zi.logger.Debug("Zitadel health check completed", zap.Error(err))
+	// Используем health check метод клиента
+	if err := zi.client.HealthCheck(ctx); err != nil {
+		zi.logger.Debug("Zitadel health check failed", zap.Error(err))
+		return err
 	}
 
+	zi.logger.Debug("Zitadel health check passed")
 	return nil
 }
 
@@ -165,15 +195,21 @@ func (zi *ZitadelIntegration) CreateDefaultTenant(ctx context.Context) (string, 
 		return "", fmt.Errorf("Zitadel integration not enabled or tenant manager not available")
 	}
 
-	defaultConfig := map[string]interface{}{
-		"max_peers":       10,
-		"max_connections": 100,
-		"max_tunnels":     20,
-		"bandwidth_limit": "1GB",
-		"storage_limit":   "10GB",
+	tenantReq := &zitadel.TenantCreateRequest{
+		Name:        "CloudBridge Default",
+		DisplayName: "CloudBridge Default Tenant", 
+		Domain:      "cloudbridge.local",
+		AdminEmail:  "admin@cloudbridge.local",
+		Quotas: &zitadel.TenantQuotas{
+			MaxPeers:       10,
+			MaxConnections: 100,
+			MaxTunnels:     20,
+			BandwidthLimit: "1GB",
+			StorageLimit:   "10GB",
+		},
 	}
-
-	tenant, err := zi.tenantManager.CreateTenant(ctx, "CloudBridge Default", "cloudbridge.local", defaultConfig)
+	
+	tenant, err := zi.tenantManager.CreateTenant(ctx, tenantReq)
 	if err != nil {
 		return "", fmt.Errorf("failed to create default tenant: %w", err)
 	}
@@ -207,13 +243,13 @@ func (mh *MigrationHelper) MigrateKeycloakToken(ctx context.Context, keycloakTok
 }
 
 // ValidateTokenWithFallback валидирует токен сначала через Zitadel, затем через Keycloak fallback
-func (mh *MigrationHelper) ValidateTokenWithFallback(ctx context.Context, token string) (*zitadel.BaseTokenClaims, error) {
+func (mh *MigrationHelper) ValidateTokenWithFallback(ctx context.Context, token string) (*zitadel.TokenClaims, error) {
 	if !mh.zitadelIntegration.enabled {
 		return nil, fmt.Errorf("Zitadel integration not enabled")
 	}
 
 	// Попытка валидации через Zitadel
-	claims, err := mh.zitadelIntegration.validator.ValidateToken(token)
+	claims, err := mh.zitadelIntegration.client.ValidateToken(ctx, token)
 	if err == nil {
 		mh.logger.Debug("Token validated successfully via Zitadel")
 		return claims, nil

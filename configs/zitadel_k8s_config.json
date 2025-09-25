@@ -1,0 +1,47 @@
+{
+  "zitadel": {
+    "enabled": true,
+    "k8s_config": {
+      "zitadel_service_name": "zitadel",
+      "zitadel_namespace": "zitadel-system",
+      "zitadel_port": 8080,
+      "use_internal_dns": true,
+      "internal_domain": "zitadel.local",
+      "insecure_skip_verify": true,
+      "use_tls": false,
+      "enable_service_discovery": true,
+      "health_check_path": "/debug/healthz",
+      "health_check_interval": "30s"
+    },
+    "domain": "zitadel.zitadel-system.svc.cluster.local:8080",
+    "project_id": "cloudbridge-relay-project",
+    "client_id": "cloudbridge-relay-client",
+    "client_secret": "${ZITADEL_CLIENT_SECRET:-fallback-secret}",
+    "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+    "scopes": [
+      "openid",
+      "profile",
+      "email",
+      "urn:zitadel:iam:org:project:id:zitadel:aud"
+    ],
+    "redirect_url": "http://localhost:8080/auth/callback",
+    "token_validation": {
+      "audience": "cloudbridge-relay",
+      "clock_skew": "30s"
+    },
+    "cache_ttl": "5m",
+    "http_timeout": "15s",
+    "insecure": true,
+    "tenant_management": {
+      "enabled": true,
+      "auto_create": true,
+      "default_quotas": {
+        "max_peers": 50,
+        "max_connections": 500,
+        "max_tunnels": 100,
+        "bandwidth_limit": "10GB",
+        "storage_limit": "100GB"
+      }
+    }
+  }
+}

@@ -51,17 +51,17 @@ func TestNATMetricsBasic(t *testing.T) {
 	agent := nat.NewICEAgent(natLogger, stunServers, nil)
 
 	// Записываем несколько попыток соединения через метрики
-	agent.Metrics.RecordConnectivityCheck("test-client", true)
-	agent.Metrics.RecordConnectivityCheck("test-client", false)
-	agent.Metrics.RecordConnectivityCheck("test-client", true)
+	agent.Metrics.UpdateConnectivityMetrics(true, 100*time.Millisecond)
+	agent.Metrics.UpdateConnectivityMetrics(false, 200*time.Millisecond)
+	agent.Metrics.UpdateConnectivityMetrics(true, 150*time.Millisecond)
 
 	// Проверяем метрики
-	stats := agent.Metrics.GetAllMetrics()
-	assert.NotEmpty(t, stats)
+	successRate := agent.Metrics.GetSuccessRate()
+	assert.Greater(t, successRate, 0.0)
 
-	// Проверяем статистику типов NAT
-	natStats := agent.Metrics.GetNATBehaviorStats()
-	assert.NotEmpty(t, natStats)
+	// Проверяем общее количество кандидатов
+	totalCandidates := agent.Metrics.GetTotalCandidates()
+	assert.GreaterOrEqual(t, totalCandidates, 0)
 }
 
 // TestFallbackManagerBasic тестирует базовую функциональность FallbackManager

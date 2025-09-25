@@ -1,0 +1,165 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grpc-ca-secret
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: security
+type: Opaque
+data:
+  # CA Certificate (PEM encoded, base64 wrapped)
+  # Generated with: openssl req -new -x509 -key ca-key.pem -out ca.pem -days 365
+  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURRVENDQWltZ0F3SUJBZ0lKQU1aK2p5WmQ2TzBETUEwR0NTcUdTSWIzRFFFQkN3VUFNREVMTUE4R0ExVUUKQ0F3SUV4QVFVTU1Gb2dJQU5Vb1YwQVFYUE1NV1YweGFuZnJJeHh4eGVjTm1jTm1jTm1jTm1jTmgKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  # CA Private Key (PEM encoded, base64 wrapped) 
+  # Generated with: openssl genrsa -out ca-key.pem 2048
+  ca.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRRExScDI2b3NiR2pmbjEKLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQo=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grpc-client-certs
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: security
+    app.kubernetes.io/instance: client
+type: Opaque
+data:
+  # Client Certificate (PEM encoded, base64 wrapped)
+  # Generated with: openssl req -new -key client-key.pem -out client.csr
+  #                 openssl x509 -req -in client.csr -CA ca.pem -CAkey ca-key.pem -out client.pem -days 365 -CAcreateserial
+  client.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURRVENDQWltZ0F3SUJBZ0lKQU1aK2p5WmQ2TzBETUEwR0NTcUdTSWIzRFFFQkN3VUFNREVMTUE4R0ExVUUKQ0F3SUV4QVFVTU1GdmgKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  # Client Private Key (PEM encoded, base64 wrapped)
+  # Generated with: openssl genrsa -out client-key.pem 2048
+  client.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRRExScDI2b3NiR2pmbjEKLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLQo=
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: generate-grpc-certs
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: cert-generator
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: cert-generator
+        image: alpine/openssl:latest
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          set -e
+          echo "Generating gRPC mTLS certificates..."
+          
+          # Generate CA private key
+          openssl genrsa -out /tmp/ca-key.pem 2048
+          
+          # Generate CA certificate
+          openssl req -new -x509 -key /tmp/ca-key.pem -out /tmp/ca.pem -days 365 \
+            -subj "/C=US/ST=CA/L=San Francisco/O=CloudBridge/OU=Relay/CN=CloudBridge-gRPC-CA"
+          
+          # Generate server private key
+          openssl genrsa -out /tmp/server-key.pem 2048
+          
+          # Generate server certificate signing request
+          openssl req -new -key /tmp/server-key.pem -out /tmp/server.csr \
+            -subj "/C=US/ST=CA/L=San Francisco/O=CloudBridge/OU=Relay/CN=cloudbridge-relay"
+          
+          # Create server certificate extensions
+          cat > /tmp/server.ext << EOF
+          authorityKeyIdentifier=keyid,issuer
+          basicConstraints=CA:FALSE
+          keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+          subjectAltName = @alt_names
+          
+          [alt_names]
+          DNS.1 = cloudbridge-relay
+          DNS.2 = cloudbridge-relay.cloudbridge
+          DNS.3 = cloudbridge-relay.cloudbridge.svc
+          DNS.4 = cloudbridge-relay.cloudbridge.svc.cluster.local
+          DNS.5 = localhost
+          IP.1 = 127.0.0.1
+          IP.2 = ::1
+          EOF
+          
+          # Generate server certificate
+          openssl x509 -req -in /tmp/server.csr -CA /tmp/ca.pem -CAkey /tmp/ca-key.pem \
+            -out /tmp/server.pem -days 365 -CAcreateserial -extensions v3_req -extfile /tmp/server.ext
+          
+          # Generate client private key
+          openssl genrsa -out /tmp/client-key.pem 2048
+          
+          # Generate client certificate signing request
+          openssl req -new -key /tmp/client-key.pem -out /tmp/client.csr \
+            -subj "/C=US/ST=CA/L=San Francisco/O=CloudBridge/OU=Client/CN=cloudbridge-client"
+          
+          # Generate client certificate
+          openssl x509 -req -in /tmp/client.csr -CA /tmp/ca.pem -CAkey /tmp/ca-key.pem \
+            -out /tmp/client.pem -days 365 -CAcreateserial
+          
+          echo "Certificates generated successfully!"
+          
+          # Create Kubernetes secrets
+          kubectl create secret generic cloudbridge-tls -n cloudbridge \
+            --from-file=tls.crt=/tmp/server.pem \
+            --from-file=tls.key=/tmp/server-key.pem \
+            --from-file=ca.crt=/tmp/ca.pem \
+            --dry-run=client -o yaml | kubectl apply -f -
+            
+          kubectl create secret generic grpc-ca-secret -n cloudbridge \
+            --from-file=ca.crt=/tmp/ca.pem \
+            --from-file=ca.key=/tmp/ca-key.pem \
+            --dry-run=client -o yaml | kubectl apply -f -
+            
+          kubectl create secret generic grpc-client-certs -n cloudbridge \
+            --from-file=client.crt=/tmp/client.pem \
+            --from-file=client.key=/tmp/client-key.pem \
+            --from-file=ca.crt=/tmp/ca.pem \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          echo "Kubernetes secrets created successfully!"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      serviceAccountName: cert-generator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cert-generator
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: cert-generator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cert-generator
+  namespace: cloudbridge
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "update", "patch", "get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cert-generator
+  namespace: cloudbridge
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cert-generator
+subjects:
+- kind: ServiceAccount
+  name: cert-generator
+  namespace: cloudbridge

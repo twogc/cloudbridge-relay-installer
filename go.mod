@@ -24,6 +24,8 @@ require (
 
 require (
 	github.com/gorilla/websocket v1.5.3
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
+	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/pion/stun v0.6.1
@@ -31,7 +33,10 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/zitadel/oidc/v3 v3.44.0
 	github.com/zitadel/zitadel-go/v3 v3.13.0
+	golang.org/x/oauth2 v0.31.0
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20241231184526-a9ab2273dd10
+	google.golang.org/grpc v1.75.1
+	google.golang.org/protobuf v1.36.9
 )
 
 require (
@@ -59,6 +64,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/golang/mock v1.7.0-rc.1 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
@@ -124,7 +130,6 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20250911091902-df9299821621 // indirect
 	golang.org/x/lint v0.0.0-20241112194109-818c5a804067 // indirect
 	golang.org/x/mod v0.28.0 // indirect
-	golang.org/x/oauth2 v0.31.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
@@ -134,8 +139,6 @@ require (
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250908214217-97024824d090 // indirect
-	google.golang.org/grpc v1.75.1 // indirect
-	google.golang.org/protobuf v1.36.9 // indirect
 	honnef.co/go/tools v0.6.1 // indirect
 )
 

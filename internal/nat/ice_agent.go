@@ -34,6 +34,10 @@ type ICEAgent struct {
 	state ICEState
 	mu    sync.RWMutex
 
+	// Компоненты
+	stunClient          *STUNClient
+	connectivityChecker *ConnectivityChecker
+
 	// Метрики
 	Metrics *NATMetrics
 
@@ -103,15 +107,24 @@ const (
 func NewICEAgent(logger *logger.Logger, stunServers []string, turnPool *TURNPool) *ICEAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Create metrics
+	metrics := NewNATMetrics()
+
+	// Create components
+	stunClient := NewSTUNClient(logger, stunServers)
+	connectivityChecker := NewConnectivityChecker(logger, metrics)
+
 	ia := &ICEAgent{
-		logger:          logger,
-		stunServers:     stunServers,
-		turnPool:        turnPool,
-		turnAllocations: make(map[string]*TURNAllocation),
-		state:           ICEStateNew,
-		Metrics:         NewNATMetrics(logger),
-		ctx:             ctx,
-		cancel:          cancel,
+		logger:              logger,
+		stunServers:         stunServers,
+		turnPool:            turnPool,
+		turnAllocations:     make(map[string]*TURNAllocation),
+		state:               ICEStateNew,
+		stunClient:          stunClient,
+		connectivityChecker: connectivityChecker,
+		Metrics:             metrics,
+		ctx:                 ctx,
+		cancel:              cancel,
 	}
 
 	return ia
@@ -121,15 +134,24 @@ func NewICEAgent(logger *logger.Logger, stunServers []string, turnPool *TURNPool
 func NewICEAgentWithTURNPoolManager(logger *logger.Logger, stunServers []string, turnPoolManager *TURNPoolManager) *ICEAgent {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Create metrics
+	metrics := NewNATMetrics()
+
+	// Create components
+	stunClient := NewSTUNClient(logger, stunServers)
+	connectivityChecker := NewConnectivityChecker(logger, metrics)
+
 	ia := &ICEAgent{
-		logger:          logger,
-		stunServers:     stunServers,
-		turnPoolManager: turnPoolManager,
-		turnAllocations: make(map[string]*TURNAllocation),
-		state:           ICEStateNew,
-		Metrics:         NewNATMetrics(logger),
-		ctx:             ctx,
-		cancel:          cancel,
+		logger:              logger,
+		stunServers:         stunServers,
+		turnPoolManager:     turnPoolManager,
+		turnAllocations:     make(map[string]*TURNAllocation),
+		state:               ICEStateNew,
+		stunClient:          stunClient,
+		connectivityChecker: connectivityChecker,
+		Metrics:             metrics,
+		ctx:                 ctx,
+		cancel:              cancel,
 	}
 
 	return ia
@@ -225,20 +247,48 @@ func (ia *ICEAgent) gatherCandidates() {
 			ia.state = ICEStateGathered
 		}
 		ia.mu.Unlock()
+		ia.Metrics.FinishGathering()
 	}()
 
-	// 1. Собираем host candidates
-	ia.gatherHostCandidates()
+	// 1. Собираем host candidates через STUNClient
+	hostCandidates, err := ia.stunClient.GatherHostCandidates()
+	if err != nil {
+		ia.logger.Error("Failed to gather host candidates", zap.Error(err))
+	} else {
+		ia.mu.Lock()
+		ia.localCandidates = append(ia.localCandidates, hostCandidates...)
+		ia.mu.Unlock()
+	}
 
 	// 2. Собираем server reflexive candidates через STUN
-	ia.gatherServerReflexiveCandidates()
+	srflxCandidates, err := ia.stunClient.GatherServerReflexiveCandidates(ia.ctx)
+	if err != nil {
+		ia.logger.Error("Failed to gather server-reflexive candidates", zap.Error(err))
+	} else {
+		ia.mu.Lock()
+		ia.localCandidates = append(ia.localCandidates, srflxCandidates...)
+		ia.mu.Unlock()
+	}
 
 	// 3. Собираем relay candidates через TURN
 	ia.gatherRelayCandidates()
 
+	// 4. Определяем тип NAT
+	natType, err := ia.stunClient.DiscoverNATType(ia.ctx)
+	if err != nil {
+		ia.logger.Warn("Failed to discover NAT type", zap.Error(err))
+	} else {
+		ia.Metrics.NATType = natType.String()
+		ia.logger.Info("NAT type discovered", zap.String("type", natType.String()))
+	}
+
+	ia.mu.RLock()
+	candidateCount := len(ia.localCandidates)
+	ia.mu.RUnlock()
+
 	ia.logger.Info("ICE candidate gathering completed",
-		zap.Int("local_candidates", len(ia.localCandidates)),
-	)
+		zap.Int("local_candidates", candidateCount),
+		zap.String("nat_type", ia.Metrics.NATType))
 }
 
 // gatherHostCandidates собирает host кандидаты
@@ -321,48 +371,30 @@ func (ia *ICEAgent) gatherRelayCandidates() {
 
 // performSTUNBinding выполняет STUN binding request
 func (ia *ICEAgent) performSTUNBinding(stunServer string) *ICECandidate {
-	start := time.Now()
 
-	// Create STUN client
-	stunClient, err := NewSTUNClient(stunServer, ia.logger.GetZapLogger())
-	if err != nil {
-		ia.logger.Debug("Failed to create STUN client", zap.String("server", stunServer), zap.Error(err))
-		ia.Metrics.RecordSTUNRequest("ice-agent", stunServer, false, time.Since(start))
-		return nil
-	}
-	defer stunClient.Close()
-
-	// Get external address through STUN
-	externalAddr, err := stunClient.GetExternalAddress()
+	// Use the existing STUN client to perform binding
+	result, err := ia.stunClient.PerformSTUNBinding(context.Background(), stunServer)
 	if err != nil {
 		ia.logger.Debug("STUN binding failed", zap.String("server", stunServer), zap.Error(err))
-		ia.Metrics.RecordSTUNRequest("ice-agent", stunServer, false, time.Since(start))
 		return nil
 	}
 
-	ia.Metrics.RecordSTUNRequest("ice-agent", stunServer, true, time.Since(start))
+	if result.MappedAddr == nil {
+		ia.logger.Debug("No mapped address received", zap.String("server", stunServer))
+		return nil
+	}
 
 	// Get local address for related address
 	localAddr := "192.168.1.100" // Default fallback
 	localPort := 12345
-
-	// Try to get actual local address
-	if stunClient.conn != nil {
-		if addr := stunClient.conn.LocalAddr(); addr != nil {
-			if udpAddr, ok := addr.(*net.UDPAddr); ok {
-				localAddr = udpAddr.IP.String()
-				localPort = udpAddr.Port
-			}
-		}
-	}
 
 	return &ICECandidate{
 		Foundation:  fmt.Sprintf("srflx-%s", stunServer),
 		Component:   1,
 		Transport:   "UDP",
 		Priority:    ia.calculatePriority(ICECandidateTypeServerReflexive, 0),
-		Address:     externalAddr.IP.String(),
-		Port:        externalAddr.Port,
+		Address:     result.MappedAddr.IP.String(),
+		Port:        result.MappedAddr.Port,
 		Type:        ICECandidateTypeServerReflexive,
 		RelatedAddr: localAddr,
 		RelatedPort: localPort,
@@ -405,19 +437,26 @@ func (ia *ICEAgent) AddRemoteCandidate(candidate *ICECandidate) error {
 // StartConnectivityChecks запускает connectivity checks
 func (ia *ICEAgent) StartConnectivityChecks() error {
 	ia.mu.Lock()
-	defer ia.mu.Unlock()
+	localCandidates := make([]*ICECandidate, len(ia.localCandidates))
+	copy(localCandidates, ia.localCandidates)
+	remoteCandidates := make([]*ICECandidate, len(ia.remoteCandidates))
+	copy(remoteCandidates, ia.remoteCandidates)
+	ia.mu.Unlock()
 
 	if ia.state != ICEStateGathered {
 		return fmt.Errorf("ICE agent is not in gathered state")
 	}
 
+	ia.mu.Lock()
 	ia.state = ICEStateChecking
-	ia.logger.Info("Starting ICE connectivity checks")
+	ia.mu.Unlock()
 
-	// Запускаем connectivity checks в отдельной горутине
-	go ia.performConnectivityChecks()
+	ia.logger.Info("Starting ICE connectivity checks",
+		zap.Int("local_candidates", len(localCandidates)),
+		zap.Int("remote_candidates", len(remoteCandidates)))
 
-	return nil
+	// Используем новый ConnectivityChecker
+	return ia.connectivityChecker.StartConnectivityChecks(localCandidates, remoteCandidates)
 }
 
 // performConnectivityChecks выполняет connectivity checks
@@ -506,13 +545,11 @@ func (ia *ICEAgent) performConnectivityCheck(pair *ICECandidatePair) bool {
 	conn, err := net.DialTimeout("udp", fmt.Sprintf("%s:%d", pair.RemoteCandidate.Address, pair.RemoteCandidate.Port), 5*time.Second)
 	if err != nil {
 		pair.State = ICECandidatePairStateFailed
-		ia.Metrics.RecordConnectivityCheck("ice-agent", false)
 		return false
 	}
 	defer conn.Close()
 
 	pair.State = ICECandidatePairStateSucceeded
-	ia.Metrics.RecordConnectivityCheck("ice-agent", true)
 	return true
 }
 
@@ -540,7 +577,6 @@ func (ia *ICEAgent) GetSelectedPair() *ICECandidatePair {
 // Close закрывает ICE агент
 func (ia *ICEAgent) Close() error {
 	ia.cancel()
-	ia.Metrics.Stop()
 	ia.logger.Info("ICE agent closed")
 	return nil
 }

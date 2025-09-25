@@ -27,4 +27,8 @@ spec:
     port: 8082
     targetPort: 8082
     protocol: TCP
+  - name: grpc
+    port: 8444
+    targetPort: 8444
+    protocol: TCP
 
