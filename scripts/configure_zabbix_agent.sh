@@ -13,7 +13,7 @@ echo "🔧 Настройка Zabbix Agent для подключения к се
 # Проверяем доступность Zabbix сервера
 echo "📡 Проверка доступности Zabbix сервера..."
 if ping -c 1 -W 5 "$ZABBIX_SERVER_IP" > /dev/null 2>&1; then
-    echo "✅ Zabbix сервер $ZABBIX_SERVER_IP доступен"
+    echo "Zabbix сервер $ZABBIX_SERVER_IP доступен"
 else
     echo "❌ Zabbix сервер $ZABBIX_SERVER_IP недоступен"
     echo "   Проверьте сетевую связность и настройки файрвола"
@@ -23,7 +23,7 @@ fi
 # Проверяем порт Zabbix Agent
 echo "🔌 Проверка порта Zabbix Agent (10050)..."
 if timeout 5 bash -c "</dev/tcp/$ZABBIX_SERVER_IP/10050" 2>/dev/null; then
-    echo "✅ Порт 10050 на $ZABBIX_SERVER_IP открыт"
+    echo "Порт 10050 на $ZABBIX_SERVER_IP открыт"
 else
     echo "❌ Порт 10050 на $ZABBIX_SERVER_IP недоступен"
     echo "   Убедитесь, что Zabbix Server запущен и слушает на порту 10050"
@@ -47,7 +47,7 @@ sudo sed -i "s/^ServerActive=.*/ServerActive=$ZABBIX_SERVER_IP/" "$ZABBIX_AGENT_
 sudo sed -i "s/^Hostname=.*/Hostname=$HOSTNAME/" "$ZABBIX_AGENT_CONFIG"
 
 # Проверяем обновленную конфигурацию
-echo "📋 Проверка обновленной конфигурации..."
+echo "Проверка обновленной конфигурации..."
 echo "   Server: $(grep '^Server=' "$ZABBIX_AGENT_CONFIG" | cut -d'=' -f2)"
 echo "   ServerActive: $(grep '^ServerActive=' "$ZABBIX_AGENT_CONFIG" | cut -d'=' -f2)"
 echo "   Hostname: $(grep '^Hostname=' "$ZABBIX_AGENT_CONFIG" | cut -d'=' -f2)"
@@ -64,12 +64,12 @@ sudo systemctl start zabbix-agent
 # Проверяем статус сервиса
 echo "📊 Проверка статуса Zabbix Agent..."
 if sudo systemctl is-active --quiet zabbix-agent; then
-    echo "✅ Zabbix Agent успешно запущен"
+    echo "Zabbix Agent успешно запущен"
     sudo systemctl status zabbix-agent --no-pager
 else
     echo "❌ Ошибка запуска Zabbix Agent"
     sudo systemctl status zabbix-agent --no-pager
-    echo "📋 Логи Zabbix Agent:"
+    echo "Логи Zabbix Agent:"
     sudo journalctl -u zabbix-agent --no-pager -n 20
     exit 1
 fi
@@ -82,9 +82,9 @@ echo "   CPU Usage: $(zabbix_agentd -t cloudbridge.system.cpu.usage | awk '{prin
 echo "   Memory Usage: $(zabbix_agentd -t cloudbridge.system.memory.usage | awk '{print $2}' | tr -d '[]')"
 
 echo ""
-echo "✅ Настройка Zabbix Agent завершена!"
+echo "Настройка Zabbix Agent завершена!"
 echo ""
-echo "📋 Следующие шаги:"
+echo "Следующие шаги:"
 echo "1. В веб-интерфейсе Zabbix создайте хост с именем: $HOSTNAME"
 echo "2. Укажите IP адрес: $(hostname -I | awk '{print $1}')"
 echo "3. Импортируйте шаблон: scripts/cloudbridge_ai_zabbix_template_working.xml"

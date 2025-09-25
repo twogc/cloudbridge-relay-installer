@@ -1019,7 +1019,7 @@ main() {
     
     print_success "🎉 Миграция успешно завершена!"
     echo ""
-    echo "📋 Следующие шаги:"
+    echo "Следующие шаги:"
     echo "1. Настройте DNS для api.cloudbridge.local"
     echo "2. Настройте SSL сертификаты"
     echo "3. Настройте мониторинг Prometheus/Grafana"

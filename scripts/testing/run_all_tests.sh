@@ -210,7 +210,7 @@ show_access_urls() {
     echo
     echo -e "${GREEN}📈 Prometheus:${NC} http://$server_ip:9090"
     echo
-    echo -e "${GREEN}🔗 Relay Metrics:${NC} http://$server_ip:8081/metrics"
+    echo -e "${GREEN} Relay Metrics:${NC} http://$server_ip:8081/metrics"
     echo
 }
 

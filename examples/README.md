@@ -53,7 +53,7 @@ cd advanced/
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **P2P Mesh**: UDP 51820
 
-## 🔗 Дополнительная информация
+##  Дополнительная информация
 
 - [Документация API](../docs/api.md)
 - [Руководство по настройке](../docs/configuration.md)

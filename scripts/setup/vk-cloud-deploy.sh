@@ -302,15 +302,15 @@ EOF
 
 ### Health Check
 - **Endpoint:** http://$(terraform output -raw relay_optimized_loadbalancer_ip 2>/dev/null || echo "localhost"):80/health
-- **Status:** ✅ Working
+- **Status:** Working
 
 ### Metrics
 - **Endpoint:** http://$(terraform output -raw relay_optimized_loadbalancer_ip 2>/dev/null || echo "localhost"):8081/metrics
-- **Status:** ✅ Working
+- **Status:** Working
 
 ### Load Test
 - **Script:** production-load-test.js
-- **Status:** ✅ Completed
+- **Status:** Completed
 
 ## Следующие шаги
 
@@ -371,7 +371,7 @@ main() {
     
     # Вывод итоговой информации
     echo ""
-    echo "📋 Итоговая информация:"
+    echo "Итоговая информация:"
     echo "========================"
     echo "Load Balancer IP: $(terraform output -raw relay_optimized_loadbalancer_ip 2>/dev/null || echo "Not configured")"
     echo "Instance IPs: $(terraform output -raw relay_optimized_instance_ips 2>/dev/null || echo "Not configured")"
@@ -379,7 +379,7 @@ main() {
     echo "Prometheus: http://$(terraform output -raw relay_optimized_loadbalancer_ip 2>/dev/null || echo "localhost"):9091"
     echo "Health Check: http://$(terraform output -raw relay_optimized_loadbalancer_ip 2>/dev/null || echo "localhost"):80/health"
     echo ""
-    echo "🔗 Полезные ссылки:"
+    echo " Полезные ссылки:"
     echo "- VK Cloud Console: https://mcs.mail.ru"
     echo "- Документация: https://mcs.mail.ru/docs"
     echo "- Поддержка: support@vk.com"

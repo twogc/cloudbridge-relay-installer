@@ -46,7 +46,7 @@ if [ ! -f "$THEME_DIR/login/resources/js/login.js" ]; then
     exit 1
 fi
 
-log "✅ Все основные файлы темы найдены"
+log "Все основные файлы темы найдены"
 
 # Проверяем, что Keycloak запущен
 log "Проверяем, что Keycloak запущен..."
@@ -55,7 +55,7 @@ if ! curl -s -f http://localhost:8080/ > /dev/null; then
     exit 1
 fi
 
-log "✅ Keycloak запущен и отвечает"
+log "Keycloak запущен и отвечает"
 
 # Проверяем, что тема доступна в Keycloak
 log "Проверяем доступность темы в Keycloak..."
@@ -85,7 +85,7 @@ TOKEN_RESPONSE=$(curl -s -X POST http://localhost:8080/realms/master/protocol/op
 
 if echo "$TOKEN_RESPONSE" | grep -q "access_token"; then
     ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
-    log "✅ Токен администратора получен"
+    log "Токен администратора получен"
 else
     error "Не удалось получить токен администратора"
     echo "$TOKEN_RESPONSE"
@@ -98,10 +98,10 @@ REALM_RESPONSE=$(curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 if echo "$REALM_RESPONSE" | grep -q "realm"; then
     CURRENT_THEME=$(echo "$REALM_RESPONSE" | jq -r '.loginTheme // empty')
-    log "✅ Realm '$REALM_NAME' найден"
+    log "Realm '$REALM_NAME' найден"
     
     if [ "$CURRENT_THEME" = "playa" ]; then
-        log "✅ Тема 'playa' уже применена к realm"
+        log "Тема 'playa' уже применена к realm"
     else
         warn "Тема 'playa' не применена к realm (текущая тема: $CURRENT_THEME)"
         
@@ -118,7 +118,7 @@ if echo "$REALM_RESPONSE" | grep -q "realm"; then
                 \"emailTheme\": \"playa\"
             }"
         
-        log "✅ Тема 'playa' применена к realm"
+        log "Тема 'playa' применена к realm"
     fi
 else
     error "Realm '$REALM_NAME' не найден"

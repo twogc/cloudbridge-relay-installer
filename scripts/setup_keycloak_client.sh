@@ -23,7 +23,7 @@ ADMIN_TOKEN_RESPONSE=$(curl -s -k -X POST "$KEYCLOAK_URL/realms/master/protocol/
 
 if echo "$ADMIN_TOKEN_RESPONSE" | grep -q "access_token"; then
     ADMIN_TOKEN=$(echo "$ADMIN_TOKEN_RESPONSE" | jq -r '.access_token')
-    echo "✅ Токен администратора получен"
+    echo "Токен администратора получен"
 else
     echo "❌ Не удалось получить токен администратора:"
     echo "$ADMIN_TOKEN_RESPONSE"
@@ -55,7 +55,7 @@ USER_RESPONSE=$(curl -s -k -X POST "$KEYCLOAK_URL/admin/realms/$REALM/users" \
     -d "$USER_DATA")
 
 if [ $? -eq 0 ]; then
-    echo "✅ Тестовый пользователь создан"
+    echo "Тестовый пользователь создан"
     echo "Username: testuser"
     echo "Password: testpass123"
 else
@@ -83,7 +83,7 @@ CLIENT_RESPONSE=$(curl -s -k -X POST "$KEYCLOAK_URL/admin/realms/$REALM/clients"
     -d "$CLIENT_DATA")
 
 if [ $? -eq 0 ]; then
-    echo "✅ Тестовый клиент создан"
+    echo "Тестовый клиент создан"
     echo "Client ID: test-client"
     
     # Получаем client secret
@@ -114,7 +114,7 @@ TOKEN_RESPONSE=$(curl -s -k -X POST "$KEYCLOAK_URL/realms/$REALM/protocol/openid
 
 if echo "$TOKEN_RESPONSE" | grep -q "access_token"; then
     ACCESS_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
-    echo "✅ Токен получен успешно!"
+    echo "Токен получен успешно!"
     echo "Access Token: ${ACCESS_TOKEN:0:50}..."
     echo ""
     echo "Полный ответ:"

@@ -205,7 +205,7 @@ check_ssl_security() {
         local protocols=("ssl2" "ssl3" "tls1" "tls1_1" "tls1_2" "tls1_3")
         for protocol in "${protocols[@]}"; do
             if timeout 5 openssl s_client -connect "$DOMAIN:443" -servername "$DOMAIN" -"$protocol" < /dev/null 2>/dev/null | grep -q "Connected"; then
-                echo "✅ $protocol: поддерживается" >> "$ssl_file"
+                echo "$protocol: поддерживается" >> "$ssl_file"
                 if [[ "$protocol" == "ssl2" || "$protocol" == "ssl3" ]]; then
                     log_warning "Устаревший протокол $protocol поддерживается"
                 fi
@@ -254,7 +254,7 @@ check_security_headers() {
         for header in "${security_headers[@]}"; do
             if echo "$headers" | grep -qi "$header"; then
                 local value=$(echo "$headers" | grep -i "$header" | head -1)
-                echo "✅ $value" >> "$headers_file"
+                echo "$value" >> "$headers_file"
                 log_success "Найден заголовок: $header"
             else
                 echo "❌ $header: отсутствует" >> "$headers_file"
@@ -346,7 +346,7 @@ check_open_ports() {
         
         for port in "${common_ports[@]}"; do
             if timeout 2 bash -c "</dev/tcp/$ip/$port" 2>/dev/null; then
-                echo "✅ Порт $port: открыт" >> "$ports_file"
+                echo "Порт $port: открыт" >> "$ports_file"
                 log_warning "Открыт порт $port"
             else
                 if [[ $VERBOSE == true ]]; then
@@ -374,30 +374,30 @@ check_vulnerabilities() {
     # Проверка Heartbleed
     echo "## Проверка Heartbleed:" >> "$vuln_file"
     if timeout 5 openssl s_client -connect "$DOMAIN:443" -servername "$DOMAIN" -tlsextdebug 2>/dev/null | grep -q "heartbeat"; then
-        echo "⚠️  Heartbeat extension обнаружен" >> "$vuln_file"
+        echo "  Heartbeat extension обнаружен" >> "$vuln_file"
         log_warning "Heartbeat extension обнаружен (проверьте версию OpenSSL)"
     else
-        echo "✅ Heartbeat extension не обнаружен" >> "$vuln_file"
+        echo "Heartbeat extension не обнаружен" >> "$vuln_file"
     fi
     
     # Проверка BEAST
     echo "" >> "$vuln_file"
     echo "## Проверка BEAST:" >> "$vuln_file"
     if timeout 5 openssl s_client -connect "$DOMAIN:443" -servername "$DOMAIN" -cipher 'RC4' < /dev/null 2>/dev/null | grep -q "Connected"; then
-        echo "⚠️  RC4 поддерживается (уязвимость BEAST)" >> "$vuln_file"
+        echo "  RC4 поддерживается (уязвимость BEAST)" >> "$vuln_file"
         log_warning "RC4 поддерживается (уязвимость BEAST)"
     else
-        echo "✅ RC4 не поддерживается" >> "$vuln_file"
+        echo "RC4 не поддерживается" >> "$vuln_file"
     fi
     
     # Проверка POODLE
     echo "" >> "$vuln_file"
     echo "## Проверка POODLE:" >> "$vuln_file"
     if timeout 5 openssl s_client -connect "$DOMAIN:443" -servername "$DOMAIN" -ssl3 < /dev/null 2>/dev/null | grep -q "Connected"; then
-        echo "⚠️  SSL 3.0 поддерживается (уязвимость POODLE)" >> "$vuln_file"
+        echo "  SSL 3.0 поддерживается (уязвимость POODLE)" >> "$vuln_file"
         log_warning "SSL 3.0 поддерживается (уязвимость POODLE)"
     else
-        echo "✅ SSL 3.0 не поддерживается" >> "$vuln_file"
+        echo "SSL 3.0 не поддерживается" >> "$vuln_file"
     fi
 }
 
@@ -423,13 +423,13 @@ analyze_token_information_leak() {
         
         # Проверка на последовательность
         if [[ $user_id =~ ^[0-9]+$ ]]; then
-            echo "⚠️  User ID содержит только цифры (может быть последовательным)" >> "$leak_file"
+            echo "  User ID содержит только цифры (может быть последовательным)" >> "$leak_file"
             log_warning "User ID может быть последовательным: $user_id"
         fi
         
         # Проверка длины
         if [[ ${#user_id} -lt 8 ]]; then
-            echo "⚠️  User ID слишком короткий (${#user_id} символов)" >> "$leak_file"
+            echo "  User ID слишком короткий (${#user_id} символов)" >> "$leak_file"
             log_warning "User ID слишком короткий: $user_id"
         fi
     fi
@@ -445,12 +445,12 @@ analyze_token_information_leak() {
         
         # Проверка App ID
         if [[ $app_id =~ ^[0-9]+$ ]]; then
-            echo "⚠️  App ID содержит только цифры" >> "$leak_file"
+            echo "  App ID содержит только цифры" >> "$leak_file"
         fi
         
         # Проверка Session ID
         if [[ ${#session_id} -lt 16 ]]; then
-            echo "⚠️  Session ID слишком короткий (${#session_id} символов)" >> "$leak_file"
+            echo "  Session ID слишком короткий (${#session_id} символов)" >> "$leak_file"
             log_warning "Session ID слишком короткий: $session_id"
         fi
     fi
@@ -465,7 +465,7 @@ analyze_token_information_leak() {
         echo "Уникальных символов в подписи: $unique_chars" >> "$leak_file"
         
         if [[ $unique_chars -lt 10 ]]; then
-            echo "⚠️  Низкая энтропия в подписи" >> "$leak_file"
+            echo "  Низкая энтропия в подписи" >> "$leak_file"
             log_warning "Низкая энтропия в подписи"
         fi
     fi
@@ -573,13 +573,13 @@ main() {
     # Очистка
     cleanup
     
-    log_security "✅ Аудит безопасности завершен"
+    log_security "Аудит безопасности завершен"
     log_info "Результаты сохранены в: $OUTPUT_DIR"
     log_info "Основной отчет: $REPORT_FILE"
     
     # Вывод краткого резюме
     echo ""
-    log_security "📋 Краткое резюме:"
+    log_security "Краткое резюме:"
     echo "  - Анализ структуры токена: $(grep -c "SUCCESS\|WARNING\|ERROR" "$OUTPUT_DIR/token_analysis.txt" 2>/dev/null || echo "0") проблем"
     echo "  - SSL/TLS безопасность: $(grep -c "WARNING\|ERROR" "$OUTPUT_DIR/ssl_analysis.txt" 2>/dev/null || echo "0") проблем"
     echo "  - Заголовки безопасности: $(grep -c "отсутствует" "$OUTPUT_DIR/security_headers.txt" 2>/dev/null || echo "0") отсутствующих"

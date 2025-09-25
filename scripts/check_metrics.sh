@@ -28,21 +28,21 @@ check_metric() {
     
     # Проверяем, что значения не равны 0 или пустые
     if [ "$prometheus_value" != "0" ] && [ "$prometheus_value" != "" ]; then
-        echo "  ✅ Prometheus: РЕАЛЬНЫЕ ДАННЫЕ"
+        echo "  Prometheus: РЕАЛЬНЫЕ ДАННЫЕ"
     else
-        echo "  ⚠️  Prometheus: НЕТ ДАННЫХ"
+        echo "    Prometheus: НЕТ ДАННЫХ"
     fi
     
     if [ "$api_value" != "0" ] && [ "$api_value" != "null" ] && [ "$api_value" != "N/A" ]; then
-        echo "  ✅ API: РЕАЛЬНЫЕ ДАННЫЕ"
+        echo "  API: РЕАЛЬНЫЕ ДАННЫЕ"
     else
-        echo "  ⚠️  API: НЕТ ДАННЫХ"
+        echo "    API: НЕТ ДАННЫХ"
     fi
     echo ""
 }
 
 # Проверяем все метрики
-echo "🤖 AI SERVICE METRICS"
+echo " AI SERVICE METRICS"
 echo "====================="
 
 check_metric "anomalies_detected" "ai_anomalies_detected_total" "http://$MINIKUBE_IP:30083/api/v1/ai/metrics"
@@ -58,9 +58,9 @@ echo "🎯 Route Optimization Accuracy:"
 accuracy=$(curl -s "http://$MINIKUBE_IP:30083/metrics" | grep "ai_prediction_accuracy" | awk '{print $2}' | head -1)
 echo "  Значение: $accuracy"
 if [ "$accuracy" != "0" ] && [ "$accuracy" != "" ]; then
-    echo "  ✅ РЕАЛЬНЫЕ ДАННЫЕ"
+    echo "  РЕАЛЬНЫЕ ДАННЫЕ"
 else
-    echo "  ⚠️  НЕТ ДАННЫХ"
+    echo "    НЕТ ДАННЫХ"
 fi
 echo ""
 
@@ -69,9 +69,9 @@ echo "⏱️  AI Processing Time:"
 processing_time=$(curl -s "http://$MINIKUBE_IP:30083/metrics" | grep "ai_processing_time" | awk '{print $2}' | head -1)
 echo "  Значение: $processing_time ms"
 if [ "$processing_time" != "0" ] && [ "$processing_time" != "" ]; then
-    echo "  ✅ РЕАЛЬНЫЕ ДАННЫЕ"
+    echo "  РЕАЛЬНЫЕ ДАННЫЕ"
 else
-    echo "  ⚠️  НЕТ ДАННЫХ"
+    echo "    НЕТ ДАННЫХ"
 fi
 echo ""
 
@@ -88,7 +88,7 @@ echo "🔍 AI Service Status:"
 status=$(curl -s "http://$MINIKUBE_IP:30083/api/v1/ai/status" | jq -r '.status' 2>/dev/null)
 echo "  Status: $status"
 if [ "$status" = "running" ]; then
-    echo "  ✅ СЕРВИС РАБОТАЕТ"
+    echo "  СЕРВИС РАБОТАЕТ"
 else
     echo "  ❌ СЕРВИС НЕ РАБОТАЕТ"
 fi
@@ -101,14 +101,14 @@ echo "  Components: $components"
 echo ""
 
 # Проверяем логи на наличие реальных данных
-echo "📋 Log Analysis:"
+echo "Log Analysis:"
 echo "Проверяем логи AI Service на наличие реальных данных..."
 ai_logs=$(kubectl logs -n cloudbridge -l app.kubernetes.io/name=ai-service -c ai-service --tail=50 2>/dev/null | grep -E "(real|actual|metrics|data)" | wc -l)
 echo "  Найдено упоминаний реальных данных: $ai_logs"
 if [ "$ai_logs" -gt 0 ]; then
-    echo "  ✅ ЛОГИ СОДЕРЖАТ РЕАЛЬНЫЕ ДАННЫЕ"
+    echo "  ЛОГИ СОДЕРЖАТ РЕАЛЬНЫЕ ДАННЫЕ"
 else
-    echo "  ⚠️  ЛОГИ НЕ СОДЕРЖАТ РЕАЛЬНЫХ ДАННЫХ"
+    echo "    ЛОГИ НЕ СОДЕРЖАТ РЕАЛЬНЫХ ДАННЫХ"
 fi
 echo ""
 
@@ -135,7 +135,7 @@ echo "Процент реальных данных: $((real_metrics * 100 / tota
 if [ "$real_metrics" -eq "$total_metrics" ]; then
     echo "🎉 ВСЕ МЕТРИКИ СОДЕРЖАТ РЕАЛЬНЫЕ ДАННЫЕ!"
 elif [ "$real_metrics" -gt 0 ]; then
-    echo "✅ ЧАСТИЧНО РЕАЛЬНЫЕ ДАННЫЕ"
+    echo "ЧАСТИЧНО РЕАЛЬНЫЕ ДАННЫЕ"
 else
     echo "❌ НЕТ РЕАЛЬНЫХ ДАННЫХ"
 fi
@@ -163,4 +163,4 @@ optimizer_status=$(curl -s "http://$MINIKUBE_IP:30083/api/v1/ai/status" | jq -r 
 echo "   Status: $optimizer_status"
 
 echo ""
-echo "✅ ПРОВЕРКА ЗАВЕРШЕНА"
+echo "ПРОВЕРКА ЗАВЕРШЕНА"

@@ -6,7 +6,7 @@
 
 set -e
 
-echo "🤖 Запуск AI-аналитика CloudBridge Relay..."
+echo " Запуск AI-аналитика CloudBridge Relay..."
 
 # Цвета для вывода
 RED='\033[0;31m'

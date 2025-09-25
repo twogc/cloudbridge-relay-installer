@@ -245,7 +245,7 @@ alerting:
       bot_token: "${TELEGRAM_BOT_TOKEN}"
       chat_id: "${TELEGRAM_CHAT_ID}"
       template: |
-        🚨 {severity} Alert: {title}
+        {severity} Alert: {title}
         
         📊 Details:
         • Tenant: {tenant_id}
@@ -255,7 +255,7 @@ alerting:
         
         📝 Description: {description}
         
-        🔗 View in SIEM: {siem_url}
+         View in SIEM: {siem_url}
         
     email:
       enabled: true

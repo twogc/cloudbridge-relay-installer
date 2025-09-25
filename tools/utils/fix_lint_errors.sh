@@ -50,7 +50,7 @@ done
 # 6. Удаление временных файлов
 rm -f temp_constants.go
 
-echo "✅ Основные ошибки линтера исправлены!"
+echo "Основные ошибки линтера исправлены!"
 echo ""
 echo "🧪 Запустите проверку:"
 echo "  golangci-lint run --timeout=5m"

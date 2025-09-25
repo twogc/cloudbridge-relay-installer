@@ -223,28 +223,28 @@ check_health() {
         
         # Проверяем Keycloak
         if curl -f http://localhost:8080/ &> /dev/null; then
-            log "✅ Keycloak запущен и отвечает"
+            log "Keycloak запущен и отвечает"
         else
             warn "⏳ Keycloak еще не готов..."
         fi
         
         # Проверяем Relay
         if curl -f http://localhost:8081/metrics &> /dev/null; then
-            log "✅ Relay запущен и отвечает"
+            log "Relay запущен и отвечает"
         else
             warn "⏳ Relay еще не готов..."
         fi
         
         # Проверяем Grafana
         if curl -f http://localhost:3000/api/health &> /dev/null; then
-            log "✅ Grafana запущен и отвечает"
+            log "Grafana запущен и отвечает"
         else
             warn "⏳ Grafana еще не готов..."
         fi
         
         # Проверяем ML сервис
         if curl -f http://localhost:8000/health &> /dev/null; then
-            log "✅ ML сервис запущен и отвечает"
+            log "ML сервис запущен и отвечает"
         else
             warn "⏳ ML сервис еще не готов..."
         fi
@@ -258,9 +258,9 @@ check_health() {
             
             # Проверяем наличие темы
             if [ -d "keycloak/themes/playa" ]; then
-                log "✅ Кастомная тема Playa найдена"
+                log "Кастомная тема Playa найдена"
             else
-                warn "⚠️  Кастомная тема Playa не найдена в keycloak/themes/playa"
+                warn "  Кастомная тема Playa не найдена в keycloak/themes/playa"
             fi
             
             return 0
@@ -295,12 +295,12 @@ show_status() {
     echo -e "  \033[1;36m🚀 Relay:\033[0m        http://localhost:8081"
     echo -e "  \033[1;36m📊 Grafana:\033[0m      http://localhost:3000"
     echo -e "  \033[1;36m📈 Prometheus:\033[0m   http://localhost:9090"
-    echo -e "  \033[1;36m🚨 AlertManager:\033[0m http://localhost:9093"
-    echo -e "  \033[1;36m🤖 ML API:\033[0m       http://localhost:8000"
+    echo -e "  \033[1;36mAlertManager:\033[0m http://localhost:9093"
+    echo -e "  \033[1;36m ML API:\033[0m       http://localhost:8000"
     echo
     log "Тема Keycloak:"
     echo -e "  \033[1;36m🎨 Кастомная тема:\033[0m Playa (автоматически настроена)"
-    echo -e "  \033[1;36m🔗 Страница входа:\033[0m http://localhost:8080/realms/cloudbridge/protocol/openid-connect/auth"
+    echo -e "  \033[1;36m Страница входа:\033[0m http://localhost:8080/realms/cloudbridge/protocol/openid-connect/auth"
     echo
     
     log "Логи сервисов:"
@@ -310,7 +310,7 @@ show_status() {
     echo -e "  \033[1;33mtail -f logs/ml_api.log\033[0m"
     
     echo
-    echo -e "\033[1;35m💡 Quick Tips:\033[0m"
+    echo -e "\033[1;35mQuick Tips:\033[0m"
     echo -e "  • Use \033[1;33m./scripts/start_production.sh --status\033[0m to check service status"
     echo -e "  • Use \033[1;33mdocker-compose logs -f [service]\033[0m to view real-time logs"
     echo -e "  • Use \033[1;33m./scripts/setup/setup_dashboards.sh\033[0m to update Grafana dashboards"
@@ -430,29 +430,29 @@ check_keycloak_theme() {
     
     if [ -d "keycloak/themes/playa" ]; then
         local theme_files=$(find keycloak/themes/playa -type f | wc -l)
-        log "✅ Кастомная тема Playa найдена ($theme_files файлов)"
+        log "Кастомная тема Playa найдена ($theme_files файлов)"
         
         # Проверяем основные файлы темы
         if [ -f "keycloak/themes/playa/theme.properties" ]; then
-            log "✅ Основной файл конфигурации темы найден"
+            log "Основной файл конфигурации темы найден"
         else
-            warn "⚠️  Файл theme.properties не найден"
+            warn "  Файл theme.properties не найден"
         fi
         
         if [ -f "keycloak/themes/playa/login/css/style.css" ]; then
-            log "✅ CSS файл темы найден"
+            log "CSS файл темы найден"
         else
-            warn "⚠️  CSS файл темы не найден"
+            warn "  CSS файл темы не найден"
         fi
         
         if [ -f "keycloak/themes/playa/login/index.ftl" ]; then
-            log "✅ Шаблон входа найден"
+            log "Шаблон входа найден"
         else
-            warn "⚠️  Шаблон входа не найден"
+            warn "  Шаблон входа не найден"
         fi
         
     else
-        warn "⚠️  Кастомная тема Playa не найдена в keycloak/themes/playa"
+        warn "  Кастомная тема Playa не найдена в keycloak/themes/playa"
         warn "Тема не будет применена автоматически"
     fi
 } 

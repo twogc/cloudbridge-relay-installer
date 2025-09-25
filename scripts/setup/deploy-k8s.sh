@@ -23,11 +23,11 @@ log_info() {
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}$1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}  $1${NC}"
 }
 
 log_error() {
@@ -165,7 +165,7 @@ show_status() {
     kubectl get pv,pvc -n $MONITORING_NAMESPACE
     echo ""
     
-    echo "🔗 Ingress Status:"
+    echo " Ingress Status:"
     kubectl get ingress -n $NAMESPACE
     echo ""
 }

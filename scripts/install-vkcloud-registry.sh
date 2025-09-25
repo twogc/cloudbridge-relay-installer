@@ -175,7 +175,7 @@ print_info() {
     echo ""
     log_success "🎉 Docker Registry успешно установлен!"
     echo ""
-    echo "📋 Информация о registry:"
+    echo "Информация о registry:"
     echo "   IP адрес: $REGISTRY_IP"
     echo "   Порт: 5000"
     echo "   URL: http://$REGISTRY_IP:5000"

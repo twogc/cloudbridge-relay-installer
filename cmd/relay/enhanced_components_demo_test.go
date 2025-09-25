@@ -35,7 +35,7 @@ func main() {
 	cfg := createDemoConfig()
 
 	// Демонстрация StatelessResetManager
-	fmt.Println("\n📋 1. StatelessResetManager Demo")
+	fmt.Println("\n1. StatelessResetManager Demo")
 	fmt.Println("--------------------------------")
 	demoStatelessResetManager(logger, cfg)
 
@@ -49,7 +49,7 @@ func main() {
 	fmt.Println("-------------------------")
 	demoMASQUESupport(logger, cfg)
 
-	fmt.Println("\n✅ Demo completed successfully!")
+	fmt.Println("\nDemo completed successfully!")
 }
 
 func createDemoConfig() *config.Config {
@@ -89,7 +89,7 @@ func demoStatelessResetManager(logger *logger.Logger, cfg *config.Config) {
 
 	// Получаем информацию о ключе
 	info := srm.GetKeyInfo()
-	fmt.Printf("✅ StatelessResetKey created successfully\n")
+	fmt.Printf("StatelessResetKey created successfully\n")
 	fmt.Printf("   - Key file: %s\n", info["key_file"])
 	fmt.Printf("   - Key length: %d bytes\n", info["key_length"])
 	fmt.Printf("   - Has file: %t\n", info["has_file"])
@@ -100,7 +100,7 @@ func demoStatelessResetManager(logger *logger.Logger, cfg *config.Config) {
 		return
 	}
 
-	fmt.Printf("✅ Key validation passed\n")
+	fmt.Printf("Key validation passed\n")
 }
 
 func demoICESupport(logger *logger.Logger, cfg *config.Config) {
@@ -122,7 +122,7 @@ func demoICESupport(logger *logger.Logger, cfg *config.Config) {
 		return
 	}
 
-	fmt.Printf("✅ ICE support started successfully\n")
+	fmt.Printf("ICE support started successfully\n")
 	fmt.Printf("   - STUN servers: %v\n", cfg.ICEStunTurn.StunServers)
 	fmt.Printf("   - ICE timeout: %v\n", cfg.ICEStunTurn.ICETimeout)
 
@@ -132,7 +132,7 @@ func demoICESupport(logger *logger.Logger, cfg *config.Config) {
 
 	// Получаем кандидаты
 	candidates := iceSupport.GetLocalCandidates()
-	fmt.Printf("✅ Gathered %d ICE candidates\n", len(candidates))
+	fmt.Printf("Gathered %d ICE candidates\n", len(candidates))
 
 	// Закрываем ICE поддержку
 	if err := iceSupport.Close(); err != nil {
@@ -140,7 +140,7 @@ func demoICESupport(logger *logger.Logger, cfg *config.Config) {
 		return
 	}
 
-	fmt.Printf("✅ ICE support closed successfully\n")
+	fmt.Printf("ICE support closed successfully\n")
 }
 
 func demoMASQUESupport(logger *logger.Logger, cfg *config.Config) {
@@ -155,7 +155,7 @@ func demoMASQUESupport(logger *logger.Logger, cfg *config.Config) {
 		return
 	}
 
-	fmt.Printf("✅ MASQUE server started successfully\n")
+	fmt.Printf("MASQUE server started successfully\n")
 	fmt.Printf("   - Proxy URL: %s\n", cfg.MASQUE.ProxyURL)
 	fmt.Printf("   - ALPN protocols: %v\n", cfg.MASQUE.ALPNProtocols)
 	fmt.Printf("   - Fallback enabled: %t\n", cfg.MASQUE.FallbackEnabled)
@@ -171,5 +171,5 @@ func demoMASQUESupport(logger *logger.Logger, cfg *config.Config) {
 		return
 	}
 
-	fmt.Printf("✅ MASQUE server closed successfully\n")
+	fmt.Printf("MASQUE server closed successfully\n")
 }

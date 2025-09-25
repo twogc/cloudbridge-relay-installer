@@ -315,6 +315,85 @@
       "relay"
     ]
   },
+  "turn_pool": {
+    "enabled": true,
+    "default_pool_name": "primary",
+    "allocation_timeout": "10m",
+    "health_check_interval": "30s",
+    "health_check_timeout": "5s",
+    "max_allocations_per_client": 10,
+    "load_balancing_strategy": "weighted",
+    "weighted_threshold": 0.8,
+    "metrics_enabled": true,
+    "stats_interval": "60s",
+    "latency_history_size": 100,
+    "failover_enabled": true,
+    "failover_timeout": "30s",
+    "max_retries": 3,
+    "backoff_multiplier": 2.0,
+    "pools": {
+      "primary": {
+        "name": "primary",
+        "region": "ru-central1",
+        "servers": [
+          {
+            "address": "turn1.cloudbridge.ru:3478",
+            "username": "cloudbridge",
+            "password": "${TURN_PASSWORD}",
+            "realm": "cloudbridge.ru",
+            "priority": 100,
+            "weight": 80,
+            "max_connections": 1000,
+            "region": "ru-central1",
+            "provider": "vkcloud",
+            "capabilities": ["udp", "tcp", "tls"],
+            "tags": {
+              "environment": "production",
+              "tier": "primary"
+            }
+          },
+          {
+            "address": "turn2.cloudbridge.ru:3478",
+            "username": "cloudbridge",
+            "password": "${TURN_PASSWORD}",
+            "realm": "cloudbridge.ru",
+            "priority": 90,
+            "weight": 60,
+            "max_connections": 500,
+            "region": "ru-central1",
+            "provider": "vkcloud",
+            "capabilities": ["udp", "tcp"],
+            "tags": {
+              "environment": "production",
+              "tier": "secondary"
+            }
+          }
+        ]
+      },
+      "backup": {
+        "name": "backup",
+        "region": "ru-west1",
+        "servers": [
+          {
+            "address": "turn-backup.cloudbridge.ru:3478",
+            "username": "cloudbridge-backup",
+            "password": "${TURN_BACKUP_PASSWORD}",
+            "realm": "cloudbridge.ru",
+            "priority": 50,
+            "weight": 40,
+            "max_connections": 200,
+            "region": "ru-west1",
+            "provider": "yandex",
+            "capabilities": ["udp"],
+            "tags": {
+              "environment": "production",
+              "tier": "backup"
+            }
+          }
+        ]
+      }
+    }
+  },
   "masque": {
     "enabled": true,
     "proxy_url": "https://auth.2gc.ru:8443",

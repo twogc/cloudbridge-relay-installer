@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🤖 Настройка интеграции AI метрик с Zabbix..."
+echo " Настройка интеграции AI метрик с Zabbix..."
 
 # Конфигурация
 ZABBIX_AGENT_CONFIG="/etc/zabbix/zabbix_agentd.conf"
@@ -128,7 +128,7 @@ echo "🔄 Перезапуск Zabbix Agent..."
 sudo systemctl restart zabbix-agent
 
 # Проверка статуса
-echo "✅ Проверка статуса Zabbix Agent..."
+echo "Проверка статуса Zabbix Agent..."
 sudo systemctl status zabbix-agent --no-pager
 
 # Тестирование AI метрик
@@ -140,9 +140,9 @@ echo "   Load Predictions: $(zabbix_agentd -t ai.load_predictions)"
 echo "   Routes Optimized: $(zabbix_agentd -t ai.routes_optimized)"
 
 echo ""
-echo "✅ Интеграция AI метрик с Zabbix завершена!"
+echo "Интеграция AI метрик с Zabbix завершена!"
 echo ""
-echo "📋 Следующие шаги:"
+echo "Следующие шаги:"
 echo "1. Обновите Zabbix шаблон CloudBridge Relay Server"
 echo "2. Добавьте новые AI метрики в мониторинг"
 echo "3. Настройте триггеры для AI метрик"

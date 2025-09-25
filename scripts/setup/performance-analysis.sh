@@ -23,11 +23,11 @@ log_info() {
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}$1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}  $1${NC}"
 }
 
 log_error() {
@@ -279,7 +279,7 @@ show_performance_summary() {
     echo "• Monitoring: $(kubectl get pods -n $MONITORING_NAMESPACE --no-headers | wc -l) pods"
     
     echo ""
-    echo "📋 Files Generated:"
+    echo "Files Generated:"
     ls -la $RESULTS_DIR/
 }
 

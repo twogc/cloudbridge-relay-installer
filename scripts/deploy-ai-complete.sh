@@ -21,17 +21,17 @@ SERVICE_NAME="ai-service"
 echo -e "${PURPLE}🚀 Complete AI Service Deployment Script${NC}"
 echo "================================================"
 echo -e "${BLUE}This script will deploy AI service with:${NC}"
-echo "  - ✅ AI Service with all endpoints"
-echo "  - ✅ Monitoring and alerting (Prometheus + Grafana)"
-echo "  - ✅ Autoscaling (HPA + VPA)"
-echo "  - ✅ Security (NetworkPolicy + RBAC)"
-echo "  - ✅ Testing and validation"
+echo "  - AI Service with all endpoints"
+echo "  - Monitoring and alerting (Prometheus + Grafana)"
+echo "  - Autoscaling (HPA + VPA)"
+echo "  - Security (NetworkPolicy + RBAC)"
+echo "  - Testing and validation"
 echo
 
 # Function to print step header
 print_step() {
     echo
-    echo -e "${PURPLE}📋 STEP $1: $2${NC}"
+    echo -e "${PURPLE}STEP $1: $2${NC}"
     echo "================================================"
 }
 
@@ -39,7 +39,7 @@ print_step() {
 check_namespace() {
     local namespace="$1"
     if kubectl get namespace $namespace >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Namespace $namespace exists${NC}"
+        echo -e "${GREEN}Namespace $namespace exists${NC}"
         return 0
     else
         echo -e "${RED}❌ Namespace $namespace not found${NC}"
@@ -56,7 +56,7 @@ wait_for_deployment() {
     echo -n "Waiting for $deployment to be ready... "
     
     if kubectl wait --for=condition=available --timeout=${timeout}s deployment/$deployment -n $namespace >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Ready${NC}"
+        echo -e "${GREEN}Ready${NC}"
         return 0
     else
         echo -e "${RED}❌ Timeout${NC}"
@@ -73,7 +73,7 @@ run_script() {
     
     if [ -f "$script" ]; then
         if bash "$script"; then
-            echo -e "${GREEN}✅ $description completed successfully${NC}"
+            echo -e "${GREEN}$description completed successfully${NC}"
             return 0
         else
             echo -e "${RED}❌ $description failed${NC}"
@@ -114,7 +114,7 @@ test_ai_service() {
         echo -n "Testing $description... "
         
         if kubectl exec -n $NAMESPACE $POD_NAME -- wget -qO- --timeout=10 "http://localhost:8083$endpoint" >/dev/null 2>&1; then
-            echo -e "${GREEN}✅ OK${NC}"
+            echo -e "${GREEN}OK${NC}"
         else
             echo -e "${RED}❌ FAILED${NC}"
             failed=$((failed + 1))
@@ -122,7 +122,7 @@ test_ai_service() {
     done
     
     if [ $failed -eq 0 ]; then
-        echo -e "${GREEN}✅ All endpoint tests passed${NC}"
+        echo -e "${GREEN}All endpoint tests passed${NC}"
         return 0
     else
         echo -e "${RED}❌ $failed endpoint tests failed${NC}"
@@ -199,7 +199,7 @@ main() {
     echo
     echo -e "${YELLOW}Checking Kubernetes cluster...${NC}"
     if kubectl cluster-info >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Kubernetes cluster is accessible${NC}"
+        echo -e "${GREEN}Kubernetes cluster is accessible${NC}"
     else
         echo -e "${RED}❌ Cannot access Kubernetes cluster${NC}"
         exit 1
@@ -213,7 +213,7 @@ main() {
     # Build Docker image
     echo -n "Building Docker image... "
     if docker build -f Dockerfile.ai-service -t cloudbridge/ai-service:latest . --no-cache >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Built${NC}"
+        echo -e "${GREEN}Built${NC}"
     else
         echo -e "${RED}❌ Failed${NC}"
         exit 1
@@ -222,7 +222,7 @@ main() {
     # Load image to Minikube
     echo -n "Loading image to Minikube... "
     if minikube image load cloudbridge/ai-service:latest >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Loaded${NC}"
+        echo -e "${GREEN}Loaded${NC}"
     else
         echo -e "${RED}❌ Failed${NC}"
         exit 1
@@ -231,7 +231,7 @@ main() {
     # Deploy AI service
     echo -n "Deploying AI service... "
     if kubectl apply -f k8s/ai-service/ -n $NAMESPACE >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Deployed${NC}"
+        echo -e "${GREEN}Deployed${NC}"
     else
         echo -e "${RED}❌ Failed${NC}"
         exit 1
@@ -274,7 +274,7 @@ main() {
     show_access_info
     show_monitoring_commands
     
-    echo -e "${GREEN}✅ AI Service is fully deployed and operational!${NC}"
+    echo -e "${GREEN}AI Service is fully deployed and operational!${NC}"
     echo
     echo -e "${YELLOW}📝 Next Steps:${NC}"
     echo "  1. Access the AI service and test all endpoints"

@@ -66,12 +66,12 @@ jobs:
         
         # Scan filesystem for vulnerabilities
         trivy fs --severity HIGH,CRITICAL --format json --output security_reports/trivy-fs-results.json . || {
-          echo "⚠️ Trivy found issues, but continuing..."
+          echo " Trivy found issues, but continuing..."
         }
         
         # Scan filesystem for secrets
         trivy fs --scanners secret --format json --output security_reports/trivy-secrets-results.json . || {
-          echo "⚠️ Trivy found secrets, but continuing..."
+          echo " Trivy found secrets, but continuing..."
         }
 
     - name: 🔍 Run Trivy dependency scan
@@ -80,7 +80,7 @@ jobs:
         
         # Scan Go dependencies
         trivy fs --scanners vuln --format json --output security_reports/trivy-deps-results.json . || {
-          echo "⚠️ Trivy found dependency issues, but continuing..."
+          echo " Trivy found dependency issues, but continuing..."
         }
 
     - name: 🔍 Run Gosec security scan
@@ -89,7 +89,7 @@ jobs:
         
         # Run gosec for Go security
         gosec -fmt json -out security_reports/gosec-results.json ./... || {
-          echo "⚠️ gosec found issues, but continuing..."
+          echo " gosec found issues, but continuing..."
         }
 
     - name: 🔍 Run golangci-lint
@@ -99,7 +99,7 @@ jobs:
         
         # Run golangci-lint with timeout
         golangci-lint run --timeout=5m --out-format=json > security_reports/golangci-lint-results.json || {
-          echo "⚠️ golangci-lint found issues, but continuing..."
+          echo " golangci-lint found issues, but continuing..."
         }
 
     - name: 🔍 Run Nancy dependency scan
@@ -108,7 +108,7 @@ jobs:
         
         # Run nancy for dependency vulnerabilities
         go list -json -deps ./... | nancy sleuth --output json > security_reports/nancy-results.json || {
-          echo "⚠️ nancy found issues, but continuing..."
+          echo " nancy found issues, but continuing..."
         }
 
     - name: 🔍 Run Safety Python scan
@@ -133,7 +133,7 @@ jobs:
         **Branch:** ${{ github.ref_name }}
         **Commit:** ${{ github.sha }}
         
-        ## 📋 Summary
+        ## Summary
         
         This report contains the results of comprehensive security scanning using multiple tools:
         
@@ -153,7 +153,7 @@ jobs:
         - `nancy-results.json`: Nancy dependency scan results
         - `python-security-results.json`: Safety Python scan results (if applicable)
         
-        ## 🚨 Critical Issues
+        ## Critical Issues
         
         Please review the JSON files for detailed vulnerability information.
         
@@ -184,18 +184,18 @@ jobs:
         echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🔍 Scans Performed:" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Trivy filesystem scan" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Trivy secrets scan" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Trivy dependency scan" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Gosec security scan" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ golangci-lint scan" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Nancy dependency scan" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Safety Python scan" >> $GITHUB_STEP_SUMMARY
+        echo "- Trivy filesystem scan" >> $GITHUB_STEP_SUMMARY
+        echo "- Trivy secrets scan" >> $GITHUB_STEP_SUMMARY
+        echo "- Trivy dependency scan" >> $GITHUB_STEP_SUMMARY
+        echo "- Gosec security scan" >> $GITHUB_STEP_SUMMARY
+        echo "- golangci-lint scan" >> $GITHUB_STEP_SUMMARY
+        echo "- Nancy dependency scan" >> $GITHUB_STEP_SUMMARY
+        echo "- Safety Python scan" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📊 Results:" >> $GITHUB_STEP_SUMMARY
         echo "Check the uploaded artifacts for detailed scan results." >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🚨 Next Steps:" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
         echo "1. Review all scan results" >> $GITHUB_STEP_SUMMARY
         echo "2. Address critical and high severity issues" >> $GITHUB_STEP_SUMMARY
         echo "3. Update vulnerable dependencies" >> $GITHUB_STEP_SUMMARY
@@ -245,7 +245,7 @@ jobs:
         
         # Scan Docker image
         trivy image --severity HIGH,CRITICAL --format json --output security_reports/trivy-docker-results.json cloudbridge-relay:security-test || {
-          echo "⚠️ Trivy found Docker image issues, but continuing..."
+          echo " Trivy found Docker image issues, but continuing..."
         }
 
     - name: 📤 Upload Docker security artifacts

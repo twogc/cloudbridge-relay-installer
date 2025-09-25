@@ -15,7 +15,7 @@ curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
   -H "Content-Type: application/json" \
   -d "{
     \"chat_id\": \"${CHAT_ID}\",
-    \"text\": \"🤖 Тестовое сообщение от CloudBridge AI Service\\n\\nВремя: $(date)\\nСтатус: Система работает нормально\\n\\nЭто автоматическое тестовое сообщение для проверки интеграции Telegram уведомлений.\",
+    \"text\": \" Тестовое сообщение от CloudBridge AI Service\\n\\nВремя: $(date)\\nСтатус: Система работает нормально\\n\\nЭто автоматическое тестовое сообщение для проверки интеграции Telegram уведомлений.\",
     \"parse_mode\": \"HTML\"
   }" | jq .
 

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cadence
+  labels:
+    name: cadence
+    app: cadence
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cadence-system
+  labels:
+    name: cadence-system
+    app: cadence

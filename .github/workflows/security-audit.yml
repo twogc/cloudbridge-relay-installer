@@ -54,13 +54,13 @@ jobs:
         # Run gosec for Go security
         echo "Running gosec security scan..."
         gosec -fmt json -out security_reports/gosec-results.json ./... || {
-          echo "⚠️ gosec found issues, but continuing..."
+          echo " gosec found issues, but continuing..."
         }
         
         # Run nancy for dependency vulnerabilities
         echo "Running nancy dependency scan..."
         go list -json -deps ./... | nancy sleuth --output json > security_reports/nancy-results.json || {
-          echo "⚠️ nancy found issues, but continuing..."
+          echo " nancy found issues, but continuing..."
         }
         
         # Check for outdated dependencies
@@ -73,7 +73,7 @@ jobs:
           safety check -r requirements.txt --json --output security_reports/python-security-results.json || true
         fi
         
-        echo "✅ Comprehensive security audit completed"
+        echo "Comprehensive security audit completed"
 
     - name: 📊 Create security report
       run: |

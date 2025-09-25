@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🔗 Скрипт интеграции SIEM с существующим мониторингом CloudBridge Relay
+#  Скрипт интеграции SIEM с существующим мониторингом CloudBridge Relay
 # Автор: CloudBridge Team
 # Версия: 2.0.0
 
@@ -102,7 +102,7 @@ parse_arguments() {
 # Показать справку
 show_help() {
     cat << EOF
-🔗 Скрипт интеграции SIEM с существующим мониторингом
+ Скрипт интеграции SIEM с существующим мониторингом
 
 Использование:
     sudo $0 --siem-ip <IP_ADDRESS> [опции]
@@ -845,7 +845,7 @@ verify_integration() {
 
 # Основная функция
 main() {
-    log_info "🔗 Начало интеграции SIEM с существующим мониторингом"
+    log_info " Начало интеграции SIEM с существующим мониторингом"
     
     # Проверки
     check_root
@@ -862,7 +862,7 @@ main() {
     restart_monitoring_services
     verify_integration
     
-    log_success "✅ Интеграция SIEM с мониторингом завершена успешно!"
+    log_success "Интеграция SIEM с мониторингом завершена успешно!"
     
     cat << EOF
 
@@ -873,12 +873,12 @@ main() {
    - SIEM Alerts Dashboard: http://localhost:3000/d/siem-alerts  
    - SIEM Security Dashboard: http://localhost:3000/d/siem-security
 
-🔗 Полезные ссылки:
+ Полезные ссылки:
    - Prometheus: http://localhost:9090
    - AlertManager: http://localhost:9093
    - Grafana: http://localhost:3000
 
-⚠️  Важные замечания:
+  Важные замечания:
    - Убедитесь, что SIEM сервер доступен по адресу ${SIEM_SERVER_IP}:${SIEM_SERVER_PORT}
    - Проверьте настройки уведомлений в AlertManager
    - Настройте переменные окружения для email и Telegram уведомлений

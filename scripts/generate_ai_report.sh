@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🤖 ГЕНЕРАЦИЯ ОТЧЕТА ПО РЕКОМЕНДАЦИЯМ AI СЕРВИСА${NC}"
+echo -e "${BLUE} ГЕНЕРАЦИЯ ОТЧЕТА ПО РЕКОМЕНДАЦИЯМ AI СЕРВИСА${NC}"
 echo "=========================================================="
 echo ""
 
@@ -37,7 +37,7 @@ route_recommendations=$(get_ai_data "/api/v1/ai/route/recommendations")
 echo "$route_recommendations" | jq -r '.recommendations[] | "• \(.protocol): латентность \(.latency)ms, score \(.score)"' 2>/dev/null || echo "$route_recommendations"
 echo ""
 
-echo -e "${BLUE}🚨 АКТИВНЫЕ АЛЕРТЫ:${NC}"
+echo -e "${BLUE}АКТИВНЫЕ АЛЕРТЫ:${NC}"
 echo "======================"
 alerts=$(get_ai_data "/api/v1/ai/alerts")
 echo "$alerts" | jq -r '.alerts[] | "• \(.message) (серьезность: \(.severity))"' 2>/dev/null || echo "$alerts"
@@ -61,7 +61,7 @@ performance=$(get_ai_data "/api/v1/ai/trends/performance")
 echo "$performance" | jq -r '.trends | to_entries[] | "• \(.key): последнее значение \(.value[-1].value)"' 2>/dev/null || echo "$performance"
 echo ""
 
-echo -e "${GREEN}💡 КЛЮЧЕВЫЕ РЕКОМЕНДАЦИИ:${NC}"
+echo -e "${GREEN}КЛЮЧЕВЫЕ РЕКОМЕНДАЦИИ:${NC}"
 echo "============================="
 echo "• Использовать QUIC-Enhanced для лучшей производительности"
 echo "• Переобучить модель прогнозирования нагрузки"
@@ -69,7 +69,7 @@ echo "• Продолжить мониторинг сетевых аномал�
 echo "• Система работает стабильно"
 echo ""
 
-echo -e "${YELLOW}📋 СЛЕДУЮЩИЕ ШАГИ:${NC}"
+echo -e "${YELLOW}СЛЕДУЮЩИЕ ШАГИ:${NC}"
 echo "=================="
 echo "• Мониторить точность прогнозов нагрузки"
 echo "• Анализировать новые аномалии"
@@ -77,7 +77,7 @@ echo "• Оптимизировать маршруты на основе рек
 echo "• Регулярно проверять состояние компонентов"
 echo ""
 
-echo -e "${GREEN}✅ Отчет сгенерирован успешно!${NC}"
+echo -e "${GREEN}Отчет сгенерирован успешно!${NC}"
 echo "Время генерации: $(date)"
 
 

@@ -172,7 +172,7 @@ gh pr merge 29 --squash
 
 ### Готовность к сертификации:
 - Все security issues закрыты ✅
-- Dependencies актуальны ✅  
+- Dependencies актуальны  
 - Automated security scanning ✅
 - Documented security processes ✅
 
@@ -180,7 +180,7 @@ gh pr merge 29 --squash
 
 ---
 
-## ✅ РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ (2025-09-23)
+## РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ (2025-09-23)
 
 ### CI/CD Отключение
 - **Причина**: GitHub Actions billing issues ("account payments have failed or spending limit needs increase")

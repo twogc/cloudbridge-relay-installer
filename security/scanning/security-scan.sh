@@ -23,11 +23,11 @@ log_info() {
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}$1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}  $1${NC}"
 }
 
 log_error() {
@@ -257,13 +257,13 @@ show_results() {
     fi
     
     echo ""
-    echo "📋 Resource Usage:"
+    echo "Resource Usage:"
     if [ -f "$SCAN_DIR/results/node-resources.txt" ]; then
         cat $SCAN_DIR/results/node-resources.txt
     fi
     
     echo ""
-    echo "📋 Pod Resources:"
+    echo "Pod Resources:"
     if [ -f "$SCAN_DIR/results/pod-resources.txt" ]; then
         cat $SCAN_DIR/results/pod-resources.txt
     fi

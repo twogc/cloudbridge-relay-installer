@@ -137,20 +137,20 @@ jobs:
           # Run gosec for Go security
           echo "Running gosec security scan..."
           gosec -fmt json -out security_reports/gosec-results.json ./... || {
-            echo "⚠️ gosec found issues, but continuing..."
+            echo " gosec found issues, but continuing..."
           }
           
           # Run nancy for dependency vulnerabilities
           echo "Running nancy dependency scan..."
           go list -json -deps ./... | nancy sleuth --output json > security_reports/nancy-results.json || {
-            echo "⚠️ nancy found issues, but continuing..."
+            echo " nancy found issues, but continuing..."
           }
           
           # Check for secrets
           echo "Running trufflehog secret scan..."
           # Note: This would require trufflehog to be installed
           
-          echo "✅ Security scan completed"
+          echo "Security scan completed"
 
       - name: 📤 Upload security artifacts
         uses: actions/upload-artifact@v4
@@ -186,7 +186,7 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: 📋 Set version info
+      - name: Set version info
         id: version
         run: |
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
@@ -235,7 +235,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📋 Extract metadata
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -398,7 +398,7 @@ jobs:
       - name: 📢 Success notification
         if: needs.test.result == 'success' && needs.build.result == 'success' && needs.docker.result == 'success'
         run: |
-          echo "✅ CloudBridge Relay CI/CD Pipeline completed successfully!"
+          echo "CloudBridge Relay CI/CD Pipeline completed successfully!"
           echo "Version: ${{ needs.build.outputs.version }}"
           echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.version }}"
 

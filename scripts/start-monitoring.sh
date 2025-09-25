@@ -47,7 +47,7 @@ start_port_forward() {
     echo -n "Starting $description on port $local_port... "
     
     if check_port $local_port; then
-        echo -e "${YELLOW}⚠️  Port $local_port already in use${NC}"
+        echo -e "${YELLOW}  Port $local_port already in use${NC}"
         return 1
     fi
     
@@ -58,7 +58,7 @@ start_port_forward() {
     # Wait a moment and check if it's still running
     sleep 2
     if kill -0 $pid 2>/dev/null; then
-        echo -e "${GREEN}✅ Started (PID: $pid)${NC}"
+        echo -e "${GREEN}Started (PID: $pid)${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed to start${NC}"
@@ -74,7 +74,7 @@ check_service() {
     echo -n "Checking $name availability... "
     
     if curl -s -o /dev/null -w "%{http_code}" "$url" | grep -q "200\|302\|401"; then
-        echo -e "${GREEN}✅ Available${NC}"
+        echo -e "${GREEN}Available${NC}"
         return 0
     else
         echo -e "${RED}❌ Not available${NC}"
@@ -84,7 +84,7 @@ check_service() {
 
 # Main function
 main() {
-    echo -e "${YELLOW}📋 Starting CloudBridge Monitoring Services...${NC}"
+    echo -e "${YELLOW}Starting CloudBridge Monitoring Services...${NC}"
     echo
     
     # Cleanup existing port-forwards
@@ -95,7 +95,7 @@ main() {
     
     # Check Grafana
     if kubectl get pod -n cloudbridge-monitoring -l app.kubernetes.io/name=grafana --no-headers 2>/dev/null | grep -q Running; then
-        echo -e "${GREEN}✅ Grafana pod is running${NC}"
+        echo -e "${GREEN}Grafana pod is running${NC}"
     else
         echo -e "${RED}❌ Grafana pod not found or not running${NC}"
         echo -e "${YELLOW}   Run: kubectl get pods -n cloudbridge-monitoring${NC}"
@@ -104,7 +104,7 @@ main() {
     
     # Check Prometheus
     if kubectl get pod -n cloudbridge-monitoring -l app.kubernetes.io/name=prometheus --no-headers 2>/dev/null | grep -q Running; then
-        echo -e "${GREEN}✅ Prometheus pod is running${NC}"
+        echo -e "${GREEN}Prometheus pod is running${NC}"
     else
         echo -e "${RED}❌ Prometheus pod not found or not running${NC}"
         echo -e "${YELLOW}   Run: kubectl get pods -n cloudbridge-monitoring${NC}"
@@ -113,7 +113,7 @@ main() {
     
     # Check AI Service
     if kubectl get pod -n cloudbridge -l app.kubernetes.io/name=ai-service --no-headers 2>/dev/null | grep -q Running; then
-        echo -e "${GREEN}✅ AI Service pod is running${NC}"
+        echo -e "${GREEN}AI Service pod is running${NC}"
     else
         echo -e "${RED}❌ AI Service pod not found or not running${NC}"
         echo -e "${YELLOW}   Run: kubectl get pods -n cloudbridge${NC}"
@@ -159,7 +159,7 @@ main() {
     echo "   No authentication required"
     echo
     
-    echo -e "${BLUE}🤖 AI Service API:${NC}"
+    echo -e "${BLUE} AI Service API:${NC}"
     echo "   URL: http://localhost:8083"
     echo "   Health: http://localhost:8083/health"
     echo "   Status: http://localhost:8083/api/v1/ai/status"

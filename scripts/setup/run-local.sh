@@ -33,7 +33,7 @@ docker run -d \
     -v $(pwd)/logs:/app/logs \
     twogc/cloudbridge-relay:alpine
 
-echo "✅ Контейнер запущен!"
+echo "Контейнер запущен!"
 echo ""
 echo "📊 Статус:"
 docker ps | grep cloudbridge-relay-alpine

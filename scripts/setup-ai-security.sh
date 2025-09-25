@@ -23,7 +23,7 @@ echo "================================================"
 # Function to check if namespace exists
 check_namespace() {
     if kubectl get namespace $NAMESPACE >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Namespace $NAMESPACE exists${NC}"
+        echo -e "${GREEN}Namespace $NAMESPACE exists${NC}"
         return 0
     else
         echo -e "${RED}❌ Namespace $NAMESPACE not found${NC}"
@@ -90,7 +90,7 @@ spec:
     echo "$NETWORK_POLICY_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -116,7 +116,7 @@ metadata:
     echo "$SERVICE_ACCOUNT_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
     else
         echo -e "${RED}❌ Failed${NC}"
         return 1
@@ -143,7 +143,7 @@ rules:
     echo "$ROLE_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
     else
         echo -e "${RED}❌ Failed${NC}"
         return 1
@@ -168,7 +168,7 @@ roleRef:
     echo "$ROLE_BINDING_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -208,7 +208,7 @@ spec:
     echo "$PSP_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -258,10 +258,10 @@ volumes:
     echo "$SCC_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${YELLOW}⚠️  SCC not supported (not OpenShift)${NC}"
+        echo -e "${YELLOW}  SCC not supported (not OpenShift)${NC}"
         return 0
     fi
 }
@@ -288,7 +288,7 @@ data:
     echo "$SECRET_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         echo -e "${YELLOW}   API Key: $API_KEY${NC}"
         return 0
     else
@@ -354,7 +354,7 @@ data:
     echo "$SECURITY_CONFIG_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -371,10 +371,10 @@ create_pod_security_standards() {
     kubectl label namespace $NAMESPACE pod-security.kubernetes.io/audit=restricted --overwrite >/dev/null 2>&1
     kubectl label namespace $NAMESPACE pod-security.kubernetes.io/warn=restricted --overwrite >/dev/null 2>&1
     
-    echo -e "${GREEN}✅ Pod Security Standards applied${NC}"
+    echo -e "${GREEN}Pod Security Standards applied${NC}"
 }
 
-echo -e "${YELLOW}📋 Setting up AI Service Security...${NC}"
+echo -e "${YELLOW}Setting up AI Service Security...${NC}"
 echo
 
 # Check prerequisites

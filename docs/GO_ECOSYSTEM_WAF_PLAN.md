@@ -1,6 +1,6 @@
 # 🚀 **План интеграции Go-экосистемы WAF и Reverse Proxy в CloudBridge Relay**
 
-## 📋 **Обзор решения**
+## **Обзор решения**
 
 ### **Цель:**
 Интегрировать зрелые Go-инструменты для создания enterprise-класса WAF, API Gateway и Identity-aware proxy поверх CloudBridge Relay.
@@ -45,7 +45,7 @@ Internet → Traefik (Ingress + Rate Limit)
 
 ## 🗓️ **План реализации (6 недель)**
 
-### **📅 Этап 1: Traefik + Coraza WAF (2 недели)**
+### ** Этап 1: Traefik + Coraza WAF (2 недели)**
 
 #### **1.1 Установка и настройка Traefik**
 ```yaml
@@ -247,7 +247,7 @@ data:
         "id:920100,phase:1,block,msg:'Rate Limit Exceeded',logdata:'Matched Data: %{MATCHED_VAR} found within %{MATCHED_VAR_NAME}',tag:'application-multi',tag:'language-multi',tag:'platform-multi',tag:'attack-dos',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-OWASP_CRS/PROTOCOL_VIOLATION/EVASION-%{matched_var_name}=%{matched_var}"
 ```
 
-### **📅 Этап 2: ORY Oathkeeper + Zitadel (2 недели)**
+### ** Этап 2: ORY Oathkeeper + Zitadel (2 недели)**
 
 #### **2.1 Oathkeeper Configuration**
 ```yaml
@@ -388,7 +388,7 @@ data:
       - handler: id_token
 ```
 
-### **📅 Этап 3: KrakenD API Gateway (1 неделя)**
+### ** Этап 3: KrakenD API Gateway (1 неделя)**
 
 #### **3.1 KrakenD Configuration**
 ```json
@@ -486,7 +486,7 @@ data:
 }
 ```
 
-### **📅 Этап 4: CrowdSec Bot Protection (1 неделя)**
+### ** Этап 4: CrowdSec Bot Protection (1 неделя)**
 
 #### **4.1 CrowdSec Configuration**
 ```yaml
@@ -825,7 +825,7 @@ echo "🌐 Deploying KrakenD API Gateway..."
 kubectl apply -f k8s/krakend/
 
 # Deploy CrowdSec
-echo "🤖 Deploying CrowdSec Bot Protection..."
+echo " Deploying CrowdSec Bot Protection..."
 kubectl apply -f k8s/crowdsec/
 
 # Wait for deployments
@@ -839,7 +839,7 @@ kubectl wait --for=condition=available --timeout=300s deployment/crowdsec -n cro
 echo "🏥 Running health checks..."
 ./scripts/health-check-waf.sh
 
-echo "✅ WAF Stack deployed successfully!"
+echo "WAF Stack deployed successfully!"
 ```
 
 ## 📈 **Ожидаемые результаты**
@@ -859,7 +859,7 @@ echo "✅ WAF Stack deployed successfully!"
 ### **Управляемость:**
 - 🔧 < 2 минуты время развертывания
 - 📊 100% покрытие метриками
-- 🚨 < 30 секунд время обнаружения инцидентов
+- < 30 секунд время обнаружения инцидентов
 - 📝 100% логирование запросов
 
 ## 🎯 **Заключение**

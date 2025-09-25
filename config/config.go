@@ -70,17 +70,17 @@ type configRaw struct {
 		ProjectID    string `json:"project_id"`
 		ClientID     string `json:"client_id"`
 		ClientSecret string `json:"client_secret"`
-		
+
 		FallbackSecret string `json:"fallback_secret"`
-		
+
 		TokenValidation struct {
-			Audience   string `json:"audience"`
-			ClockSkew  string `json:"clock_skew"`
+			Audience  string `json:"audience"`
+			ClockSkew string `json:"clock_skew"`
 		} `json:"token_validation"`
-		
+
 		CacheTTL    string `json:"cache_ttl"`
 		HTTPTimeout string `json:"http_timeout"`
-		
+
 		TenantManagement struct {
 			Enabled       bool `json:"enabled"`
 			AutoCreate    bool `json:"auto_create"`
@@ -287,13 +287,13 @@ type configRaw struct {
 
 	// ICE/STUN/TURN Configuration
 	ICEStunTurn struct {
-		Enabled            bool     `json:"enabled"`
-		StunServers        []string `json:"stun_servers"`
-		TurnServers        []string `json:"turn_servers"`
-		ICETimeout         string   `json:"ice_timeout"`
-		ConnectionTimeout  string   `json:"connection_timeout"`
-		GatheringTimeout   string   `json:"gathering_timeout"`
-		CandidateTypes     []string `json:"candidate_types"`
+		Enabled           bool     `json:"enabled"`
+		StunServers       []string `json:"stun_servers"`
+		TurnServers       []string `json:"turn_servers"`
+		ICETimeout        string   `json:"ice_timeout"`
+		ConnectionTimeout string   `json:"connection_timeout"`
+		GatheringTimeout  string   `json:"gathering_timeout"`
+		CandidateTypes    []string `json:"candidate_types"`
 	} `json:"ice_stun_turn"`
 
 	// MASQUE Configuration
@@ -305,11 +305,11 @@ type configRaw struct {
 	} `json:"masque"`
 
 	HTTPAPI struct {
-		Enabled bool   `json:"enabled"`
-		Port    int    `json:"port"`
-		Host    string `json:"host"`
-		CORSEnabled bool `json:"cors_enabled"`
-		RateLimit struct {
+		Enabled     bool   `json:"enabled"`
+		Port        int    `json:"port"`
+		Host        string `json:"host"`
+		CORSEnabled bool   `json:"cors_enabled"`
+		RateLimit   struct {
 			Enabled           bool `json:"enabled"`
 			RequestsPerMinute int  `json:"requests_per_minute"`
 		} `json:"rate_limit"`
@@ -319,13 +319,13 @@ type configRaw struct {
 		Enabled bool   `json:"enabled"`
 		Port    int    `json:"port"`
 		Host    string `json:"host"`
-		TLS struct {
+		TLS     struct {
 			Enabled  bool   `json:"enabled"`
 			CertFile string `json:"cert_file"`
 			KeyFile  string `json:"key_file"`
 		} `json:"tls"`
 		CORSEnabled bool `json:"cors_enabled"`
-		RateLimit struct {
+		RateLimit   struct {
 			Enabled           bool `json:"enabled"`
 			RequestsPerMinute int  `json:"requests_per_minute"`
 		} `json:"rate_limit"`
@@ -379,17 +379,17 @@ type Config struct {
 		ProjectID    string `json:"project_id"`
 		ClientID     string `json:"client_id"`
 		ClientSecret string `json:"client_secret"`
-		
+
 		FallbackSecret string `json:"fallback_secret"`
-		
+
 		TokenValidation struct {
-			Audience   string        `json:"audience"`
-			ClockSkew  time.Duration `json:"clock_skew"`
+			Audience  string        `json:"audience"`
+			ClockSkew time.Duration `json:"clock_skew"`
 		} `json:"token_validation"`
-		
+
 		CacheTTL    time.Duration `json:"cache_ttl"`
 		HTTPTimeout time.Duration `json:"http_timeout"`
-		
+
 		TenantManagement struct {
 			Enabled       bool `json:"enabled"`
 			AutoCreate    bool `json:"auto_create"`
@@ -683,14 +683,50 @@ type Config struct {
 
 	// ICE/STUN/TURN Configuration
 	ICEStunTurn struct {
-		Enabled            bool          `json:"enabled"`
-		StunServers        []string      `json:"stun_servers"`
-		TurnServers        []string      `json:"turn_servers"`
-		ICETimeout         time.Duration `json:"ice_timeout"`
-		ConnectionTimeout  time.Duration `json:"connection_timeout"`
-		GatheringTimeout   time.Duration `json:"gathering_timeout"`
-		CandidateTypes     []string      `json:"candidate_types"`
+		Enabled           bool          `json:"enabled"`
+		StunServers       []string      `json:"stun_servers"`
+		TurnServers       []string      `json:"turn_servers"`
+		ICETimeout        time.Duration `json:"ice_timeout"`
+		ConnectionTimeout time.Duration `json:"connection_timeout"`
+		GatheringTimeout  time.Duration `json:"gathering_timeout"`
+		CandidateTypes    []string      `json:"candidate_types"`
 	} `json:"ice_stun_turn"`
+
+	// TURN Pool Configuration
+	TURNPool struct {
+		Enabled                 bool          `json:"enabled"`
+		DefaultPoolName         string        `json:"default_pool_name"`
+		AllocationTimeout       time.Duration `json:"allocation_timeout"`
+		HealthCheckInterval     time.Duration `json:"health_check_interval"`
+		HealthCheckTimeout      time.Duration `json:"health_check_timeout"`
+		MaxAllocationsPerClient int           `json:"max_allocations_per_client"`
+		LoadBalancingStrategy   string        `json:"load_balancing_strategy"`
+		WeightedThreshold       float64       `json:"weighted_threshold"`
+		MetricsEnabled          bool          `json:"metrics_enabled"`
+		StatsInterval           time.Duration `json:"stats_interval"`
+		LatencyHistorySize      int           `json:"latency_history_size"`
+		FailoverEnabled         bool          `json:"failover_enabled"`
+		FailoverTimeout         time.Duration `json:"failover_timeout"`
+		MaxRetries              int           `json:"max_retries"`
+		BackoffMultiplier       float64       `json:"backoff_multiplier"`
+		Pools                   map[string]struct {
+			Name    string `json:"name"`
+			Region  string `json:"region"`
+			Servers []struct {
+				Address        string            `json:"address"`
+				Username       string            `json:"username"`
+				Password       string            `json:"password"`
+				Realm          string            `json:"realm"`
+				Priority       int               `json:"priority"`
+				Weight         int               `json:"weight"`
+				MaxConnections int               `json:"max_connections"`
+				Region         string            `json:"region"`
+				Provider       string            `json:"provider"`
+				Capabilities   []string          `json:"capabilities"`
+				Tags           map[string]string `json:"tags"`
+			} `json:"servers"`
+		} `json:"pools"`
+	} `json:"turn_pool"`
 
 	// MASQUE Configuration
 	MASQUE struct {
@@ -708,11 +744,11 @@ type Config struct {
 
 	// HTTP API Configuration
 	HTTPAPI struct {
-		Enabled bool   `json:"enabled"`
-		Port    int    `json:"port"`
-		Host    string `json:"host"`
-		CORSEnabled bool `json:"cors_enabled"`
-		RateLimit struct {
+		Enabled     bool   `json:"enabled"`
+		Port        int    `json:"port"`
+		Host        string `json:"host"`
+		CORSEnabled bool   `json:"cors_enabled"`
+		RateLimit   struct {
 			Enabled           bool `json:"enabled"`
 			RequestsPerMinute int  `json:"requests_per_minute"`
 		} `json:"rate_limit"`
@@ -723,13 +759,13 @@ type Config struct {
 		Enabled bool   `json:"enabled"`
 		Port    int    `json:"port"`
 		Host    string `json:"host"`
-		TLS struct {
+		TLS     struct {
 			Enabled  bool   `json:"enabled"`
 			CertFile string `json:"cert_file"`
 			KeyFile  string `json:"key_file"`
 		} `json:"tls"`
 		CORSEnabled bool `json:"cors_enabled"`
-		RateLimit struct {
+		RateLimit   struct {
 			Enabled           bool `json:"enabled"`
 			RequestsPerMinute int  `json:"requests_per_minute"`
 		} `json:"rate_limit"`

@@ -50,7 +50,7 @@ check_pods_status() {
         pod_name=$(echo $line | awk '{print $1}')
         status=$(echo $line | awk '{print $3}')
         if [ "$status" = "Running" ]; then
-            echo -e "   ✅ $pod_name - $status"
+            echo -e "   $pod_name - $status"
         else
             echo -e "   ❌ $pod_name - $status"
         fi
@@ -63,7 +63,7 @@ check_pods_status() {
         pod_name=$(echo $line | awk '{print $1}')
         status=$(echo $line | awk '{print $3}')
         if [ "$status" = "Running" ]; then
-            echo -e "   ✅ $pod_name - $status"
+            echo -e "   $pod_name - $status"
         else
             echo -e "   ❌ $pod_name - $status"
         fi
@@ -83,7 +83,7 @@ start_port_forward() {
     
     # Проверяем, не запущен ли уже port-forward
     if pgrep -f "kubectl port-forward.*$service_name.*$local_port:$remote_port" > /dev/null; then
-        echo -e "${YELLOW}⚠️  Port-forward для $service_name уже запущен${NC}"
+        echo -e "${YELLOW}  Port-forward для $service_name уже запущен${NC}"
         return 0
     fi
     
@@ -96,7 +96,7 @@ start_port_forward() {
     
     # Проверяем, что процесс запустился
     if kill -0 $pid 2>/dev/null; then
-        echo -e "${GREEN}✅ Port-forward для $service_name запущен (PID: $pid)${NC}"
+        echo -e "${GREEN}Port-forward для $service_name запущен (PID: $pid)${NC}"
         echo -e "   ${CYAN}Доступ:${NC} http://localhost:$local_port"
         echo -e "   ${CYAN}Описание:${NC} $description"
         echo ""
@@ -118,7 +118,7 @@ stop_all_port_forwards() {
         echo "$pids" | xargs kill -TERM 2>/dev/null || true
         sleep 2
         echo "$pids" | xargs kill -KILL 2>/dev/null || true
-        echo -e "${GREEN}✅ Все port-forward остановлены${NC}"
+        echo -e "${GREEN}Все port-forward остановлены${NC}"
     else
         echo -e "${YELLOW}ℹ️  Нет активных port-forward${NC}"
     fi
@@ -131,7 +131,7 @@ stop_all_port_forwards() {
         echo "$cadence_web_pids" | xargs kill -TERM 2>/dev/null || true
         sleep 2
         echo "$cadence_web_pids" | xargs kill -KILL 2>/dev/null || true
-        echo -e "${GREEN}✅ Cadence Web UI остановлен${NC}"
+        echo -e "${GREEN}Cadence Web UI остановлен${NC}"
     else
         echo -e "${YELLOW}ℹ️  Cadence Web UI не запущен${NC}"
     fi
@@ -151,7 +151,7 @@ show_port_forward_status() {
     if [ -n "$pids" ]; then
         echo "$pids" | while read pid; do
             local cmd=$(ps -p $pid -o args= 2>/dev/null || echo "Процесс не найден")
-            echo -e "   ${GREEN}✅ PID $pid:${NC} $cmd"
+            echo -e "   ${GREEN}PID $pid:${NC} $cmd"
         done
     else
         echo -e "   ${YELLOW}ℹ️  Нет активных port-forward${NC}"
@@ -163,7 +163,7 @@ show_port_forward_status() {
     if [ -n "$cadence_web_pids" ]; then
         echo "$cadence_web_pids" | while read pid; do
             local cmd=$(ps -p $pid -o args= 2>/dev/null || echo "Процесс не найден")
-            echo -e "   ${GREEN}✅ PID $pid:${NC} $cmd"
+            echo -e "   ${GREEN}PID $pid:${NC} $cmd"
         done
     else
         echo -e "   ${YELLOW}ℹ️  Cadence Web UI не запущен${NC}"
@@ -173,7 +173,7 @@ show_port_forward_status() {
     if kubectl get svc -n cloudbridge cadence-nodeport > /dev/null 2>&1; then
         local nodeport=$(kubectl get svc -n cloudbridge cadence-nodeport -o jsonpath='{.spec.ports[0].nodePort}')
         local minikube_ip=$(minikube ip 2>/dev/null || echo "unknown")
-        echo -e "   ${GREEN}✅ NodePort активен: $minikube_ip:$nodeport${NC}"
+        echo -e "   ${GREEN}NodePort активен: $minikube_ip:$nodeport${NC}"
     else
         echo -e "   ${YELLOW}ℹ️  NodePort сервис не найден${NC}"
     fi
@@ -190,12 +190,12 @@ open_browser() {
     
     if command -v xdg-open > /dev/null; then
         xdg-open "$url" 2>/dev/null &
-        echo -e "${GREEN}✅ Браузер открыт для $description${NC}"
+        echo -e "${GREEN}Браузер открыт для $description${NC}"
     elif command -v open > /dev/null; then
         open "$url" 2>/dev/null &
-        echo -e "${GREEN}✅ Браузер открыт для $description${NC}"
+        echo -e "${GREEN}Браузер открыт для $description${NC}"
     else
-        echo -e "${YELLOW}⚠️  Автоматическое открытие браузера не поддерживается${NC}"
+        echo -e "${YELLOW}  Автоматическое открытие браузера не поддерживается${NC}"
         echo -e "   ${CYAN}Откройте вручную:${NC} $url"
     fi
     echo ""
@@ -219,43 +219,43 @@ main() {
             start_port_forward "cloudbridge-relay" "$NAMESPACE_CLOUDBRIDGE" 8084 8084 "CloudBridge Relay Metrics"
             
             echo -e "${YELLOW}🚀 Проверка Cadence Web UI в кластере...${NC}"
-            echo -e "${CYAN}💡 Cadence Web UI доступен на: http://192.168.49.2:30088${NC}"
+            echo -e "${CYAN}Cadence Web UI доступен на: http://192.168.49.2:30088${NC}"
             
             # Проверяем развертывание Cadence Web UI в кластере
             if kubectl get deployment -n cloudbridge cadence-web > /dev/null 2>&1; then
-                echo -e "${GREEN}✅ Cadence Web UI развернут в кластере${NC}"
+                echo -e "${GREEN}Cadence Web UI развернут в кластере${NC}"
                 
                 # Проверяем статус пода
                 local cadence_web_pod=$(kubectl get pods -n cloudbridge -l app.kubernetes.io/name=cadence-web -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
                 if [ -n "$cadence_web_pod" ]; then
                     local pod_status=$(kubectl get pod -n cloudbridge $cadence_web_pod -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
                     if [ "$pod_status" = "Running" ]; then
-                        echo -e "${GREEN}✅ Cadence Web UI pod работает: $cadence_web_pod${NC}"
+                        echo -e "${GREEN}Cadence Web UI pod работает: $cadence_web_pod${NC}"
                     else
-                        echo -e "${YELLOW}⚠️  Cadence Web UI pod не в состоянии Running: $pod_status${NC}"
+                        echo -e "${YELLOW}  Cadence Web UI pod не в состоянии Running: $pod_status${NC}"
                     fi
                 fi
             else
-                echo -e "${YELLOW}⚠️  Cadence Web UI не развернут, разворачиваем...${NC}"
+                echo -e "${YELLOW}  Cadence Web UI не развернут, разворачиваем...${NC}"
                 kubectl apply -f k8s/deployments/cadence-web-deployment.yaml > /dev/null 2>&1
                 kubectl apply -f k8s/services/cadence-web-service.yaml > /dev/null 2>&1
                 sleep 10
-                echo -e "${GREEN}✅ Cadence Web UI развернут${NC}"
+                echo -e "${GREEN}Cadence Web UI развернут${NC}"
             fi
             
             echo -e "${GREEN}🎉 Все UI интерфейсы запущены!${NC}"
             echo ""
-            echo -e "${BLUE}📋 Доступные интерфейсы:${NC}"
+            echo -e "${BLUE}Доступные интерфейсы:${NC}"
             print_service_info "Cadence Web UI" "30088" "Полноценный веб-интерфейс для Cadence" "http://192.168.49.2:30088"
             print_service_info "Grafana" "3000" "Дашборды и визуализация (включая Cadence)" "http://localhost:3000"
             print_service_info "Prometheus" "9090" "Метрики и алерты (включая Cadence)" "http://localhost:9090"
             print_service_info "Cassandra Metrics" "9500" "База данных метрики" "http://localhost:9500"
             print_service_info "CloudBridge Relay" "8084" "Основное приложение" "http://localhost:8084"
-            echo -e "${YELLOW}📋 Дополнительные инструменты:${NC}"
+            echo -e "${YELLOW}Дополнительные инструменты:${NC}"
             echo -e "   ${CYAN}CLI:${NC} ./tools/cadence-web/cadence-monitor.sh"
             echo -e "   ${CYAN}Логи:${NC} kubectl logs -n cloudbridge cadence-xxx"
             
-            echo -e "${YELLOW}💡 Для остановки используйте: $0 stop${NC}"
+            echo -e "${YELLOW}Для остановки используйте: $0 stop${NC}"
             ;;
             
         "stop")
@@ -277,7 +277,7 @@ main() {
             
             # Проверяем NodePort сервис для Cadence
             if kubectl get svc -n cloudbridge cadence-nodeport > /dev/null 2>&1; then
-                echo -e "${GREEN}✅ NodePort сервис для Cadence найден${NC}"
+                echo -e "${GREEN}NodePort сервис для Cadence найден${NC}"
             else
                 kubectl apply -f k8s/services/cadence-nodeport.yaml > /dev/null 2>&1
                 sleep 3
@@ -309,31 +309,31 @@ main() {
             
         "cadence")
             echo -e "${YELLOW}🚀 Проверка Cadence Web UI в кластере...${NC}"
-            echo -e "${CYAN}💡 Cadence Web UI доступен на: http://192.168.49.2:30088${NC}"
+            echo -e "${CYAN}Cadence Web UI доступен на: http://192.168.49.2:30088${NC}"
             echo ""
             
             # Проверяем развертывание Cadence Web UI в кластере
             if kubectl get deployment -n cloudbridge cadence-web > /dev/null 2>&1; then
-                echo -e "${GREEN}✅ Cadence Web UI развернут в кластере${NC}"
+                echo -e "${GREEN}Cadence Web UI развернут в кластере${NC}"
                 
                 # Проверяем статус пода
                 local cadence_web_pod=$(kubectl get pods -n cloudbridge -l app.kubernetes.io/name=cadence-web -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
                 if [ -n "$cadence_web_pod" ]; then
                     local pod_status=$(kubectl get pod -n cloudbridge $cadence_web_pod -o jsonpath='{.status.phase}' 2>/dev/null || echo "Unknown")
                     if [ "$pod_status" = "Running" ]; then
-                        echo -e "${GREEN}✅ Cadence Web UI pod работает: $cadence_web_pod${NC}"
-                        echo -e "${CYAN}💡 Доступ: http://192.168.49.2:30088${NC}"
+                        echo -e "${GREEN}Cadence Web UI pod работает: $cadence_web_pod${NC}"
+                        echo -e "${CYAN}Доступ: http://192.168.49.2:30088${NC}"
                     else
-                        echo -e "${YELLOW}⚠️  Cadence Web UI pod не в состоянии Running: $pod_status${NC}"
+                        echo -e "${YELLOW}  Cadence Web UI pod не в состоянии Running: $pod_status${NC}"
                     fi
                 fi
             else
-                echo -e "${YELLOW}⚠️  Cadence Web UI не развернут, разворачиваем...${NC}"
+                echo -e "${YELLOW}  Cadence Web UI не развернут, разворачиваем...${NC}"
                 kubectl apply -f k8s/deployments/cadence-web-deployment.yaml > /dev/null 2>&1
                 kubectl apply -f k8s/services/cadence-web-service.yaml > /dev/null 2>&1
                 sleep 10
-                echo -e "${GREEN}✅ Cadence Web UI развернут${NC}"
-                echo -e "${CYAN}💡 Доступ: http://192.168.49.2:30088${NC}"
+                echo -e "${GREEN}Cadence Web UI развернут${NC}"
+                echo -e "${CYAN}Доступ: http://192.168.49.2:30088${NC}"
             fi
             ;;
             
@@ -372,7 +372,7 @@ main() {
             
         *)
             echo -e "${RED}❌ Неизвестная команда: $1${NC}"
-            echo -e "${YELLOW}💡 Используйте '$0 help' для справки${NC}"
+            echo -e "${YELLOW}Используйте '$0 help' для справки${NC}"
             exit 1
             ;;
     esac

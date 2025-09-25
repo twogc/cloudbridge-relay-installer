@@ -26,7 +26,7 @@ check_grafana() {
     echo -n "Checking Grafana accessibility... "
     
     if curl -s -o /dev/null -w "%{http_code}" "$GRAFANA_URL" | grep -q "200\|302"; then
-        echo -e "${GREEN}✅ Accessible${NC}"
+        echo -e "${GREEN}Accessible${NC}"
         return 0
     else
         echo -e "${RED}❌ Not accessible${NC}"
@@ -39,7 +39,7 @@ check_dashboard_file() {
     echo -n "Checking dashboard template file... "
     
     if [ -f "$DASHBOARD_FILE" ]; then
-        echo -e "${GREEN}✅ Found${NC}"
+        echo -e "${GREEN}Found${NC}"
         return 0
     else
         echo -e "${RED}❌ Not found${NC}"
@@ -59,7 +59,7 @@ import_dashboard() {
         -u "$GRAFANA_USER:$GRAFANA_PASSWORD" 2>/dev/null)
     
     if echo "$response" | grep -q "success\|id"; then
-        echo -e "${GREEN}✅ Imported successfully${NC}"
+        echo -e "${GREEN}Imported successfully${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed to import${NC}"
@@ -71,7 +71,7 @@ import_dashboard() {
 # Function to show manual import instructions
 show_manual_instructions() {
     echo
-    echo -e "${YELLOW}📋 Manual Import Instructions:${NC}"
+    echo -e "${YELLOW}Manual Import Instructions:${NC}"
     echo "================================================"
     echo
     echo "1. Open Grafana in your browser:"
@@ -95,16 +95,16 @@ show_manual_instructions() {
     echo "8. Configure the dashboard settings and click 'Import'"
     echo
     echo -e "${BLUE}📊 Dashboard Features:${NC}"
-    echo "   ✅ AI Service Status"
-    echo "   ✅ Request Rate"
-    echo "   ✅ Response Time"
-    echo "   ✅ CPU Usage"
-    echo "   ✅ Memory Usage"
-    echo "   ✅ Anomaly Detection Rate"
-    echo "   ✅ Prediction Accuracy"
-    echo "   ✅ Active Alerts"
-    echo "   ✅ Error Rate"
-    echo "   ✅ Throughput"
+    echo "   AI Service Status"
+    echo "   Request Rate"
+    echo "   Response Time"
+    echo "   CPU Usage"
+    echo "   Memory Usage"
+    echo "   Anomaly Detection Rate"
+    echo "   Prediction Accuracy"
+    echo "   Active Alerts"
+    echo "   Error Rate"
+    echo "   Throughput"
     echo
 }
 
@@ -119,7 +119,7 @@ show_dashboard_content() {
 
 # Main function
 main() {
-    echo -e "${YELLOW}📋 Importing AI Service Dashboard Template...${NC}"
+    echo -e "${YELLOW}Importing AI Service Dashboard Template...${NC}"
     echo
     
     # Check prerequisites
@@ -152,7 +152,7 @@ main() {
         echo -e "${YELLOW}📝 The dashboard should now be available in the 'Dashboards' section.${NC}"
     else
         echo
-        echo -e "${YELLOW}⚠️  Automatic import failed. Using manual import method.${NC}"
+        echo -e "${YELLOW}  Automatic import failed. Using manual import method.${NC}"
         show_manual_instructions
     fi
     
@@ -162,7 +162,7 @@ main() {
     echo "   - Grafana URL: $GRAFANA_URL"
     echo "   - Namespace: cloudbridge-monitoring"
     echo
-    echo -e "${GREEN}✅ Import process complete!${NC}"
+    echo -e "${GREEN}Import process complete!${NC}"
 }
 
 # Run main function

@@ -20,7 +20,7 @@ check_status() {
     echo -n "Проверка $name... "
     
     if eval "$command" >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ OK${NC}"
+        echo -e "${GREEN}OK${NC}"
         return 0
     else
         echo -e "${RED}❌ FAIL${NC}"
@@ -37,9 +37,9 @@ check_warning() {
     echo -n "Проверка $name... "
     
     if eval "$command" >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ OK${NC}"
+        echo -e "${GREEN}OK${NC}"
     else
-        echo -e "${YELLOW}⚠️  $warning${NC}"
+        echo -e "${YELLOW}  $warning${NC}"
     fi
 }
 
@@ -61,7 +61,7 @@ check_warning "Сертификат Let's Encrypt" "sudo test -f /etc/letsencryp
 # 5. Проверка логов MASQUE
 echo -n "Проверка логов MASQUE... "
 if kubectl logs -n cloudbridge $(kubectl get pods -n cloudbridge | grep cloudbridge-relay | head -1 | awk '{print $1}') | grep -q "MASQUE server started successfully"; then
-    echo -e "${GREEN}✅ OK${NC}"
+    echo -e "${GREEN}OK${NC}"
 else
     echo -e "${RED}❌ FAIL${NC}"
 fi
@@ -90,14 +90,14 @@ echo "----------------"
 
 # Проверка мониторинга
 if ! kubectl get pods -n cloudbridge | grep -q prometheus; then
-    echo "⚠️  Рекомендуется настроить Prometheus для мониторинга"
+    echo "  Рекомендуется настроить Prometheus для мониторинга"
 fi
 
 # Проверка HTTP/3 клиента
 if ! command -v curl --http3 &> /dev/null; then
-    echo "⚠️  Рекомендуется установить curl с поддержкой HTTP/3 для полного тестирования"
+    echo "  Рекомендуется установить curl с поддержкой HTTP/3 для полного тестирования"
 fi
 
 echo ""
-echo "✅ Мониторинг завершен"
+echo "Мониторинг завершен"
 

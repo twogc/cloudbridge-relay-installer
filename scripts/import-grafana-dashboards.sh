@@ -26,7 +26,7 @@ check_grafana() {
     echo -n "Checking Grafana accessibility... "
     
     if curl -s -o /dev/null -w "%{http_code}" "$GRAFANA_URL" | grep -q "200\|302"; then
-        echo -e "${GREEN}✅ Accessible${NC}"
+        echo -e "${GREEN}Accessible${NC}"
         return 0
     else
         echo -e "${RED}❌ Not accessible${NC}"
@@ -47,10 +47,10 @@ get_api_key() {
     
     if echo "$response" | grep -q "key"; then
         API_KEY=$(echo "$response" | grep -o '"key":"[^"]*"' | cut -d'"' -f4)
-        echo -e "${GREEN}✅ Got API key${NC}"
+        echo -e "${GREEN}Got API key${NC}"
         return 0
     else
-        echo -e "${YELLOW}⚠️  Using basic auth${NC}"
+        echo -e "${YELLOW}  Using basic auth${NC}"
         return 1
     fi
 }
@@ -86,7 +86,7 @@ import_dashboard() {
     fi
     
     if echo "$response" | grep -q "success\|id"; then
-        echo -e "${GREEN}✅ Imported${NC}"
+        echo -e "${GREEN}Imported${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -182,7 +182,7 @@ create_simple_dashboard() {
     fi
     
     if echo "$response" | grep -q "success\|id"; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -192,7 +192,7 @@ create_simple_dashboard() {
 
 # Main function
 main() {
-    echo -e "${YELLOW}📋 Importing Grafana dashboards...${NC}"
+    echo -e "${YELLOW}Importing Grafana dashboards...${NC}"
     echo
     
     # Check Grafana accessibility

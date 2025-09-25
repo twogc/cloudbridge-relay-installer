@@ -313,13 +313,13 @@ main() {
     for service in "${SERVICES[@]}"; do
         if build_image "$service"; then
             if push_image "$service"; then
-                log_success "✅ Сервис ${service} успешно обработан"
+                log_success "Сервис ${service} успешно обработан"
             else
                 log_error "❌ Ошибка отправки сервиса ${service}"
                 exit 1
             fi
         else
-            log_warning "⚠️ Сервис ${service} пропущен"
+            log_warning " Сервис ${service} пропущен"
         fi
     done
     

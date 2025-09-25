@@ -11,7 +11,7 @@ if [[ -z "$HOST" ]]; then
 fi
 
 say() { echo -e "[$(date +%H:%M:%S)] $*"; }
-ok() { echo -e "✅ $*"; }
+ok() { echo -e "$*"; }
 err() { echo -e "❌ $*"; }
 
 # UDP 51820 (WireGuard)

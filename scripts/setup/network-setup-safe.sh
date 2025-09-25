@@ -71,7 +71,7 @@ echo -e "\n7. Применяем сетевую конфигурацию..."
 sudo netplan try --timeout=30
 
 if [ $? -eq 0 ]; then
-    echo "✅ Сетевая конфигурация применена успешно"
+    echo "Сетевая конфигурация применена успешно"
     sudo netplan apply
 else
     echo "❌ Ошибка применения конфигурации, откатываемся..."
@@ -92,7 +92,7 @@ ip route show
 # 8. Проверяем SSH доступ
 echo -e "\n9. Проверяем SSH доступ..."
 if ping -c 1 8.8.8.8 > /dev/null 2>&1; then
-    echo "✅ Интернет доступен"
+    echo "Интернет доступен"
 else
     echo "❌ Проблемы с интернетом"
 fi
@@ -133,7 +133,7 @@ if [[ "$response" =~ ^[Yy]$ ]]; then
     sudo netplan try --timeout=30
     if [ $? -eq 0 ]; then
         sudo netplan apply
-        echo "✅ Bonding настроен успешно"
+        echo "Bonding настроен успешно"
     else
         echo "❌ Ошибка настройки bonding"
     fi
@@ -143,9 +143,9 @@ EOF
 chmod +x setup-bonding.sh
 
 echo -e "\n=== Настройка завершена ==="
-echo "✅ Дополнительная сетевая карта настроена"
-echo "✅ SSH доступ сохранен"
-echo "✅ Создан скрипт setup-bonding.sh для настройки балансировки нагрузки"
+echo "Дополнительная сетевая карта настроена"
+echo "SSH доступ сохранен"
+echo "Создан скрипт setup-bonding.sh для настройки балансировки нагрузки"
 echo ""
 echo "Следующие шаги:"
 echo "1. Проверьте работу SSH: ssh user@your-server-ip"

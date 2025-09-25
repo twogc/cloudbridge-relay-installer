@@ -1,6 +1,6 @@
 # 🏗️ **Архитектура CloudBridge Relay**
 
-## 📋 **Обзор**
+## **Обзор**
 
 Этот раздел содержит документы по архитектуре CloudBridge Relay - QUIC-first + MASQUE глобальной Zero-Trust overlay сети.
 

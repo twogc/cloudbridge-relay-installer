@@ -40,7 +40,7 @@ cleanup_old_blocks() {
             kubectl exec -n $NAMESPACE $PROMETHEUS_POD -- rm -rf "$block"
         done
         
-        echo "✅ Old blocks cleaned up successfully"
+        echo "Old blocks cleaned up successfully"
     else
         echo "ℹ️  No old blocks found to clean up"
     fi
@@ -63,7 +63,7 @@ cleanup_wal_files() {
             kubectl exec -n $NAMESPACE $PROMETHEUS_POD -- rm -f "$wal_file"
         done
         
-        echo "✅ Old WAL files cleaned up successfully"
+        echo "Old WAL files cleaned up successfully"
     else
         echo "ℹ️  No old WAL files found to clean up"
     fi
@@ -76,7 +76,7 @@ force_cleanup() {
     # Отправляем запрос на очистку через API
     kubectl exec -n $NAMESPACE $PROMETHEUS_POD -- curl -X POST http://localhost:9090/api/v1/admin/tsdb/clean_tombstones 2>/dev/null || true
     
-    echo "✅ Force cleanup completed"
+    echo "Force cleanup completed"
 }
 
 # Функция для мониторинга метрик
@@ -117,7 +117,7 @@ main() {
     
     # Проверяем, нужна ли очистка
     if (( $(echo "$current_size_gb > $CLEANUP_THRESHOLD_GB" | bc -l) )); then
-        echo "⚠️  Storage size (${current_size_gb}GB) exceeds threshold (${CLEANUP_THRESHOLD_GB}GB)"
+        echo "  Storage size (${current_size_gb}GB) exceeds threshold (${CLEANUP_THRESHOLD_GB}GB)"
         echo "Starting cleanup process..."
         
         # Выполняем очистку
@@ -129,7 +129,7 @@ main() {
         local new_size_gb=$(get_storage_size_gb)
         local saved_gb=$(echo "scale=2; $current_size_gb - $new_size_gb" | bc)
         
-        echo "✅ Cleanup completed!"
+        echo "Cleanup completed!"
         echo "Storage size before: ${current_size_gb}GB"
         echo "Storage size after: ${new_size_gb}GB"
         echo "Space saved: ${saved_gb}GB"

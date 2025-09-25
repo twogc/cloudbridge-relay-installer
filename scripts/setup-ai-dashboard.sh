@@ -22,7 +22,7 @@ echo "================================================"
 # Function to check if namespace exists
 check_namespace() {
     if kubectl get namespace $NAMESPACE >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Namespace $NAMESPACE exists${NC}"
+        echo -e "${GREEN}Namespace $NAMESPACE exists${NC}"
         return 0
     else
         echo -e "${RED}❌ Namespace $NAMESPACE not found${NC}"
@@ -39,7 +39,7 @@ wait_for_deployment() {
     echo -n "Waiting for $deployment to be ready... "
     
     if kubectl wait --for=condition=available --timeout=${timeout}s deployment/$deployment -n $namespace >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Ready${NC}"
+        echo -e "${GREEN}Ready${NC}"
         return 0
     else
         echo -e "${RED}❌ Timeout${NC}"
@@ -58,7 +58,7 @@ create_dashboard() {
     kubectl create configmap $dashboard_name --from-literal=dashboard.json="$dashboard_json" -n $GRAFANA_NAMESPACE --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -66,7 +66,7 @@ create_dashboard() {
     fi
 }
 
-echo -e "${YELLOW}📋 Setting up AI Service Dashboard...${NC}"
+echo -e "${YELLOW}Setting up AI Service Dashboard...${NC}"
 echo
 
 # Check namespaces
@@ -79,7 +79,7 @@ echo
 # Check if Grafana is running
 echo -e "${BLUE}🔍 Checking Grafana deployment...${NC}"
 if kubectl get deployment grafana -n $GRAFANA_NAMESPACE >/dev/null 2>&1; then
-    echo -e "${GREEN}✅ Grafana deployment found${NC}"
+    echo -e "${GREEN}Grafana deployment found${NC}"
     wait_for_deployment "grafana" $GRAFANA_NAMESPACE
 else
     echo -e "${RED}❌ Grafana deployment not found${NC}"
@@ -225,7 +225,7 @@ echo -n "Creating ServiceMonitor... "
 echo "$SERVICEMONITOR_YAML" | kubectl apply -f - >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Created${NC}"
+    echo -e "${GREEN}Created${NC}"
 else
     echo -e "${RED}❌ Failed${NC}"
 fi
@@ -286,7 +286,7 @@ echo -n "Creating PrometheusRule... "
 echo "$PROMETHEUSRULE_YAML" | kubectl apply -f - >/dev/null 2>&1
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Created${NC}"
+    echo -e "${GREEN}Created${NC}"
 else
     echo -e "${RED}❌ Failed${NC}"
 fi
@@ -304,7 +304,7 @@ echo "  - Prometheus: kubectl port-forward -n $GRAFANA_NAMESPACE svc/prometheus 
 echo "  - AI Service: kubectl port-forward -n cloudbridge svc/ai-service 8083:8083"
 echo
 
-echo -e "${BLUE}🔗 URLs:${NC}"
+echo -e "${BLUE} URLs:${NC}"
 echo "  - Grafana: http://localhost:3000 (admin/admin)"
 echo "  - Prometheus: http://localhost:9090"
 echo "  - AI Service: http://localhost:8083"

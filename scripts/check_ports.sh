@@ -15,10 +15,10 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Проверка Dockerfile
-echo -e "${BLUE}📋 Проверка Dockerfile...${NC}"
+echo -e "${BLUE}Проверка Dockerfile...${NC}"
 
 if grep -q "EXPOSE 9090 9090/udp 51820/udp 8084" Dockerfile; then
-    echo -e "${GREEN}✅ Dockerfile: порты настроены правильно${NC}"
+    echo -e "${GREEN}Dockerfile: порты настроены правильно${NC}"
 else
     echo -e "${RED}❌ Dockerfile: порты настроены неправильно${NC}"
     echo "   Ожидается: EXPOSE 9090 9090/udp 51820/udp 8084"
@@ -26,69 +26,69 @@ else
 fi
 
 if grep -q "http://localhost:9090/health" Dockerfile; then
-    echo -e "${GREEN}✅ Dockerfile: health check настроен правильно${NC}"
+    echo -e "${GREEN}Dockerfile: health check настроен правильно${NC}"
 else
     echo -e "${RED}❌ Dockerfile: health check настроен неправильно${NC}"
 fi
 
 # Проверка docker-compose.yml
-echo -e "${BLUE}📋 Проверка docker-compose.yml...${NC}"
+echo -e "${BLUE}Проверка docker-compose.yml...${NC}"
 
 if grep -q '"9090:9090"' docker-compose.yml; then
-    echo -e "${GREEN}✅ docker-compose.yml: порт 9090 TCP настроен${NC}"
+    echo -e "${GREEN}docker-compose.yml: порт 9090 TCP настроен${NC}"
 else
     echo -e "${RED}❌ docker-compose.yml: порт 9090 TCP не найден${NC}"
 fi
 
 if grep -q '"9090:9090/udp"' docker-compose.yml; then
-    echo -e "${GREEN}✅ docker-compose.yml: порт 9090 UDP настроен${NC}"
+    echo -e "${GREEN}docker-compose.yml: порт 9090 UDP настроен${NC}"
 else
     echo -e "${RED}❌ docker-compose.yml: порт 9090 UDP не найден${NC}"
 fi
 
 if grep -q '"51820:51820/udp"' docker-compose.yml; then
-    echo -e "${GREEN}✅ docker-compose.yml: порт 51820 UDP настроен${NC}"
+    echo -e "${GREEN}docker-compose.yml: порт 51820 UDP настроен${NC}"
 else
     echo -e "${RED}❌ docker-compose.yml: порт 51820 UDP не найден${NC}"
 fi
 
 if grep -q '"8084:8084"' docker-compose.yml; then
-    echo -e "${GREEN}✅ docker-compose.yml: порт 8084 TCP настроен${NC}"
+    echo -e "${GREEN}docker-compose.yml: порт 8084 TCP настроен${NC}"
 else
     echo -e "${RED}❌ docker-compose.yml: порт 8084 TCP не найден${NC}"
 fi
 
 # Проверка config.json
-echo -e "${BLUE}📋 Проверка config.json...${NC}"
+echo -e "${BLUE}Проверка config.json...${NC}"
 
 if grep -q '"port": 9090' configs/config.json; then
-    echo -e "${GREEN}✅ config.json: API порт 9090 настроен${NC}"
+    echo -e "${GREEN}config.json: API порт 9090 настроен${NC}"
 else
     echo -e "${RED}❌ config.json: API порт 9090 не найден${NC}"
 fi
 
 if grep -q '"port": 8084' configs/config.json; then
-    echo -e "${GREEN}✅ config.json: Metrics порт 8084 настроен${NC}"
+    echo -e "${GREEN}config.json: Metrics порт 8084 настроен${NC}"
 else
     echo -e "${RED}❌ config.json: Metrics порт 8084 не найден${NC}"
 fi
 
 if grep -A 5 '"enhanced_quic"' configs/config.json | grep -q '"port": 9090'; then
-    echo -e "${GREEN}✅ config.json: QUIC порт 9090 настроен${NC}"
+    echo -e "${GREEN}config.json: QUIC порт 9090 настроен${NC}"
 else
     echo -e "${RED}❌ config.json: QUIC порт 9090 не найден${NC}"
 fi
 
 # Проверка health check в config.json
 if grep -q "http://localhost:9090/health" configs/config.json; then
-    echo -e "${GREEN}✅ config.json: health check настроен правильно${NC}"
+    echo -e "${GREEN}config.json: health check настроен правильно${NC}"
 else
     echo -e "${RED}❌ config.json: health check настроен неправильно${NC}"
 fi
 
 # Проверка docker-compose health check
 if grep -q "http://localhost:9090/health" docker-compose.yml; then
-    echo -e "${GREEN}✅ docker-compose.yml: health check настроен правильно${NC}"
+    echo -e "${GREEN}docker-compose.yml: health check настроен правильно${NC}"
 else
     echo -e "${RED}❌ docker-compose.yml: health check настроен неправильно${NC}"
 fi
@@ -109,9 +109,9 @@ echo -e "${BLUE}🔍 Проверка неиспользуемых портов:
 OLD_PORTS=("8080" "8081" "8082" "80")
 for port in "${OLD_PORTS[@]}"; do
     if grep -q ":$port" docker-compose.yml || grep -q "EXPOSE.*$port" Dockerfile; then
-        echo -e "${YELLOW}⚠️  Порт $port все еще используется (возможно устарел)${NC}"
+        echo -e "${YELLOW}  Порт $port все еще используется (возможно устарел)${NC}"
     fi
 done
 
 echo ""
-echo -e "${GREEN}✅ Проверка портов завершена!${NC}"
+echo -e "${GREEN}Проверка портов завершена!${NC}"

@@ -14,7 +14,7 @@ echo -e "  \033[1;36m🔐 Keycloak:\033[0m     http://localhost:8080"
 echo -e "  \033[1;36m🚀 Relay:\033[0m        http://localhost:8081"
 echo -e "  \033[1;36m📊 Grafana:\033[0m      http://localhost:3000"
 echo -e "  \033[1;36m📈 Prometheus:\033[0m   http://localhost:9090"
-echo -e "  \033[1;36m🚨 AlertManager:\033[0m http://localhost:9093"
+echo -e "  \033[1;36mAlertManager:\033[0m http://localhost:9093"
 echo
 
 echo -e "\033[1;36m🔧 Полезные команды:\033[0m"
@@ -28,4 +28,4 @@ echo -e "  \033[1;33mdocs/deployment_guide.md\033[0m - Руководство п
 echo -e "  \033[1;33mdocs/dashboard_guide.md\033[0m - Руководство по дашбордам"
 echo
 
-echo -e "\033[0;32m✅ Установка CloudBridge Relay завершена успешно!\033[0m" 
+echo -e "\033[0;32mУстановка CloudBridge Relay завершена успешно!\033[0m" 

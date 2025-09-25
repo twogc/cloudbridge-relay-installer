@@ -21,8 +21,8 @@ PR #31 (cadence): 3 failed checks
 PR #29 (prometheus): 5 failed checks
 PR #26 (JWT): 5 failed checks
 
-✅ PR #28 (pytest-asyncio): 0 failed checks
-✅ PR #27 (rich): 0 failed checks
+PR #28 (pytest-asyncio): 0 failed checks
+PR #27 (rich): 0 failed checks
 ```
 
 ## Рекомендуемая стратегия
@@ -135,3 +135,7 @@ gh pr merge 27 --squash
 4. **CI/CD здоровье** - не загрязнять историю failed merges
 
 Dependabot автоматически создаст новые PR для всех dependency updates в течение 24-48 часов после пуша в main.
+
+
+
+

@@ -154,7 +154,7 @@ get_deployment_info() {
     
     print_success "Развертывание завершено!"
     echo ""
-    echo "📋 Информация о развертывании:"
+    echo "Информация о развертывании:"
     echo "   Instance IP: $instance_ip"
     echo "   Instance ID: $instance_id"
     echo "   Load Balancer: $loadbalancer_ip"
@@ -237,7 +237,7 @@ main() {
         get_deployment_info
         test_deployment
         
-        print_header "✅ Развертывание завершено успешно!"
+        print_header "Развертывание завершено успешно!"
     else
         print_warning "Развертывание отменено"
         exit 0

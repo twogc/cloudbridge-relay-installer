@@ -1,6 +1,6 @@
 # ⚡ **БЫСТРОЕ ИСПРАВЛЕНИЕ KEYCLOAK**
 
-## 🚨 **ПРОБЛЕМА**
+## **ПРОБЛЕМА**
 CloudBridge Relay не может подключиться к Keycloak на `auth.2gc.ru:8080`
 
 ## ⚡ **БЫСТРОЕ РЕШЕНИЕ (5 минут)**
@@ -68,7 +68,7 @@ kubectl rollout restart deployment/cloudbridge-relay -n cloudbridge
 kubectl logs -f deployment/cloudbridge-relay -n cloudbridge
 ```
 
-## ✅ **ПРОВЕРКА**
+## **ПРОВЕРКА**
 - Логи должны показать: `"Keycloak client initialized successfully"`
 - Нет ошибок: `"failed to parse public key"`
 - Health endpoint отвечает: `curl http://localhost:9091/health`

@@ -79,7 +79,7 @@ build_wireguard_go() {
     cd /
     rm -rf $TEMP_DIR
     
-    echo "✅ WireGuard-go установлен в /usr/local/bin/wireguard-go"
+    echo "WireGuard-go установлен в /usr/local/bin/wireguard-go"
 }
 
 # Создание директорий
@@ -93,7 +93,7 @@ create_directories() {
     chmod 755 /etc/wireguard
     chmod 755 /var/run/wireguard
     
-    echo "✅ Директории созданы"
+    echo "Директории созданы"
 }
 
 # Проверка установки
@@ -102,7 +102,7 @@ verify_installation() {
     
     # Проверяем wireguard-go
     if command -v wireguard-go >/dev/null 2>&1; then
-        echo "✅ wireguard-go найден"
+        echo "wireguard-go найден"
         wireguard-go --version
     else
         echo "❌ wireguard-go не найден"
@@ -111,7 +111,7 @@ verify_installation() {
     
     # Проверяем wg
     if command -v wg >/dev/null 2>&1; then
-        echo "✅ wg найден"
+        echo "wg найден"
         wg version
     else
         echo "❌ wg не найден"
@@ -120,13 +120,13 @@ verify_installation() {
     
     # Проверяем ip
     if command -v ip >/dev/null 2>&1; then
-        echo "✅ ip найден"
+        echo "ip найден"
     else
         echo "❌ ip не найден"
         exit 1
     fi
     
-    echo "✅ Все компоненты установлены успешно"
+    echo "Все компоненты установлены успешно"
 }
 
 # Настройка systemd сервиса (опционально)
@@ -149,7 +149,7 @@ WantedBy=multi-user.target
 EOF
 
     systemctl daemon-reload
-    echo "✅ Systemd сервис настроен"
+    echo "Systemd сервис настроен"
 }
 
 # Основная функция
@@ -165,7 +165,7 @@ main() {
     echo ""
     echo "🎉 Установка завершена успешно!"
     echo ""
-    echo "📋 Что было установлено:"
+    echo "Что было установлено:"
     echo "  • wireguard-go - пользовательская реализация WireGuard"
     echo "  • wireguard-tools - утилиты для управления WireGuard"
     echo "  • iproute2 - утилиты для управления сетью"

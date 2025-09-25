@@ -154,7 +154,7 @@ print_info() {
     echo ""
     log_success "🎉 GitHub Secrets настроены!"
     echo ""
-    echo "📋 Настроенные секреты:"
+    echo "Настроенные секреты:"
     echo "   REGISTRY_IP       = $REGISTRY_IP"
     echo "   REGISTRY_USERNAME = $REGISTRY_USERNAME"
     echo "   REGISTRY_PASSWORD = $REGISTRY_PASSWORD"

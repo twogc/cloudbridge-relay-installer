@@ -52,9 +52,9 @@ set_secret() {
     
     if [ -n "$secret_value" ]; then
         echo "$secret_value" | gh secret set "$secret_name"
-        echo -e "${GREEN}✅ Secret ${secret_name} set successfully${NC}"
+        echo -e "${GREEN}Secret ${secret_name} set successfully${NC}"
     else
-        echo -e "${YELLOW}⚠️ Skipping ${secret_name} (empty value)${NC}"
+        echo -e "${YELLOW} Skipping ${secret_name} (empty value)${NC}"
     fi
     echo ""
 }
@@ -72,7 +72,7 @@ set_optional_secret() {
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         set_secret "$secret_name" "$secret_description"
     else
-        echo -e "${YELLOW}⚠️ Skipping ${secret_name}${NC}"
+        echo -e "${YELLOW} Skipping ${secret_name}${NC}"
         echo ""
     fi
 }
@@ -81,11 +81,11 @@ echo -e "${BLUE}🚀 Setting up GitHub Secrets for CI/CD Pipeline${NC}"
 echo ""
 
 # Required secrets for basic CI/CD
-echo -e "${GREEN}📋 Required Secrets:${NC}"
+echo -e "${GREEN}Required Secrets:${NC}"
 set_secret "GITHUB_TOKEN" "GitHub token for registry access (usually auto-generated)"
 
 # Optional secrets for advanced features
-echo -e "${GREEN}📋 Optional Secrets (for advanced features):${NC}"
+echo -e "${GREEN}Optional Secrets (for advanced features):${NC}"
 
 # Container Registry secrets
 set_optional_secret "REGISTRY_USERNAME" "Container registry username"
@@ -116,14 +116,14 @@ set_optional_secret "SLACK_WEBHOOK" "Slack webhook for notifications"
 set_optional_secret "TEAMS_WEBHOOK" "Microsoft Teams webhook for notifications"
 set_optional_secret "DISCORD_WEBHOOK" "Discord webhook for notifications"
 
-echo -e "${GREEN}✅ GitHub Secrets setup completed!${NC}"
+echo -e "${GREEN}GitHub Secrets setup completed!${NC}"
 echo ""
-echo -e "${BLUE}📋 Next steps:${NC}"
+echo -e "${BLUE}Next steps:${NC}"
 echo "1. Push your code to trigger the CI/CD pipeline"
 echo "2. Check the Actions tab to see the pipeline running"
 echo "3. Monitor the build and deployment process"
 echo ""
-echo -e "${BLUE}🔗 Useful links:${NC}"
+echo -e "${BLUE} Useful links:${NC}"
 echo "• GitHub Actions: https://github.com/${REPO}/actions"
 echo "• Secrets management: https://github.com/${REPO}/settings/secrets/actions"
 echo "• Container registry: https://github.com/${REPO}/packages"

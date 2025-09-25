@@ -306,7 +306,7 @@ show_status() {
         jq '.loadbalancers[] | {id, name, vip_address, status, availability_zone}'
     
     echo ""
-    echo "🔗 Прослушиватели:"
+    echo " Прослушиватели:"
     if [ -n "$LISTENER_ID" ]; then
         curl -s -H "X-Auth-Token: $OS_TOKEN" \
             "$OCTAVIA_URL/v2.0/lbaas/listeners/$LISTENER_ID" | \
@@ -357,10 +357,10 @@ setup_cloudbridge_relay() {
     # 8. Показываем статус
     show_status
     
-    log_success "✅ Настройка CloudBridge Relay завершена!"
+    log_success "Настройка CloudBridge Relay завершена!"
     
     echo ""
-    echo "📋 Сводка:"
+    echo "Сводка:"
     echo "Anycast IP: $ANYCAST_IP"
     echo "Балансировщик: $LOADBALANCER_VIP"
     echo "Прослушиватель: $LISTENER_ID"

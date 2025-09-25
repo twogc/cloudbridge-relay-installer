@@ -22,7 +22,7 @@ func NewReportGenerator() *ReportGenerator {
 
 // GenerateMarkdown генерирует Markdown отчет
 func (r *ReportGenerator) GenerateMarkdown(report *analytics.Report) (string, error) {
-	templateStr := `# 🤖 CloudBridge Relay AI Analytics Report
+	templateStr := `#  CloudBridge Relay AI Analytics Report
 
 **Generated**: {{.Timestamp.Format "2006-01-02 15:04:05"}}
 **Report ID**: {{.ID}}
@@ -35,12 +35,12 @@ func (r *ReportGenerator) GenerateMarkdown(report *analytics.Report) (string, er
 - {{.}}
 {{end}}
 
-## 🚨 Critical Issues
+## Critical Issues
 {{range .Analysis.CriticalIssues}}
 - {{.}}
 {{end}}
 
-## 💡 Recommendations
+## Recommendations
 {{range .Analysis.Recommendations}}
 - {{.}}
 {{end}}
@@ -94,7 +94,7 @@ func (r *ReportGenerator) GenerateMarkdown(report *analytics.Report) (string, er
 No metrics data available
 {{end}}
 
-## 🚨 Detected Anomalies
+## Detected Anomalies
 {{if .Metrics.Anomalies}}
 {{range .Metrics.Anomalies}}
 - **{{.Type}}** ({{.Severity}}): {{.Description}}
@@ -284,7 +284,7 @@ func (r *ReportGenerator) GenerateHTML(report *analytics.Report) (string, error)
 <body>
     <div class="container">
         <div class="header">
-            <h1>🤖 CloudBridge AI Analytics Report</h1>
+            <h1> CloudBridge AI Analytics Report</h1>
             <div class="subtitle">Generated: {{.Timestamp.Format "2006-01-02 15:04:05"}}</div>
             <div class="subtitle">Report ID: {{.ID}}</div>
         </div>
@@ -307,7 +307,7 @@ func (r *ReportGenerator) GenerateHTML(report *analytics.Report) (string, error)
 
         {{if .Analysis.CriticalIssues}}
         <div class="section critical">
-            <h2>🚨 Critical Issues</h2>
+            <h2>Critical Issues</h2>
             <ul>
                 {{range .Analysis.CriticalIssues}}
                 <li>{{.}}</li>
@@ -318,7 +318,7 @@ func (r *ReportGenerator) GenerateHTML(report *analytics.Report) (string, error)
 
         {{if .Analysis.Recommendations}}
         <div class="section recommendation">
-            <h2>💡 Recommendations</h2>
+            <h2>Recommendations</h2>
             <ul>
                 {{range .Analysis.Recommendations}}
                 <li>{{.}}</li>
@@ -360,7 +360,7 @@ func (r *ReportGenerator) GenerateHTML(report *analytics.Report) (string, error)
 
         {{if .Metrics.Anomalies}}
         <div class="section anomaly">
-            <h2>🚨 Detected Anomalies</h2>
+            <h2>Detected Anomalies</h2>
             {{range .Metrics.Anomalies}}
             <div class="metric-card">
                 <h4>{{.Type}} ({{.Severity}})</h4>

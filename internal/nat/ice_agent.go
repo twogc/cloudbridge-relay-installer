@@ -17,13 +17,18 @@ type ICEAgent struct {
 	logger *logger.Logger
 
 	// STUN и TURN серверы
-	stunServers []string
-	turnPool    *TURNPool
+	stunServers     []string
+	turnPool        *TURNPool
+	turnPoolManager *TURNPoolManager
 
 	// ICE кандидаты
 	localCandidates  []*ICECandidate
 	remoteCandidates []*ICECandidate
 	selectedPair     *ICECandidatePair
+
+	// TURN allocations
+	turnAllocations map[string]*TURNAllocation
+	allocationsMu   sync.RWMutex
 
 	// Состояние
 	state ICEState
@@ -98,16 +103,99 @@ func NewICEAgent(logger *logger.Logger, stunServers []string, turnPool *TURNPool
 	ctx, cancel := context.WithCancel(context.Background())
 
 	ia := &ICEAgent{
-		logger:      logger,
-		stunServers: stunServers,
-		turnPool:    turnPool,
-		state:       ICEStateNew,
-		Metrics:     NewNATMetrics(logger),
-		ctx:         ctx,
-		cancel:      cancel,
+		logger:          logger,
+		stunServers:     stunServers,
+		turnPool:        turnPool,
+		turnAllocations: make(map[string]*TURNAllocation),
+		state:           ICEStateNew,
+		Metrics:         NewNATMetrics(logger),
+		ctx:             ctx,
+		cancel:          cancel,
 	}
 
 	return ia
+}
+
+// NewICEAgentWithTURNPoolManager создает новый ICE агент с TURN pool manager
+func NewICEAgentWithTURNPoolManager(logger *logger.Logger, stunServers []string, turnPoolManager *TURNPoolManager) *ICEAgent {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ia := &ICEAgent{
+		logger:          logger,
+		stunServers:     stunServers,
+		turnPoolManager: turnPoolManager,
+		turnAllocations: make(map[string]*TURNAllocation),
+		state:           ICEStateNew,
+		Metrics:         NewNATMetrics(logger),
+		ctx:             ctx,
+		cancel:          cancel,
+	}
+
+	return ia
+}
+
+// AllocateTURNRelay создает TURN allocation через pool manager
+func (ia *ICEAgent) AllocateTURNRelay(clientID string, preferences *AllocationPreferences) (*TURNAllocation, error) {
+	if ia.turnPoolManager == nil {
+		return nil, fmt.Errorf("TURN pool manager not configured")
+	}
+
+	allocation, err := ia.turnPoolManager.AllocateTURN(clientID, preferences)
+	if err != nil {
+		ia.logger.Error("Failed to allocate TURN relay",
+			zap.String("client_id", clientID),
+			zap.Error(err))
+		return nil, err
+	}
+
+	// Сохраняем allocation в ICE agent
+	ia.allocationsMu.Lock()
+	ia.turnAllocations[allocation.AllocationID] = allocation
+	ia.allocationsMu.Unlock()
+
+	ia.logger.Info("TURN relay allocated",
+		zap.String("allocation_id", allocation.AllocationID),
+		zap.String("client_id", clientID),
+		zap.String("server", allocation.Server.Address))
+
+	return allocation, nil
+}
+
+// ReleaseTURNRelay освобождает TURN allocation
+func (ia *ICEAgent) ReleaseTURNRelay(allocationID string) error {
+	ia.allocationsMu.Lock()
+	allocation, exists := ia.turnAllocations[allocationID]
+	if exists {
+		delete(ia.turnAllocations, allocationID)
+	}
+	ia.allocationsMu.Unlock()
+
+	if !exists {
+		return fmt.Errorf("allocation %s not found in ICE agent", allocationID)
+	}
+
+	if ia.turnPoolManager != nil {
+		return ia.turnPoolManager.ReleaseTURN(allocationID)
+	}
+
+	ia.logger.Info("TURN relay released",
+		zap.String("allocation_id", allocationID),
+		zap.String("client_id", allocation.ClientID))
+
+	return nil
+}
+
+// GetTURNAllocations возвращает список активных TURN allocations
+func (ia *ICEAgent) GetTURNAllocations() []*TURNAllocation {
+	ia.allocationsMu.RLock()
+	defer ia.allocationsMu.RUnlock()
+
+	allocations := make([]*TURNAllocation, 0, len(ia.turnAllocations))
+	for _, allocation := range ia.turnAllocations {
+		allocations = append(allocations, allocation)
+	}
+
+	return allocations
 }
 
 // StartGathering запускает сбор ICE кандидатов
@@ -494,4 +582,33 @@ func (t ICECandidateType) String() string {
 	default:
 		return "unknown"
 	}
+}
+
+// Stop останавливает ICE agent и освобождает все ресурсы
+func (ia *ICEAgent) Stop() error {
+	ia.mu.Lock()
+	defer ia.mu.Unlock()
+
+	// Освобождаем все TURN allocations
+	ia.allocationsMu.Lock()
+	for allocationID := range ia.turnAllocations {
+		if ia.turnPoolManager != nil {
+			if err := ia.turnPoolManager.ReleaseTURN(allocationID); err != nil {
+				ia.logger.Error("Failed to release TURN allocation during stop",
+					zap.String("allocation_id", allocationID),
+					zap.Error(err))
+			}
+		}
+	}
+	ia.turnAllocations = make(map[string]*TURNAllocation)
+	ia.allocationsMu.Unlock()
+
+	// Останавливаем контекст
+	ia.cancel()
+
+	// Обновляем состояние
+	ia.state = ICEStateFailed
+
+	ia.logger.Info("ICE agent stopped")
+	return nil
 }

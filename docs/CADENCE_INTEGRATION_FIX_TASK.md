@@ -165,7 +165,7 @@ import (
 - [ ] Проверить логи на ошибки
 - [ ] Убедиться в работоспособности
 
-## 📋 Конкретные задачи
+## Конкретные задачи
 
 ### 1. Проверить конфигурацию Cadence
 ```bash
@@ -215,19 +215,19 @@ cadence:
 ## 🎯 Ожидаемые результаты
 
 ### 1. HTTP API Cadence
-- ✅ `curl http://cadence-service:7934/health` возвращает статус
-- ✅ AI Service может подключиться через HTTP
-- ✅ Метрики Cadence доступны
+- `curl http://cadence-service:7934/health` возвращает статус
+- AI Service может подключиться через HTTP
+- Метрики Cadence доступны
 
 ### 2. gRPC интеграция
-- ✅ AI Service подключается к Cadence через gRPC
-- ✅ Workflow функции работают
-- ✅ Cadence управляет AI процессами
+- AI Service подключается к Cadence через gRPC
+- Workflow функции работают
+- Cadence управляет AI процессами
 
 ### 3. Полный поток данных
-- ✅ Relay → Prometheus → AI → Cadence
-- ✅ AI Service создает workflow в Cadence
-- ✅ Cadence управляет AI операциями
+- Relay → Prometheus → AI → Cadence
+- AI Service создает workflow в Cadence
+- Cadence управляет AI операциями
 
 ## 📝 Критерии приемки
 
@@ -266,7 +266,7 @@ cadence:
 - **Срок выполнения**: 1 рабочий день
 - **Приоритет**: Высокий
 
-## 🔗 Полезные ссылки
+##  Полезные ссылки
 
 - [Cadence HTTP API Documentation](https://cadenceworkflow.io/docs/operation-guide/tools/cadence-web/)
 - [Cadence gRPC Client](https://cadenceworkflow.io/docs/go-client/)

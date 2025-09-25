@@ -1,4 +1,4 @@
-# ✅ **Чек-лист доработки для MVP**
+# **Чек-лист доработки для MVP**
 
 ## 🎯 **Цель MVP**
 Реализовать QUIC-first + MASQUE архитектуру с тремя ключевыми компонентами:
@@ -6,7 +6,7 @@
 2. **ICE/STUN/TURN слой**: свой STUN, управляемый TURN-пул, метрики NAT-типов/успеха, ICE↔MASQUE селектор
 3. **WG-профиль для site-to-site/legacy**: с ограничениями и сценариями роуминга
 
-### 📋 **Соответствие стандартам**
+### **Соответствие стандартам**
 - **MASQUE/CONNECT-UDP/CONNECT-IP** (RFC 9298/RFC 9484) + **HTTP Datagrams/Capsule** (RFC 9297)
 - **QUIC DATAGRAM** (RFC 9221) для приоритизации HTTP
 - **ICE/STUN/TURN** (RFC 8445) с fallback на relay
@@ -16,11 +16,11 @@
 
 ---
 
-## 📅 **ЭТАП 1: QUIC-first + MASQUE + ICE селектор (Неделя 1-2)**
+##  **ЭТАП 1: QUIC-first + MASQUE + ICE селектор (Неделя 1-2)**
 
 ### 🔴 **Критические задачи**
 
-#### **1.1 HTTP Datagrams интеграция с MASQUE** ✅ **ЗАВЕРШЕНО**
+#### **1.1 HTTP Datagrams интеграция с MASQUE** **ЗАВЕРШЕНО**
 - [x] **Создать HTTP Datagrams handler** в `cmd/relay/masque_support.go`
   - [x] Добавить метод `handleHTTPDatagrams()`
   - [x] Интегрировать с `SendDatagram()` и `ReceiveDatagram()`
@@ -35,7 +35,7 @@
   - [x] Создать тест `TestMASQUEHTTPDatagrams`
   - [x] Проверить отправку/получение datagrams через MASQUE
 
-#### **1.2 Downgrade на WebSocket/TCP** ✅ **ЗАВЕРШЕНО**
+#### **1.2 Downgrade на WebSocket/TCP** **ЗАВЕРШЕНО**
 - [x] **Создать WebSocket fallback** в `cmd/relay/websocket_fallback.go`
   - [x] Реализовать `WebSocketFallback` структуру
   - [x] Добавить методы `UpgradeToWebSocket()` и `HandleWebSocket()`
@@ -52,7 +52,7 @@
   - [x] Создать тест `TestFallbackMechanism`
   - [x] Проверить fallback при блокировке QUIC
 
-#### **1.3 QUIC-безопасность и Capsule fallback** ✅ **ЗАВЕРШЕНО**
+#### **1.3 QUIC-безопасность и Capsule fallback** **ЗАВЕРШЕНО**
 - [x] **QUIC Security (RFC 9000)**
   - [x] Реализовать **address validation / Retry** в `internal/quic/security.go`
   - [x] Добавить **3× anti-amplification limit** при валидации адреса клиента
@@ -64,7 +64,7 @@
   - [x] Автоматический fallback на Capsule при отсутствии DATAGRAM
   - [x] Тесты для обоих путей (с/без DATAGRAM)
 
-#### **1.4 ICE↔MASQUE селектор (раннее внедрение)** ✅ **ЗАВЕРШЕНО**
+#### **1.4 ICE↔MASQUE селектор (раннее внедрение)** **ЗАВЕРШЕНО**
 - [x] **ICE-MASQUE bridge** в `cmd/relay/ice_masque_bridge.go`
   - [x] Создать `ICEMASQUEBridge` структуру
   - [x] Реализовать методы:
@@ -76,7 +76,7 @@
   - [x] Добавить метрики для анализа выбора протокола
   - [x] Интегрировать с e2e-флоу для QUIC-first подхода
 
-#### **1.5 Улучшение MASQUE обработки ошибок** ✅ **ЗАВЕРШЕНО**
+#### **1.5 Улучшение MASQUE обработки ошибок** **ЗАВЕРШЕНО**
 - [x] **Обработка ошибок соединения**
   - [x] Добавить retry логику в `createMASQUEConnection()`
   - [x] Реализовать graceful shutdown соединений
@@ -88,7 +88,7 @@
 
 ### 🟡 **Важные задачи**
 
-#### **1.6 CONNECT-IP (перемещено из критичных)** ✅ **ЗАВЕРШЕНО**
+#### **1.6 CONNECT-IP (перемещено из критичных)** **ЗАВЕРШЕНО**
 - [x] **CONNECT-IP реализация** в `cmd/relay/masque_support.go`
   - [x] Реализовать полный IP-туннель через MASQUE (RFC 9484)
   - [x] Добавить поддержку IPv4/IPv6 туннелирования
@@ -110,7 +110,7 @@
   - [ ] Подтвердить, что QUIC и STUN/TURN на одном сокете не мешают друг другу
   - [ ] Тест с включенным/выключенным флагом мультиплексирования
 
-#### **1.8 Интеграционные тесты** ✅ **ЗАВЕРШЕНО**
+#### **1.8 Интеграционные тесты** **ЗАВЕРШЕНО**
 - [x] **Создать MASQUE integration tests**
   - [x] `TestMASQUEFullFlow` - полный flow CONNECT-UDP
   - [x] `TestMASQUEDatagrams` - тест HTTP Datagrams
@@ -122,11 +122,11 @@
 
 ---
 
-## 📅 **ЭТАП 2: ICE/STUN/TURN слой (Неделя 3-4)** ✅ **ЗАВЕРШЕНО**
+##  **ЭТАП 2: ICE/STUN/TURN слой (Неделя 3-4)** **ЗАВЕРШЕНО**
 
 ### 🔴 **Критические задачи**
 
-#### **2.1 Расширенные метрики NAT и TURN** ✅ **ЗАВЕРШЕНО**
+#### **2.1 Расширенные метрики NAT и TURN** **ЗАВЕРШЕНО**
 - [x] **NAT Behaviour Discovery (RFC 5780)** в `internal/nat/behaviour_discovery.go`
   - [x] Реализовать **NAT Behaviour Discovery** как диагностическую метрику
   - [x] Добавить классификацию NAT типов (Full Cone, Restricted, Port Restricted, Symmetric)
@@ -150,7 +150,7 @@
   - [x] Добавить NAT метрики в `internal/metrics/`
   - [x] Создать dashboard для NAT аналитики
 
-#### **2.2 Управляемый TURN-пул** ✅ **ЗАВЕРШЕНО**
+#### **2.2 Управляемый TURN-пул** **ЗАВЕРШЕНО**
 - [x] **Создать TURN Pool Manager** в `internal/nat/turn_pool.go`
   - [x] Реализовать `TURNServerPool` структуру
   - [x] Добавить методы:
@@ -166,7 +166,7 @@
   - [x] Обновить `ICEAgent` для использования TURN pool
   - [x] Добавить fallback на TURN при неудаче P2P
 
-#### **2.3 TCP-alloc поддержка** ✅ **ЗАВЕРШЕНО**
+#### **2.3 TCP-alloc поддержка** **ЗАВЕРШЕНО**
 - [x] **TCP TURN allocation** в `internal/nat/tcp_allocation.go`
   - [x] Реализовать `TCPAllocation` структуру
   - [x] Добавить методы для TCP TURN операций
@@ -175,7 +175,7 @@
   - [x] Добавить TCP candidates в ICE gathering
   - [x] Обработать TCP TURN в ICE connectivity checks
 
-#### **2.4 ICE Connectivity Checks** ✅ **ЗАВЕРШЕНО**
+#### **2.4 ICE Connectivity Checks** **ЗАВЕРШЕНО**
 - [x] **ICE Connectivity Manager** в `internal/nat/ice_connectivity.go`
   - [x] Реализовать `ICEConnectivityManager` структуру
   - [x] Добавить методы:
@@ -188,7 +188,7 @@
   - [x] Добавить автоматическое восстановление соединений
   - [x] Реализовать fallback механизмы
 
-#### **2.5 Восстановление ICE компонента** ✅ **ЗАВЕРШЕНО**
+#### **2.5 Восстановление ICE компонента** **ЗАВЕРШЕНО**
 - [x] **Восстановить ICE Agent** в `internal/nat/ice_agent.go`
   - [x] Реализовать `ICEAgent` структуру с полной функциональностью
   - [x] Добавить методы:
@@ -244,39 +244,39 @@
 
 ## 🧪 **Результаты тестирования Этапа 2 в Minikube**
 
-### ✅ **Успешное развертывание и тестирование:**
+### **Успешное развертывание и тестирование:**
 
 #### **Развертывание:**
-- ✅ **Docker образ** - успешно собран с новыми компонентами
-- ✅ **Minikube deployment** - успешно обновлен
-- ✅ **Pod'ы** - запущены и работают (2/2 Ready)
+- **Docker образ** - успешно собран с новыми компонентами
+- **Minikube deployment** - успешно обновлен
+- **Pod'ы** - запущены и работают (2/2 Ready)
 
 #### **Компоненты Этапа 2 - РАБОТАЮТ:**
 
 **ICE/STUN/TURN компоненты:**
-- ✅ **ICE Manager** - создан и запущен
-- ✅ **ICE Support** - запущен с STUN серверами
-- ✅ **ICE Candidate Gathering** - работает (собрал 1 кандидат)
-- ✅ **STUN UDP Server** - запущен на порту 19302
-- ✅ **P2P Tunnel Manager** - запущен
-- ✅ **Heartbeat Manager** - запущен
+- **ICE Manager** - создан и запущен
+- **ICE Support** - запущен с STUN серверами
+- **ICE Candidate Gathering** - работает (собрал 1 кандидат)
+- **STUN UDP Server** - запущен на порту 19302
+- **P2P Tunnel Manager** - запущен
+- **Heartbeat Manager** - запущен
 
 **MASQUE компоненты:**
-- ✅ **MASQUE Server** - запущен на порту 8443 (UDP)
-- ✅ **CONNECT-UDP handler** - зарегистрирован
-- ✅ **CONNECT-IP handler** - зарегистрирован  
-- ✅ **HTTP Datagrams handler** - зарегистрирован
-- ✅ **Health check handler** - зарегистрирован
+- **MASQUE Server** - запущен на порту 8443 (UDP)
+- **CONNECT-UDP handler** - зарегистрирован
+- **CONNECT-IP handler** - зарегистрирован  
+- **HTTP Datagrams handler** - зарегистрирован
+- **Health check handler** - зарегистрирован
 
 **QUIC компоненты:**
-- ✅ **QUIC Underlay Manager** - запущен на порту 5554
-- ✅ **P2P QUIC Server** - запущен на порту 5553
-- ✅ **Enhanced QUIC Server** - запущен на порту 9092
+- **QUIC Underlay Manager** - запущен на порту 5554
+- **P2P QUIC Server** - запущен на порту 5553
+- **Enhanced QUIC Server** - запущен на порту 9092
 
 #### **API Endpoints - РАБОТАЮТ:**
-- ✅ **HTTP API (8080)** - работает, health check OK
-- ✅ **P2P API (8082)** - работает, health check OK
-- ✅ **MASQUE API (8443)** - слушает на UDP (HTTP/3)
+- **HTTP API (8080)** - работает, health check OK
+- **P2P API (8082)** - работает, health check OK
+- **MASQUE API (8443)** - слушает на UDP (HTTP/3)
 
 #### **Сетевые порты - ВСЕ АКТИВНЫ:**
 ```
@@ -290,19 +290,19 @@ UDP 5554  - QUIC Underlay
 ```
 
 #### **Логи показывают успешную работу:**
-- ✅ **ICE candidate gathering completed** - 1 кандидат собран
-- ✅ **STUN UDP server started** - на порту 19302
-- ✅ **MASQUE server started successfully** - на порту 8443
-- ✅ **P2P Tunnel Manager started** - успешно
-- ✅ **Heartbeat Manager started** - успешно
+- **ICE candidate gathering completed** - 1 кандидат собран
+- **STUN UDP server started** - на порту 19302
+- **MASQUE server started successfully** - на порту 8443
+- **P2P Tunnel Manager started** - успешно
+- **Heartbeat Manager started** - успешно
 
 ---
 
-## 📅 **ЭТАП 3: WG-профиль и финализация (Неделя 5-6)**
+##  **ЭТАП 3: WG-профиль и финализация (Неделя 5-6)**
 
 ### 🟡 **Важные задачи**
 
-#### **3.1 WG-профиль для legacy VPN** ✅ **ЗАВЕРШЕНО**
+#### **3.1 WG-профиль для legacy VPN** **ЗАВЕРШЕНО**
 - [x] **Создать WG Profile Manager** в `cmd/relay/wg_profile.go`
   - [x] Реализовать `WGProfileManager` структуру с полным функционалом:
     - [x] `AddPeer()` - добавление пиров
@@ -326,7 +326,7 @@ UDP 5554  - QUIC Underlay
   - [x] Проверена работа API endpoints
   - [x] Подтверждена инициализация и запуск менеджера
 
-#### **3.2 Сценарии роуминга** ✅ **ЗАВЕРШЕНО**
+#### **3.2 Сценарии роуминга** **ЗАВЕРШЕНО**
 - [x] **Connection Migration** в `internal/enhanced/quic/migration.go`
   - [x] Реализовать `ConnectionMigration` структуру
   - [x] Добавить методы:
@@ -337,7 +337,7 @@ UDP 5554  - QUIC Underlay
   - [x] Использовать QUIC connection migration
   - [x] Реализовать seamless handover между сетями
 
-#### **3.3 Last resort relay** ✅ **ЗАВЕРШЕНО**
+#### **3.3 Last resort relay** **ЗАВЕРШЕНО**
 - [x] **Relay Manager** в `internal/p2p/relay_manager.go`
   - [x] Реализовать `RelayManager` структуру
   - [x] Добавить методы:
@@ -350,7 +350,7 @@ UDP 5554  - QUIC Underlay
 
 ### 🟢 **Дополнительные задачи**
 
-#### **3.4 Финальное тестирование** ✅ **ЗАВЕРШЕНО**
+#### **3.4 Финальное тестирование** **ЗАВЕРШЕНО**
 - [x] **End-to-end тесты**
   - [x] `TestMASQUEICEIntegration` - полный тест MVP функциональности
   - [x] `TestFullModuleIntegration` - тест enterprise сценария
@@ -365,7 +365,7 @@ UDP 5554  - QUIC Underlay
   - [x] `TestNetworkFailures` - тест сетевых сбоев
   - [x] `TestResourceUsage` - тест использования ресурсов
 
-#### **3.5 Документация и мониторинг** ✅ **ЗАВЕРШЕНО**
+#### **3.5 Документация и мониторинг** **ЗАВЕРШЕНО**
 - [x] **API документация**
   - [x] Обновить OpenAPI спецификации
   - [x] Добавить примеры использования в `examples/README.md`
@@ -383,7 +383,7 @@ UDP 5554  - QUIC Underlay
 
 ## 🔧 **Технические улучшения**
 
-### **Код качество** ✅ **ЗАВЕРШЕНО**
+### **Код качество** **ЗАВЕРШЕНО**
 - [x] **Рефакторинг**
   - [x] Вынести общую логику в отдельные пакеты
   - [x] Улучшить error handling в `internal/errors/errors.go`
@@ -397,7 +397,7 @@ UDP 5554  - QUIC Underlay
   - [x] Hot reload конфигурации
   - [x] Environment-specific конфигурации
 
-### **Безопасность** ✅ **ЗАВЕРШЕНО**
+### **Безопасность** **ЗАВЕРШЕНО**
 - [x] **TLS/SSL**
   - [x] Автоматическая генерация сертификатов
   - [x] Certificate rotation
@@ -411,7 +411,7 @@ UDP 5554  - QUIC Underlay
   - [x] Perfect forward secrecy
   - [x] Key rotation
 
-### **Производительность** ✅ **ЗАВЕРШЕНО**
+### **Производительность** **ЗАВЕРШЕНО**
 - [x] **Оптимизация**
   - [x] Connection pooling в `internal/connection/pool.go`
   - [x] Memory optimization в `internal/connection/performance.go`
@@ -426,41 +426,41 @@ UDP 5554  - QUIC Underlay
 ## 📊 **Критерии готовности MVP**
 
 ### **Функциональные критерии**
-- [x] ✅ CONNECT-UDP работает через MASQUE (RFC 9298)
-- [x] ✅ CONNECT-IP работает через MASQUE (RFC 9484)
-- [x] ✅ HTTP Datagrams поддерживаются (RFC 9221)
-- [x] ✅ Capsule fallback без DATAGRAM работает (RFC 9297)
-- [x] ✅ ICE↔MASQUE селектор функционирует
-- [x] ✅ Extended CONNECT WebSocket fallback (RFC 9220)
-- [x] ✅ QUIC Security: address validation, Retry, anti-amplification
-- [x] ✅ NAT Behaviour Discovery метрики (RFC 5780)
-- [x] ✅ Prometheus-экспортер coturn
-- [x] ✅ TURN-пул управляется
-- [x] ✅ ICE Agent с полной функциональностью
-- [x] ✅ ICE Connectivity Checks
-- [x] ✅ TCP TURN allocation
-- [x] ✅ WG-профиль для legacy работает
+- [x] CONNECT-UDP работает через MASQUE (RFC 9298)
+- [x] CONNECT-IP работает через MASQUE (RFC 9484)
+- [x] HTTP Datagrams поддерживаются (RFC 9221)
+- [x] Capsule fallback без DATAGRAM работает (RFC 9297)
+- [x] ICE↔MASQUE селектор функционирует
+- [x] Extended CONNECT WebSocket fallback (RFC 9220)
+- [x] QUIC Security: address validation, Retry, anti-amplification
+- [x] NAT Behaviour Discovery метрики (RFC 5780)
+- [x] Prometheus-экспортер coturn
+- [x] TURN-пул управляется
+- [x] ICE Agent с полной функциональностью
+- [x] ICE Connectivity Checks
+- [x] TCP TURN allocation
+- [x] WG-профиль для legacy работает
 
-### **Технические критерии** ✅ **ВСЕ ВЫПОЛНЕНЫ**
-- [x] ✅ Latency < 100ms для локальных соединений
-- [x] ✅ Поддержка 100+ одновременных соединений
-- [x] ✅ Memory usage < 500MB
-- [x] ✅ CPU usage < 50%
-- [x] ✅ Автоматический fallback: ICE → CONNECT-UDP → TURN → WS/TCP
-- [x] ✅ QUIC Security: защита от DoS/амплификации
-- [x] ✅ Graceful shutdown соединений
-- [x] ✅ Восстановление после сбоев
-- [x] ✅ RFC 9443 демультиплекс (опционально)
+### **Технические критерии** **ВСЕ ВЫПОЛНЕНЫ**
+- [x] Latency < 100ms для локальных соединений
+- [x] Поддержка 100+ одновременных соединений
+- [x] Memory usage < 500MB
+- [x] CPU usage < 50%
+- [x] Автоматический fallback: ICE → CONNECT-UDP → TURN → WS/TCP
+- [x] QUIC Security: защита от DoS/амплификации
+- [x] Graceful shutdown соединений
+- [x] Восстановление после сбоев
+- [x] RFC 9443 демультиплекс (опционально)
 
-### **Качественные критерии** ✅ **ВСЕ ВЫПОЛНЕНЫ**
-- [x] ✅ Покрытие тестами > 80%
-- [x] ✅ Нет критических багов
-- [x] ✅ Документация готова
-- [x] ✅ Мониторинг настроен (Prometheus + Grafana)
-- [x] ✅ Логирование работает
-- [x] ✅ Метрики собираются (NAT + TURN + MASQUE)
-- [x] ✅ Совместимость с reference-реализациями MASQUE
-- [x] ✅ Соответствие RFC стандартам
+### **Качественные критерии** **ВСЕ ВЫПОЛНЕНЫ**
+- [x] Покрытие тестами > 80%
+- [x] Нет критических багов
+- [x] Документация готова
+- [x] Мониторинг настроен (Prometheus + Grafana)
+- [x] Логирование работает
+- [x] Метрики собираются (NAT + TURN + MASQUE)
+- [x] Совместимость с reference-реализациями MASQUE
+- [x] Соответствие RFC стандартам
 
 ---
 
@@ -574,7 +574,7 @@ curl http://localhost:8080/metrics | grep nat_
 
 ## 🧪 **РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ WG-ПРОФИЛЯ**
 
-### ✅ **Успешное тестирование в Minikube (21.09.2025)**
+### **Успешное тестирование в Minikube (21.09.2025)**
 
 #### **Созданные компоненты:**
 - **WG-профиль менеджер** (`cmd/relay/wg_profile.go`) - 400+ строк кода
@@ -595,12 +595,12 @@ GET /api/v1/wireguard/peers → {}
 ```
 
 #### **Подтвержденная функциональность:**
-- ✅ Инициализация WG-профиль менеджера
-- ✅ Создание WireGuard интерфейсов
-- ✅ REST API для управления пирами
-- ✅ Интеграция с Kubernetes/Minikube
-- ✅ Правильные права доступа (NET_ADMIN, SYS_MODULE)
-- ✅ Мониторинг и статистика устройств
+- Инициализация WG-профиль менеджера
+- Создание WireGuard интерфейсов
+- REST API для управления пирами
+- Интеграция с Kubernetes/Minikube
+- Правильные права доступа (NET_ADMIN, SYS_MODULE)
+- Мониторинг и статистика устройств
 
 #### **Оценка сложности реализации:**
 - **Фактическая сложность**: СРЕДНЯЯ (3/10) ✅
@@ -609,24 +609,24 @@ GET /api/v1/wireguard/peers → {}
 - **Зависимости**: `wgctrl-go` библиотека
 
 #### **Готовность к продакшену:**
-- ✅ Docker образ собран и протестирован
-- ✅ Kubernetes манифесты готовы
-- ✅ Конфигурация настроена
-- ✅ API endpoints функционируют
-- ✅ Логирование и мониторинг работают
+- Docker образ собран и протестирован
+- Kubernetes манифесты готовы
+- Конфигурация настроена
+- API endpoints функционируют
+- Логирование и мониторинг работают
 
 ### 🎯 **Статус MVP: ЭТАП 3 ЗАВЕРШЕН НА 100%**
 
 **Все три этапа MVP полностью реализованы:**
-- ✅ **Stage 1**: QUIC-first + MASQUE + ICE selector
-- ✅ **Stage 2**: ICE/STUN/TURN layer  
-- ✅ **Stage 3**: WireGuard (WG) profile
+- **Stage 1**: QUIC-first + MASQUE + ICE selector
+- **Stage 2**: ICE/STUN/TURN layer  
+- **Stage 3**: WireGuard (WG) profile
 
 ---
 
 ## 🔐 **РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ KEYCLOAK ИНТЕГРАЦИИ**
 
-### ✅ **Успешное тестирование Keycloak (21.09.2025)**
+### **Успешное тестирование Keycloak (21.09.2025)**
 
 #### **Проблема решена разработчиком:**
 - 🔍 **Найден правильный Keycloak сервер**: `https://auth.2gc.ru:443`
@@ -652,12 +652,12 @@ curl http://localhost:8080/health
 ```
 
 #### **Подтвержденная функциональность:**
-- ✅ **Keycloak validator инициализирован** успешно
-- ✅ **WireGuard Profile Manager** работает
-- ✅ **HTTP сервер** запущен на порту 9091
-- ✅ **P2P API Server** работает на порту 8082
-- ✅ **Health endpoint** отвечает корректно
-- ✅ **Все компоненты** инициализированы без ошибок
+- **Keycloak validator инициализирован** успешно
+- **WireGuard Profile Manager** работает
+- **HTTP сервер** запущен на порту 9091
+- **P2P API Server** работает на порту 8082
+- **Health endpoint** отвечает корректно
+- **Все компоненты** инициализированы без ошибок
 
 #### **Конфигурация Keycloak:**
 ```json
@@ -675,29 +675,29 @@ curl http://localhost:8080/health
 ```
 
 #### **Готовность к продакшену:**
-- ✅ **Keycloak интеграция** полностью функциональна
-- ✅ **Аутентификация** настроена и работает
-- ✅ **Все API endpoints** доступны
-- ✅ **Логирование** работает корректно
-- ✅ **Fallback режим** активен при необходимости
+- **Keycloak интеграция** полностью функциональна
+- **Аутентификация** настроена и работает
+- **Все API endpoints** доступны
+- **Логирование** работает корректно
+- **Fallback режим** активен при необходимости
 
 ### 🎯 **ФИНАЛЬНЫЙ СТАТУС MVP: 95% ГОТОВ**
 
 **Все компоненты MVP полностью функциональны:**
-- ✅ **Stage 1**: QUIC-first + MASQUE + ICE selector
-- ✅ **Stage 2**: ICE/STUN/TURN layer  
-- ✅ **Stage 3**: WireGuard (WG) profile
-- ✅ **Keycloak интеграция**: Аутентификация и авторизация
-- ✅ **CONNECT-IP**: Полная реализация IP-туннелирования
-- ✅ **Connection Migration**: Seamless handover между сетями
-- ✅ **Relay Manager**: Last resort relay с балансировкой
-- ✅ **Тестирование**: End-to-end, Performance, Stress тесты
-- ✅ **Документация**: API, примеры, мониторинг
-- ✅ **Безопасность**: TLS/SSL, JWT, Rate limiting, mTLS
-- ✅ **Производительность**: Connection pooling, Auto-scaling
-- ✅ **Мониторинг**: Prometheus + Grafana dashboards
+- **Stage 1**: QUIC-first + MASQUE + ICE selector
+- **Stage 2**: ICE/STUN/TURN layer  
+- **Stage 3**: WireGuard (WG) profile
+- **Keycloak интеграция**: Аутентификация и авторизация
+- **CONNECT-IP**: Полная реализация IP-туннелирования
+- **Connection Migration**: Seamless handover между сетями
+- **Relay Manager**: Last resort relay с балансировкой
+- **Тестирование**: End-to-end, Performance, Stress тесты
+- **Документация**: API, примеры, мониторинг
+- **Безопасность**: TLS/SSL, JWT, Rate limiting, mTLS
+- **Производительность**: Connection pooling, Auto-scaling
+- **Мониторинг**: Prometheus + Grafana dashboards
 
-**⚠️ ТРЕБУЕТСЯ: Выполнить 8 "боевых" проверок для подтверждения готовности к продакшену**
+** ТРЕБУЕТСЯ: Выполнить 8 "боевых" проверок для подтверждения готовности к продакшену**
 
 **После выполнения всех "боевых" проверок MVP будет 100% готов к развертыванию!**
 
@@ -706,13 +706,13 @@ curl http://localhost:8080/health
 ## 📝 **Примечания**
 
 ### **Исправления RFC номеров в коде:**
-- ✅ **QUIC DATAGRAM**: RFC 9221 (не "приоритизация HTTP" - это RFC 9218)
-- ✅ **HTTP Datagrams/Capsule**: RFC 9297
-- ✅ **CONNECT-UDP**: RFC 9298
-- ✅ **CONNECT-IP**: RFC 9484
-- ✅ **WebSockets over H3**: RFC 9220
-- ✅ **Демультиплекс QUIC + STUN/TURN**: RFC 9443
-- ✅ **NAT Behaviour Discovery**: RFC 5780 (экспериментальный, диагностические метрики)
+- **QUIC DATAGRAM**: RFC 9221 (не "приоритизация HTTP" - это RFC 9218)
+- **HTTP Datagrams/Capsule**: RFC 9297
+- **CONNECT-UDP**: RFC 9298
+- **CONNECT-IP**: RFC 9484
+- **WebSockets over H3**: RFC 9220
+- **Демультиплекс QUIC + STUN/TURN**: RFC 9443
+- **NAT Behaviour Discovery**: RFC 5780 (экспериментальный, диагностические метрики)
 
 ### **Важные замечания:**
 - **MASQUE тестирование**: Использовать CONNECT (не GET) для валидных тестов туннеля
@@ -742,7 +742,7 @@ curl http://localhost:8080/health
 - [RFC 9443](https://datatracker.ietf.org/doc/html/rfc9443) - Multiplexing Scheme Updates for QUIC
 - [RFC 5780](https://datatracker.ietf.org/doc/html/rfc5780) - NAT Behavior Discovery Using Session Traversal Utilities
 
-### 🔗 **Reference реализации**
+###  **Reference реализации**
 - [quic-go/masque-go](https://github.com/quic-go/masque-go) - MASQUE implementation
 - [connect-ip-go](https://github.com/connect-ip-go) - CONNECT-IP implementation
 - [ngtcp2/nghttp3](https://github.com/ngtcp2/nghttp3) - HTTP/3 client library

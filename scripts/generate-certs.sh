@@ -33,7 +33,7 @@ if ! command -v openssl &> /dev/null; then
     exit 1
 fi
 
-echo -e "${GREEN}✅ OpenSSL found: $(openssl version)${NC}"
+echo -e "${GREEN}OpenSSL found: $(openssl version)${NC}"
 
 # Generate CA private key
 echo -e "${YELLOW}🔑 Generating CA private key...${NC}"
@@ -97,9 +97,9 @@ chmod 600 "$CERT_DIR"/*.key
 chmod 644 "$CERT_DIR"/*.p12
 
 # Display certificate information
-echo -e "${GREEN}✅ Certificate generation completed successfully!${NC}"
+echo -e "${GREEN}Certificate generation completed successfully!${NC}"
 echo ""
-echo -e "${BLUE}📋 Generated certificates:${NC}"
+echo -e "${BLUE}Generated certificates:${NC}"
 echo "  📜 CA Certificate: $CERT_DIR/ca.crt"
 echo "  🔑 CA Private Key: $CERT_DIR/ca.key"
 echo "  📜 Server Certificate: $CERT_DIR/server.crt"
@@ -111,7 +111,7 @@ echo "  🗄️ Cassandra Truststore: $CERT_DIR/cassandra-truststore.p12"
 echo ""
 
 # Display certificate details
-echo -e "${BLUE}📋 Certificate Details:${NC}"
+echo -e "${BLUE}Certificate Details:${NC}"
 echo "CA Certificate:"
 openssl x509 -in "$CERT_DIR/ca.crt" -text -noout | grep -E "(Subject:|Issuer:|Not Before|Not After)"
 
@@ -125,7 +125,7 @@ openssl x509 -in "$CERT_DIR/client.crt" -text -noout | grep -E "(Subject:|Issuer
 
 echo ""
 echo -e "${GREEN}🎉 All certificates generated successfully!${NC}"
-echo -e "${YELLOW}💡 Next steps:${NC}"
+echo -e "${YELLOW}Next steps:${NC}"
 echo "  1. Update CloudBridge Relay configuration to enable TLS"
 echo "  2. Create Kubernetes secrets for certificates"
 echo "  3. Update deployment manifests to mount certificates"

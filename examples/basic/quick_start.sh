@@ -18,14 +18,14 @@ if ! command -v docker-compose &> /dev/null; then
     exit 1
 fi
 
-echo "✅ Docker проверен"
+echo "Docker проверен"
 
 # Запуск CloudBridge Relay
 echo "🐳 Запуск CloudBridge Relay..."
 docker-compose up -d
 
 if [ $? -eq 0 ]; then
-    echo "✅ CloudBridge Relay успешно запущен!"
+    echo "CloudBridge Relay успешно запущен!"
     echo ""
     echo "📊 Доступные эндпоинты:"
     echo "  • Relay API:        http://localhost:8082"

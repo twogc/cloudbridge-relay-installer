@@ -186,7 +186,7 @@ sudo ufw allow 10051/tcp
 sudo ufw --force enable
 
 # Проверка статуса сервисов
-echo "✅ Проверка статуса сервисов..."
+echo "Проверка статуса сервисов..."
 echo "PostgreSQL:"
 sudo systemctl status postgresql --no-pager -l
 echo ""
@@ -206,7 +206,7 @@ sudo netstat -tlnp | grep -E "(80|443|10050|10051|5432)"
 echo ""
 echo "🎉 Установка Zabbix завершена!"
 echo ""
-echo "📋 Информация для доступа:"
+echo "Информация для доступа:"
 echo "   Веб-интерфейс: http://10.0.0.241/zabbix"
 echo "   Логин по умолчанию: Admin"
 echo "   Пароль по умолчанию: zabbix"
@@ -216,7 +216,7 @@ echo "   sudo systemctl status zabbix-server"
 echo "   sudo systemctl restart zabbix-server"
 echo "   sudo tail -f /var/log/zabbix/zabbix_server.log"
 echo ""
-echo "⚠️  Не забудьте изменить пароль по умолчанию после первого входа!"
+echo "  Не забудьте изменить пароль по умолчанию после первого входа!"
 
 
 

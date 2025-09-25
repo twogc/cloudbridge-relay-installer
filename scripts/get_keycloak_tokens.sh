@@ -29,7 +29,7 @@ RESPONSE=$(curl -s -k -X POST "$KEYCLOAK_URL/realms/$REALM/protocol/openid-conne
     -d "password=$PASSWORD")
 
 if echo "$RESPONSE" | grep -q "access_token"; then
-    echo "✅ Успешно получен токен через password grant"
+    echo "Успешно получен токен через password grant"
     echo "$RESPONSE" | jq .
 else
     echo "❌ Ошибка получения токена через password grant:"
@@ -44,7 +44,7 @@ RESPONSE2=$(curl -s -k -X POST "$KEYCLOAK_URL/realms/$REALM/protocol/openid-conn
     -d "client_secret=$CLIENT_SECRET")
 
 if echo "$RESPONSE2" | grep -q "access_token"; then
-    echo "✅ Успешно получен токен через client credentials"
+    echo "Успешно получен токен через client credentials"
     echo "$RESPONSE2" | jq .
 else
     echo "❌ Ошибка получения токена через client credentials:"
@@ -56,7 +56,7 @@ echo "3. Проверка доступных клиентов в realm..."
 # Попробуем получить информацию о realm
 REALM_INFO=$(curl -s -k "$KEYCLOAK_URL/realms/$REALM")
 if echo "$REALM_INFO" | grep -q "realm"; then
-    echo "✅ Realm $REALM доступен"
+    echo "Realm $REALM доступен"
     echo "Public Key: $(echo "$REALM_INFO" | jq -r '.public_key' | head -c 50)..."
 else
     echo "❌ Realm $REALM недоступен"

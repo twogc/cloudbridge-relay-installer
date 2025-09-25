@@ -36,7 +36,7 @@
 - [**Reference Repos Battle Testing Ready**](guides/REFERENCE_REPOS_BATTLE_TESTING_READY.md) - Готовность к боевому тестированию
 - [**Developer Task MASQUE Debug**](guides/DEVELOPER_TASK_MASQUE_DEBUG.md) - Задача разработчика по отладке MASQUE
 
-### 📋 **Отчеты** (`reports/`)
+### **Отчеты** (`reports/`)
 - [**Code Analysis Report**](reports/CODE_ANALYSIS_REPORT.md) - Анализ кода
 - [**Analysis Summary**](reports/ANALYSIS_SUMMARY.md) - Сводка анализа
 - [**Critical Blockers Resolution Report**](reports/CRITICAL_BLOCKERS_RESOLUTION_REPORT.md) - Разрешение критических блокеров

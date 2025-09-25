@@ -1,30 +1,30 @@
 # 🎯 **Обзор автоматизации CloudBridge Relay**
 
-## 📋 **Что создано:**
+## **Что создано:**
 
 ### **1. Скрипты автоматизации:**
-- ✅ **`setup-container-registry.sh`** - настройка Container Registry
-- ✅ **`test-registry-connection.sh`** - тестирование подключения
-- ✅ **`deploy-automated.sh`** - полное автоматизированное развертывание
+- **`setup-container-registry.sh`** - настройка Container Registry
+- **`test-registry-connection.sh`** - тестирование подключения
+- **`deploy-automated.sh`** - полное автоматизированное развертывание
 
 ### **2. Terraform конфигурации:**
-- ✅ **`docker-registry-automation.tf`** - автоматизация через remote-exec
-- ✅ **`cloudbridge-relay-ddos.tf`** - базовая инфраструктура
-- ✅ **`cloud-init-ddos.yaml`** - минимальная конфигурация VM
+- **`docker-registry-automation.tf`** - автоматизация через remote-exec
+- **`cloudbridge-relay-ddos.tf`** - базовая инфраструктура
+- **`cloud-init-ddos.yaml`** - минимальная конфигурация VM
 
 ### **3. GitHub Actions:**
-- ✅ **`.github/workflows/build-and-deploy.yml`** - CI/CD pipeline
+- **`.github/workflows/build-and-deploy.yml`** - CI/CD pipeline
 
 ### **4. Конфигурационные файлы:**
-- ✅ **`docker-compose.vk-cloud.yml`** - для VK Cloud Registry
-- ✅ **`.env`** - переменные окружения
-- ✅ **`load-env.sh`** - загрузка переменных
+- **`docker-compose.vk-cloud.yml`** - для VK Cloud Registry
+- **`.env`** - переменные окружения
+- **`load-env.sh`** - загрузка переменных
 
 ### **5. Документация:**
-- ✅ **`AUTOMATION_CONSULTATION.md`** - консультация по автоматизации
-- ✅ **`GITHUB_SECRETS_SETUP.md`** - настройка GitHub Secrets
-- ✅ **`README_AUTOMATION.md`** - полная инструкция
-- ✅ **`NEXT_STEPS.md`** - следующие шаги
+- **`AUTOMATION_CONSULTATION.md`** - консультация по автоматизации
+- **`GITHUB_SECRETS_SETUP.md`** - настройка GitHub Secrets
+- **`README_AUTOMATION.md`** - полная инструкция
+- **`NEXT_STEPS.md`** - следующие шаги
 
 ## 🚀 **Архитектура автоматизации:**
 

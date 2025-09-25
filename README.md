@@ -2,7 +2,7 @@
 
 **QUIC-first + MASQUE глобальная Zero-Trust overlay сеть**
 
-## 📋 **Быстрый старт**
+## **Быстрый старт**
 
 ### **Развертывание:**
 ```bash
@@ -59,7 +59,7 @@
 - [Настройка репозиториев](docs/guides/REFERENCE_REPOS_SETUP_REPORT.md)
 - [Отладка MASQUE](docs/guides/DEVELOPER_TASK_MASQUE_DEBUG.md)
 
-### **📋 Отчеты**
+### **Отчеты**
 - [Анализ кода](docs/reports/CODE_ANALYSIS_REPORT.md)
 - [Готовность MVP](docs/reports/MVP_READINESS_ANALYSIS.md)
 - [Чек-лист разработки](docs/reports/MVP_DEVELOPMENT_CHECKLIST.md)
@@ -106,13 +106,13 @@ sudo ./scripts/ufw-cloudbridge.sh show
 
 ## 🎯 **Статус проекта**
 
-- ✅ **Архитектура**: Готова
-- ✅ **Развертывание**: Работает в Minikube
-- ✅ **Безопасность**: Keycloak интегрирован
-- ✅ **Мониторинг**: Prometheus настроен
-- ✅ **Порты**: 5550-5555 настроены
-- ✅ **UFW**: Правила настроены
-- ✅ **Документация**: Структурирована
+- **Архитектура**: Готова
+- **Развертывание**: Работает в Minikube
+- **Безопасность**: Keycloak интегрирован
+- **Мониторинг**: Prometheus настроен
+- **Порты**: 5550-5555 настроены
+- **UFW**: Правила настроены
+- **Документация**: Структурирована
 
 ---
 

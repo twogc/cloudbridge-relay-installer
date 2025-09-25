@@ -1,6 +1,6 @@
 # 🚀 Инструкция по доступу к Zitadel
 
-## ✅ Проброс портов настроен!
+## Проброс портов настроен!
 
 ### 🌐 Доступ к Zitadel UI
 
@@ -20,7 +20,7 @@
 - Token: http://zitadel.local:8080/oauth/v2/token
 - UserInfo: http://zitadel.local:8080/oidc/v1/userinfo
 
-## 📋 Следующие шаги
+## Следующие шаги
 
 ### 1. Создать проект в Zitadel UI
 
@@ -128,7 +128,7 @@ curl -k http://zitadel.local:8080/oauth/v2/token \
   -d "grant_type=client_credentials&client_id=ВАШ_CLIENT_ID&client_secret=ВАШ_CLIENT_SECRET"
 ```
 
-## ⚠️ Важные замечания
+##  Важные замечания
 
 1. **Домен:** Используйте `zitadel.local:8080`, а не `localhost:8080`
 2. **HTTPS:** В development режиме используйте HTTP, в production - HTTPS
@@ -148,5 +148,6 @@ curl -k http://zitadel.local:8080/oauth/v2/token \
 ### Проблема: Не могу войти в систему
 - Убедитесь, что используете правильные учетные данные
 - Проверьте, что Zitadel полностью инициализирован
+
 
 

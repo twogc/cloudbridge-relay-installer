@@ -31,6 +31,7 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
+	"github.com/twogc/cloudbridge-relay-installer/internal/nat"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2c"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"github.com/twogc/cloudbridge-relay-installer/internal/protocol"
@@ -142,6 +143,9 @@ type Server struct {
 
 	// Zitadel Integration
 	zitadelIntegration *ZitadelIntegration
+
+	// TURN Pool Manager
+	turnPoolManager *nat.TURNPoolManager
 
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -571,6 +575,81 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		loggerInstance.Info("Zitadel disabled, skipping Zitadel integration initialization")
 	}
 
+	// Initialize TURN Pool Manager
+	var turnPoolManager *nat.TURNPoolManager
+	if cfg.TURNPool.Enabled {
+		// Create TURN pool configuration from config
+		turnPoolConfig := &nat.TURNPoolConfig{
+			DefaultPoolName:         cfg.TURNPool.DefaultPoolName,
+			AllocationTimeout:       cfg.TURNPool.AllocationTimeout,
+			HealthCheckInterval:     cfg.TURNPool.HealthCheckInterval,
+			HealthCheckTimeout:      cfg.TURNPool.HealthCheckTimeout,
+			MaxAllocationsPerClient: cfg.TURNPool.MaxAllocationsPerClient,
+			LoadBalancingStrategy:   cfg.TURNPool.LoadBalancingStrategy,
+			WeightedThreshold:       cfg.TURNPool.WeightedThreshold,
+			MetricsEnabled:          cfg.TURNPool.MetricsEnabled,
+			StatsInterval:           cfg.TURNPool.StatsInterval,
+			LatencyHistorySize:      cfg.TURNPool.LatencyHistorySize,
+			FailoverEnabled:         cfg.TURNPool.FailoverEnabled,
+			FailoverTimeout:         cfg.TURNPool.FailoverTimeout,
+			MaxRetries:              cfg.TURNPool.MaxRetries,
+			BackoffMultiplier:       cfg.TURNPool.BackoffMultiplier,
+		}
+
+		turnPoolManager = nat.NewTURNPoolManager(turnPoolConfig, loggerInstance.GetZapLogger())
+
+		// Initialize pools from configuration
+		for poolName, poolConfig := range cfg.TURNPool.Pools {
+			err := turnPoolManager.CreatePool(poolName)
+			if err != nil {
+				loggerInstance.Error("Failed to create TURN pool",
+					zap.String("pool", poolName),
+					zap.Error(err))
+				continue
+			}
+
+			// Add servers to the pool
+			for _, serverConfig := range poolConfig.Servers {
+				server := &nat.TURNServerInfo{
+					TURNServerPool: &nat.TURNServerPool{
+						Address:        serverConfig.Address,
+						Username:       serverConfig.Username,
+						Password:       serverConfig.Password,
+						Realm:          serverConfig.Realm,
+						Priority:       serverConfig.Priority,
+						Weight:         serverConfig.Weight,
+						MaxConnections: serverConfig.MaxConnections,
+						IsHealthy:      true,
+					},
+					Region:       serverConfig.Region,
+					Provider:     serverConfig.Provider,
+					Capabilities: serverConfig.Capabilities,
+					Tags:         serverConfig.Tags,
+				}
+
+				err := turnPoolManager.AddServerToPool(poolName, server)
+				if err != nil {
+					loggerInstance.Error("Failed to add server to TURN pool",
+						zap.String("pool", poolName),
+						zap.String("server", serverConfig.Address),
+						zap.Error(err))
+				} else {
+					loggerInstance.Info("Added TURN server to pool",
+						zap.String("pool", poolName),
+						zap.String("server", serverConfig.Address),
+						zap.String("region", serverConfig.Region))
+				}
+			}
+		}
+
+		loggerInstance.Info("TURN Pool Manager initialized",
+			zap.String("default_pool", cfg.TURNPool.DefaultPoolName),
+			zap.Int("pools", len(cfg.TURNPool.Pools)),
+			zap.String("strategy", cfg.TURNPool.LoadBalancingStrategy))
+	} else {
+		loggerInstance.Info("TURN Pool disabled, skipping TURN Pool Manager initialization")
+	}
+
 	return &Server{
 		config:               cfg,
 		logger:               loggerInstance,
@@ -604,6 +683,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		wgProfileManager:     wgProfileManager,
 		masqueIntegration:    masqueIntegration,
 		zitadelIntegration:   zitadelIntegration,
+		turnPoolManager:      turnPoolManager,
 		ctx:                  ctx,
 		cancel:               cancel,
 		startTime:            time.Now(),
@@ -1763,6 +1843,12 @@ func (s *Server) Stop() {
 
 	if s.quicRelayHandler != nil {
 		s.quicRelayHandler.Stop()
+	}
+
+	// Stop TURN Pool Manager
+	if s.turnPoolManager != nil {
+		s.turnPoolManager.Stop()
+		s.logger.Info("TURN Pool Manager stopped")
 	}
 
 	// Stop WireGuard Profile Manager

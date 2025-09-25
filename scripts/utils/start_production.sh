@@ -188,21 +188,21 @@ check_health() {
         
         # Проверяем Keycloak
         if curl -f http://localhost:8080/ &> /dev/null; then
-            log "✅ Keycloak запущен и отвечает"
+            log "Keycloak запущен и отвечает"
         else
             warn "⏳ Keycloak еще не готов..."
         fi
         
         # Проверяем Relay
         if curl -f http://localhost:8081/metrics &> /dev/null; then
-            log "✅ Relay запущен и отвечает"
+            log "Relay запущен и отвечает"
         else
             warn "⏳ Relay еще не готов..."
         fi
         
         # Проверяем Grafana
         if curl -f http://localhost:3000/api/health &> /dev/null; then
-            log "✅ Grafana запущен и отвечает"
+            log "Grafana запущен и отвечает"
         else
             warn "⏳ Grafana еще не готов..."
         fi
@@ -244,7 +244,7 @@ show_status() {
     echo -e "  \033[1;36m🚀 Relay:\033[0m        http://localhost:8081"
     echo -e "  \033[1;36m📊 Grafana:\033[0m      http://localhost:3000"
     echo -e "  \033[1;36m📈 Prometheus:\033[0m   http://localhost:9090"
-    echo -e "  \033[1;36m🚨 AlertManager:\033[0m http://localhost:9093"
+    echo -e "  \033[1;36mAlertManager:\033[0m http://localhost:9093"
     echo
     
     log "Логи сервисов:"
@@ -253,7 +253,7 @@ show_status() {
     echo -e "  \033[1;33mdocker-compose logs -f grafana\033[0m"
     
     echo
-    echo -e "\033[1;35m💡 Quick Tips:\033[0m"
+    echo -e "\033[1;35mQuick Tips:\033[0m"
     echo -e "  • Use \033[1;33m./scripts/start_production.sh --status\033[0m to check service status"
     echo -e "  • Use \033[1;33mdocker-compose logs -f [service]\033[0m to view real-time logs"
     echo -e "  • Use \033[1;33m./scripts/setup/setup_dashboards.sh\033[0m to update Grafana dashboards"

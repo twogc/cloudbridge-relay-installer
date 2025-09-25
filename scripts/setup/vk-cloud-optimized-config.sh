@@ -151,12 +151,12 @@ validate_vk_cloud_config() {
         return 1
     fi
     
-    echo "✅ Все обязательные переменные установлены"
+    echo "Все обязательные переменные установлены"
     
     # Проверка подключения к VK Cloud
-    echo "🔗 Проверка подключения к VK Cloud..."
+    echo " Проверка подключения к VK Cloud..."
     if openstack token issue >/dev/null 2>&1; then
-        echo "✅ Подключение к VK Cloud успешно"
+        echo "Подключение к VK Cloud успешно"
     else
         echo "❌ Ошибка подключения к VK Cloud"
         return 1
@@ -175,7 +175,7 @@ test_vk_cloud_performance() {
     if command -v speedtest-cli >/dev/null 2>&1; then
         speedtest-cli --simple
     else
-        echo "⚠️ speedtest-cli не установлен, пропускаем тест сети"
+        echo " speedtest-cli не установлен, пропускаем тест сети"
     fi
     
     # Тест дискового I/O
@@ -183,10 +183,10 @@ test_vk_cloud_performance() {
     if command -v fio >/dev/null 2>&1; then
         fio --name=test --ioengine=libaio --rw=read --bs=4k --numjobs=1 --size=1G --runtime=10 --time_based
     else
-        echo "⚠️ fio не установлен, пропускаем тест диска"
+        echo " fio не установлен, пропускаем тест диска"
     fi
     
-    echo "✅ Тестирование производительности завершено"
+    echo "Тестирование производительности завершено"
 }
 
 # Функция оптимизации ресурсов
@@ -208,7 +208,7 @@ optimize_vk_cloud_resources() {
     export CLOUDBRIDGE_NETWORK_BUFFERING="enabled"
     export CLOUDBRIDGE_NETWORK_OFFLOADING="enabled"
     
-    echo "✅ Оптимизация ресурсов завершена"
+    echo "Оптимизация ресурсов завершена"
 }
 
 # Функция настройки мониторинга
@@ -229,7 +229,7 @@ setup_vk_cloud_monitoring() {
     export VK_DASHBOARDS_ENABLED="true"
     export VK_DASHBOARDS_REFRESH="30s"
     
-    echo "✅ Мониторинг VK Cloud настроен"
+    echo "Мониторинг VK Cloud настроен"
 }
 
 # =============================================================================
@@ -257,13 +257,13 @@ main() {
     
     echo "🎉 Оптимизированная конфигурация VK Cloud готова!"
     echo ""
-    echo "📋 Следующие шаги:"
+    echo "Следующие шаги:"
     echo "1. Запустите Terraform: terraform init && terraform apply"
     echo "2. Проверьте статус: kubectl get pods -A"
     echo "3. Настройте мониторинг: kubectl port-forward svc/grafana 3000:3000"
     echo "4. Запустите нагрузочное тестирование: k6 run production-load-test.js"
     echo ""
-    echo "🔗 Полезные ссылки:"
+    echo " Полезные ссылки:"
     echo "- VK Cloud Console: https://mcs.mail.ru"
     echo "- Документация: https://mcs.mail.ru/docs"
     echo "- Поддержка: support@vk.com"

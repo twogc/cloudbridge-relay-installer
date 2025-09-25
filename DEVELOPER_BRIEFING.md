@@ -1,6 +1,6 @@
 # 🚀 **CloudBridge Relay - Брифинг для разработчика**
 
-## 📋 **Краткое резюме проекта**
+## **Краткое резюме проекта**
 
 **CloudBridge Relay** - это QUIC-first + MASQUE сеть для создания "почти LAN" соединений между удаленными серверами клиентов с поддержкой CONNECT-UDP/CONNECT-IP и ICE/STUN/TURN слоя.
 
@@ -38,13 +38,13 @@
 
 ## 📊 **Текущее состояние (по результатам тестирования DevOps)**
 
-### **✅ ЧТО УЖЕ РАБОТАЕТ:**
-- ✅ **Базовая инфраструктура:** Клиенты запускаются и регистрируются
-- ✅ **Сетевые интерфейсы:** Настроены (10.100.77.77, 10.100.77.78)
-- ✅ **Relay сервер:** Доступен и отвечает на все порты
-- ✅ **API endpoints:** HTTP API (8080) и P2P API (8082) работают
-- ✅ **JWT аутентификация:** Валидация токенов работает
-- ✅ **Все протоколы:** STUN (19302), QUIC (9090), Enhanced QUIC (9092), MASQUE (8443)
+### **ЧТО УЖЕ РАБОТАЕТ:**
+- **Базовая инфраструктура:** Клиенты запускаются и регистрируются
+- **Сетевые интерфейсы:** Настроены (10.100.77.77, 10.100.77.78)
+- **Relay сервер:** Доступен и отвечает на все порты
+- **API endpoints:** HTTP API (8080) и P2P API (8082) работают
+- **JWT аутентификация:** Валидация токенов работает
+- **Все протоколы:** STUN (19302), QUIC (9090), Enhanced QUIC (9092), MASQUE (8443)
 
 ### **❌ ЧТО ТРЕБУЕТ ДОРАБОТКИ:**
 - ❌ **CONNECT-UDP/CONNECT-IP:** Нет реализации MASQUE протокола
@@ -154,7 +154,7 @@ curl http://localhost:8080/health
 curl http://localhost:8082/health
 ```
 
-## 📋 **План разработки**
+## **План разработки**
 
 ### **Этап 1: QUIC-first + MASQUE (1-2 дня)**
 - [ ] Реализовать CONNECT-UDP протокол
@@ -183,22 +183,22 @@ curl http://localhost:8082/health
 ## 🧪 **Критерии успеха**
 
 ### **Функциональность:**
-- ✅ CONNECT-UDP и CONNECT-IP работают через MASQUE
-- ✅ HTTP Datagrams поддерживаются
-- ✅ ICE/STUN/TURN слой с метриками NAT
-- ✅ WG-профиль для legacy VPN
-- ✅ Downgrade на WS/TCP при блокировке
+- CONNECT-UDP и CONNECT-IP работают через MASQUE
+- HTTP Datagrams поддерживаются
+- ICE/STUN/TURN слой с метриками NAT
+- WG-профиль для legacy VPN
+- Downgrade на WS/TCP при блокировке
 
 ### **Производительность:**
-- ✅ Поддержка 100+ одновременных MASQUE соединений
-- ✅ Memory usage < 500MB
-- ✅ CPU usage < 50%
-- ✅ Поддержка 10+ tenant одновременно
+- Поддержка 100+ одновременных MASQUE соединений
+- Memory usage < 500MB
+- CPU usage < 50%
+- Поддержка 10+ tenant одновременно
 
 ### **Стабильность:**
-- ✅ Автоматический fallback на WS/TCP
-- ✅ Graceful shutdown MASQUE соединений
-- ✅ Восстановление соединений после сбоев
+- Автоматический fallback на WS/TCP
+- Graceful shutdown MASQUE соединений
+- Восстановление соединений после сбоев
 
 ## 📚 **Документация**
 
@@ -252,4 +252,4 @@ curl http://localhost:8082/health
 
 **🎯 Цель: Создать QUIC-first + MASQUE сеть с CONNECT-UDP/CONNECT-IP, ICE/STUN/TURN слоем и WG-профилем для legacy VPN!**
 
-**📋 Задача: Реализовать QUIC-first + MASQUE архитектуру с тремя ключевыми компонентами: CONNECT-UDP/CONNECT-IP, ICE/STUN/TURN слой с метриками NAT, и WG-профиль для site-to-site/legacy с fallback на WS/TCP.**
+**Задача: Реализовать QUIC-first + MASQUE архитектуру с тремя ключевыми компонентами: CONNECT-UDP/CONNECT-IP, ICE/STUN/TURN слой с метриками NAT, и WG-профиль для site-to-site/legacy с fallback на WS/TCP.**

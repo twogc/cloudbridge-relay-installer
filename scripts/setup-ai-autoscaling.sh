@@ -22,7 +22,7 @@ echo "================================================"
 # Function to check if namespace exists
 check_namespace() {
     if kubectl get namespace $NAMESPACE >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Namespace $NAMESPACE exists${NC}"
+        echo -e "${GREEN}Namespace $NAMESPACE exists${NC}"
         return 0
     else
         echo -e "${RED}❌ Namespace $NAMESPACE not found${NC}"
@@ -33,7 +33,7 @@ check_namespace() {
 # Function to check if deployment exists
 check_deployment() {
     if kubectl get deployment $SERVICE_NAME -n $NAMESPACE >/dev/null 2>&1; then
-        echo -e "${GREEN}✅ Deployment $SERVICE_NAME exists${NC}"
+        echo -e "${GREEN}Deployment $SERVICE_NAME exists${NC}"
         return 0
     else
         echo -e "${RED}❌ Deployment $SERVICE_NAME not found${NC}"
@@ -92,7 +92,7 @@ spec:
     echo "$HPA_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -106,13 +106,13 @@ create_vpa() {
     
     # Check if VPA CRD exists
     if ! kubectl get crd verticalpodautoscalers.autoscaling.k8s.io >/dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️  VPA CRD not found. Installing VPA...${NC}"
+        echo -e "${YELLOW}  VPA CRD not found. Installing VPA...${NC}"
         
         # Install VPA
         kubectl apply -f https://github.com/kubernetes/autoscaler/releases/download/vertical-pod-autoscaler-0.13.0/vpa-release.yaml >/dev/null 2>&1
         
         if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✅ VPA installed${NC}"
+            echo -e "${GREEN}VPA installed${NC}"
         else
             echo -e "${RED}❌ Failed to install VPA${NC}"
             return 1
@@ -122,9 +122,9 @@ create_vpa() {
         echo -n "Waiting for VPA to be ready... "
         kubectl wait --for=condition=available --timeout=300s deployment/vpa-admission-controller -n kube-system >/dev/null 2>&1
         if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✅ Ready${NC}"
+            echo -e "${GREEN}Ready${NC}"
         else
-            echo -e "${YELLOW}⚠️  VPA may not be fully ready${NC}"
+            echo -e "${YELLOW}  VPA may not be fully ready${NC}"
         fi
     fi
     
@@ -155,7 +155,7 @@ spec:
     echo "$VPA_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -182,7 +182,7 @@ spec:
     echo "$PDB_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -196,12 +196,12 @@ create_custom_metrics_hpa() {
     
     # Check if metrics-server is installed
     if ! kubectl get deployment metrics-server -n kube-system >/dev/null 2>&1; then
-        echo -e "${YELLOW}⚠️  Metrics server not found. Installing...${NC}"
+        echo -e "${YELLOW}  Metrics server not found. Installing...${NC}"
         
         kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml >/dev/null 2>&1
         
         if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✅ Metrics server installed${NC}"
+            echo -e "${GREEN}Metrics server installed${NC}"
         else
             echo -e "${RED}❌ Failed to install metrics server${NC}"
             return 1
@@ -245,7 +245,7 @@ spec:
     echo "$CUSTOM_HPA_YAML" | kubectl apply -f - >/dev/null 2>&1
     
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Created${NC}"
+        echo -e "${GREEN}Created${NC}"
         return 0
     else
         echo -e "${RED}❌ Failed${NC}"
@@ -253,7 +253,7 @@ spec:
     fi
 }
 
-echo -e "${YELLOW}📋 Setting up AI Service Autoscaling...${NC}"
+echo -e "${YELLOW}Setting up AI Service Autoscaling...${NC}"
 echo
 
 # Check prerequisites

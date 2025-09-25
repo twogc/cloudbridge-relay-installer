@@ -10,7 +10,7 @@ echo "🧪 Тестирование AI Workflows через Cadence..."
 # Проверяем, что Cadence Web UI доступен
 echo "📡 Проверка доступности Cadence Web UI..."
 if curl -s http://localhost:8088 > /dev/null; then
-    echo "✅ Cadence Web UI доступен на http://localhost:8088"
+    echo "Cadence Web UI доступен на http://localhost:8088"
 else
     echo "❌ Cadence Web UI недоступен. Запускаем port-forward..."
     kubectl port-forward -n cloudbridge service/cadence-web-service 8088:8088 &
@@ -18,9 +18,9 @@ else
 fi
 
 # Проверяем, что AI Service доступен
-echo "🤖 Проверка доступности AI Service..."
+echo " Проверка доступности AI Service..."
 if curl -s http://localhost:8083/api/v1/ai/status > /dev/null; then
-    echo "✅ AI Service доступен на http://localhost:8083"
+    echo "AI Service доступен на http://localhost:8083"
 else
     echo "❌ AI Service недоступен. Запускаем port-forward..."
     kubectl port-forward -n cloudbridge service/ai-service-nodeport 8083:8083 &
@@ -83,7 +83,7 @@ echo "   • AI Service API: http://localhost:8083"
 echo "   • Cadence Web UI: http://localhost:8088"
 echo "   • AI Metrics: http://localhost:8083/metrics"
 echo ""
-echo "🔗 Полезные ссылки:"
+echo " Полезные ссылки:"
 echo "   • AI API Docs: http://localhost:8083/api/v1/ai/status"
 echo "   • Cadence Workflows: http://localhost:8088/domains/cloudbridge/workflows"
 echo ""

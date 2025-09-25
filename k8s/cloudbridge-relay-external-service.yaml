@@ -11,17 +11,29 @@ spec:
   selector:
     app: cloudbridge-relay
   ports:
-    # HTTP API
-    - name: http-api
-      port: 8080
-      targetPort: 8080
+    # Main Server
+    - name: main-server
+      port: 5550
+      targetPort: 5550
       nodePort: 30080
+      protocol: TCP
+    # Metrics
+    - name: metrics
+      port: 5551
+      targetPort: 5551
+      nodePort: 30081
       protocol: TCP
     # P2P API  
     - name: p2p-api
-      port: 8082
-      targetPort: 8082
+      port: 5552
+      targetPort: 5552
       nodePort: 32500
+      protocol: TCP
+    # HTTP API
+    - name: http-api
+      port: 5553
+      targetPort: 5553
+      nodePort: 30087
       protocol: TCP
     # STUN Server
     - name: stun-server
@@ -67,15 +79,25 @@ spec:
   selector:
     app: cloudbridge-relay
   ports:
-    # HTTP API
-    - name: http-api
-      port: 8080
-      targetPort: 8080
+    # Main Server
+    - name: main-server
+      port: 5550
+      targetPort: 5550
+      protocol: TCP
+    # Metrics
+    - name: metrics
+      port: 5551
+      targetPort: 5551
       protocol: TCP
     # P2P API
     - name: p2p-api
-      port: 8082
-      targetPort: 8082
+      port: 5552
+      targetPort: 5552
+      protocol: TCP
+    # HTTP API
+    - name: http-api
+      port: 5553
+      targetPort: 5553
       protocol: TCP
     # STUN Server
     - name: stun-server

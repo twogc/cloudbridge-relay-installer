@@ -22,11 +22,11 @@ log_info() {
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}$1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}  $1${NC}"
 }
 
 log_error() {
@@ -381,7 +381,7 @@ show_status() {
     kubectl get services -n $NAMESPACE
     echo ""
     
-    echo "📋 ConfigMaps Status:"
+    echo "ConfigMaps Status:"
     kubectl get configmaps -n $NAMESPACE
     echo ""
     
@@ -404,11 +404,11 @@ show_access_info() {
     echo "   - Internal: http://prometheus.$NAMESPACE.svc.cluster.local:9090"
     echo ""
     
-    echo "🚨 Alertmanager:"
+    echo "Alertmanager:"
     echo "   - Internal: http://alertmanager.$NAMESPACE.svc.cluster.local:9093"
     echo ""
     
-    echo "🔗 Port Forward Commands:"
+    echo " Port Forward Commands:"
     echo "   kubectl port-forward service/grafana 3000:3000 -n $NAMESPACE"
     echo "   kubectl port-forward service/prometheus 9090:9090 -n $NAMESPACE"
     echo "   kubectl port-forward service/alertmanager 9093:9093 -n $NAMESPACE"

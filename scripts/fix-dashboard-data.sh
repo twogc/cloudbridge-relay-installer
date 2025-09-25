@@ -20,7 +20,7 @@ AI_METRICS=$(kubectl exec -n cloudbridge deployment/ai-service -- wget -qO- "htt
 echo "Найдено метрик AI Service: $AI_METRICS"
 
 if [ $AI_METRICS -gt 0 ]; then
-    echo -e "${GREEN}✅ AI Service генерирует метрики${NC}"
+    echo -e "${GREEN}AI Service генерирует метрики${NC}"
 else
     echo -e "${RED}❌ AI Service не генерирует метрики${NC}"
     exit 1
@@ -32,7 +32,7 @@ TARGETS=$(kubectl exec -n cloudbridge-monitoring deployment/prometheus -- wget -
 echo "Статус AI Service target: $TARGETS"
 
 if [ "$TARGETS" = '"up"' ]; then
-    echo -e "${GREEN}✅ Prometheus собирает метрики AI Service${NC}"
+    echo -e "${GREEN}Prometheus собирает метрики AI Service${NC}"
 else
     echo -e "${RED}❌ Prometheus не собирает метрики AI Service${NC}"
     exit 1
@@ -44,19 +44,19 @@ DATASOURCE=$(kubectl exec -n cloudbridge-monitoring deployment/grafana -- wget -
 echo "URL datasource: $DATASOURCE"
 
 if [ "$DATASOURCE" = '"http://prometheus.cloudbridge-monitoring.svc.cluster.local:9090"' ]; then
-    echo -e "${GREEN}✅ Datasource Prometheus настроен правильно${NC}"
+    echo -e "${GREEN}Datasource Prometheus настроен правильно${NC}"
 else
     echo -e "${RED}❌ Datasource Prometheus настроен неправильно${NC}"
     exit 1
 fi
 
 # Проверка дашборда
-echo -e "${YELLOW}📋 Проверка дашборда...${NC}"
+echo -e "${YELLOW}Проверка дашборда...${NC}"
 DASHBOARD=$(kubectl exec -n cloudbridge-monitoring deployment/grafana -- wget -qO- "http://localhost:3000/api/search?query=AI" --header="Authorization: Basic YWRtaW46YWRtaW4xMjM=" 2>/dev/null | jq '.[] | select(.title | contains("AI")) | .title' 2>/dev/null)
 echo "Найден дашборд: $DASHBOARD"
 
 if [ -n "$DASHBOARD" ]; then
-    echo -e "${GREEN}✅ Дашборд AI Service найден${NC}"
+    echo -e "${GREEN}Дашборд AI Service найден${NC}"
 else
     echo -e "${RED}❌ Дашборд AI Service не найден${NC}"
     exit 1
@@ -68,10 +68,10 @@ UP_METRIC=$(kubectl exec -n cloudbridge-monitoring deployment/prometheus -- wget
 echo "Количество результатов для up{job=\"ai-service\"}: $UP_METRIC"
 
 if [ "$UP_METRIC" -gt 0 ]; then
-    echo -e "${GREEN}✅ Метрика up{job=\"ai-service\"} доступна${NC}"
+    echo -e "${GREEN}Метрика up{job=\"ai-service\"} доступна${NC}"
 else
     echo -e "${RED}❌ Метрика up{job=\"ai-service\"} недоступна${NC}"
-    echo -e "${YELLOW}💡 Возможные причины:${NC}"
+    echo -e "${YELLOW}Возможные причины:${NC}"
     echo "   1. Prometheus не может подключиться к AI Service"
     echo "   2. Неправильная конфигурация scrape"
     echo "   3. Проблемы с сетью в кластере"
@@ -83,9 +83,9 @@ HTTP_METRICS=$(kubectl exec -n cloudbridge-monitoring deployment/prometheus -- w
 echo "Количество HTTP метрик: $HTTP_METRICS"
 
 if [ "$HTTP_METRICS" -gt 0 ]; then
-    echo -e "${GREEN}✅ HTTP метрики доступны${NC}"
+    echo -e "${GREEN}HTTP метрики доступны${NC}"
 else
-    echo -e "${YELLOW}⚠️  HTTP метрики недоступны (это нормально, если нет запросов)${NC}"
+    echo -e "${YELLOW}  HTTP метрики недоступны (это нормально, если нет запросов)${NC}"
 fi
 
 # Проверка AI метрик
@@ -94,7 +94,7 @@ AI_METRICS_COUNT=$(kubectl exec -n cloudbridge-monitoring deployment/prometheus 
 echo "Количество AI метрик: $AI_METRICS_COUNT"
 
 if [ "$AI_METRICS_COUNT" -gt 0 ]; then
-    echo -e "${GREEN}✅ AI метрики доступны${NC}"
+    echo -e "${GREEN}AI метрики доступны${NC}"
 else
     echo -e "${RED}❌ AI метрики недоступны${NC}"
 fi
@@ -107,7 +107,7 @@ echo -e "${BLUE}📊 Информация о доступе:${NC}"
 echo "   Grafana: http://localhost:3000 (admin/admin123)"
 echo "   Prometheus: http://localhost:9090"
 echo
-echo -e "${YELLOW}💡 Если данные не отображаются в дашборде:${NC}"
+echo -e "${YELLOW}Если данные не отображаются в дашборде:${NC}"
 echo "   1. Проверьте временной диапазон (должен быть 'Last 1 hour' или больше)"
 echo "   2. Убедитесь, что datasource 'Prometheus' выбран"
 echo "   3. Проверьте, что панели используют правильные запросы"

@@ -6,7 +6,7 @@ MASQUE (Multiplexed Application Substrate over QUIC Encryption) - это про�
 
 ## 🚀 Статус
 
-✅ **MASQUE сервер полностью функционален и готов к использованию!**
+**MASQUE сервер полностью функционален и готов к использованию!**
 
 ### Текущая конфигурация:
 - **Порт**: 8443 (UDP) - HTTP/3/QUIC
@@ -105,17 +105,17 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay | grep -i masque
 ## 🔍 Мониторинг
 
 ### Текущий статус
-- ✅ MASQUE сервер запущен
-- ✅ Порт 8443 слушается на UDP
-- ✅ TLS конфигурация активна
-- ✅ Все handlers зарегистрированы
+- MASQUE сервер запущен
+- Порт 8443 слушается на UDP
+- TLS конфигурация активна
+- Все handlers зарегистрированы
 
 ### Рекомендации по мониторингу
 1. **Метрики**: Добавить Prometheus метрики для MASQUE
 2. **Алерты**: Настроить уведомления о недоступности
 3. **Логи**: Мониторинг ошибок TLS и QUIC
 
-## 🚨 Устранение неполадок
+## Устранение неполадок
 
 ### Проблема: "Connection refused"
 **Причина**: HTTP/3 работает на UDP, а не TCP
@@ -139,10 +139,10 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay | grep -i masque
 
 MASQUE HTTP/3 сервер полностью настроен и готов к использованию. Все основные компоненты работают корректно:
 
-- ✅ HTTP/3 сервер на порту 8443 (UDP)
-- ✅ TLS с сертификатом Let's Encrypt
-- ✅ Все MASQUE endpoints доступны
-- ✅ Kubernetes service настроен для UDP трафика
+- HTTP/3 сервер на порту 8443 (UDP)
+- TLS с сертификатом Let's Encrypt
+- Все MASQUE endpoints доступны
+- Kubernetes service настроен для UDP трафика
 
 Для полного тестирования рекомендуется использовать HTTP/3 клиент с поддержкой MASQUE протокола.
 

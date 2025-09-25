@@ -12,27 +12,27 @@ import (
 // BestPracticesGuide содержит примеры следования лучшим практикам Cadence
 // Этот файл служит справочником для разработчиков
 
-// ✅ ПРАВИЛЬНО: Детерминированный workflow
+// ПРАВИЛЬНО: Детерминированный workflow
 func CorrectWorkflowExample(ctx workflow.Context, input string) error {
 	logger := workflow.GetLogger(ctx)
 
-	// ✅ Используем workflow.Now() вместо time.Now()
+	// Используем workflow.Now() вместо time.Now()
 	startTime := workflow.Now(ctx)
 	logger.Info("Workflow started", zap.Time("start_time", startTime), zap.String("input", input))
 
-	// ✅ Используем workflow.Sleep() вместо time.Sleep()
+	// Используем workflow.Sleep() вместо time.Sleep()
 	err := workflow.Sleep(ctx, time.Minute)
 	if err != nil {
 		return err
 	}
 
-	// ✅ Используем workflow.Go() для конкурентности
+	// Используем workflow.Go() для конкурентности
 	workflow.Go(ctx, func(ctx workflow.Context) {
 		logger.Info("Concurrent execution in workflow.Go")
 		// Здесь можно безопасно вызывать другие workflow API
 	})
 
-	// ✅ Все внешние действия через activities
+	// Все внешние действия через activities
 	var result string
 	err = workflow.ExecuteActivity(ctx, "ExternalServiceActivity", input).Get(ctx, &result)
 	if err != nil {
@@ -40,10 +40,10 @@ func CorrectWorkflowExample(ctx workflow.Context, input string) error {
 		return err
 	}
 
-	// ✅ Используем workflow API для каналов
+	// Используем workflow API для каналов
 	ch := workflow.NewChannel(ctx)
 
-	// ✅ Используем workflow.Selector вместо select
+	// Используем workflow.Selector вместо select
 	selector := workflow.NewSelector(ctx)
 	selector.AddReceive(ch, func(c workflow.Channel, more bool) {
 		var data string
@@ -94,35 +94,35 @@ func IncorrectWorkflowExample(ctx workflow.Context, input string) error {
 // ActivityBestPractices демонстрирует лучшие практики для activities
 type ActivityBestPractices struct{}
 
-// ✅ ПРАВИЛЬНО: Идемпотентная activity
+// ПРАВИЛЬНО: Идемпотентная activity
 func (a *ActivityBestPractices) IdempotentActivity(ctx context.Context, resourceID string) error {
-	// ✅ Проверяем, не был ли ресурс уже создан
+	// Проверяем, не был ли ресурс уже создан
 	if resourceExists(resourceID) {
-		// ✅ Возвращаем успех, если ресурс уже существует
+		// Возвращаем успех, если ресурс уже существует
 		return nil
 	}
 
-	// ✅ Создаем ресурс только если его нет
+	// Создаем ресурс только если его нет
 	err := createResource(resourceID)
 	if err != nil {
-		// ✅ Если ошибка постоянная, возвращаем ошибку как есть
+		// Если ошибка постоянная, возвращаем ошибку как есть
 		if isPermanentError(err) {
 			return err // В Cadence Go нет NewNonRetryableError
 		}
-		// ✅ Временные ошибки автоматически повторятся
+		// Временные ошибки автоматически повторятся
 		return err
 	}
 
 	return nil
 }
 
-// ✅ ПРАВИЛЬНО: Activity с heartbeat для долгих операций
+// ПРАВИЛЬНО: Activity с heartbeat для долгих операций
 func (a *ActivityBestPractices) LongRunningActivity(ctx context.Context, items []string) error {
 	for i, item := range items {
-		// ✅ Отправляем heartbeat для индикации прогресса
+		// Отправляем heartbeat для индикации прогресса
 		activity.RecordHeartbeat(ctx, i)
 
-		// ✅ Проверяем отмену через context
+		// Проверяем отмену через context
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -140,9 +140,9 @@ func (a *ActivityBestPractices) LongRunningActivity(ctx context.Context, items [
 	return nil
 }
 
-// ✅ ПРАВИЛЬНО: Использование retry policies
+// ПРАВИЛЬНО: Использование retry policies
 func WorkflowWithRetryExample(ctx workflow.Context) error {
-	// ✅ Настраиваем retry policy для activity
+	// Настраиваем retry policy для activity
 	retryPolicy := &workflow.RetryPolicy{
 		InitialInterval:    time.Second,
 		BackoffCoefficient: 2.0,
@@ -159,28 +159,28 @@ func WorkflowWithRetryExample(ctx workflow.Context) error {
 
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
-	// ✅ Activity будет автоматически повторена при сбоях
+	// Activity будет автоматически повторена при сбоях
 	return workflow.ExecuteActivity(ctx, "ReliableActivity", "data").Get(ctx, nil)
 }
 
-// ✅ ПРАВИЛЬНО: Использование child workflows
+// ПРАВИЛЬНО: Использование child workflows
 func ParentWorkflowExample(ctx workflow.Context, tasks []string) error {
 	logger := workflow.GetLogger(ctx)
 
-	// ✅ Настройки для child workflows
+	// Настройки для child workflows
 	childOptions := workflow.ChildWorkflowOptions{
 		ExecutionStartToCloseTimeout: time.Hour,
 		TaskStartToCloseTimeout:      time.Minute,
 	}
 
-	// ✅ Запускаем child workflows параллельно
+	// Запускаем child workflows параллельно
 	futures := make([]workflow.Future, len(tasks))
 	for i, task := range tasks {
 		childCtx := workflow.WithChildOptions(ctx, childOptions)
 		futures[i] = workflow.ExecuteChildWorkflow(childCtx, ProcessTaskWorkflow, task)
 	}
 
-	// ✅ Ждем завершения всех child workflows
+	// Ждем завершения всех child workflows
 	for i, future := range futures {
 		var result string
 		err := future.Get(ctx, &result)
@@ -195,11 +195,11 @@ func ParentWorkflowExample(ctx workflow.Context, tasks []string) error {
 	return nil
 }
 
-// ✅ ПРАВИЛЬНО: Signal handling в workflow
+// ПРАВИЛЬНО: Signal handling в workflow
 func SignalHandlingWorkflowExample(ctx workflow.Context) error {
 	logger := workflow.GetLogger(ctx)
 
-	// ✅ Создаем каналы для сигналов
+	// Создаем каналы для сигналов
 	pauseSignal := workflow.GetSignalChannel(ctx, "pause")
 	resumeSignal := workflow.GetSignalChannel(ctx, "resume")
 	stopSignal := workflow.GetSignalChannel(ctx, "stop")
@@ -209,7 +209,7 @@ func SignalHandlingWorkflowExample(ctx workflow.Context) error {
 	for {
 		selector := workflow.NewSelector(ctx)
 
-		// ✅ Обрабатываем сигналы
+		// Обрабатываем сигналы
 		selector.AddReceive(pauseSignal, func(c workflow.Channel, more bool) {
 			var signal interface{}
 			c.Receive(ctx, &signal)
@@ -231,7 +231,7 @@ func SignalHandlingWorkflowExample(ctx workflow.Context) error {
 			// Выходим из функции
 		})
 
-		// ✅ Добавляем таймер для периодической работы
+		// Добавляем таймер для периодической работы
 		if !isPaused {
 			timer := workflow.NewTimer(ctx, 30*time.Second)
 			selector.AddFuture(timer, func(f workflow.Future) {

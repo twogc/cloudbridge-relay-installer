@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: traefik-system
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/component: ingress-controller
+    app.kubernetes.io/part-of: cloudbridge-waf
+spec:
+  type: LoadBalancer
+  ports:
+  - name: web
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  - name: websecure
+    port: 443
+    targetPort: 443
+    protocol: TCP
+  - name: dashboard
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9100
+    targetPort: 9100
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/component: ingress-controller
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-dashboard
+  namespace: traefik-system
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/part-of: cloudbridge-waf
+spec:
+  type: ClusterIP
+  ports:
+  - name: dashboard
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/component: ingress-controller
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-metrics
+  namespace: traefik-system
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/component: metrics
+    app.kubernetes.io/part-of: cloudbridge-waf
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 9100
+    targetPort: 9100
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/component: ingress-controller
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coraza-waf
+  namespace: traefik-system
+  labels:
+    app.kubernetes.io/name: coraza-waf
+    app.kubernetes.io/instance: coraza-waf
+    app.kubernetes.io/component: waf
+    app.kubernetes.io/part-of: cloudbridge-waf
+spec:
+  type: ClusterIP
+  ports:
+  - name: waf
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/component: ingress-controller
+
+
+

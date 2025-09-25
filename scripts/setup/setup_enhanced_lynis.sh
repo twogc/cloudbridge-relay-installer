@@ -151,35 +151,35 @@ show_status() {
     
     # Systemd сервисы
     echo "Systemd сервисы:"
-    sudo systemctl is-active enhanced-lynis-audit.timer 2>/dev/null && echo "✅ enhanced-lynis-audit.timer: активен" || echo "❌ enhanced-lynis-audit.timer: неактивен"
-    sudo systemctl is-enabled enhanced-lynis-audit.timer 2>/dev/null && echo "✅ enhanced-lynis-audit.timer: включен" || echo "❌ enhanced-lynis-audit.timer: не включен"
+    sudo systemctl is-active enhanced-lynis-audit.timer 2>/dev/null && echo "enhanced-lynis-audit.timer: активен" || echo "❌ enhanced-lynis-audit.timer: неактивен"
+    sudo systemctl is-enabled enhanced-lynis-audit.timer 2>/dev/null && echo "enhanced-lynis-audit.timer: включен" || echo "❌ enhanced-lynis-audit.timer: не включен"
     
     # Зависимости
     echo ""
     echo "Зависимости:"
-    command -v lynis &> /dev/null && echo "✅ lynis: установлен" || echo "❌ lynis: не установлен"
-    command -v jq &> /dev/null && echo "✅ jq: установлен" || echo "❌ jq: не установлен"
-    command -v curl &> /dev/null && echo "✅ curl: установлен" || echo "❌ curl: не установлен"
-    command -v docker &> /dev/null && echo "✅ docker: установлен" || echo "❌ docker: не установлен"
+    command -v lynis &> /dev/null && echo "lynis: установлен" || echo "❌ lynis: не установлен"
+    command -v jq &> /dev/null && echo "jq: установлен" || echo "❌ jq: не установлен"
+    command -v curl &> /dev/null && echo "curl: установлен" || echo "❌ curl: не установлен"
+    command -v docker &> /dev/null && echo "docker: установлен" || echo "❌ docker: не установлен"
     
     # Файлы
     echo ""
     echo "Файлы:"
-    [[ -f "/etc/lynis/enhanced_custom.prf" ]] && echo "✅ enhanced_custom.prf: существует" || echo "❌ enhanced_custom.prf: не существует"
-    [[ -f "/etc/systemd/system/enhanced-lynis-audit.service" ]] && echo "✅ enhanced-lynis-audit.service: существует" || echo "❌ enhanced-lynis-audit.service: не существует"
-    [[ -f "/etc/systemd/system/enhanced-lynis-audit.timer" ]] && echo "✅ enhanced-lynis-audit.timer: существует" || echo "❌ enhanced-lynis-audit.timer: не существует"
+    [[ -f "/etc/lynis/enhanced_custom.prf" ]] && echo "enhanced_custom.prf: существует" || echo "❌ enhanced_custom.prf: не существует"
+    [[ -f "/etc/systemd/system/enhanced-lynis-audit.service" ]] && echo "enhanced-lynis-audit.service: существует" || echo "❌ enhanced-lynis-audit.service: не существует"
+    [[ -f "/etc/systemd/system/enhanced-lynis-audit.timer" ]] && echo "enhanced-lynis-audit.timer: существует" || echo "❌ enhanced-lynis-audit.timer: не существует"
     
     # Директории
     echo ""
     echo "Директории:"
-    [[ -d "/var/log/lynis/reports" ]] && echo "✅ /var/log/lynis/reports: существует" || echo "❌ /var/log/lynis/reports: не существует"
-    [[ -d "/var/lib/lynis-telegram" ]] && echo "✅ /var/lib/lynis-telegram: существует" || echo "❌ /var/lib/lynis-telegram: не существует"
+    [[ -d "/var/log/lynis/reports" ]] && echo "/var/log/lynis/reports: существует" || echo "❌ /var/log/lynis/reports: не существует"
+    [[ -d "/var/lib/lynis-telegram" ]] && echo "/var/lib/lynis-telegram: существует" || echo "❌ /var/lib/lynis-telegram: не существует"
     
     # Логи
     echo ""
     echo "Логи:"
-    [[ -f "/var/log/lynis/lynis.log" ]] && echo "✅ lynis.log: существует" || echo "❌ lynis.log: не существует"
-    [[ -f "/etc/logrotate.d/lynis" ]] && echo "✅ logrotate: настроен" || echo "❌ logrotate: не настроен"
+    [[ -f "/var/log/lynis/lynis.log" ]] && echo "lynis.log: существует" || echo "❌ lynis.log: не существует"
+    [[ -f "/etc/logrotate.d/lynis" ]] && echo "logrotate: настроен" || echo "❌ logrotate: не настроен"
 }
 
 # Показ справки

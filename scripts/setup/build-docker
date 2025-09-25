@@ -50,7 +50,7 @@ build_image() {
         -t "$image_name:latest" \
         .
     
-    echo -e "${GREEN}✅ $service service built successfully${NC}"
+    echo -e "${GREEN}$service service built successfully${NC}"
     echo -e "   Image: $image_name:$VERSION"
     echo -e "   Image: $image_name:latest"
     echo ""
@@ -68,7 +68,7 @@ push_image() {
     # Push latest tag
     docker push "$image_name:latest"
     
-    echo -e "${GREEN}✅ $image_name pushed successfully${NC}"
+    echo -e "${GREEN}$image_name pushed successfully${NC}"
     echo ""
 }
 
@@ -207,14 +207,14 @@ if [[ "$PUSH" == "true" ]]; then
 fi
 
 # Show build summary
-echo -e "${GREEN}✅ Docker build completed successfully!${NC}"
+echo -e "${GREEN}Docker build completed successfully!${NC}"
 echo -e "${GREEN}=====================================${NC}"
 echo -e "Built services: ${BLUE}${SERVICES[*]}${NC}"
 echo -e "Version: ${BLUE}$VERSION${NC}"
 echo -e "Registry: ${BLUE}$REGISTRY${NC}"
 echo -e "Push: ${BLUE}$PUSH${NC}"
 echo ""
-echo -e "${YELLOW}📋 Built Images:${NC}"
+echo -e "${YELLOW}Built Images:${NC}"
 for service in "${SERVICES[@]}"; do
     case $service in
         "all")

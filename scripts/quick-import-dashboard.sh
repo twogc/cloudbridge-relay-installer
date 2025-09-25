@@ -26,7 +26,7 @@ show_dashboard() {
     kubectl get configmap grafana-dashboards -n cloudbridge-monitoring -o jsonpath="{.data.$configmap_key}" | jq .
     
     echo
-    echo -e "${BLUE}📋 Instructions:${NC}"
+    echo -e "${BLUE}Instructions:${NC}"
     echo "1. Copy the JSON above"
     echo "2. Go to http://localhost:3000"
     echo "3. Login with admin/admin123"
@@ -37,7 +37,7 @@ show_dashboard() {
 
 # Main function
 main() {
-    echo -e "${YELLOW}📋 Available Dashboards:${NC}"
+    echo -e "${YELLOW}Available Dashboards:${NC}"
     echo
     
     # Show AI Service Dashboard

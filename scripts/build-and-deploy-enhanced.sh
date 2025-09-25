@@ -22,7 +22,7 @@ success() {
 }
 
 warning() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] ⚠️${NC} $1"
+    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] ${NC} $1"
 }
 
 error() {

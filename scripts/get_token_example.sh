@@ -38,7 +38,7 @@ if echo "$TOKEN_RESPONSE" | grep -q "access_token"; then
     REFRESH_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.refresh_token')
     EXPIRES_IN=$(echo "$TOKEN_RESPONSE" | jq -r '.expires_in')
     
-    echo "✅ OAuth Token получен успешно!"
+    echo "OAuth Token получен успешно!"
     echo "Access Token: ${ACCESS_TOKEN:0:50}..."
     echo "Refresh Token: ${REFRESH_TOKEN:0:50}..."
     echo "Expires in: $EXPIRES_IN секунд"
@@ -59,7 +59,7 @@ API_RESPONSE=$(curl -s -k -X POST "$KEYCLOAK_URL/realms/$REALM/protocol/openid-c
 
 if echo "$API_RESPONSE" | grep -q "access_token"; then
     API_TOKEN=$(echo "$API_RESPONSE" | jq -r '.access_token')
-    echo "✅ API Key получен успешно!"
+    echo "API Key получен успешно!"
     echo "API Token: ${API_TOKEN:0:50}..."
     echo ""
     echo "Полный ответ:"
@@ -78,7 +78,7 @@ if [ -n "$ACCESS_TOKEN" ]; then
         "$KEYCLOAK_URL/realms/$REALM/protocol/openid-connect/userinfo")
     
     if echo "$USERINFO_RESPONSE" | grep -q "sub"; then
-        echo "✅ OAuth Token валиден!"
+        echo "OAuth Token валиден!"
         echo "User Info:"
         echo "$USERINFO_RESPONSE" | jq .
     else

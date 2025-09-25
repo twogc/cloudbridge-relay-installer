@@ -1,6 +1,6 @@
-# 🚨 **ОТЧЕТ О ПРОБЛЕМЕ ПОДКЛЮЧЕНИЯ К KEYCLOAK**
+# **ОТЧЕТ О ПРОБЛЕМЕ ПОДКЛЮЧЕНИЯ К KEYCLOAK**
 
-## 📋 **Краткое описание проблемы**
+## **Краткое описание проблемы**
 
 **Проблема**: CloudBridge Relay не может подключиться к Keycloak серверу, расположенному на внутреннем IP адресе `auth.2gc.ru`.
 
@@ -238,7 +238,7 @@ curl http://localhost:9091/api/v1/auth/status
 
 ---
 
-## 🔗 **ПОЛЕЗНЫЕ ССЫЛКИ**
+##  **ПОЛЕЗНЫЕ ССЫЛКИ**
 
 - **Keycloak Admin Console**: https://auth.2gc.ru:8080/admin
 - **Realm Settings**: https://auth.2gc.ru:8080/realms/cloudbridge

@@ -1,6 +1,6 @@
 # Миграция с Keycloak на Zitadel
 
-## 📋 Обзор
+## Обзор
 
 Этот документ описывает процесс миграции системы аутентификации CloudBridge Relay с Keycloak на Zitadel.
 
@@ -208,7 +208,7 @@ err := tenantManager.UpdateTenantQuotas(ctx, tenantID, quotas)
 }
 ```
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Распространенные проблемы
 

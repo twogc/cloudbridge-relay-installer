@@ -59,7 +59,7 @@ for service in ai cadence quic wireguard; do
 done
 
 # Copy configuration files
-echo -e "${YELLOW}📋 Copying configuration files...${NC}"
+echo -e "${YELLOW}Copying configuration files...${NC}"
 cp -r configs $BUILD_DIR/
 cp -r scripts $BUILD_DIR/ 2>/dev/null || true
 cp docker-compose.yml $BUILD_DIR/ 2>/dev/null || true
@@ -92,7 +92,7 @@ if ! command -v docker &> /dev/null; then
     curl -fsSL https://get.docker.com -o get-docker.sh
     sudo sh get-docker.sh
     sudo usermod -aG docker $USER
-    echo "✅ Docker installed. Please log out and log back in to use Docker without sudo."
+    echo "Docker installed. Please log out and log back in to use Docker without sudo."
 fi
 
 # Check if Docker Compose is installed
@@ -106,7 +106,7 @@ fi
 echo "🚀 Starting CloudBridge Relay services..."
 docker-compose up -d
 
-echo "✅ CloudBridge Relay installed and started!"
+echo "CloudBridge Relay installed and started!"
 echo "🌐 Web UI: http://localhost:8088"
 echo "📊 Metrics: http://localhost:8084/metrics"
 echo "🔧 API: http://localhost:9090/health"
@@ -163,13 +163,13 @@ tar -czf $BUILD_DIR/relay-installer.tar.gz -C $BUILD_DIR .
 
 # Show build summary
 echo ""
-echo -e "${GREEN}✅ Build completed successfully!${NC}"
+echo -e "${GREEN}Build completed successfully!${NC}"
 echo -e "${GREEN}================================${NC}"
 echo -e "Build directory: ${BLUE}$BUILD_DIR${NC}"
 echo -e "Archive: ${BLUE}$BUILD_DIR/relay-installer.tar.gz${NC}"
 echo -e "Binaries: ${BLUE}$(ls $BIN_DIR/)${NC}"
 echo ""
-echo -e "${YELLOW}📋 Build Summary:${NC}"
+echo -e "${YELLOW}Build Summary:${NC}"
 echo -e "  Version: $VERSION"
 echo -e "  Build Time: $BUILD_TIME"
 echo -e "  Git Commit: $GIT_COMMIT"

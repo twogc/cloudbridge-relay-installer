@@ -1,6 +1,6 @@
 # 🚀 CloudBridge Relay - Kubernetes Deployment
 
-## 📋 Обзор
+## Обзор
 
 Этот раздел содержит Kubernetes манифесты для развертывания CloudBridge Relay Server с полным стеком сервисов, включая Cadence Workflow Engine, Cassandra, Prometheus и Grafana.
 
@@ -359,15 +359,15 @@ kubectl port-forward service/grafana 3000:3000 -n cloudbridge-monitoring
 
 Kubernetes deployment обеспечивает:
 
-- ✅ **Высокую доступность** - реплики и health checks
-- ✅ **Масштабируемость** - HPA и VPA
-- ✅ **Безопасность** - RBAC и Network Policies
-- ✅ **Мониторинг** - Prometheus и Grafana
-- ✅ **Персистентность** - Persistent Volumes
-- ✅ **Управляемость** - автоматическое развертывание
+- **Высокую доступность** - реплики и health checks
+- **Масштабируемость** - HPA и VPA
+- **Безопасность** - RBAC и Network Policies
+- **Мониторинг** - Prometheus и Grafana
+- **Персистентность** - Persistent Volumes
+- **Управляемость** - автоматическое развертывание
 
 ---
 
 *Документ создан: 2025-09-06*  
-*Статус: ✅ Готов к использованию* 🚀
+*Статус: Готов к использованию* 🚀
 

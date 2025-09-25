@@ -247,7 +247,7 @@ correlation_rules:
 notification_settings:
   initial_access:
     telegram_template: |
-      🚨 [INITIAL ACCESS] Обнаружена попытка получения доступа
+      [INITIAL ACCESS] Обнаружена попытка получения доступа
       
       Техника: {technique_name} ({technique_id})
       Источник: {source_ip}
@@ -258,7 +258,7 @@ notification_settings:
       
   privilege_escalation:
     telegram_template: |
-      🚨 [PRIVILEGE ESCALATION] Обнаружено повышение привилегий
+      [PRIVILEGE ESCALATION] Обнаружено повышение привилегий
       
       Техника: {technique_name} ({technique_id})
       Пользователь: {user}
@@ -270,7 +270,7 @@ notification_settings:
       
   data_exfiltration:
     telegram_template: |
-      🚨 [DATA EXFILTRATION] Обнаружена утечка данных
+      [DATA EXFILTRATION] Обнаружена утечка данных
       
       Техника: {technique_name} ({technique_id})
       Объем данных: {data_size}

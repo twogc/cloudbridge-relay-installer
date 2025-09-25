@@ -1,16 +1,16 @@
 # 🚀 CloudBridge Relay - Полная автоматизация развертывания
 
-## 📋 **Обзор автоматизации**
+## **Обзор автоматизации**
 
 Этот проект предоставляет **полностью автоматизированное развертывание** CloudBridge Relay серверов через Terraform с интеграцией VK Cloud Container Registry.
 
 ### **Что автоматизировано:**
-- ✅ **Создание инфраструктуры** через Terraform
-- ✅ **Установка всех компонентов** (Docker, Nginx, UFW, Fail2ban)
-- ✅ **Настройка DDoS защиты** и firewall
-- ✅ **Развертывание CloudBridge Relay** из Container Registry
-- ✅ **Создание скриптов управления** и мониторинга
-- ✅ **CI/CD pipeline** через GitHub Actions
+- **Создание инфраструктуры** через Terraform
+- **Установка всех компонентов** (Docker, Nginx, UFW, Fail2ban)
+- **Настройка DDoS защиты** и firewall
+- **Развертывание CloudBridge Relay** из Container Registry
+- **Создание скриптов управления** и мониторинга
+- **CI/CD pipeline** через GitHub Actions
 
 ## 🎯 **Быстрый старт**
 
@@ -218,7 +218,7 @@ curl http://localhost:8080/health
 curl http://localhost:8081/metrics
 ```
 
-## 🚨 **Устранение неполадок**
+## **Устранение неполадок**
 
 ### **Ошибки Container Registry:**
 

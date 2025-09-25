@@ -865,9 +865,9 @@ main() {
     echo "• sudo journalctl -u siem.service -f"
     echo "• tail -f /opt/siem/logs/*.log"
     echo ""
-    echo "⚠️  ВАЖНО: Не забудьте настроить переменные окружения в /opt/siem/.env.siem"
-    echo "⚠️  ВАЖНО: Обновите IP адреса удаленных серверов в конфигурации"
-    echo "⚠️  ВАЖНО: Настройте SSL сертификаты для production"
+    echo "  ВАЖНО: Не забудьте настроить переменные окружения в /opt/siem/.env.siem"
+    echo "  ВАЖНО: Обновите IP адреса удаленных серверов в конфигурации"
+    echo "  ВАЖНО: Настройте SSL сертификаты для production"
     echo ""
 }
 

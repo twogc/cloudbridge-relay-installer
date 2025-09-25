@@ -11,7 +11,7 @@ echo "🔧 Настройка мониторинга CloudBridge..."
 sudo mkdir -p /etc/zabbix/templates/cloudbridge
 
 # Создание шаблона для CloudBridge Relay
-echo "📋 Создание шаблона CloudBridge..."
+echo "Создание шаблона CloudBridge..."
 sudo tee /etc/zabbix/templates/cloudbridge/cloudbridge-relay.xml > /dev/null <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
@@ -115,7 +115,7 @@ sudo tee /etc/zabbix/templates/cloudbridge/cloudbridge-relay.xml > /dev/null <<'
 EOF
 
 # Создание скрипта для Telegram уведомлений
-echo "📱 Настройка Telegram уведомлений..."
+echo "Настройка Telegram уведомлений..."
 sudo mkdir -p /usr/lib/zabbix/alertscripts
 
 sudo tee /usr/lib/zabbix/alertscripts/telegram.sh > /dev/null <<'EOF'
@@ -131,8 +131,8 @@ SUBJECT="$2"
 MESSAGE="$3"
 
 # Формирование сообщения
-TEXT="🚨 *Zabbix Alert*
-📋 *Subject:* $SUBJECT
+TEXT="*Zabbix Alert*
+*Subject:* $SUBJECT
 📝 *Message:* $MESSAGE
 🕐 *Time:* $(date)
 🖥️ *Server:* 10.0.0.241"
@@ -179,9 +179,9 @@ echo "⏰ Настройка автоматического резервного
 (crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/zabbix-backup.sh") | crontab -
 
 echo ""
-echo "✅ Настройка мониторинга CloudBridge завершена!"
+echo "Настройка мониторинга CloudBridge завершена!"
 echo ""
-echo "📋 Следующие шаги:"
+echo "Следующие шаги:"
 echo "1. Откройте веб-интерфейс Zabbix: http://10.0.0.241/zabbix"
 echo "2. Войдите с учетными данными: Admin / zabbix"
 echo "3. Импортируйте шаблон: Configuration → Templates → Import"

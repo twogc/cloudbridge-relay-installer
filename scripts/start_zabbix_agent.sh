@@ -32,7 +32,7 @@ sleep 3
 # Проверяем, что Agent запустился
 echo "📊 Проверка статуса Zabbix Agent..."
 if sudo netstat -tlnp | grep -q "zabbix_agen.*:10050"; then
-    echo "✅ Zabbix Agent успешно запущен на порту 10050"
+    echo "Zabbix Agent успешно запущен на порту 10050"
 else
     echo "❌ Ошибка запуска Zabbix Agent"
     exit 1
@@ -45,9 +45,9 @@ echo "   AI Health: $(zabbix_agentd -t ai.health | awk '{print $2}' | tr -d '[]'
 echo "   CPU Usage: $(zabbix_agentd -t cloudbridge.system.cpu.usage | awk '{print $2}' | tr -d '[]')"
 
 echo ""
-echo "✅ Zabbix Agent с AI метриками запущен!"
+echo "Zabbix Agent с AI метриками запущен!"
 echo ""
-echo "📋 Информация:"
+echo "Информация:"
 echo "   Порт: 10050"
 echo "   Конфигурация: /etc/zabbix/zabbix_agentd.conf"
 echo "   Логи: /var/log/zabbix/zabbix_agentd.log"

@@ -74,17 +74,17 @@ build: ## Собрать бинарный файл
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT)" \
 		-o $(BIN_DIR)/cloudbridge-relay ./cmd/relay
-	@echo "✅ Сборка завершена: $(BIN_DIR)/cloudbridge-relay"
+	@echo "Сборка завершена: $(BIN_DIR)/cloudbridge-relay"
 
 clean: ## Очистить артефакты сборки
 	@echo "Очистка артефактов..."
 	@rm -rf $(BIN_DIR) $(DIST_DIR)
-	@echo "✅ Очистка завершена"
+	@echo "Очистка завершена"
 
 test: ## Запустить тесты
 	@echo "Запуск тестов..."
 	go test -v ./...
-	@echo "✅ Тесты завершены"
+	@echo "Тесты завершены"
 
 test-coverage: ## Запустить тесты с покрытием
 	@echo "🧪 Запуск тестов с покрытием..."
@@ -92,32 +92,32 @@ test-coverage: ## Запустить тесты с покрытием
 	go test -v -race -coverprofile=coverage_reports/coverage.out -covermode=atomic ./...
 	go tool cover -html=coverage_reports/coverage.out -o coverage_reports/coverage.html
 	@echo "📊 Отчет о покрытии: coverage_reports/coverage.html"
-	@echo "✅ Тесты с покрытием завершены"
+	@echo "Тесты с покрытием завершены"
 
 test-critical: ## Тесты критических компонентов
 	@echo "🔥 Тестирование критических компонентов..."
 	go test -v -race -cover ./internal/token/... ./internal/auth/... ./internal/p2p/... ./internal/api/... ./internal/quic/... ./internal/keycloak/... ./config/...
-	@echo "✅ Критические тесты завершены"
+	@echo "Критические тесты завершены"
 
 test-unit: ## Unit тесты
 	@echo "🧪 Запуск unit тестов..."
 	go test -v -race -short ./internal/... ./config/...
-	@echo "✅ Unit тесты завершены"
+	@echo "Unit тесты завершены"
 
 test-integration: ## Интеграционные тесты
-	@echo "🔗 Запуск интеграционных тестов..."
+	@echo " Запуск интеграционных тестов..."
 	go test -v -race -tags=integration ./...
-	@echo "✅ Интеграционные тесты завершены"
+	@echo "Интеграционные тесты завершены"
 
 test-benchmark: ## Бенчмарки
 	@echo "⚡ Запуск бенчмарков..."
 	go test -v -bench=. -benchmem ./...
-	@echo "✅ Бенчмарки завершены"
+	@echo "Бенчмарки завершены"
 
 test-race: ## Тесты с race detection
 	@echo "🏃 Запуск тестов с race detection..."
 	go test -v -race ./...
-	@echo "✅ Race detection тесты завершены"
+	@echo "Race detection тесты завершены"
 
 test-coverage-report: ## Генерация отчета о покрытии
 	@echo "📊 Генерация отчета о покрытии..."
@@ -128,7 +128,7 @@ test-coverage-report: ## Генерация отчета о покрытии
 	@echo "📈 Покрытие по функциям:"
 	@tail -1 coverage_reports/coverage.txt
 	@echo "📊 HTML отчет: coverage_reports/coverage.html"
-	@echo "✅ Отчет о покрытии сгенерирован"
+	@echo "Отчет о покрытии сгенерирован"
 
 test-coverage-check: ## Проверка покрытия тестами
 	@echo "🔍 Проверка покрытия тестами..."
@@ -139,7 +139,7 @@ test-coverage-check: ## Проверка покрытия тестами
 		echo "❌ Покрытие тестами: $$COVERAGE% (требуется >80%)"; \
 		exit 1; \
 	else \
-		echo "✅ Покрытие тестами: $$COVERAGE%"; \
+		echo "Покрытие тестами: $$COVERAGE%"; \
 	fi
 
 test-watch: ## Запуск тестов в режиме наблюдения
@@ -150,57 +150,57 @@ test-watch: ## Запуск тестов в режиме наблюдения
 test-clean: ## Очистка отчетов о покрытии
 	@echo "🧹 Очистка отчетов о покрытии..."
 	@rm -rf coverage_reports/
-	@echo "✅ Отчеты о покрытии очищены"
+	@echo "Отчеты о покрытии очищены"
 
 deps: ## Проверить зависимости
 	@echo "Проверка зависимостей..."
 	go mod tidy
 	go mod verify
-	@echo "✅ Зависимости проверены"
+	@echo "Зависимости проверены"
 
 fmt: ## Форматировать код
 	@echo "Форматирование кода..."
 	go fmt ./...
-	@echo "✅ Форматирование завершено"
+	@echo "Форматирование завершено"
 
 lint: ## Запустить линтер (golangci-lint)
 	@echo "Запуск линтера..."
 	golangci-lint run
-	@echo "✅ Линтинг завершен"
+	@echo "Линтинг завершен"
 
 security-check: ## Проверка безопасности (gosec)
 	@echo "Проверка безопасности..."
 	gosec ./...
-	@echo "✅ Проверка безопасности завершена"
+	@echo "Проверка безопасности завершена"
 
 security-full: ## Полная проверка безопасности (все инструменты)
 	@echo "🔒 Запуск полной проверки безопасности..."
 	@chmod +x scripts/security-check.sh
 	@./scripts/security-check.sh
-	@echo "✅ Полная проверка безопасности завершена"
+	@echo "Полная проверка безопасности завершена"
 
 security-trivy: ## Сканирование уязвимостей с Trivy
 	@echo "🔍 Сканирование уязвимостей с Trivy..."
 	@mkdir -p security_reports
 	trivy fs --severity HIGH,CRITICAL --format table .
-	@echo "✅ Сканирование Trivy завершено"
+	@echo "Сканирование Trivy завершено"
 
 security-secrets: ## Поиск секретов с Trivy
 	@echo "🔍 Поиск секретов с Trivy..."
 	@mkdir -p security_reports
 	trivy fs --scanners secret --format table .
-	@echo "✅ Поиск секретов завершен"
+	@echo "Поиск секретов завершен"
 
 security-deps: ## Проверка зависимостей с Nancy
 	@echo "🔍 Проверка зависимостей с Nancy..."
 	@mkdir -p security_reports
 	go list -json -deps ./... | nancy sleuth
-	@echo "✅ Проверка зависимостей завершена"
+	@echo "Проверка зависимостей завершена"
 
 security-lint: ## Проверка кода с golangci-lint
 	@echo "🔍 Проверка кода с golangci-lint..."
 	export PATH=$$PATH:$$(go env GOPATH)/bin && golangci-lint run --timeout=5m
-	@echo "✅ Проверка golangci-lint завершена"
+	@echo "Проверка golangci-lint завершена"
 
 dev: fmt lint test build ## Полный цикл разработки
 
@@ -216,7 +216,7 @@ docker-build: ## Собрать Docker образ
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		-t $(FULL_IMAGE_NAME) \
 		-t $(LATEST_IMAGE_NAME) .
-	@echo "✅ Docker образ собран"
+	@echo "Docker образ собран"
 
 docker-build-nc: ## Собрать Docker образ без кэша
 	docker build --no-cache \
@@ -230,12 +230,12 @@ docker-push: ## Отправить Docker образ в registry
 	@echo "Отправка Docker образа в registry..."
 	docker push $(FULL_IMAGE_NAME)
 	docker push $(LATEST_IMAGE_NAME)
-	@echo "✅ Docker образ отправлен"
+	@echo "Docker образ отправлен"
 
 docker-run: ## Запустить через compose (ожидает cap/device в compose)
 	@echo "Запуск Docker контейнера (compose)..."
 	$(COMPOSE) -f $(COMPOSE_FILE) up -d
-	@echo "✅ Docker контейнер запущен"
+	@echo "Docker контейнер запущен"
 
 docker-run-direct: ## Запустить напрямую c NET_ADMIN и /dev/net/tun
 	@echo "Запуск Docker контейнера (direct run)..."
@@ -246,18 +246,18 @@ docker-run-direct: ## Запустить напрямую c NET_ADMIN и /dev/ne
 		--restart=always \
 		$(LATEST_IMAGE_NAME) \
 		--config /app/configs/config.json
-	@echo "✅ Docker контейнер запущен (direct)"
+	@echo "Docker контейнер запущен (direct)"
 
 docker-stop: ## Остановить Docker (compose)
 	@echo "Остановка Docker контейнера (compose)..."
 	-$(COMPOSE) -f $(COMPOSE_FILE) down || true
-	@echo "✅ Docker контейнер остановлен"
+	@echo "Docker контейнер остановлен"
 
 docker-stop-local: ## Остановить локальные контейнеры
 	@echo "Остановка локальных Docker контейнеров..."
 	-docker stop $(RUN_NAME) cloudbridge-relay-alpine cloudbridge-relay-simple 2>/dev/null || true
 	-docker rm   $(RUN_NAME) cloudbridge-relay-alpine cloudbridge-relay-simple 2>/dev/null || true
-	@echo "✅ Локальные контейнеры остановлены"
+	@echo "Локальные контейнеры остановлены"
 
 docker-logs: ## Показать логи контейнера
 	@echo "Логи Docker контейнера..."
@@ -276,7 +276,7 @@ install-wireguard: ## Установить WireGuard зависимости на
 	@echo "Установка WireGuard зависимостей..."
 	@chmod +x $(SCRIPTS_DIR)/install-wireguard.sh
 	@$(SCRIPTS_DIR)/install-wireguard.sh
-	@echo "✅ WireGuard зависимости установлены"
+	@echo "WireGuard зависимости установлены"
 
 # ===== Optional: fetch userspace wireguard-go from GitHub mirror =====
 
@@ -284,11 +284,11 @@ fetch-wireguard-go: ## Клонировать wireguard-go (GitHub mirror)
 	@echo "Cloning wireguard-go (mirror): $(WIREGUARD_GO_REPO)"
 	@rm -rf $(WIREGUARD_GO_DIR)
 	@git clone --depth=1 $(WIREGUARD_GO_REPO) $(WIREGUARD_GO_DIR)
-	@echo "✅ wireguard-go исходники готовы: $(WIREGUARD_GO_DIR)"
+	@echo "wireguard-go исходники готовы: $(WIREGUARD_GO_DIR)"
 
 clean-wireguard-go: ## Удалить wireguard-go исходники
 	@rm -rf $(WIREGUARD_GO_DIR)
-	@echo "✅ wireguard-go очищен"
+	@echo "wireguard-go очищен"
 
 # ===== Testing ports =====
 
@@ -296,31 +296,31 @@ test-ports: ## Тестировать порты relay сервера (localhost
 	@echo "Тестирование портов relay сервера..."
 	@chmod +x ../terraform-relay/scripts/test-relay-ports.sh
 	@../terraform-relay/scripts/test-relay-ports.sh localhost 80
-	@echo "✅ Тестирование портов завершено"
+	@echo "Тестирование портов завершено"
 
 test-ports-remote: ## Тестировать порты удаленного relay сервера
 	@echo "Тестирование портов удаленного relay сервера..."
 	@chmod +x ../terraform-relay/scripts/test-relay-ports.sh
 	@../terraform-relay/scripts/test-relay-ports.sh 109.120.191.126 80
-	@echo "✅ Тестирование удаленных портов завершено"
+	@echo "Тестирование удаленных портов завершено"
 
 test-anycast: ## Тестировать Anycast IP
 	@echo "Тестирование Anycast IP..."
 	@chmod +x ../terraform-relay/scripts/test-relay-ports.sh
 	@../terraform-relay/scripts/test-relay-ports.sh 83.166.235.45 80
-	@echo "✅ Тестирование Anycast IP завершено"
+	@echo "Тестирование Anycast IP завершено"
 
 # ===== Kubernetes =====
 
 deploy-k8s: ## Развернуть в Kubernetes
 	@echo "Развертывание в Kubernetes..."
 	kubectl apply -f ../terraform-relay/k8s/manifests/cloudbridge-manifests.yaml
-	@echo "✅ Развертывание в Kubernetes завершено"
+	@echo "Развертывание в Kubernetes завершено"
 
 deploy-k8s-anycast: ## Развернуть в Kubernetes с Anycast
 	@echo "Развертывание в Kubernetes с Anycast..."
 	kubectl apply -f ../terraform-relay/k8s/manifests/cloudbridge-anycast-manifests.yaml
-	@echo "✅ Развертывание в Kubernetes с Anycast завершено"
+	@echo "Развертывание в Kubernetes с Anycast завершено"
 
 test-k8s: ## Тестировать Kubernetes развертывание
 	@echo "Проверка подов:"
@@ -329,7 +329,7 @@ test-k8s: ## Тестировать Kubernetes развертывание
 	kubectl get services -n cloudbridge-relay
 	@echo "Проверка логов (последние 20 строк):"
 	kubectl logs -n cloudbridge-relay -l app=cloudbridge-relay --tail=20
-	@echo "✅ Тестирование Kubernetes завершено"
+	@echo "Тестирование Kubernetes завершено"
 
 # ===== Status & cleanup =====
 
@@ -347,7 +347,7 @@ clean-all: clean docker-stop ## Полная очистка
 	@echo "Полная очистка..."
 	-docker system prune -f
 	-kubectl delete namespace cloudbridge-relay 2>/dev/null || true
-	@echo "✅ Полная очистка завершена"
+	@echo "Полная очистка завершена"
 
 # ===== Docs =====
 
@@ -361,7 +361,7 @@ docs: ## Генерировать документацию
 	  echo "## Время сборки: $(BUILD_TIME)"; \
 	  echo "## Git commit: $(GIT_COMMIT)"; \
 	} > docs/README.md
-	@echo "✅ Документация сгенерирована"
+	@echo "Документация сгенерирована"
 
 # ===== Ports help =====
 

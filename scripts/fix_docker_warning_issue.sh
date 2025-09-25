@@ -152,9 +152,9 @@ sudo /usr/sbin/zabbix_agentd -c /etc/zabbix/zabbix_agentd.conf -f &
 sleep 3
 
 # Шаг 6: Проверка запуска
-echo "✅ Шаг 6: Проверка запуска..."
+echo "Шаг 6: Проверка запуска..."
 if sudo netstat -tlnp | grep -q "zabbix_agen.*:10050"; then
-    echo "✅ Zabbix Agent успешно запущен на порту 10050"
+    echo "Zabbix Agent успешно запущен на порту 10050"
 else
     echo "❌ Ошибка запуска Zabbix Agent"
     exit 1
@@ -170,7 +170,7 @@ echo "   AI Anomalies: $(zabbix_agentd -t ai.anomaly_detections | awk '{print $2
 echo ""
 echo "🎉 Проблема Docker предупреждений исправлена!"
 echo ""
-echo "📋 Информация:"
+echo "Информация:"
 echo "   Zabbix Agent: Запущен на порту 10050"
 echo "   Скрипт метрик: Обновлен с фильтрацией предупреждений"
 echo "   Права Docker: Исправлены для пользователя zabbix"

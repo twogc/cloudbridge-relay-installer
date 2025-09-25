@@ -105,7 +105,7 @@ associate_ip_to_anycast() {
         "$NEUTRON_URL/v2.0/anycastips/$anycast_id/associate")
     
     if echo "$RESULT" | jq -e '.anycastip' > /dev/null; then
-        echo "✅ IP адрес успешно привязан к Anycast IP"
+        echo "IP адрес успешно привязан к Anycast IP"
         echo "$RESULT" | jq '.anycastip'
     else
         echo "❌ Ошибка привязки:"
@@ -129,7 +129,7 @@ disassociate_ip_from_anycast() {
         "$NEUTRON_URL/v2.0/anycastips/$anycast_id/disassociate")
     
     if echo "$RESULT" | jq -e '.anycastip' > /dev/null; then
-        echo "✅ IP адрес успешно отвязан от Anycast IP"
+        echo "IP адрес успешно отвязан от Anycast IP"
         echo "$RESULT" | jq '.anycastip'
     else
         echo "❌ Ошибка отвязки:"
@@ -158,7 +158,7 @@ add_healthcheck() {
         "$NEUTRON_URL/v2.0/anycastips/$anycast_id/healthcheck")
     
     if echo "$RESULT" | jq -e '.healthcheck' > /dev/null; then
-        echo "✅ Healthcheck успешно добавлен"
+        echo "Healthcheck успешно добавлен"
         echo "$RESULT" | jq '.healthcheck'
     else
         echo "❌ Ошибка добавления healthcheck:"
@@ -238,10 +238,10 @@ setup_cloudbridge_anycast() {
     check_anycast_status "$ANYCAST_ID"
     
     echo ""
-    echo "✅ Anycast IP настроен!"
+    echo "Anycast IP настроен!"
     echo "📍 ID: $ANYCAST_ID"
     echo ""
-    echo "🔗 Для привязки IP адресов используйте:"
+    echo " Для привязки IP адресов используйте:"
     echo "   ./anycast-api.sh associate $ANYCAST_ID <port_id>"
 }
 

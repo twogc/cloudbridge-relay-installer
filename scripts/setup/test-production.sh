@@ -23,11 +23,11 @@ log_info() {
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}$1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}  $1${NC}"
 }
 
 log_error() {
@@ -328,19 +328,19 @@ show_test_summary() {
     echo "• Prometheus Health: $(cat $TEST_RESULTS_DIR/prometheus-health-test.txt | tail -1)"
     echo ""
     
-    echo "📋 Resource Usage:"
+    echo "Resource Usage:"
     if [ -f "$TEST_RESULTS_DIR/node-resources.txt" ]; then
         cat $TEST_RESULTS_DIR/node-resources.txt
     fi
     echo ""
     
-    echo "📋 Pod Resources:"
+    echo "Pod Resources:"
     if [ -f "$TEST_RESULTS_DIR/pod-resources-cloudbridge.txt" ]; then
         cat $TEST_RESULTS_DIR/pod-resources-cloudbridge.txt
     fi
     echo ""
     
-    echo "📋 Files Generated:"
+    echo "Files Generated:"
     ls -la $TEST_RESULTS_DIR/
 }
 

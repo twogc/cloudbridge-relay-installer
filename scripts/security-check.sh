@@ -65,7 +65,7 @@ install_tools() {
         go install github.com/sonatype-nexus-community/nancy@latest
     fi
     
-    echo -e "${GREEN}✅ All tools installed${NC}"
+    echo -e "${GREEN}All tools installed${NC}"
 }
 
 # Function to run Trivy filesystem scan
@@ -74,15 +74,15 @@ run_trivy_fs() {
     
     # Scan for vulnerabilities
     trivy fs --severity HIGH,CRITICAL --format json --output "$REPORTS_DIR/trivy-fs-$TIMESTAMP.json" . || {
-        echo -e "${YELLOW}⚠️  Trivy found issues${NC}"
+        echo -e "${YELLOW}  Trivy found issues${NC}"
     }
     
     # Scan for secrets
     trivy fs --scanners secret --format json --output "$REPORTS_DIR/trivy-secrets-$TIMESTAMP.json" . || {
-        echo -e "${YELLOW}⚠️  Trivy found secrets${NC}"
+        echo -e "${YELLOW}  Trivy found secrets${NC}"
     }
     
-    echo -e "${GREEN}✅ Trivy filesystem scan completed${NC}"
+    echo -e "${GREEN}Trivy filesystem scan completed${NC}"
 }
 
 # Function to run Trivy dependency scan
@@ -90,10 +90,10 @@ run_trivy_deps() {
     echo -e "${BLUE}🔍 Running Trivy dependency scan...${NC}"
     
     trivy fs --scanners vuln --format json --output "$REPORTS_DIR/trivy-deps-$TIMESTAMP.json" . || {
-        echo -e "${YELLOW}⚠️  Trivy found dependency issues${NC}"
+        echo -e "${YELLOW}  Trivy found dependency issues${NC}"
     }
     
-    echo -e "${GREEN}✅ Trivy dependency scan completed${NC}"
+    echo -e "${GREEN}Trivy dependency scan completed${NC}"
 }
 
 # Function to run Gosec
@@ -101,10 +101,10 @@ run_gosec() {
     echo -e "${BLUE}🔍 Running Gosec security scan...${NC}"
     
     gosec -fmt json -out "$REPORTS_DIR/gosec-$TIMESTAMP.json" ./... || {
-        echo -e "${YELLOW}⚠️  Gosec found issues${NC}"
+        echo -e "${YELLOW}  Gosec found issues${NC}"
     }
     
-    echo -e "${GREEN}✅ Gosec scan completed${NC}"
+    echo -e "${GREEN}Gosec scan completed${NC}"
 }
 
 # Function to run golangci-lint
@@ -114,10 +114,10 @@ run_golangci_lint() {
     export PATH=$PATH:$(go env GOPATH)/bin
     
     golangci-lint run --timeout=5m --out-format=json > "$REPORTS_DIR/golangci-lint-$TIMESTAMP.json" || {
-        echo -e "${YELLOW}⚠️  golangci-lint found issues${NC}"
+        echo -e "${YELLOW}  golangci-lint found issues${NC}"
     }
     
-    echo -e "${GREEN}✅ golangci-lint completed${NC}"
+    echo -e "${GREEN}golangci-lint completed${NC}"
 }
 
 # Function to run Nancy
@@ -125,10 +125,10 @@ run_nancy() {
     echo -e "${BLUE}🔍 Running Nancy dependency scan...${NC}"
     
     go list -json -deps ./... | nancy sleuth --output json > "$REPORTS_DIR/nancy-$TIMESTAMP.json" || {
-        echo -e "${YELLOW}⚠️  Nancy found issues${NC}"
+        echo -e "${YELLOW}  Nancy found issues${NC}"
     }
     
-    echo -e "${GREEN}✅ Nancy scan completed${NC}"
+    echo -e "${GREEN}Nancy scan completed${NC}"
 }
 
 # Function to run Safety (Python dependencies)
@@ -138,11 +138,11 @@ run_safety() {
     if [ -f "requirements.txt" ]; then
         pip install safety
         safety check -r requirements.txt --json --output "$REPORTS_DIR/safety-$TIMESTAMP.json" || {
-            echo -e "${YELLOW}⚠️  Safety found issues${NC}"
+            echo -e "${YELLOW}  Safety found issues${NC}"
         }
-        echo -e "${GREEN}✅ Safety scan completed${NC}"
+        echo -e "${GREEN}Safety scan completed${NC}"
     else
-        echo -e "${YELLOW}⚠️  No requirements.txt found, skipping Safety scan${NC}"
+        echo -e "${YELLOW}  No requirements.txt found, skipping Safety scan${NC}"
     fi
 }
 
@@ -157,15 +157,15 @@ generate_summary() {
 **Project:** CloudBridge Relay
 **Timestamp:** $TIMESTAMP
 
-## 📋 Scans Performed
+## Scans Performed
 
-- ✅ Trivy filesystem scan
-- ✅ Trivy secrets scan  
-- ✅ Trivy dependency scan
-- ✅ Gosec security scan
-- ✅ golangci-lint scan
-- ✅ Nancy dependency scan
-- ✅ Safety Python scan (if applicable)
+- Trivy filesystem scan
+- Trivy secrets scan  
+- Trivy dependency scan
+- Gosec security scan
+- golangci-lint scan
+- Nancy dependency scan
+- Safety Python scan (if applicable)
 
 ## 📁 Report Files
 
@@ -177,7 +177,7 @@ generate_summary() {
 - \`nancy-$TIMESTAMP.json\`: Nancy dependency scan results
 - \`safety-$TIMESTAMP.json\`: Safety Python scan results (if applicable)
 
-## 🚨 Critical Issues
+## Critical Issues
 
 Please review the JSON files for detailed vulnerability information.
 
@@ -198,7 +198,7 @@ Please review the JSON files for detailed vulnerability information.
 
 EOF
 
-    echo -e "${GREEN}✅ Summary report generated: $REPORTS_DIR/security-summary-$TIMESTAMP.md${NC}"
+    echo -e "${GREEN}Summary report generated: $REPORTS_DIR/security-summary-$TIMESTAMP.md${NC}"
 }
 
 # Function to display results
@@ -206,7 +206,7 @@ display_results() {
     echo -e "${BLUE}📊 Security Scan Results${NC}"
     echo -e "${BLUE}========================${NC}"
     echo ""
-    echo -e "${GREEN}✅ All security scans completed successfully!${NC}"
+    echo -e "${GREEN}All security scans completed successfully!${NC}"
     echo ""
     echo "📁 Reports generated in: $REPORTS_DIR"
     echo "📄 Summary report: security-summary-$TIMESTAMP.md"
@@ -214,7 +214,7 @@ display_results() {
     echo -e "${YELLOW}🔍 Review the following files:${NC}"
     ls -la "$REPORTS_DIR"/*"$TIMESTAMP"*
     echo ""
-    echo -e "${BLUE}💡 Next steps:${NC}"
+    echo -e "${BLUE}Next steps:${NC}"
     echo "1. Review all JSON reports for vulnerabilities"
     echo "2. Address critical and high severity issues"
     echo "3. Update vulnerable dependencies"

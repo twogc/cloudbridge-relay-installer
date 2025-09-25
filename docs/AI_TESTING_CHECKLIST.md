@@ -7,7 +7,7 @@ cd /home/ubuntu/cloudbridge-relay-installer
 ./scripts/test_real_ai_data.sh
 ```
 
-## ✅ Проверочный список
+## Проверочный список
 
 ### 1. Проверка сервисов
 - [ ] CloudBridge Relay запущен

@@ -1,6 +1,6 @@
 # 🚀 **Production-Ready WAF Plan для CloudBridge Relay**
 
-## 📋 **Обзор с учетом Production Redlines**
+## **Обзор с учетом Production Redlines**
 
 ### **Реалистичные SLO и метрики:**
 - **p95 end-to-end** (Ingress→Relay→Backend): 150–300 ms
@@ -572,7 +572,7 @@ data:
     }
 ```
 
-## ⚠️ **6. Fail-open / Fail-closed стратегии**
+##  **6. Fail-open / Fail-closed стратегии**
 
 ### **Конфигурация по типам API:**
 ```yaml
@@ -829,7 +829,7 @@ data:
             X-M2M-Auth: "true"
 ```
 
-## 📋 **9. ISO 27001/27017/27018 документация**
+## **9. ISO 27001/27017/27018 документация**
 
 ### **ISMS Controls Mapping:**
 ```yaml
@@ -901,7 +901,7 @@ This policy defines the process for managing changes to WAF rules and security p
 - **Compliance Team**: Audit and validation
 ```
 
-## ✅ **10. Check-list PoC → Prod**
+## **10. Check-list PoC → Prod**
 
 ### **Pre-Production Checklist:**
 ```yaml
@@ -955,11 +955,11 @@ data:
 3. **📝 Policy-as-Code** с канареечными выкатами
 4. **🔐 Безопасное управление секретами** через Vault
 5. **📊 Полную observability** для аудита ISO
-6. **⚠️ Fail-open/fail-closed** стратегии
+6. ** Fail-open/fail-closed** стратегии
 7. **🔄 Blue/Green релизы** с быстрым откатом
 8. **🔐 Совместимость с Zitadel** ACR/AMR
-9. **📋 ISO compliance** документацию
-10. **✅ Production readiness** чек-лист
+9. **ISO compliance** документацию
+10. **Production readiness** чек-лист
 
 **Готовность к production: 95%**
 **Время до production: 4-6 недель**

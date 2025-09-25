@@ -97,7 +97,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📋 Extract metadata
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -344,7 +344,7 @@ jobs:
       - name: 📢 Success notification
         if: needs.deploy.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped')
         run: |
-          echo "✅ CloudBridge Relay staging deployment completed successfully!"
+          echo "CloudBridge Relay staging deployment completed successfully!"
           echo "Environment: ${{ env.ENVIRONMENT }}"
           echo "Namespace: ${{ env.NAMESPACE }}"
           echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image-tag || 'staging' }}"
@@ -362,7 +362,7 @@ jobs:
       - name: 📢 Partial success notification
         if: needs.deploy.result == 'success' && needs.test.result == 'failure'
         run: |
-          echo "⚠️ CloudBridge Relay staging deployment succeeded but tests failed!"
+          echo " CloudBridge Relay staging deployment succeeded but tests failed!"
           echo "Deploy: ${{ needs.deploy.result }}"
           echo "Test: ${{ needs.test.result }}"
           echo "Please check test results and fix issues before promoting to production."

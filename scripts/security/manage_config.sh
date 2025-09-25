@@ -180,17 +180,17 @@ validate_config() {
         return 1
     fi
     
-    log_info "✅ Конфигурация корректна"
+    log_info "Конфигурация корректна"
     return 0
 }
 
 # Показать статус конфигурации
 show_status() {
-    echo "📋 Статус конфигурации мониторинга безопасности"
+    echo "Статус конфигурации мониторинга безопасности"
     echo "=============================================="
     
     if [[ -f "$SYSTEM_CONFIG" ]]; then
-        echo "✅ Системная конфигурация: $SYSTEM_CONFIG"
+        echo "Системная конфигурация: $SYSTEM_CONFIG"
         echo "   Размер: $(du -h "$SYSTEM_CONFIG" | cut -f1)"
         echo "   Владелец: $(stat -c '%U:%G' "$SYSTEM_CONFIG")"
         echo "   Права: $(stat -c '%a' "$SYSTEM_CONFIG")"
@@ -199,7 +199,7 @@ show_status() {
     fi
     
     if [[ -f "$USER_CONFIG" ]]; then
-        echo "✅ Пользовательская конфигурация: $USER_CONFIG"
+        echo "Пользовательская конфигурация: $USER_CONFIG"
         echo "   Размер: $(du -h "$USER_CONFIG" | cut -f1)"
         echo "   Владелец: $(stat -c '%U:%G' "$USER_CONFIG")"
         echo "   Права: $(stat -c '%a' "$USER_CONFIG")"
@@ -208,7 +208,7 @@ show_status() {
     fi
     
     if [[ -f "$BACKUP_CONFIG" ]]; then
-        echo "✅ Резервная копия: $BACKUP_CONFIG"
+        echo "Резервная копия: $BACKUP_CONFIG"
         echo "   Размер: $(du -h "$BACKUP_CONFIG" | cut -f1)"
         echo "   Дата: $(stat -c '%y' "$BACKUP_CONFIG")"
     else
@@ -219,9 +219,9 @@ show_status() {
     echo "🔄 Синхронизация:"
     if [[ -f "$SYSTEM_CONFIG" && -f "$USER_CONFIG" ]]; then
         if diff "$SYSTEM_CONFIG" "$USER_CONFIG" > /dev/null; then
-            echo "✅ Конфигурации синхронизированы"
+            echo "Конфигурации синхронизированы"
         else
-            echo "⚠️  Конфигурации различаются"
+            echo "  Конфигурации различаются"
         fi
     else
         echo "❌ Невозможно сравнить конфигурации"

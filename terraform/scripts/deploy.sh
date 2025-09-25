@@ -23,11 +23,11 @@ log_info() {
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}$1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}  $1${NC}"
 }
 
 log_error() {
@@ -209,7 +209,7 @@ show_status() {
     kubectl get pv,pvc -A | grep cloudbridge || echo "No CloudBridge volumes found"
     echo ""
     
-    echo "🔗 Ingress:"
+    echo " Ingress:"
     kubectl get ingress -A | grep cloudbridge || echo "No CloudBridge ingress found"
     echo ""
 }
@@ -237,7 +237,7 @@ show_access_info() {
     echo "   - Internal: http://prometheus.cloudbridge-monitoring.svc.cluster.local:9090"
     echo ""
     
-    echo "🔗 Port Forward Commands:"
+    echo " Port Forward Commands:"
     echo "   kubectl port-forward service/cloudbridge-relay 9090:9090 -n cloudbridge"
     echo "   kubectl port-forward service/grafana 3000:3000 -n cloudbridge-monitoring"
     echo "   kubectl port-forward service/prometheus 9090:9090 -n cloudbridge-monitoring"

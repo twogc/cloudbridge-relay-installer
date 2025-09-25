@@ -13,10 +13,10 @@ sudo usermod -aG docker zabbix
 # Проверяем, что пользователь zabbix может получить доступ к Docker
 echo "🧪 Тестирование доступа к Docker..."
 if sudo -u zabbix docker ps >/dev/null 2>&1; then
-    echo "✅ Пользователь zabbix может получить доступ к Docker"
+    echo "Пользователь zabbix может получить доступ к Docker"
 else
     echo "❌ Ошибка доступа к Docker для пользователя zabbix"
-    echo "💡 Попробуйте перезапустить систему или выполнить:"
+    echo "Попробуйте перезапустить систему или выполнить:"
     echo "   sudo systemctl restart zabbix-agent"
     exit 1
 fi
@@ -24,7 +24,7 @@ fi
 # Проверяем права на Docker socket
 echo "🔍 Проверка прав на Docker socket..."
 if [ -S /var/run/docker.sock ]; then
-    echo "📋 Текущие права на Docker socket:"
+    echo "Текущие права на Docker socket:"
     ls -la /var/run/docker.sock
     echo ""
     echo "👥 Группа docker:"
@@ -41,9 +41,9 @@ echo "   CPU использование: $(zabbix_agentd -t cloudbridge.system.c
 echo "   Память: $(zabbix_agentd -t cloudbridge.system.memory.usage | awk '{print $2}' | tr -d '[]')%"
 
 echo ""
-echo "✅ Права доступа исправлены!"
+echo "Права доступа исправлены!"
 echo ""
-echo "📋 Информация:"
+echo "Информация:"
 echo "   Пользователь zabbix добавлен в группу docker"
 echo "   Docker API доступен для Zabbix Agent"
 echo "   Системные метрики работают корректно"

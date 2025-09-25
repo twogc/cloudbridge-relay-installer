@@ -23,7 +23,7 @@ else
     exit 1
 fi
 
-echo "📋 Обнаружена ОС: $OS $VER"
+echo "Обнаружена ОС: $OS $VER"
 
 # Обновление системы
 echo "📦 Обновление системы..."
@@ -186,14 +186,14 @@ sudo chown -R zabbix:zabbix /etc/zabbix/scripts
 echo "🔥 Настройка файрвола..."
 if command -v ufw &> /dev/null; then
     sudo ufw allow $ZABBIX_AGENT_PORT/tcp
-    echo "✅ UFW: Разрешен порт $ZABBIX_AGENT_PORT"
+    echo "UFW: Разрешен порт $ZABBIX_AGENT_PORT"
 elif command -v firewall-cmd &> /dev/null; then
     sudo firewall-cmd --permanent --add-port=$ZABBIX_AGENT_PORT/tcp
     sudo firewall-cmd --reload
-    echo "✅ Firewalld: Разрешен порт $ZABBIX_AGENT_PORT"
+    echo "Firewalld: Разрешен порт $ZABBIX_AGENT_PORT"
 elif command -v iptables &> /dev/null; then
     sudo iptables -A INPUT -p tcp --dport $ZABBIX_AGENT_PORT -j ACCEPT
-    echo "✅ iptables: Разрешен порт $ZABBIX_AGENT_PORT"
+    echo "iptables: Разрешен порт $ZABBIX_AGENT_PORT"
 fi
 
 # Запуск и включение Zabbix Agent
@@ -202,13 +202,13 @@ sudo systemctl start zabbix-agent
 sudo systemctl enable zabbix-agent
 
 # Проверка статуса
-echo "✅ Проверка статуса Zabbix Agent..."
+echo "Проверка статуса Zabbix Agent..."
 sudo systemctl status zabbix-agent --no-pager -l
 
 # Проверка подключения к серверу
 echo "🔍 Проверка подключения к Zabbix Server..."
 if nc -z $ZABBIX_SERVER_IP $ZABBIX_SERVER_PORT; then
-    echo "✅ Подключение к Zabbix Server ($ZABBIX_SERVER_IP:$ZABBIX_SERVER_PORT) успешно"
+    echo "Подключение к Zabbix Server ($ZABBIX_SERVER_IP:$ZABBIX_SERVER_PORT) успешно"
 else
     echo "❌ Не удается подключиться к Zabbix Server ($ZABBIX_SERVER_IP:$ZABBIX_SERVER_PORT)"
     echo "   Проверьте сетевую связность и настройки файрвола"
@@ -217,7 +217,7 @@ fi
 # Проверка порта агента
 echo "🔍 Проверка порта Zabbix Agent..."
 if netstat -tlnp | grep :$ZABBIX_AGENT_PORT; then
-    echo "✅ Zabbix Agent слушает на порту $ZABBIX_AGENT_PORT"
+    echo "Zabbix Agent слушает на порту $ZABBIX_AGENT_PORT"
 else
     echo "❌ Zabbix Agent не слушает на порту $ZABBIX_AGENT_PORT"
 fi
@@ -232,7 +232,7 @@ echo "Использование памяти: $(sudo -u zabbix /usr/sbin/zabbix
 echo ""
 echo "🎉 Установка Zabbix Agent завершена!"
 echo ""
-echo "📋 Информация:"
+echo "Информация:"
 echo "   Hostname: $HOSTNAME"
 echo "   Zabbix Server: $ZABBIX_SERVER_IP:$ZABBIX_SERVER_PORT"
 echo "   Agent Port: $ZABBIX_AGENT_PORT"
@@ -245,7 +245,7 @@ echo "   sudo systemctl restart zabbix-agent"
 echo "   sudo tail -f /var/log/zabbix/zabbix_agentd.log"
 echo "   sudo -u zabbix /usr/sbin/zabbix_agentd -t cloudbridge.relay.status"
 echo ""
-echo "⚠️  Следующие шаги:"
+echo "  Следующие шаги:"
 echo "1. Добавьте хост '$HOSTNAME' в Zabbix Server"
 echo "2. Примените шаблон 'CloudBridge Relay Server'"
 echo "3. Проверьте сбор метрик в веб-интерфейсе"

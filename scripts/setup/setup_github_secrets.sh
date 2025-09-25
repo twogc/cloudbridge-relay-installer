@@ -7,12 +7,12 @@ echo "🔐 Настройка GitHub Secrets для CloudBridge Relay"
 echo "================================================="
 echo ""
 
-echo "📋 Необходимые секреты:"
+echo "Необходимые секреты:"
 echo ""
 echo "1. GH_TOKEN - Personal Access Token с правами:"
-echo "   ✅ repo (Full control)"
-echo "   ✅ workflow (Update workflows)"
-echo "   ✅ write:packages (Upload packages)"
+echo "   repo (Full control)"
+echo "   workflow (Update workflows)"
+echo "   write:packages (Upload packages)"
 echo ""
 echo "2. DOCKERHUB_USERNAME - Логин Docker Hub"
 echo "   Значение: twogc"
@@ -21,7 +21,7 @@ echo "3. DOCKERHUB_TOKEN - Access Token от Docker Hub"
 echo "   Создать: https://hub.docker.com/settings/security"
 echo ""
 
-echo "🔗 Ссылки для настройки:"
+echo " Ссылки для настройки:"
 echo ""
 echo "📍 GitHub Personal Access Token:"
 echo "   https://github.com/settings/tokens"
@@ -41,24 +41,24 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     
     if [ -z "$GITHUB_TOKEN" ]; then
         echo "❌ GITHUB_TOKEN не установлен в переменных окружения"
-        echo "💡 Установите: export GITHUB_TOKEN=your_token"
-        echo "💡 В GitHub Secrets используйте имя: GH_TOKEN"
+        echo "Установите: export GITHUB_TOKEN=your_token"
+        echo "В GitHub Secrets используйте имя: GH_TOKEN"
     else
-        echo "✅ GITHUB_TOKEN найден в переменных окружения"
+        echo "GITHUB_TOKEN найден в переменных окружения"
         
         # Проверка токена
         response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user)
         if echo "$response" | grep -q '"login"'; then
             username=$(echo "$response" | grep '"login"' | cut -d'"' -f4)
-            echo "✅ Токен валиден. Пользователь: $username"
+            echo "Токен валиден. Пользователь: $username"
             
             # Проверка прав workflow
             scopes=$(curl -s -I -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user | grep -i "x-oauth-scopes" | cut -d' ' -f2-)
             if echo "$scopes" | grep -q "workflow"; then
-                echo "✅ Права workflow: ОК"
+                echo "Права workflow: ОК"
             else
                 echo "❌ Права workflow: НЕ НАЙДЕНЫ"
-                echo "💡 Добавьте scope 'workflow' к токену"
+                echo "Добавьте scope 'workflow' к токену"
             fi
         else
             echo "❌ Токен недействителен"

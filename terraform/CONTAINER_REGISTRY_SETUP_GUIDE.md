@@ -1,6 +1,6 @@
 # 🔧 **Пошаговая инструкция: Создание Container Registry в VK Cloud Console**
 
-## 📋 **Обзор**
+## **Обзор**
 
 Container Registry в VK Cloud - это приватный реестр Docker образов, который позволяет хранить и управлять вашими контейнерными образами. Это необходимо для автоматизации развертывания CloudBridge Relay серверов.
 
@@ -136,7 +136,7 @@ docker tag alpine:latest registry.vkcs.ru/cloudbridge-relay/test:latest
 docker push registry.vkcs.ru/cloudbridge-relay/test:latest
 ```
 
-## 🚨 **Возможные проблемы и решения**
+## **Возможные проблемы и решения**
 
 ### **Проблема 1: Раздел Container Registry не найден**
 **Решение:**
@@ -184,7 +184,7 @@ docker push registry.vkcs.ru/cloudbridge-relay/test:latest
 
 ---
 
-## ✅ **Чек-лист готовности**
+## **Чек-лист готовности**
 
 - [ ] Container Registry создан в VK Cloud Console
 - [ ] Настроена аутентификация (username/password)

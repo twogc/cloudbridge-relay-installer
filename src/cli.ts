@@ -332,7 +332,7 @@ program
       // Здесь можно добавить сохранение в YAML файл
       spinner.succeed(chalk.green(`Configuration generated: ${options.output}`));
       
-      console.log(chalk.blue('\n📋 Configuration:'));
+      console.log(chalk.blue('\nConfiguration:'));
       console.log(chalk.white(JSON.stringify(config, null, 2)));
       
     } catch (error) {

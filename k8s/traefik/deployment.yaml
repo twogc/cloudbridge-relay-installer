@@ -1,0 +1,168 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: traefik-system
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik
+    app.kubernetes.io/component: ingress-controller
+    app.kubernetes.io/part-of: cloudbridge-waf
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+      app.kubernetes.io/instance: traefik
+      app.kubernetes.io/component: ingress-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: traefik
+        app.kubernetes.io/instance: traefik
+        app.kubernetes.io/component: ingress-controller
+        app.kubernetes.io/part-of: cloudbridge-waf
+    spec:
+      serviceAccountName: traefik
+      containers:
+      - name: traefik
+        image: traefik:v3.0
+        args:
+        - --api.dashboard=true
+        - --api.insecure=false
+        - --providers.kubernetesingress=true
+        - --providers.kubernetescrd=true
+        - --entrypoints.web.address=:80
+        - --entrypoints.websecure.address=:443
+        - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+        - --certificatesresolvers.letsencrypt.acme.email=admin@cloudbridge.local
+        - --certificatesresolvers.letsencrypt.acme.storage=/data/acme.json
+        - --entrypoints.web.http.redirections.entrypoint.to=websecure
+        - --entrypoints.web.http.redirections.entrypoint.scheme=https
+        - --entrypoints.web.http.redirections.entrypoint.permanent=true
+        - --log.level=INFO
+        - --accesslog=true
+        - --metrics.prometheus=true
+        - --metrics.prometheus.addEntryPointsLabels=true
+        - --metrics.prometheus.addServicesLabels=true
+        - --tracing.jaeger=true
+        - --tracing.jaeger.samplingType=const
+        - --tracing.jaeger.samplingParam=1.0
+        - --tracing.jaeger.localAgentHostPort=jaeger:14268
+        - --ping=true
+        - --ping.entrypoint=traefik
+        ports:
+        - name: web
+          containerPort: 80
+        - name: websecure
+          containerPort: 443
+        - name: dashboard
+          containerPort: 8080
+        - name: metrics
+          containerPort: 9100
+        - name: traefik
+          containerPort: 9000
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: coraza-config
+          mountPath: /etc/coraza
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 65532
+          capabilities:
+            drop:
+            - ALL
+      - name: coraza-waf
+        image: coraza/coraza-waf:latest
+        args:
+        - --config=/etc/coraza/coraza.conf
+        - --rules=/etc/coraza/crs/
+        - --server=:8081
+        ports:
+        - name: waf
+          containerPort: 8081
+        volumeMounts:
+        - name: coraza-config
+          mountPath: /etc/coraza
+        - name: coraza-rules
+          mountPath: /etc/coraza/crs
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 65532
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: data
+        emptyDir: {}
+      - name: coraza-config
+        configMap:
+          name: coraza-config
+      - name: coraza-rules
+        configMap:
+          name: coraza-crs
+      securityContext:
+        fsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+
+
+

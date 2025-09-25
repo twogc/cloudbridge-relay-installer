@@ -1,6 +1,6 @@
 # 🚀 **Быстрая памятка: Container Registry**
 
-## 📋 **Что нужно сделать:**
+## **Что нужно сделать:**
 
 ### **1. Войти в VK Cloud Console**
 - **URL:** https://mcs.mail.ru/

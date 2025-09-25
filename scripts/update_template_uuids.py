@@ -88,7 +88,7 @@ def update_template():
     with open('cloudbridge-relay-template-fixed.xml', 'w', encoding='utf-8') as f:
         f.write(content)
     
-    print("✅ Все UUID успешно обновлены!")
+    print("Все UUID успешно обновлены!")
 
 if __name__ == "__main__":
     update_template()

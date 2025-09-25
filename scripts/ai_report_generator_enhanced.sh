@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🤖 УЛУЧШЕННЫЙ ГЕНЕРАТОР ОТЧЕТОВ AI${NC}"
+echo -e "${BLUE} УЛУЧШЕННЫЙ ГЕНЕРАТОР ОТЧЕТОВ AI${NC}"
 echo "============================================="
 echo ""
 
@@ -44,7 +44,7 @@ analyze_data() {
                 echo "• ВНИМАНИЕ: Обнаружено $alert_count активных алертов"
                 echo "$data" | jq -r '.alerts[] | "  - \(.message) (серьезность: \(.severity))"' 2>/dev/null
             else
-                echo "• ✅ Активных алертов нет"
+                echo "• Активных алертов нет"
             fi
             ;;
         "anomalies")
@@ -54,16 +54,16 @@ analyze_data() {
                 echo "• Обнаружено $anomaly_count аномалий за последние 24 часа"
                 echo "$data" | jq -r '.history[] | "  - \(.type): \(.description) (score: \(.score), серьезность: \(.severity))"' 2>/dev/null
             else
-                echo "• ✅ Аномалий не обнаружено"
+                echo "• Аномалий не обнаружено"
             fi
             ;;
         "health")
             # Анализ здоровья системы
             overall_health=$(echo "$data" | jq -r '.health.overall' 2>/dev/null)
             if [ "$overall_health" = "healthy" ]; then
-                echo "• ✅ Общее состояние: $overall_health"
+                echo "• Общее состояние: $overall_health"
             else
-                echo "• ⚠️ Общее состояние: $overall_health"
+                echo "•  Общее состояние: $overall_health"
             fi
             
             echo "$data" | jq -r '.health.components | to_entries[] | "• \(.key): \(.value.status) (точность: \(.value.accuracy))"' 2>/dev/null
@@ -86,16 +86,16 @@ echo "=================================="
 route_data=$(get_ai_data "/api/v1/ai/route/recommendations")
 echo "$route_data" | jq -r '.recommendations[] | "• \(.protocol): латентность \(.latency)ms, score \(.score)"' 2>/dev/null || echo "$route_data"
 echo ""
-echo -e "${GREEN}💡 АНАЛИЗ РЕКОМЕНДАЦИЙ:${NC}"
+echo -e "${GREEN}АНАЛИЗ РЕКОМЕНДАЦИЙ:${NC}"
 analyze_data "$route_data" "route"
 echo ""
 
-echo -e "${BLUE}🚨 АКТИВНЫЕ АЛЕРТЫ:${NC}"
+echo -e "${BLUE}АКТИВНЫЕ АЛЕРТЫ:${NC}"
 echo "======================"
 alerts_data=$(get_ai_data "/api/v1/ai/alerts")
 echo "$alerts_data" | jq -r '.alerts[] | "• \(.message) (серьезность: \(.severity))"' 2>/dev/null || echo "$alerts_data"
 echo ""
-echo -e "${GREEN}💡 АНАЛИЗ АЛЕРТОВ:${NC}"
+echo -e "${GREEN}АНАЛИЗ АЛЕРТОВ:${NC}"
 analyze_data "$alerts_data" "alerts"
 echo ""
 
@@ -104,7 +104,7 @@ echo "======================="
 anomaly_data=$(get_ai_data "/api/v1/ai/history/anomalies")
 echo "$anomaly_data" | jq -r '.history[] | "• \(.type): \(.description) (score: \(.score), серьезность: \(.severity))"' 2>/dev/null || echo "$anomaly_data"
 echo ""
-echo -e "${GREEN}💡 АНАЛИЗ АНОМАЛИЙ:${NC}"
+echo -e "${GREEN}АНАЛИЗ АНОМАЛИЙ:${NC}"
 analyze_data "$anomaly_data" "anomalies"
 echo ""
 
@@ -113,7 +113,7 @@ echo "============================="
 health_data=$(get_ai_data "/api/v1/ai/health/detailed")
 echo "$health_data" | jq -r '.health.components | to_entries[] | "• \(.key): \(.value.status) (точность: \(.value.accuracy))"' 2>/dev/null || echo "$health_data"
 echo ""
-echo -e "${GREEN}💡 АНАЛИЗ ЗДОРОВЬЯ СИСТЕМЫ:${NC}"
+echo -e "${GREEN}АНАЛИЗ ЗДОРОВЬЯ СИСТЕМЫ:${NC}"
 analyze_data "$health_data" "health"
 echo ""
 
@@ -123,7 +123,7 @@ performance_data=$(get_ai_data "/api/v1/ai/trends/performance")
 echo "$performance_data" | jq -r '.trends | to_entries[] | "• \(.key): последнее значение \(.value[-1].value)"' 2>/dev/null || echo "$performance_data"
 echo ""
 
-echo -e "${GREEN}💡 КЛЮЧЕВЫЕ РЕКОМЕНДАЦИИ:${NC}"
+echo -e "${GREEN}КЛЮЧЕВЫЕ РЕКОМЕНДАЦИИ:${NC}"
 echo "============================="
 
 # Генерация рекомендаций на основе данных
@@ -145,7 +145,7 @@ fi
 
 echo ""
 
-echo -e "${YELLOW}📋 СЛЕДУЮЩИЕ ШАГИ:${NC}"
+echo -e "${YELLOW}СЛЕДУЮЩИЕ ШАГИ:${NC}"
 echo "=================="
 echo "• Мониторить точность прогнозов нагрузки"
 echo "• Анализировать новые аномалии"
@@ -153,7 +153,7 @@ echo "• Оптимизировать маршруты на основе рек
 echo "• Регулярно проверять состояние компонентов"
 echo ""
 
-echo -e "${GREEN}✅ Отчет сгенерирован успешно!${NC}"
+echo -e "${GREEN}Отчет сгенерирован успешно!${NC}"
 echo "Время генерации: $(date)"
 echo ""
 echo -e "${BLUE}ℹ️ Примечание: Отчет сгенерирован без Cloudflare AI (сервис недоступен)${NC}"

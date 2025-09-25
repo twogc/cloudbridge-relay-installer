@@ -1,4 +1,4 @@
-# ✅ ZITADEL Setup Complete
+# ZITADEL Setup Complete
 
 ## 🎯 Problem Solved
 Fixed the `{"code":5,"message":"Not Found"}` error that was preventing user authentication in ZITADEL.
@@ -22,12 +22,12 @@ ZITADEL was configured to use Login V2 UI (`login_v2: {"required": true}`), but 
 
 ## 📊 System Status
 
-- ✅ **SSL Certificate**: Valid (Let's Encrypt, expires Dec 7, 2025)
-- ✅ **Authentication**: Working perfectly
-- ✅ **HAProxy**: Configured with proper redirects and headers
-- ✅ **ZITADEL**: 3/3 pods running
-- ✅ **Database**: PostgreSQL healthy
-- ✅ **Domain**: https://edge.2gc.ru/ fully functional
+- **SSL Certificate**: Valid (Let's Encrypt, expires Dec 7, 2025)
+- **Authentication**: Working perfectly
+- **HAProxy**: Configured with proper redirects and headers
+- **ZITADEL**: 3/3 pods running
+- **Database**: PostgreSQL healthy
+- **Domain**: https://edge.2gc.ru/ fully functional
 
 ## 🔧 Key Configuration Files
 
@@ -44,3 +44,4 @@ Users can now successfully:
 - Create organizations, projects, and applications
 
 **The system is fully operational and ready for production use!**
+

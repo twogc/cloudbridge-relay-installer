@@ -69,7 +69,7 @@ check_file "DOCUMENTATION.md" || ((errors++))
 check_file "docs/DOCUMENTATION_REORGANIZATION_REPORT.md" || ((errors++))
 
 echo ""
-echo "📋 Проверка README файлов в папках:"
+echo "Проверка README файлов в папках:"
 echo "----------------------------------"
 
 # Проверка README файлов в папках
@@ -112,7 +112,7 @@ check_file "docs/deployment/QUICKSTART.md" || ((errors++))
 check_file "docs/integration/siem_readme.md" || ((errors++))
 
 echo ""
-echo "🔗 Проверка ключевых файлов документации:"
+echo " Проверка ключевых файлов документации:"
 echo "----------------------------------------"
 
 # Проверка ключевых файлов
@@ -133,11 +133,11 @@ echo ""
 echo "=================================================="
 
 if [ $errors -eq 0 ]; then
-    echo -e "${GREEN}✅ Все проверки пройдены успешно!${NC}"
+    echo -e "${GREEN}Все проверки пройдены успешно!${NC}"
     echo -e "${GREEN}📚 Документация полностью структурирована${NC}"
     exit 0
 else
     echo -e "${RED}❌ Найдено ошибок: $errors${NC}"
-    echo -e "${YELLOW}⚠️  Проверьте отсутствующие файлы и папки${NC}"
+    echo -e "${YELLOW}  Проверьте отсутствующие файлы и папки${NC}"
     exit 1
 fi 

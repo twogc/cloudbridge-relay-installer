@@ -42,7 +42,7 @@ kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=ai-service -n c
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=ai-worker -n cloudbridge --timeout=120s
 
 # Проверяем статус
-echo "✅ Проверяем статус сервисов..."
+echo "Проверяем статус сервисов..."
 kubectl get pods -n cloudbridge | grep ai
 
 echo "🎉 AI сервис обновлен с интеграцией реальных данных!"
@@ -51,5 +51,5 @@ echo "⏱️ Интервал обработки увеличен до 60 сек
 echo "🔧 Тестовый режим отключен"
 
 # Показываем логи
-echo "📋 Последние логи AI сервиса:"
+echo "Последние логи AI сервиса:"
 kubectl logs -n cloudbridge -l app.kubernetes.io/name=ai-service --tail=10

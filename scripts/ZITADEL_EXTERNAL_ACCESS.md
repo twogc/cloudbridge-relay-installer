@@ -1,6 +1,6 @@
 # 🌐 **Zitadel External Access Setup - COMPLETED!**
 
-## ✅ **НАСТРОЙКА ЗАВЕРШЕНА УСПЕШНО**
+## **НАСТРОЙКА ЗАВЕРШЕНА УСПЕШНО**
 
 ### **🔧 Что было настроено:**
 
@@ -27,7 +27,7 @@
 - **Email:** `admin@local.test`
 - **Password:** `jrcCaigzmqzHpRcxo61RDiS+xejxX4/K`
 
-### **📋 OIDC Endpoints:**
+### **OIDC Endpoints:**
 
 ```json
 {
@@ -56,7 +56,7 @@
 - **Valid Until:** Dec 7 07:45:47 2025 GMT
 - **Certificate Path:** `/etc/haproxy/certs/edge.2gc.ru.pem`
 - **Private Key:** Included in PEM file
-- **Status:** ✅ Valid and working
+- **Status:** Valid and working
 
 #### **Kubernetes Services:**
 - **Zitadel API:** `zitadel-nodeport` (NodePort 30001)
@@ -186,9 +186,9 @@ kubectl -n zitadel get events
 
 ## 🎉 **РЕЗУЛЬТАТ: Zitadel доступен извне через HTTPS!**
 
-**✅ Внешний доступ настроен и работает**
-**✅ OIDC endpoints доступны**
-**✅ UI доступен через браузер**
-**✅ Готов к созданию проекта и приложения**
+**Внешний доступ настроен и работает**
+**OIDC endpoints доступны**
+**UI доступен через браузер**
+**Готов к созданию проекта и приложения**
 
 **🌐 Доступ:** https://edge.2gc.ru/ui/login

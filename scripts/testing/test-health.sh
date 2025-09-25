@@ -29,7 +29,7 @@ print_status() {
     local message=$2
     case $status in
         "PASS")
-            echo -e "${GREEN}✅ $message${NC}"
+            echo -e "${GREEN}$message${NC}"
             ;;
         "FAIL")
             echo -e "${RED}❌ $message${NC}"
@@ -38,7 +38,7 @@ print_status() {
             echo -e "${BLUE}ℹ️  $message${NC}"
             ;;
         "WARN")
-            echo -e "${YELLOW}⚠️  $message${NC}"
+            echo -e "${YELLOW}  $message${NC}"
             ;;
     esac
 }

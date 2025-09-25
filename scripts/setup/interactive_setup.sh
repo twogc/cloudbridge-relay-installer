@@ -134,7 +134,7 @@ start_keycloak() {
     
     while [[ $attempt -le $max_attempts ]]; do
         if curl -f http://localhost:8080/ &> /dev/null; then
-            log "✅ Keycloak запущен и готов"
+            log "Keycloak запущен и готов"
             return 0
         fi
         

@@ -14,19 +14,19 @@ import (
 
 // TURNServerPool представляет TURN сервер в пуле
 type TURNServerPool struct {
-	Address         string
-	Username        string
-	Password        string
-	Realm           string
-	Priority        int
-	Weight          int
-	MaxConnections  int
+	Address           string
+	Username          string
+	Password          string
+	Realm             string
+	Priority          int
+	Weight            int
+	MaxConnections    int
 	ActiveConnections int
-	LastHealthCheck time.Time
-	IsHealthy       bool
-	AverageLatency  time.Duration
-	TotalRequests   uint64
-	FailedRequests  uint64
+	LastHealthCheck   time.Time
+	IsHealthy         bool
+	AverageLatency    time.Duration
+	TotalRequests     uint64
+	FailedRequests    uint64
 }
 
 // TURNPool управляет пулом TURN серверов с балансировкой
@@ -261,16 +261,16 @@ func (tp *TURNPool) checkServerHealth(server *TURNServerPool) {
 	defer cancel()
 
 	start := time.Now()
-	
+
 	// В реальной реализации здесь должна быть проверка TURN сервера
 	// Пока просто проверяем доступность порта
 	conn, err := net.DialTimeout("tcp", server.Address, tp.healthCheckTimeout)
 	latency := time.Since(start)
-	
+
 	tp.serversMutex.Lock()
 	server.LastHealthCheck = time.Now()
 	server.AverageLatency = tp.calculateAverageLatency(server.AverageLatency, latency, server.TotalRequests+1)
-	
+
 	if err != nil {
 		server.IsHealthy = false
 		server.FailedRequests++
@@ -304,11 +304,11 @@ func (tp *TURNPool) GetServerStats() map[string]interface{} {
 	defer tp.serversMutex.RUnlock()
 
 	stats := map[string]interface{}{
-		"total_servers":      len(tp.servers),
-		"healthy_servers":    0,
-		"unhealthy_servers":  0,
-		"total_connections":  0,
-		"max_connections":    0,
+		"total_servers":     len(tp.servers),
+		"healthy_servers":   0,
+		"unhealthy_servers": 0,
+		"total_connections": 0,
+		"max_connections":   0,
 	}
 
 	for _, server := range tp.servers {

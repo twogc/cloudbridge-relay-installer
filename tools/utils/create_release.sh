@@ -27,7 +27,7 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-echo "✅ Зависимости проверены"
+echo "Зависимости проверены"
 
 # Запуск тестов
 echo "🧪 Запуск тестов..."
@@ -35,7 +35,7 @@ make test || {
     echo "❌ Тесты не прошли"
     exit 1
 }
-echo "✅ Тесты прошли успешно"
+echo "Тесты прошли успешно"
 
 # Сборка для разных платформ
 echo "🔨 Сборка бинарных файлов..."
@@ -65,7 +65,7 @@ for platform in "${platforms[@]}"; do
     fi
 done
 
-echo "✅ Бинарные файлы собраны"
+echo "Бинарные файлы собраны"
 
 # Создание архивов
 echo "📦 Создание архивов..."
@@ -75,11 +75,11 @@ for file in cloudbridge-relay-*; do
     if [[ $file == *.exe ]]; then
         # Windows - ZIP архив
         zip "${file%.exe}.zip" "$file"
-        echo "  ✅ Создан ${file%.exe}.zip"
+        echo "  Создан ${file%.exe}.zip"
     else
         # Unix - TAR.GZ архив
         tar -czf "${file}.tar.gz" "$file"
-        echo "  ✅ Создан ${file}.tar.gz"
+        echo "  Создан ${file}.tar.gz"
     fi
 done
 
@@ -89,19 +89,19 @@ cd ..
 echo "🐳 Сборка Docker образа..."
 docker build -t "twogc/cloudbridge-relay:$VERSION" .
 docker tag "twogc/cloudbridge-relay:$VERSION" "twogc/cloudbridge-relay:latest"
-echo "✅ Docker образ собран"
+echo "Docker образ собран"
 
 # Создание checksums
 echo "🔐 Создание checksums..."
 cd $DIST_DIR
 sha256sum *.tar.gz *.zip > checksums.txt
-echo "✅ Checksums созданы"
+echo "Checksums созданы"
 cd ..
 
 # Генерация changelog
 echo "📝 Генерация changelog..."
 git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~10")..HEAD > $DIST_DIR/CHANGELOG.md
-echo "✅ Changelog сгенерирован"
+echo "Changelog сгенерирован"
 
 # Показ результатов
 echo ""
@@ -121,4 +121,4 @@ echo "  2. Загрузите Docker образ: docker push twogc/cloudbridge-r
 echo "  3. Создайте GitHub Release и приложите файлы из dist/"
 
 echo ""
-echo "✅ Релиз $VERSION успешно создан!"
+echo "Релиз $VERSION успешно создан!"

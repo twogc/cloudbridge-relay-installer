@@ -126,7 +126,7 @@ create_api_docs() {
 </html>
 EOF
 
-    echo -e "${GREEN}✅ API documentation created${NC}"
+    echo -e "${GREEN}API documentation created${NC}"
 }
 
 # Function to start documentation server
@@ -146,7 +146,7 @@ start_docs_server() {
     # Create API documentation
     create_api_docs
     
-    echo -e "${GREEN}✅ Documentation server starting on port $PORT${NC}"
+    echo -e "${GREEN}Documentation server starting on port $PORT${NC}"
     echo -e "${BLUE}📖 Access the documentation at: http://localhost:$PORT/$API_DOCS_FILE${NC}"
     echo
     echo -e "${YELLOW}Press Ctrl+C to stop the server${NC}"
@@ -159,7 +159,7 @@ start_docs_server() {
 
 # Main function
 main() {
-    echo -e "${YELLOW}📋 AI Service API Documentation Server${NC}"
+    echo -e "${YELLOW}AI Service API Documentation Server${NC}"
     echo
     
     # Check if port is available

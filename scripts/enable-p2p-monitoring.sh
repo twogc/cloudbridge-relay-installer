@@ -71,15 +71,15 @@ if [ -n "$RELAY_POD" ]; then
     
     # Check if metrics endpoint is accessible
     if kubectl exec -n cloudbridge $RELAY_POD -- curl -s http://localhost:8084/metrics &> /dev/null; then
-        log_info "✅ Relay metrics endpoint is accessible"
+        log_info "Relay metrics endpoint is accessible"
     else
-        log_warn "⚠️  Relay metrics endpoint is not accessible on port 8084"
+        log_warn "  Relay metrics endpoint is not accessible on port 8084"
         log_info "Checking if metrics are available on different port..."
         
         # Try different ports
         for port in 9090 8082 8084; do
             if kubectl exec -n cloudbridge $RELAY_POD -- curl -s http://localhost:$port/metrics &> /dev/null; then
-                log_info "✅ Metrics found on port $port"
+                log_info "Metrics found on port $port"
                 break
             fi
         done
@@ -107,11 +107,11 @@ if [ -n "$GRAFANA_SERVICE" ]; then
     
     # Check if Grafana is accessible
     if curl -s http://localhost:3000/api/health &> /dev/null; then
-        log_info "✅ Grafana is accessible at http://localhost:3000"
+        log_info "Grafana is accessible at http://localhost:3000"
         log_info "Default credentials: admin/admin"
         log_info "Dashboard will be available after login"
     else
-        log_warn "⚠️  Grafana is not accessible on localhost:3000"
+        log_warn "  Grafana is not accessible on localhost:3000"
     fi
     
     # Stop port-forward
@@ -146,9 +146,9 @@ echo ""
 # 8. Test metrics collection
 log_info "Testing metrics collection..."
 if kubectl exec -n cloudbridge $RELAY_POD -- curl -s http://localhost:8084/metrics | grep -q "cloudbridge"; then
-    log_info "✅ CloudBridge metrics are being exposed"
+    log_info "CloudBridge metrics are being exposed"
 else
-    log_warn "⚠️  CloudBridge metrics not found. Check if metrics are enabled in relay configuration"
+    log_warn "  CloudBridge metrics not found. Check if metrics are enabled in relay configuration"
 fi
 
 log_info "P2P Mesh monitoring setup completed!"

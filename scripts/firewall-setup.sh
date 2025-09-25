@@ -207,10 +207,10 @@ setup_firewall() {
     create_security_rule $admin_sg_id "egress" "tcp" 1 65535 "0.0.0.0/0"
     create_security_rule $admin_sg_id "egress" "udp" 1 65535 "0.0.0.0/0"
     
-    success "✅ Firewall настроен успешно!"
+    success "Firewall настроен успешно!"
     
     echo ""
-    echo "📋 Созданные Security Groups:"
+    echo "Созданные Security Groups:"
     echo "  - cloudbridge-relay-sg: $relay_sg_id"
     echo "  - cloudbridge-admin-sg: $admin_sg_id"
     echo ""

@@ -94,13 +94,13 @@ verify_installation() {
     log "Проверка установки..."
     
     if systemctl is-enabled cloudbridge-relay.service &> /dev/null; then
-        log "✅ Сервис включен для автозапуска"
+        log "Сервис включен для автозапуска"
     else
         warn "Сервис не включен для автозапуска"
     fi
     
     if systemctl is-active cloudbridge-relay.service &> /dev/null; then
-        log "✅ Сервис активен"
+        log "Сервис активен"
     else
         log "Сервис не запущен (будет запущен при перезагрузке)"
     fi

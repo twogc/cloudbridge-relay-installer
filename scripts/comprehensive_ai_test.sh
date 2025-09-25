@@ -27,13 +27,13 @@ log_test() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
     if [ "$status" = "PASS" ]; then
-        echo -e "${GREEN}✅ PASS${NC} - $test_name: $message"
+        echo -e "${GREEN}PASS${NC} - $test_name: $message"
         PASSED_TESTS=$((PASSED_TESTS + 1))
     elif [ "$status" = "FAIL" ]; then
         echo -e "${RED}❌ FAIL${NC} - $test_name: $message"
         FAILED_TESTS=$((FAILED_TESTS + 1))
     elif [ "$status" = "WARN" ]; then
-        echo -e "${YELLOW}⚠️  WARN${NC} - $test_name: $message"
+        echo -e "${YELLOW}  WARN${NC} - $test_name: $message"
     elif [ "$status" = "INFO" ]; then
         echo -e "${BLUE}ℹ️  INFO${NC} - $test_name: $message"
     fi
@@ -352,7 +352,7 @@ if [ $TOTAL_TESTS -gt 0 ]; then
     if [ $success_rate -ge 90 ]; then
         echo -e "${GREEN}🎉 Отличный результат! Система готова к продакшн использованию.${NC}"
     elif [ $success_rate -ge 75 ]; then
-        echo -e "${YELLOW}⚠️  Хороший результат, но есть области для улучшения.${NC}"
+        echo -e "${YELLOW}  Хороший результат, но есть области для улучшения.${NC}"
     else
         echo -e "${RED}❌ Требуется доработка системы.${NC}"
     fi
@@ -375,4 +375,4 @@ echo "5. Настроить мониторинг и алерты"
 echo "6. Добавить автоматические тесты в CI/CD"
 echo "7. Документировать процедуры развертывания"
 
-echo -e "\n${GREEN}✅ Тестирование завершено!${NC}"
+echo -e "\n${GREEN}Тестирование завершено!${NC}"
