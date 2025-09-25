@@ -40,7 +40,7 @@ k8s/configmaps/cadence-config.yaml
 /etc/cadence/schema/cassandra/visibility/schema.cql
 ```
 
-## 🔧 **Что нужно проверить разработчику**
+##  **Что нужно проверить разработчику**
 
 ### **1. Проверить логи Cadence Web UI:**
 ```bash

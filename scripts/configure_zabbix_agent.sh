@@ -8,7 +8,7 @@ ZABBIX_SERVER_IP="${1:-10.0.0.241}"
 HOSTNAME="${2:-cloudbridge-relay-01}"
 ZABBIX_AGENT_CONFIG="/etc/zabbix/zabbix_agentd.conf"
 
-echo "🔧 Настройка Zabbix Agent для подключения к серверу $ZABBIX_SERVER_IP..."
+echo " Настройка Zabbix Agent для подключения к серверу $ZABBIX_SERVER_IP..."
 
 # Проверяем доступность Zabbix сервера
 echo "📡 Проверка доступности Zabbix сервера..."
@@ -91,7 +91,7 @@ echo "3. Импортируйте шаблон: scripts/cloudbridge_ai_zabbix_te
 echo "4. Примените шаблон к хосту"
 echo "5. Проверьте сбор данных в Monitoring → Latest data"
 echo ""
-echo "🔧 Полезные команды:"
+echo " Полезные команды:"
 echo "   sudo systemctl status zabbix-agent  # Статус агента"
 echo "   sudo systemctl restart zabbix-agent  # Перезапуск агента"
 echo "   sudo tail -f /var/log/zabbix/zabbix_agentd.log  # Логи агента"

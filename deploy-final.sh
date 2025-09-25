@@ -233,7 +233,7 @@ EOF
 kubectl apply -f /tmp/cloudbridge-relay-deployment.yaml
 
 # 8. Развертывание AI Service
-echo "🤖 Развертывание AI Service..."
+echo " Развертывание AI Service..."
 cat > /tmp/ai-service-deployment.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
@@ -376,7 +376,7 @@ EOF
 kubectl apply -f /tmp/additional-services.yaml
 
 # 10. Инициализация Cassandra
-echo "🔧 Инициализация Cassandra для Cadence..."
+echo " Инициализация Cassandra для Cadence..."
 echo "⏳ Ожидание готовности Cassandra..."
 kubectl wait --for=condition=ready pod -l app=cassandra -n cloudbridge --timeout=300s
 

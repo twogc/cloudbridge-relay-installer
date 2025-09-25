@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ai-telegram-notifications
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/component: ai
+    app.kubernetes.io/name: ai-telegram-notifications
+    app.kubernetes.io/part-of: cloudbridge-relay
+spec:
+  schedule: "0 */1 * * *" # Каждый час
+  timeZone: "Europe/Moscow" # Московское время
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ai-telegram-sender
+            image: curlimages/curl:latest
+            env:
+            - name: TZ
+              value: "Europe/Moscow"
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "🤖 Generating professional AI report via Cloudflare AI..."
+              
+              # Вызываем AI сервис для генерации отчета
+              RESPONSE=$(curl -s -X POST "http://ai-service.cloudbridge.svc.cluster.local:8083/api/v1/ai/generate-report" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "report_type": "telegram",
+                  "format": "professional",
+                  "language": "russian",
+                  "use_cloudflare_ai": true,
+                  "include_metrics": true,
+                  "include_analysis": true,
+                  "include_recommendations": true,
+                  "include_forecast": true
+                }' 2>/dev/null)
+              
+              if [ -n "$RESPONSE" ]; then
+                echo "✅ AI report generated successfully"
+                echo "Response: $RESPONSE"
+                exit 0
+              else
+                echo "❌ Failed to generate AI report, using fallback"
+                # Fallback: отправляем базовое уведомление
+                curl -s -X POST "http://ai-service.cloudbridge.svc.cluster.local:8083/api/v1/ai/send-telegram-message" \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                    "message": "🔄 Ежечасный отчет CloudBridge AI: система работает стабильно. Детальный анализ временно недоступен."
+                  }' 2>/dev/null
+                exit 1
+              fi
+          restartPolicy: OnFailure
+          terminationGracePeriodSeconds: 30

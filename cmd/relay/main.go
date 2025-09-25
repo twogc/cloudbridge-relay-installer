@@ -99,6 +99,16 @@ type Server struct {
 	circuitBreaker *circuitbreaker.CircuitBreaker
 	healthChecker  *health.HealthChecker
 
+	// TURN server components
+	turnServer *nat.EnhancedTURNServer
+	turnPool   *nat.TURNPool
+
+	// DERP server components
+	derpServer *nat.DERPServer
+
+	// WebSocket tunnel components
+	wsTunnel *tunnel.WebSocketTunnel
+
 	// Enhanced QUIC components
 	enhancedQUICManager  *EnhancedQUICManager
 	tenantManager        *tenant.Manager
@@ -305,6 +315,61 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	p2pEnabled := true // Always enable P2P for QUIC relay
 	// P2P functionality is handled by QUIC relay instead
 	loggerInstance.Info("P2P QUIC relay mode enabled")
+
+	// Initialize TURN server components
+	var turnServer *nat.EnhancedTURNServer
+	var turnPool *nat.TURNPool
+
+	// Initialize DERP server components
+	var derpServer *nat.DERPServer
+
+	// Initialize WebSocket tunnel components
+	var wsTunnel *tunnel.WebSocketTunnel
+
+	// Initialize TURN pool
+	turnPool = nat.NewTURNPool(loggerInstance)
+
+	// Add default TURN server to pool
+	defaultTURNServer := &nat.TURNServerPool{
+		Address:           "127.0.0.1:3478",
+		Username:          "cloudbridge",
+		Password:          "turnpassword",
+		Realm:             "cloudbridge.local",
+		Priority:          1,
+		Weight:            100,
+		MaxConnections:    1000,
+		ActiveConnections: 0,
+		IsHealthy:         true,
+	}
+	turnPool.AddServer(defaultTURNServer)
+
+	// Initialize Enhanced TURN server
+	if cfg.ICEStunTurn.Enabled {
+		turnServer, err = nat.NewEnhancedTURNServer(
+			"0.0.0.0:3478",
+			"cloudbridge.local",
+			"cloudbridge",
+			"turnpassword",
+			loggerInstance.GetZapLogger(),
+		)
+		if err != nil {
+			loggerInstance.Error("Failed to initialize Enhanced TURN server", zap.Error(err))
+		} else {
+			loggerInstance.Info("Enhanced TURN server initialized successfully")
+		}
+	}
+
+	// Initialize DERP server for fallback mechanisms
+	derpServer, err = nat.NewDERPServer("0.0.0.0:3479", loggerInstance.GetZapLogger())
+	if err != nil {
+		loggerInstance.Error("Failed to initialize DERP server", zap.Error(err))
+	} else {
+		loggerInstance.Info("DERP server initialized successfully")
+	}
+
+	// Initialize WebSocket tunnel for fallback mechanisms
+	wsTunnel = tunnel.NewWebSocketTunnel(loggerInstance.GetZapLogger(), nil)
+	loggerInstance.Info("WebSocket tunnel initialized successfully")
 
 	// Initialize P2P API Server
 	loggerInstance.Info("Starting P2P API Server initialization...")
@@ -658,6 +723,10 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		authAdapter:          authAdapter,
 		circuitBreaker:       circuitBreaker,
 		healthChecker:        healthChecker,
+		turnServer:           turnServer,
+		turnPool:             turnPool,
+		derpServer:           derpServer,
+		wsTunnel:             wsTunnel,
 		enhancedQUICManager:  enhancedQUICManager,
 		tenantManager:        tenantMgr,
 		loadBalancer:         loadBal,
@@ -704,6 +773,11 @@ func (s *Server) Start() error {
 	// Start HTTP server on configured port for health checks
 	go func() {
 		httpMux := http.NewServeMux()
+
+		// WebSocket tunnel endpoint
+		if s.wsTunnel != nil {
+			httpMux.HandleFunc("/ws", s.wsTunnel.CreateHTTPHandler())
+		}
 
 		// Health check endpoint
 		httpMux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -1149,6 +1223,26 @@ func (s *Server) Start() error {
 				go s.handleSTUNPacket(udpConn, addr, buffer[:n])
 			}
 		}()
+	}
+
+	// Start Enhanced TURN server on port 3478
+	if s.turnServer != nil {
+		go func() {
+			if err := s.turnServer.Start(); err != nil {
+				s.logger.Error("Failed to start Enhanced TURN server", zap.Error(err))
+			}
+		}()
+		s.logger.Info("Enhanced TURN server started on port 3478")
+	}
+
+	// Start DERP server on port 3479
+	if s.derpServer != nil {
+		go func() {
+			if err := s.derpServer.Start(); err != nil {
+				s.logger.Error("Failed to start DERP server", zap.Error(err))
+			}
+		}()
+		s.logger.Info("DERP server started on port 3479")
 	}
 
 	// Start Enhanced QUIC UDP server on port 9092

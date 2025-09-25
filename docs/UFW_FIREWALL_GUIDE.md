@@ -36,7 +36,7 @@ sudo ufw allow 8443/udp comment "CloudBridge Relay - MASQUE Protocol"
 sudo ufw allow 5554/udp comment "CloudBridge Relay - UDP Transport"
 ```
 
-## 🔧 **Порты CloudBridge Relay**
+##  **Порты CloudBridge Relay**
 
 ### **TCP порты:**
 | Порт | Протокол | Назначение | Описание |

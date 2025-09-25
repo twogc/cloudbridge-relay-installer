@@ -14,7 +14,7 @@ echo -e "${BLUE}📊 Шаг 1: Проверка статуса AI сервиса
 echo "----------------------------------------"
 kubectl exec deployment/ai-service -n cloudbridge -c ai-service -- wget -qO- http://localhost:8083/api/v1/ai/status | jq .
 
-echo -e "\n${BLUE}📈 Шаг 2: Метрики AI сервиса${NC}"
+echo -e "\n${BLUE} Шаг 2: Метрики AI сервиса${NC}"
 echo "----------------------------"
 echo "Аномалии обнаружены:"
 kubectl exec deployment/ai-service -n cloudbridge -c ai-service -- wget -qO- http://localhost:8083/metrics | grep "ai_anomalies_detected_total"

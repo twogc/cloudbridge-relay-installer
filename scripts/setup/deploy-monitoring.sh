@@ -400,7 +400,7 @@ show_access_info() {
     echo "   - Password: admin123"
     echo ""
     
-    echo "📈 Prometheus:"
+    echo " Prometheus:"
     echo "   - Internal: http://prometheus.$NAMESPACE.svc.cluster.local:9090"
     echo ""
     

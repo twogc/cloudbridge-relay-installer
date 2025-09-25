@@ -194,7 +194,7 @@ optimize_vk_cloud_resources() {
     echo "⚡ Оптимизация ресурсов VK Cloud..."
     
     # Оптимизация CPU
-    echo "🔧 Оптимизация CPU..."
+    echo " Оптимизация CPU..."
     export CLOUDBRIDGE_CPU_AFFINITY="enabled"
     export CLOUDBRIDGE_CPU_GOVERNOR="performance"
     

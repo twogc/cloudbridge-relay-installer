@@ -89,7 +89,7 @@ kubectl get configmap ai-config -n cloudbridge -o yaml
 kubectl get configmap cloudbridge-config -n cloudbridge -o yaml
 ```
 
-## 🔧 Устранение проблем
+##  Устранение проблем
 
 ### Проблема: AI Service не отвечает
 ```bash

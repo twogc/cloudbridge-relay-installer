@@ -189,7 +189,7 @@ show_deployment_info() {
     echo "   Cadence gRPC: $MINIKUBE_IP:$CADENCE_GRPC_PORT"
     echo "   Cadence Web UI: http://$MINIKUBE_IP:$CADENCE_WEB_PORT"
     echo ""
-    echo "🔧 Полезные команды:"
+    echo " Полезные команды:"
     echo "   kubectl get pods -n cloudbridge"
     echo "   kubectl logs -f deployment/cadence -n cloudbridge"
     echo "   kubectl describe deployment cadence -n cloudbridge"

@@ -208,7 +208,7 @@ show_access_urls() {
     echo -e "${GREEN}   Логин:${NC} admin"
     echo -e "${GREEN}   Пароль:${NC} $password"
     echo
-    echo -e "${GREEN}📈 Prometheus:${NC} http://$server_ip:9090"
+    echo -e "${GREEN} Prometheus:${NC} http://$server_ip:9090"
     echo
     echo -e "${GREEN} Relay Metrics:${NC} http://$server_ip:8081/metrics"
     echo

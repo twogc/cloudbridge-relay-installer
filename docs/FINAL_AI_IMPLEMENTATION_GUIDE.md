@@ -121,7 +121,7 @@ curl -X POST "http://localhost:8080/api/v1/ai/optimize" \
 - `internal/ai/metrics.go` - новые методы метрик
 - `k8s/configmaps/ai-config.yaml` - обновленная конфигурация
 
-## 🔧 Конфигурация
+##  Конфигурация
 
 ### AI Service конфигурация
 ```yaml
@@ -211,7 +211,7 @@ kubectl exec -n cloudbridge deployment/ai-service -- nslookup cloudbridge-relay.
 }
 ```
 
-## 📈 Улучшения производительности
+##  Улучшения производительности
 
 - **Точность прогнозов:** +40% (с 60% до 85%)
 - **Скорость обнаружения аномалий:** +60% (с 5s до 2s)

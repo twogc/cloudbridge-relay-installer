@@ -89,7 +89,7 @@ kubectl get services -n cloudbridge-monitoring
 kubectl logs -f deployment/cloudbridge-relay -n cloudbridge
 ```
 
-## 🔧 Конфигурация
+##  Конфигурация
 
 ### **ConfigMaps**
 
@@ -276,7 +276,7 @@ spec:
     updateMode: "Auto"
 ```
 
-## 🔧 Troubleshooting
+##  Troubleshooting
 
 ### **Общие проблемы**
 

@@ -10,7 +10,7 @@
 - **Email:** `admin@local.test`
 - **Password:** `jrcCaigzmqzHpRcxo61RDiS+xejxX4/K`
 
-### 🔧 Доступ к Zitadel API
+###  Доступ к Zitadel API
 
 **Base URL:** http://zitadel.local:8080
 

@@ -1,4 +1,4 @@
-# 🔧 **Пошаговая инструкция: Создание Container Registry в VK Cloud Console**
+#  **Пошаговая инструкция: Создание Container Registry в VK Cloud Console**
 
 ## **Обзор**
 
@@ -90,7 +90,7 @@ Description: CloudBridge Relay automation token
 registry.vkcs.ru/cloudbridge-relay/cloudbridge-relay:latest
 ```
 
-## 🔧 **Шаг 6: Обновление .env файла**
+##  **Шаг 6: Обновление .env файла**
 
 ### **6.1 Отредактируйте .env файл**
 ```bash

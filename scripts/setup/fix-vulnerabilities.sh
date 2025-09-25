@@ -49,7 +49,7 @@ echo -e "\n🔍 Проверка уязвимостей после обновл�
 npm audit
 
 # 2. Обновляем Go зависимости
-echo -e "\n🔧 Обновление Go зависимостей..."
+echo -e "\n Обновление Go зависимостей..."
 
 # Обновляем Go модули до последних безопасных версий
 go get -u github.com/gin-contrib/cors@v1.7.0
@@ -302,7 +302,7 @@ echo "📦 Проверка Node.js зависимостей..."
 npm audit --audit-level=moderate
 
 # Проверка Go уязвимостей
-echo "🔧 Проверка Go зависимостей..."
+echo " Проверка Go зависимостей..."
 go list -json -m all | jq -r '.Path + " " + .Version' | while read pkg version; do
     echo "Проверка: $pkg@$version"
 done

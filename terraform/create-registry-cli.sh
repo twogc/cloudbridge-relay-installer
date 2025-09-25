@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🔧 Создание Container Registry через OpenStack CLI"
+echo " Создание Container Registry через OpenStack CLI"
 echo "================================================="
 
 # Цвета для вывода

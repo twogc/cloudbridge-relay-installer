@@ -154,7 +154,7 @@ main() {
     echo "   Password: admin"
     echo
     
-    echo -e "${BLUE}📈 Prometheus:${NC}"
+    echo -e "${BLUE} Prometheus:${NC}"
     echo "   URL: http://localhost:9090"
     echo "   No authentication required"
     echo

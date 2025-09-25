@@ -28,7 +28,7 @@ type CreateTenantRequest struct {
 }
 
 func main() {
-	log.Println("🔧 Инициализация тестового tenant'а relay-test-tenant...")
+	log.Println(" Инициализация тестового tenant'а relay-test-tenant...")
 
 	// Конфигурация тестового tenant'а
 	tenant := TenantConfig{

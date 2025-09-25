@@ -35,7 +35,7 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay --tail=5 2>/dev/null ||
 echo ""
 
 # Проверка логов AI Service
-echo "🤖 Последние логи AI Service:"
+echo " Последние логи AI Service:"
 kubectl logs -n cloudbridge deployment/ai-service --tail=5 2>/dev/null || echo "Логи недоступны"
 echo ""
 

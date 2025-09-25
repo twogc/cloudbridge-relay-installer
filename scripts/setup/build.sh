@@ -109,7 +109,7 @@ docker-compose up -d
 echo "CloudBridge Relay installed and started!"
 echo "🌐 Web UI: http://localhost:8088"
 echo "📊 Metrics: http://localhost:8084/metrics"
-echo "🔧 API: http://localhost:9090/health"
+echo " API: http://localhost:9090/health"
 EOF
 
 chmod +x $BUILD_DIR/install.sh

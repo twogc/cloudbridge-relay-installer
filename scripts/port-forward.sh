@@ -96,7 +96,7 @@ main() {
             print_header "Port-forwards started!"
             echo ""
             print_status "🌐 Zitadel UI: http://zitadel.local:8080/ui/login"
-            print_status "🔧 Zitadel API: http://zitadel.local:8080"
+            print_status " Zitadel API: http://zitadel.local:8080"
             echo ""
             print_status "Login credentials:"
             print_status "  Email: admin@local.test"
@@ -141,7 +141,7 @@ main() {
             echo ""
             print_status "🚀 CloudBridge Relay API: http://localhost:9091"
             print_status "📊 Health check: http://localhost:9091/health"
-            print_status "📈 Metrics: http://localhost:9091/metrics"
+            print_status " Metrics: http://localhost:9091/metrics"
             ;;
             
         "all")
@@ -158,7 +158,7 @@ main() {
             print_header "All port-forwards started!"
             echo ""
             print_status "🌐 Zitadel UI: http://zitadel.local:8080/ui/login"
-            print_status "🔧 Zitadel API: http://zitadel.local:8080"
+            print_status " Zitadel API: http://zitadel.local:8080"
             print_status "🚀 CloudBridge Relay API: http://localhost:9091"
             ;;
             

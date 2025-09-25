@@ -97,7 +97,7 @@ kill -9 <PID>
 kubectl port-forward service/cadence-nodeport 8081:7934 -n cloudbridge
 ```
 
-## 🔧 Быстрые исправления
+##  Быстрые исправления
 
 ### 1. Сброс конфигурации Cadence
 ```bash

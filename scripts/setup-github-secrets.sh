@@ -160,7 +160,7 @@ print_info() {
     echo "   REGISTRY_PASSWORD = $REGISTRY_PASSWORD"
     echo "   KUBECONFIG        = [base64 encoded]"
     echo ""
-    echo "🔧 Следующие шаги:"
+    echo " Следующие шаги:"
     echo "   1. Убедитесь, что Docker Registry запущен"
     echo "   2. Проверьте доступность registry: http://$REGISTRY_IP:5000"
     echo "   3. Запустите GitHub Actions workflow"

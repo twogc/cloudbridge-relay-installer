@@ -45,7 +45,7 @@ func (r *ReportGenerator) GenerateMarkdown(report *analytics.Report) (string, er
 - {{.}}
 {{end}}
 
-## 📈 Performance Assessment
+##  Performance Assessment
 {{.Analysis.Performance}}
 
 ## 🏥 System Health
@@ -106,7 +106,7 @@ No metrics data available
 No anomalies detected
 {{end}}
 
-## 📈 Trends
+##  Trends
 {{if .Metrics.Trends}}
 {{range .Metrics.Trends}}
 - **{{.Metric}}**: {{.Direction}} ({{printf "%.2f" .Change}}, confidence: {{printf "%.2f" .Confidence}})
@@ -328,7 +328,7 @@ func (r *ReportGenerator) GenerateHTML(report *analytics.Report) (string, error)
         {{end}}
 
         <div class="section">
-            <h2>📈 Performance Assessment</h2>
+            <h2> Performance Assessment</h2>
             <p>{{.Analysis.Performance}}</p>
         </div>
 

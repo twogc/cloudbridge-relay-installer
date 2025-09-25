@@ -81,7 +81,7 @@ terraform/
 └── CLEANUP_COMPLETE.md           # Этот файл (удалить после прочтения)
 ```
 
-## 🔧 **Исправленные проблемы:**
+##  **Исправленные проблемы:**
 
 ### **Дублирование required_providers:**
 - ❌ **Было:** Дублирующий блок `terraform` в `docker-registry-automation.tf`

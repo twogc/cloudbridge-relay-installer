@@ -1,6 +1,7 @@
 package routing
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"sync"
@@ -11,9 +12,10 @@ import (
 
 // LatencyPredictor предсказывает латентность для различных протоколов
 type LatencyPredictor struct {
-	logger *zap.Logger
-	models map[string]*LatencyModel
-	mu     sync.RWMutex
+	logger           *zap.Logger
+	models           map[string]*LatencyModel
+	metricsCollector *NetworkMetricsCollector
+	mu               sync.RWMutex
 }
 
 // LatencyModel модель для предсказания латентности
@@ -25,10 +27,11 @@ type LatencyModel struct {
 }
 
 // NewLatencyPredictor создает новый предсказатель латентности
-func NewLatencyPredictor(logger *zap.Logger) *LatencyPredictor {
+func NewLatencyPredictor(logger *zap.Logger, prometheusURL, cloudbridgeURL string) *LatencyPredictor {
 	return &LatencyPredictor{
-		logger: logger,
-		models: make(map[string]*LatencyModel),
+		logger:           logger,
+		models:           make(map[string]*LatencyModel),
+		metricsCollector: NewNetworkMetricsCollector(logger, prometheusURL, cloudbridgeURL),
 	}
 }
 
@@ -46,6 +49,11 @@ func (lp *LatencyPredictor) Initialize() error {
 			Variation:   lp.getVariation(protocol),
 			LastUpdate:  time.Now(),
 		}
+	}
+
+	// Собираем начальные метрики
+	if err := lp.metricsCollector.CollectMetrics(); err != nil {
+		lp.logger.Warn("Failed to collect initial metrics", zap.Error(err))
 	}
 
 	lp.logger.Info("Latency Predictor initialized successfully")
@@ -78,8 +86,8 @@ func (lp *LatencyPredictor) Predict(source, destination string, protocol string)
 	// Итоговая латентность
 	totalLatency := baseLatency + distanceLatency + timeLatency + loadLatency
 
-	// Добавляем случайную вариацию
-	variation := model.Variation * (0.5 + 0.5*math.Sin(float64(time.Now().Unix())))
+	// Добавляем вариацию на основе реальных метрик сети
+	variation := lp.calculateRealVariation(source, destination, model)
 	totalLatency += variation
 
 	// Ограничиваем значения
@@ -182,11 +190,81 @@ func (lp *LatencyPredictor) getTimeBasedLatency() float64 {
 	return 0.0 // Обычная латентность
 }
 
-// getLoadBasedLatency возвращает латентность на основе нагрузки (эвристика)
+// getLoadBasedLatency возвращает латентность на основе реальной нагрузки
 func (lp *LatencyPredictor) getLoadBasedLatency() float64 {
-	// Эвристическая оценка нагрузки на основе времени
-	load := math.Sin(float64(time.Now().Unix())/3600.0)*0.5 + 0.5
+	// Получаем реальные метрики сети
+	allMetrics := lp.metricsCollector.GetAllNodeMetrics()
+	if len(allMetrics) == 0 {
+		return 0.0
+	}
 
-	// Корректируем латентность на основе нагрузки
-	return load * 10.0 // До +10ms при высокой нагрузке
+	// Вычисляем среднюю нагрузку по всем узлам
+	totalLoad := 0.0
+	nodeCount := 0
+
+	for _, metrics := range allMetrics {
+		// Комбинируем различные метрики для оценки нагрузки
+		nodeLoad := (metrics.CPUUsage + metrics.MemoryUsage + metrics.NetworkLoad) / 3.0
+		totalLoad += nodeLoad
+		nodeCount++
+	}
+
+	if nodeCount == 0 {
+		return 0.0
+	}
+
+	averageLoad := totalLoad / float64(nodeCount)
+
+	// Корректируем латентность на основе реальной нагрузки
+	// Нормализуем к разумному диапазону
+	return averageLoad * 0.1 // До +10ms при высокой нагрузке
+}
+
+// calculateRealVariation вычисляет вариацию латентности на основе реальных метрик
+func (lp *LatencyPredictor) calculateRealVariation(source, destination string, model *LatencyModel) float64 {
+	// Получаем метрики узлов
+	sourceMetrics, sourceExists := lp.metricsCollector.GetNodeMetrics(source)
+	destMetrics, destExists := lp.metricsCollector.GetNodeMetrics(destination)
+
+	if !sourceExists || !destExists {
+		// Если нет метрик, используем базовую вариацию
+		return model.Variation * 0.1
+	}
+
+	// Вычисляем вариацию на основе нестабильности метрик
+	sourceStability := lp.calculateNodeStability(sourceMetrics)
+	destStability := lp.calculateNodeStability(destMetrics)
+
+	// Средняя нестабильность
+	averageStability := (sourceStability + destStability) / 2.0
+
+	// Вариация пропорциональна нестабильности
+	variation := model.Variation * averageStability
+
+	return variation
+}
+
+// calculateNodeStability вычисляет стабильность узла на основе его метрик
+func (lp *LatencyPredictor) calculateNodeStability(metrics *NodeMetrics) float64 {
+	// Вычисляем коэффициент вариации для различных метрик
+	cpuStability := 1.0 - math.Min(1.0, metrics.CPUUsage/100.0)
+	memoryStability := 1.0 - math.Min(1.0, metrics.MemoryUsage/100.0)
+	networkStability := 1.0 - math.Min(1.0, metrics.NetworkLoad/100.0)
+	errorStability := 1.0 - math.Min(1.0, metrics.ErrorRate)
+
+	// Средняя стабильность (чем выше, тем стабильнее)
+	averageStability := (cpuStability + memoryStability + networkStability + errorStability) / 4.0
+
+	// Возвращаем нестабильность (обратное значение)
+	return 1.0 - averageStability
+}
+
+// StartMetricsCollection запускает периодический сбор метрик
+func (lp *LatencyPredictor) StartMetricsCollection(ctx context.Context) {
+	lp.metricsCollector.StartPeriodicCollection(ctx)
+}
+
+// GetMetricsCollector возвращает коллектор метрик
+func (lp *LatencyPredictor) GetMetricsCollector() *NetworkMetricsCollector {
+	return lp.metricsCollector
 }

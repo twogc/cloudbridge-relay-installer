@@ -41,7 +41,7 @@ cd /home/ubuntu/cloudbridge-relay-installer
 | `./check-status.sh` | Проверка статуса | ✅ Да |
 | `./cleanup.sh` | Очистка развертывания | ✅ Да |
 
-## 🔧 Принципы MINIKUBE_BUILD_GUIDE.md
+##  Принципы MINIKUBE_BUILD_GUIDE.md
 
 ### **1. Уникальные теги образов**
 ```bash

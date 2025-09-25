@@ -294,7 +294,7 @@ show_status() {
     echo -e "  \033[1;36m🔐 Keycloak:\033[0m     http://localhost:8080"
     echo -e "  \033[1;36m🚀 Relay:\033[0m        http://localhost:8081"
     echo -e "  \033[1;36m📊 Grafana:\033[0m      http://localhost:3000"
-    echo -e "  \033[1;36m📈 Prometheus:\033[0m   http://localhost:9090"
+    echo -e "  \033[1;36m Prometheus:\033[0m   http://localhost:9090"
     echo -e "  \033[1;36mAlertManager:\033[0m http://localhost:9093"
     echo -e "  \033[1;36m ML API:\033[0m       http://localhost:8000"
     echo

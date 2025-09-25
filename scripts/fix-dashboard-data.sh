@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🔧 ИСПРАВЛЕНИЕ ПРОБЛЕМЫ С ДАННЫМИ В ДАШБОРДЕ${NC}"
+echo -e "${BLUE} ИСПРАВЛЕНИЕ ПРОБЛЕМЫ С ДАННЫМИ В ДАШБОРДЕ${NC}"
 echo "================================================"
 
 # Проверка метрик AI Service
@@ -27,7 +27,7 @@ else
 fi
 
 # Проверка targets в Prometheus
-echo -e "${YELLOW}📈 Проверка targets в Prometheus...${NC}"
+echo -e "${YELLOW} Проверка targets в Prometheus...${NC}"
 TARGETS=$(kubectl exec -n cloudbridge-monitoring deployment/prometheus -- wget -qO- "http://localhost:9090/api/v1/targets" 2>/dev/null | jq '.data.activeTargets[] | select(.labels.job=="ai-service") | .health' 2>/dev/null)
 echo "Статус AI Service target: $TARGETS"
 

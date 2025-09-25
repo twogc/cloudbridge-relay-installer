@@ -159,7 +159,7 @@ get_deployment_info() {
     echo "   Instance ID: $instance_id"
     echo "   Load Balancer: $loadbalancer_ip"
     echo ""
-    echo "🔧 Следующие шаги:"
+    echo " Следующие шаги:"
     echo "   1. SSH подключение: ssh ubuntu@$instance_ip"
     echo "   2. Проверка DDoS защиты: sudo ddos-status"
     echo "   3. Запуск relay: sudo relay-start"

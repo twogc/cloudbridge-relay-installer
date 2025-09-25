@@ -86,9 +86,9 @@ type DataPipeline struct {
 
 // DataSources configuration
 type DataSources struct {
-	PrometheusURL   string `yaml:"prometheus_url"`
-	CloudBridgeURL  string `yaml:"cloudbridge_url"`
-	CadenceURL      string `yaml:"cadence_url"`
+	PrometheusURL  string `yaml:"prometheus_url"`
+	CloudBridgeURL string `yaml:"cloudbridge_url"`
+	CadenceURL     string `yaml:"cadence_url"`
 }
 
 // Cadence configuration
@@ -272,7 +272,7 @@ func GetDefaultConfig() *Config {
 			},
 			Development: Development{
 				Debug:    false,
-				MockData: false,
+				MockData: false, // По умолчанию используем реальные данные
 				TestMode: false,
 			},
 		},

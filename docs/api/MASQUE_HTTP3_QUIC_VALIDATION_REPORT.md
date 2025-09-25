@@ -215,7 +215,7 @@ ms.http3Server = &http3.Server{
 
 ---
 
-## 🔧 **Endpoints**
+##  **Endpoints**
 
 ### **MASQUE endpoints:**
 - `/.well-known/masque/udp/` - CONNECT-UDP

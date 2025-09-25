@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🔧 Автоматическое исправление проблемы Docker предупреждений в Zabbix..."
+echo " Автоматическое исправление проблемы Docker предупреждений в Zabbix..."
 echo ""
 
 # Шаг 1: Остановка Zabbix Agent
@@ -176,7 +176,7 @@ echo "   Скрипт метрик: Обновлен с фильтрацией �
 echo "   Права Docker: Исправлены для пользователя zabbix"
 echo "   Конфигурация: Очищена от дублирующихся записей"
 echo ""
-echo "🔧 Полезные команды:"
+echo " Полезные команды:"
 echo "   zabbix_agentd -t cloudbridge.docker.containers.running  # Тест Docker метрики"
 echo "   sudo tail -f /var/log/zabbix/zabbix_agentd.log         # Просмотр логов"
 echo "   sudo netstat -tlnp | grep 10050                        # Проверка порта"

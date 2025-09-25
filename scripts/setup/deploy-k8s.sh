@@ -186,7 +186,7 @@ show_access_info() {
     echo "   - Password: admin123"
     echo ""
     
-    echo "📈 Prometheus:"
+    echo " Prometheus:"
     echo "   - Internal: http://prometheus.$MONITORING_NAMESPACE.svc.cluster.local:9090"
     echo "   - External: https://prometheus.cloudbridge.example.com"
     echo ""

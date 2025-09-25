@@ -25,6 +25,16 @@ ai:
       memory_limit: "100MB"
       file_path: "/app/data/ai_metrics.json"
   
+  # Data sources configuration
+  data_sources:
+    prometheus_url: "http://prometheus.cloudbridge.svc.cluster.local:9090"
+    cloudbridge_url: "http://cloudbridge-relay.cloudbridge.svc.cluster.local:5552"
+    cadence_url: "http://cadence-service.cloudbridge.svc.cluster.local:7934"
+  
+  # Request timeout configuration
+  request_timeout: "30s"
+  max_concurrent_requests: 100
+  
   anomaly_detection:
     enabled: true
     threshold: 0.8
@@ -47,7 +57,7 @@ ai:
   monitoring:
     enabled: true
     metrics_interval: "30s"
-    dashboard_url: "http://localhost:8083/metrics"
+    dashboard_url: "http://ai-service.cloudbridge.svc.cluster.local:8083/metrics"
     
   behavior_analysis:
     enabled: true

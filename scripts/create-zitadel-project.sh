@@ -50,7 +50,7 @@ fi
 echo "Project created successfully! ID: $PROJECT_ID"
 
 # Создаем OIDC приложение
-echo "🔧 Creating OIDC application: $APP_NAME..."
+echo " Creating OIDC application: $APP_NAME..."
 APP_RESPONSE=$(curl -k -s -X POST "$ZITADEL_DOMAIN/admin/v1/projects/$PROJECT_ID/apps/oidc" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
@@ -130,7 +130,7 @@ EOF
 echo ""
 echo "Zitadel project and application created successfully!"
 echo ""
-echo "🔧 Next steps:"
+echo " Next steps:"
 echo "1. Update configs/config.json with the above configuration"
 echo "2. Update k8s/configmaps/cloudbridge-config.yaml"
 echo "3. Restart CloudBridge Relay deployment"

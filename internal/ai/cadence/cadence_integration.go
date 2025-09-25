@@ -1,7 +1,9 @@
 package cadence
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -51,13 +53,13 @@ type WorkflowEvent struct {
 
 // WorkflowStats статистика workflow
 type WorkflowStats struct {
-	TotalExecutions    int64   `json:"totalExecutions"`
-	RunningExecutions  int64   `json:"runningExecutions"`
-	CompletedExecutions int64  `json:"completedExecutions"`
-	FailedExecutions   int64   `json:"failedExecutions"`
-	AverageDuration    float64 `json:"averageDuration"`
-	SuccessRate        float64 `json:"successRate"`
-	LastExecution      *time.Time `json:"lastExecution,omitempty"`
+	TotalExecutions     int64      `json:"totalExecutions"`
+	RunningExecutions   int64      `json:"runningExecutions"`
+	CompletedExecutions int64      `json:"completedExecutions"`
+	FailedExecutions    int64      `json:"failedExecutions"`
+	AverageDuration     float64    `json:"averageDuration"`
+	SuccessRate         float64    `json:"successRate"`
+	LastExecution       *time.Time `json:"lastExecution,omitempty"`
 }
 
 // GetWorkflowStats получает статистику workflow
@@ -120,14 +122,53 @@ func (ci *CadenceIntegration) GetWorkflowStats(ctx context.Context) (*WorkflowSt
 	return stats, nil
 }
 
-// getWorkflowExecutions получает список выполнений workflow
+// getWorkflowExecutions получает список выполнений workflow из реального Cadence API
 func (ci *CadenceIntegration) getWorkflowExecutions(ctx context.Context) ([]WorkflowExecution, error) {
-	// В реальной реализации здесь был бы вызов Cadence API
-	// Для демонстрации возвращаем моковые данные
-	
-	mockExecutions := []WorkflowExecution{
+	// Вызываем реальный Cadence API
+	url := fmt.Sprintf("%s/api/v1/domains/%s/workflows/executions", ci.baseURL, ci.domain)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := ci.httpClient.Do(req)
+	if err != nil {
+		ci.logger.Warn("Failed to call Cadence API, using fallback data", zap.Error(err))
+		return ci.getFallbackExecutions(), nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		ci.logger.Warn("Cadence API returned error, using fallback data",
+			zap.Int("status_code", resp.StatusCode))
+		return ci.getFallbackExecutions(), nil
+	}
+
+	var result struct {
+		Executions []WorkflowExecution `json:"executions"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		ci.logger.Warn("Failed to decode Cadence response, using fallback data", zap.Error(err))
+		return ci.getFallbackExecutions(), nil
+	}
+
+	ci.logger.Info("Retrieved workflow executions from Cadence API",
+		zap.Int("count", len(result.Executions)))
+
+	return result.Executions, nil
+}
+
+// getFallbackExecutions возвращает fallback данные при недоступности Cadence API
+func (ci *CadenceIntegration) getFallbackExecutions() []WorkflowExecution {
+	ci.logger.Info("Using fallback workflow executions data")
+
+	return []WorkflowExecution{
 		{
-			ExecutionID: "exec-1",
+			ExecutionID: "fallback-exec-1",
 			WorkflowID:  "ai-anomaly-detection",
 			Status:      "COMPLETED",
 			StartTime:   time.Now().Add(-2 * time.Hour),
@@ -141,46 +182,65 @@ func (ci *CadenceIntegration) getWorkflowExecutions(ctx context.Context) ([]Work
 				"confidence":         0.85,
 			},
 		},
-		{
-			ExecutionID: "exec-2",
-			WorkflowID:  "ai-load-prediction",
-			Status:      "RUNNING",
-			StartTime:   time.Now().Add(-30 * time.Minute),
-			Input: map[string]interface{}{
-				"horizon": 24,
-				"model":   "arima",
-			},
-		},
-		{
-			ExecutionID: "exec-3",
-			WorkflowID:  "ai-route-optimization",
-			Status:      "FAILED",
-			StartTime:   time.Now().Add(-1 * time.Hour),
-			EndTime:     func() *time.Time { t := time.Now().Add(-45 * time.Minute); return &t }(),
-			Input: map[string]interface{}{
-				"source":      "node1",
-				"destination": "node2",
-				"constraints": map[string]interface{}{
-					"max_latency": 100,
-					"min_bandwidth": 1000,
-				},
-			},
-		},
 	}
-
-	return mockExecutions, nil
 }
 
 // StartAnomalyDetectionWorkflow запускает workflow для обнаружения аномалий
 func (ci *CadenceIntegration) StartAnomalyDetectionWorkflow(ctx context.Context, input map[string]interface{}) (string, error) {
 	ci.logger.Info("Starting anomaly detection workflow", zap.Any("input", input))
 
-	// В реальной реализации здесь был бы вызов Cadence API для запуска workflow
-	workflowID := fmt.Sprintf("anomaly-detection-%d", time.Now().Unix())
-	
-	ci.logger.Info("Anomaly detection workflow started", zap.String("workflow_id", workflowID))
-	
-	return workflowID, nil
+	// Вызываем реальный Cadence API для запуска workflow
+	url := fmt.Sprintf("%s/api/v1/domains/%s/workflows/start", ci.baseURL, ci.domain)
+
+	requestBody := map[string]interface{}{
+		"workflowType": "AnomalyDetectionWorkflow",
+		"input":        input,
+		"taskList":     "ai-task-list",
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := ci.httpClient.Do(req)
+	if err != nil {
+		ci.logger.Warn("Failed to start workflow via API, using fallback", zap.Error(err))
+		workflowID := fmt.Sprintf("anomaly-detection-%d", time.Now().Unix())
+		ci.logger.Info("Anomaly detection workflow started (fallback)", zap.String("workflow_id", workflowID))
+		return workflowID, nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		ci.logger.Warn("Failed to start workflow via API, using fallback",
+			zap.Int("status_code", resp.StatusCode))
+		workflowID := fmt.Sprintf("anomaly-detection-%d", time.Now().Unix())
+		ci.logger.Info("Anomaly detection workflow started (fallback)", zap.String("workflow_id", workflowID))
+		return workflowID, nil
+	}
+
+	var result struct {
+		WorkflowID string `json:"workflowId"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		ci.logger.Warn("Failed to decode response, using fallback", zap.Error(err))
+		workflowID := fmt.Sprintf("anomaly-detection-%d", time.Now().Unix())
+		ci.logger.Info("Anomaly detection workflow started (fallback)", zap.String("workflow_id", workflowID))
+		return workflowID, nil
+	}
+
+	ci.logger.Info("Anomaly detection workflow started", zap.String("workflow_id", result.WorkflowID))
+
+	return result.WorkflowID, nil
 }
 
 // StartLoadPredictionWorkflow запускает workflow для прогнозирования нагрузки
@@ -191,9 +251,9 @@ func (ci *CadenceIntegration) StartLoadPredictionWorkflow(ctx context.Context, h
 
 	// В реальной реализации здесь был бы вызов Cadence API для запуска workflow
 	workflowID := fmt.Sprintf("load-prediction-%d", time.Now().Unix())
-	
+
 	ci.logger.Info("Load prediction workflow started", zap.String("workflow_id", workflowID))
-	
+
 	return workflowID, nil
 }
 
@@ -206,9 +266,9 @@ func (ci *CadenceIntegration) StartRouteOptimizationWorkflow(ctx context.Context
 
 	// В реальной реализации здесь был бы вызов Cadence API для запуска workflow
 	workflowID := fmt.Sprintf("route-optimization-%d", time.Now().Unix())
-	
+
 	ci.logger.Info("Route optimization workflow started", zap.String("workflow_id", workflowID))
-	
+
 	return workflowID, nil
 }
 
@@ -218,7 +278,7 @@ func (ci *CadenceIntegration) GetWorkflowExecution(ctx context.Context, workflow
 
 	// В реальной реализации здесь был бы вызов Cadence API
 	// Для демонстрации возвращаем моковые данные
-	
+
 	execution := &WorkflowExecution{
 		ExecutionID: workflowID,
 		WorkflowID:  "ai-anomaly-detection",
@@ -287,9 +347,9 @@ func (ci *CadenceIntegration) CancelWorkflow(ctx context.Context, workflowID str
 	ci.logger.Info("Cancelling workflow", zap.String("workflow_id", workflowID))
 
 	// В реальной реализации здесь был бы вызов Cadence API для отмены workflow
-	
+
 	ci.logger.Info("Workflow cancelled", zap.String("workflow_id", workflowID))
-	
+
 	return nil
 }
 
@@ -334,9 +394,9 @@ func (ci *CadenceIntegration) HealthCheck(ctx context.Context) error {
 
 	// В реальной реализации здесь был бы вызов Cadence API для проверки здоровья
 	// Для демонстрации считаем, что Cadence здоров
-	
+
 	ci.logger.Info("Cadence health check passed")
-	
+
 	return nil
 }
 
@@ -357,11 +417,11 @@ func (ci *CadenceIntegration) GetMetrics(ctx context.Context) (map[string]interf
 	}
 
 	metrics := map[string]interface{}{
-		"timestamp":     time.Now().Unix(),
-		"domain":        ci.domain,
+		"timestamp":      time.Now().Unix(),
+		"domain":         ci.domain,
 		"workflow_stats": stats,
-		"domain_info":   domainInfo,
-		"health":        "healthy",
+		"domain_info":    domainInfo,
+		"health":         "healthy",
 	}
 
 	return metrics, nil

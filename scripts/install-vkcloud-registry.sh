@@ -182,7 +182,7 @@ print_info() {
     echo "   Пользователь: cloudbridge"
     echo "   Пароль: password"
     echo ""
-    echo "🔧 Команды для работы:"
+    echo " Команды для работы:"
     echo "   # Вход в registry"
     echo "   docker login $REGISTRY_IP:5000 --username cloudbridge --password password"
     echo ""

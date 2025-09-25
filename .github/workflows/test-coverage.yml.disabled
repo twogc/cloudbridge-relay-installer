@@ -25,7 +25,7 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: 🔧 Set up Go
+    - name:  Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
@@ -59,9 +59,9 @@ jobs:
         go tool cover -html=coverage_reports/coverage.out -o coverage_reports/coverage.html
         go tool cover -func=coverage_reports/coverage.out > coverage_reports/coverage.txt
 
-    - name: 📈 Check coverage threshold
+    - name:  Check coverage threshold
       run: |
-        echo "📈 Checking coverage threshold..."
+        echo " Checking coverage threshold..."
         COVERAGE=$(go tool cover -func=coverage_reports/coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
         echo "Current coverage: ${COVERAGE}%"
         echo "Required coverage: ${COVERAGE_THRESHOLD}%"
@@ -96,7 +96,7 @@ jobs:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔧 Set up Go
+    - name:  Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
@@ -115,7 +115,7 @@ jobs:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔧 Set up Go
+    - name:  Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
@@ -140,7 +140,7 @@ jobs:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔧 Set up Go
+    - name:  Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
@@ -159,7 +159,7 @@ jobs:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔧 Set up Go
+    - name:  Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
@@ -202,7 +202,7 @@ jobs:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🔧 Set up Go
+    - name:  Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}

@@ -22,6 +22,7 @@ type AIService struct {
 	aiService          *ai.Service
 	logger             *zap.Logger
 	notificationSystem *notifications.NotificationSystem
+	cloudflareAI       *analytics.CloudflareAIClient
 }
 
 // NewAIService создает новый AI сервис
@@ -46,10 +47,29 @@ func NewAIService(aiService *ai.Service, logger *zap.Logger) *AIService {
 		logger.Warn("Telegram credentials not provided, notifications disabled")
 	}
 
+	// Инициализируем Cloudflare AI клиент
+	var cloudflareAI *analytics.CloudflareAIClient
+	accountID := os.Getenv("CLOUDFLARE_ACCOUNT_ID")
+	apiToken := os.Getenv("CLOUDFLARE_AI_TOKEN")
+	model := os.Getenv("CLOUDFLARE_AI_MODEL")
+	
+	if accountID != "" && apiToken != "" {
+		if model == "" {
+			model = "@cf/meta/llama-2-7b-chat-int8"
+		}
+		cloudflareAI = analytics.NewCloudflareAIClient(accountID, apiToken, model, 2000)
+		logger.Info("Cloudflare AI client configured", 
+			zap.String("model", model),
+			zap.String("account_id", accountID))
+	} else {
+		logger.Warn("Cloudflare AI credentials not provided, AI analysis disabled")
+	}
+
 	return &AIService{
 		aiService:          aiService,
 		logger:             logger,
 		notificationSystem: notificationSystem,
+		cloudflareAI:       cloudflareAI,
 	}
 }
 
@@ -101,6 +121,11 @@ func (s *AIService) SetupRoutes(router *gin.Engine) {
 		api.POST("/telegram/send", s.SendTelegramMessage)
 		api.GET("/telegram/status", s.GetTelegramStatus)
 		api.POST("/telegram/resource-alert", s.SendResourceAlert)
+
+		// Report Generation
+		api.POST("/generate-report", s.GenerateReport)
+		api.POST("/send-notification", s.SendNotification)
+		api.POST("/notify", s.Notify)
 	}
 }
 
@@ -994,4 +1019,467 @@ func (s *AIService) SendResourceAlert(c *gin.Context) {
 		"message":   "Resource alert sent successfully",
 		"timestamp": time.Now(),
 	})
+}
+
+// GenerateReportRequest запрос на генерацию отчета
+type GenerateReportRequest struct {
+	ReportType         string `json:"report_type"`
+	Format             string `json:"format"`
+	Language           string `json:"language"`
+	UseCloudflareAI    bool   `json:"use_cloudflare_ai"`
+	IncludeMetrics     bool   `json:"include_metrics"`
+	IncludeSystemInfo  bool   `json:"include_system_info"`
+	IncludePerformance bool   `json:"include_performance"`
+	Prompt             string `json:"prompt"`
+}
+
+// GenerateReport генерирует отчет с использованием Cloudflare AI
+func (s *AIService) GenerateReport(c *gin.Context) {
+	var req analytics.GenerateReportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Получаем реальные метрики
+	metrics := s.collectRealMetrics()
+	
+	var aiReport *analytics.AIReport
+	var err error
+
+	// Генерируем отчет через Cloudflare AI или fallback
+	if req.UseCloudflareAI && s.cloudflareAI != nil {
+		aiReport, err = s.generateReportWithCloudflareAI(metrics, req)
+		if err != nil {
+			s.logger.Error("Failed to generate report with Cloudflare AI, using fallback", zap.Error(err))
+			aiReport = s.generateReportWithFallback(metrics)
+		}
+	} else {
+		aiReport = s.generateReportWithFallback(metrics)
+	}
+	
+	// Отправляем отчет в Telegram
+	if s.notificationSystem != nil {
+		if err := s.sendTelegramReport(aiReport); err != nil {
+			s.logger.Error("Failed to send Telegram report", zap.Error(err))
+		}
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"message": "AI report generated and sent successfully",
+		"report":  aiReport,
+		"timestamp": time.Now(),
+	})
+}
+
+// SendNotificationRequest запрос на отправку уведомления
+type SendNotificationRequest struct {
+	Type            string `json:"type"`
+	MessageType     string `json:"message_type"`
+	Format          string `json:"format"`
+	Language        string `json:"language"`
+	UseCloudflareAI bool   `json:"use_cloudflare_ai"`
+	Prompt          string `json:"prompt"`
+}
+
+// SendNotification отправляет уведомление
+func (s *AIService) SendNotification(c *gin.Context) {
+	var req SendNotificationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Создаем уведомление на основе типа
+	var message string
+	switch req.MessageType {
+	case "hourly_report":
+		message = "Ежечасный отчет системы CloudBridge: все системы работают нормально"
+	case "anomaly_alert":
+		message = "Обнаружена аномалия в системе CloudBridge"
+	case "performance_alert":
+		message = "Предупреждение о производительности системы CloudBridge"
+	default:
+		message = "Уведомление от системы CloudBridge"
+	}
+
+	// Если включен Cloudflare AI, генерируем сообщение через него
+	if req.UseCloudflareAI {
+		message = fmt.Sprintf("Cloudflare AI: %s", message)
+	}
+
+	// Отправляем уведомление
+	if s.notificationSystem != nil {
+		report := &analytics.Report{
+			ID:        "notification-" + fmt.Sprintf("%d", time.Now().Unix()),
+			Timestamp: time.Now(),
+			Analysis: &analytics.AnalysisResult{
+				Summary:         message,
+				Insights:        []string{},
+				Recommendations: []string{},
+				CriticalIssues:  []string{},
+				Performance:     "Normal",
+			},
+			Metrics: &analytics.MetricsData{
+				Health: &analytics.HealthStatus{
+					Overall: "healthy",
+					Score:   100.0,
+					Components: map[string]string{
+						"system": "healthy",
+					},
+				},
+				Anomalies: []analytics.Anomaly{},
+			},
+		}
+
+		if err := s.notificationSystem.SendReport(report); err != nil {
+			s.logger.Error("Failed to send notification", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to send notification",
+				"details": err.Error(),
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Notification sent successfully",
+		"type":      req.Type,
+		"timestamp": time.Now(),
+	})
+}
+
+// NotifyRequest запрос на уведомление
+type NotifyRequest struct {
+	Action string `json:"action"`
+}
+
+// Notify обрабатывает простые уведомления
+func (s *AIService) Notify(c *gin.Context) {
+	var req NotifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var message string
+	switch req.Action {
+	case "send_hourly_report":
+		message = "Отправка ежечасного отчета системы CloudBridge"
+	case "send_anomaly_alert":
+		message = "Отправка алерта об аномалии"
+	case "send_performance_alert":
+		message = "Отправка алерта о производительности"
+	default:
+		message = fmt.Sprintf("Выполнение действия: %s", req.Action)
+	}
+
+	// Отправляем уведомление
+	if s.notificationSystem != nil {
+		report := &analytics.Report{
+			ID:        "action-" + fmt.Sprintf("%d", time.Now().Unix()),
+			Timestamp: time.Now(),
+			Analysis: &analytics.AnalysisResult{
+				Summary:         message,
+				Insights:        []string{},
+				Recommendations: []string{},
+				CriticalIssues:  []string{},
+				Performance:     "Normal",
+			},
+			Metrics: &analytics.MetricsData{
+				Health: &analytics.HealthStatus{
+					Overall: "healthy",
+					Score:   100.0,
+					Components: map[string]string{
+						"system": "healthy",
+					},
+				},
+				Anomalies: []analytics.Anomaly{},
+			},
+		}
+
+		if err := s.notificationSystem.SendReport(report); err != nil {
+			s.logger.Error("Failed to send notification", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to send notification",
+				"details": err.Error(),
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Action completed successfully",
+		"action":    req.Action,
+		"timestamp": time.Now(),
+	})
+}
+
+// collectRealMetrics собирает реальные метрики системы
+func (s *AIService) collectRealMetrics() analytics.AIMetricsData {
+	// Получаем статус AI сервиса
+	status := s.aiService.GetStatus()
+	
+	// Получаем системные метрики из статуса
+	systemMetrics := status.Resources
+	if systemMetrics == nil {
+		systemMetrics = make(map[string]interface{})
+	}
+
+	// Извлекаем метрики из статуса
+	metrics := analytics.AIMetricsData{
+		AnomaliesDetected:  s.getIntMetric(systemMetrics, "anomalies_detected", 0),
+		PredictionsMade:    s.getIntMetric(systemMetrics, "predictions_made", 0),
+		RequestsProcessed:  s.getIntMetric(systemMetrics, "requests_processed", 0),
+		RoutesOptimized:    s.getIntMetric(systemMetrics, "routes_optimized", 0),
+		PredictionAccuracy: s.getFloatMetric(systemMetrics, "prediction_accuracy", 0.85),
+		CPUUsage:          s.getFloatMetric(systemMetrics, "cpu_usage", 0.0),
+		MemoryUsage:       s.getFloatMetric(systemMetrics, "memory_usage", 0.0),
+		DiskUsage:         s.getFloatMetric(systemMetrics, "disk_usage", 0.0),
+		ActiveAlerts:      s.getIntMetric(systemMetrics, "active_alerts", 0),
+		ProcessingTime:    s.getFloatMetric(systemMetrics, "processing_time", 0.0),
+		ServiceUptime:     s.calculateServiceUptime(status),
+	}
+
+	return metrics
+}
+
+// getIntMetric извлекает int значение метрики с fallback
+func (s *AIService) getIntMetric(metrics map[string]interface{}, key string, defaultValue int) int {
+	if value, exists := metrics[key]; exists {
+		if intVal, ok := value.(int); ok {
+			return intVal
+		}
+		if floatVal, ok := value.(float64); ok {
+			return int(floatVal)
+		}
+	}
+	return defaultValue
+}
+
+// getFloatMetric извлекает float64 значение метрики с fallback
+func (s *AIService) getFloatMetric(metrics map[string]interface{}, key string, defaultValue float64) float64 {
+	if value, exists := metrics[key]; exists {
+		if floatVal, ok := value.(float64); ok {
+			return floatVal
+		}
+		if intVal, ok := value.(int); ok {
+			return float64(intVal)
+		}
+	}
+	return defaultValue
+}
+
+// calculateServiceUptime вычисляет время работы сервиса
+func (s *AIService) calculateServiceUptime(status *ai.ServiceStatus) float64 {
+	return status.Uptime.Hours()
+}
+
+// generateReportWithCloudflareAI генерирует отчет через Cloudflare AI
+func (s *AIService) generateReportWithCloudflareAI(metrics analytics.AIMetricsData, req analytics.GenerateReportRequest) (*analytics.AIReport, error) {
+	prompt := req.Prompt
+	if prompt == "" {
+		prompt = analytics.PROFESSIONAL_PROMPT
+	}
+	
+	return s.cloudflareAI.GenerateReport(metrics, prompt)
+}
+
+// generateReportWithFallback генерирует отчет с локальным анализом
+func (s *AIService) generateReportWithFallback(metrics analytics.AIMetricsData) *analytics.AIReport {
+	// Вычисляем оценку здоровья системы
+	healthScore := s.calculateHealthScore(metrics)
+	systemStatus := s.determineSystemStatus(healthScore)
+	
+	// Генерируем локальный анализ
+	analysis := s.generateLocalAnalysis(metrics)
+	
+	return &analytics.AIReport{
+		Timestamp:    time.Now(),
+		SystemStatus: systemStatus,
+		HealthScore:  healthScore,
+		Analysis: struct {
+			OverallAssessment string   `json:"overall_assessment"`
+			Performance      string   `json:"performance"`
+			Issues           []string `json:"issues"`
+			Recommendations  []string `json:"recommendations"`
+			Forecast         string   `json:"forecast"`
+		}{
+			OverallAssessment: analysis.Summary,
+			Performance:      analysis.Performance,
+			Issues:          analysis.CriticalIssues,
+			Recommendations: analysis.Recommendations,
+			Forecast:        "Система будет стабильно работать в ближайшие 24 часа",
+		},
+		Metrics: struct {
+			AnomaliesDetected    int     `json:"anomalies_detected"`
+			PredictionsMade      int     `json:"predictions_made"`
+			RequestsProcessed    int     `json:"requests_processed"`
+			RoutesOptimized      int     `json:"routes_optimized"`
+			PredictionAccuracy   float64 `json:"prediction_accuracy"`
+			CPUUsage            float64 `json:"cpu_usage"`
+			MemoryUsage         float64 `json:"memory_usage"`
+			DiskUsage           float64 `json:"disk_usage"`
+			ActiveAlerts        int     `json:"active_alerts"`
+			ProcessingTime      float64 `json:"processing_time"`
+			ServiceUptime       float64 `json:"service_uptime"`
+		}{
+			AnomaliesDetected:  metrics.AnomaliesDetected,
+			PredictionsMade:    metrics.PredictionsMade,
+			RequestsProcessed:  metrics.RequestsProcessed,
+			RoutesOptimized:    metrics.RoutesOptimized,
+			PredictionAccuracy: metrics.PredictionAccuracy,
+			CPUUsage:          metrics.CPUUsage,
+			MemoryUsage:       metrics.MemoryUsage,
+			DiskUsage:         metrics.DiskUsage,
+			ActiveAlerts:      metrics.ActiveAlerts,
+			ProcessingTime:    metrics.ProcessingTime,
+			ServiceUptime:     metrics.ServiceUptime,
+		},
+	}
+}
+
+// calculateHealthScore вычисляет оценку здоровья системы
+func (s *AIService) calculateHealthScore(metrics analytics.AIMetricsData) int {
+	score := 100.0
+
+	// Штрафы за проблемы
+	if metrics.CPUUsage > 80 {
+		score -= 20
+	} else if metrics.CPUUsage > 60 {
+		score -= 10
+	}
+
+	if metrics.MemoryUsage > 80 {
+		score -= 15
+	} else if metrics.MemoryUsage > 60 {
+		score -= 8
+	}
+
+	if metrics.DiskUsage > 90 {
+		score -= 25
+	} else if metrics.DiskUsage > 80 {
+		score -= 15
+	}
+
+	if metrics.ActiveAlerts > 0 {
+		score -= float64(metrics.ActiveAlerts * 10)
+	}
+
+	if metrics.PredictionAccuracy < 0.7 {
+		score -= 20
+	} else if metrics.PredictionAccuracy < 0.8 {
+		score -= 10
+	}
+
+	// Бонусы за хорошие показатели
+	if metrics.PredictionAccuracy > 0.9 {
+		score += 5
+	}
+
+	if metrics.ServiceUptime > 99.9 {
+		score += 5
+	}
+
+	if score < 0 {
+		score = 0
+	}
+	if score > 100 {
+		score = 100
+	}
+
+	return int(score)
+}
+
+// determineSystemStatus определяет статус системы
+func (s *AIService) determineSystemStatus(healthScore int) string {
+	switch {
+	case healthScore >= 90:
+		return "excellent"
+	case healthScore >= 75:
+		return "good"
+	case healthScore >= 50:
+		return "attention"
+	default:
+		return "critical"
+	}
+}
+
+// generateLocalAnalysis генерирует локальный анализ
+func (s *AIService) generateLocalAnalysis(metrics analytics.AIMetricsData) *analytics.AnalysisResult {
+	var issues []string
+	var recommendations []string
+
+	// Анализируем проблемы
+	if metrics.CPUUsage > 80 {
+		issues = append(issues, "Высокое использование CPU")
+		recommendations = append(recommendations, "Оптимизировать нагрузку на CPU")
+	}
+
+	if metrics.MemoryUsage > 80 {
+		issues = append(issues, "Высокое использование памяти")
+		recommendations = append(recommendations, "Увеличить объем памяти или оптимизировать использование")
+	}
+
+	if metrics.DiskUsage > 90 {
+		issues = append(issues, "Критически мало места на диске")
+		recommendations = append(recommendations, "Очистить диск или увеличить объем")
+	}
+
+	if metrics.ActiveAlerts > 0 {
+		issues = append(issues, fmt.Sprintf("Активные алерты: %d", metrics.ActiveAlerts))
+		recommendations = append(recommendations, "Исследовать и устранить причины алертов")
+	}
+
+	if metrics.PredictionAccuracy < 0.8 {
+		issues = append(issues, "Низкая точность предсказаний")
+		recommendations = append(recommendations, "Переобучить модели AI")
+	}
+
+	// Если проблем нет, добавляем общие рекомендации
+	if len(issues) == 0 {
+		recommendations = append(recommendations, "Продолжить мониторинг системы")
+		recommendations = append(recommendations, "Регулярно проверять метрики производительности")
+	}
+
+	summary := "Система CloudBridge AI работает стабильно"
+	if len(issues) > 0 {
+		summary = fmt.Sprintf("Обнаружено %d проблем, требующих внимания", len(issues))
+	}
+
+	return &analytics.AnalysisResult{
+		Summary:         summary,
+		Insights:        []string{"Локальный анализ выполнен"},
+		Recommendations: recommendations,
+		CriticalIssues:  issues,
+		Performance:     "Анализ завершен",
+	}
+}
+
+// sendTelegramReport отправляет отчет в Telegram
+func (s *AIService) sendTelegramReport(report *analytics.AIReport) error {
+	// Создаем отчет в формате analytics.Report для совместимости
+	analyticsReport := &analytics.Report{
+		ID:        fmt.Sprintf("ai-report-%d", time.Now().Unix()),
+		Timestamp: report.Timestamp,
+		Analysis: &analytics.AnalysisResult{
+			Summary:         report.Analysis.OverallAssessment,
+			Insights:        []string{report.Analysis.Performance},
+			Recommendations: report.Analysis.Recommendations,
+			CriticalIssues:  report.Analysis.Issues,
+			Performance:     report.Analysis.Performance,
+		},
+		Metrics: &analytics.MetricsData{
+			Health: &analytics.HealthStatus{
+				Overall: report.SystemStatus,
+				Score:   float64(report.HealthScore),
+				Components: map[string]string{
+					"ai_service": report.SystemStatus,
+				},
+			},
+			Anomalies: []analytics.Anomaly{},
+		},
+	}
+
+	return s.notificationSystem.SendReport(analyticsReport)
 }

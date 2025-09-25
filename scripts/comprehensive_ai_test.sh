@@ -361,7 +361,7 @@ fi
 # Очистка фоновых процессов
 kill $RELAY_PF_PID $AI_PF_PID $PROM_PF_PID $CADENCE_PF_PID 2>/dev/null
 
-echo -e "\n${CYAN}🔧 Рекомендации по улучшению:${NC}"
+echo -e "\n${CYAN} Рекомендации по улучшению:${NC}"
 echo "================================="
 
 if [ $FAILED_TESTS -gt 0 ]; then

@@ -25,6 +25,10 @@ type RealService struct {
 	realLoadPredictor   *predictive.RealLoadPredictor
 	cadenceIntegration  *cadence.CadenceIntegration
 
+	// Компоненты маршрутизации с реальными данными
+	pathFinder       *routing.PathFinder
+	latencyPredictor *routing.LatencyPredictor
+
 	// Мониторинг и метрики
 	monitoring *AIMonitoring
 	metrics    *AIMetrics
@@ -83,6 +87,25 @@ func (rs *RealService) Initialize() error {
 		rs.config.AI.Cadence.Domain,
 	)
 
+	// Инициализируем компоненты маршрутизации с реальными данными
+	rs.pathFinder = routing.NewPathFinder(
+		rs.logger,
+		rs.config.AI.DataSources.PrometheusURL,
+		rs.config.AI.DataSources.CloudBridgeURL,
+	)
+	if err := rs.pathFinder.Initialize(); err != nil {
+		return fmt.Errorf("failed to initialize path finder: %w", err)
+	}
+
+	rs.latencyPredictor = routing.NewLatencyPredictor(
+		rs.logger,
+		rs.config.AI.DataSources.PrometheusURL,
+		rs.config.AI.DataSources.CloudBridgeURL,
+	)
+	if err := rs.latencyPredictor.Initialize(); err != nil {
+		return fmt.Errorf("failed to initialize latency predictor: %w", err)
+	}
+
 	// Инициализируем мониторинг
 	rs.monitoring = NewAIMonitoring()
 
@@ -126,6 +149,19 @@ func (rs *RealService) Start() error {
 	go func() {
 		defer rs.wg.Done()
 		rs.cadenceIntegrationLoop()
+	}()
+
+	// Запускаем сбор метрик для маршрутизации
+	rs.wg.Add(1)
+	go func() {
+		defer rs.wg.Done()
+		rs.pathFinder.StartMetricsCollection(rs.ctx)
+	}()
+
+	rs.wg.Add(1)
+	go func() {
+		defer rs.wg.Done()
+		rs.latencyPredictor.StartMetricsCollection(rs.ctx)
 	}()
 
 	rs.logger.Info("Real AI service started successfully")
@@ -190,30 +226,84 @@ func (rs *RealService) PredictLoad(horizon int) (*predictive.LoadPrediction, err
 	return prediction, nil
 }
 
-// OptimizeRoute оптимизирует маршрут
+// OptimizeRoute оптимизирует маршрут с использованием реальных данных
 func (rs *RealService) OptimizeRoute(source, destination string, constraints map[string]interface{}) (*routing.OptimizedRoute, error) {
 	rs.logger.Debug("Optimizing route",
 		zap.String("source", source),
 		zap.String("destination", destination),
 		zap.Any("constraints", constraints))
 
-	// В реальной реализации здесь был бы вызов реального оптимизатора маршрутов
-	// Для демонстрации возвращаем базовый результат
+	// Определяем протокол из ограничений
+	protocol := "QUIC" // По умолчанию
+	if p, ok := constraints["protocol"].(string); ok {
+		protocol = p
+	}
+
+	// Находим оптимальный путь
+	path, err := rs.pathFinder.FindOptimalPath(source, destination, protocol)
+	if err != nil {
+		rs.metrics.IncrementRouteOptimizationErrors()
+		return nil, fmt.Errorf("failed to find optimal path: %w", err)
+	}
+
+	// Предсказываем латентность
+	predictedLatency, err := rs.latencyPredictor.Predict(source, destination, protocol)
+	if err != nil {
+		rs.logger.Warn("Failed to predict latency, using default", zap.Error(err))
+		predictedLatency = 50.0 // Значение по умолчанию
+	}
+
+	// Вычисляем уверенность на основе качества данных
+	confidence := rs.calculateRouteConfidence(source, destination)
 
 	route := &routing.OptimizedRoute{
-		Protocol:         "QUIC",
-		PredictedLatency: 50.0,
-		Confidence:       0.85,
+		Protocol:         protocol,
+		PredictedLatency: predictedLatency,
+		Confidence:       confidence,
 		Timestamp:        time.Now(),
-		Path:             []string{source, "relay-1", "relay-2", destination},
+		Path:             path,
 	}
 
 	rs.metrics.IncrementRouteOptimizations()
 	rs.logger.Info("Route optimization completed",
 		zap.String("protocol", route.Protocol),
-		zap.Float64("latency", route.PredictedLatency))
+		zap.Float64("latency", route.PredictedLatency),
+		zap.Float64("confidence", route.Confidence),
+		zap.Strings("path", route.Path))
 
 	return route, nil
+}
+
+// calculateRouteConfidence вычисляет уверенность в маршруте на основе качества данных
+func (rs *RealService) calculateRouteConfidence(source, destination string) float64 {
+	confidence := 0.5 // Базовая уверенность
+
+	// Проверяем наличие метрик для узлов
+	if rs.pathFinder != nil {
+		sourceMetrics, sourceExists := rs.pathFinder.GetMetricsCollector().GetNodeMetrics(source)
+		destMetrics, destExists := rs.pathFinder.GetMetricsCollector().GetNodeMetrics(destination)
+
+		if sourceExists && destExists {
+			// Увеличиваем уверенность при наличии актуальных метрик
+			confidence += 0.3
+
+			// Дополнительная уверенность за актуальность данных
+			now := time.Now()
+			if now.Sub(sourceMetrics.LastUpdate) < 5*time.Minute {
+				confidence += 0.1
+			}
+			if now.Sub(destMetrics.LastUpdate) < 5*time.Minute {
+				confidence += 0.1
+			}
+		}
+	}
+
+	// Ограничиваем уверенность
+	if confidence > 1.0 {
+		confidence = 1.0
+	}
+
+	return confidence
 }
 
 // GetStatus возвращает статус AI сервиса
@@ -221,7 +311,7 @@ func (rs *RealService) GetStatus() *ClientServiceStatus {
 	status := &ClientServiceStatus{
 		AnomalyDetector: rs.realAnomalyDetector != nil,
 		LoadPredictor:   rs.realLoadPredictor != nil,
-		RouteOptimizer:  true, // Всегда доступен
+		RouteOptimizer:  rs.pathFinder != nil && rs.latencyPredictor != nil,
 		Monitoring:      rs.monitoring != nil,
 		DataPipeline:    rs.realDataCollector != nil,
 	}
@@ -248,6 +338,14 @@ func (rs *RealService) HealthCheck() error {
 
 	if rs.realLoadPredictor == nil {
 		return fmt.Errorf("load predictor not initialized")
+	}
+
+	if rs.pathFinder == nil {
+		return fmt.Errorf("path finder not initialized")
+	}
+
+	if rs.latencyPredictor == nil {
+		return fmt.Errorf("latency predictor not initialized")
 	}
 
 	// Проверяем Cadence

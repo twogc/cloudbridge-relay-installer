@@ -47,7 +47,7 @@ source ../load-env.sh
 ./deploy-automated.sh
 ```
 
-## 🔧 **Основные компоненты**
+##  **Основные компоненты**
 
 ### **Terraform конфигурации:**
 - **`cloudbridge-relay-ddos.tf`** - базовая инфраструктура с DDoS защитой

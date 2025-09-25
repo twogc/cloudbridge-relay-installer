@@ -3,7 +3,7 @@
 ## 🎯 Problem Solved
 Fixed the `{"code":5,"message":"Not Found"}` error that was preventing user authentication in ZITADEL.
 
-## 🔧 Root Cause & Solution
+##  Root Cause & Solution
 
 ### Problem
 ZITADEL was configured to use Login V2 UI (`login_v2: {"required": true}`), but the route `/ui/v2/login/login` was not properly configured, causing "Not Found" errors.
@@ -29,7 +29,7 @@ ZITADEL was configured to use Login V2 UI (`login_v2: {"required": true}`), but 
 - **Database**: PostgreSQL healthy
 - **Domain**: https://edge.2gc.ru/ fully functional
 
-## 🔧 Key Configuration Files
+##  Key Configuration Files
 
 - `k8s/zitadel/values.edge.yaml` - Main ZITADEL Helm configuration
 - `k8s/zitadel/ingress/ingress.yaml` - Ingress with disabled SSL redirect

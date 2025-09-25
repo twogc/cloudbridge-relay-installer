@@ -233,7 +233,7 @@ show_access_info() {
     echo "   - Password: (from terraform outputs)"
     echo ""
     
-    echo "📈 Prometheus:"
+    echo " Prometheus:"
     echo "   - Internal: http://prometheus.cloudbridge-monitoring.svc.cluster.local:9090"
     echo ""
     

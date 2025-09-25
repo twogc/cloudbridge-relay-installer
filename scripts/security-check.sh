@@ -181,7 +181,7 @@ generate_summary() {
 
 Please review the JSON files for detailed vulnerability information.
 
-## 🔧 Recommendations
+##  Recommendations
 
 1. **Update Dependencies**: Update vulnerable dependencies to fixed versions
 2. **Remove Secrets**: Move private keys to secure secret management

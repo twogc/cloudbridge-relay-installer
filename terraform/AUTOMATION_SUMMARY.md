@@ -51,7 +51,7 @@ GitHub Repo → GitHub Actions → VK Cloud Registry → Terraform → VM с г�
 - **До автоматизации:** 1-2 часа
 - **После автоматизации:** 10-15 минут
 
-## 🔧 **Технологический стек:**
+##  **Технологический стек:**
 
 - **Infrastructure as Code:** Terraform
 - **Container Registry:** VK Cloud Container Registry

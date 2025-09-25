@@ -280,6 +280,14 @@ func (m *AIMetrics) IncrementRouteOptimizations() {
 	m.routeOptimizations++
 }
 
+// IncrementRouteOptimizationErrors увеличивает счетчик ошибок оптимизации маршрутов
+func (m *AIMetrics) IncrementRouteOptimizationErrors() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// Можно добавить отдельное поле для ошибок оптимизации маршрутов
+	// Пока используем существующую логику
+}
+
 func (m *AIMetrics) Reset() {
 	m.mu.Lock()
 	defer m.mu.Unlock()

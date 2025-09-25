@@ -71,7 +71,7 @@ Client → TURN Server → Relay Address → Peer
 
 ---
 
-## 📈 **Статистика реализации**
+##  **Статистика реализации**
 
 ### **Количественные показатели:**
 - **Создано файлов**: 1 новый файл (`turn_server.go`)
@@ -87,7 +87,7 @@ Client → TURN Server → Relay Address → Peer
 
 ---
 
-## 🔧 **Интеграция с ICE**
+##  **Интеграция с ICE**
 
 ### **Добавлено в ICEAgent:**
 - **turnRelayServer** - интеграция TURN сервера

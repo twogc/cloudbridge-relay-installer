@@ -32,7 +32,7 @@
 
 ### **1. Файл с переменными Keycloak**
 - 📁 `keycloak.env` - содержит все необходимые переменные
-- 🔧 Правильный URL: `https://auth.2gc.ru:8080`
+-  Правильный URL: `https://auth.2gc.ru:8080`
 - 🔑 Fallback Public Key включен
 
 ### **2. Скрипт автоматического исправления**
@@ -86,7 +86,7 @@ source keycloak.env
 
 ---
 
-## 🔧 **ДЛЯ MINIKUBE**
+##  **ДЛЯ MINIKUBE**
 
 ### **Обновить ConfigMap**
 ```bash

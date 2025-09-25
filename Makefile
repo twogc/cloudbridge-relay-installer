@@ -125,7 +125,7 @@ test-coverage-report: ## Генерация отчета о покрытии
 	go test -coverprofile=coverage_reports/coverage.out -covermode=atomic ./...
 	go tool cover -html=coverage_reports/coverage.out -o coverage_reports/coverage.html
 	go tool cover -func=coverage_reports/coverage.out > coverage_reports/coverage.txt
-	@echo "📈 Покрытие по функциям:"
+	@echo " Покрытие по функциям:"
 	@tail -1 coverage_reports/coverage.txt
 	@echo "📊 HTML отчет: coverage_reports/coverage.html"
 	@echo "Отчет о покрытии сгенерирован"

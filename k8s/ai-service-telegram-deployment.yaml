@@ -20,9 +20,24 @@ spec:
         app.kubernetes.io/name: ai-service
         app.kubernetes.io/part-of: cloudbridge-relay
     spec:
+      initContainers:
+      - name: timezone-setup
+        image: alpine:3.18
+        command: ['sh', '-c']
+        args:
+        - |
+          apk add --no-cache tzdata
+          cp /usr/share/zoneinfo/Europe/Moscow /etc/localtime
+          echo "Europe/Moscow" > /tmp/timezone
+          cp /tmp/timezone /etc/timezone
+        volumeMounts:
+        - name: timezone-volume
+          mountPath: /etc/localtime
+        - name: timezone-volume
+          mountPath: /etc/timezone
       containers:
       - name: ai-service
-        image: ai-service:telegram-fix-v2
+        image: ai-service:ai-telegram-20250925-175138
         imagePullPolicy: Never
         ports:
         - containerPort: 8083
@@ -55,10 +70,28 @@ spec:
             secretKeyRef:
               name: ai-telegram-secret
               key: TELEGRAM_CHAT_ID
+        
+        # Cloudflare AI Secrets
+        - name: CLOUDFLARE_AI_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-ai-secret
+              key: CLOUDFLARE_AI_TOKEN
+        - name: CLOUDFLARE_ACCOUNT_ID
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-ai-secret
+              key: CLOUDFLARE_ACCOUNT_ID
+        - name: CLOUDFLARE_AI_MODEL
+          value: "@cf/meta/llama-2-7b-chat-int8"
         - name: AI_TELEGRAM_PARSE_MODE
           value: "HTML"
         - name: AI_TELEGRAM_DISABLE_WEB_PAGE_PREVIEW
           value: "true"
+        
+        # Timezone Settings
+        - name: TZ
+          value: "Europe/Moscow"
         
         # Notification Settings
         - name: AI_NOTIFICATIONS_ENABLED
@@ -111,11 +144,21 @@ spec:
         
         # Prometheus Integration
         - name: AI_PROMETHEUS_URL
-          value: "http://prometheus-service:9090"
+          value: "http://prometheus.cloudbridge-monitoring.svc.cluster.local:9090"
         
         # Cadence Integration
         - name: AI_CADENCE_INTEGRATION
           value: "true"
+        
+        # Cloudflare AI Integration
+        - name: CLOUDFLARE_AI_ENABLED
+          value: "true"
+        - name: CLOUDFLARE_AI_API_URL
+          value: "https://api.cloudflare.com/client/v4/accounts/073ae0130b7cee5e55a1ac1a335431a8/ai/run"
+        - name: CLOUDFLARE_AI_LANGUAGE
+          value: "russian"
+        - name: CLOUDFLARE_AI_REPORT_PROMPT
+          value: "Создай профессиональный отчет о состоянии системы CloudBridge на русском языке. Включи анализ метрик, производительности и рекомендации."
         
         resources:
           requests:
@@ -142,11 +185,19 @@ spec:
           readOnly: true
         - name: ai-models
           mountPath: /app/models
+        - name: timezone-volume
+          mountPath: /etc/localtime
+          readOnly: true
+        - name: timezone-volume
+          mountPath: /etc/timezone
+          readOnly: true
       volumes:
       - name: ai-config
         configMap:
           name: ai-telegram-config
       - name: ai-models
+        emptyDir: {}
+      - name: timezone-volume
         emptyDir: {}
       restartPolicy: Always
 ---

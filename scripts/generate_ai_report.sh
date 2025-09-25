@@ -43,7 +43,7 @@ alerts=$(get_ai_data "/api/v1/ai/alerts")
 echo "$alerts" | jq -r '.alerts[] | "• \(.message) (серьезность: \(.severity))"' 2>/dev/null || echo "$alerts"
 echo ""
 
-echo -e "${BLUE}📈 ИСТОРИЯ АНОМАЛИЙ:${NC}"
+echo -e "${BLUE} ИСТОРИЯ АНОМАЛИЙ:${NC}"
 echo "======================="
 anomaly_history=$(get_ai_data "/api/v1/ai/history/anomalies")
 echo "$anomaly_history" | jq -r '.history[] | "• \(.type): \(.description) (score: \(.score), серьезность: \(.severity))"' 2>/dev/null || echo "$anomaly_history"
@@ -55,7 +55,7 @@ health=$(get_ai_data "/api/v1/ai/health/detailed")
 echo "$health" | jq -r '.health.components | to_entries[] | "• \(.key): \(.value.status) (точность: \(.value.accuracy))"' 2>/dev/null || echo "$health"
 echo ""
 
-echo -e "${BLUE}📈 ТРЕНДЫ ПРОИЗВОДИТЕЛЬНОСТИ:${NC}"
+echo -e "${BLUE} ТРЕНДЫ ПРОИЗВОДИТЕЛЬНОСТИ:${NC}"
 echo "================================="
 performance=$(get_ai_data "/api/v1/ai/trends/performance")
 echo "$performance" | jq -r '.trends | to_entries[] | "• \(.key): последнее значение \(.value[-1].value)"' 2>/dev/null || echo "$performance"

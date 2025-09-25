@@ -214,7 +214,7 @@ setup_firewall() {
     echo "  - cloudbridge-relay-sg: $relay_sg_id"
     echo "  - cloudbridge-admin-sg: $admin_sg_id"
     echo ""
-    echo "🔧 Следующие шаги:"
+    echo " Следующие шаги:"
     echo "  1. Применить Security Groups к Load Balancer"
     echo "  2. Применить Security Groups к Kubernetes узлам"
     echo "  3. Протестировать доступность сервисов"

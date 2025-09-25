@@ -37,7 +37,7 @@ curl -v https://auth.2gc.ru:8080/realms/cloudbridge
 ./cloudbridge-relay --config=configs/config.json --log-level=debug
 ```
 
-## 🔧 **ДЛЯ MINIKUBE**
+##  **ДЛЯ MINIKUBE**
 
 ### **Обновить ConfigMap**
 ```bash

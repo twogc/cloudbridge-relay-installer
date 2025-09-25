@@ -2,7 +2,7 @@
 
 ## **SSL СЕРТИФИКАТ НАСТРОЕН УСПЕШНО**
 
-### **🔧 Что было сделано:**
+### ** Что было сделано:**
 
 1. **Найден существующий сертификат** для домена `edge.2gc.ru`
 2. **Обновлена HAProxy конфигурация** для использования правильного домена
@@ -83,7 +83,7 @@ openssl s_client -connect edge.2gc.ru:443 -servername edge.2gc.ru < /dev/null 2>
 4. Создайте OIDC приложение `cloudbridge-relay`
 5. Получите Client ID и Client Secret
 
-#### **2. 🔧 ВЫСОКИЙ: Обновить конфигурацию CloudBridge**
+#### **2.  ВЫСОКИЙ: Обновить конфигурацию CloudBridge**
 После получения credentials обновить:
 - `configs/config.json`
 - `k8s/configmaps/cloudbridge-config.yaml`

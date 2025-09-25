@@ -128,7 +128,7 @@ func (mc *MASQUEConnection) SendDatagramWithContextID(data []byte) error {
 		return fmt.Errorf("stream not initialized")
 	}
 
-	// Создаем datagram с Context ID согласно RFC 9297
+	// Создаем datagram с Context ID согласно RFC 9297 (как в masque-go)
 	// Формат: [Quarter Stream ID (varint)][HTTP Datagram Payload]
 	datagram := make([]byte, 0, len(contextIDZero)+len(data))
 	datagram = append(datagram, contextIDZero...) // Context ID = 0 для CONNECT-UDP

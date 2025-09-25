@@ -1025,7 +1025,7 @@ main() {
     echo "3. Настройте мониторинг Prometheus/Grafana"
     echo "4. Настройте алерты"
     echo ""
-    echo "🔧 Полезные команды:"
+    echo " Полезные команды:"
     echo "- Проверка статуса: kubectl get all -n cloudbridge-relay"
     echo "- Логи сервисов: kubectl logs -f deployment/wireguard-service -n cloudbridge-relay"
     echo "- Масштабирование: kubectl scale deployment wireguard-service --replicas=3 -n cloudbridge-relay"

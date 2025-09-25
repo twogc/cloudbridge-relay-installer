@@ -31,7 +31,7 @@ func NewRealPrometheusCollector(logger *zap.Logger, baseURL string) *RealPrometh
 	return &RealPrometheusCollector{
 		logger: logger,
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 30 * time.Second,
 		},
 		baseURL: baseURL,
 		metrics: []string{
@@ -453,9 +453,9 @@ func NewRelayMetricsCollector(logger *zap.Logger) *RelayMetricsCollector {
 			},
 		},
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 30 * time.Second,
 		},
-		relayURL: "http://cloudbridge-relay.cloudbridge.svc.cluster.local:5553",
+		relayURL: "http://cloudbridge-relay.cloudbridge.svc.cluster.local:5552",
 	}
 }
 

@@ -123,7 +123,7 @@ check_file "docs/integration/keycloak_integration.md" || ((errors++))
 check_file "docs/troubleshooting/debugging.md" || ((errors++))
 
 echo ""
-echo "📈 Общая статистика:"
+echo " Общая статистика:"
 echo "-------------------"
 
 total_files=$(find docs -name "*.md" | wc -l)

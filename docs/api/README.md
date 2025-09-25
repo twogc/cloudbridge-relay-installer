@@ -27,7 +27,7 @@
 | 5554 | TCP | HTTPS API | HTTPS API с TLS |
 | 5555 | UDP | QUIC Transport | QUIC транспорт |
 
-## 🔧 **REST API**
+##  **REST API**
 
 ### **Базовый URL:**
 ```
@@ -140,7 +140,7 @@ Authorization: Bearer <jwt-token>
 - **Realm**: cloudbridge
 - **Client ID**: quic-client
 
-## 📈 **Метрики API**
+##  **Метрики API**
 
 ### **Prometheus метрики:**
 - **relay_connections_total** - Общее количество соединений

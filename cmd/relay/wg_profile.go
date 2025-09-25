@@ -13,7 +13,41 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-// WGProfileManager управляет WireGuard интерфейсами и пирами
+// SiteToSiteConnection представляет site-to-site VPN соединение
+type SiteToSiteConnection struct {
+	ID         string
+	Name       string
+	LocalSite  *Site
+	RemoteSite *Site
+	Status     string
+	CreatedAt  time.Time
+	LastSeen   time.Time
+	Bandwidth  uint64
+	IsActive   bool
+}
+
+// Site представляет VPN site
+type Site struct {
+	ID          string
+	Name        string
+	PublicKey   string
+	Endpoint    string
+	AllowedIPs  []string
+	Description string
+}
+
+// RoutingRule представляет правило маршрутизации
+type RoutingRule struct {
+	ID          string
+	Source      string
+	Destination string
+	Gateway     string
+	Interface   string
+	Priority    int
+	IsActive    bool
+}
+
+// WGProfileManager управляет WireGuard интерфейсами и пирами (на основе wgctrl-go)
 type WGProfileManager struct {
 	client  *wgctrl.Client
 	config  *config.Config
@@ -24,6 +58,10 @@ type WGProfileManager struct {
 	mu      sync.RWMutex
 	devices map[string]*wgtypes.Device
 	peers   map[string]wgtypes.PeerConfig
+
+	// Site-to-site VPN management
+	siteToSiteConnections map[string]*SiteToSiteConnection
+	routingRules          map[string]*RoutingRule
 }
 
 // NewWGProfileManager создает новый менеджер WG-профилей
@@ -36,13 +74,15 @@ func NewWGProfileManager(cfg *config.Config, logger *zap.Logger) (*WGProfileMana
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &WGProfileManager{
-		client:  client,
-		config:  cfg,
-		logger:  logger,
-		ctx:     ctx,
-		cancel:  cancel,
-		devices: make(map[string]*wgtypes.Device),
-		peers:   make(map[string]wgtypes.PeerConfig),
+		client:                client,
+		config:                cfg,
+		logger:                logger,
+		ctx:                   ctx,
+		cancel:                cancel,
+		devices:               make(map[string]*wgtypes.Device),
+		peers:                 make(map[string]wgtypes.PeerConfig),
+		siteToSiteConnections: make(map[string]*SiteToSiteConnection),
+		routingRules:          make(map[string]*RoutingRule),
 	}, nil
 }
 
@@ -383,4 +423,148 @@ func (w *WGProfileManager) GetStats() map[string]interface{} {
 	}
 
 	return stats
+}
+
+// CreateSiteToSiteConnection создает site-to-site VPN соединение
+func (w *WGProfileManager) CreateSiteToSiteConnection(name string, localSite, remoteSite *Site) (*SiteToSiteConnection, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	connID := fmt.Sprintf("s2s_%d", time.Now().UnixNano())
+	connection := &SiteToSiteConnection{
+		ID:         connID,
+		Name:       name,
+		LocalSite:  localSite,
+		RemoteSite: remoteSite,
+		Status:     "connecting",
+		CreatedAt:  time.Now(),
+		LastSeen:   time.Now(),
+		IsActive:   false,
+	}
+
+	w.siteToSiteConnections[connID] = connection
+
+	w.logger.Info("Site-to-site connection created",
+		zap.String("conn_id", connID),
+		zap.String("name", name),
+		zap.String("local_site", localSite.Name),
+		zap.String("remote_site", remoteSite.Name))
+
+	return connection, nil
+}
+
+// ActivateSiteToSiteConnection активирует site-to-site соединение
+func (w *WGProfileManager) ActivateSiteToSiteConnection(connID string) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	connection, exists := w.siteToSiteConnections[connID]
+	if !exists {
+		return fmt.Errorf("site-to-site connection not found: %s", connID)
+	}
+
+	// Создаем peer конфигурацию для remote site
+	peerConfig, err := w.CreatePeerConfig(
+		connection.RemoteSite.PublicKey,
+		connection.RemoteSite.Endpoint,
+		connection.RemoteSite.AllowedIPs[0], // Используем первый allowed IP
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create peer config: %w", err)
+	}
+
+	// Добавляем peer к основному интерфейсу
+	interfaceName := w.config.WireGuard.Interface.Name
+	if err := w.AddPeer(interfaceName, peerConfig); err != nil {
+		return fmt.Errorf("failed to add peer: %w", err)
+	}
+
+	// Создаем правила маршрутизации
+	for _, allowedIP := range connection.RemoteSite.AllowedIPs {
+		ruleID := fmt.Sprintf("rule_%s_%d", connID, time.Now().UnixNano())
+		rule := &RoutingRule{
+			ID:          ruleID,
+			Source:      connection.LocalSite.AllowedIPs[0],
+			Destination: allowedIP,
+			Gateway:     connection.RemoteSite.Endpoint,
+			Interface:   interfaceName,
+			Priority:    100,
+			IsActive:    true,
+		}
+		w.routingRules[ruleID] = rule
+	}
+
+	connection.Status = "active"
+	connection.IsActive = true
+	connection.LastSeen = time.Now()
+
+	w.logger.Info("Site-to-site connection activated",
+		zap.String("conn_id", connID),
+		zap.String("name", connection.Name))
+
+	return nil
+}
+
+// DeactivateSiteToSiteConnection деактивирует site-to-site соединение
+func (w *WGProfileManager) DeactivateSiteToSiteConnection(connID string) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	connection, exists := w.siteToSiteConnections[connID]
+	if !exists {
+		return fmt.Errorf("site-to-site connection not found: %s", connID)
+	}
+
+	// Удаляем peer
+	publicKey, err := wgtypes.ParseKey(connection.RemoteSite.PublicKey)
+	if err != nil {
+		return fmt.Errorf("failed to parse public key: %w", err)
+	}
+
+	interfaceName := w.config.WireGuard.Interface.Name
+	if err := w.RemovePeer(interfaceName, publicKey); err != nil {
+		w.logger.Warn("Failed to remove peer", zap.Error(err))
+	}
+
+	// Удаляем правила маршрутизации
+	for ruleID, rule := range w.routingRules {
+		if rule.Source == connection.LocalSite.AllowedIPs[0] {
+			delete(w.routingRules, ruleID)
+		}
+	}
+
+	connection.Status = "inactive"
+	connection.IsActive = false
+
+	w.logger.Info("Site-to-site connection deactivated",
+		zap.String("conn_id", connID),
+		zap.String("name", connection.Name))
+
+	return nil
+}
+
+// GetSiteToSiteConnections возвращает список site-to-site соединений
+func (w *WGProfileManager) GetSiteToSiteConnections() []*SiteToSiteConnection {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+
+	connections := make([]*SiteToSiteConnection, 0, len(w.siteToSiteConnections))
+	for _, conn := range w.siteToSiteConnections {
+		connections = append(connections, conn)
+	}
+
+	return connections
+}
+
+// GetRoutingRules возвращает список правил маршрутизации
+func (w *WGProfileManager) GetRoutingRules() []*RoutingRule {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+
+	rules := make([]*RoutingRule, 0, len(w.routingRules))
+	for _, rule := range w.routingRules {
+		rules = append(rules, rule)
+	}
+
+	return rules
 }

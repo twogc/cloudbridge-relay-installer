@@ -99,7 +99,7 @@ echo -e "${GREEN}АНАЛИЗ АЛЕРТОВ:${NC}"
 analyze_data "$alerts_data" "alerts"
 echo ""
 
-echo -e "${BLUE}📈 ИСТОРИЯ АНОМАЛИЙ:${NC}"
+echo -e "${BLUE} ИСТОРИЯ АНОМАЛИЙ:${NC}"
 echo "======================="
 anomaly_data=$(get_ai_data "/api/v1/ai/history/anomalies")
 echo "$anomaly_data" | jq -r '.history[] | "• \(.type): \(.description) (score: \(.score), серьезность: \(.severity))"' 2>/dev/null || echo "$anomaly_data"
@@ -117,7 +117,7 @@ echo -e "${GREEN}АНАЛИЗ ЗДОРОВЬЯ СИСТЕМЫ:${NC}"
 analyze_data "$health_data" "health"
 echo ""
 
-echo -e "${BLUE}📈 ТРЕНДЫ ПРОИЗВОДИТЕЛЬНОСТИ:${NC}"
+echo -e "${BLUE} ТРЕНДЫ ПРОИЗВОДИТЕЛЬНОСТИ:${NC}"
 echo "================================="
 performance_data=$(get_ai_data "/api/v1/ai/trends/performance")
 echo "$performance_data" | jq -r '.trends | to_entries[] | "• \(.key): последнее значение \(.value[-1].value)"' 2>/dev/null || echo "$performance_data"

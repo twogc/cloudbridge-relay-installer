@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cadence
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cadence
+    app.kubernetes.io/component: workflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cadence
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cadence
+    spec:
+      containers:
+      - name: cadence
+        image: ubercadence/server:0.24.0-auto-setup
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: grpc
+          containerPort: 7933
+          protocol: TCP
+        - name: web
+          containerPort: 7934
+          protocol: TCP
+        env:
+        # Database configuration
+        - name: DB
+          value: "sqlite"
+        - name: DB_PATH
+          value: "/var/lib/cadence/cadence.db"
+        
+        # Disable Cassandra
+        - name: CASSANDRA_HOSTS
+          value: ""
+        - name: CASSANDRA_PORT
+          value: ""
+        - name: CASSANDRA_USER
+          value: ""
+        - name: CASSANDRA_PASSWORD
+          value: ""
+        - name: CASSANDRA_KEYSPACE
+          value: ""
+        - name: CASSANDRA_VISIBILITY_KEYSPACE
+          value: ""
+        
+        # Disable Elasticsearch
+        - name: ENABLE_ES
+          value: "false"
+        - name: ES_HOSTS
+          value: ""
+        - name: ES_PORT
+          value: ""
+        
+        # Services
+        - name: SERVICES
+          value: "frontend,history,matching,worker"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: SKIP_SCHEMA_SETUP
+          value: "false"
+        - name: AUTO_SETUP
+          value: "true"
+        
+        # Ringpop
+        - name: RINGPOP_NAME
+          value: "cadence"
+        - name: RINGPOP_BOOTSTRAP_MODE
+          value: "hosts"
+        - name: RINGPOP_BOOTSTRAP_HOSTS
+          value: "cadence:7933"
+        
+        # Cluster metadata
+        - name: CLUSTER_METADATA_ENABLE_GLOBAL_DOMAIN
+          value: "true"
+        - name: CLUSTER_METADATA_FAILOVER_VERSION_INCREMENT
+          value: "10"
+        - name: CLUSTER_METADATA_MASTER_CLUSTER_NAME
+          value: "active"
+        - name: CLUSTER_METADATA_CURRENT_CLUSTER_NAME
+          value: "active"
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 7934
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 7934
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        volumeMounts:
+        - name: cadence-data
+          mountPath: /var/lib/cadence
+      volumes:
+      - name: cadence-data
+        persistentVolumeClaim:
+          claimName: cadence-pvc
+      nodeSelector:
+        kubernetes.io/os: linux
+
+
+

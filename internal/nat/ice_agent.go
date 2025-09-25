@@ -42,11 +42,12 @@ type ICEAgent struct {
 	cancel context.CancelFunc
 }
 
-// ICEState представляет состояние ICE агента
+// ICEState представляет состояние ICE агента (на основе pion/ice)
 type ICEState int
 
 const (
-	ICEStateNew ICEState = iota
+	ICEStateUnknown ICEState = iota
+	ICEStateNew
 	ICEStateGathering
 	ICEStateGathered
 	ICEStateChecking
@@ -610,5 +611,30 @@ func (ia *ICEAgent) Stop() error {
 	ia.state = ICEStateFailed
 
 	ia.logger.Info("ICE agent stopped")
+	return nil
+}
+
+// PerformConnectivityChecks выполняет ICE connectivity checks (на основе pion/ice)
+func (ia *ICEAgent) PerformConnectivityChecks() error {
+	ia.mu.Lock()
+	ia.state = ICEStateChecking
+	ia.mu.Unlock()
+
+	ia.logger.Info("Starting ICE connectivity checks")
+
+	// Создаем candidate pairs
+	pairs := ia.createCandidatePairs()
+	if len(pairs) == 0 {
+		ia.mu.Lock()
+		ia.state = ICEStateFailed
+		ia.mu.Unlock()
+		return fmt.Errorf("no candidate pairs available")
+	}
+
+	// Выполняем connectivity checks для каждой пары
+	for _, pair := range pairs {
+		go ia.performConnectivityCheck(pair)
+	}
+
 	return nil
 }

@@ -21,7 +21,7 @@
 - **ICE/STUN/TURN** - NAT traversal
 - **Zero-Trust** - Модель безопасности
 
-## 🔧 **Порты**
+##  **Порты**
 
 | Порт | Протокол | Назначение |
 |------|----------|------------|
@@ -100,7 +100,7 @@ sudo ./scripts/ufw-cloudbridge.sh show
 ## 📞 **Поддержка**
 
 - 📚 **[Полная документация](docs/README.md)**
-- 🔧 **[Руководства](docs/guides/README.md)**
+-  **[Руководства](docs/guides/README.md)**
 - 📊 **[Отчеты](docs/reports/README.md)**
 - 🚀 **[Развертывание](docs/deployment/README.md)**
 

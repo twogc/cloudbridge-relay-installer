@@ -27,7 +27,7 @@ type RealDataCollector struct {
 func NewRealDataCollector(logger *zap.Logger, prometheusURL, cloudbridgeURL, cadenceURL string) *RealDataCollector {
 	return &RealDataCollector{
 		logger:         logger,
-		httpClient:     &http.Client{Timeout: 10 * time.Second},
+		httpClient:     &http.Client{Timeout: 30 * time.Second},
 		prometheusURL:  prometheusURL,
 		cloudbridgeURL: cloudbridgeURL,
 		cadenceURL:     cadenceURL,

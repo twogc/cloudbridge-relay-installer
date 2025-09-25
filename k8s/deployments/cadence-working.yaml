@@ -68,7 +68,7 @@ spec:
         - name: CLUSTER_METADATA_CURRENT_CLUSTER_NAME
           value: "active"
         
-        # Disable config file completely
+        # Disable config file completely - use environment variables only
         - name: CONFIG_TEMPLATE_PATH
           value: ""
         - name: CONFIG_FILE_PATH
@@ -81,6 +81,28 @@ spec:
         # Force environment variables
         - name: CADENCE_USE_ENV_VARS
           value: "true"
+        
+        # SQLite persistence configuration
+        - name: CADENCE_PERSISTENCE_VISIBILITY_STORE
+          value: "sqlite"
+        - name: CADENCE_PERSISTENCE_SQL_VISIBILITY_DRIVERNAME
+          value: "sqlite3"
+        - name: CADENCE_PERSISTENCE_SQL_VISIBILITY_DATASOURCENAME
+          value: "/var/lib/cadence/visibility.db"
+        
+        # Main database configuration
+        - name: CADENCE_PERSISTENCE_DEFAULT_STORE
+          value: "sqlite"
+        - name: CADENCE_PERSISTENCE_SQL_DEFAULT_DRIVERNAME
+          value: "sqlite3"
+        - name: CADENCE_PERSISTENCE_SQL_DEFAULT_DATASOURCENAME
+          value: "/var/lib/cadence/cadence.db"
+        
+        # Metrics configuration
+        - name: CADENCE_METRICS_PROMETHEUS_PORT
+          value: "7934"
+        - name: CADENCE_METRICS_PROMETHEUS_ENDPOINT
+          value: "/metrics"
         
         resources:
           requests:

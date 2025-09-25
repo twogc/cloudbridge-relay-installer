@@ -21,7 +21,7 @@ Internet → L4 DDoS Protection (Cloud/ISP)
        → Backend Services
 ```
 
-## 🔧 **1. Реалистичные цели и SLO**
+##  **1. Реалистичные цели и SLO**
 
 ### **Метрики производительности:**
 ```yaml

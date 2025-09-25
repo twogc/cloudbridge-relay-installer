@@ -50,7 +50,7 @@ check_metric "predictions_made" "ai_predictions_made_total" "http://$MINIKUBE_IP
 check_metric "routes_optimized" "ai_routes_optimized_total" "http://$MINIKUBE_IP:30083/api/v1/ai/metrics"
 check_metric "requests_processed" "ai_requests_processed_total" "http://$MINIKUBE_IP:30083/api/v1/ai/metrics"
 
-echo "📈 ДОПОЛНИТЕЛЬНЫЕ МЕТРИКИ"
+echo " ДОПОЛНИТЕЛЬНЫЕ МЕТРИКИ"
 echo "========================="
 
 # Проверяем точность предсказаний

@@ -97,7 +97,7 @@ EOF
 sudo chmod +x $AI_METRICS_SCRIPT
 
 # Добавление AI метрик в конфигурацию Zabbix Agent
-echo "🔧 Добавление AI метрик в конфигурацию Zabbix Agent..."
+echo " Добавление AI метрик в конфигурацию Zabbix Agent..."
 
 # Создаем резервную копию конфигурации
 sudo cp $ZABBIX_AGENT_CONFIG ${ZABBIX_AGENT_CONFIG}.backup.$(date +%Y%m%d_%H%M%S)
@@ -181,7 +181,7 @@ echo "2. Примените шаблон к хосту CloudBridge"
 echo "3. Проверьте сбор данных в Monitoring → Latest data"
 echo "4. Настройте дашборд для AI метрик"
 echo ""
-echo "🔧 Полезные команды:"
+echo " Полезные команды:"
 echo "   sudo systemctl status zabbix-agent  # Статус агента"
 echo "   sudo tail -f /var/log/zabbix/zabbix_agentd.log  # Логи агента"
 echo "   zabbix_agentd -t ai.status  # Тест AI метрики"

@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🔧 Установка WireGuard-go и зависимостей..."
+echo " Установка WireGuard-go и зависимостей..."
 
 # Проверяем, что мы root или используем sudo
 if [[ $EUID -ne 0 ]]; then
@@ -131,7 +131,7 @@ verify_installation() {
 
 # Настройка systemd сервиса (опционально)
 setup_systemd_service() {
-    echo "🔧 Настройка systemd сервиса..."
+    echo " Настройка systemd сервиса..."
     
     cat > /etc/systemd/system/wireguard-go@.service << EOF
 [Unit]
@@ -174,7 +174,7 @@ main() {
     echo "  • /etc/wireguard - конфигурационные файлы"
     echo "  • /var/run/wireguard - сокеты управления"
     echo ""
-    echo "🔧 Использование:"
+    echo " Использование:"
     echo "  • wireguard-go <interface_name> - запуск интерфейса"
     echo "  • wg show <interface_name> - просмотр статуса"
     echo "  • systemctl start wireguard-go@<interface_name> - запуск через systemd"

@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🔧 Настройка мониторинга CloudBridge..."
+echo " Настройка мониторинга CloudBridge..."
 
 # Создание директории для кастомных шаблонов
 sudo mkdir -p /etc/zabbix/templates/cloudbridge
@@ -188,7 +188,7 @@ echo "3. Импортируйте шаблон: Configuration → Templates → 
 echo "4. Создайте хост для CloudBridge сервера"
 echo "5. Настройте Telegram уведомления (укажите BOT_TOKEN и CHAT_ID)"
 echo ""
-echo "🔧 Полезные команды:"
+echo " Полезные команды:"
 echo "   sudo /usr/local/bin/zabbix-backup.sh  # Ручной бэкап"
 echo "   sudo tail -f /var/log/zabbix/zabbix_server.log  # Логи сервера"
 echo "   sudo systemctl restart zabbix-server  # Перезапуск сервера"

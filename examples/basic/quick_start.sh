@@ -33,7 +33,7 @@ if [ $? -eq 0 ]; then
     echo "  • Grafana:          http://localhost:3000 (admin/admin)"
     echo "  • P2P Mesh:         UDP 51820"
     echo ""
-    echo "🔧 Для тестирования P2P mesh запустите:"
+    echo " Для тестирования P2P mesh запустите:"
     echo "  ./../../tests/p2p/test_p2p_mesh.sh"
 else
     echo "❌ Ошибка запуска CloudBridge Relay"

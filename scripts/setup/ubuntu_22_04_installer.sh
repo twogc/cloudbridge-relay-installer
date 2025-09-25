@@ -256,7 +256,7 @@ show_completion_info() {
     echo "   • Лог установки: $INSTALL_LOG"
     echo "   • Конфигурация: $CONFIG_FILE"
     echo ""
-    echo -e "\033[1;33m🔧 Следующие шаги:\033[0m"
+    echo -e "\033[1;33m Следующие шаги:\033[0m"
     echo "   1. Запустите Relay сервер: relay-start"
     echo "   2. Проверьте статус: relay-status"
     echo "   3. Запустите аудит безопасности: lynis audit system"

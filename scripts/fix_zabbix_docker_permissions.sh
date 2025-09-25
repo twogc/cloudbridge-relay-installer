@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🔧 Исправление прав доступа Zabbix Agent к Docker..."
+echo " Исправление прав доступа Zabbix Agent к Docker..."
 
 # Добавляем пользователя zabbix в группу docker
 echo "👤 Добавление пользователя zabbix в группу docker..."
