@@ -29,6 +29,11 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/circuitbreaker"
 	"github.com/twogc/cloudbridge-relay-installer/internal/health"
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
+	kubeauthz "github.com/twogc/cloudbridge-relay-installer/internal/kube/authz_policy"
+	clusterreg "github.com/twogc/cloudbridge-relay-installer/internal/kube/cluster_registry"
+	kubemetrics "github.com/twogc/cloudbridge-relay-installer/internal/kube/metrics"
+	kubeproxy "github.com/twogc/cloudbridge-relay-installer/internal/kube/proxy"
+	kubestreams "github.com/twogc/cloudbridge-relay-installer/internal/kube/streams"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 	"github.com/twogc/cloudbridge-relay-installer/internal/nat"
@@ -84,6 +89,15 @@ var (
 	// Local numeric counters for JSON status endpoint
 	activeConnCount int64
 	totalConnCount  int64
+
+	// kubeProxyBuilder is initialized once at server startup and reused for all /kube/{clusterId} requests.
+	kubeProxyBuilder *kubeproxy.Builder
+	// kubeMetrics holds all kube proxy metrics
+	kubeMetrics *kubemetrics.KubeProxyMetrics
+	// kubeStreamsHandler handles WebSocket streams for exec/attach/logs/port-forward
+	kubeStreamsHandler *kubestreams.Handler
+	// kubeAuthorizer handles authorization for kube proxy requests
+	kubeAuthorizer *kubeauthz.Authorizer
 )
 
 // Server represents the main relay server
@@ -764,6 +778,87 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		loggerInstance.Info("gRPC disabled, skipping gRPC integration initialization")
 	}
 
+	// --- Kube proxy registry & builder (v1) ---
+	// TODO: load clusters from cfg.Kubernetes.Clusters once schema is defined.
+	var clusters []*clusterreg.Cluster
+	for _, c := range cfg.Kubernetes.Clusters {
+		cluster := &clusterreg.Cluster{
+			ID:            c.ID,
+			APIServerURL:  c.APIServerURL,
+			SkipTLSVerify: c.SkipTLSVerify,
+		}
+		// Load CA and client cert/key from files if provided
+		if c.CA != "" {
+			if pemData, err := os.ReadFile(c.CA); err == nil {
+				cluster.CAPEM = pemData
+			}
+		}
+		if c.ClientCert != "" && c.ClientKey != "" {
+			if crt, err := os.ReadFile(c.ClientCert); err == nil {
+				cluster.ClientCertPEM = crt
+			}
+			if key, err := os.ReadFile(c.ClientKey); err == nil {
+				cluster.ClientKeyPEM = key
+			}
+		}
+		clusters = append(clusters, cluster)
+	}
+	defaultRegistry := clusterreg.NewStaticRegistry(clusters)
+	kubeProxyBuilder = kubeproxy.NewBuilder(defaultRegistry)
+	kubeMetrics = kubemetrics.NewKubeProxyMetrics()
+	kubeStreamsHandler = kubestreams.NewHandler(defaultRegistry, kubeMetrics)
+
+	// Initialize authorization policies
+	var tenantPolicies []*kubeauthz.TenantPolicy
+	for _, configPolicy := range cfg.Kubernetes.Policies {
+		policy := &kubeauthz.TenantPolicy{
+			TenantID: configPolicy.TenantID,
+			UserID:   configPolicy.UserID,
+			Groups:   configPolicy.Groups,
+		}
+
+		for _, configRule := range configPolicy.Rules {
+			rule := kubeauthz.Rule{
+				Name:       configRule.Name,
+				APIGroups:  configRule.APIGroups,
+				Resources:  configRule.Resources,
+				Namespaces: configRule.Namespaces,
+				Deny:       configRule.Deny,
+			}
+
+			// Convert string verbs to Verb type
+			for _, verbStr := range configRule.Verbs {
+				rule.Verbs = append(rule.Verbs, kubeauthz.Verb(verbStr))
+			}
+
+			policy.Rules = append(policy.Rules, rule)
+		}
+
+		tenantPolicies = append(tenantPolicies, policy)
+	}
+
+	policyManager := kubeauthz.NewPolicyManager(tenantPolicies)
+	kubeAuthorizer = kubeauthz.NewAuthorizer(policyManager)
+
+	// Start audit logging goroutine
+	go func() {
+		for auditEvent := range kubeAuthorizer.GetAuditChannel() {
+			// TODO: use structured logger instead of log.Printf
+			loggerInstance.Info("kube-proxy-audit",
+				zap.String("cluster_id", auditEvent.ClusterID),
+				zap.String("tenant_id", auditEvent.Request.TenantID),
+				zap.String("user_id", auditEvent.Request.UserID),
+				zap.String("verb", string(auditEvent.Request.Verb)),
+				zap.String("resource", auditEvent.Request.Resource),
+				zap.String("namespace", auditEvent.Request.Namespace),
+				zap.Bool("allowed", auditEvent.Response.Allowed),
+				zap.String("reason", auditEvent.Response.Reason),
+				zap.String("matched_rule", auditEvent.Response.MatchedRule),
+				zap.Duration("duration", auditEvent.Duration),
+			)
+		}
+	}()
+
 	return &Server{
 		config:               cfg,
 		logger:               loggerInstance,
@@ -1185,6 +1280,9 @@ func (s *Server) Start() error {
 				}
 			}()
 		}
+
+		// Kube proxy endpoint
+		httpMux.HandleFunc("/kube/", kubeProxyHTTPHandler)
 	}()
 	// P2P QUIC functionality is handled by the QUIC relay server
 
@@ -2092,4 +2190,136 @@ func (s *Server) generateTLSConfig() *tls.Config {
 		},
 		NextProtos: []string{"cloudbridge-p2p", "h3", "h3-29", "h3-28", "h3-27"},
 	}
+}
+
+// kubeProxyHTTPHandler handles incoming /kube/{clusterId}/... requests and reverses them
+// to the appropriate Kubernetes API server via kubeProxyBuilder.
+func kubeProxyHTTPHandler(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
+
+	if kubeProxyBuilder == nil || kubeMetrics == nil || kubeStreamsHandler == nil || kubeAuthorizer == nil {
+		http.Error(w, "kube proxy not initialized", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Extract clusterId
+	trimmed := strings.TrimPrefix(r.URL.Path, "/kube/")
+	parts := strings.SplitN(trimmed, "/", 2)
+	if len(parts) == 0 || parts[0] == "" {
+		http.Error(w, "clusterId required", http.StatusBadRequest)
+		return
+	}
+	clusterID := parts[0]
+
+	// Extract API path for authorization
+	apiPath := ""
+	if len(parts) > 1 {
+		apiPath = "/" + parts[1]
+	}
+
+	// Parse resource information for authorization
+	apiGroup, resource, namespace, name, err := kubeauthz.ParseResourceFromPath(apiPath)
+	if err != nil && apiPath != "" {
+		// Log the error but allow the request to proceed for non-standard paths
+		// TODO: add proper logging
+	}
+
+	// Extract authentication information (simplified - in production use proper JWT parsing)
+	tenantID := extractTenantID(r)
+	userID := extractUserID(r)
+	groups := extractGroups(r)
+
+	// Create authorization request
+	verb := kubeauthz.ParseVerbFromMethod(r.Method)
+	authReq := &kubeauthz.AuthRequest{
+		TenantID:   tenantID,
+		UserID:     userID,
+		Groups:     groups,
+		Verb:       verb,
+		APIGroup:   apiGroup,
+		Resource:   resource,
+		Namespace:  namespace,
+		Name:       name,
+		Path:       apiPath,
+		RemoteAddr: r.RemoteAddr,
+	}
+
+	// Check authorization
+	authResp := kubeAuthorizer.Authorize(authReq)
+	if !authResp.Allowed {
+		http.Error(w, "forbidden: "+authResp.Reason, http.StatusForbidden)
+		return
+	}
+
+	// TODO: Add clusterID to audit event - requires modifying Authorize method
+
+	// Check if this is a WebSocket upgrade request (exec/attach/logs/port-forward)
+	if kubestreams.IsWebSocketUpgrade(r) {
+		kubeStreamsHandler.ServeWebSocketProxy(w, r, clusterID)
+		return
+	}
+
+	proxy, err := kubeProxyBuilder.Build(clusterID)
+	if err != nil {
+		kubeMetrics.RecordUpstreamError(clusterID, "404")
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	// Wrap ResponseWriter to capture status code
+	wrapped := &responseWriter{ResponseWriter: w, statusCode: 200}
+	proxy.ServeHTTP(wrapped, r)
+
+	// Record metrics
+	duration := time.Since(startTime)
+	statusCode := strconv.Itoa(wrapped.statusCode)
+	kubeMetrics.RecordRequest(clusterID, string(verb), resource, statusCode, duration)
+}
+
+// extractTenantID extracts tenant ID from request headers or returns default
+func extractTenantID(r *http.Request) string {
+	// Try various headers that might contain tenant info
+	if tenantID := r.Header.Get("X-Tenant-ID"); tenantID != "" {
+		return tenantID
+	}
+	if tenantID := r.Header.Get("X-Forwarded-User"); tenantID != "" {
+		return tenantID // Use forwarded user as tenant for simplicity
+	}
+	// TODO: Parse JWT token and extract tenant ID from claims
+	return "default"
+}
+
+// extractUserID extracts user ID from request headers
+func extractUserID(r *http.Request) string {
+	if userID := r.Header.Get("X-Remote-User"); userID != "" {
+		return userID
+	}
+	if userID := r.Header.Get("X-Forwarded-User"); userID != "" {
+		return userID
+	}
+	// TODO: Parse JWT token and extract user ID from claims
+	return "anonymous"
+}
+
+// extractGroups extracts user groups from request headers
+func extractGroups(r *http.Request) []string {
+	if groups := r.Header.Get("X-Remote-Group"); groups != "" {
+		return strings.Split(groups, ",")
+	}
+	if groups := r.Header.Get("X-Forwarded-Groups"); groups != "" {
+		return strings.Split(groups, ",")
+	}
+	// TODO: Parse JWT token and extract groups from claims
+	return []string{"users"}
+}
+
+// responseWriter wraps http.ResponseWriter to capture the status code
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }

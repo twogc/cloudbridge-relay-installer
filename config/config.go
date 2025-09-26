@@ -344,6 +344,31 @@ type configRaw struct {
 		MaxRecvMsgSize   int    `json:"max_recv_msg_size"`
 		MaxSendMsgSize   int    `json:"max_send_msg_size"`
 	} `json:"grpc"`
+
+	// Kubernetes clusters for kube proxy
+	Kubernetes struct {
+		Clusters []struct {
+			ID            string `json:"id"`
+			APIServerURL  string `json:"api_server_url"`
+			CA            string `json:"ca,omitempty"`
+			ClientCert    string `json:"client_cert,omitempty"`
+			ClientKey     string `json:"client_key,omitempty"`
+			SkipTLSVerify bool   `json:"skip_tls_verify"`
+		} `json:"clusters"`
+		Policies []struct {
+			TenantID string   `json:"tenant_id"`
+			UserID   string   `json:"user_id,omitempty"`
+			Groups   []string `json:"groups,omitempty"`
+			Rules    []struct {
+				Name       string   `json:"name"`
+				Verbs      []string `json:"verbs"`
+				APIGroups  []string `json:"api_groups,omitempty"`
+				Resources  []string `json:"resources"`
+				Namespaces []string `json:"namespaces,omitempty"`
+				Deny       bool     `json:"deny,omitempty"`
+			} `json:"rules"`
+		} `json:"policies"`
+	} `json:"kubernetes"`
 }
 
 // Config represents the server configuration
@@ -804,6 +829,31 @@ type Config struct {
 		MaxRecvMsgSize   int           `json:"max_recv_msg_size"`
 		MaxSendMsgSize   int           `json:"max_send_msg_size"`
 	} `json:"grpc"`
+
+	// Kubernetes proxy settings
+	Kubernetes struct {
+		Clusters []struct {
+			ID            string
+			APIServerURL  string
+			CA            string
+			ClientCert    string
+			ClientKey     string
+			SkipTLSVerify bool
+		}
+		Policies []struct {
+			TenantID string
+			UserID   string
+			Groups   []string
+			Rules    []struct {
+				Name       string
+				Verbs      []string
+				APIGroups  []string
+				Resources  []string
+				Namespaces []string
+				Deny       bool
+			}
+		}
+	} `json:"kubernetes"`
 }
 
 // HealthCheckConfig represents a health check configuration
@@ -1153,6 +1203,65 @@ func Load(path string) (*Config, error) {
 	config.GRPC.KeepaliveTimeout = parseDuration(raw.GRPC.KeepaliveTimeout, 10*time.Second)
 	config.GRPC.MaxRecvMsgSize = raw.GRPC.MaxRecvMsgSize
 	config.GRPC.MaxSendMsgSize = raw.GRPC.MaxSendMsgSize
+
+	// Kubernetes
+	for _, cluster := range raw.Kubernetes.Clusters {
+		config.Kubernetes.Clusters = append(config.Kubernetes.Clusters, struct {
+			ID            string
+			APIServerURL  string
+			CA            string
+			ClientCert    string
+			ClientKey     string
+			SkipTLSVerify bool
+		}{
+			ID:            cluster.ID,
+			APIServerURL:  cluster.APIServerURL,
+			CA:            cluster.CA,
+			ClientCert:    cluster.ClientCert,
+			ClientKey:     cluster.ClientKey,
+			SkipTLSVerify: cluster.SkipTLSVerify,
+		})
+	}
+
+	for _, policy := range raw.Kubernetes.Policies {
+		configPolicy := struct {
+			TenantID string
+			UserID   string
+			Groups   []string
+			Rules    []struct {
+				Name       string
+				Verbs      []string
+				APIGroups  []string
+				Resources  []string
+				Namespaces []string
+				Deny       bool
+			}
+		}{
+			TenantID: policy.TenantID,
+			UserID:   policy.UserID,
+			Groups:   policy.Groups,
+		}
+
+		for _, rule := range policy.Rules {
+			configPolicy.Rules = append(configPolicy.Rules, struct {
+				Name       string
+				Verbs      []string
+				APIGroups  []string
+				Resources  []string
+				Namespaces []string
+				Deny       bool
+			}{
+				Name:       rule.Name,
+				Verbs:      rule.Verbs,
+				APIGroups:  rule.APIGroups,
+				Resources:  rule.Resources,
+				Namespaces: rule.Namespaces,
+				Deny:       rule.Deny,
+			})
+		}
+
+		config.Kubernetes.Policies = append(config.Kubernetes.Policies, configPolicy)
+	}
 
 	// Set defaults for gRPC if not specified
 	if config.GRPC.Port == 0 {

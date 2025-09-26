@@ -1,0 +1,333 @@
+# CloudBridge Relay RBAC Configuration
+# RBAC-карта для интеграции ZITADEL ролей с Kubernetes RBAC
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudbridge-rbac
+  labels:
+    name: cloudbridge-rbac
+    app.kubernetes.io/part-of: cloudbridge-relay
+---
+# ClusterRole для cluster-admin уровня доступа
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudbridge-cluster-admin
+  labels:
+    app.kubernetes.io/part-of: cloudbridge-relay
+    rbac.cloudbridge.io/level: cluster-admin
+rules:
+# Полный доступ ко всем ресурсам
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+# Доступ к non-resource URLs
+- nonResourceURLs: ["*"]
+  verbs: ["*"]
+---
+# ClusterRole для tenant-admin уровня доступа
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudbridge-tenant-admin
+  labels:
+    app.kubernetes.io/part-of: cloudbridge-relay
+    rbac.cloudbridge.io/level: tenant-admin
+rules:
+# Core resources - полный доступ
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims", "serviceaccounts"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# Pod subresources
+- apiGroups: [""]
+  resources: ["pods/exec", "pods/attach", "pods/log", "pods/portforward", "pods/proxy"]
+  verbs: ["get", "create"]
+# Apps resources
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# Networking
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# Extensions
+- apiGroups: ["extensions"]
+  resources: ["ingresses", "deployments", "replicasets", "daemonsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# Autoscaling
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+# Batch resources
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+# ClusterRole для tenant-reader уровня доступа
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudbridge-tenant-reader
+  labels:
+    app.kubernetes.io/part-of: cloudbridge-relay
+    rbac.cloudbridge.io/level: tenant-reader
+rules:
+# Core resources - только чтение
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "persistentvolumeclaims", "serviceaccounts", "namespaces"]
+  verbs: ["get", "list", "watch"]
+# Pod logs и proxy (только чтение)
+- apiGroups: [""]
+  resources: ["pods/log", "pods/proxy"]
+  verbs: ["get"]
+# Apps resources - только чтение
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+# Networking - только чтение  
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "watch"]
+# Batch resources - только чтение
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+---
+# ClusterRole для k8s-viewer уровня доступа
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudbridge-k8s-viewer
+  labels:
+    app.kubernetes.io/part-of: cloudbridge-relay
+    rbac.cloudbridge.io/level: k8s-viewer
+rules:
+# Основные read-only права
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "namespaces", "nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+# Доступ к logs
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
+---
+# ClusterRole для k8s-editor уровня доступа
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudbridge-k8s-editor
+  labels:
+    app.kubernetes.io/part-of: cloudbridge-relay
+    rbac.cloudbridge.io/level: k8s-editor
+rules:
+# Расширенные права (без delete для безопасности)
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods/exec", "pods/attach", "pods/log", "pods/portforward"]
+  verbs: ["get", "create"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+# ClusterRoleBinding для system service account (relay-server)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudbridge-relay-server-binding
+  labels:
+    app.kubernetes.io/part-of: cloudbridge-relay
+subjects:
+- kind: ServiceAccount
+  name: relay-server
+  namespace: cloudbridge
+roleRef:
+  kind: ClusterRole
+  name: cloudbridge-cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+# ClusterRoleBinding для пользователей с ролью cluster-admin в JWT
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudbridge-jwt-cluster-admin
+  labels:
+    app.kubernetes.io/part-of: cloudbridge-relay
+    rbac.cloudbridge.io/source: jwt-claim
+subjects:
+# Маппинг JWT claim roles=cluster-admin
+- kind: User
+  name: "jwt:roles=cluster-admin"
+  apiGroup: rbac.authorization.k8s.io
+# Альтернативный формат с tenant_id
+- kind: User  
+  name: "jwt:tenant_id=*:roles=cluster-admin"
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cloudbridge-cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+# ServiceAccount для relay-server
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: relay-server
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/component: service-account
+automountServiceAccountToken: true
+---
+# ConfigMap с RBAC маппингом для CloudBridge Relay
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudbridge-rbac-mapping
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/component: rbac-config
+data:
+  rbac-mapping.yaml: |
+    # RBAC Mapping Configuration для CloudBridge Relay
+    rbac_mappings:
+      # Глобальные роли (применяются ко всем namespace)
+      global_roles:
+        - jwt_role: "cluster-admin"
+          k8s_cluster_role: "cloudbridge-cluster-admin"
+          description: "Полный доступ к кластеру"
+          
+        - jwt_role: "k8s-viewer"
+          k8s_cluster_role: "cloudbridge-k8s-viewer"
+          description: "Глобальный просмотр ресурсов"
+          
+        - jwt_role: "k8s-editor"
+          k8s_cluster_role: "cloudbridge-k8s-editor"
+          description: "Глобальное редактирование ресурсов"
+
+      # Tenant-specific роли (применяются к namespace с префиксом tenant)  
+      tenant_roles:
+        - jwt_role: "tenant-admin"
+          k8s_role: "cloudbridge-tenant-admin"
+          namespace_pattern: "ns-{tenant_id}"
+          description: "Админ доступ к tenant namespace"
+          
+        - jwt_role: "tenant-reader"
+          k8s_role: "cloudbridge-tenant-reader"
+          namespace_pattern: "ns-{tenant_id}"
+          description: "Доступ на чтение к tenant namespace"
+
+      # Запрещенные комбинации
+      denied_mappings:
+        - jwt_role: "*"
+          k8s_namespace: "kube-system"
+          reason: "System namespace защищен"
+          
+        - jwt_role: "*"
+          k8s_namespace: "kube-public"
+          reason: "Public namespace защищен"
+          
+        - tenant_id: "default"
+          jwt_role: "cluster-admin"
+          reason: "Default tenant не может иметь cluster-admin права"
+
+  # Пример OPA Rego политики  
+  rbac-policy.rego: |
+    package cloudbridge.rbac
+
+    import future.keywords.if
+    import future.keywords.in
+
+    # Основное правило авторизации
+    allow if {
+        # Проверка глобальных ролей
+        global_role_allowed
+    }
+
+    allow if {
+        # Проверка tenant ролей
+        tenant_role_allowed
+    }
+
+    # Глобальные роли
+    global_role_allowed if {
+        input.jwt.roles[_] == "cluster-admin"
+        not denied_access
+    }
+
+    global_role_allowed if {
+        input.jwt.roles[_] == "k8s-viewer"
+        input.request.verb in ["get", "list", "watch"]
+        not denied_access
+    }
+
+    global_role_allowed if {
+        input.jwt.roles[_] == "k8s-editor" 
+        input.request.verb in ["get", "list", "watch", "create", "update", "patch"]
+        not denied_access
+    }
+
+    # Tenant роли
+    tenant_role_allowed if {
+        "tenant-admin" in input.jwt.roles
+        input.request.namespace == sprintf("ns-%s", [input.jwt.tenant_id])
+        not denied_access
+    }
+
+    tenant_role_allowed if {
+        "tenant-reader" in input.jwt.roles
+        input.request.namespace == sprintf("ns-%s", [input.jwt.tenant_id])
+        input.request.verb in ["get", "list", "watch"]
+        not denied_access
+    }
+
+    # Запрещенный доступ
+    denied_access if {
+        input.request.namespace in ["kube-system", "kube-public", "kube-node-lease"]
+        not "cluster-admin" in input.jwt.roles
+    }
+
+    denied_access if {
+        input.jwt.tenant_id == "default"
+        "cluster-admin" in input.jwt.roles
+    }
+
+    # Audit лог
+    audit_log := {
+        "timestamp": time.now_ns(),
+        "user": input.jwt.sub,
+        "tenant_id": input.jwt.tenant_id,
+        "client_id": input.jwt.client_id,
+        "action": input.request.verb,
+        "resource": input.request.resource,
+        "namespace": input.request.namespace,
+        "roles": input.jwt.roles,
+        "allowed": allow,
+        "session_id": input.jwt.audit_session_id
+    }
+
+  # Список системных namespace (защищенные)
+  system-namespaces.txt: |
+    kube-system
+    kube-public
+    kube-node-lease
+    cert-manager
+    ingress-nginx
+    monitoring
+    logging
+    backup
+    zitadel
+    cloudbridge
+    cloudbridge-rbac

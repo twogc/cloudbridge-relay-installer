@@ -1,0 +1,284 @@
+# ZITADEL Helm Values для CloudBridge Relay
+# Конфигурация с поддержкой custom scopes, claims и JWT templates
+
+zitadel:
+  # Основные настройки
+  masterkeySecretName: zitadel-masterkey
+  
+  # Публичная конфигурация
+  configmapConfig:
+    ExternalDomain: idp.example.com
+    ExternalSecure: true
+    ExternalPort: 443
+    
+    # Настройки первой инстанции
+    FirstInstance:
+      Org:
+        Name: cloudbridge
+        LoginClient:
+          Machine:
+            Username: 'zitadel-admin'
+            Name: 'CloudBridge Admin Client'
+          Pat:
+            ExpirationDate: '2029-12-31T23:59:59Z'
+    
+    # Настройки токенов
+    DefaultInstance:
+      AccessTokenLifetime: 15m
+      RefreshTokenLifetime: 8h
+      IdTokenLifetime: 1h
+      DefaultLoginPolicy:
+        AllowUsernamePassword: true
+        AllowRegister: true
+        AllowExternalIdp: false
+        ForceMFA: false
+        PasswordlessType: NOT_ALLOWED
+        HidePasswordReset: false
+        IgnoreUnknownUsernames: false
+        DefaultRedirectURI: https://relay.2gc.space/auth/callback
+      
+      # Настройки OIDC
+      OIDCSettings:
+        AccessTokenLifetime: 900s     # 15 минут
+        IdTokenLifetime: 3600s        # 1 час  
+        RefreshTokenLifetime: 28800s  # 8 часов
+        RefreshTokenIdleExpiration: 86400s  # 24 часа
+      
+      # Настройки безопасности
+      SecurityPolicy:
+        EnabledIdps: []
+        MfaInitSkipLifetime: 720h
+        SecondFactorCheckLifetime: 18h
+        MultiFactorCheckLifetime: 12h
+  
+  # Приватная конфигурация
+  secretConfig:
+    # База данных
+    Database:
+      Postgres:
+        Host: pg-postgresql.zitadel.svc.cluster.local
+        Port: 5432
+        Database: zitadel
+        User:
+          Username: zitadel
+          Password: "" # Будет получен из секрета
+        Admin:
+          Username: postgres  
+          Password: "" # Будет получен из секрета
+        SSL:
+          Mode: disable
+    
+    # TLS настройки
+    TLS:
+      Enabled: false
+      Mode: external
+    
+    # Настройки логирования
+    Log:
+      Level: info
+      Format: json
+    
+    # Настройки мониторинга
+    Metrics:
+      Type: prometheus
+    
+    # Настройки токенов (приватные)
+    SystemDefaults:
+      AccessTokenLifetime: 900s
+      IdTokenLifetime: 3600s
+      RefreshTokenLifetime: 28800s
+      
+      # Настройки ключей подписи
+      KeyConfig:
+        Size: 2048
+        CertificateSize: 2048
+  
+  # Настройки развертывания
+  init:
+    activeDeadlineSeconds: 3600
+    backoffLimit: 3
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+  
+  setup:
+    activeDeadlineSeconds: 3600
+    backoffLimit: 3
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+# Ресурсы основного контейнера
+resources:
+  requests:
+    cpu: 500m
+    memory: 2Gi
+  limits:
+    cpu: "2"
+    memory: 4Gi
+
+# Настройки автоскалирования
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Настройки сети
+service:
+  type: ClusterIP
+  ports:
+    http:
+      port: 8080
+      targetPort: 8080
+    grpc:
+      port: 8081
+      targetPort: 8081
+    metrics:
+      port: 9090
+      targetPort: 9090
+
+# Ingress настройки  
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    nginx.ingress.kubernetes.io/client-max-body-size: "1m"
+  hosts:
+    - host: idp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - idp.example.com
+      secretName: zitadel-tls
+
+# Login UI (отключен, используем основной UI)
+login:
+  enabled: false
+
+# Дополнительные переменные окружения
+extraEnv:
+  - name: TZ
+    value: "Europe/Moscow"
+  - name: ZITADEL_LOG_LEVEL
+    value: "info"
+  - name: ZITADEL_LOG_FORMAT
+    value: "json"
+
+# Настройки безопасности контейнера
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+# Persistent Volume для конфигурации (если нужно)
+persistence:
+  enabled: false
+  
+# Сервисный аккаунт
+serviceAccount:
+  create: true
+  name: zitadel
+  annotations: {}
+
+# Network policies
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - port: 8080
+          protocol: TCP
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - port: 9090
+          protocol: TCP
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Affinity настройки
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - zitadel
+          topologyKey: kubernetes.io/hostname
+
+# Tolerations
+tolerations: []
+
+# Node selector
+nodeSelector: {}
+
+# Probe настройки
+probes:
+  liveness:
+    enabled: true
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  readiness:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+    successThreshold: 1
+  startup:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+    successThreshold: 1
+
+# Дополнительные labels
+labels:
+  app.kubernetes.io/part-of: cloudbridge-relay
+  app.kubernetes.io/component: identity-provider
+  environment: production
+  tenant: cloudbridge
+
+# Дополнительные аннотации
+annotations:
+  deployment.kubernetes.io/revision: "1"
+  meta.helm.sh/release-name: zitadel
+  meta.helm.sh/release-namespace: zitadel

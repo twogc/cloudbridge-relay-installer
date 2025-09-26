@@ -1,0 +1,169 @@
+{
+  "server": {
+    "address": ":8443",
+    "port": 8443,
+    "timeout": "30s",
+    "max_tunnels": 1000,
+    "ping_interval": "30s",
+    "cleanup_interval": "60s"
+  },
+  "security": {
+    "tls_enabled": true,
+    "cert_file": "/etc/relay/tls/tls.crt",
+    "key_file": "/etc/relay/tls/tls.key"
+  },
+  "metrics": {
+    "enabled": true,
+    "port": 5551,
+    "path": "/metrics"
+  },
+  "api": {
+    "enabled": true,
+    "port": 8080,
+    "version": "v1"
+  },
+  "grpc": {
+    "enabled": true,
+    "port": 8444,
+    "tls_enabled": true,
+    "cert_file": "/etc/relay/tls/tls.crt",
+    "key_file": "/etc/relay/tls/tls.key",
+    "keepalive_ping": "15s",
+    "keepalive_timeout": "10s"
+  },
+  "kubernetes": {
+    "clusters": [
+      {
+        "id": "minikube",
+        "api_server_url": "https://192.168.49.2:8443",
+        "ca": "/etc/relay/clusters/minikube/ca.crt",
+        "client_cert": "/etc/relay/clusters/minikube/client.crt",
+        "client_key": "/etc/relay/clusters/minikube/client.key",
+        "skip_tls_verify": false
+      },
+      {
+        "id": "dev-cluster",
+        "api_server_url": "https://dev-k8s.example.com:6443",
+        "ca": "/etc/relay/clusters/dev/ca.crt",
+        "client_cert": "/etc/relay/clusters/dev/client.crt",
+        "client_key": "/etc/relay/clusters/dev/client.key",
+        "skip_tls_verify": false
+      },
+      {
+        "id": "staging-cluster",
+        "api_server_url": "https://staging-k8s.example.com:6443",
+        "ca": "/etc/relay/clusters/staging/ca.crt",
+        "client_cert": "/etc/relay/clusters/staging/client.crt",
+        "client_key": "/etc/relay/clusters/staging/client.key",
+        "skip_tls_verify": false
+      }
+    ],
+    "policies": [
+      {
+        "tenant_id": "default",
+        "user_id": "",
+        "groups": ["users"],
+        "rules": [
+          {
+            "name": "default-read-only",
+            "verbs": ["get", "list", "watch"],
+            "api_groups": [""],
+            "resources": ["pods", "services", "configmaps", "secrets"],
+            "namespaces": ["default"]
+          }
+        ]
+      },
+      {
+        "tenant_id": "dev-team",
+        "user_id": "",
+        "groups": ["developers", "qa"],
+        "rules": [
+          {
+            "name": "dev-full-access",
+            "verbs": ["get", "list", "watch", "create", "update", "patch", "delete"],
+            "api_groups": ["", "apps", "extensions"],
+            "resources": ["pods", "services", "deployments", "configmaps", "secrets", "ingresses"],
+            "namespaces": ["development", "testing"]
+          },
+          {
+            "name": "dev-exec-logs",
+            "verbs": ["exec", "attach", "logs", "portforward"],
+            "api_groups": [""],
+            "resources": ["pods", "pods/exec", "pods/attach", "pods/log", "pods/portforward"],
+            "namespaces": ["development", "testing"]
+          },
+          {
+            "name": "staging-read-only",
+            "verbs": ["get", "list", "watch", "logs"],
+            "api_groups": ["", "apps"],
+            "resources": ["pods", "services", "deployments", "pods/log"],
+            "namespaces": ["staging"]
+          },
+          {
+            "name": "deny-production",
+            "verbs": ["*"],
+            "api_groups": ["*"],
+            "resources": ["*"],
+            "namespaces": ["production", "kube-system"],
+            "deny": true
+          }
+        ]
+      },
+      {
+        "tenant_id": "ops-team", 
+        "user_id": "",
+        "groups": ["operators", "sre"],
+        "rules": [
+          {
+            "name": "ops-cluster-admin",
+            "verbs": ["get", "list", "watch", "create", "update", "patch", "delete"],
+            "api_groups": ["*"],
+            "resources": ["*"],
+            "namespaces": []
+          },
+          {
+            "name": "ops-exec-access",
+            "verbs": ["exec", "attach", "logs", "portforward", "proxy"],
+            "api_groups": [""],
+            "resources": ["pods", "pods/exec", "pods/attach", "pods/log", "pods/portforward", "services/proxy", "nodes/proxy"],
+            "namespaces": []
+          }
+        ]
+      },
+      {
+        "tenant_id": "readonly-viewer",
+        "user_id": "",
+        "groups": ["viewers"],
+        "rules": [
+          {
+            "name": "global-read-only",
+            "verbs": ["get", "list", "watch"],
+            "api_groups": ["", "apps", "extensions", "networking.k8s.io"],
+            "resources": ["pods", "services", "deployments", "ingresses", "configmaps"],
+            "namespaces": ["default", "development", "staging"]
+          },
+          {
+            "name": "logs-only",
+            "verbs": ["logs"],
+            "api_groups": [""],
+            "resources": ["pods/log"],
+            "namespaces": ["default", "development", "staging"]
+          },
+          {
+            "name": "deny-exec-portforward",
+            "verbs": ["exec", "attach", "portforward", "proxy"],
+            "api_groups": [""],
+            "resources": ["pods/exec", "pods/attach", "pods/portforward"],
+            "namespaces": ["*"],
+            "deny": true
+          }
+        ]
+      }
+    ]
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "output": "stdout"
+  }
+}
