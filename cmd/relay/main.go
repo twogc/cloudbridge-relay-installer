@@ -1281,8 +1281,13 @@ func (s *Server) Start() error {
 			}()
 		}
 
+		// Wait for kubectl proxy components to initialize
+		time.Sleep(1 * time.Second)
+
 		// Kube proxy endpoint
 		httpMux.HandleFunc("/kube/", kubeProxyHTTPHandler)
+
+		log.Printf("kubectl proxy endpoint registered: /kube/")
 	}()
 	// P2P QUIC functionality is handled by the QUIC relay server
 
