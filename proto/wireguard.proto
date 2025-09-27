@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package wireguard.v1;
+
+option go_package = "github.com/twogc/cloudbridge-relay-installer/proto/wireguard/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// WireGuard Service для управления туннелями
+service WireGuardService {
+  // Создать WireGuard туннель для tenant'а
+  rpc CreateTunnel(CreateWireGuardTunnelRequest) returns (CreateWireGuardTunnelResponse);
+  
+  // Удалить WireGuard туннель
+  rpc DeleteTunnel(DeleteWireGuardTunnelRequest) returns (DeleteWireGuardTunnelResponse);
+  
+  // Получить информацию о туннеле
+  rpc GetTunnel(GetWireGuardTunnelRequest) returns (GetWireGuardTunnelResponse);
+  
+  // Получить список всех туннелей
+  rpc ListTunnels(ListWireGuardTunnelsRequest) returns (ListWireGuardTunnelsResponse);
+  
+  // Получить статус WireGuard сервера
+  rpc GetStatus(GetWireGuardStatusRequest) returns (GetWireGuardStatusResponse);
+  
+  // Получить метрики WireGuard
+  rpc GetMetrics(GetWireGuardMetricsRequest) returns (GetWireGuardMetricsResponse);
+  
+  // Обновить конфигурацию WireGuard сервера
+  rpc UpdateConfig(UpdateWireGuardConfigRequest) returns (UpdateWireGuardConfigResponse);
+}
+
+// Запрос на создание WireGuard туннеля
+message CreateWireGuardTunnelRequest {
+  string tenant_id = 1;
+  string request_id = 2;
+  map<string, string> metadata = 3;
+}
+
+// Ответ на создание WireGuard туннеля
+message CreateWireGuardTunnelResponse {
+  bool success = 1;
+  string message = 2;
+  string request_id = 3;
+  string public_key = 4;
+  string endpoint = 5;
+  int32 port = 6;
+  string client_config = 7;
+}
+
+// Запрос на удаление WireGuard туннеля
+message DeleteWireGuardTunnelRequest {
+  string tenant_id = 1;
+  string request_id = 2;
+}
+
+// Ответ на удаление WireGuard туннеля
+message DeleteWireGuardTunnelResponse {
+  bool success = 1;
+  string message = 2;
+  string request_id = 3;
+}
+
+// Запрос на получение информации о туннеле
+message GetWireGuardTunnelRequest {
+  string tenant_id = 1;
+  string request_id = 2;
+}
+
+// Ответ с информацией о туннеле
+message GetWireGuardTunnelResponse {
+  bool success = 1;
+  string message = 2;
+  string request_id = 3;
+  WireGuardTunnelInfo tunnel = 4;
+}
+
+// Запрос на получение списка туннелей
+message ListWireGuardTunnelsRequest {
+  string request_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+// Ответ со списком туннелей
+message ListWireGuardTunnelsResponse {
+  bool success = 1;
+  string message = 2;
+  string request_id = 3;
+  repeated WireGuardTunnelInfo tunnels = 4;
+}
+
+// Запрос на получение статуса WireGuard сервера
+message GetWireGuardStatusRequest {
+  string request_id = 1;
+}
+
+// Ответ со статусом WireGuard сервера
+message GetWireGuardStatusResponse {
+  bool success = 1;
+  string message = 2;
+  string request_id = 3;
+  map<string, string> status = 4;
+}
+
+// Запрос на получение метрик WireGuard
+message GetWireGuardMetricsRequest {
+  string request_id = 1;
+}
+
+// Ответ с метриками WireGuard
+message GetWireGuardMetricsResponse {
+  bool success = 1;
+  string message = 2;
+  string request_id = 3;
+  map<string, string> metrics = 4;
+}
+
+// Запрос на обновление конфигурации WireGuard
+message UpdateWireGuardConfigRequest {
+  string request_id = 1;
+  bool force_reload = 2;
+}
+
+// Ответ на обновление конфигурации WireGuard
+message UpdateWireGuardConfigResponse {
+  bool success = 1;
+  string message = 2;
+  string request_id = 3;
+}
+
+// Информация о WireGuard туннеле
+message WireGuardTunnelInfo {
+  string tenant_id = 1;
+  string public_key = 2;
+  string endpoint = 3;
+  int32 port = 4;
+  bool is_active = 5;
+  int64 bytes_received = 6;
+  int64 bytes_sent = 7;
+  int64 last_connected = 8; // Unix timestamp
+  google.protobuf.Timestamp created_at = 9;
+}

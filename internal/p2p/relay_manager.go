@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/database"
+	"github.com/twogc/cloudbridge-relay-installer/internal/wireguard"
 )
 
 // RelayManager управляет P2P relay соединениями
@@ -21,6 +22,7 @@ type RelayManager struct {
 	subnetCounter   int32                // Счетчик для динамического выделения подсетей
 	allocatedNets   map[string]string    // tenantID -> network CIDR
 	repository      *database.Repository // Database repository for IPAM persistence
+	wireguardManager *wireguard.WireGuardTenantManager // WireGuard management for VIP tenants
 	mutex           sync.RWMutex
 	logger          *zap.Logger
 	ctx             context.Context
@@ -82,6 +84,9 @@ func NewRelayManager(logger *zap.Logger, repository *database.Repository) *Relay
 		ctx:             ctx,
 		cancel:          cancel,
 	}
+	
+	// Инициализируем WireGuard менеджер для VIP tenant'ов
+	rm.wireguardManager = wireguard.NewWireGuardTenantManager(repository, logger)
 
 	// Инициализируем IPAM данные из базы данных
 	err := rm.initializeIPAMFromDB()
