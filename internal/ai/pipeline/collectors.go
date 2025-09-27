@@ -561,8 +561,8 @@ func (rmc *RelayMetricsCollector) fetchRelayStats() (*RelayStats, error) {
 		// Если метрики недоступны, попробуем получить данные через API
 		rmc.logger.Warn("Failed to fetch relay metrics, trying API endpoint", zap.Error(err))
 
-		// Попытка получить данные через API endpoint
-		apiURL := fmt.Sprintf("%s/api/v1/stats", rmc.relayURL)
+		// Попытка получить данные через health endpoint
+		apiURL := fmt.Sprintf("%s/health", rmc.relayURL)
 		apiResp, apiErr := rmc.httpClient.Get(apiURL)
 		if apiErr != nil {
 			rmc.logger.Warn("Failed to fetch relay API stats, using zero values", zap.Error(apiErr))

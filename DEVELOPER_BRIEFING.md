@@ -39,19 +39,24 @@
 ## 📊 **Текущее состояние (по результатам тестирования DevOps)**
 
 ### **ЧТО УЖЕ РАБОТАЕТ:**
-- **Базовая инфраструктура:** Клиенты запускаются и регистрируются
-- **Сетевые интерфейсы:** Настроены (10.100.77.77, 10.100.77.78)
-- **Relay сервер:** Доступен и отвечает на все порты
-- **API endpoints:** HTTP API (8080) и P2P API (8082) работают
-- **JWT аутентификация:** Валидация токенов работает
-- **Все протоколы:** STUN (19302), QUIC (9090), Enhanced QUIC (9092), MASQUE (8443)
+- **gRPC сервер (TLS 1.3):** порт 8444 (NodePort 30844), Control/Tunnel/Heartbeat — OK
+- **JWT аутентификация:** проверка подписи и авторизация — OK
+- **Метрики/health:** порт 5551, endpoints `/metrics` и `/health` — OK
+- **Kubernetes:** Deployment/Service/NetworkPolicy обновлены под gRPC 8444 — OK
+- **Туннели через gRPC:** создание и heartbeat — OK
+- **MASQUE/Datagrams/STUN/TURN:** не включены (в roadmap)
 
-### **❌ ЧТО ТРЕБУЕТ ДОРАБОТКИ:**
-- ❌ **CONNECT-UDP/CONNECT-IP:** Нет реализации MASQUE протокола
-- ❌ **HTTP Datagrams:** Нет поддержки QUIC datagrams
-- ❌ **ICE/STUN/TURN слой:** Нет метрик NAT-типов/успеха
-- ❌ **WG-профиль:** Нет поддержки legacy VPN с ограничениями
-- ❌ **Downgrade на WS/TCP:** Нет fallback для блокирующих сетей
+### **🆕 Актуальный Roadmap (Q4 2025)**
+| Приоритет | Feature | Статус | Следующие шаги |
+|-----------|---------|--------|---------------|
+| 🔥 | MASQUE / CONNECT-UDP & CONNECT-IP | **Design** готов | PoC на базе `quic-go` + unit-benchmarks |
+| 🔥 | QUIC Datagrams (HTTP Datagrams) | **0%** | Включить `EnableDatagrams=true`, реализовать mux-layer |
+| 🔥 | NAT Telemetry (ICE/STUN/TURN) | **10%** | Scaffolding; добавить Prometheus-метрики success-rate и типов NAT |
+| ⚡ | WireGuard profile (legacy site-to-site) | **In Progress** | CLI опция `--wg-profile`, Helm secret c конфигом |
+| ⚡ | TCP/WebSocket fallback | **TCP готов / WS stub** | Feature-flag `--tcp-fallback`, e2e/CI тесты |
+| 💤 | QUIC 0-RTT optimisation | **Backlog** | Анализ CVE + optional enable per-tenant |
+
+> Обновлено: 26 сен 2025 после интеграции gRPC + TLS 1.3, полноценного клиента и mesh-routing.
 
 ## 🎯 **Основные задачи для разработчика**
 
@@ -253,3 +258,20 @@ curl http://localhost:8082/health
 **🎯 Цель: Создать QUIC-first + MASQUE сеть с CONNECT-UDP/CONNECT-IP, ICE/STUN/TURN слоем и WG-профилем для legacy VPN!**
 
 **Задача: Реализовать QUIC-first + MASQUE архитектуру с тремя ключевыми компонентами: CONNECT-UDP/CONNECT-IP, ICE/STUN/TURN слой с метриками NAT, и WG-профиль для site-to-site/legacy с fallback на WS/TCP.**
+
+## 🔒 Future Risks & Mitigations (Mesh / QUIC)
+
+| # | Risk | Evidence | Technical Mitigations |
+|---|------|-----------|-----------------------|
+| 1 | High CPU load with QUIC/TLS (user-space crypto) | Fastly 2023 «QUIC vs TCP»; arXiv 2310.09423; SIGCOMM’20 | AES-NI/ChaCha offload, UDP GSO/GRO, XDP/DPDK fast-path, NUMA pinning, per-tenant rate-limit |
+| 2 | Mesh over-connect (O(N²) links) | Princeton «Scalable Routing Overlay Networks» | Sparse-mesh pruning, `max_peers` в JWT, latency-aware peer selection |
+| 3 | Troubleshooting complexity (route loops, flaps) | Overlay/Underlay study (DIV-2020) | Control-plane telemetry, OpenTelemetry tracing, alerts on asymmetric routes |
+| 4 | UDP blocks / Sym-NAT / DPI | RFC 9000; enterprise firewall tests | TCP-fallback (443), STUN/ICE, QUIC disguise, disable 0-RTT by default |
+| 5 | Overhead of many concurrent streams | Google QUIC scalability papers | Stream pool & priority, BBR v2, adaptive windows, hard caps per peer |
+
+Backlog items (Q4 2025):
+1. eBPF CPU profiling & syscall heat-maps.
+2. XDP fast-path PoC on ≥10 Gbps relays.
+3. Sparse-mesh scheduler in `internal/p2p/relay_manager.go`.
+4. OpenTelemetry exporter in `internal/metrics`.
+5. Feature-flag `relay.tcp_fallback.enabled` (TLS-over-TCP mode).

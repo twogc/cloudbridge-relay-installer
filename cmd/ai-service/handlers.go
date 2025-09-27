@@ -52,13 +52,13 @@ func NewAIService(aiService *ai.Service, logger *zap.Logger) *AIService {
 	accountID := os.Getenv("CLOUDFLARE_ACCOUNT_ID")
 	apiToken := os.Getenv("CLOUDFLARE_AI_TOKEN")
 	model := os.Getenv("CLOUDFLARE_AI_MODEL")
-	
+
 	if accountID != "" && apiToken != "" {
 		if model == "" {
 			model = "@cf/meta/llama-2-7b-chat-int8"
 		}
 		cloudflareAI = analytics.NewCloudflareAIClient(accountID, apiToken, model, 2000)
-		logger.Info("Cloudflare AI client configured", 
+		logger.Info("Cloudflare AI client configured",
 			zap.String("model", model),
 			zap.String("account_id", accountID))
 	} else {
@@ -71,6 +71,16 @@ func NewAIService(aiService *ai.Service, logger *zap.Logger) *AIService {
 		notificationSystem: notificationSystem,
 		cloudflareAI:       cloudflareAI,
 	}
+}
+
+// getAnomalyAccuracy получает реальную accuracy от AI Service или возвращает fallback
+func (s *AIService) getAnomalyAccuracy() float64 {
+	if anomalyStats := s.aiService.GetAnomalyStats(); anomalyStats != nil {
+		if acc, ok := anomalyStats["accuracy"].(float64); ok {
+			return acc
+		}
+	}
+	return 0.95 // fallback value
 }
 
 // SetupRoutes настраивает маршруты для AI API
@@ -175,13 +185,27 @@ func (s *AIService) DetectAnomaly(c *gin.Context) {
 // GetAnomalyStatus возвращает статус детектора аномалий
 func (s *AIService) GetAnomalyStatus(c *gin.Context) {
 	status := s.aiService.GetStatus()
+	anomalyStats := s.aiService.GetAnomalyStats()
+
+	// Получаем реальные данные или fallback значения
+	var detections interface{} = 100
+	var accuracy float64 = 0.95
+
+	if anomalyStats != nil {
+		if detCount, ok := anomalyStats["detection_count"]; ok {
+			detections = detCount
+		}
+		if acc, ok := anomalyStats["accuracy"].(float64); ok {
+			accuracy = acc
+		}
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"enabled": status.Components["anomaly_detector"],
 		"status":  "running",
 		"metrics": map[string]interface{}{
-			"detections": 100,
-			"accuracy":   0.95,
+			"detections": detections,
+			"accuracy":   accuracy,
 		},
 	})
 }
@@ -335,13 +359,22 @@ func (s *AIService) GetRouteRecommendations(c *gin.Context) {
 
 // ListModels возвращает список доступных моделей
 func (s *AIService) ListModels(c *gin.Context) {
+	// Получаем реальную accuracy от детектора
+	anomalyStats := s.aiService.GetAnomalyStats()
+	var anomalyAccuracy float64 = 0.95
+	if anomalyStats != nil {
+		if acc, ok := anomalyStats["accuracy"].(float64); ok {
+			anomalyAccuracy = acc
+		}
+	}
+
 	models := []map[string]interface{}{
 		{
 			"id":           "anomaly-detector",
 			"name":         "Network Anomaly Detector",
 			"type":         "isolation_forest",
 			"status":       "active",
-			"accuracy":     0.95,
+			"accuracy":     anomalyAccuracy,
 			"last_trained": time.Now().Add(-24 * time.Hour),
 		},
 		{
@@ -807,7 +840,7 @@ func (s *AIService) GetDetailedHealth(c *gin.Context) {
 			"anomaly_detector": map[string]interface{}{
 				"status":     "healthy",
 				"uptime":     "24h",
-				"accuracy":   0.95,
+				"accuracy":   s.getAnomalyAccuracy(),
 				"last_check": time.Now(),
 			},
 			"load_predictor": map[string]interface{}{
@@ -1043,7 +1076,7 @@ func (s *AIService) GenerateReport(c *gin.Context) {
 
 	// Получаем реальные метрики
 	metrics := s.collectRealMetrics()
-	
+
 	var aiReport *analytics.AIReport
 	var err error
 
@@ -1057,17 +1090,17 @@ func (s *AIService) GenerateReport(c *gin.Context) {
 	} else {
 		aiReport = s.generateReportWithFallback(metrics)
 	}
-	
+
 	// Отправляем отчет в Telegram
 	if s.notificationSystem != nil {
 		if err := s.sendTelegramReport(aiReport); err != nil {
 			s.logger.Error("Failed to send Telegram report", zap.Error(err))
 		}
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "AI report generated and sent successfully",
-		"report":  aiReport,
+		"message":   "AI report generated and sent successfully",
+		"report":    aiReport,
 		"timestamp": time.Now(),
 	})
 }
@@ -1219,7 +1252,7 @@ func (s *AIService) Notify(c *gin.Context) {
 func (s *AIService) collectRealMetrics() analytics.AIMetricsData {
 	// Получаем статус AI сервиса
 	status := s.aiService.GetStatus()
-	
+
 	// Получаем системные метрики из статуса
 	systemMetrics := status.Resources
 	if systemMetrics == nil {
@@ -1233,12 +1266,12 @@ func (s *AIService) collectRealMetrics() analytics.AIMetricsData {
 		RequestsProcessed:  s.getIntMetric(systemMetrics, "requests_processed", 0),
 		RoutesOptimized:    s.getIntMetric(systemMetrics, "routes_optimized", 0),
 		PredictionAccuracy: s.getFloatMetric(systemMetrics, "prediction_accuracy", 0.85),
-		CPUUsage:          s.getFloatMetric(systemMetrics, "cpu_usage", 0.0),
-		MemoryUsage:       s.getFloatMetric(systemMetrics, "memory_usage", 0.0),
-		DiskUsage:         s.getFloatMetric(systemMetrics, "disk_usage", 0.0),
-		ActiveAlerts:      s.getIntMetric(systemMetrics, "active_alerts", 0),
-		ProcessingTime:    s.getFloatMetric(systemMetrics, "processing_time", 0.0),
-		ServiceUptime:     s.calculateServiceUptime(status),
+		CPUUsage:           s.getFloatMetric(systemMetrics, "cpu_usage", 0.0),
+		MemoryUsage:        s.getFloatMetric(systemMetrics, "memory_usage", 0.0),
+		DiskUsage:          s.getFloatMetric(systemMetrics, "disk_usage", 0.0),
+		ActiveAlerts:       s.getIntMetric(systemMetrics, "active_alerts", 0),
+		ProcessingTime:     s.getFloatMetric(systemMetrics, "processing_time", 0.0),
+		ServiceUptime:      s.calculateServiceUptime(status),
 	}
 
 	return metrics
@@ -1281,7 +1314,7 @@ func (s *AIService) generateReportWithCloudflareAI(metrics analytics.AIMetricsDa
 	if prompt == "" {
 		prompt = analytics.PROFESSIONAL_PROMPT
 	}
-	
+
 	return s.cloudflareAI.GenerateReport(metrics, prompt)
 }
 
@@ -1290,51 +1323,51 @@ func (s *AIService) generateReportWithFallback(metrics analytics.AIMetricsData) 
 	// Вычисляем оценку здоровья системы
 	healthScore := s.calculateHealthScore(metrics)
 	systemStatus := s.determineSystemStatus(healthScore)
-	
+
 	// Генерируем локальный анализ
 	analysis := s.generateLocalAnalysis(metrics)
-	
+
 	return &analytics.AIReport{
 		Timestamp:    time.Now(),
 		SystemStatus: systemStatus,
 		HealthScore:  healthScore,
 		Analysis: struct {
 			OverallAssessment string   `json:"overall_assessment"`
-			Performance      string   `json:"performance"`
-			Issues           []string `json:"issues"`
-			Recommendations  []string `json:"recommendations"`
-			Forecast         string   `json:"forecast"`
+			Performance       string   `json:"performance"`
+			Issues            []string `json:"issues"`
+			Recommendations   []string `json:"recommendations"`
+			Forecast          string   `json:"forecast"`
 		}{
 			OverallAssessment: analysis.Summary,
-			Performance:      analysis.Performance,
-			Issues:          analysis.CriticalIssues,
-			Recommendations: analysis.Recommendations,
-			Forecast:        "Система будет стабильно работать в ближайшие 24 часа",
+			Performance:       analysis.Performance,
+			Issues:            analysis.CriticalIssues,
+			Recommendations:   analysis.Recommendations,
+			Forecast:          "Система будет стабильно работать в ближайшие 24 часа",
 		},
 		Metrics: struct {
-			AnomaliesDetected    int     `json:"anomalies_detected"`
-			PredictionsMade      int     `json:"predictions_made"`
-			RequestsProcessed    int     `json:"requests_processed"`
-			RoutesOptimized      int     `json:"routes_optimized"`
-			PredictionAccuracy   float64 `json:"prediction_accuracy"`
-			CPUUsage            float64 `json:"cpu_usage"`
-			MemoryUsage         float64 `json:"memory_usage"`
-			DiskUsage           float64 `json:"disk_usage"`
-			ActiveAlerts        int     `json:"active_alerts"`
-			ProcessingTime      float64 `json:"processing_time"`
-			ServiceUptime       float64 `json:"service_uptime"`
+			AnomaliesDetected  int     `json:"anomalies_detected"`
+			PredictionsMade    int     `json:"predictions_made"`
+			RequestsProcessed  int     `json:"requests_processed"`
+			RoutesOptimized    int     `json:"routes_optimized"`
+			PredictionAccuracy float64 `json:"prediction_accuracy"`
+			CPUUsage           float64 `json:"cpu_usage"`
+			MemoryUsage        float64 `json:"memory_usage"`
+			DiskUsage          float64 `json:"disk_usage"`
+			ActiveAlerts       int     `json:"active_alerts"`
+			ProcessingTime     float64 `json:"processing_time"`
+			ServiceUptime      float64 `json:"service_uptime"`
 		}{
 			AnomaliesDetected:  metrics.AnomaliesDetected,
 			PredictionsMade:    metrics.PredictionsMade,
 			RequestsProcessed:  metrics.RequestsProcessed,
 			RoutesOptimized:    metrics.RoutesOptimized,
 			PredictionAccuracy: metrics.PredictionAccuracy,
-			CPUUsage:          metrics.CPUUsage,
-			MemoryUsage:       metrics.MemoryUsage,
-			DiskUsage:         metrics.DiskUsage,
-			ActiveAlerts:      metrics.ActiveAlerts,
-			ProcessingTime:    metrics.ProcessingTime,
-			ServiceUptime:     metrics.ServiceUptime,
+			CPUUsage:           metrics.CPUUsage,
+			MemoryUsage:        metrics.MemoryUsage,
+			DiskUsage:          metrics.DiskUsage,
+			ActiveAlerts:       metrics.ActiveAlerts,
+			ProcessingTime:     metrics.ProcessingTime,
+			ServiceUptime:      metrics.ServiceUptime,
 		},
 	}
 }

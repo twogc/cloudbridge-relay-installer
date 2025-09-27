@@ -3,6 +3,7 @@ package routing
 import (
 	"fmt"
 	"math"
+	"os"
 	"sync"
 	"time"
 
@@ -45,12 +46,16 @@ type OptimizedRoute struct {
 
 // NewRouteOptimizer создает новый оптимизатор маршрутов
 func NewRouteOptimizer(config *Config, logger *zap.Logger) *RouteOptimizer {
+	// Получаем URLs из переменных окружения с fallback на localhost
+	relayURL := getEnvOrDefault("RELAY_URL", "http://cloudbridge-relay:5551")
+	prometheusURL := getEnvOrDefault("PROMETHEUS_URL", "http://localhost:9090")
+
 	return &RouteOptimizer{
 		config:           config,
 		logger:           logger,
 		bandit:           NewMultiArmedBandit(config.ExplorationRate),
-		latencyPredictor: NewLatencyPredictor(logger, "http://localhost:9090", "http://localhost:8080"),
-		pathFinder:       NewPathFinder(logger, "http://localhost:9090", "http://localhost:8080"),
+		latencyPredictor: NewLatencyPredictor(logger, prometheusURL, relayURL),
+		pathFinder:       NewPathFinder(logger, prometheusURL, relayURL),
 	}
 }
 
@@ -124,7 +129,7 @@ func (ro *RouteOptimizer) OptimizeRoute(source, destination string) (*OptimizedR
 
 	// Обновляем метрики
 	ro.optimizationCount++
-	
+
 	// Обновляем средний gain на основе confidence
 	ro.updateAverageGain(confidence)
 
@@ -245,3 +250,10 @@ func (ro *RouteOptimizer) GetMetrics() map[string]interface{} {
 	}
 }
 
+// getEnvOrDefault возвращает значение переменной окружения или значение по умолчанию
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}

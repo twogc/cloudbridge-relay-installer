@@ -297,7 +297,8 @@ func (rdc *RealDataCollector) getRelayHealth() (map[string]interface{}, error) {
 
 // getRelayStats получает статистику CloudBridge Relay
 func (rdc *RealDataCollector) getRelayStats() (map[string]interface{}, error) {
-	url := fmt.Sprintf("%s/api/v1/stats", rdc.cloudbridgeURL)
+	// Используем /health endpoint вместо несуществующего /api/v1/stats
+	url := fmt.Sprintf("%s/health", rdc.cloudbridgeURL)
 
 	resp, err := rdc.httpClient.Get(url)
 	if err != nil {

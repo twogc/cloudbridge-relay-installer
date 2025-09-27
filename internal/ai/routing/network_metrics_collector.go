@@ -223,7 +223,8 @@ func (nmc *NetworkMetricsCollector) queryPrometheusMetric(metric string) (float6
 
 // getRelayStats получает статистику CloudBridge Relay
 func (nmc *NetworkMetricsCollector) getRelayStats() (map[string]interface{}, error) {
-	url := fmt.Sprintf("%s/api/v1/stats", nmc.cloudbridgeURL)
+	// Используем /health endpoint вместо несуществующего /api/v1/stats
+	url := fmt.Sprintf("%s/health", nmc.cloudbridgeURL)
 
 	resp, err := nmc.httpClient.Get(url)
 	if err != nil {
