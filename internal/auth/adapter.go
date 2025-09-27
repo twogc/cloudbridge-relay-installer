@@ -36,6 +36,7 @@ type TokenInfo struct {
 	FullName  string                 `json:"full_name"`
 	Groups    []string               `json:"groups"`
 	Roles     []string               `json:"roles"`
+	TenantID  string                 `json:"tenant_id"`
 	Claims    map[string]interface{} `json:"claims"`
 	Provider  string                 `json:"provider"`
 }
