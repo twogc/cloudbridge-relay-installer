@@ -1,0 +1,79 @@
+# Fix 2: Service-rules for intra-tenant HTTP to ClusterIP services
+# Разрешает HTTP к сервисам внутри того же tenant'а
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-216420165-allow-services
+spec:
+  order: 49  # Выше чем per-tenant allow (50) и ICMP deny (60)
+  selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  types: [Egress]
+  egress:
+  # Allow HTTP to any service in tenant namespaces
+  - action: Allow
+    destination:
+      namespaceSelector: has(tenant.cloudbridge.io/id)
+    protocol: TCP
+  # Allow HTTP to specific ClusterIP services
+  - action: Allow
+    destination:
+      selector: has(tenant.cloudbridge.io/id)
+    protocol: TCP
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-123456789-allow-services
+spec:
+  order: 49
+  selector: tenant.cloudbridge.io/id == "tenant-123456789"
+  types: [Egress]
+  egress:
+  - action: Allow
+    destination:
+      namespaceSelector: has(tenant.cloudbridge.io/id)
+    protocol: TCP
+  - action: Allow
+    destination:
+      selector: has(tenant.cloudbridge.io/id)
+    protocol: TCP
+---
+# Allow intra-tenant ICMP within same tenant (позитивное разрешение ping внутри tenant)
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-216420165-allow-icmp
+spec:
+  order: 49
+  selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  types: [Ingress, Egress]
+  ingress:
+  - action: Allow
+    protocol: ICMP
+    source:
+      selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  egress:
+  - action: Allow
+    protocol: ICMP
+    destination:
+      selector: tenant.cloudbridge.io/id == "tenant-216420165"
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-123456789-allow-icmp
+spec:
+  order: 49
+  selector: tenant.cloudbridge.io/id == "tenant-123456789"
+  types: [Ingress, Egress]
+  ingress:
+  - action: Allow
+    protocol: ICMP
+    source:
+      selector: tenant.cloudbridge.io/id == "tenant-123456789"
+  egress:
+  - action: Allow
+    protocol: ICMP
+    destination:
+      selector: tenant.cloudbridge.io/id == "tenant-123456789"

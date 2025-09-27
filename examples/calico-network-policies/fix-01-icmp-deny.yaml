@@ -1,0 +1,23 @@
+# Fix 1: Explicit ICMP deny between different tenants
+# Блокирует ping между разными tenant'ами
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: deny-icmp-cross-tenant
+spec:
+  order: 60  # Между system allows (50) и general deny (100)
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Ingress, Egress]
+  ingress:
+  - action: Deny
+    protocol: ICMP
+    source:
+      selector: has(tenant.cloudbridge.io/id)
+    # Блокируем все ICMP от других tenant pods
+  egress:
+  - action: Deny
+    protocol: ICMP
+    destination:
+      selector: has(tenant.cloudbridge.io/id)
+    # Блокируем все ICMP к другим tenant pods

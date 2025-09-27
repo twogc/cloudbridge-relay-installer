@@ -26,12 +26,17 @@ import (
 
 // Server represents the gRPC server
 type Server struct {
+	config           Config
 	grpcServer       *grpc.Server
 	listener         net.Listener
 	logger           *logger.Logger
 	authAdapter      *auth.Adapter
 	tunnelManager    *tunnel.Manager
 	heartbeatManager *p2p.HeartbeatManager
+
+	// Enhanced Security Components
+	rbacMiddleware   *RBACMiddleware    // Enhanced RBAC
+	rateLimiter      *TenantRateLimiter // Per-tenant rate limiting
 
 	// Services
 	controlService   *ControlService
@@ -100,17 +105,24 @@ func NewServer(
 	zapLogger := logger.GetZapLogger()
 	grpc_zap.ReplaceGrpcLogger(zapLogger)
 
+	// Create enhanced security middleware
+	rbacMiddleware := NewRBACMiddleware(authAdapter, zapLogger)
+	rateLimiter := NewTenantRateLimiter(zapLogger)
+
 	opts = append(opts,
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_ctxtags.StreamServerInterceptor(),
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_zap.StreamServerInterceptor(zapLogger),
+			rbacMiddleware.StreamInterceptor(),  // Enhanced RBAC
 			grpc_recovery.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ctxtags.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_zap.UnaryServerInterceptor(zapLogger),
+			rbacMiddleware.UnaryInterceptor(),   // Enhanced RBAC + Rate Limiting
+			rateLimiter.RateLimitingInterceptor(), // Per-tenant rate limiting
 			grpc_recovery.UnaryServerInterceptor(),
 		)),
 	)
