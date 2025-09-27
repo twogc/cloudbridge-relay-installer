@@ -65,10 +65,10 @@ parse_prometheus_metric() {
 
 case "${metric}" in
   status)
-    read -r code t <<<"$(fetch_http "/api/v1/ai/status")"
+    read -r code t <<<"$(fetch_http "/health")"
     if [[ "${code}" == "200" ]]; then
       if [[ -n "${jq_bin}" ]]; then
-        body=$(get_body "/api/v1/ai/status")
+        body=$(get_body "/health")
         # Try to extract .status, fallback to "running"
         status=$(echo "${body}" | "${jq_bin}" -r 'try .status // empty' 2>/dev/null || true)
         if [[ -n "${status}" && "${status}" != "null" ]]; then
@@ -84,11 +84,11 @@ case "${metric}" in
     fi
     ;;
   http200)
-    read -r code t <<<"$(fetch_http "/api/v1/ai/status")"
+    read -r code t <<<"$(fetch_http "/health")"
     if [[ "${code}" == "200" ]]; then echo 1; else echo 0; fi
     ;;
   latency_ms)
-    read -r code t <<<"$(fetch_http "/api/v1/ai/status")"
+    read -r code t <<<"$(fetch_http "/health")"
     ms=$(awk -v s="${t}" 'BEGIN{printf (s*1000)}')
     echo "${ms}"
     ;;

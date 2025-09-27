@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: cloudbridge-relay
-        image: cloudbridge-relay:mvp-20250925-035744
+        image: cloudbridge-relay:fix-prometheus-20250927-160658
         imagePullPolicy: Never
         ports:
         - containerPort: 5550
@@ -69,6 +69,10 @@ spec:
           value: "/app/certs/tls.crt"
         - name: RELAY_TLS_KEY_FILE
           value: "/app/certs/tls.key"
+        - name: PROMETHEUS_URL
+          value: "http://prometheus.cloudbridge.svc.cluster.local:9090"
+        - name: RELAY_URL
+          value: "http://cloudbridge-relay:5551"
         resources:
           requests:
             memory: "256Mi"
@@ -103,6 +107,10 @@ spec:
         - name: config
           mountPath: /app/configs
           readOnly: true
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: data-volume
+          mountPath: /app/data
       volumes:
       - name: tls-certs
         secret:
@@ -110,3 +118,7 @@ spec:
       - name: config
         configMap:
           name: cloudbridge-relay-config
+      - name: tmp-volume
+        emptyDir: {}
+      - name: data-volume
+        emptyDir: {}

@@ -115,7 +115,30 @@ func (c *Client) Migrate() error {
 		return fmt.Errorf("failed to execute schema: %w", err)
 	}
 
-	c.logger.Info("Database migrations completed successfully")
+	c.logger.Info("Database schema migration completed successfully")
+	return nil
+}
+
+// MigrateIPAM runs IPAM-specific migrations
+func (c *Client) MigrateIPAM() error {
+	c.logger.Info("Running IPAM migrations...")
+
+	// Read migrations file
+	migrations, err := ioutil.ReadFile("internal/database/migrations.sql")
+	if err != nil {
+		return fmt.Errorf("failed to read migrations file: %w", err)
+	}
+
+	// Execute migrations
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	_, err = c.db.ExecContext(ctx, string(migrations))
+	if err != nil {
+		return fmt.Errorf("failed to execute IPAM migrations: %w", err)
+	}
+
+	c.logger.Info("IPAM migrations completed successfully")
 	return nil
 }
 

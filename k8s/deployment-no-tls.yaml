@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudbridge-relay-no-tls
+  namespace: cloudbridge
+  labels:
+    app: cloudbridge-relay-no-tls
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudbridge-relay-no-tls
+  template:
+    metadata:
+      labels:
+        app: cloudbridge-relay-no-tls
+    spec:
+      containers:
+      - name: cloudbridge-relay
+        image: cloudbridge-relay:fix-prometheus-20250927-160658
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8444
+          name: grpc
+          protocol: TCP
+        - containerPort: 5550
+          name: main-server
+          protocol: TCP
+        - containerPort: 5551
+          name: metrics
+          protocol: TCP
+        env:
+        - name: SERVER_HOST
+          value: "0.0.0.0"
+        - name: SERVER_PORT
+          value: "5550"
+        - name: PROMETHEUS_URL
+          value: "http://prometheus.cloudbridge.svc.cluster.local:9090"
+        - name: RELAY_URL
+          value: "http://cloudbridge-relay.cloudbridge.svc.cluster.local:5552"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: data-volume
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5551
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5551
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        configMap:
+          name: cloudbridge-relay-config-no-tls
+      - name: tmp-volume
+        emptyDir: {}
+      - name: data-volume
+        emptyDir: {}

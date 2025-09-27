@@ -1,0 +1,64 @@
+# System Services Exceptions
+# ⚡ ЖЕЛЕЗОБЕТОННАЯ защита: разрешения для системных сервисов (DNS, kube-system)
+---
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-system-services
+spec:
+  tier: security      # ⚡ Тот же security tier
+  order: 50           # ⚡ Самый высокий приоритет для системных сервисов
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Egress]
+  egress:
+  # DNS разрешения - kube-dns
+  - action: Allow
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      selector: k8s-app == "kube-dns"
+    protocol: UDP
+    ports: [53]
+  # DNS - альтернативный порт для DNAT случаев  
+  - action: Allow
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      selector: k8s-app == "kube-dns"
+    protocol: UDP
+    ports: [5353]  # ⚡ ИСПРАВЛЕНО: учитываем DNAT в некоторых дистрибутивах
+  # CoreDNS поддержка
+  - action: Allow
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system" 
+      selector: k8s-app == "coredns"
+    protocol: UDP
+    ports: [53, 5353]  # ⚡ Оба порта для надежности
+  # TCP DNS для больших запросов
+  - action: Allow
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      selector: k8s-app == "kube-dns" || k8s-app == "coredns"
+    protocol: TCP
+    ports: [53]
+
+---
+# Backup policy для случая отсутствия tier support
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-system-services-backup
+spec:
+  order: 50
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Egress]
+  egress:
+  # DNS services
+  - action: Allow
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+    protocol: UDP
+    ports: [53, 5353]
+  - action: Allow
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+    protocol: TCP
+    ports: [53]

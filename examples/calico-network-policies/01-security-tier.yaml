@@ -1,0 +1,26 @@
+# Calico Security Tier Configuration
+# Создает dedicated tier "security" для всех security правил
+---
+apiVersion: projectcalico.org/v3
+kind: Tier
+metadata:
+  name: security
+spec:
+  order: 100
+  # Высокий приоритет для security правил
+  # Меньше число = выше приоритет
+  # default tier = order 1000
+  # security tier = order 100 (выше приоритета)
+---
+# Альтернативная конфигурация если Tier API недоступен
+# В этом случае используем order в GlobalNetworkPolicy напрямую
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: calico-tier-config
+  namespace: calico-system
+data:
+  tier-config.yaml: |
+    # Calico tier configuration
+    security_tier_enabled: "true"
+    security_tier_order: "100"

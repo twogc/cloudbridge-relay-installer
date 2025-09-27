@@ -1,0 +1,116 @@
+# Metadata Services Protection
+# ⚠️ КРИТИЧНО: Блокировка IMDS + kube-apiserver согласно NSA/CISA рекомендациям
+---
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: block-metadata-services
+spec:
+  tier: security
+  order: 10           # Очень высокий приоритет
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Egress]
+  egress:
+  # Блокируем AWS/GCP/Azure Instance Metadata Service (IMDS)
+  - action: Deny
+    destination:
+      nets: ["169.254.169.254/32"]
+    protocol: TCP
+  - action: Deny
+    destination:
+      nets: ["169.254.169.254/32"]
+    protocol: UDP
+  # Блокируем прямой доступ к kube-apiserver
+  # ⚡ ИСПРАВЛЕНО: используем service rules вместо pod селекторов
+  - action: Deny
+    destination:
+      services:
+        name: kubernetes
+        namespace: default
+    protocol: TCP
+
+---
+# Точечные разрешения для операторских pods (если нужно)
+apiVersion: projectcalico.org/v3  
+kind: NetworkPolicy
+metadata:
+  name: allow-apiserver-for-operators
+  namespace: tenant-216420165
+spec:
+  selector: role == "operator"  # Только для operator pods
+  types: [Egress]
+  egress:
+  - action: Allow
+    destination:
+      # ⚡ ИСПРАВЛЕНО: service rules для kube-apiserver
+      services:
+        name: kubernetes
+        namespace: default
+    protocol: TCP
+
+---
+# GKE specific IMDS protection
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: block-gke-metadata
+spec:
+  tier: security
+  order: 15
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Egress]
+  egress:
+  # GKE Metadata server
+  - action: Deny
+    destination:
+      nets: ["169.254.169.254/32"]
+    protocol: TCP
+    ports: [80, 443]
+  # GKE Instance identity
+  - action: Deny
+    destination:
+      nets: ["169.254.169.254/32"]
+    
+---
+# AWS specific protections
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: block-aws-metadata
+spec:
+  tier: security
+  order: 15
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Egress]
+  egress:
+  # AWS Instance Metadata Service v1/v2
+  - action: Deny
+    destination:
+      nets: ["169.254.169.254/32"]
+  # AWS Link-local addresses
+  - action: Deny
+    destination:
+      nets: ["169.254.0.0/16"]
+    
+---
+# Azure specific protections
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: block-azure-metadata
+spec:
+  tier: security
+  order: 15
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Egress]
+  egress:
+  # Azure Instance Metadata Service
+  - action: Deny
+    destination:
+      nets: ["169.254.169.254/32"]
+    protocol: TCP
+    ports: [80]
+  # Azure WireServer
+  - action: Deny
+    destination:
+      nets: ["168.63.129.16/32"]

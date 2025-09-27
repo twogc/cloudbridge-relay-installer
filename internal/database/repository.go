@@ -427,6 +427,137 @@ func (r *Repository) CleanupOldData() error {
 	return nil
 }
 
+// TenantNetworkRepository methods (IPAM functionality)
+
+// CreateTenantNetwork creates a new tenant network allocation
+func (r *Repository) CreateTenantNetwork(network *TenantNetwork) error {
+	query := `
+		INSERT INTO tenant_networks (
+			tenant_id, network_cidr, subnet_counter, allocated_at, is_active
+		) VALUES (
+			:tenant_id, :network_cidr, :subnet_counter, :allocated_at, :is_active
+		) RETURNING id, created_at, updated_at`
+
+	rows, err := r.db.NamedQuery(query, network)
+	if err != nil {
+		return fmt.Errorf("failed to create tenant network: %w", err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.Scan(&network.ID, &network.CreatedAt, &network.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("failed to scan tenant network result: %w", err)
+		}
+	}
+
+	r.logger.Info("Tenant network allocated",
+		zap.String("tenant_id", network.TenantID),
+		zap.String("network_cidr", network.NetworkCIDR),
+		zap.Int("subnet_counter", network.SubnetCounter),
+		zap.String("db_id", network.ID.String()),
+	)
+
+	return nil
+}
+
+// GetTenantNetwork retrieves network allocation for a tenant
+func (r *Repository) GetTenantNetwork(tenantID string) (*TenantNetwork, error) {
+	query := `SELECT * FROM tenant_networks WHERE tenant_id = $1 AND is_active = true`
+
+	var network TenantNetwork
+	err := r.db.Get(&network, query, tenantID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("tenant network not found: %s", tenantID)
+		}
+		return nil, fmt.Errorf("failed to get tenant network: %w", err)
+	}
+
+	return &network, nil
+}
+
+// GetAllTenantNetworks retrieves all active tenant network allocations
+func (r *Repository) GetAllTenantNetworks() ([]*TenantNetwork, error) {
+	query := `SELECT * FROM tenant_networks WHERE is_active = true ORDER BY allocated_at ASC`
+
+	var networks []*TenantNetwork
+	err := r.db.Select(&networks, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all tenant networks: %w", err)
+	}
+
+	return networks, nil
+}
+
+// GetMaxSubnetCounter retrieves the maximum subnet counter from all allocations
+func (r *Repository) GetMaxSubnetCounter() (int, error) {
+	query := `SELECT COALESCE(MAX(subnet_counter), 79) FROM tenant_networks WHERE is_active = true`
+
+	var maxCounter int
+	err := r.db.Get(&maxCounter, query)
+	if err != nil {
+		return 79, fmt.Errorf("failed to get max subnet counter: %w", err)
+	}
+
+	return maxCounter, nil
+}
+
+// UpdateTenantNetwork updates tenant network information
+func (r *Repository) UpdateTenantNetwork(tenantID string, networkCIDR string, subnetCounter int) error {
+	query := `
+		UPDATE tenant_networks 
+		SET network_cidr = $2, subnet_counter = $3, updated_at = NOW()
+		WHERE tenant_id = $1 AND is_active = true`
+
+	result, err := r.db.Exec(query, tenantID, networkCIDR, subnetCounter)
+	if err != nil {
+		return fmt.Errorf("failed to update tenant network: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("tenant network not found: %s", tenantID)
+	}
+
+	r.logger.Debug("Tenant network updated",
+		zap.String("tenant_id", tenantID),
+		zap.String("network_cidr", networkCIDR),
+		zap.Int("subnet_counter", subnetCounter),
+	)
+
+	return nil
+}
+
+// DeactivateTenantNetwork deactivates a tenant network (soft delete)
+func (r *Repository) DeactivateTenantNetwork(tenantID string) error {
+	query := `UPDATE tenant_networks SET is_active = false, updated_at = NOW() WHERE tenant_id = $1`
+
+	result, err := r.db.Exec(query, tenantID)
+	if err != nil {
+		return fmt.Errorf("failed to deactivate tenant network: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("tenant network not found: %s", tenantID)
+	}
+
+	r.logger.Info("Tenant network deactivated",
+		zap.String("tenant_id", tenantID),
+	)
+
+	return nil
+}
+
 // GetStats returns database statistics
 func (r *Repository) GetStats() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
@@ -462,6 +593,21 @@ func (r *Repository) GetStats() (map[string]interface{}, error) {
 		return nil, fmt.Errorf("failed to get websocket connection count: %w", err)
 	}
 	stats["websocket_connections"] = wsConnectionCount
+
+	// Count tenant networks
+	var tenantNetworkCount int
+	err = r.db.Get(&tenantNetworkCount, "SELECT COUNT(*) FROM tenant_networks WHERE is_active = true")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant network count: %w", err)
+	}
+	stats["tenant_networks"] = tenantNetworkCount
+
+	// Get current max subnet counter
+	maxCounter, err := r.GetMaxSubnetCounter()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get max subnet counter: %w", err)
+	}
+	stats["max_subnet_counter"] = maxCounter
 
 	return stats, nil
 }

@@ -203,6 +203,18 @@ func (nc *NetworkConfig) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, nc)
 }
 
+// TenantNetwork represents a network allocated to a tenant for IPAM
+type TenantNetwork struct {
+	ID            uuid.UUID `json:"id" db:"id"`
+	TenantID      string    `json:"tenant_id" db:"tenant_id"`
+	NetworkCIDR   string    `json:"network_cidr" db:"network_cidr"`
+	SubnetCounter int       `json:"subnet_counter" db:"subnet_counter"`
+	AllocatedAt   time.Time `json:"allocated_at" db:"allocated_at"`
+	IsActive      bool      `json:"is_active" db:"is_active"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
+}
+
 // Labels represents metric labels
 type Labels map[string]string
 

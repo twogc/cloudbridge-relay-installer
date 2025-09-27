@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudbridge-relay-no-tls
+  namespace: cloudbridge
+  labels:
+    app: cloudbridge-relay-no-tls
+spec:
+  type: NodePort
+  selector:
+    app: cloudbridge-relay-no-tls
+  ports:
+  - name: grpc
+    port: 8444
+    targetPort: 8444
+    nodePort: 30845
+    protocol: TCP
+  - name: main-server
+    port: 5550
+    targetPort: 5550
+    nodePort: 30081
+    protocol: TCP
+  - name: metrics
+    port: 5551
+    targetPort: 5551
+    nodePort: 30082
+    protocol: TCP

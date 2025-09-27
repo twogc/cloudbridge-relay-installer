@@ -26,7 +26,7 @@ func NewP2PIntegration(logger *logger.Logger, config *config.Config, jwtSecret [
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Create components
-	relayManager := p2p.NewRelayManager(logger.GetZapLogger())
+	relayManager := p2p.NewRelayManager(logger.GetZapLogger(), nil) // TODO: Initialize repository in production
 	heartbeatManager := p2p.NewHeartbeatManager(relayManager, logger.GetZapLogger())
 	peerManager := p2p.NewPeerManager(logger.GetZapLogger())
 	tokenValidator := p2p.NewTokenValidator(jwtSecret, logger.GetZapLogger())

@@ -81,6 +81,7 @@ type DataPipeline struct {
 	BatchSize          int           `yaml:"batch_size"`
 	ProcessingInterval time.Duration `yaml:"processing_interval"`
 	RetentionDays      int           `yaml:"retention_days"`
+	PrometheusURL      string        `yaml:"prometheus_url"`
 	Features           Features      `yaml:"features"`
 }
 
@@ -165,6 +166,14 @@ func LoadConfig(configPath string) (*Config, error) {
 	var config Config
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	// Override with environment variables
+	if prometheusURL := os.Getenv("PROMETHEUS_URL"); prometheusURL != "" {
+		config.AI.DataPipeline.PrometheusURL = prometheusURL
+	}
+	if relayURL := os.Getenv("RELAY_URL"); relayURL != "" {
+		config.AI.DataSources.CloudBridgeURL = relayURL
 	}
 
 	// Validate configuration

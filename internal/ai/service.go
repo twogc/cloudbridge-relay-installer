@@ -57,6 +57,7 @@ func (s *Service) Initialize() error {
 		BatchSize:          s.config.AI.DataPipeline.BatchSize,
 		ProcessingInterval: s.config.AI.DataPipeline.ProcessingInterval,
 		RetentionDays:      s.config.AI.DataPipeline.RetentionDays,
+		PrometheusURL:      s.config.AI.DataPipeline.PrometheusURL,
 	}
 	s.dataPipeline = pipeline.NewDataPipeline(pipelineConfig, s.logger)
 	if err := s.dataPipeline.Initialize(); err != nil {

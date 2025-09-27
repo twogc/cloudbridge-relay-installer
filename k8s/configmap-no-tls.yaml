@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudbridge-relay-config-no-tls
+  namespace: cloudbridge
+data:
+  config.json: |
+    {
+      "server": {
+        "host": "0.0.0.0",
+        "port": 5550,
+        "timeout": "30s",
+        "max_connections": 10000,
+        "read_timeout": "30s",
+        "write_timeout": "30s",
+        "idle_timeout": "60s"
+      },
+      "grpc": {
+        "enabled": true,
+        "port": 8444,
+        "tls_enabled": false,
+        "cert_file": "/app/certs/tls.crt",
+        "key_file": "/app/certs/tls.key",
+        "mtls_enabled": false,
+        "keepalive_ping": "15s",
+        "keepalive_timeout": "10s",
+        "max_recv_msg_size": 4194304,
+        "max_send_msg_size": 4194304
+      },
+      "security": {
+        "token_validation": {
+          "enabled": true,
+          "secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+          "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+          "algorithm": "HS256",
+          "issuer": "https://edge.2gc.ru",
+          "audience": ["relay-server", "cloudbridge-relay"]
+        },
+        "rate_limiting": {
+          "enabled": true,
+          "requests_per_minute": 1000,
+          "burst_size": 100,
+          "cleanup_interval": "1m"
+        }
+      },
+      "metrics": {
+        "enabled": true,
+        "port": 5551,
+        "path": "/metrics",
+        "interval": "30s"
+      },
+      "logging": {
+        "level": "info",
+        "format": "json",
+        "output": "stdout"
+      }
+    }

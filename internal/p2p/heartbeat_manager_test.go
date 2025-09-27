@@ -13,7 +13,7 @@ import (
 func TestNewHeartbeatManager(t *testing.T) {
 	t.Run("creates heartbeat manager successfully", func(t *testing.T) {
 		zapLogger := zap.NewNop()
-		relayManager := NewRelayManager(zapLogger)
+		relayManager := NewRelayManager(zapLogger, nil)
 		manager := NewHeartbeatManager(relayManager, zapLogger)
 
 		assert.NotNil(t, manager)
@@ -24,7 +24,7 @@ func TestNewHeartbeatManager(t *testing.T) {
 	})
 
 	t.Run("creates heartbeat manager with nil logger", func(t *testing.T) {
-		relayManager := NewRelayManager(nil)
+		relayManager := NewRelayManager(nil, nil)
 		manager := NewHeartbeatManager(relayManager, nil)
 
 		assert.NotNil(t, manager)
@@ -34,7 +34,7 @@ func TestNewHeartbeatManager(t *testing.T) {
 
 func TestHeartbeatManager_RegisterPeer(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 	defer manager.Stop()
 
@@ -73,7 +73,7 @@ func TestHeartbeatManager_RegisterPeer(t *testing.T) {
 
 func TestHeartbeatManager_CleanupOfflinePeers(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 	defer manager.Stop()
 
@@ -106,7 +106,7 @@ func TestHeartbeatManager_CleanupOfflinePeers(t *testing.T) {
 
 func TestHeartbeatManager_UpdateHeartbeat(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 	defer manager.Stop()
 
@@ -143,7 +143,7 @@ func TestHeartbeatManager_UpdateHeartbeat(t *testing.T) {
 
 func TestHeartbeatManager_GetActivePeers(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 	defer manager.Stop()
 
@@ -172,7 +172,7 @@ func TestHeartbeatManager_GetActivePeers(t *testing.T) {
 
 func TestHeartbeatManager_GetTenantStats(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 	defer manager.Stop()
 
@@ -201,7 +201,7 @@ func TestHeartbeatManager_GetTenantStats(t *testing.T) {
 
 func TestHeartbeatManager_GetTenantStats_Global(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 	defer manager.Stop()
 
@@ -230,7 +230,7 @@ func TestHeartbeatManager_GetTenantStats_Global(t *testing.T) {
 
 func TestHeartbeatManager_Start(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 
 	t.Run("starts manager successfully", func(t *testing.T) {
@@ -244,7 +244,7 @@ func TestHeartbeatManager_Start(t *testing.T) {
 
 func TestHeartbeatManager_Stop(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 
 	t.Run("stops manager successfully", func(t *testing.T) {
@@ -260,7 +260,7 @@ func TestHeartbeatManager_Stop(t *testing.T) {
 
 func TestHeartbeatManager_ContextCancellation(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 
 	t.Run("handles context cancellation", func(t *testing.T) {
@@ -280,7 +280,7 @@ func TestHeartbeatManager_ContextCancellation(t *testing.T) {
 
 func TestHeartbeatManager_CheckHeartbeatTimeouts(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 
 	t.Run("marks peers as offline after timeout", func(t *testing.T) {
@@ -341,7 +341,7 @@ func TestHeartbeatManager_CheckHeartbeatTimeouts(t *testing.T) {
 
 func TestHeartbeatManager_PerformCleanup(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 
 	t.Run("removes old offline peers", func(t *testing.T) {
@@ -428,7 +428,7 @@ func TestHeartbeatManager_PerformCleanup(t *testing.T) {
 
 func TestHeartbeatManager_EdgeCases(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 	defer manager.Stop()
 
@@ -615,7 +615,7 @@ func TestHeartbeatManager_PeerHeartbeat(t *testing.T) {
 
 func TestHeartbeatManager_StartStopMultipleTimes(t *testing.T) {
 	zapLogger := zap.NewNop()
-	relayManager := NewRelayManager(zapLogger)
+	relayManager := NewRelayManager(zapLogger, nil)
 	manager := NewHeartbeatManager(relayManager, zapLogger)
 
 	t.Run("handles multiple start/stop cycles", func(t *testing.T) {

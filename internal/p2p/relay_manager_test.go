@@ -13,7 +13,7 @@ import (
 func TestNewRelayManager(t *testing.T) {
 	t.Run("creates relay manager successfully", func(t *testing.T) {
 		zapLogger := zap.NewNop()
-		manager := NewRelayManager(zapLogger)
+		manager := NewRelayManager(zapLogger, nil)
 
 		assert.NotNil(t, manager)
 		assert.NotNil(t, manager.tenants)
@@ -24,7 +24,7 @@ func TestNewRelayManager(t *testing.T) {
 	})
 
 	t.Run("creates relay manager with nil logger", func(t *testing.T) {
-		manager := NewRelayManager(nil)
+		manager := NewRelayManager(nil, nil)
 
 		assert.NotNil(t, manager)
 		assert.Nil(t, manager.logger)
@@ -33,7 +33,7 @@ func TestNewRelayManager(t *testing.T) {
 
 func TestRelayManager_CreateRelaySession(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	defer manager.Shutdown()
 
 	t.Run("fails when peer connections not found", func(t *testing.T) {
@@ -71,7 +71,7 @@ func TestRelayManager_CreateRelaySession(t *testing.T) {
 
 func TestRelayManager_GetRelaySession(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	defer manager.Shutdown()
 
 	t.Run("fails when peer connections not found", func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestRelayManager_GetRelaySession(t *testing.T) {
 
 func TestRelayManager_CloseRelaySession(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	defer manager.Shutdown()
 
 	t.Run("fails when peer connections not found", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestRelayManager_CloseRelaySession(t *testing.T) {
 
 func TestRelayManager_GetActiveSessions(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	defer manager.Shutdown()
 
 	t.Run("returns empty list when no connections", func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestRelayManager_GetActiveSessions(t *testing.T) {
 
 func TestRelayManager_UpdateSessionActivity(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	defer manager.Shutdown()
 
 	t.Run("gets tenant info successfully", func(t *testing.T) {
@@ -162,7 +162,7 @@ func TestRelayManager_UpdateSessionActivity(t *testing.T) {
 
 func TestRelayManager_GetActiveConnections_Final(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	defer manager.Shutdown()
 
 	t.Run("returns empty list when no connections", func(t *testing.T) {
@@ -179,7 +179,7 @@ func TestRelayManager_GetActiveConnections_Final(t *testing.T) {
 
 func TestRelayManager_Start(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 
 	t.Run("starts manager successfully", func(t *testing.T) {
 		// Start cleanup routine
@@ -196,7 +196,7 @@ func TestRelayManager_Start(t *testing.T) {
 
 func TestRelayManager_Stop(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 
 	t.Run("stops manager successfully", func(t *testing.T) {
 		// Start cleanup routine
@@ -214,7 +214,7 @@ func TestRelayManager_Stop(t *testing.T) {
 // TestRelayManager_RegisterQUICConnection тестирует RegisterQUICConnection
 func TestRelayManager_RegisterQUICConnection(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	// Don't call Shutdown() to avoid nil pointer issues with test connections
 
 	t.Run("registers QUIC connection successfully", func(t *testing.T) {
@@ -277,7 +277,7 @@ func TestRelayManager_RegisterQUICConnection(t *testing.T) {
 // TestRelayManager_RelayPacket тестирует RelayPacket
 func TestRelayManager_RelayPacket(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	// Don't call Shutdown() to avoid nil pointer issues with test connections
 
 	t.Run("relays packet successfully", func(t *testing.T) {
@@ -377,7 +377,7 @@ func TestRelayManager_RelayPacket(t *testing.T) {
 // TestRelayManager_forwardPacket тестирует forwardPacket
 func TestRelayManager_forwardPacket(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	// Don't call Shutdown() to avoid nil pointer issues with test connections
 
 	t.Run("forwards packet to active connection", func(t *testing.T) {
@@ -429,7 +429,7 @@ func TestRelayManager_forwardPacket(t *testing.T) {
 // TestRelayManager_getPeerIP тестирует getPeerIP
 func TestRelayManager_getPeerIP(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	defer manager.Shutdown()
 
 	t.Run("returns peer IP", func(t *testing.T) {
@@ -457,7 +457,7 @@ func TestRelayManager_getPeerIP(t *testing.T) {
 // TestRelayManager_generateConnectionID тестирует generateConnectionID
 func TestRelayManager_generateConnectionID(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	defer manager.Shutdown()
 
 	t.Run("generates connection ID with source < target", func(t *testing.T) {
@@ -501,7 +501,7 @@ func TestRelayManager_generateConnectionID(t *testing.T) {
 // TestRelayManager_GetConnectionInfo тестирует GetConnectionInfo
 func TestRelayManager_GetConnectionInfo(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	defer manager.Shutdown()
 
 	t.Run("returns connection info for existing connection", func(t *testing.T) {
@@ -555,7 +555,7 @@ func TestRelayManager_GetConnectionInfo(t *testing.T) {
 // TestRelayManager_parsePacketTarget тестирует parsePacketTarget
 func TestRelayManager_parsePacketTarget(t *testing.T) {
 	zapLogger := zap.NewNop()
-	manager := NewRelayManager(zapLogger)
+	manager := NewRelayManager(zapLogger, nil)
 	// Don't call Shutdown() to avoid nil pointer issues with test connections
 
 	t.Run("parses valid packet target", func(t *testing.T) {

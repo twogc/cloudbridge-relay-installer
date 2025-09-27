@@ -21,7 +21,7 @@ func TestNewP2PTunnelManager(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		relayManager := NewRelayManager(zap.NewNop())
+		relayManager := NewRelayManager(zap.NewNop(), nil)
 		manager := NewP2PTunnelManager(loggerInstance, relayManager)
 
 		assert.NotNil(t, manager)
@@ -33,7 +33,7 @@ func TestNewP2PTunnelManager(t *testing.T) {
 	})
 
 	t.Run("creates tunnel manager with nil logger", func(t *testing.T) {
-		relayManager := NewRelayManager(zap.NewNop())
+		relayManager := NewRelayManager(zap.NewNop(), nil)
 		manager := NewP2PTunnelManager(nil, relayManager)
 
 		assert.NotNil(t, manager)
@@ -49,7 +49,7 @@ func TestP2PTunnelManager_CreateTunnel(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 
@@ -114,7 +114,7 @@ func TestP2PTunnelManager_GetTunnel(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 
@@ -154,7 +154,7 @@ func TestP2PTunnelManager_CloseTunnel(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 
@@ -193,7 +193,7 @@ func TestP2PTunnelManager_GetActiveTunnels(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 
@@ -250,7 +250,7 @@ func TestP2PTunnelManager_UpdateHeartbeat(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 
@@ -293,7 +293,7 @@ func TestP2PTunnelManager_GetTunnelsByTenant_Final_Last(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 
@@ -336,7 +336,7 @@ func TestP2PTunnelManager_heartbeatLoop(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 
@@ -368,7 +368,7 @@ func TestP2PTunnelManager_sendHeartbeats(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 
@@ -408,7 +408,7 @@ func TestP2PTunnelManager_cleanupLoop(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 
@@ -440,7 +440,7 @@ func TestP2PTunnelManager_cleanupInactiveTunnels(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	relayManager := NewRelayManager(zap.NewNop())
+	relayManager := NewRelayManager(zap.NewNop(), nil)
 	manager := NewP2PTunnelManager(loggerInstance, relayManager)
 	defer manager.Stop()
 

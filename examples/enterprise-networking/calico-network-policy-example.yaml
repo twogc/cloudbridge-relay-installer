@@ -1,0 +1,125 @@
+# CloudBridge Enterprise Networking - Calico Network Policies
+# =====================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cloudbridge-tenant-isolation
+  namespace: cloudbridge
+  labels:
+    tenant.cloudbridge.io/isolation: "enabled"
+spec:
+  # Применяется ко всем podам CloudBridge Relay
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cloudbridge-relay
+  
+  policyTypes:
+  - Ingress
+  - Egress
+
+  # ВХОДЯЩИЙ ТРАФИК
+  ingress:
+  # Разрешить gRPC для всех tenant'ов
+  - from: []
+    ports:
+    - protocol: TCP
+      port: 8444
+    - protocol: UDP 
+      port: 51820
+
+  # Разрешить метрики только из monitoring namespace
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: cloudbridge-monitoring
+    ports:
+    - protocol: TCP
+      port: 5551
+
+  # ИСХОДЯЩИЙ ТРАФИК  
+  egress:
+  # DNS разрешение
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  
+  # Подключения к базе данных
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: postgresql
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# Отдельная политика для каждого tenant'а
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: tenant-216420165-isolation
+  namespace: cloudbridge
+spec:
+  # Применяется только к подам этого tenant'а
+  selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  
+  types:
+  - Ingress
+  - Egress
+
+  # Разрешить трафик только внутри tenant'а
+  ingress:
+  - action: Allow
+    source:
+      selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  
+  egress:
+  - action: Allow
+    destination:
+      selector: tenant.cloudbridge.io/id == "tenant-216420165"
+      
+  # Блокировать межтенантный трафик
+  - action: Deny
+    destination:
+      selector: has(tenant.cloudbridge.io/id) && tenant.cloudbridge.io/id != "tenant-216420165"
+
+---
+# Глобальная политика блокировки межтенантного трафика
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: cloudbridge-global-tenant-isolation
+spec:
+  # Приоритет выше чем обычные политики
+  order: 100
+  
+  # Применяется ко всем CloudBridge подам
+  selector: app.kubernetes.io/name == "cloudbridge-relay"
+  
+  types:
+  - Ingress
+  - Egress
+
+  # Блокируем все межтенантные соединения
+  ingress:
+  - action: Deny
+    source:
+      selector: has(tenant.cloudbridge.io/id)
+    destination:
+      selector: has(tenant.cloudbridge.io/id)
+    # Условие: разные tenant ID
+    metadata:
+      annotations:
+        projectcalico.org/condition: 'source.tenant.cloudbridge.io/id != destination.tenant.cloudbridge.io/id'
+        
+  egress:
+  - action: Deny
+    source:
+      selector: has(tenant.cloudbridge.io/id) 
+    destination:
+      selector: has(tenant.cloudbridge.io/id)
+    metadata:
+      annotations:
+        projectcalico.org/condition: 'source.tenant.cloudbridge.io/id != destination.tenant.cloudbridge.io/id'

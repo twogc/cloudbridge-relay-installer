@@ -45,6 +45,7 @@ ai:
     batch_size: 1000
     processing_interval: "60s"  # Увеличиваем интервал до 1 минуты
     retention_days: 30
+    prometheus_url: "http://prometheus.cloudbridge.svc.cluster.local:9090"
     
     # Feature extraction
     features:

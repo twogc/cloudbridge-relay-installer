@@ -130,6 +130,25 @@ CREATE TABLE IF NOT EXISTS websocket_connections (
     CONSTRAINT websocket_connections_connection_id_check CHECK (connection_id != '')
 );
 
+-- Tenant networks table (for IPAM - IP Address Management)
+CREATE TABLE IF NOT EXISTS tenant_networks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id VARCHAR(255) UNIQUE NOT NULL,
+    network_cidr VARCHAR(20) NOT NULL,
+    subnet_counter INTEGER NOT NULL,
+    allocated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT true,
+    
+    -- Metadata
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Constraints
+    CONSTRAINT tenant_networks_tenant_id_check CHECK (tenant_id != ''),
+    CONSTRAINT tenant_networks_network_cidr_check CHECK (network_cidr != ''),
+    CONSTRAINT tenant_networks_subnet_counter_check CHECK (subnet_counter >= 0 AND subnet_counter <= 255)
+);
+
 -- Relay messages table (for audit and debugging)
 CREATE TABLE IF NOT EXISTS relay_messages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -180,6 +199,10 @@ CREATE INDEX IF NOT EXISTS idx_websocket_connections_tenant_id ON websocket_conn
 CREATE INDEX IF NOT EXISTS idx_websocket_connections_is_active ON websocket_connections(is_active);
 CREATE INDEX IF NOT EXISTS idx_websocket_connections_connected_at ON websocket_connections(connected_at);
 
+CREATE INDEX IF NOT EXISTS idx_tenant_networks_tenant_id ON tenant_networks(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_networks_is_active ON tenant_networks(is_active);
+CREATE INDEX IF NOT EXISTS idx_tenant_networks_allocated_at ON tenant_networks(allocated_at);
+
 CREATE INDEX IF NOT EXISTS idx_relay_messages_from_peer_id ON relay_messages(from_peer_id);
 CREATE INDEX IF NOT EXISTS idx_relay_messages_to_peer_id ON relay_messages(to_peer_id);
 CREATE INDEX IF NOT EXISTS idx_relay_messages_timestamp ON relay_messages(timestamp);
@@ -202,6 +225,9 @@ CREATE TRIGGER update_peer_connections_updated_at BEFORE UPDATE ON peer_connecti
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_websocket_connections_updated_at BEFORE UPDATE ON websocket_connections
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_tenant_networks_updated_at BEFORE UPDATE ON tenant_networks
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Create cleanup function for old data

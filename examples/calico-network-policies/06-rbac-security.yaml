@@ -1,0 +1,122 @@
+# RBAC and Advanced Security Policies
+# Enhanced gRPC Security + Rate Limiting per tenant
+---
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: cloudbridge-grpc-access
+spec:
+  tier: security
+  order: 150
+  # Только pods с определенной ролью могут обращаться к gRPC серверу
+  selector: app == "cloudbridge-relay"
+  types: [Ingress]
+  ingress:
+  - action: Allow
+    source:
+      selector: role == "peer" || role == "client"
+    protocol: TCP
+    ports: [8444]  # gRPC port
+  # Rate limiting через annotation (если поддерживается)
+  # metadata:
+  #   annotations:
+  #     "calico.io/rate-limit": "100req/min"
+
+---
+# Network Policy для fine-grained permissions
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cloudbridge-grpc-rbac
+  namespace: cloudbridge
+spec:
+  podSelector:
+    matchLabels:
+      app: cloudbridge-relay
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          role: authorized-client
+    - namespaceSelector:
+        matchLabels:
+          name: tenant-namespace
+    ports:
+    - protocol: TCP
+      port: 8444
+
+---
+# Audit Logging Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: calico-audit-config
+  namespace: calico-system
+data:
+  audit.yaml: |
+    # Calico Felix logs + Prometheus для policy violations
+    # LOG_LEVEL=debug для детального аудита network policy hits
+    audit:
+      enabled: true
+      log_level: "debug"
+      policy_violations: true
+      prometheus_metrics: true
+      
+---
+# Network Policy Observability - Prometheus ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: calico-felix-metrics
+  namespace: calico-system
+spec:
+  selector:
+    matchLabels:
+      app: calico-felix
+  endpoints:
+  - port: metrics-port
+    path: /metrics
+    interval: 30s
+    # Метрики для policy hits и violations
+
+---
+# Rate Limiting через Calico (если поддерживается)
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-rate-limiting
+spec:
+  tier: security
+  order: 180
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Ingress, Egress]
+  # Примечание: фактический rate limiting может требовать дополнительных компонентов
+  # или интеграции с service mesh (Istio/Linkerd)
+  
+---
+# Advanced threat protection
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: threat-detection
+spec:
+  tier: security
+  order: 190
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Ingress, Egress]
+  egress:
+  # Блокируем известные malicious IP ranges
+  - action: Deny
+    destination:
+      nets: 
+        - "0.0.0.0/8"      # Invalid source addresses
+        - "127.0.0.0/8"    # Loopback
+        - "224.0.0.0/4"    # Multicast
+        - "240.0.0.0/4"    # Reserved
+  # Блокируем подозрительные протоколы
+  - action: Deny
+    protocol: ICMP
+    icmp:
+      type: 8  # Ping requests (опционально)
