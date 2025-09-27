@@ -1,0 +1,213 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ipam
+  labels:
+    name: ipam
+    app.kubernetes.io/name: cloudbridge-ipam
+    app.kubernetes.io/component: ipam-service
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ipam-config
+  namespace: ipam
+data:
+  config.yaml: |
+    server:
+      host: "0.0.0.0"
+      port: 8080
+    database:
+      host: "postgres.cloudbridge.svc.cluster.local"
+      port: 5432
+      name: "cadence"
+      user: "cadence"
+      password: "cadence123"
+      ssl_mode: "disable"
+    ipam:
+      address_space: "10.0.0.0/8"
+      default_subnet_size: 24
+      max_subnets_per_tenant: 100
+    logging:
+      level: "info"
+      format: "json"
+    metrics:
+      enabled: true
+      port: 9090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ipam-service
+  namespace: ipam
+  labels:
+    app: ipam-service
+    app.kubernetes.io/name: cloudbridge-ipam
+    app.kubernetes.io/component: ipam-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ipam-service
+  template:
+    metadata:
+      labels:
+        app: ipam-service
+        app.kubernetes.io/name: cloudbridge-ipam
+        app.kubernetes.io/component: ipam-service
+    spec:
+      containers:
+      - name: ipam-service
+        image: cloudbridge-ipam:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: health
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: CONFIG_FILE
+          value: "/app/config.yaml"
+        - name: LOG_LEVEL
+          value: "info"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config.yaml
+          subPath: config.yaml
+        - name: logs
+          mountPath: /var/log/ipam
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: config
+        configMap:
+          name: ipam-config
+      - name: logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipam-service
+  namespace: ipam
+  labels:
+    app: ipam-service
+    app.kubernetes.io/name: cloudbridge-ipam
+    app.kubernetes.io/component: ipam-service
+spec:
+  selector:
+    app: ipam-service
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: health
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipam-service-external
+  namespace: ipam
+  labels:
+    app: ipam-service
+    app.kubernetes.io/name: cloudbridge-ipam
+    app.kubernetes.io/component: ipam-service
+spec:
+  selector:
+    app: ipam-service
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ipam-service-netpol
+  namespace: ipam
+spec:
+  podSelector:
+    matchLabels:
+      app: ipam-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: cloudbridge
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 8081
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: cloudbridge
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to: []  # Allow DNS
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: ipam-service
+  namespace: ipam
+  labels:
+    app: ipam-service
+    app.kubernetes.io/name: cloudbridge-ipam
+spec:
+  selector:
+    matchLabels:
+      app: ipam-service
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s

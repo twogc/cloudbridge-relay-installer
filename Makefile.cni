@@ -1,0 +1,149 @@
+# CloudBridge CNI Plugin Makefile
+SHELL := /bin/bash
+
+# ===== Versions & metadata =====
+VERSION      ?= $(shell git describe --tags --always --dirty)
+BUILD_TIME   ?= $(shell date -u '+%Y-%m-%d_%H:%M:%S')
+GIT_COMMIT   ?= $(shell git rev-parse HEAD)
+
+# ===== Container registry =====
+REGISTRY     ?= twogc
+IMAGE_NAME   ?= cloudbridge-cni
+FULL_IMAGE_NAME   = $(REGISTRY)/$(IMAGE_NAME):$(VERSION)
+LATEST_IMAGE_NAME = $(REGISTRY)/$(IMAGE_NAME):latest
+
+# ===== Go params =====
+GOOS        ?= linux
+GOARCH      ?= amd64
+CGO_ENABLED  = 1
+
+# ===== Dirs =====
+BIN_DIR      = bin
+CNI_BIN_DIR  = /opt/cni/bin
+CNI_CONF_DIR = /etc/cni/net.d
+DIST_DIR     = dist
+
+# ===== PHONY =====
+.PHONY: help build-cni clean-cni test-cni docker-build-cni docker-push-cni \
+        install-cni uninstall-cni test-integration-cni
+
+help: ## Показать справку для CNI
+	@echo "CloudBridge CNI Plugin"
+	@echo "====================="
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+	  awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-22s\033[0m %s\n", $$1, $$2}'
+
+# ===== Build & test =====
+
+build-cni: ## Собрать CNI plugin
+	@echo "Сборка CloudBridge CNI Plugin..."
+	@mkdir -p $(BIN_DIR)
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
+		-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT)" \
+		-o $(BIN_DIR)/cloudbridge-cni ./cmd/cni-plugin
+	@echo "CNI Plugin собран: $(BIN_DIR)/cloudbridge-cni"
+
+clean-cni: ## Очистить CNI артефакты
+	@echo "Очистка CNI артефактов..."
+	@rm -rf $(BIN_DIR)/cloudbridge-cni
+	@echo "CNI артефакты очищены"
+
+test-cni: ## Запустить тесты CNI
+	@echo "Запуск тестов CNI..."
+	go test -v ./internal/cni/...
+	@echo "Тесты CNI завершены"
+
+test-integration-cni: ## Интеграционные тесты CNI
+	@echo "Запуск интеграционных тестов CNI..."
+	go test -v -tags=integration ./internal/cni/...
+	@echo "Интеграционные тесты CNI завершены"
+
+# ===== Docker =====
+
+docker-build-cni: ## Собрать Docker образ CNI
+	@echo "Сборка Docker образа CNI: $(FULL_IMAGE_NAME)"
+	docker build \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg BUILD_TIME=$(BUILD_TIME) \
+		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
+		-f Dockerfile.cni \
+		-t $(FULL_IMAGE_NAME) \
+		-t $(LATEST_IMAGE_NAME) .
+	@echo "Docker образ CNI собран"
+
+docker-push-cni: ## Отправить Docker образ CNI в registry
+	@echo "Отправка Docker образа CNI в registry..."
+	docker push $(FULL_IMAGE_NAME)
+	docker push $(LATEST_IMAGE_NAME)
+	@echo "Docker образ CNI отправлен"
+
+# ===== Installation =====
+
+install-cni: build-cni ## Установить CNI plugin
+	@echo "Установка CNI plugin..."
+	@sudo mkdir -p $(CNI_BIN_DIR) $(CNI_CONF_DIR)
+	@sudo cp $(BIN_DIR)/cloudbridge-cni $(CNI_BIN_DIR)/
+	@sudo chmod +x $(CNI_BIN_DIR)/cloudbridge-cni
+	@sudo cp configs/cni/cloudbridge-cni.conf $(CNI_CONF_DIR)/
+	@echo "CNI plugin установлен"
+
+uninstall-cni: ## Удалить CNI plugin
+	@echo "Удаление CNI plugin..."
+	@sudo rm -f $(CNI_BIN_DIR)/cloudbridge-cni
+	@sudo rm -f $(CNI_CONF_DIR)/cloudbridge-cni.conf
+	@echo "CNI plugin удален"
+
+# ===== Kubernetes =====
+
+deploy-cni-k8s: ## Развернуть CNI plugin в Kubernetes
+	@echo "Развертывание CNI plugin в Kubernetes..."
+	kubectl apply -f k8s/cni-plugin-daemonset.yaml
+	@echo "CNI plugin развернут в Kubernetes"
+
+undeploy-cni-k8s: ## Удалить CNI plugin из Kubernetes
+	@echo "Удаление CNI plugin из Kubernetes..."
+	kubectl delete -f k8s/cni-plugin-daemonset.yaml --ignore-not-found=true
+	@echo "CNI plugin удален из Kubernetes"
+
+# ===== Testing =====
+
+test-cni-local: ## Локальное тестирование CNI
+	@echo "Локальное тестирование CNI plugin..."
+	@mkdir -p /tmp/cni-test
+	@echo '{"cniVersion":"0.4.0","name":"test","type":"cloudbridge-cni","ipam":{"type":"cloudbridge-ipam","serviceUrl":"http://localhost:8080","tenantId":"test-tenant"}}' | \
+		$(BIN_DIR)/cloudbridge-cni add test-container /tmp/cni-test veth0
+	@echo "Локальное тестирование завершено"
+
+# ===== Development =====
+
+dev-setup-cni: ## Настройка среды разработки CNI
+	@echo "Настройка среды разработки CNI..."
+	@go mod tidy
+	@go mod download
+	@echo "Среда разработки CNI настроена"
+
+fmt-cni: ## Форматировать CNI код
+	@echo "Форматирование CNI кода..."
+	go fmt ./cmd/cni-plugin/... ./internal/cni/...
+	@echo "Форматирование CNI завершено"
+
+lint-cni: ## Запустить линтер CNI
+	@echo "Запуск линтера CNI..."
+	golangci-lint run ./cmd/cni-plugin/... ./internal/cni/...
+	@echo "Линтинг CNI завершен"
+
+# ===== Status =====
+
+status-cni: ## Проверить статус CNI
+	@echo "Статус CNI plugin:"
+	@ls -la $(CNI_BIN_DIR)/cloudbridge-cni 2>/dev/null || echo "CNI plugin не установлен"
+	@ls -la $(CNI_CONF_DIR)/cloudbridge-cni.conf 2>/dev/null || echo "CNI конфигурация не найдена"
+	@kubectl get daemonset cloudbridge-cni-plugin -n kube-system 2>/dev/null || echo "CNI DaemonSet не развернут"
+
+# ===== All =====
+
+all-cni: clean-cni build-cni test-cni docker-build-cni ## Полный цикл CNI
+	@echo "Полный цикл CNI завершен"
+
+prod-cni: clean-cni test-cni docker-build-cni docker-push-cni ## Production сборка CNI
+	@echo "Production сборка CNI завершена"

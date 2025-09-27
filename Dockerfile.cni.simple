@@ -1,0 +1,31 @@
+# Simple Dockerfile for CloudBridge CNI Plugin
+FROM alpine:3.18
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    iproute2 \
+    iptables \
+    curl \
+    jq
+
+# Create CNI directories
+RUN mkdir -p /opt/cni/bin /etc/cni/net.d /var/log/cloudbridge-cni
+
+# Copy CNI plugin binary to /app
+COPY bin/cloudbridge-cni /app/cloudbridge-cni
+
+# Copy configuration to /app
+COPY configs/cni/cloudbridge-cni.conf /app/cloudbridge-cni.conf
+
+# Set permissions
+RUN chmod +x /app/cloudbridge-cni
+
+# Create log directory
+RUN mkdir -p /var/log/cloudbridge-cni && \
+    chmod 755 /var/log/cloudbridge-cni
+
+# Set working directory
+WORKDIR /opt/cni/bin
+
+# Default command
+CMD ["/opt/cni/bin/cloudbridge-cni"]

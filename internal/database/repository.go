@@ -611,3 +611,193 @@ func (r *Repository) GetStats() (map[string]interface{}, error) {
 
 	return stats, nil
 }
+
+// IPAM Methods - Tenant Management
+
+// CreateTenant creates a new tenant
+func (r *Repository) CreateTenant(tenant *Tenant) error {
+	query := `
+		INSERT INTO tenants (
+			tenant_id, description, max_subnets, status, created_at, updated_at
+		) VALUES (
+			:tenant_id, :description, :max_subnets, :status, :created_at, :updated_at
+		) RETURNING id`
+
+	rows, err := r.db.NamedQuery(query, tenant)
+	if err != nil {
+		return fmt.Errorf("failed to create tenant: %w", err)
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.Scan(&tenant.ID)
+		if err != nil {
+			return fmt.Errorf("failed to scan tenant ID: %w", err)
+		}
+	}
+
+	r.logger.Info("Tenant created", 
+		zap.String("tenant_id", tenant.TenantID),
+		zap.Int("id", tenant.ID))
+
+	return nil
+}
+
+// GetTenant retrieves a tenant by ID
+func (r *Repository) GetTenant(tenantID string) (*Tenant, error) {
+	query := `SELECT * FROM tenants WHERE tenant_id = $1`
+	
+	var tenant Tenant
+	err := r.db.Get(&tenant, query, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
+	return &tenant, nil
+}
+
+// DeleteTenant deletes a tenant
+func (r *Repository) DeleteTenant(tenantID string) error {
+	query := `DELETE FROM tenants WHERE tenant_id = $1`
+	
+	result, err := r.db.Exec(query, tenantID)
+	if err != nil {
+		return fmt.Errorf("failed to delete tenant: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("tenant not found")
+	}
+
+	r.logger.Info("Tenant deleted", zap.String("tenant_id", tenantID))
+	return nil
+}
+
+// ListTenants lists tenants with pagination
+func (r *Repository) ListTenants(limit, offset int, status string) ([]*Tenant, error) {
+	query := `SELECT * FROM tenants`
+	args := []interface{}{}
+	argIndex := 1
+
+	if status != "" {
+		query += ` WHERE status = $` + fmt.Sprintf("%d", argIndex)
+		args = append(args, status)
+		argIndex++
+	}
+
+	query += ` ORDER BY created_at DESC LIMIT $` + fmt.Sprintf("%d", argIndex) + ` OFFSET $` + fmt.Sprintf("%d", argIndex+1)
+	args = append(args, limit, offset)
+
+	var tenants []*Tenant
+	err := r.db.Select(&tenants, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tenants: %w", err)
+	}
+
+	return tenants, nil
+}
+
+// GetTenantSubnetCount returns the number of active subnets for a tenant
+func (r *Repository) GetTenantSubnetCount(tenantID string) (int, error) {
+	query := `SELECT COUNT(*) FROM tenant_networks WHERE tenant_id = $1 AND is_active = true`
+	
+	var count int
+	err := r.db.Get(&count, query, tenantID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get tenant subnet count: %w", err)
+	}
+
+	return count, nil
+}
+
+// DeactivateAllTenantSubnets deactivates all subnets for a tenant
+func (r *Repository) DeactivateAllTenantSubnets(tenantID string) error {
+	query := `UPDATE tenant_networks SET is_active = false, updated_at = $1 WHERE tenant_id = $2`
+	
+	_, err := r.db.Exec(query, time.Now(), tenantID)
+	if err != nil {
+		return fmt.Errorf("failed to deactivate tenant subnets: %w", err)
+	}
+
+	r.logger.Info("All tenant subnets deactivated", zap.String("tenant_id", tenantID))
+	return nil
+}
+
+// GetIPAMStats returns IPAM statistics
+func (r *Repository) GetIPAMStats() (*IPAMStats, error) {
+	query := `
+		SELECT 
+			(SELECT COUNT(*) FROM tenants) as total_tenants,
+			(SELECT COUNT(*) FROM tenants WHERE status = 'active') as active_tenants,
+			(SELECT COUNT(*) FROM tenant_networks) as total_subnets,
+			(SELECT COUNT(*) FROM tenant_networks WHERE is_active = true) as allocated_subnets,
+			(SELECT COUNT(*) FROM tenant_networks WHERE is_active = false) as available_subnets,
+			CASE 
+				WHEN (SELECT COUNT(*) FROM tenant_networks) > 0 
+				THEN (SELECT COUNT(*) FROM tenant_networks WHERE is_active = true)::float / (SELECT COUNT(*) FROM tenant_networks)::float * 100
+				ELSE 0 
+			END as utilization_rate`
+
+	var stats IPAMStats
+	err := r.db.Get(&stats, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get IPAM stats: %w", err)
+	}
+
+	return &stats, nil
+}
+
+// DeactivateTenantSubnet deactivates a specific subnet for a tenant
+func (r *Repository) DeactivateTenantSubnet(tenantID, subnetCIDR string) error {
+	query := `UPDATE tenant_networks SET is_active = false, updated_at = $1 WHERE tenant_id = $2 AND network_cidr = $3`
+	
+	result, err := r.db.Exec(query, time.Now(), tenantID, subnetCIDR)
+	if err != nil {
+		return fmt.Errorf("failed to deactivate tenant subnet: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("subnet not found")
+	}
+
+	r.logger.Info("Tenant subnet deactivated", 
+		zap.String("tenant_id", tenantID),
+		zap.String("subnet_cidr", subnetCIDR))
+	return nil
+}
+
+// GetTenantSubnets returns all subnets for a tenant
+func (r *Repository) GetTenantSubnets(tenantID string) ([]*TenantNetwork, error) {
+	query := `SELECT * FROM tenant_networks WHERE tenant_id = $1 ORDER BY created_at DESC`
+	
+	var subnets []*TenantNetwork
+	err := r.db.Select(&subnets, query, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant subnets: %w", err)
+	}
+
+	return subnets, nil
+}
+
+// GetNextSubnetCounter returns the next available subnet counter
+func (r *Repository) GetNextSubnetCounter() (int, error) {
+	query := `SELECT COALESCE(MAX(subnet_counter), 0) + 1 FROM tenant_networks`
+	
+	var counter int
+	err := r.db.Get(&counter, query)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get next subnet counter: %w", err)
+	}
+
+	return counter, nil
+}

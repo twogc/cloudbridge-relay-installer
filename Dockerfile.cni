@@ -1,0 +1,53 @@
+# Multi-stage build for CloudBridge CNI Plugin
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git make gcc musl-dev
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY cmd/cni-plugin/ ./cmd/cni-plugin/
+COPY internal/cni/ ./internal/cni/
+
+# Build CNI plugin
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o cloudbridge-cni ./cmd/cni-plugin
+
+# Runtime stage
+FROM alpine:3.18
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    iproute2 \
+    iptables \
+    curl \
+    jq
+
+# Create CNI directories
+RUN mkdir -p /opt/cni/bin /etc/cni/net.d /var/log/cloudbridge-cni
+
+# Copy CNI plugin binary
+COPY --from=builder /app/cloudbridge-cni /opt/cni/bin/cloudbridge-cni
+
+# Copy configuration
+COPY configs/cni/ /etc/cni/net.d/
+
+# Set permissions
+RUN chmod +x /opt/cni/bin/cloudbridge-cni
+
+# Create log directory
+RUN mkdir -p /var/log/cloudbridge-cni && \
+    chmod 755 /var/log/cloudbridge-cni
+
+# Set working directory
+WORKDIR /opt/cni/bin
+
+# Default command
+CMD ["/opt/cni/bin/cloudbridge-cni"]
