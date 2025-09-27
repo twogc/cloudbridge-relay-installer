@@ -142,7 +142,7 @@ func (rm *RelayManager) RegisterPeer(tenantID, peerID, publicKey string, allowed
 	if _, exists := rm.tenants[tenantID]; !exists {
 		rm.tenants[tenantID] = &Tenant{
 			TenantID:       tenantID,
-			NetworkCIDR:    rm.getTenantNetwork(tenantID),
+			NetworkCIDR:    rm.GetTenantNetwork(tenantID),
 			Peers:          make(map[string]*Peer),
 			Connections:    make(map[string]*RelayP2PConnection),
 			MaxPeers:       100,
@@ -386,7 +386,7 @@ func (rm *RelayManager) forwardPacket(targetConn *QUICConnection, data []byte) e
 }
 
 // getTenantNetwork возвращает сеть для tenant
-func (rm *RelayManager) getTenantNetwork(tenantID string) string {
+func (rm *RelayManager) GetTenantNetwork(tenantID string) string {
 	// Каждый tenant получает свою подсеть
 	tenantNetworks := map[string]string{
 		"tenant-216420165": "10.100.77.0/24",
@@ -416,17 +416,21 @@ func (rm *RelayManager) generateNewTenantNetwork(tenantID string) string {
 	// Инициализируем allocatedNets если нужно
 	if rm.allocatedNets == nil {
 		rm.allocatedNets = make(map[string]string)
-		// Резервируем известные подсети
-		rm.allocatedNets["tenant-216420165"] = "10.100.77.0/24"
-		rm.allocatedNets["tenant-123456789"] = "10.100.78.0/24"
-		rm.allocatedNets["tenant-987654321"] = "10.100.79.0/24"
+		// Резервируем известные подсети (мигрируем в новый диапазон)
+		rm.allocatedNets["tenant-216420165"] = "10.0.77.0/24"
+		rm.allocatedNets["tenant-123456789"] = "10.0.78.0/24"
+		rm.allocatedNets["tenant-987654321"] = "10.0.79.0/24"
 		rm.subnetCounter = 79 // Начинаем с 80
 	}
 
 	// Ищем следующую доступную подсеть
 	for {
 		rm.subnetCounter++
-		candidateNet := fmt.Sprintf("10.100.%d.0/24", rm.subnetCounter)
+		// Новый алгоритм: используем весь 10.0.0.0/8 диапазон
+		// Формат: 10.x.y.0/24 где x = subnetCounter/256, y = subnetCounter%256
+		x := rm.subnetCounter / 256
+		y := rm.subnetCounter % 256
+		candidateNet := fmt.Sprintf("10.%d.%d.0/24", x, y)
 
 		// Проверяем что эта подсеть не занята
 		occupied := false
@@ -437,7 +441,7 @@ func (rm *RelayManager) generateNewTenantNetwork(tenantID string) string {
 			}
 		}
 
-		if !occupied && rm.subnetCounter < 255 {
+		if !occupied && rm.subnetCounter < 65535 { // 256*256-1 = 65535 (максимум для 10.0.0.0/8)
 			// Выделяем подсеть в памяти
 			rm.allocatedNets[tenantID] = candidateNet
 
