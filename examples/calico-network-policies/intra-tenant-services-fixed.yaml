@@ -1,0 +1,39 @@
+# Fixed intra-tenant service communication
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-216420165-allow-services-fixed
+spec:
+  order: 49
+  selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  types: [Egress]
+  egress:
+  # Allow TCP to services within same tenant namespaces
+  - action: Allow
+    protocol: TCP
+    destination:
+      namespaceSelector: tenant.cloudbridge.io/id == "tenant-216420165"
+  # Allow TCP to pods within same tenant
+  - action: Allow
+    protocol: TCP
+    destination:
+      selector: tenant.cloudbridge.io/id == "tenant-216420165"
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-123456789-allow-services-fixed
+spec:
+  order: 49
+  selector: tenant.cloudbridge.io/id == "tenant-123456789" 
+  types: [Egress]
+  egress:
+  - action: Allow
+    protocol: TCP
+    destination:
+      namespaceSelector: tenant.cloudbridge.io/id == "tenant-123456789"
+  - action: Allow
+    protocol: TCP
+    destination:
+      selector: tenant.cloudbridge.io/id == "tenant-123456789"

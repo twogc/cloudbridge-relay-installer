@@ -12,9 +12,9 @@ spec:
   # Allow DNS to kube-system namespace
   - action: Allow
     destination:
-      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system"
     protocol: UDP
   - action: Allow  
     destination:
-      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system"
     protocol: TCP

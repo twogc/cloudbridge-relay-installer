@@ -1,0 +1,25 @@
+# Fixed DNS access policy - no duplicate destination keys
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-dns-system-fixed
+spec:
+  order: 50
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Egress]
+  egress:
+  # Allow DNS UDP to kube-system
+  - action: Allow
+    protocol: UDP
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      selector: k8s-app in {"kube-dns","coredns"}
+      ports: [53, 5353]
+  # Allow DNS TCP to kube-system
+  - action: Allow
+    protocol: TCP
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      selector: k8s-app in {"kube-dns","coredns"}
+      ports: [53]

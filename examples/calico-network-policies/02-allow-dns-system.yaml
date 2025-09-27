@@ -14,14 +14,14 @@ spec:
     # Allow DNS to kube-system (CoreDNS/kube-dns)
     - action: Allow
       destination:
-        namespaceSelector: name == "kube-system"
+        namespaceSelector: kubernetes.io/metadata.name == "kube-system"
         selector: k8s-app in {"kube-dns", "coredns"}
       protocol: UDP
       destination:
         ports: [53]
     - action: Allow
       destination:
-        namespaceSelector: name == "kube-system"
+        namespaceSelector: kubernetes.io/metadata.name == "kube-system"
         selector: k8s-app in {"kube-dns", "coredns"}
       protocol: TCP
       destination:
@@ -29,7 +29,7 @@ spec:
     # Allow HTTPS to kube-system for system services
     - action: Allow
       destination:
-        namespaceSelector: name == "kube-system"
+        namespaceSelector: kubernetes.io/metadata.name == "kube-system"
       protocol: TCP
       destination:
         ports: [443]

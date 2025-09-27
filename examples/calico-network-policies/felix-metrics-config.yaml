@@ -1,0 +1,31 @@
+# Proper Felix Configuration for metrics and observability
+---
+apiVersion: crd.projectcalico.org/v1
+kind: FelixConfiguration
+metadata:
+  name: default
+spec:
+  prometheusMetricsEnabled: true
+  prometheusMetricsPort: 9091
+  logSeverityScreen: Info
+  logSeverityFile: Info
+  # Enable policy logging for debugging
+  # logSeverityScreen: Debug  # Uncomment for detailed policy debugging
+---
+# Service for Felix metrics
+apiVersion: v1
+kind: Service
+metadata:
+  name: felix-metrics-service
+  namespace: calico-system
+  labels:
+    k8s-app: calico-felix
+spec:
+  selector:
+    k8s-app: calico-node
+  ports:
+  - name: metrics
+    port: 9091
+    targetPort: 9091
+    protocol: TCP
+  type: ClusterIP

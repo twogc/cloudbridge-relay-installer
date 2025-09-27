@@ -13,28 +13,28 @@ spec:
   # DNS разрешения - kube-dns
   - action: Allow
     destination:
-      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system"
       selector: k8s-app == "kube-dns"
     protocol: UDP
     ports: [53]
   # DNS - альтернативный порт для DNAT случаев  
   - action: Allow
     destination:
-      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system"
       selector: k8s-app == "kube-dns"
     protocol: UDP
     ports: [5353]  # ⚡ ИСПРАВЛЕНО: учитываем DNAT в некоторых дистрибутивах
   # CoreDNS поддержка
   - action: Allow
     destination:
-      namespaceSelector: kubernetes.io/metadata.name == "kube-system" 
+      namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system" 
       selector: k8s-app == "coredns"
     protocol: UDP
     ports: [53, 5353]  # ⚡ Оба порта для надежности
   # TCP DNS для больших запросов
   - action: Allow
     destination:
-      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system"
       selector: k8s-app == "kube-dns" || k8s-app == "coredns"
     protocol: TCP
     ports: [53]
@@ -53,11 +53,11 @@ spec:
   # DNS services
   - action: Allow
     destination:
-      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system"
     protocol: UDP
     ports: [53, 5353]
   - action: Allow
     destination:
-      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+      namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system"
     protocol: TCP
     ports: [53]

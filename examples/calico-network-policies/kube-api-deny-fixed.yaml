@@ -1,0 +1,24 @@
+# Fixed kube-API blocking policy
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: block-kubeapi-fixed
+spec:
+  order: 15
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Egress]
+  egress:
+  # Block access to kubernetes service
+  - action: Deny
+    protocol: TCP
+    destination:
+      services:
+        name: kubernetes
+        namespace: default
+  # Block direct access to API server IPs (common ports)
+  - action: Deny
+    protocol: TCP
+    destination:
+      ports: [443, 6443, 8443]
+      nets: ["10.96.0.1/32"]  # Common kube-apiserver service IP
