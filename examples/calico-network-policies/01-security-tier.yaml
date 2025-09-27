@@ -1,7 +1,7 @@
 # Calico Security Tier Configuration
 # Создает dedicated tier "security" для всех security правил
 ---
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: Tier
 metadata:
   name: security

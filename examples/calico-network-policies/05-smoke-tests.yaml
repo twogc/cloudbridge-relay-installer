@@ -1,0 +1,77 @@
+# Smoke Test Pods for Network Policy Validation
+# Тестовые pods для проверки изоляции
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-a-test
+  labels:
+    name: tenant-a-test
+---
+apiVersion: v1  
+kind: Namespace
+metadata:
+  name: tenant-b-test
+  labels:
+    name: tenant-b-test
+---
+# Test pod for tenant A
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod-tenant-a
+  namespace: tenant-a-test
+  labels:
+    tenant.cloudbridge.io/id: "tenant-216420165"
+    app: test-pod
+spec:
+  containers:
+  - name: netshoot
+    image: nicolaka/netshoot:latest
+    command: ["/bin/bash", "-c", "sleep 3600"]
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi" 
+        cpu: "100m"
+---
+# Test pod for tenant B
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod-tenant-b
+  namespace: tenant-b-test
+  labels:
+    tenant.cloudbridge.io/id: "tenant-123456789"
+    app: test-pod
+spec:
+  containers:
+  - name: netshoot
+    image: nicolaka/netshoot:latest
+    command: ["/bin/bash", "-c", "sleep 3600"]
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+---
+# Test service for tenant B
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-svc-tenant-b
+  namespace: tenant-b-test
+  labels:
+    tenant.cloudbridge.io/id: "tenant-123456789"
+spec:
+  selector:
+    app: test-pod
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  type: ClusterIP

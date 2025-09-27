@@ -1,0 +1,35 @@
+# Standard Kubernetes NetworkPolicy for tenant A isolation
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tenant-a-isolation
+  namespace: tenant-a-test
+spec:
+  podSelector: {}  # Применяется ко всем pods в namespace
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow only from same tenant
+    - from:
+      - podSelector:
+          matchLabels:
+            tenant.cloudbridge.io/id: "tenant-216420165"
+      - namespaceSelector:
+          matchLabels:
+            tenant.cloudbridge.io/id: "tenant-216420165"
+  egress:
+    # Allow DNS
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: kube-system
+    # Allow only to same tenant
+    - to:
+      - podSelector:
+          matchLabels:
+            tenant.cloudbridge.io/id: "tenant-216420165"
+      - namespaceSelector:
+          matchLabels:
+            tenant.cloudbridge.io/id: "tenant-216420165"

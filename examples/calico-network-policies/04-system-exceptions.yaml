@@ -1,12 +1,11 @@
 # System Services Exceptions
 # ⚡ ЖЕЛЕЗОБЕТОННАЯ защита: разрешения для системных сервисов (DNS, kube-system)
 ---
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: allow-system-services
 spec:
-  tier: security      # ⚡ Тот же security tier
   order: 50           # ⚡ Самый высокий приоритет для системных сервисов
   selector: has(tenant.cloudbridge.io/id)
   types: [Egress]
@@ -42,7 +41,7 @@ spec:
 
 ---
 # Backup policy для случая отсутствия tier support
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: allow-system-services-backup

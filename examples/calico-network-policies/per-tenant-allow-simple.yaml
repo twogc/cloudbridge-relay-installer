@@ -1,0 +1,35 @@
+# Simple per-tenant allow policy
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-216420165-allow-intra
+spec:
+  order: 200
+  selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  types: [Ingress, Egress]
+  ingress:
+  - action: Allow
+    source:
+      selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  egress:
+  - action: Allow
+    destination:
+      selector: tenant.cloudbridge.io/id == "tenant-216420165"
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-123456789-allow-intra
+spec:
+  order: 200
+  selector: tenant.cloudbridge.io/id == "tenant-123456789"
+  types: [Ingress, Egress]
+  ingress:
+  - action: Allow
+    source:
+      selector: tenant.cloudbridge.io/id == "tenant-123456789"
+  egress:
+  - action: Allow
+    destination:
+      selector: tenant.cloudbridge.io/id == "tenant-123456789"

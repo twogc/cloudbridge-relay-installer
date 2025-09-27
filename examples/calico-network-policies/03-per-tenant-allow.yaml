@@ -1,84 +1,59 @@
-# Per-Tenant Allow Policies
-# ⚡ ЖЕЛЕЗОБЕТОННАЯ защита: разрешения только внутри tenant'а
-# ⚠️ КРИТИЧНО: Отдельная политика для каждого tenant'а (Calico НЕ поддерживает переменные)
-
+# Per-tenant Allow Policies (adapted from kubernetes-network-policy-recipes)
+# Разрешает intra-tenant коммуникацию
 ---
-# Tenant 216420165 - Allow intra-tenant communication
-apiVersion: projectcalico.org/v3
-kind: GlobalNetworkPolicy  
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
 metadata:
   name: tenant-216420165-allow-intra
 spec:
-  tier: security      # ⚡ ИСПРАВЛЕНО: используем dedicated tier
-  order: 200          # ⚡ Более низкий приоритет чем deny-all (100)
+  order: 50
   selector: tenant.cloudbridge.io/id == "tenant-216420165"
-  types: [Ingress, Egress]
+  types:
+    - Ingress
+    - Egress
   ingress:
-  - action: Allow
-    source:
-      selector: tenant.cloudbridge.io/id == "tenant-216420165"
+    - action: Allow
+      source:
+        selector: tenant.cloudbridge.io/id == "tenant-216420165"
   egress:
-  - action: Allow
-    destination:
-      selector: tenant.cloudbridge.io/id == "tenant-216420165"
-
+    - action: Allow
+      destination:
+        selector: tenant.cloudbridge.io/id == "tenant-216420165"
 ---
-# Tenant 123456789 - Allow intra-tenant communication
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: tenant-123456789-allow-intra
 spec:
-  tier: security
-  order: 200
+  order: 50
   selector: tenant.cloudbridge.io/id == "tenant-123456789"
-  types: [Ingress, Egress]
+  types:
+    - Ingress
+    - Egress
   ingress:
-  - action: Allow
-    source:
-      selector: tenant.cloudbridge.io/id == "tenant-123456789"
+    - action: Allow
+      source:
+        selector: tenant.cloudbridge.io/id == "tenant-123456789"
   egress:
-  - action: Allow
-    destination:
-      selector: tenant.cloudbridge.io/id == "tenant-123456789"
-
+    - action: Allow
+      destination:
+        selector: tenant.cloudbridge.io/id == "tenant-123456789"
 ---
-# Tenant 987654321 - Allow intra-tenant communication
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: tenant-987654321-allow-intra
 spec:
-  tier: security
-  order: 200
+  order: 50
   selector: tenant.cloudbridge.io/id == "tenant-987654321"
-  types: [Ingress, Egress]
+  types:
+    - Ingress
+    - Egress
   ingress:
-  - action: Allow
-    source:
-      selector: tenant.cloudbridge.io/id == "tenant-987654321"
+    - action: Allow
+      source:
+        selector: tenant.cloudbridge.io/id == "tenant-987654321"
   egress:
-  - action: Allow
-    destination:
-      selector: tenant.cloudbridge.io/id == "tenant-987654321"
-
----
-# TEMPLATE для новых tenant'ов
-# Замените TENANT_ID на актуальный ID
-# apiVersion: projectcalico.org/v3
-# kind: GlobalNetworkPolicy
-# metadata:
-#   name: tenant-TENANT_ID-allow-intra
-# spec:
-#   tier: security
-#   order: 200
-#   selector: tenant.cloudbridge.io/id == "tenant-TENANT_ID"
-#   types: [Ingress, Egress]
-#   ingress:
-#   - action: Allow
-#     source:
-#       selector: tenant.cloudbridge.io/id == "tenant-TENANT_ID"
-#   egress:
-#   - action: Allow
-#     destination:
-#       selector: tenant.cloudbridge.io/id == "tenant-TENANT_ID"
+    - action: Allow
+      destination:
+        selector: tenant.cloudbridge.io/id == "tenant-987654321"

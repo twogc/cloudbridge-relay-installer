@@ -1,0 +1,46 @@
+# Block IMDS and kube-API (adapted from kubernetes-network-policy-recipes)  
+# Блокирует доступ к метаданным и API серверу
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: block-imds
+spec:
+  order: 50  # Очень высокий приоритет
+  selector: has(tenant.cloudbridge.io/id)
+  types:
+    - Egress
+  egress:
+    # Block AWS/GCP/Azure Instance Metadata Service
+    - action: Deny
+      destination:
+        nets: ["169.254.169.254/32"]
+    # Block Azure WireServer
+    - action: Deny
+      destination:
+        nets: ["168.63.129.16/32"]
+    # Block direct access to Kubernetes API server
+    - action: Deny
+      destination:
+        services:
+          name: kubernetes
+          namespace: default
+      protocol: TCP
+---
+# Allow controlled access to kube-API for specific workloads
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-api-for-operators
+spec:
+  order: 40  # Выше чем block
+  selector: tenant.cloudbridge.io/id == "system" && role == "operator"
+  types:
+    - Egress
+  egress:
+    - action: Allow
+      destination:
+        services:
+          name: kubernetes  
+          namespace: default
+      protocol: TCP

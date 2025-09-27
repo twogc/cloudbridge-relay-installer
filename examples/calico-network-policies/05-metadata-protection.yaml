@@ -1,12 +1,11 @@
 # Metadata Services Protection
 # ⚠️ КРИТИЧНО: Блокировка IMDS + kube-apiserver согласно NSA/CISA рекомендациям
 ---
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: block-metadata-services
 spec:
-  tier: security
   order: 10           # Очень высокий приоритет
   selector: has(tenant.cloudbridge.io/id)
   types: [Egress]
@@ -31,7 +30,7 @@ spec:
 
 ---
 # Точечные разрешения для операторских pods (если нужно)
-apiVersion: projectcalico.org/v3  
+apiVersion: crd.projectcalico.org/v1  
 kind: NetworkPolicy
 metadata:
   name: allow-apiserver-for-operators
@@ -50,12 +49,11 @@ spec:
 
 ---
 # GKE specific IMDS protection
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: block-gke-metadata
 spec:
-  tier: security
   order: 15
   selector: has(tenant.cloudbridge.io/id)
   types: [Egress]
@@ -73,12 +71,11 @@ spec:
     
 ---
 # AWS specific protections
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: block-aws-metadata
 spec:
-  tier: security
   order: 15
   selector: has(tenant.cloudbridge.io/id)
   types: [Egress]
@@ -94,12 +91,11 @@ spec:
     
 ---
 # Azure specific protections
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: block-azure-metadata
 spec:
-  tier: security
   order: 15
   selector: has(tenant.cloudbridge.io/id)
   types: [Egress]

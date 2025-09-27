@@ -1,0 +1,21 @@
+# Fixed Cross-Tenant Deny Policy with explicit Deny rules
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: cross-tenant-deny-fixed
+spec:
+  order: 500  # Между allow (150) и default-deny (1000)
+  selector: has(tenant.cloudbridge.io/id)
+  types:
+    - Ingress
+    - Egress
+  # Явно блокируем трафик между разными tenant'ами
+  ingress:
+    - action: Deny
+      source:
+        selector: has(tenant.cloudbridge.io/id) && tenant.cloudbridge.io/id != global()
+  egress:
+    - action: Deny
+      destination:
+        selector: has(tenant.cloudbridge.io/id) && tenant.cloudbridge.io/id != global()

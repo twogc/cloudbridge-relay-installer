@@ -1,0 +1,29 @@
+# Explicit Cross-Tenant Deny - очень конкретные правила
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: explicit-deny-216420165-to-123456789
+spec:
+  order: 75  # Между allow (50) и старыми deny (100)
+  selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  types:
+    - Egress
+  egress:
+    - action: Deny
+      destination:
+        selector: tenant.cloudbridge.io/id == "tenant-123456789"
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: explicit-deny-123456789-to-216420165
+spec:
+  order: 75
+  selector: tenant.cloudbridge.io/id == "tenant-123456789"
+  types:
+    - Egress
+  egress:
+    - action: Deny
+      destination:
+        selector: tenant.cloudbridge.io/id == "tenant-216420165"

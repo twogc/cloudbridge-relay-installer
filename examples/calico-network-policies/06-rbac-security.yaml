@@ -1,12 +1,11 @@
 # RBAC and Advanced Security Policies
 # Enhanced gRPC Security + Rate Limiting per tenant
 ---
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: cloudbridge-grpc-access
 spec:
-  tier: security
   order: 150
   # Только pods с определенной ролью могут обращаться к gRPC серверу
   selector: app == "cloudbridge-relay"
@@ -83,12 +82,11 @@ spec:
 
 ---
 # Rate Limiting через Calico (если поддерживается)
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: tenant-rate-limiting
 spec:
-  tier: security
   order: 180
   selector: has(tenant.cloudbridge.io/id)
   types: [Ingress, Egress]
@@ -97,12 +95,11 @@ spec:
   
 ---
 # Advanced threat protection
-apiVersion: projectcalico.org/v3
+apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: threat-detection
 spec:
-  tier: security
   order: 190
   selector: has(tenant.cloudbridge.io/id)
   types: [Ingress, Egress]

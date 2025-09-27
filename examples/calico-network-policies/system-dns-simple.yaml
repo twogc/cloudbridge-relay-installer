@@ -1,0 +1,20 @@
+# Simple DNS access policy for system services
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-dns-system-simple
+spec:
+  order: 50
+  selector: has(tenant.cloudbridge.io/id)
+  types: [Egress]
+  egress:
+  # Allow DNS to kube-system namespace
+  - action: Allow
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+    protocol: UDP
+  - action: Allow  
+    destination:
+      namespaceSelector: kubernetes.io/metadata.name == "kube-system"
+    protocol: TCP

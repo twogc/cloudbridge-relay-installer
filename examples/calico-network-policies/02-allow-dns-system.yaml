@@ -1,0 +1,35 @@
+# Allow DNS and System Services (adapted from kubernetes-network-policy-recipes)
+# Разрешает DNS queries и системные сервисы
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-dns-system
+spec:
+  order: 100  # Высокий приоритет - разрешения должны быть выше deny
+  selector: has(tenant.cloudbridge.io/id)
+  types:
+    - Egress
+  egress:
+    # Allow DNS to kube-system (CoreDNS/kube-dns)
+    - action: Allow
+      destination:
+        namespaceSelector: name == "kube-system"
+        selector: k8s-app in {"kube-dns", "coredns"}
+      protocol: UDP
+      destination:
+        ports: [53]
+    - action: Allow
+      destination:
+        namespaceSelector: name == "kube-system"
+        selector: k8s-app in {"kube-dns", "coredns"}
+      protocol: TCP
+      destination:
+        ports: [53]
+    # Allow HTTPS to kube-system for system services
+    - action: Allow
+      destination:
+        namespaceSelector: name == "kube-system"
+      protocol: TCP
+      destination:
+        ports: [443]

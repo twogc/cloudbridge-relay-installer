@@ -1,0 +1,14 @@
+# Global Default-Deny Policy (adapted from kubernetes-network-policy-recipes)
+# Блокирует все Ingress и Egress трафик для pods с tenant labels
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: global-default-deny
+spec:
+  order: 1000  # Низкий приоритет - применяется последним
+  selector: has(tenant.cloudbridge.io/id)
+  types:
+    - Ingress
+    - Egress
+  # Пустые ingress/egress блоки = DENY ALL

@@ -46,7 +46,7 @@ check_prerequisites() {
     fi
     
     # Check Calico installation
-    if ! kubectl get crd globalnetworkpolicies.projectcalico.org &> /dev/null; then
+    if ! kubectl get crd globalnetworkpolicies.crd.projectcalico.org &> /dev/null; then
         log_error "Calico CRDs not found. Please install Calico first."
         exit 1
     fi
