@@ -28,6 +28,7 @@ func NewRBACMiddleware(authAdapter *auth.Adapter, logger *zap.Logger) *RBACMiddl
 	permissions := make(map[string][]string)
 	
 	// Configure method permissions according to CloudBridge security model
+	permissions["/relay.v1.ControlService/Hello"] = []string{"peer", "client", "admin", "user"}  // ИСПРАВЛЕНО: добавлен Hello
 	permissions["/relay.v1.ControlService/Authenticate"] = []string{"peer", "client", "admin"}
 	permissions["/relay.v1.ControlService/GetStatus"] = []string{"peer", "client", "admin", "monitor"}
 	permissions["/relay.v1.TunnelService/CreateTunnel"] = []string{"peer", "client"}
@@ -240,3 +241,4 @@ func (s *rbacServerStream) Context() context.Context {
 	ctx = context.WithValue(ctx, "user_subject", s.tokenInfo.Subject)
 	return ctx
 }
+
