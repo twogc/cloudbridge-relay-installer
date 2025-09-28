@@ -47,7 +47,161 @@ Personal Cabinet → Zitadel → JWT Token → Relay → Tunnel
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📊 **Текущее состояние (обновлено 27 сентября 2025)**
+## 🔌 **Порты и Endpoints (обновлено 28 сентября 2025)**
+
+### **🎯 Рабочие порты Minikube (192.168.49.2):**
+
+#### **✅ CloudBridge Relay External - порт 32500** ⭐ **ОСНОВНОЙ**
+- **Health:** `http://192.168.49.2:32500/health` → `{"status":"healthy"}`
+- **Metrics:** `http://192.168.49.2:32500/metrics` → JSON метрики
+- **API:** `http://192.168.49.2:32500/api/v1/` → REST API
+- **Статус:** Полностью функциональный CloudBridge Relay
+
+#### **✅ AI Service - порт 30083**
+- **Health:** `http://192.168.49.2:30083/health` → `{"status":"healthy"}`
+- **Статус:** AI сервис работает
+
+#### **✅ CloudBridge Relay Test - порт 31080**
+- **Health:** `http://192.168.49.2:31080/health` → `{"status":"ok"}`
+- **Статус:** Тестовый endpoint
+
+### **🌐 Внешние endpoints (для LoadBalancer):**
+
+#### **🎯 Планируемые внешние порты:**
+- **443 (HTTPS)** - Основной SSL endpoint для CloudBridge Relay
+- **80 (HTTP)** - HTTP redirect на HTTPS
+- **8443 (HTTPS-TLS)** - Альтернативный TLS endpoint
+- **8082 (HTTP)** - P2P API endpoint
+- **19302 (UDP)** - STUN/TURN сервер
+- **9090 (UDP)** - QUIC transport
+- **9092 (UDP)** - Enhanced QUIC
+
+#### **🔧 LoadBalancer конфигурация:**
+```yaml
+# Внешний LoadBalancer должен проксировать:
+HTTPS:443 → Kubernetes:32500  # Основной CloudBridge Relay
+HTTP:80   → Kubernetes:32500  # HTTP redirect
+```
+
+### **☸️ Kubernetes Proxy Architecture:**
+
+#### **🏗️ Текущая архитектура:**
+```
+External LoadBalancer (VK Cloud)
+         ↓ (HTTPS/HTTP)
+    Kubernetes NodePort
+         ↓ (32500)
+   CloudBridge Relay Pod
+         ↓ (9090)
+    Internal Services
+```
+
+#### **🔄 Tenant Proxy Configuration:**
+```yaml
+# k8s/tenant-proxy-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant-proxy-config
+data:
+  kubernetes:
+    cluster_endpoint: "https://192.168.49.2:8443"
+    service_account_token: "auto-detected"
+  
+  tenants:
+    tenant-a:
+      access_policy: "read-write"
+      namespaces: ["tenant-a-prod", "tenant-a-dev"]
+    tenant-b:
+      access_policy: "read-only"
+      namespaces: ["tenant-b-test"]
+```
+
+### **🔐 Security & Access:**
+
+#### **🛡️ LoadBalancer Security:**
+- **SSL Termination:** На LoadBalancer уровне
+- **Security Groups:** Настроены для портов 443, 80, 8080, 32500
+- **TLS Certificates:** `*.2gc.ru` wildcard certificate
+
+#### **🔑 Authentication Flow:**
+```
+Client → LoadBalancer:443 → Kubernetes:32500 → CloudBridge Relay
+  ↓
+JWT Token Validation → RBAC → Tenant Isolation → P2P Tunnel
+```
+
+### **📊 Health Monitoring:**
+
+#### **✅ Доступные health checks:**
+- `GET /health` - Основной health check
+- `GET /metrics` - Prometheus метрики
+- `GET /api/v1/system/info` - Системная информация
+
+#### **📈 Метрики (JSON format):**
+```json
+{
+  "metrics": {
+    "connections": {"active": 0, "total": 0},
+    "peers": {"online": 0, "total": 0},
+    "memory": {"alloc_mb": 6, "sys_mb": 21},
+    "uptime": 8396.569432785
+  },
+  "status": "healthy"
+}
+```
+
+## 🚨 **LoadBalancer Status & Pilot Project (28 сентября 2025)**
+
+### **❌ VK Cloud LoadBalancer Issues:**
+
+#### **🔍 Диагностированные проблемы:**
+- **LoadBalancer ID:** `95bd8ca8-b30d-461a-9206-eb04c403a544`
+- **Amphora Instance:** Физически неисправен
+- **Port Status:** DOWN (не поднимается)
+- **Member Status:** Все members в ERROR независимо от backend
+- **ARP Status:** `<incomplete>` - amphora не отвечает
+
+#### **✅ Исправленные проблемы пользователем:**
+- **Security Group:** Создан новый `a9d6da55-1972-4748-9de1-9a68e61bb339`
+- **Network Configuration:** Подсеть `192.168.49.0/24` настроена корректно
+- **Backend Servers:** Все работают идеально
+- **Health Monitors:** Настроены правильно
+
+#### **🎯 Статус техподдержки:**
+- **Запрос отправлен:** Требуется перезапуск/пересоздание amphora instance
+- **Критичность:** Блокирует внешний доступ к продакшен среде
+
+### **🚀 Pilot Project Ready:**
+
+#### **✅ Прямое подключение к Kubernetes:**
+- **URL:** `http://192.168.49.2:32500`
+- **Health Check:** ✅ `{"status":"healthy"}`
+- **Metrics:** ✅ Полные JSON метрики
+- **API:** ✅ Все endpoints работают
+
+#### **📋 Конфигурация клиента:**
+```yaml
+# test/relay-client/config-pilot-ready.yaml
+relay:
+  host: "192.168.49.2"
+  port: 32500
+  base_url: "http://192.168.49.2:32500"
+  
+api:
+  base_url: "http://192.168.49.2:32500"
+  heartbeat_url: "http://192.168.49.2:32500/api/v1/heartbeat"
+```
+
+### **🔄 Обходное решение для пилота:**
+```bash
+# Прямое тестирование без LoadBalancer
+curl http://192.168.49.2:32500/health     # ✅ healthy
+curl http://192.168.49.2:32500/metrics    # ✅ JSON metrics
+curl http://192.168.49.2:32500/api/v1/    # ✅ API endpoints
+```
+
+## 📊 **Текущее состояние (обновлено 28 сентября 2025)**
 
 ### **✅ MVP 100% ГОТОВ К PRODUCTION:**
 
@@ -420,3 +574,79 @@ Backlog items (Q4 2025):
 3. Sparse-mesh scheduler in `internal/p2p/relay_manager.go`.
 4. OpenTelemetry exporter in `internal/metrics`.
 5. Feature-flag `relay.tcp_fallback.enabled` (TLS-over-TCP mode).
+
+## 📁 **Project Structure (обновлено 28 сентября 2025)**
+
+### **🗂️ Новая организация проекта:**
+
+#### **📋 Корневые файлы:**
+- `MINIKUBE_BUILD_GUIDE.md` - Основное руководство по сборке
+- `DEVELOPER_BRIEFING.md` - Техническое описание проекта (этот файл)
+- `PROJECT_STRUCTURE.md` - Описание структуры проекта
+
+#### **📁 Структура документации:**
+```
+docs/
+├── reports/           # Отчеты по тестированию и диагностике
+│   ├── PROJECT_RESTRUCTURING_REPORT.md
+│   ├── FINAL_LOADBALANCER_DIAGNOSIS.md
+│   ├── VK_CLOUD_SUPPORT_REQUEST.md
+│   └── ...
+├── guides/           # Руководства пользователя
+│   ├── QUICK_START_GUIDE.md
+│   ├── CLIENT_CONNECTION_GUIDE.md
+│   └── ...
+├── security/         # Документация по безопасности
+│   ├── SECURITY.md
+│   ├── ENTERPRISE_SECURITY_COMPLETE.md
+│   └── ...
+├── deployment/       # Инструкции по развертыванию
+│   ├── PILOT_PROJECT_SETUP.md
+│   ├── EXTERNAL_LB_SETUP.md
+│   └── ...
+└── troubleshooting/  # Устранение неполадок
+    └── CADENCE_TROUBLESHOOTING.md
+```
+
+#### **📁 Архивные файлы:**
+```
+archive/
+├── scripts/          # Старые скрипты и утилиты
+│   ├── vk-cloud-openstack.sh
+│   ├── test-loadbalancer-tenants.sh
+│   └── ...
+├── configs/          # Старые конфигурационные файлы
+│   ├── nginx-loadbalancer-proxy.conf
+│   ├── edge-2gc-ru.conf
+│   └── ...
+└── old-reports/      # Устаревшие отчеты и логи
+```
+
+#### **🐳 Docker файлы:**
+```
+docker/dockerfiles/   # Все Dockerfile варианты
+├── Dockerfile.relay
+├── Dockerfile.ai-service
+├── Dockerfile.cni
+└── ...
+```
+
+### **🎯 Преимущества новой структуры:**
+- **Чистый корень** - только необходимые файлы
+- **Логичная организация** - документация сгруппирована по типам
+- **Легкая навигация** - быстрый поиск нужной информации
+- **Архивирование** - старые файлы отделены от активных
+
+### **📖 Как использовать:**
+1. **Быстрый старт:** `MINIKUBE_BUILD_GUIDE.md`
+2. **Техническая информация:** `DEVELOPER_BRIEFING.md` (этот файл)
+3. **Отчеты и диагностика:** `docs/reports/`
+4. **Руководства:** `docs/guides/`
+5. **Безопасность:** `docs/security/`
+
+---
+
+**Последнее обновление:** 28 сентября 2025  
+**Статус проекта:** ✅ Готов к пилотному развертыванию  
+**LoadBalancer:** ❌ Требует исправления VK Cloud (amphora instance)  
+**Обходное решение:** ✅ Прямое подключение к Kubernetes (192.168.49.2:32500)
