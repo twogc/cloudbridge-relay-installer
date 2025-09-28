@@ -517,63 +517,47 @@ func (p *ZitadelProvider) ValidateToken(ctx context.Context, token string) (*Tok
 - **Конфигурация:** `configs/config.json`
 - **JWT токены:** `official-token.txt`
 
-## 🚀 **Следующие шаги**
+## 🚀 **Текущие приоритеты (28 сентября 2025)**
 
-### **Немедленно (сегодня):**
-1. Изучить текущий код в `cmd/relay/`
-2. Понять структуру JWT токенов
-3. Проанализировать существующие API endpoints
-4. Создать базовые структуры данных для MASQUE
+### **🎯 Немедленные задачи:**
+1. **Исправление VK Cloud LoadBalancer** - ожидание ответа техподдержки
+2. **Пилотное развертывание** - использование прямого доступа к Kubernetes
+3. **Мониторинг и метрики** - настройка Prometheus/Grafana
+4. **Документация** - обновление руководств пользователя
 
-### **Этап 1 (1-2 дня):**
-1. Реализовать MASQUE Manager
-2. Добавить CONNECT-UDP поддержку
-3. Реализовать HTTP Datagrams
-4. Протестировать базовую MASQUE связность
+### **📋 Готовые компоненты:**
+- ✅ **gRPC Transport** - TLS 1.3, JWT authentication, RBAC
+- ✅ **P2P Mesh Networking** - виртуальные сети с tenant изоляцией  
+- ✅ **Multi-Tenancy** - уникальные подсети per tenant
+- ✅ **Enterprise Security** - JWT validation, RBAC middleware
+- ✅ **Health Monitoring** - `/health`, `/metrics` endpoints
+- ✅ **Kubernetes Integration** - полная интеграция с K8s
 
-### **Этап 2 (1-2 дня):**
-1. Реализовать ICE/STUN/TURN слой
-2. Добавить метрики NAT-типов
-3. Протестировать NAT traversal
+### **🔧 Техническое обслуживание:**
+1. **LoadBalancer Recovery** - после исправления VK Cloud
+2. **External DNS Setup** - настройка `*.2gc.ru` доменов
+3. **SSL Certificate Management** - автоматическое обновление
+4. **Performance Optimization** - мониторинг и оптимизация
 
-### **Этап 3 (2-3 дня):**
-1. Реализовать WG-профиль для legacy
-2. Добавить сценарии роуминга
-3. Протестировать site-to-site соединения
+## 📞 **Текущий статус поддержки**
 
-### **Этап 4 (1 день):**
-1. Реализовать downgrade на WS/TCP
-2. Добавление метрик и мониторинга
-3. Финальное тестирование
+### **✅ Работающие компоненты:**
+- **Kubernetes Cluster** - полностью функциональный
+- **CloudBridge Relay** - все endpoints работают
+- **AI Service** - готов к использованию
+- **Security Layer** - JWT, RBAC, TLS настроены
+- **Monitoring** - Prometheus метрики доступны
 
-## 📞 **Поддержка**
+### **⚠️ Известные проблемы:**
+- **VK Cloud LoadBalancer** - amphora instance неисправен
+- **External Access** - временно через прямое подключение
+- **DNS Resolution** - требует настройки после исправления LB
 
-- **Текущий статус:** Все порты работают, нужна доработка QUIC-first + MASQUE архитектуры
-- **Тестирование:** DevOps уже протестировал базовую инфраструктуру
-- **Результаты тестирования:** Клиенты регистрируются, но нужна реализация CONNECT-UDP/CONNECT-IP и ICE/STUN/TURN слоя
-
----
-
-**🎯 Цель: Создать QUIC-first + MASQUE сеть с CONNECT-UDP/CONNECT-IP, ICE/STUN/TURN слоем и WG-профилем для legacy VPN!**
-
-**Задача: Реализовать QUIC-first + MASQUE архитектуру с тремя ключевыми компонентами: CONNECT-UDP/CONNECT-IP, ICE/STUN/TURN слой с метриками NAT, и WG-профиль для site-to-site/legacy с fallback на WS/TCP.**
-
-## 🔒 Future Risks & Mitigations (Mesh / QUIC)
-
-| # | Risk | Evidence | Technical Mitigations |
-|---|------|-----------|-----------------------|
-| 1 | High CPU load with QUIC/TLS (user-space crypto) | Fastly 2023 «QUIC vs TCP»; arXiv 2310.09423; SIGCOMM’20 | AES-NI/ChaCha offload, UDP GSO/GRO, XDP/DPDK fast-path, NUMA pinning, per-tenant rate-limit |
-| 2 | Mesh over-connect (O(N²) links) | Princeton «Scalable Routing Overlay Networks» | Sparse-mesh pruning, `max_peers` в JWT, latency-aware peer selection |
-| 3 | Troubleshooting complexity (route loops, flaps) | Overlay/Underlay study (DIV-2020) | Control-plane telemetry, OpenTelemetry tracing, alerts on asymmetric routes |
-| 4 | UDP blocks / Sym-NAT / DPI | RFC 9000; enterprise firewall tests | TCP-fallback (443), STUN/ICE, QUIC disguise, disable 0-RTT by default |
-| 5 | Overhead of many concurrent streams | Google QUIC scalability papers | Stream pool & priority, BBR v2, adaptive windows, hard caps per peer |
-
-Backlog items (Q4 2025):
-1. eBPF CPU profiling & syscall heat-maps.
-2. XDP fast-path PoC on ≥10 Gbps relays.
-3. Sparse-mesh scheduler in `internal/p2p/relay_manager.go`.
-4. OpenTelemetry exporter in `internal/metrics`.
-5. Feature-flag `relay.tcp_fallback.enabled` (TLS-over-TCP mode).
+### **🎯 Цели на ближайшее время:**
+1. **Завершить пилотный проект** с прямым доступом
+2. **Получить исправление LoadBalancer** от VK Cloud
+3. **Настроить внешний доступ** через исправленный LB
+4. **Подготовить production deployment**
 
 ## 📁 **Project Structure (обновлено 28 сентября 2025)**
 
