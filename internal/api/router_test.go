@@ -202,7 +202,7 @@ func TestAPIRouter_CORSMiddleware(t *testing.T) {
 
 	// Создаем Gin engine
 	engine := gin.New()
-	engine.Use(router.corsMiddleware())
+	router.SetupSecurityMiddleware(engine, "development", nil)
 
 	// Добавляем тестовый маршрут
 	engine.GET("/test", func(c *gin.Context) {

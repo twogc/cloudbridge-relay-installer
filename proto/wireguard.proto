@@ -141,3 +141,4 @@ message WireGuardTunnelInfo {
   int64 last_connected = 8; // Unix timestamp
   google.protobuf.Timestamp created_at = 9;
 }
+

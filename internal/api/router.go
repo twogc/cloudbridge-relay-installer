@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -268,10 +267,17 @@ func NewAPIRouterWithKeycloak(logger *zap.Logger, validator TokenValidator, keyc
 
 // SetupRoutes настраивает все маршруты API
 func (r *APIRouter) SetupRoutes(router *gin.Engine) {
-	// Middleware
+	r.SetupRoutesWithSecurity(router, "development", nil)
+}
+
+// SetupRoutesWithSecurity настраивает маршруты с указанным уровнем безопасности
+func (r *APIRouter) SetupRoutesWithSecurity(router *gin.Engine, environment string, allowedOrigins []string) {
+	// Security middleware (должен быть первым)
+	r.SetupSecurityMiddleware(router, environment, allowedOrigins)
+
+	// Standard middleware
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
-	router.Use(r.corsMiddleware())
 	router.Use(r.rateLimitMiddleware())
 
 	// API v1 группа
@@ -295,12 +301,12 @@ func (r *APIRouter) SetupRoutes(router *gin.Engine) {
 				tenantPeers.GET("/discover", r.peerManager.DiscoverPeers)
 				tenantPeers.PUT("/:peer_id/status", r.peerManager.UpdatePeerStatus)
 				tenantPeers.GET("/:peer_id", r.peerManager.GetPeerInfo)
-				
+
 				// Heartbeat endpoints
 				tenantPeers.POST("/:peer_id/heartbeat", r.heartbeatHandler.HandleHeartbeat)
 				tenantPeers.GET("/:peer_id/status", r.heartbeatHandler.GetPeerStatus)
 			}
-			
+
 			// Tenant statistics endpoints
 			tenant.GET("/stats", r.heartbeatHandler.GetTenantStats)
 			tenant.GET("/peers/online", r.heartbeatHandler.GetOnlinePeers)
@@ -414,21 +420,33 @@ func (r *APIRouter) StartHub() {
 	r.logger.Info("WebSocket Hub started")
 }
 
-// corsMiddleware настраивает CORS
-func (r *APIRouter) corsMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
-		c.Header("Access-Control-Allow-Credentials", "true")
+// SetupSecurityMiddleware настраивает security middleware в зависимости от среды
+func (r *APIRouter) SetupSecurityMiddleware(router *gin.Engine, environment string, allowedOrigins []string) {
+	var securityConfig *SecurityConfig
 
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
+	switch environment {
+	case "production":
+		securityConfig = ProductionSecurityConfig(allowedOrigins)
+		r.logger.Info("Using production security configuration")
+	case "staging":
+		securityConfig = DefaultSecurityConfig()
+		securityConfig.Environment = "staging"
+		securityConfig.ForceHTTPS = true
+		if len(allowedOrigins) > 0 {
+			securityConfig.AllowedOrigins = allowedOrigins
 		}
-
-		c.Next()
+		r.logger.Info("Using staging security configuration")
+	default:
+		securityConfig = DefaultSecurityConfig()
+		r.logger.Info("Using development security configuration")
 	}
+
+	securityMiddleware := NewSecurityMiddleware(securityConfig, r.logger)
+
+	router.Use(securityMiddleware.HTTPSRedirect())
+	router.Use(securityMiddleware.SecurityHeaders())
+	router.Use(securityMiddleware.CORS())
+	router.Use(securityMiddleware.SecurityAudit())
 }
 
 // rateLimitMiddleware настраивает rate limiting
@@ -503,7 +521,7 @@ func (r *RealAIServiceAdapter) GetStatus() *ai.ServiceStatus {
 			},
 		}
 	}
-	
+
 	return r.aiService.GetStatus()
 }
 
@@ -511,7 +529,7 @@ func (r *RealAIServiceAdapter) DetectAnomaly(ctx context.Context, metrics *anoma
 	if r.aiService == nil {
 		return nil, fmt.Errorf("AI Service not available")
 	}
-	
+
 	// Получаем реальный результат детекции аномалий
 	return r.aiService.DetectAnomaly(ctx, metrics)
 }
@@ -520,7 +538,7 @@ func (r *RealAIServiceAdapter) PredictLoad(ctx context.Context, horizon int) (*p
 	if r.aiService == nil {
 		return nil, fmt.Errorf("AI Service not available")
 	}
-	
+
 	// Получаем реальное предсказание нагрузки
 	return r.aiService.PredictLoad(ctx, horizon)
 }
@@ -529,7 +547,7 @@ func (r *RealAIServiceAdapter) OptimizeRoute(ctx context.Context, source, destin
 	if r.aiService == nil {
 		return nil, fmt.Errorf("AI Service not available")
 	}
-	
+
 	// Получаем реальную оптимизацию маршрута
 	return r.aiService.OptimizeRoute(ctx, source, destination, constraints)
 }

@@ -72,3 +72,4 @@ func NewLogger(logLevel string) (*zap.Logger, error) {
 
 	return logger, nil
 }
+

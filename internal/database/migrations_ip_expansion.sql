@@ -34,3 +34,4 @@ CHECK (network_cidr ~ '^10\.\d{1,3}\.\d{1,3}\.0/24$');
 INSERT INTO tenant_networks (tenant_id, network_cidr, subnet_counter, is_active, created_at, updated_at)
 VALUES ('migration-ip-expansion', '10.0.0.0/8', 0, false, NOW(), NOW())
 ON CONFLICT (tenant_id) DO NOTHING;
+

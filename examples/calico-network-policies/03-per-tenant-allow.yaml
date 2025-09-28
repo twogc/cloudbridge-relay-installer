@@ -57,3 +57,4 @@ spec:
     - action: Allow
       destination:
         selector: tenant.cloudbridge.io/id == "tenant-987654321"
+

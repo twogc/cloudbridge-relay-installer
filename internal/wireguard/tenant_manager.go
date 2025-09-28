@@ -297,3 +297,4 @@ func (wgtm *WireGuardTenantManager) checkTunnelHealth() {
 		}
 	}
 }
+

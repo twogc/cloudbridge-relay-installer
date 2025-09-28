@@ -292,3 +292,4 @@ func (cm *ConfigManager) parseWireGuardOutput(output string) map[string]interfac
 	
 	return status
 }
+

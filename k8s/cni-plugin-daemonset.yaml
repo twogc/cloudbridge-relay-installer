@@ -170,3 +170,4 @@ subjects:
 - kind: ServiceAccount
   name: cloudbridge-cni-plugin
   namespace: kube-system
+

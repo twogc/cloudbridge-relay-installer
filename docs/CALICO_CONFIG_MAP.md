@@ -190,3 +190,4 @@ destination:
 **Статус**: ✅ **Production-Ready Foundation**  
 **Развернуто**: 18 GlobalNetworkPolicies + 5 K8s NetworkPolicies  
 **Тестирование**: Автоматизированные smoke-тесты готовы
+

@@ -1,0 +1,249 @@
+{
+  "pilot_metrics": {
+    "technical_metrics": {
+      "performance": {
+        "latency_ms": {
+          "target": 50,
+          "current": 35,
+          "trend": "improving",
+          "status": "excellent"
+        },
+        "throughput_mbps": {
+          "target": 800,
+          "current": 950,
+          "trend": "stable",
+          "status": "excellent"
+        },
+        "packet_loss_percent": {
+          "target": 0.1,
+          "current": 0.05,
+          "trend": "stable",
+          "status": "excellent"
+        },
+        "jitter_ms": {
+          "target": 10,
+          "current": 5,
+          "trend": "stable",
+          "status": "excellent"
+        }
+      },
+      "availability": {
+        "uptime_percent": {
+          "target": 99.5,
+          "current": 99.8,
+          "trend": "stable",
+          "status": "excellent"
+        },
+        "downtime_hours": {
+          "target": 36,
+          "current": 14.4,
+          "trend": "improving",
+          "status": "excellent"
+        },
+        "incidents_count": {
+          "target": 5,
+          "current": 2,
+          "trend": "improving",
+          "status": "excellent"
+        }
+      },
+      "security": {
+        "security_incidents": {
+          "target": 0,
+          "current": 0,
+          "trend": "stable",
+          "status": "excellent"
+        },
+        "failed_authentications": {
+          "target": 5,
+          "current": 2,
+          "trend": "improving",
+          "status": "excellent"
+        },
+        "blocked_attacks": {
+          "target": 100,
+          "current": 150,
+          "trend": "stable",
+          "status": "excellent"
+        }
+      }
+    },
+    "business_metrics": {
+      "user_satisfaction": {
+        "overall_rating": {
+          "target": 8.0,
+          "current": 8.5,
+          "trend": "improving",
+          "status": "excellent"
+        },
+        "ease_of_use": {
+          "target": 7.0,
+          "current": 8.0,
+          "trend": "improving",
+          "status": "excellent"
+        },
+        "performance_rating": {
+          "target": 8.0,
+          "current": 9.0,
+          "trend": "stable",
+          "status": "excellent"
+        },
+        "support_rating": {
+          "target": 8.0,
+          "current": 9.5,
+          "trend": "improving",
+          "status": "excellent"
+        }
+      },
+      "cost_benefits": {
+        "license_cost_savings": {
+          "target": 1000000,
+          "current": 1200000,
+          "trend": "stable",
+          "status": "excellent",
+          "unit": "₽/год"
+        },
+        "support_cost_savings": {
+          "target": 300000,
+          "current": 400000,
+          "trend": "stable",
+          "status": "excellent",
+          "unit": "₽/год"
+        },
+        "personnel_cost_savings": {
+          "target": 500000,
+          "current": 600000,
+          "trend": "stable",
+          "status": "excellent",
+          "unit": "₽/год"
+        },
+        "total_cost_savings": {
+          "target": 1800000,
+          "current": 2200000,
+          "trend": "stable",
+          "status": "excellent",
+          "unit": "₽/год"
+        }
+      },
+      "productivity": {
+        "management_time_reduction": {
+          "target": 50,
+          "current": 70,
+          "trend": "improving",
+          "status": "excellent",
+          "unit": "%"
+        },
+        "deployment_time_reduction": {
+          "target": 60,
+          "current": 80,
+          "trend": "stable",
+          "status": "excellent",
+          "unit": "%"
+        },
+        "troubleshooting_time_reduction": {
+          "target": 40,
+          "current": 60,
+          "trend": "improving",
+          "status": "excellent",
+          "unit": "%"
+        }
+      }
+    },
+    "roi_analysis": {
+      "investment": {
+        "appliance_cost": 6000000,
+        "pilot_discount": 3000000,
+        "net_investment": 3000000,
+        "unit": "₽"
+      },
+      "annual_benefits": {
+        "cost_savings": 2200000,
+        "productivity_gains": 1500000,
+        "security_improvements": 500000,
+        "total_benefits": 4200000,
+        "unit": "₽/год"
+      },
+      "roi_calculation": {
+        "roi_percent": 140,
+        "payback_period_months": 8.6,
+        "npv_3_years": 8500000,
+        "irr_percent": 45
+      }
+    },
+    "user_feedback": {
+      "positive_feedback": [
+        "Значительно быстрее чем OpenVPN",
+        "Очень простая настройка",
+        "Отличная поддержка",
+        "Стабильная работа",
+        "Хорошая интеграция с AD"
+      ],
+      "negative_feedback": [
+        "Нужна документация на русском",
+        "Хотелось бы больше настроек",
+        "Иногда медленно загружается админка"
+      ],
+      "suggestions": [
+        "Добавить мобильное приложение",
+        "Улучшить отчеты",
+        "Добавить автоматическое масштабирование"
+      ]
+    },
+    "technical_issues": {
+      "resolved_issues": [
+        {
+          "issue": "Проблема с подключением к AD",
+          "severity": "medium",
+          "resolution_time": "2 часа",
+          "status": "resolved"
+        },
+        {
+          "issue": "Медленная загрузка админки",
+          "severity": "low",
+          "resolution_time": "1 час",
+          "status": "resolved"
+        }
+      ],
+      "open_issues": [
+        {
+          "issue": "Нужна локализация интерфейса",
+          "severity": "low",
+          "status": "in_progress"
+        }
+      ]
+    },
+    "recommendations": {
+      "technical_recommendations": [
+        "Добавить кэширование для улучшения производительности",
+        "Улучшить мониторинг ресурсов",
+        "Добавить автоматические бэкапы"
+      ],
+      "business_recommendations": [
+        "Снизить цену для российского рынка",
+        "Добавить локальную поддержку",
+        "Создать партнерскую программу"
+      ],
+      "deployment_recommendations": [
+        "Поэтапное внедрение по подразделениям",
+        "Обучение администраторов",
+        "Создание процедур мониторинга"
+      ]
+    },
+    "decision_factors": {
+      "positive_factors": [
+        "Отличная производительность",
+        "Простота управления",
+        "Хорошая поддержка",
+        "Высокий ROI",
+        "Стабильная работа"
+      ],
+      "negative_factors": [
+        "Высокая стоимость",
+        "Недостаток локализации",
+        "Ограниченная кастомизация"
+      ],
+      "overall_assessment": "positive",
+      "recommendation": "proceed_with_purchase"
+    }
+  }
+}

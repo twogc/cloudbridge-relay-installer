@@ -1,0 +1,371 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudbridge-tenant-proxy-config
+  namespace: cloudbridge
+  labels:
+    app: cloudbridge-relay
+    component: tenant-proxy
+data:
+  tenant-config.yaml: |
+    # CloudBridge Tenant Proxy Configuration for edge.2gc.ru
+    
+    # Global settings
+    global:
+      domain: "edge.2gc.ru"
+      default_tenant: "default"
+      max_tenants: 100
+      session_timeout: "24h"
+      
+    # Load balancer configuration
+    load_balancer:
+      algorithm: "round_robin"  # round_robin, least_connections, ip_hash
+      health_check:
+        enabled: true
+        interval: "30s"
+        timeout: "5s"
+        path: "/health"
+      sticky_sessions: false
+      
+    # Tenant definitions
+    tenants:
+      # Default tenant - basic access
+      - id: "default"
+        name: "Default Tenant"
+        domain: "edge.2gc.ru"
+        max_connections: 100
+        max_tunnels: 10
+        rate_limit:
+          requests_per_minute: 1000
+          burst_size: 100
+        features:
+          - "basic_relay"
+          - "health_monitoring"
+        groups: ["users"]
+        
+      # Development team - full dev access
+      - id: "dev-team"
+        name: "Development Team"
+        domain: "dev.edge.2gc.ru"
+        max_connections: 500
+        max_tunnels: 50
+        rate_limit:
+          requests_per_minute: 5000
+          burst_size: 500
+        features:
+          - "basic_relay"
+          - "advanced_relay"
+          - "p2p_mesh"
+          - "health_monitoring"
+          - "metrics_access"
+          - "log_access"
+        groups: ["developers", "qa"]
+        
+      # Operations team - cluster admin
+      - id: "ops-team"
+        name: "Operations Team"
+        domain: "ops.edge.2gc.ru"
+        max_connections: 1000
+        max_tunnels: 100
+        rate_limit:
+          requests_per_minute: 10000
+          burst_size: 1000
+        features:
+          - "basic_relay"
+          - "advanced_relay"
+          - "p2p_mesh"
+          - "health_monitoring"
+          - "metrics_access"
+          - "log_access"
+          - "admin_access"
+          - "cluster_management"
+        groups: ["operators", "sre", "admins"]
+        
+      # Production tenant - high performance
+      - id: "production"
+        name: "Production Services"
+        domain: "api.edge.2gc.ru"
+        max_connections: 2000
+        max_tunnels: 200
+        rate_limit:
+          requests_per_minute: 20000
+          burst_size: 2000
+        features:
+          - "basic_relay"
+          - "advanced_relay"
+          - "p2p_mesh"
+          - "health_monitoring"
+          - "high_availability"
+          - "priority_routing"
+        groups: ["production", "services"]
+        
+      # Read-only viewer
+      - id: "readonly-viewer"
+        name: "Read-Only Viewer"
+        domain: "monitor.edge.2gc.ru"
+        max_connections: 50
+        max_tunnels: 5
+        rate_limit:
+          requests_per_minute: 500
+          burst_size: 50
+        features:
+          - "health_monitoring"
+          - "metrics_view"
+        groups: ["viewers", "monitoring"]
+        
+    # Kubernetes cluster configurations
+    clusters:
+      - id: "edge-production"
+        name: "Edge Production Cluster"
+        api_server_url: "https://k8s-prod.edge.2gc.ru:6443"
+        ca_cert_path: "/etc/relay/clusters/edge-production/ca.crt"
+        client_cert_path: "/etc/relay/clusters/edge-production/client.crt"
+        client_key_path: "/etc/relay/clusters/edge-production/client.key"
+        skip_tls_verify: false
+        default_namespace: "production"
+        
+      - id: "edge-staging"
+        name: "Edge Staging Cluster"
+        api_server_url: "https://k8s-staging.edge.2gc.ru:6443"
+        ca_cert_path: "/etc/relay/clusters/edge-staging/ca.crt"
+        client_cert_path: "/etc/relay/clusters/edge-staging/client.crt"
+        client_key_path: "/etc/relay/clusters/edge-staging/client.key"
+        skip_tls_verify: false
+        default_namespace: "staging"
+        
+      - id: "edge-development"
+        name: "Edge Development Cluster"
+        api_server_url: "https://k8s-dev.edge.2gc.ru:6443"
+        ca_cert_path: "/etc/relay/clusters/edge-development/ca.crt"
+        client_cert_path: "/etc/relay/clusters/edge-development/client.crt"
+        client_key_path: "/etc/relay/clusters/edge-development/client.key"
+        skip_tls_verify: false
+        default_namespace: "development"
+        
+      # Local minikube for testing
+      - id: "minikube-local"
+        name: "Local Minikube"
+        api_server_url: "https://kubernetes.default.svc.cluster.local:443"
+        ca_cert_path: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+        token_path: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        skip_tls_verify: false
+        default_namespace: "cloudbridge"
+        
+    # Access policies
+    policies:
+      # Default tenant - basic read access
+      - tenant_id: "default"
+        cluster_id: "minikube-local"
+        rules:
+          - name: "basic-read"
+            verbs: ["get", "list", "watch"]
+            api_groups: [""]
+            resources: ["pods", "services", "configmaps"]
+            namespaces: ["default", "cloudbridge"]
+            
+      # Development team - full dev access
+      - tenant_id: "dev-team"
+        cluster_id: "edge-development"
+        rules:
+          - name: "dev-full-access"
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+            api_groups: ["", "apps", "extensions", "networking.k8s.io"]
+            resources: ["*"]
+            namespaces: ["development", "testing", "dev-*"]
+          - name: "dev-exec-access"
+            verbs: ["exec", "attach", "logs", "portforward"]
+            api_groups: [""]
+            resources: ["pods/exec", "pods/attach", "pods/log", "pods/portforward"]
+            namespaces: ["development", "testing"]
+          - name: "staging-read-only"
+            verbs: ["get", "list", "watch", "logs"]
+            api_groups: ["", "apps"]
+            resources: ["pods", "services", "deployments", "pods/log"]
+            namespaces: ["staging"]
+            
+      # Operations team - cluster admin
+      - tenant_id: "ops-team"
+        cluster_id: "*"  # Access to all clusters
+        rules:
+          - name: "cluster-admin"
+            verbs: ["*"]
+            api_groups: ["*"]
+            resources: ["*"]
+            namespaces: []  # All namespaces
+          - name: "cross-cluster-access"
+            verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+            api_groups: ["*"]
+            resources: ["*"]
+            namespaces: []
+            
+      # Production tenant - production access only
+      - tenant_id: "production"
+        cluster_id: "edge-production"
+        rules:
+          - name: "production-access"
+            verbs: ["get", "list", "watch", "create", "update", "patch"]
+            api_groups: ["", "apps", "networking.k8s.io"]
+            resources: ["pods", "services", "deployments", "ingresses", "configmaps", "secrets"]
+            namespaces: ["production", "prod-*"]
+          - name: "production-logs"
+            verbs: ["logs"]
+            api_groups: [""]
+            resources: ["pods/log"]
+            namespaces: ["production", "prod-*"]
+          - name: "deny-delete"
+            verbs: ["delete"]
+            api_groups: ["*"]
+            resources: ["*"]
+            namespaces: ["production"]
+            deny: true
+            
+      # Read-only viewer - monitoring access
+      - tenant_id: "readonly-viewer"
+        cluster_id: "*"
+        rules:
+          - name: "global-read-only"
+            verbs: ["get", "list", "watch"]
+            api_groups: ["", "apps", "extensions", "networking.k8s.io", "metrics.k8s.io"]
+            resources: ["pods", "services", "deployments", "ingresses", "nodes", "namespaces"]
+            namespaces: []
+          - name: "logs-access"
+            verbs: ["logs"]
+            api_groups: [""]
+            resources: ["pods/log"]
+            namespaces: []
+          - name: "deny-exec-portforward"
+            verbs: ["exec", "attach", "portforward", "proxy"]
+            api_groups: [""]
+            resources: ["pods/exec", "pods/attach", "pods/portforward"]
+            namespaces: ["*"]
+            deny: true
+            
+    # Proxy routing rules
+    routing:
+      # Route by subdomain
+      - match:
+          host: "dev.edge.2gc.ru"
+        route:
+          tenant: "dev-team"
+          cluster: "edge-development"
+          
+      - match:
+          host: "ops.edge.2gc.ru"
+        route:
+          tenant: "ops-team"
+          cluster: "*"
+          
+      - match:
+          host: "api.edge.2gc.ru"
+        route:
+          tenant: "production"
+          cluster: "edge-production"
+          
+      - match:
+          host: "monitor.edge.2gc.ru"
+        route:
+          tenant: "readonly-viewer"
+          cluster: "*"
+          
+      # Route by path prefix
+      - match:
+          path_prefix: "/api/v1/tenants/dev-team"
+        route:
+          tenant: "dev-team"
+          cluster: "edge-development"
+          
+      - match:
+          path_prefix: "/api/v1/tenants/ops-team"
+        route:
+          tenant: "ops-team"
+          cluster: "*"
+          
+      # Default routing
+      - match:
+          default: true
+        route:
+          tenant: "default"
+          cluster: "minikube-local"
+          
+    # Security settings
+    security:
+      jwt:
+        secret_key: "cloudbridge-tenant-jwt-secret-edge-2gc-ru"
+        expiration: "24h"
+        issuer: "cloudbridge-relay.edge.2gc.ru"
+        
+      tls:
+        cert_file: "/etc/ssl/certs/tls.crt"
+        key_file: "/etc/ssl/private/tls.key"
+        ca_file: "/etc/ssl/certs/ca.crt"
+        
+      cors:
+        allowed_origins:
+          - "https://edge.2gc.ru"
+          - "https://*.edge.2gc.ru"
+          - "https://dashboard.edge.2gc.ru"
+        allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        allowed_headers: ["Origin", "Content-Type", "Accept", "Authorization", "X-Tenant-ID"]
+        
+    # Monitoring and logging
+    monitoring:
+      metrics:
+        enabled: true
+        port: 9090
+        path: "/metrics"
+        
+      health_checks:
+        enabled: true
+        port: 8080
+        path: "/health"
+        
+      logging:
+        level: "info"
+        format: "json"
+        tenant_logging: true
+        audit_logging: true
+        
+    # Performance tuning
+    performance:
+      connection_pool_size: 100
+      request_timeout: "30s"
+      idle_timeout: "60s"
+      max_concurrent_requests: 1000
+      
+      # Per-tenant limits
+      tenant_limits:
+        default_max_connections: 100
+        default_max_requests_per_second: 100
+        default_max_bandwidth_mbps: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudbridge-tenant-proxy
+  namespace: cloudbridge
+  labels:
+    app: cloudbridge-relay
+    component: tenant-proxy
+spec:
+  type: LoadBalancer
+  loadBalancerIP: "10.106.92.52"  # Reuse existing LB IP
+  ports:
+  - name: https-proxy
+    port: 443
+    targetPort: 8443
+    protocol: TCP
+  - name: http-proxy
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: grpc-proxy
+    port: 8444
+    targetPort: 8444
+    protocol: TCP
+  - name: tenant-api
+    port: 9000
+    targetPort: 9000
+    protocol: TCP
+  selector:
+    app: cloudbridge-relay
+    component: tenant-proxy

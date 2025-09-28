@@ -147,3 +147,4 @@ all-cni: clean-cni build-cni test-cni docker-build-cni ## Полный цикл 
 
 prod-cni: clean-cni test-cni docker-build-cni docker-push-cni ## Production сборка CNI
 	@echo "Production сборка CNI завершена"
+

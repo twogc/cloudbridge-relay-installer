@@ -113,3 +113,4 @@ type WireGuardTunnelInfo struct {
 	BytesSent     int64  `json:"bytes_sent"`
 	LastConnected int64  `json:"last_connected"`
 }
+

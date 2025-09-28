@@ -117,3 +117,4 @@ spec:
     protocol: ICMP
     icmp:
       type: 8  # Ping requests (опционально)
+

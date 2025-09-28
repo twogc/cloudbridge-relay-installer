@@ -308,3 +308,4 @@ trap cleanup_test_resources EXIT
 
 # Run main function
 main "$@"
+

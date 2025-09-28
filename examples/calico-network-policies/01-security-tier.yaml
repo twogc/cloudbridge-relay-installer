@@ -24,3 +24,4 @@ data:
     # Calico tier configuration
     security_tier_enabled: "true"
     security_tier_order: "100"
+

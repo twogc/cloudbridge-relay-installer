@@ -32,3 +32,4 @@ BEGIN
     DELETE FROM tenant_networks WHERE is_active = false AND updated_at < NOW() - INTERVAL '7 days';
 END;
 $$ language 'plpgsql';
+

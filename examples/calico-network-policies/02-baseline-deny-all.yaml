@@ -30,3 +30,4 @@ spec:
   selector: has(tenant.cloudbridge.io/id)
   types: [Ingress, Egress]
   # Default deny для межтенантного трафика
+

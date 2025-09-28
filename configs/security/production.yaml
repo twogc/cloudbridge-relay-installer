@@ -1,0 +1,83 @@
+# CloudBridge Security Configuration - Production Environment (edge.2gc.ru)
+
+security:
+  environment: "production"
+  
+  # HTTPS settings (обязательно для продакшена)
+  https:
+    force_https: true
+    hsts_max_age: 31536000  # 1 год
+    hsts_include_subdomain: true
+    hsts_preload: true
+    auto_redirect: true
+    http_port: 80
+    https_port: 443
+    
+  # TLS configuration для edge.2gc.ru
+  tls:
+    cert_file: "/etc/ssl/certs/edge.2gc.ru.crt"
+    key_file: "/etc/ssl/private/edge.2gc.ru.key"
+    min_version: 1.2  # TLS 1.2
+    max_version: 1.3  # TLS 1.3
+    
+  # CORS settings (строгие для продакшена)
+  cors:
+    allowed_origins:
+      - "https://edge.2gc.ru"
+      - "https://api.edge.2gc.ru"
+      - "https://dashboard.edge.2gc.ru"
+      - "https://admin.edge.2gc.ru"
+    allowed_methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "OPTIONS"
+      - "HEAD"
+    allowed_headers:
+      - "Origin"
+      - "Content-Type"
+      - "Accept"
+      - "Authorization"
+      - "X-Requested-With"
+      - "X-CSRF-Token"
+    allow_credentials: true
+    max_age: 86400  # 24 hours
+    
+  # Security headers (строгие для продакшена)
+  headers:
+    content_type_options: "nosniff"
+    frame_options: "DENY"
+    xss_protection: "1; mode=block"
+    content_security_policy: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' wss://edge.2gc.ru; frame-ancestors 'none'"
+    referrer_policy: "strict-origin-when-cross-origin"
+    remove_server_header: true
+    remove_powered_by: true
+    
+  # Rate limiting (продакшен лимиты)
+  rate_limiting:
+    global_requests_per_minute: 1000
+    global_burst_size: 100
+    ai_requests_per_minute: 100
+    ai_burst_size: 20
+    pipeline_requests_per_minute: 200
+    pipeline_burst_size: 50
+    monitoring_requests_per_minute: 50
+    monitoring_burst_size: 10
+    tenant_requests_per_minute: 500
+    tenant_burst_size: 50
+    user_requests_per_minute: 100
+    user_burst_size: 20
+    
+  # Audit settings (строгие для продакшена)
+  audit:
+    log_suspicious_requests: true
+    log_large_requests: true
+    large_request_threshold: 10MB  # 10MB для продакшена
+    log_missing_user_agent: true
+    
+# Logging configuration
+logging:
+  level: "info"
+  security_events: true
+  access_logs: true
