@@ -171,3 +171,9 @@ minikube-linux-amd64
 documentation/docs-public/
 reference-repos/
 tools/cadence-web/
+
+# External reference repositories
+reference-repos/
+
+# Submodules with untracked content
+tools/cadence-web
