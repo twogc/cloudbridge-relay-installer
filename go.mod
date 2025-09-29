@@ -3,7 +3,7 @@ module github.com/twogc/cloudbridge-relay-installer
 go 1.24.0
 
 require (
-	github.com/containernetworking/cni v0.8.1
+	github.com/containernetworking/cni v1.3.0
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
@@ -30,7 +30,6 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/pion/stun v0.6.1
-	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/zitadel/oidc/v3 v3.44.0
 	github.com/zitadel/zitadel-go/v3 v3.13.0
@@ -85,7 +84,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/onsi/ginkgo v1.16.5 // indirect
+	github.com/onsi/ginkgo/v2 v2.25.1 // indirect
 	github.com/onsi/gomega v1.38.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pborman/uuid v1.2.1 // indirect
@@ -113,6 +112,7 @@ require (
 	github.com/uber-go/tally v3.5.8+incompatible // indirect
 	github.com/uber/tchannel-go v1.34.6 // indirect
 	github.com/ugorji/go/codec v1.3.0 // indirect
+	github.com/vishvananda/netns v0.0.4 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zitadel/logging v0.6.2 // indirect
