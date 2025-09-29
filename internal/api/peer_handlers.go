@@ -327,7 +327,9 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 	}
 
 	// Генерируем peer_id из server_id в токене
+	pm.logger.Info("DEBUG: ServerID from token", zap.String("server_id", claims.ServerID))
 	peerID := generatePeerID(claims.ServerID)
+	pm.logger.Info("DEBUG: Generated peer_id", zap.String("peer_id", peerID))
 
 	// Проверка существования пира — делаем регистрацию идемпотентной
 	if existingPeer, exists := pm.peerStore.Get(tenantID, peerID); exists {
@@ -763,6 +765,23 @@ func truncateForLog(s string) string {
 
 // validateToken валидирует JWT токен
 func (pm *PeerManager) validateToken(c *gin.Context) (*P2PClaims, error) {
+	// Проверяем, включена ли авторизация
+	if os.Getenv("AUTH_ENABLED") == "false" {
+		// Возвращаем фиктивные claims для отключенной авторизации
+		tenantID := c.Param("tenant_id")
+		if tenantID == "" {
+			tenantID = "default"
+		}
+		return &P2PClaims{
+			Subject:        "anonymous",
+			TenantID:       tenantID,
+			ServerID:       "anonymous",
+			ConnectionType: "quic",
+			ProtocolType:   "p2p-mesh",
+			Permissions:    []string{"relay_connect", "relay_tunnel"},
+		}, nil
+	}
+
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
 		return nil, fmt.Errorf("missing authorization header")

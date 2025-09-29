@@ -1,0 +1,146 @@
+{
+  "server": {
+    "address": "0.0.0.0",
+    "port": 5550,
+    "timeout": "30s",
+    "max_tunnels": 1000,
+    "ping_interval": "30s",
+    "cleanup_interval": "60s"
+  },
+  "django": {
+    "api_endpoint": "",
+    "jwt_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+    "jwt_expiry": "24h",
+    "rest_timeout": "5s",
+    "rest_cache_ttl": "5m",
+    "rest_max_retries": 3,
+    "rest_retry_delay": "100ms"
+  },
+  "keycloak": {
+    "enabled": false,
+    "server_url": "",
+    "realm": "",
+    "client_id": "",
+    "client_secret": "",
+    "public_key": "",
+    "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+    "insecure": true,
+    "jwks_url": "",
+    "token_validation": {
+      "issuer": "",
+      "audience": "",
+      "clock_skew": "30s"
+    },
+    "jwks_cache_ttl": "1h",
+    "http_timeout": "30s"
+  },
+  "zitadel": {
+    "enabled": false,
+    "domain": "",
+    "project_id": "",
+    "client_id": "",
+    "client_secret": "",
+    "insecure": true,
+    "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+    "token_validation": {
+      "audience": "cloudbridge-relay",
+      "clock_skew": "30s"
+    },
+    "cache_ttl": "5m",
+    "http_timeout": "30s",
+    "tenant_management": {
+      "enabled": false,
+      "auto_create_tenants": false,
+      "default_tenant_config": {}
+    }
+  },
+  "relay": {
+    "enabled": true,
+    "protocols": ["quic", "websocket", "grpc", "wireguard"],
+    "transport": {
+      "quic": {
+        "enabled": true,
+        "port": 9090,
+        "max_streams": 1000,
+        "idle_timeout": "30s"
+      },
+      "websocket": {
+        "enabled": true,
+        "port": 5553,
+        "path": "/ws",
+        "ping_interval": "30s"
+      },
+      "grpc": {
+        "enabled": true,
+        "port": 5552,
+        "max_message_size": 4194304
+      },
+      "wireguard": {
+        "enabled": true,
+        "port": 51820,
+        "private_key": "",
+        "public_key": ""
+      }
+    },
+    "p2p": {
+      "enabled": true,
+      "mesh_network": true,
+      "peer_discovery": true,
+      "connection_timeout": "30s",
+      "heartbeat_interval": "30s"
+    }
+  },
+  "security": {
+    "tls": {
+      "enabled": false,
+      "cert_file": "",
+      "key_file": "",
+      "ca_file": ""
+    },
+    "auth": {
+      "enabled": true,
+      "jwt_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
+      "token_expiry": "24h",
+      "require_auth": true
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 100,
+      "burst_size": 20
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics_port": 5551,
+    "health_check_interval": "30s",
+    "prometheus": {
+      "enabled": true,
+      "endpoint": "/metrics"
+    }
+  },
+  "api": {
+    "enabled": true,
+    "port": 5552,
+    "host": "0.0.0.0",
+    "timeout": "30s",
+    "max_retries": 3,
+    "cors": {
+      "enabled": true,
+      "allowed_origins": ["*"],
+      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      "allowed_headers": ["*"]
+    }
+  },
+  "http": {
+    "enabled": true,
+    "port": 5551,
+    "host": "0.0.0.0",
+    "timeout": "30s",
+    "tls": {
+      "enabled": false,
+      "cert_file": "",
+      "key_file": ""
+    }
+  }
+}
+
