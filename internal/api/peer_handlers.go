@@ -328,7 +328,17 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 
 	// Генерируем peer_id из server_id в токене
 	pm.logger.Info("DEBUG: ServerID from token", zap.String("server_id", claims.ServerID))
-	peerID := generatePeerID(claims.ServerID)
+	
+	// Check if token is in special format "server-id:server-a"
+	var actualServerID string
+	if strings.HasPrefix(claims.ServerID, "server-id:") {
+		actualServerID = strings.TrimPrefix(claims.ServerID, "server-id:")
+		pm.logger.Info("DEBUG: Extracted server_id from special format", zap.String("extracted_server_id", actualServerID))
+	} else {
+		actualServerID = claims.ServerID
+	}
+	
+	peerID := generatePeerID(actualServerID)
 	pm.logger.Info("DEBUG: Generated peer_id", zap.String("peer_id", peerID))
 
 	// Проверка существования пира — делаем регистрацию идемпотентной
