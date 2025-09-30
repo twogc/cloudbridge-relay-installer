@@ -22,13 +22,13 @@ type P2PClaims struct {
 func main() {
 	// JWT секрет (должен совпадать с сервером)
 	secret := "Wahm7Iti1VAoXsFAV1MBeMfPv1yope2IJ47utB30Pk4FgZyJFZK0ayfX4zNstkUh"
-	
+
 	// Создаем токен для Server A
 	serverAToken := createP2PToken("server-a", "mesh-network-test", secret)
-	
-	// Создаем токен для Server B  
+
+	// Создаем токен для Server B
 	serverBToken := createP2PToken("server-b", "mesh-network-test", secret)
-	
+
 	fmt.Println("=== CloudBridge P2P Tokens ===")
 	fmt.Println()
 	fmt.Println("Server A Token:")
@@ -76,15 +76,15 @@ func createP2PToken(serverID, tenantID, secret string) string {
 			// НЕ устанавливаем ExpiresAt - токен бессрочный
 		},
 	}
-	
+
 	// Создаем токен
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	
+
 	// Подписываем токен
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		log.Fatalf("Error creating token for %s: %v", serverID, err)
 	}
-	
+
 	return tokenString
 }
