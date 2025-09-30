@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
@@ -288,6 +289,23 @@ func (pm *P2PManager) GetActiveConnections(c *gin.Context) {
 
 // validateToken валидирует JWT токен
 func (pm *P2PManager) validateToken(c *gin.Context) (*P2PClaims, error) {
+	// Проверяем, включена ли авторизация
+	if os.Getenv("AUTH_ENABLED") == "false" {
+		// Возвращаем фиктивные claims для отключенной авторизации
+		tenantID := c.Param("tenant_id")
+		if tenantID == "" {
+			tenantID = "default"
+		}
+		return &P2PClaims{
+			Subject:        "anonymous",
+			TenantID:       tenantID,
+			ServerID:       "anonymous",
+			ConnectionType: "quic",
+			ProtocolType:   "p2p-mesh",
+			Permissions:    []string{"relay_connect", "relay_tunnel"},
+		}, nil
+	}
+
 	// Получаем токен из заголовка Authorization
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
