@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-<<<<<<< HEAD
-=======
 	"strings"
->>>>>>> rpc-jwt-setup-20250929-232240
 
 	"github.com/gin-gonic/gin"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
@@ -295,9 +292,6 @@ func (pm *P2PManager) GetActiveConnections(c *gin.Context) {
 func (pm *P2PManager) validateToken(c *gin.Context) (*P2PClaims, error) {
 	// Проверяем, включена ли авторизация
 	if os.Getenv("AUTH_ENABLED") == "false" {
-<<<<<<< HEAD
-		// Возвращаем фиктивные claims для отключенной авторизации
-=======
 		// Извлекаем server_id из токена даже при отключенной авторизации
 		authHeader := c.GetHeader("Authorization")
 		serverID := "anonymous"
@@ -318,17 +312,10 @@ func (pm *P2PManager) validateToken(c *gin.Context) (*P2PClaims, error) {
 			}
 		}
 
->>>>>>> rpc-jwt-setup-20250929-232240
 		tenantID := c.Param("tenant_id")
 		if tenantID == "" {
 			tenantID = "default"
 		}
-<<<<<<< HEAD
-		return &P2PClaims{
-			Subject:        "anonymous",
-			TenantID:       tenantID,
-			ServerID:       "anonymous",
-=======
 
 		pm.logger.Info("Using extracted server_id for peer_id generation",
 			zap.String("server_id", serverID),
@@ -338,7 +325,6 @@ func (pm *P2PManager) validateToken(c *gin.Context) (*P2PClaims, error) {
 			Subject:        "peer_" + serverID,
 			TenantID:       tenantID,
 			ServerID:       serverID,
->>>>>>> rpc-jwt-setup-20250929-232240
 			ConnectionType: "quic",
 			ProtocolType:   "p2p-mesh",
 			Permissions:    []string{"relay_connect", "relay_tunnel"},
