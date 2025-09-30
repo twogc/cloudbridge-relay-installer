@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
@@ -291,15 +292,39 @@ func (pm *P2PManager) GetActiveConnections(c *gin.Context) {
 func (pm *P2PManager) validateToken(c *gin.Context) (*P2PClaims, error) {
 	// Проверяем, включена ли авторизация
 	if os.Getenv("AUTH_ENABLED") == "false" {
-		// Возвращаем фиктивные claims для отключенной авторизации
+		// Извлекаем server_id из токена даже при отключенной авторизации
+		authHeader := c.GetHeader("Authorization")
+		serverID := "anonymous"
+
+		if authHeader != "" {
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+			if token != authHeader {
+				// Извлекаем server_id из токена формата "server-id:server-a"
+				if strings.Contains(token, ":") {
+					parts := strings.Split(token, ":")
+					if len(parts) >= 2 {
+						serverID = parts[1]
+						pm.logger.Info("Extracted server_id from token",
+							zap.String("server_id", serverID),
+							zap.String("token_prefix", parts[0]))
+					}
+				}
+			}
+		}
+
 		tenantID := c.Param("tenant_id")
 		if tenantID == "" {
 			tenantID = "default"
 		}
+
+		pm.logger.Info("Using extracted server_id for peer_id generation",
+			zap.String("server_id", serverID),
+			zap.String("tenant_id", tenantID))
+
 		return &P2PClaims{
-			Subject:        "anonymous",
+			Subject:        "peer_" + serverID,
 			TenantID:       tenantID,
-			ServerID:       "anonymous",
+			ServerID:       serverID,
 			ConnectionType: "quic",
 			ProtocolType:   "p2p-mesh",
 			Permissions:    []string{"relay_connect", "relay_tunnel"},
@@ -313,15 +338,38 @@ func (pm *P2PManager) validateToken(c *gin.Context) (*P2PClaims, error) {
 	}
 
 	// Извлекаем токен
-	_ = authHeader
-	// if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
-	//	token = authHeader[7:]
-	// }
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	if token == authHeader {
+		return nil, fmt.Errorf("invalid authorization format")
+	}
 
-	// Здесь должна быть валидация токена
-	// Для демонстрации возвращаем mock claims
+	// Извлекаем server_id из токена формата "server-id:server-a"
+	serverID := "anonymous"
+	if strings.Contains(token, ":") {
+		parts := strings.Split(token, ":")
+		if len(parts) >= 2 {
+			serverID = parts[1]
+			pm.logger.Info("Extracted server_id from token",
+				zap.String("server_id", serverID),
+				zap.String("token_prefix", parts[0]))
+		}
+	}
+
+	tenantID := c.Param("tenant_id")
+	if tenantID == "" {
+		tenantID = "default"
+	}
+
+	pm.logger.Info("Using extracted server_id for peer_id generation",
+		zap.String("server_id", serverID),
+		zap.String("tenant_id", tenantID))
+
 	return &P2PClaims{
-		Subject:  "peer-123",
-		TenantID: "tenant-456",
+		Subject:        "peer_" + serverID,
+		TenantID:       tenantID,
+		ServerID:       serverID,
+		ConnectionType: "quic",
+		ProtocolType:   "p2p-mesh",
+		Permissions:    []string{"relay_connect", "relay_tunnel"},
 	}, nil
 }

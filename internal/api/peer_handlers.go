@@ -765,15 +765,39 @@ func truncateForLog(s string) string {
 func (pm *PeerManager) validateToken(c *gin.Context) (*P2PClaims, error) {
 	// Проверяем, включена ли авторизация
 	if os.Getenv("AUTH_ENABLED") == "false" {
-		// Возвращаем фиктивные claims для отключенной авторизации
+		// Извлекаем server_id из токена даже при отключенной авторизации
+		authHeader := c.GetHeader("Authorization")
+		serverID := "anonymous"
+
+		if authHeader != "" {
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+			if token != authHeader {
+				// Извлекаем server_id из токена формата "server-id:server-a"
+				if strings.Contains(token, ":") {
+					parts := strings.Split(token, ":")
+					if len(parts) >= 2 {
+						serverID = parts[1]
+						pm.logger.Info("Extracted server_id from token",
+							zap.String("server_id", serverID),
+							zap.String("token_prefix", parts[0]))
+					}
+				}
+			}
+		}
+
 		tenantID := c.Param("tenant_id")
 		if tenantID == "" {
 			tenantID = "default"
 		}
+
+		pm.logger.Info("Using extracted server_id for peer_id generation",
+			zap.String("server_id", serverID),
+			zap.String("tenant_id", tenantID))
+
 		return &P2PClaims{
-			Subject:        "anonymous",
+			Subject:        "peer_" + serverID,
 			TenantID:       tenantID,
-			ServerID:       "anonymous",
+			ServerID:       serverID,
 			ConnectionType: "quic",
 			ProtocolType:   "p2p-mesh",
 			Permissions:    []string{"relay_connect", "relay_tunnel"},
@@ -796,6 +820,12 @@ func (pm *PeerManager) validateToken(c *gin.Context) (*P2PClaims, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid token: %v", err)
 		}
+
+		pm.logger.Info("Token validated with external validator",
+			zap.String("server_id", claims.ServerID),
+			zap.String("tenant_id", claims.TenantID),
+			zap.String("subject", claims.Subject))
+
 		return claims, nil
 	}
 
@@ -804,6 +834,12 @@ func (pm *PeerManager) validateToken(c *gin.Context) (*P2PClaims, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid token: %v", err)
 	}
+
+	pm.logger.Info("Token validated with local JWT parser",
+		zap.String("server_id", claims.ServerID),
+		zap.String("tenant_id", claims.TenantID),
+		zap.String("subject", claims.Subject))
+
 	return claims, nil
 }
 
