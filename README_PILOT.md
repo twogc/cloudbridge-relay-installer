@@ -17,12 +17,12 @@ chmod +x cloudbridge-client
 
 ### 2. **Запуск Server A**
 ```bash
-./cloudbridge-client p2p --config server-a-pilot.yaml --log-level debug
+./test/relay-client/cloudbridge-client p2p --config server-a-pilot.yaml --log-level debug
 ```
 
 ### 3. **Запуск Server B**
 ```bash
-./cloudbridge-client p2p --config server-b-pilot.yaml --log-level debug
+./test/relay-client/cloudbridge-client p2p --config server-b-pilot.yaml --log-level debug
 ```
 
 ## 🌐 Внешние endpoints для тестирования
