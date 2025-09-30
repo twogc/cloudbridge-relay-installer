@@ -177,3 +177,4 @@ reference-repos/
 
 # Submodules with untracked content
 tools/cadence-web
+.current-tag
