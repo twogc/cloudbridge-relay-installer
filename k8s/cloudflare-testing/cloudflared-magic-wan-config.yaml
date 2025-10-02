@@ -1,0 +1,122 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-magic-wan-config
+  namespace: cloudbridge-testing
+  labels:
+    app: cloudflared-testing
+    purpose: magic-wan-integration
+data:
+  config.yml: |
+    tunnel: ${CLOUDFLARE_TUNNEL_ID}
+    credentials-file: /etc/cloudflared/credentials/credentials.json
+    
+    # Metrics and health check
+    metrics: 0.0.0.0:6006
+    no-autoupdate: true
+    loglevel: info
+    
+    # Magic WAN configuration
+    # This tunnel connects CloudBridge Relay to Cloudflare Magic WAN
+    # Clients connect to CloudBridge Relay, which forwards to Magic WAN
+    
+    # Ingress rules - CloudBridge Relay acts as a proxy to Magic WAN
+    ingress:
+      # Main relay endpoint - accepts all traffic from clients and forwards to Magic WAN
+      - hostname: relay.yourdomain.com
+        service: http://cloudbridge-relay-magic-wan:6001
+        originRequest:
+          noTLSVerify: true
+          connectTimeout: 30s
+          tlsTimeout: 10s
+          tcpKeepAlive: 30s
+          keepAliveConnections: 100
+          keepAliveTimeout: 90s
+          httpHostHeader: ""
+          originServerName: ""
+          caPool: ""
+          disableChunkedEncoding: false
+          bastionMode: false
+          proxyAddress: ""
+          proxyPort: 0
+          proxyType: ""
+          http2Origin: true
+      
+      # Health check endpoint
+      - hostname: health.yourdomain.com
+        service: http://cloudbridge-relay-magic-wan:6003/health
+      
+      # API endpoint
+      - hostname: api.yourdomain.com
+        service: http://cloudbridge-relay-magic-wan:6004
+      
+      # Metrics endpoint (internal only)
+      - hostname: metrics.yourdomain.com
+        service: http://cloudbridge-relay-magic-wan:6002/metrics
+      
+      # QUIC endpoint for high-performance connections
+      - hostname: quic.yourdomain.com
+        service: http://cloudbridge-relay-magic-wan:6091
+        originRequest:
+          noTLSVerify: true
+          connectTimeout: 30s
+          tlsTimeout: 10s
+          tcpKeepAlive: 30s
+          keepAliveConnections: 200
+          keepAliveTimeout: 90s
+          httpHostHeader: ""
+          originServerName: ""
+          caPool: ""
+          disableChunkedEncoding: false
+          bastionMode: false
+          proxyAddress: ""
+          proxyPort: 0
+          proxyType: ""
+          http2Origin: true
+      
+      # Catch-all rule for any other traffic
+      - service: http_status:404
+    
+    # Origin certificate configuration
+    originRequest:
+      noTLSVerify: true
+      connectTimeout: 30s
+      tlsTimeout: 10s
+      tcpKeepAlive: 30s
+      keepAliveConnections: 100
+      keepAliveTimeout: 90s
+      httpHostHeader: ""
+      originServerName: ""
+      caPool: ""
+      disableChunkedEncoding: false
+      bastionMode: false
+      proxyAddress: ""
+      proxyPort: 0
+      proxyType: ""
+      http2Origin: true
+    
+    # Retry configuration for reliability
+    retries: 5
+    grace-period: 30s
+    
+    # Connection settings optimized for Magic WAN
+    protocol: auto
+    heartbeatCount: 5
+    heartbeatInterval: 5s
+    
+    # Logging configuration
+    logfile: /var/log/cloudflared.log
+    logfile-max-size: 50
+    logfile-max-backups: 5
+    logfile-max-age: 7
+    
+    # Magic WAN specific settings
+    # These settings optimize the connection for Magic WAN
+    warp-routing:
+      enabled: true
+    
+    # Connection pooling for better performance
+    connection-pool:
+      max-connections: 1000
+      max-idle-connections: 100
+      max-idle-time: 30s

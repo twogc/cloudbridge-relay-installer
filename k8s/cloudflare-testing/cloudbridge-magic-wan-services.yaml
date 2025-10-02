@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudbridge-relay-magic-wan
+  namespace: cloudbridge-testing
+  labels:
+    app: cloudbridge-relay-magic-wan
+    purpose: magic-wan-integration
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6001
+    targetPort: 6001
+    name: main-server
+    protocol: TCP
+  - port: 6002
+    targetPort: 6002
+    name: metrics
+    protocol: TCP
+  - port: 6003
+    targetPort: 6003
+    name: p2p-api
+    protocol: TCP
+  - port: 6004
+    targetPort: 6004
+    name: http-api
+    protocol: TCP
+  - port: 6005
+    targetPort: 6005
+    name: https-api
+    protocol: TCP
+  - port: 6091
+    targetPort: 6091
+    name: quic-transport
+    protocol: UDP
+  - port: 19303
+    targetPort: 19303
+    name: stun-server
+    protocol: UDP
+  selector:
+    app: cloudbridge-relay-magic-wan
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudbridge-magic-wan-nodeport
+  namespace: cloudbridge-testing
+  labels:
+    app: cloudbridge-relay-magic-wan
+    purpose: magic-wan-integration
+spec:
+  type: NodePort
+  ports:
+  - port: 6001
+    targetPort: 6001
+    nodePort: 30701
+    name: main-server
+    protocol: TCP
+  - port: 6002
+    targetPort: 6002
+    nodePort: 30702
+    name: metrics
+    protocol: TCP
+  - port: 6003
+    targetPort: 6003
+    nodePort: 30703
+    name: p2p-api
+    protocol: TCP
+  - port: 6004
+    targetPort: 6004
+    nodePort: 30704
+    name: http-api
+    protocol: TCP
+  - port: 6005
+    targetPort: 6005
+    nodePort: 30705
+    name: https-api
+    protocol: TCP
+  - port: 6091
+    targetPort: 6091
+    nodePort: 30791
+    name: quic-transport
+    protocol: UDP
+  selector:
+    app: cloudbridge-relay-magic-wan
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudbridge-magic-wan-loadbalancer
+  namespace: cloudbridge-testing
+  labels:
+    app: cloudbridge-relay-magic-wan
+    purpose: magic-wan-integration
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 6001
+    name: http
+    protocol: TCP
+  - port: 443
+    targetPort: 6005
+    name: https
+    protocol: TCP
+  - port: 9091
+    targetPort: 6091
+    name: quic
+    protocol: UDP
+  selector:
+    app: cloudbridge-relay-magic-wan

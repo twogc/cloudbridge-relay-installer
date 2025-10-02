@@ -1,0 +1,192 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cadence-config
+  namespace: cloudbridge
+data:
+  docker.yaml: |
+    log:
+      level: info
+      stdout: true
+
+    services:
+      frontend:
+        rpc:
+          port: 7933
+          grpcPort: 7833
+          bindOnLocalHost: false
+        pprof:
+          port: 7934
+        metrics:
+          prometheus:
+            listenAddress: "0.0.0.0:8000"
+      history:
+        rpc:
+          port: 7935
+      matching:
+        rpc:
+          port: 7936
+      worker:
+        rpc:
+          port: 7939
+
+    clusterMetadata:
+      enableGlobalDomain: false
+      failoverVersionIncrement: 10
+      masterClusterName: "active"
+      currentClusterName: "active"
+      clusterInformation:
+        active:
+          enabled: true
+          initialFailoverVersion: 1
+          rpcAddress: "cadence:7933"
+
+    persistence:
+      numHistoryShards: 4
+      defaultStore: "sql-default"
+      visibilityStore: "sql-visibility"
+      datastores:
+        sql-default:
+          sql:
+            pluginName: "postgres"
+            databaseName: "cadence"
+            connectAddr: "postgres-service:5432"
+            connectProtocol: "tcp"
+            user: "cadence"
+            password: "cadence"
+            maxConns: 20
+            maxIdleConns: 20
+            maxConnLifetime: "1h"
+        sql-visibility:
+          sql:
+            pluginName: "postgres"
+            databaseName: "cadence_visibility"
+            connectAddr: "postgres-service:5432"
+            connectProtocol: "tcp"
+            user: "cadence"
+            password: "cadence"
+            maxConns: 20
+            maxIdleConns: 20
+            maxConnLifetime: "1h"
+
+    ringpop:
+      name: "cadence"
+      bootstrapMode: "hosts"
+      bootstrapHosts: ["cadence:7933"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cadence
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cadence
+    app.kubernetes.io/component: workflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cadence
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cadence
+    spec:
+      containers:
+      - name: cadence
+        image: ubercadence/server:0.24.0
+        command: ["/bin/bash","-lc"]
+        args:
+          - |
+            echo "Starting Cadence"
+            exec /usr/local/bin/cadence-server \
+              --root /etc/cadence \
+              --env docker \
+              start --services=frontend,history,matching,worker
+        ports:
+        - name: tchan-frontend
+          containerPort: 7933
+          protocol: TCP
+        - name: web
+          containerPort: 7934
+          protocol: TCP
+        - name: metrics
+          containerPort: 8000
+          protocol: TCP
+        env:
+        - name: LOG_LEVEL
+          value: "info"
+        - name: SERVICES
+          value: "frontend,history,matching,worker"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          tcpSocket:
+            port: 7933
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          tcpSocket:
+            port: 7933
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        volumeMounts:
+        - name: cadence-config
+          mountPath: /etc/cadence/config
+        - name: cadence-data
+          mountPath: /var/lib/cadence
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: cadence-config
+        configMap:
+          name: cadence-config
+      - name: cadence-data
+        persistentVolumeClaim:
+          claimName: cadence-pvc
+      - name: tmp
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/os: linux
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cadence-pvc
+  namespace: cloudbridge
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cadence
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cadence
+spec:
+  ports:
+    - name: tchan-frontend
+      port: 7933
+      targetPort: 7933
+    - name: web
+      port: 7934
+      targetPort: 7934
+    - name: metrics
+      port: 8000
+      targetPort: 8000
+  selector:
+    app.kubernetes.io/name: cadence

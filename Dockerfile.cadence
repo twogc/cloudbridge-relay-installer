@@ -1,0 +1,25 @@
+FROM ubercadence/server:0.24.0
+
+# Устанавливаем необходимые пакеты
+RUN apk add --no-cache netcat-openbsd
+
+# Создаем скрипт ожидания базы данных
+RUN echo '#!/bin/sh' > /wait-for-db.sh && \
+    echo 'echo "Waiting for PostgreSQL to be ready..."' >> /wait-for-db.sh && \
+    echo 'until nc -z postgres-service 5432; do' >> /wait-for-db.sh && \
+    echo '  echo "PostgreSQL is unavailable - sleeping"' >> /wait-for-db.sh && \
+    echo '  sleep 2' >> /wait-for-db.sh && \
+    echo 'done' >> /wait-for-db.sh && \
+    echo 'echo "PostgreSQL is up - starting Cadence"' >> /wait-for-db.sh && \
+    echo 'exec "$@"' >> /wait-for-db.sh && \
+    chmod +x /wait-for-db.sh
+
+# Создаем директорию для конфигурации
+RUN mkdir -p /etc/cadence/config
+
+# Устанавливаем правильные права (пользователь cadence не существует в образе)
+RUN chown -R root:root /etc/cadence
+
+# Переопределяем entrypoint
+ENTRYPOINT ["/wait-for-db.sh"]
+CMD ["/usr/local/bin/cadence-server", "--root", "/etc/cadence", "--config", "/etc/cadence/config/docker.yaml", "start", "--services=frontend,history,matching,worker"]

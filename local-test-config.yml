@@ -1,0 +1,75 @@
+# Локальная тестовая конфигурация cloudflared для подключения к CloudBridge Relay
+# Этот файл для тестирования подключения к edge.2gc.ru:9090
+
+# =============================================================================
+# ОСНОВНАЯ КОНФИГУРАЦИЯ
+# =============================================================================
+
+# Tunnel ID (получить из Cloudflare Dashboard)
+tunnel: <YOUR_TUNNEL_UUID>
+credentials-file: /home/ubuntu/.cloudflared/credentials.json
+
+# =============================================================================
+# КОНФИГУРАЦИЯ INGRESS ДЛЯ ПОДКЛЮЧЕНИЯ К CLOUDBRIDGE RELAY
+# =============================================================================
+
+ingress:
+  # Тестовый API через CloudBridge Relay
+  - hostname: test-api.local
+    service: https://edge.2gc.ru:9090/api/
+    originRequest:
+      httpHostHeader: test-api.local
+      noTLSVerify: false
+      tlsTimeout: 10s
+      connectTimeout: 10s
+      tcpKeepAlive: 30s
+      keepAliveConnections: 10
+      keepAliveTimeout: 90s
+
+  # Тестовый Health Check через CloudBridge Relay
+  - hostname: test-health.local
+    service: https://edge.2gc.ru:9090/health
+    originRequest:
+      httpHostHeader: test-health.local
+      noTLSVerify: false
+      tlsTimeout: 5s
+      connectTimeout: 5s
+
+  # Тестовый P2P API через CloudBridge Relay
+  - hostname: test-p2p.local
+    service: https://edge.2gc.ru:9090/p2p/
+    originRequest:
+      httpHostHeader: test-p2p.local
+      noTLSVerify: false
+      tlsTimeout: 10s
+      connectTimeout: 10s
+
+  # Тестовый QUIC Transport через CloudBridge Relay
+  - hostname: test-quic.local
+    service: https://edge.2gc.ru:9090/quic/
+    originRequest:
+      httpHostHeader: test-quic.local
+      noTLSVerify: false
+      tlsTimeout: 10s
+      connectTimeout: 10s
+
+  # Catch-all правило (обязательно в конце)
+  - service: http_status:404
+
+# =============================================================================
+# ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ
+# =============================================================================
+
+# Логирование
+loglevel: info
+logfile: /home/ubuntu/cloudflared-test.log
+
+# Метрики
+metrics: 127.0.0.1:8080
+
+# Автообновление
+autoupdate-freq: 24h
+
+# Graceful shutdown
+grace-period: 30s
+

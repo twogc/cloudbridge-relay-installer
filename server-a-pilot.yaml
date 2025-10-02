@@ -21,13 +21,28 @@ auth:
 
 # Relay Configuration
 relay:
-  enabled: true
-  # Основной релей через поддомен
-  url: "https://relay.2gc.ru"
-  # MASQUE прокси для HTTP/3
-  masque_url: "https://masque.2gc.ru"
-  # P2P discovery
-  p2p_url: "https://p2p.2gc.ru"
+  host: "edge.2gc.ru"
+  port: 443
+  base_url: "https://edge.2gc.ru"
+  timeout: "30s"
+  tls:
+    enabled: true
+    verify_cert: false
+    insecure_skip_verify: true
+    server_name: "edge.2gc.ru"
+
+# API Configuration
+api:
+  base_url: "https://edge.2gc.ru"
+  p2p_api_url: "https://edge.2gc.ru/api/v1/p2p"
+  heartbeat_url: "https://edge.2gc.ru/api/v1/heartbeat"
+  health_url: "https://edge.2gc.ru/health"
+  metrics_url: "https://edge.2gc.ru/metrics"
+  timeout: "30s"
+  max_retries: 3
+  backoff_multiplier: 2.0
+  max_backoff: "60s"
+  insecure_skip_verify: true
 
 # Network Configuration
 network:

@@ -1,0 +1,227 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ipsec-magic-wan-config
+  namespace: cloudbridge-testing
+  labels:
+    app: ipsec-magic-wan
+    purpose: magic-wan-l3-tunnel
+data:
+  ipsec.conf: |
+    config setup
+      uniqueids=no
+      charondebug="ike 2, cfg 2, net 2, esp 2"
+    
+    # Magic WAN IPsec IKEv2 connection
+    conn magic-wan-primary
+      keyexchange=ikev2
+      type=tunnel
+      auto=start
+      dpdaction=restart
+      dpddelay=30s
+      dpdtimeout=120s
+      
+      # IKE settings
+      ike=aes256-sha256-modp2048!
+      esp=aes256-sha256!
+      
+      # Local settings
+      left=%any
+      leftid=${LOCAL_PUBLIC_IP}
+      leftsubnet=${LOCAL_INTERNAL_NETWORKS}
+      leftsourceip=%config
+      
+      # Remote settings (Cloudflare Magic WAN)
+      right=${CF_PEER_IP}
+      rightid=${CF_PEER_IP}
+      rightsubnet=0.0.0.0/0
+      
+      # Port settings
+      ikeport=500
+      fragmentation=yes
+      forceencaps=yes
+      
+      # Connection settings
+      keyingtries=3
+      ikelifetime=8h
+      lifetime=1h
+      rekeymargin=3m
+      rekeyfuzz=100%
+      
+      # NAT-T settings
+      nat-keepalive=20
+      mobike=no
+      
+      # Compression
+      compress=no
+      
+      # Dead peer detection
+      dpdaction=restart
+      dpddelay=30s
+      dpdtimeout=120s
+    
+    # Secondary Magic WAN connection (failover)
+    conn magic-wan-secondary
+      keyexchange=ikev2
+      type=tunnel
+      auto=start
+      dpdaction=restart
+      dpddelay=30s
+      dpdtimeout=120s
+      
+      # IKE settings
+      ike=aes256-sha256-modp2048!
+      esp=aes256-sha256!
+      
+      # Local settings
+      left=%any
+      leftid=${LOCAL_PUBLIC_IP}
+      leftsubnet=${LOCAL_INTERNAL_NETWORKS}
+      leftsourceip=%config
+      
+      # Remote settings (Cloudflare Magic WAN Secondary)
+      right=${CF_PEER_IP_SECONDARY}
+      rightid=${CF_PEER_IP_SECONDARY}
+      rightsubnet=0.0.0.0/0
+      
+      # Port settings
+      ikeport=500
+      fragmentation=yes
+      forceencaps=yes
+      
+      # Connection settings
+      keyingtries=3
+      ikelifetime=8h
+      lifetime=1h
+      rekeymargin=3m
+      rekeyfuzz=100%
+      
+      # NAT-T settings
+      nat-keepalive=20
+      mobike=no
+      
+      # Compression
+      compress=no
+      
+      # Dead peer detection
+      dpdaction=restart
+      dpddelay=30s
+      dpdtimeout=120s
+
+  ipsec.secrets: |
+    # Magic WAN PSK (получить от Cloudflare)
+    : PSK "${CF_PSK}"
+    
+    # Alternative format if needed
+    ${LOCAL_PUBLIC_IP} ${CF_PEER_IP} : PSK "${CF_PSK}"
+    ${LOCAL_PUBLIC_IP} ${CF_PEER_IP_SECONDARY} : PSK "${CF_PSK}"
+
+  strongswan.conf: |
+    # StrongSwan configuration for Magic WAN
+    charon {
+      # Load plugins
+      plugins {
+        include strongswan.d/charon/*.conf
+      }
+      
+      # IKE settings
+      ikesa_lifetime = 8h
+      ikesa_retries = 3
+      ikesa_retry_delay = 30s
+      
+      # Child SA settings
+      childsa_lifetime = 1h
+      childsa_retries = 3
+      childsa_retry_delay = 30s
+      
+      # DPD settings
+      dpd_delay = 30s
+      dpd_timeout = 120s
+      dpd_action = restart
+      
+      # NAT-T settings
+      nat_keepalive = 20s
+      
+      # Compression
+      compression = no
+      
+      # Fragmentation
+      fragmentation = yes
+      force_encapsulation = yes
+      
+      # Logging
+      filelog {
+        /var/log/strongswan.log {
+          default = 2
+          flush_line = yes
+        }
+      }
+      
+      # Syslog
+      syslog {
+        daemon {
+          default = 2
+        }
+      }
+    }
+
+  setup-ipsec.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "🔧 Настройка IPsec для Magic WAN..."
+    
+    # Установка strongSwan
+    apt-get update
+    apt-get install -y strongswan strongswan-swanctl
+    
+    # Копирование конфигурации
+    cp /etc/ipsec/ipsec.conf /etc/ipsec/ipsec.conf.backup
+    cp /etc/ipsec/ipsec.secrets /etc/ipsec/ipsec.secrets.backup
+    
+    # Замена переменных в конфигурации
+    envsubst < /etc/ipsec/ipsec.conf.template > /etc/ipsec/ipsec.conf
+    envsubst < /etc/ipsec/ipsec.secrets.template > /etc/ipsec/ipsec.secrets
+    
+    # Установка прав доступа
+    chmod 600 /etc/ipsec/ipsec.secrets
+    chown root:root /etc/ipsec/ipsec.secrets
+    
+    # Запуск strongSwan
+    systemctl enable strongswan
+    systemctl start strongswan
+    
+    # Проверка статуса
+    ipsec statusall
+    
+    echo "✅ IPsec настроен для Magic WAN"
+
+  test-ipsec.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "🧪 Тестирование IPsec подключения к Magic WAN..."
+    
+    # Проверка статуса туннелей
+    echo "📊 Статус IPsec туннелей:"
+    ipsec statusall
+    
+    # Проверка активных соединений
+    echo "🔗 Активные соединения:"
+    ipsec listall
+    
+    # Проверка маршрутов
+    echo "🛣️ Маршруты через туннель:"
+    ip route show | grep -E "(magic-wan|tunnel)"
+    
+    # Тест связности через туннель
+    echo "🌐 Тест связности через Magic WAN:"
+    if ping -c 3 8.8.8.8; then
+      echo "✅ Связность через Magic WAN работает"
+    else
+      echo "❌ Проблемы со связностью через Magic WAN"
+    fi
+    
+    # Проверка логов
+    echo "📋 Последние логи IPsec:"
+    tail -20 /var/log/strongswan.log

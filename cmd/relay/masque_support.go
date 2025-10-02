@@ -9,7 +9,6 @@ import (
 	"crypto/x509/pkix"
 	"errors"
 	"fmt"
-	"io"
 	"math/big"
 	"net"
 	"net/http"
@@ -25,21 +24,6 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"github.com/twogc/cloudbridge-relay-installer/internal/masque"
 )
-
-// Context ID для MASQUE datagrams (из masque-go)
-var contextIDZero = quicvarint.Append([]byte{}, 0)
-
-// proxyEntry представляет запись прокси для Context ID управления
-type proxyEntry struct {
-	str  *http3.Stream
-	conn *net.UDPConn
-}
-
-// Close закрывает proxy entry
-func (e proxyEntry) Close() error {
-	e.str.CancelRead(quic.StreamErrorCode(http3.ErrCodeConnectError))
-	return errors.Join(e.str.Close(), e.conn.Close())
-}
 
 // errToStatus конвертирует ошибку в HTTP статус код (из masque-go)
 func errToStatus(err error) int {
@@ -75,11 +59,6 @@ type MASQUEServer struct {
 	// Управление соединениями
 	connections      map[string]*MASQUEConnection
 	connectionsMutex sync.RWMutex
-
-	// Context ID управление (из masque-go)
-	proxyEntries      map[io.Closer]struct{}
-	proxyEntriesMutex sync.Mutex
-	refCount          sync.WaitGroup
 
 	// Состояние
 	isRunning bool
@@ -131,6 +110,7 @@ func (mc *MASQUEConnection) SendDatagramWithContextID(data []byte) error {
 
 	// Создаем datagram с Context ID согласно RFC 9297 (как в masque-go)
 	// Формат: [Quarter Stream ID (varint)][HTTP Datagram Payload]
+	contextIDZero := quicvarint.Append([]byte{}, 0)
 	datagram := make([]byte, 0, len(contextIDZero)+len(data))
 	datagram = append(datagram, contextIDZero...) // Context ID = 0 для CONNECT-UDP
 	datagram = append(datagram, data...)
@@ -188,7 +168,6 @@ func NewMASQUEServer(logger *logger.Logger, config *config.Config) *MASQUEServer
 		connectIPProxy: connectIPProxy,
 		capsuleHandler: capsuleHandler,
 		connections:    make(map[string]*MASQUEConnection),
-		proxyEntries:   make(map[io.Closer]struct{}),
 		ctx:            ctx,
 		cancel:         cancel,
 	}
@@ -777,6 +756,7 @@ func (p *MASQUEUDPProxy) proxyUDPFromTarget(conn *MASQUEConnection) {
 		// Создаем datagram с Context ID как в masque-go
 		// Формат: [Quarter Stream ID (varint)][HTTP Datagram Payload]
 		udpPayload := buffer[:n]
+		contextIDZero := quicvarint.Append([]byte{}, 0)
 		datagram := make([]byte, 0, len(contextIDZero)+len(udpPayload))
 		datagram = append(datagram, contextIDZero...) // Context ID = 0 для CONNECT-UDP
 		datagram = append(datagram, udpPayload...)
@@ -872,20 +852,11 @@ func (ms *MASQUEServer) GetConnectionInfo() map[string]interface{} {
 	}
 }
 
-// Close закрывает MASQUE сервер с поддержкой Context ID управления (из masque-go)
+// Close закрывает MASQUE сервер
 func (ms *MASQUEServer) Close() error {
-	ms.proxyEntriesMutex.Lock()
+	ms.connectionsMutex.Lock()
 	ms.closed = true
 	var errs []error
-
-	// Закрываем все proxy entries
-	for closer := range ms.proxyEntries {
-		errs = append(errs, closer.Close())
-	}
-	ms.proxyEntriesMutex.Unlock()
-
-	// Ждем завершения всех горутин
-	ms.refCount.Wait()
 
 	// Отменяем контекст
 	ms.cancel()
@@ -898,7 +869,6 @@ func (ms *MASQUEServer) Close() error {
 	}
 
 	// Закрываем все соединения
-	ms.connectionsMutex.Lock()
 	for _, conn := range ms.connections {
 		if conn.Stream != nil {
 			conn.Stream.Close()
@@ -911,7 +881,6 @@ func (ms *MASQUEServer) Close() error {
 	ms.connectionsMutex.Unlock()
 
 	ms.isRunning = false
-	ms.proxyEntries = nil
 
 	return errors.Join(errs...)
 }

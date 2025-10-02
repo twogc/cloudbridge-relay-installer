@@ -1,0 +1,66 @@
+# Демонстрационная конфигурация cloudflared для CloudBridge Relay
+# ВНИМАНИЕ: Это демо-конфигурация! Замените <YOUR_TUNNEL_UUID> на реальный Tunnel ID
+
+# =============================================================================
+# ОСНОВНАЯ КОНФИГУРАЦИЯ
+# =============================================================================
+
+# Tunnel ID (ЗАМЕНИТЕ НА РЕАЛЬНЫЙ TUNNEL ID ИЗ CLOUDFLARE DASHBOARD)
+tunnel: <YOUR_TUNNEL_UUID>
+credentials-file: /etc/cloudflared/credentials.json
+
+# =============================================================================
+# КОНФИГУРАЦИЯ INGRESS ДЛЯ CLOUDBRIDGE RELAY (ПОРТ 9090)
+# =============================================================================
+
+ingress:
+  # Демо CloudBridge Relay API через Cloudflare Origin (порт 9090)
+  - hostname: demo-cloudbridge.yourdomain.com
+    service: https://edge.2gc.ru:9090/api/
+    originRequest:
+      httpHostHeader: demo-cloudbridge.yourdomain.com
+      noTLSVerify: false
+      tlsTimeout: 10s
+      connectTimeout: 10s
+      tcpKeepAlive: 30s
+      keepAliveConnections: 10
+      keepAliveTimeout: 90s
+
+  # Демо CloudBridge Relay Health Check (порт 9090)
+  - hostname: demo-health.yourdomain.com
+    service: https://edge.2gc.ru:9090/health
+    originRequest:
+      httpHostHeader: demo-health.yourdomain.com
+      noTLSVerify: false
+      tlsTimeout: 5s
+      connectTimeout: 5s
+
+  # Демо CloudBridge Relay P2P API (порт 9090)
+  - hostname: demo-p2p.yourdomain.com
+    service: https://edge.2gc.ru:9090/p2p/
+    originRequest:
+      httpHostHeader: demo-p2p.yourdomain.com
+      noTLSVerify: false
+      tlsTimeout: 10s
+      connectTimeout: 10s
+
+  # Catch-all правило (обязательно в конце)
+  - service: http_status:404
+
+# =============================================================================
+# ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ
+# =============================================================================
+
+# Логирование
+loglevel: info
+logfile: /var/log/cloudflared/cloudflared-demo.log
+
+# Метрики
+metrics: 127.0.0.1:8080
+
+# Автообновление
+autoupdate-freq: 24h
+
+# Graceful shutdown
+grace-period: 30s
+

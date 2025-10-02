@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: turn-server
+  namespace: cloudbridge
+  labels:
+    app: turn-server
+    component: nat-traversal
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: turn-server
+  template:
+    metadata:
+      labels:
+        app: turn-server
+        component: nat-traversal
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9641"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: turn-server
+        image: coturn/coturn:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: turn-udp
+          containerPort: 3478
+          protocol: UDP
+        - name: turn-tcp
+          containerPort: 3478
+          protocol: TCP
+        - name: turn-tls-udp
+          containerPort: 5349
+          protocol: UDP
+        - name: turn-tls-tcp
+          containerPort: 5349
+          protocol: TCP
+        - name: turn-relay-udp
+          containerPort: 49152
+          protocol: UDP
+        - name: prometheus
+          containerPort: 9641
+          protocol: TCP
+        env:
+        - name: TURN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: turn-server-secret
+              key: TURN_PASSWORD
+        - name: TURN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: turn-server-secret
+              key: TURN_SECRET
+        command:
+        - turnserver
+        - -c
+        - /etc/turnserver/turnserver.conf
+        - --log-file=stdout
+        - --verbose
+        volumeMounts:
+        - name: turn-config
+          mountPath: /etc/turnserver
+          readOnly: true
+        - name: turn-logs
+          mountPath: /var/log
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          tcpSocket:
+            port: 3478
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: 3478
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: turn-config
+        configMap:
+          name: turn-server-config
+      - name: turn-logs
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - turn-server
+              topologyKey: kubernetes.io/hostname
+

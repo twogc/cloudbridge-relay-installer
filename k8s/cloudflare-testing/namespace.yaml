@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudbridge-testing
+  labels:
+    name: cloudbridge-testing
+    purpose: cloudflare-integration-testing
+    environment: testing

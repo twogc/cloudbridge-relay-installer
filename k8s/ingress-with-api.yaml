@@ -41,7 +41,7 @@ spec:
           service:
             name: cloudbridge-relay-external
             port:
-              number: 5551
+              number: 5550
       - path: /
         pathType: Prefix
         backend:
@@ -105,21 +105,21 @@ spec:
           service:
             name: cloudbridge-relay-external
             port:
-              number: 5551
+              number: 5550
       - path: /api/
         pathType: Prefix
         backend:
           service:
             name: cloudbridge-relay-external
             port:
-              number: 5551
+              number: 5550
       - path: /
         pathType: Prefix
         backend:
           service:
             name: cloudbridge-relay-external
             port:
-              number: 5551
+              number: 5550
   
   # monitor.2gc.ru - Metrics and Monitoring
   - host: monitor.2gc.ru
@@ -164,7 +164,7 @@ spec:
           service:
             name: cloudbridge-relay-external
             port:
-              number: 5551
+              number: 5550
       - path: /docs/
         pathType: Prefix
         backend:

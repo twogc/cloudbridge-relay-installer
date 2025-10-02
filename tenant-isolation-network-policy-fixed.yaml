@@ -1,0 +1,77 @@
+# Строгая изоляция тенантов с блокировкой по умолчанию
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: cloudbridge
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tenant-216420165-allow
+  namespace: cloudbridge
+spec:
+  podSelector:
+    matchLabels:
+      tenant.cloudbridge.io/id: "tenant-216420165"
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          tenant.cloudbridge.io/id: "tenant-216420165"
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          tenant.cloudbridge.io/id: "tenant-216420165"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tenant-123456789-allow
+  namespace: cloudbridge
+spec:
+  podSelector:
+    matchLabels:
+      tenant.cloudbridge.io/id: "tenant-123456789"
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          tenant.cloudbridge.io/id: "tenant-123456789"
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          tenant.cloudbridge.io/id: "tenant-123456789"
+---
+# Разрешить DNS для всех подов
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: cloudbridge
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53

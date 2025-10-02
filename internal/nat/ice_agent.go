@@ -173,11 +173,11 @@ func (ia *ICEAgent) AllocateTURNRelay(clientID string, preferences *AllocationPr
 
 	// Сохраняем allocation в ICE agent
 	ia.allocationsMu.Lock()
-	ia.turnAllocations[allocation.AllocationID] = allocation
+	ia.turnAllocations[allocation.ID] = allocation
 	ia.allocationsMu.Unlock()
 
 	ia.logger.Info("TURN relay allocated",
-		zap.String("allocation_id", allocation.AllocationID),
+		zap.String("allocation_id", allocation.ID),
 		zap.String("client_id", clientID),
 		zap.String("server", allocation.Server.Address))
 
@@ -344,21 +344,22 @@ func (ia *ICEAgent) gatherRelayCandidates() {
 		return
 	}
 
-	server, err := ia.turnPool.GetBestServer()
-	if err != nil {
-		ia.logger.Warn("No TURN servers available for relay candidates")
-		return
+	// Создаем TURN allocation для relay кандидата
+	preferences := &AllocationPreferences{
+		PreferredRegion:   "default",
+		PreferredProvider: "cloudbridge",
+		MaxLatency:        100 * time.Millisecond,
+		RequiredTags:      map[string]string{"ice": "true"},
 	}
 
-	// Создаем TURN allocation для relay кандидата
-	allocation, err := ia.turnPool.AllocateTURN("ice-agent")
+	allocation, err := ia.turnPoolManager.AllocateTURN("ice-agent", preferences)
 	if err != nil {
 		ia.logger.Error("Failed to allocate TURN", zap.Error(err))
 		return
 	}
 
 	candidate := &ICECandidate{
-		Foundation: fmt.Sprintf("relay-%s", server.Address),
+		Foundation: fmt.Sprintf("relay-%s", allocation.Server.Address),
 		Component:  1,
 		Transport:  "UDP",
 		Priority:   ia.calculatePriority(ICECandidateTypeRelay, 0),

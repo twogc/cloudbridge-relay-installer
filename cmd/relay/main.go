@@ -116,7 +116,7 @@ type Server struct {
 
 	// TURN server components
 	turnServer *nat.EnhancedTURNServer
-	turnPool   *nat.TURNPool
+	turnPool   *nat.TURNPoolManager
 
 	// DERP server components
 	derpServer *nat.DERPServer
@@ -336,7 +336,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// Initialize TURN server components
 	var turnServer *nat.EnhancedTURNServer
-	var turnPool *nat.TURNPool
+	var turnPool *nat.TURNPoolManager
 
 	// Initialize DERP server components
 	var derpServer *nat.DERPServer
@@ -345,21 +345,55 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	var wsTunnel *tunnel.WebSocketTunnel
 
 	// Initialize TURN pool
-	turnPool = nat.NewTURNPool(loggerInstance)
+	turnPoolConfig := &nat.TURNPoolConfig{
+		DefaultPoolName:         "default",
+		AllocationTimeout:       30 * time.Second,
+		HealthCheckInterval:     30 * time.Second,
+		HealthCheckTimeout:      5 * time.Second,
+		MaxAllocationsPerClient: 10,
+		LoadBalancingStrategy:   "round_robin",
+		WeightedThreshold:       0.8,
+		MetricsEnabled:          true,
+		StatsInterval:           60 * time.Second,
+		LatencyHistorySize:      100,
+		FailoverEnabled:         true,
+		FailoverTimeout:         10 * time.Second,
+		MaxRetries:              3,
+		BackoffMultiplier:       2.0,
+	}
+	turnPool = nat.NewTURNPoolManager(turnPoolConfig, loggerInstance.GetZapLogger())
 
 	// Add default TURN server to pool
 	defaultTURNServer := &nat.TURNServerPool{
-		Address:           "127.0.0.1:3478",
-		Username:          "cloudbridge",
-		Password:          "turnpassword",
-		Realm:             "cloudbridge.local",
-		Priority:          1,
-		Weight:            100,
-		MaxConnections:    1000,
-		ActiveConnections: 0,
-		IsHealthy:         true,
+		Address:        "127.0.0.1:3478",
+		Username:       "cloudbridge",
+		Password:       "turnpassword",
+		Realm:          "cloudbridge.local",
+		Priority:       1,
+		Weight:         100,
+		MaxConnections: 1000,
+		Region:         "default",
+		Provider:       "cloudbridge",
+		Capabilities:   []string{"udp", "tcp", "tls"},
+		Tags:           map[string]string{"env": "development"},
 	}
-	turnPool.AddServer(defaultTURNServer)
+
+	// Create TURNServerInfo from TURNServerPool
+	serverInfo := &nat.TURNServerInfo{
+		TURNServerPool: defaultTURNServer,
+		Region:         "default",
+		Provider:       "cloudbridge",
+		Capabilities:   []string{"udp", "tcp", "tls"},
+		Tags:           map[string]string{"env": "development"},
+		Status:         "active",
+		StatusChanged:  time.Now(),
+	}
+
+	// Add server to default pool
+	err = turnPool.AddServerToPool("default", serverInfo)
+	if err != nil {
+		loggerInstance.Error("Failed to add default TURN server to pool", zap.Error(err))
+	}
 
 	// Initialize Enhanced TURN server
 	if cfg.ICEStunTurn.Enabled {
@@ -595,18 +629,19 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		loggerInstance.Info("WireGuard disabled, skipping WG profile manager initialization")
 	}
 
-	// Initialize MASQUE Integration
+	// Initialize MASQUE Integration (disabled to avoid port conflict with MASQUEServer)
 	var masqueIntegration *MASQUEIntegration
-	if cfg.MASQUE.Enabled {
-		masqueIntegration, err = NewMASQUEIntegration(loggerInstance, cfg)
-		if err != nil {
-			cancel()
-			return nil, fmt.Errorf("failed to initialize MASQUE integration: %v", err)
-		}
-		loggerInstance.Info("MASQUE Integration initialized successfully")
-	} else {
-		loggerInstance.Info("MASQUE disabled, skipping MASQUE integration initialization")
-	}
+	// if cfg.MASQUE.Enabled {
+	//	masqueIntegration, err = NewMASQUEIntegration(loggerInstance, cfg)
+	//	if err != nil {
+	//		cancel()
+	//		return nil, fmt.Errorf("failed to initialize MASQUE integration: %v", err)
+	//	}
+	//	loggerInstance.Info("MASQUE Integration initialized successfully")
+	// } else {
+	//	loggerInstance.Info("MASQUE disabled, skipping MASQUE integration initialization")
+	// }
+	loggerInstance.Info("MASQUE Integration disabled to avoid port conflict with MASQUEServer")
 
 	// Initialize Zitadel Integration
 	var zitadelIntegration *ZitadelIntegration
@@ -702,7 +737,10 @@ func NewServer(cfg *config.Config) (*Server, error) {
 						Priority:       serverConfig.Priority,
 						Weight:         serverConfig.Weight,
 						MaxConnections: serverConfig.MaxConnections,
-						IsHealthy:      true,
+						Region:         serverConfig.Region,
+						Provider:       serverConfig.Provider,
+						Capabilities:   serverConfig.Capabilities,
+						Tags:           serverConfig.Tags,
 					},
 					Region:       serverConfig.Region,
 					Provider:     serverConfig.Provider,

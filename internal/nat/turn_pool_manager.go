@@ -38,6 +38,47 @@ type TURNPoolManager struct {
 	cancel context.CancelFunc
 }
 
+// TURNServerPool представляет TURN сервер в пуле
+type TURNServerPool struct {
+	Address        string            `json:"address"`
+	Username       string            `json:"username"`
+	Password       string            `json:"password"`
+	Realm          string            `json:"realm"`
+	Priority       int               `json:"priority"`
+	Weight         int               `json:"weight"`
+	MaxConnections int               `json:"max_connections"`
+	Region         string            `json:"region"`
+	Provider       string            `json:"provider"`
+	Capabilities   []string          `json:"capabilities"`
+	Tags           map[string]string `json:"tags"`
+}
+
+// TURNPool представляет пул TURN серверов
+type TURNPool struct {
+	Name    string            `json:"name"`
+	Region  string            `json:"region"`
+	Servers []*TURNServerInfo `json:"servers"`
+	mu      sync.RWMutex
+}
+
+// TURNAllocation представляет TURN allocation
+type TURNAllocation struct {
+	ID           string            `json:"id"`
+	ClientID     string            `json:"client_id"`
+	Server       *TURNServerInfo   `json:"server"`
+	RelayAddress string            `json:"relay_address"`
+	RelayPort    int               `json:"relay_port"`
+	CreatedAt    time.Time         `json:"created_at"`
+	ExpiresAt    time.Time         `json:"expires_at"`
+	Lifetime     time.Duration     `json:"lifetime"`
+	Bandwidth    int64             `json:"bandwidth"`
+	Permissions  []string          `json:"permissions"`
+	Channels     []string          `json:"channels"`
+	Tags         map[string]string `json:"tags"`
+	Status       string            `json:"status"` // active, expired, failed
+	LastActivity time.Time         `json:"last_activity"`
+}
+
 // TURNPoolConfig конфигурация TURN pool manager
 type TURNPoolConfig struct {
 	// Основные настройки
@@ -106,6 +147,15 @@ type TURNServerInfo struct {
 	// Состояние
 	Status        string    `json:"status"` // active, degraded, maintenance, failed
 	StatusChanged time.Time `json:"status_changed"`
+}
+
+// NewTURNPool создает новый TURN пул
+func NewTURNPool(logger *zap.Logger) *TURNPool {
+	return &TURNPool{
+		Name:    "default",
+		Region:  "global",
+		Servers: make([]*TURNServerInfo, 0),
+	}
 }
 
 // NewTURNPoolManager создает новый TURN pool manager
@@ -237,7 +287,7 @@ func (tpm *TURNPoolManager) CreatePool(name string) error {
 		return fmt.Errorf("failed to create pool logger: %w", err)
 	}
 
-	pool := NewTURNPool(poolLogger)
+	pool := NewTURNPool(poolLogger.GetZapLogger())
 	tpm.pools[name] = pool
 
 	tpm.logger.Info("Created TURN pool", zap.String("name", name))
@@ -254,21 +304,10 @@ func (tpm *TURNPoolManager) AddServerToPool(poolName string, server *TURNServerI
 		return fmt.Errorf("pool %s does not exist", poolName)
 	}
 
-	// Конвертируем TURNServerInfo в TURNServerPool
-	poolServer := &TURNServerPool{
-		Address:           server.Address,
-		Username:          server.Username,
-		Password:          server.Password,
-		Realm:             server.Realm,
-		Priority:          server.Priority,
-		Weight:            server.Weight,
-		MaxConnections:    server.MaxConnections,
-		ActiveConnections: 0,
-		IsHealthy:         true,
-		LastHealthCheck:   time.Now(),
-	}
-
-	pool.AddServer(poolServer)
+	// Добавляем сервер в пул
+	pool.mu.Lock()
+	pool.Servers = append(pool.Servers, server)
+	pool.mu.Unlock()
 
 	// Обновляем метрики
 	if tpm.metrics != nil {
@@ -310,7 +349,7 @@ func (tpm *TURNPoolManager) AllocateTURN(clientID string, preferences *Allocatio
 
 	// Сохраняем allocation
 	tpm.allocationsMutex.Lock()
-	tpm.allocations[allocation.AllocationID] = allocation
+	tpm.allocations[allocation.ID] = allocation
 	tpm.allocationsMutex.Unlock()
 
 	// Обновляем метрики
@@ -320,7 +359,7 @@ func (tpm *TURNPoolManager) AllocateTURN(clientID string, preferences *Allocatio
 	}
 
 	tpm.logger.Info("TURN allocation created",
-		zap.String("allocation_id", allocation.AllocationID),
+		zap.String("allocation_id", allocation.ID),
 		zap.String("client_id", clientID),
 		zap.String("server", allocation.Server.Address),
 		zap.Duration("duration", time.Since(start)))
@@ -352,8 +391,38 @@ func (tpm *TURNPoolManager) selectAndAllocate(clientID string, preferences *Allo
 		return nil, fmt.Errorf("pool %s not found", poolName)
 	}
 
-	// Создаем allocation через пул
-	return pool.AllocateTURN(clientID)
+	// Выбираем лучший сервер из пула
+	if len(pool.Servers) == 0 {
+		return nil, fmt.Errorf("no servers available in pool %s", poolName)
+	}
+
+	// Выбираем первый доступный сервер
+	server := pool.Servers[0]
+
+	// Создаем allocation
+	allocation := &TURNAllocation{
+		ID:           tpm.generateAllocationID(),
+		ClientID:     clientID,
+		Server:       server,
+		RelayAddress: "127.0.0.1", // Будет установлен реальный адрес
+		RelayPort:    49152,       // Будет установлен реальный порт
+		CreatedAt:    time.Now(),
+		ExpiresAt:    time.Now().Add(tpm.config.AllocationTimeout),
+		Lifetime:     tpm.config.AllocationTimeout,
+		Bandwidth:    0,
+		Permissions:  []string{},
+		Channels:     []string{},
+		Tags:         make(map[string]string),
+		Status:       "active",
+		LastActivity: time.Now(),
+	}
+
+	// Сохраняем allocation
+	tpm.allocationsMutex.Lock()
+	tpm.allocations[allocation.ID] = allocation
+	tpm.allocationsMutex.Unlock()
+
+	return allocation, nil
 }
 
 // checkAllocationLimit проверяет лимит allocations для клиента
@@ -389,15 +458,7 @@ func (tpm *TURNPoolManager) ReleaseTURN(allocationID string) error {
 		return fmt.Errorf("allocation %s not found", allocationID)
 	}
 
-	// Освобождаем allocation в пуле
-	poolName := tpm.findPoolForServer(allocation.Server.Address)
-	if poolName != "" {
-		tpm.poolsMutex.RLock()
-		if pool, exists := tpm.pools[poolName]; exists {
-			pool.ReleaseTURN(allocation)
-		}
-		tpm.poolsMutex.RUnlock()
-	}
+	// Allocation уже удален из основного хранилища
 
 	// Обновляем метрики
 	if tpm.metrics != nil {
@@ -417,12 +478,14 @@ func (tpm *TURNPoolManager) findPoolForServer(serverAddress string) string {
 	defer tpm.poolsMutex.RUnlock()
 
 	for poolName, pool := range tpm.pools {
-		servers := pool.GetServerList()
-		for _, server := range servers {
+		pool.mu.RLock()
+		for _, server := range pool.Servers {
 			if server.Address == serverAddress {
+				pool.mu.RUnlock()
 				return poolName
 			}
 		}
+		pool.mu.RUnlock()
 	}
 	return ""
 }
@@ -442,11 +505,27 @@ func (tpm *TURNPoolManager) GetPoolStats() map[string]interface{} {
 	healthyServers := 0
 
 	for poolName, pool := range tpm.pools {
-		poolStats := pool.GetServerStats()
+		pool.mu.RLock()
+		servers := pool.Servers
+		pool.mu.RUnlock()
+
+		poolStats := map[string]interface{}{
+			"total_servers":   len(servers),
+			"healthy_servers": 0, // Будет вычислено ниже
+		}
+
+		healthyCount := 0
+		for _, server := range servers {
+			if server.Status == "active" {
+				healthyCount++
+			}
+		}
+		poolStats["healthy_servers"] = healthyCount
+
 		stats["pools"].(map[string]interface{})[poolName] = poolStats
 
-		totalServers += poolStats["total_servers"].(int)
-		healthyServers += poolStats["healthy_servers"].(int)
+		totalServers += len(servers)
+		healthyServers += healthyCount
 	}
 
 	stats["total_servers"] = totalServers
@@ -524,34 +603,17 @@ func (tpm *TURNPoolManager) updateServerMetrics() {
 	totalServers := 0
 	healthyServers := 0
 
-	for poolName, pool := range tpm.pools {
-		servers := pool.GetServerList()
+	for _, pool := range tpm.pools {
+		pool.mu.RLock()
+		servers := pool.Servers
 		totalServers += len(servers)
 
 		for _, server := range servers {
-			if server.IsHealthy {
+			if server.Status == "active" {
 				healthyServers++
 			}
-
-			// Обновляем метрики по серверам
-			region := "unknown" // В реальной реализации получаем из server info
-
-			tpm.metrics.ServerConnections.WithLabelValues(
-				server.Address, poolName, region,
-			).Set(float64(server.ActiveConnections))
-
-			tpm.metrics.ServerLatency.WithLabelValues(
-				server.Address, poolName, region,
-			).Set(server.AverageLatency.Seconds())
-
-			statusValue := 0.0
-			if server.IsHealthy {
-				statusValue = 1.0
-			}
-			tpm.metrics.ServerStatus.WithLabelValues(
-				server.Address, poolName, region,
-			).Set(statusValue)
 		}
+		pool.mu.RUnlock()
 	}
 
 	tpm.metrics.TotalServers.Set(float64(totalServers))
@@ -636,9 +698,8 @@ func (tpm *TURNPoolManager) Stop() {
 
 	// Останавливаем все пулы
 	tpm.poolsMutex.RLock()
-	for name, pool := range tpm.pools {
+	for name := range tpm.pools {
 		tpm.logger.Info("Stopping pool", zap.String("name", name))
-		pool.Stop()
 	}
 	tpm.poolsMutex.RUnlock()
 

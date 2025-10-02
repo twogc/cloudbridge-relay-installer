@@ -1,0 +1,50 @@
+# =============================================================================
+# ТЕСТОВАЯ КОНФИГУРАЦИЯ CLOUDFLARED ДЛЯ ПРЯМОГО ПОДКЛЮЧЕНИЯ К CLOUDBRIDGE RELAY
+# =============================================================================
+# Этот конфиг тестирует подключение cloudflared напрямую к нашему серверу
+# вместо Cloudflare Edge
+
+# =============================================================================
+# ОСНОВНАЯ КОНФИГУРАЦИЯ
+# =============================================================================
+
+# Tunnel ID (используем существующий)
+tunnel: 2813f24c-cbd5-43d3-a333-ae55b5a894b0
+credentials-file: /home/ubuntu/.cloudflared/2813f24c-cbd5-43d3-a333-ae55b5a894b0.json
+
+# =============================================================================
+# КОНФИГУРАЦИЯ INGRESS ДЛЯ ПРЯМОГО ПОДКЛЮЧЕНИЯ К CLOUDBRIDGE RELAY
+# =============================================================================
+
+ingress:
+  # Прямое подключение к CloudBridge Relay
+  - hostname: direct-test.local
+    service: https://edge.2gc.ru:9090
+    originRequest:
+      httpHostHeader: direct-test.local
+      noTLSVerify: false
+      tlsTimeout: 10s
+      connectTimeout: 10s
+      tcpKeepAlive: 30s
+      keepAliveConnections: 10
+      keepAliveTimeout: 90s
+
+  # Catch-all правило (обязательно в конце)
+  - service: http_status:404
+
+# =============================================================================
+# ДОПОЛНИТЕЛЬНЫЕ НАСТРОЙКИ
+# =============================================================================
+
+# Логирование
+loglevel: info
+logfile: /home/ubuntu/cloudflared-direct-test.log
+
+# Метрики
+metrics: 127.0.0.1:8081
+
+# Автообновление
+autoupdate-freq: 24h
+
+# Graceful shutdown
+grace-period: 30s

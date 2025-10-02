@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cadence-schema-setup
+  namespace: cloudbridge
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: sqltool
+        image: ubercadence/server:0.24.0
+        command: ["/bin/bash","-lc"]
+        args:
+          - |
+            set -e
+            /usr/local/bin/cadence-sql-tool \
+              --plugin postgres --ep postgres-service --port 5432 \
+              --user cadence --password cadence --db cadence create || true
+            /usr/local/bin/cadence-sql-tool \
+              --plugin postgres --ep postgres-service --port 5432 \
+              --user cadence --password cadence --db cadence_visibility create || true
+            /usr/local/bin/cadence-sql-tool \
+              --plugin postgres --ep postgres-service --port 5432 \
+              --user cadence --password cadence --db cadence setup-schema -v 0.0
+            /usr/local/bin/cadence-sql-tool \
+              --plugin postgres --ep postgres-service --port 5432 \
+              --user cadence --password cadence --db cadence update-schema -y
+            /usr/local/bin/cadence-sql-tool \
+              --plugin postgres --ep postgres-service --port 5432 \
+              --user cadence --password cadence --db cadence_visibility setup-schema -v 0.0
+            /usr/local/bin/cadence-sql-tool \
+              --plugin postgres --ep postgres-service --port 5432 \
+              --user cadence --password cadence --db cadence_visibility update-schema -y

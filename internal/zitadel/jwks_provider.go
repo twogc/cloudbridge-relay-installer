@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -47,7 +48,13 @@ type JWK struct {
 
 // NewJWKSProvider создает новый JWKS провайдер
 func NewJWKSProvider(domain string, httpClient *http.Client, logger *zap.Logger) (*JWKSProvider, error) {
-	jwksURL := fmt.Sprintf("https://%s/oauth/v2/keys", domain)
+	// Проверяем, содержит ли domain уже протокол
+	var jwksURL string
+	if strings.HasPrefix(domain, "http://") || strings.HasPrefix(domain, "https://") {
+		jwksURL = fmt.Sprintf("%s/oauth/v2/keys", domain)
+	} else {
+		jwksURL = fmt.Sprintf("https://%s/oauth/v2/keys", domain)
+	}
 
 	provider := &JWKSProvider{
 		logger:     logger,

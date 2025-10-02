@@ -43,6 +43,7 @@ func TestMASQUEHTTPDatagramsIntegration(t *testing.T) {
 		testData := []byte("test payload")
 
 		// Создаем datagram с Context ID = 0 (CONNECT-UDP)
+		contextIDZero := quicvarint.Append([]byte{}, 0)
 		datagram := make([]byte, 0, len(contextIDZero)+len(testData))
 		datagram = append(datagram, contextIDZero...)
 		datagram = append(datagram, testData...)
@@ -121,6 +122,7 @@ func TestMASQUEHTTPDatagramsIntegration(t *testing.T) {
 		testData := []byte("test UDP payload")
 
 		// Создаем datagram с Context ID = 0
+		contextIDZero := quicvarint.Append([]byte{}, 0)
 		datagram := make([]byte, 0, len(contextIDZero)+len(testData))
 		datagram = append(datagram, contextIDZero...)
 		datagram = append(datagram, testData...)
@@ -193,6 +195,7 @@ func TestMASQUEHTTPDatagramsPerformance(t *testing.T) {
 		testData := []byte("performance test payload")
 
 		// Создаем datagram с Context ID = 0
+		contextIDZero := quicvarint.Append([]byte{}, 0)
 		datagram := make([]byte, 0, len(contextIDZero)+len(testData))
 		datagram = append(datagram, contextIDZero...)
 		datagram = append(datagram, testData...)
@@ -222,6 +225,7 @@ func TestMASQUEHTTPDatagramsPerformance(t *testing.T) {
 		testData := []byte("performance test payload")
 
 		// Создаем datagram с Context ID = 0
+		contextIDZero := quicvarint.Append([]byte{}, 0)
 		datagram := make([]byte, 0, len(contextIDZero)+len(testData))
 		datagram = append(datagram, contextIDZero...)
 		datagram = append(datagram, testData...)

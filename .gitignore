@@ -166,6 +166,9 @@ gen/
 config.local.json
 config.dev.json test/quck-test/
 test/
+# Sensitive configuration files
+test/relay-client/config.yaml
+test/relay-client/config/config.yaml
 kubectl
 minikube-linux-amd64
 documentation/docs-public/

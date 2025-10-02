@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  cadence:
+    image: ubercadence/server:v0.22.4
+    container_name: cadence
+    ports:
+      - "7933:7933"
+      - "7934:7934"
+    environment:
+      - SERVICES=history,matching,frontend,worker
+      - LOG_LEVEL=info
+      - AUTO_SETUP=true
+      - DB=sqlite
+      - DB_PATH=/var/lib/cadence/cadence.db
+      - VISIBILITY_STORE=sqlite
+      - VISIBILITY_DB_PATH=/var/lib/cadence/visibility.db
+      - RINGPOP_NAME=cadence
+      - RINGPOP_BOOTSTRAP_MODE=hosts
+      - RINGPOP_BOOTSTRAP_HOSTS=cadence:7933
+      - CLUSTER_METADATA_ENABLE_GLOBAL_DOMAIN=false
+      - CLUSTER_METADATA_MASTER_CLUSTER_NAME=active
+      - CLUSTER_METADATA_CURRENT_CLUSTER_NAME=active
+      - CADENCE_USE_ENV_VARS=true
+    volumes:
+      - cadence-data:/var/lib/cadence
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7934/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  cadence-data:
