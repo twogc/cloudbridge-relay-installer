@@ -100,7 +100,7 @@ func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServ
 
 	// Создание API router
 	logger.Info("Creating API router...")
-	apiRouter := api.NewAPIRouter(logger)
+	apiRouter := api.NewAPIRouter(logger, validator)
 	if apiRouter == nil {
 		logger.Error("Failed to create API router")
 		return nil

@@ -14,19 +14,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// AuthMiddleware проверяет JWT и роль admin-ui
-func AuthMiddleware(keycloakClient *keycloak.Client, logger *logger.Logger) gin.HandlerFunc {
+// AuthMiddleware проверяет JWT и роль admin-ui (заглушка)
+func AuthMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Отладочная информация
 		logger.Info("AuthMiddleware called", zap.String("path", c.Request.URL.Path))
 
-		// Проверяем, что Keycloak клиент инициализирован
-		if keycloakClient == nil {
-			logger.Error("Keycloak client is nil - middleware disabled")
-			c.AbortWithStatusJSON(500, gin.H{"error": "authentication service unavailable"})
-			return
-		}
-
+		// Простая заглушка для аутентификации
+		// TODO: Реализовать реальную аутентификацию через Zitadel
 		header := c.GetHeader("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {
 			logger.Warn("Missing or invalid Authorization header", zap.String("header", header))
@@ -34,41 +29,36 @@ func AuthMiddleware(keycloakClient *keycloak.Client, logger *logger.Logger) gin.
 			return
 		}
 
+		// Простая проверка токена (заглушка)
 		token := strings.TrimPrefix(header, "Bearer ")
-		logger.Info("Validating token", zap.String("token_prefix", token[:10]+"..."))
-
-		tokenInfo, err := keycloakClient.ValidateToken(context.Background(), token)
-		if err != nil {
-			logger.Warn("Token validation failed", zap.Error(err))
+		if token == "" {
+			logger.Warn("Empty token")
 			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
 			return
 		}
 
-		logger.Info("Token validated successfully", zap.String("username", tokenInfo.Username), zap.Strings("roles", tokenInfo.Roles))
-
-		isAdmin := false
-		for _, role := range tokenInfo.Roles {
-			if role == "admin-ui" {
-				isAdmin = true
-				break
-			}
+		logger.Info("Token accepted (stub validation)", zap.String("token_prefix", token[:min(10, len(token))]+"..."))
+		
+		// Заглушка для пользователя
+		userInfo := map[string]interface{}{
+			"username": "admin",
+			"roles":   []string{"admin-ui"},
 		}
-
-		if !isAdmin {
-			logger.Warn("Access denied: missing admin-ui role", zap.Strings("user_roles", tokenInfo.Roles))
-			c.AbortWithStatusJSON(403, gin.H{"error": "forbidden: admin-ui role required"})
-			return
-		}
-
-		logger.Info("Access granted", zap.String("username", tokenInfo.Username))
-		// Можно добавить user info в context
-		c.Set("user", tokenInfo)
+		c.Set("user", userInfo)
 		c.Next()
 	}
 }
 
-// RunServer запускает Admin API с авторизацией через Keycloak
-func RunServer(addr string, keycloakClient *keycloak.Client, logger *logger.Logger) error {
+// min возвращает минимальное значение
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// RunServer запускает Admin API
+func RunServer(addr string, logger *logger.Logger) error {
 	r := gin.Default()
 
 	// CORS: разрешаем только UI-админку (замените origin на ваш реальный)
@@ -81,7 +71,7 @@ func RunServer(addr string, keycloakClient *keycloak.Client, logger *logger.Logg
 		MaxAge:           12 * 60 * 60,
 	}))
 
-	r.Use(AuthMiddleware(keycloakClient, logger)) // Re-enabled authentication
+	r.Use(AuthMiddleware(logger)) // Упрощенная аутентификация
 
 	r.GET("/api/status", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
