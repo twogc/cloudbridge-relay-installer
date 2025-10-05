@@ -10,18 +10,24 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"go.uber.org/zap"
 )
 
-// AuthMiddleware проверяет JWT и роль admin-ui (заглушка)
-func AuthMiddleware(logger *logger.Logger) gin.HandlerFunc {
+// AuthMiddleware проверяет JWT и роль admin-ui через Zitadel
+func AuthMiddleware(authAdapter *auth.Adapter, logger *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Отладочная информация
 		logger.Info("AuthMiddleware called", zap.String("path", c.Request.URL.Path))
 
-		// Простая заглушка для аутентификации
-		// TODO: Реализовать реальную аутентификацию через Zitadel
+		// Проверяем, что auth adapter инициализирован
+		if authAdapter == nil {
+			logger.Error("Auth adapter is nil - middleware disabled")
+			c.AbortWithStatusJSON(500, gin.H{"error": "authentication service unavailable"})
+			return
+		}
+
 		header := c.GetHeader("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {
 			logger.Warn("Missing or invalid Authorization header", zap.String("header", header))
@@ -29,7 +35,6 @@ func AuthMiddleware(logger *logger.Logger) gin.HandlerFunc {
 			return
 		}
 
-		// Простая проверка токена (заглушка)
 		token := strings.TrimPrefix(header, "Bearer ")
 		if token == "" {
 			logger.Warn("Empty token")
@@ -37,14 +42,38 @@ func AuthMiddleware(logger *logger.Logger) gin.HandlerFunc {
 			return
 		}
 
-		logger.Info("Token accepted (stub validation)", zap.String("token_prefix", token[:min(10, len(token))]+"..."))
-		
-		// Заглушка для пользователя
-		userInfo := map[string]interface{}{
-			"username": "admin",
-			"roles":   []string{"admin-ui"},
+		logger.Info("Validating token", zap.String("token_prefix", token[:min(10, len(token))]+"..."))
+
+		// Валидируем токен через Zitadel
+		tokenInfo, err := authAdapter.ValidateToken(context.Background(), token)
+		if err != nil {
+			logger.Warn("Token validation failed", zap.Error(err))
+			c.AbortWithStatusJSON(401, gin.H{"error": "invalid token"})
+			return
 		}
-		c.Set("user", userInfo)
+
+		logger.Info("Token validated successfully", 
+			zap.String("username", tokenInfo.Username), 
+			zap.Strings("roles", tokenInfo.Roles))
+
+		// Проверяем роль admin-ui
+		hasAdminRole := false
+		for _, role := range tokenInfo.Roles {
+			if role == "admin-ui" || role == "admin" {
+				hasAdminRole = true
+				break
+			}
+		}
+
+		if !hasAdminRole {
+			logger.Warn("Access denied: missing admin role", zap.Strings("user_roles", tokenInfo.Roles))
+			c.AbortWithStatusJSON(403, gin.H{"error": "forbidden: admin role required"})
+			return
+		}
+
+		logger.Info("Access granted", zap.String("username", tokenInfo.Username))
+		// Добавляем информацию о пользователе в context
+		c.Set("user", tokenInfo)
 		c.Next()
 	}
 }
@@ -57,8 +86,8 @@ func min(a, b int) int {
 	return b
 }
 
-// RunServer запускает Admin API
-func RunServer(addr string, logger *logger.Logger) error {
+// RunServer запускает Admin API с Zitadel аутентификацией
+func RunServer(addr string, authAdapter *auth.Adapter, logger *logger.Logger) error {
 	r := gin.Default()
 
 	// CORS: разрешаем только UI-админку (замените origin на ваш реальный)
@@ -71,7 +100,7 @@ func RunServer(addr string, logger *logger.Logger) error {
 		MaxAge:           12 * 60 * 60,
 	}))
 
-	r.Use(AuthMiddleware(logger)) // Упрощенная аутентификация
+	r.Use(AuthMiddleware(authAdapter, logger)) // Zitadel аутентификация
 
 	r.GET("/api/status", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
