@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudbridge-config
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: cloudbridge-relay
+    app.kubernetes.io/managed-by: kubectl
+data:
+  config.json: |
+    {
+      "server": {
+        "address": "0.0.0.0",
+        "port": 9090,
+        "timeout": "30s",
+        "max_tunnels": 1000,
+        "ping_interval": "30s",
+        "cleanup_interval": "1m"
+      },
+      "django": {
+        "api_endpoint": "http://localhost:8000/api",
+        "jwt_secret": "your-secret-key",
+        "jwt_expiry": "24h",
+        "rest_timeout": "5s",
+        "rest_cache_ttl": "5m",
+        "rest_max_retries": 3,
+        "rest_retry_delay": "100ms"
+      },
+      "keycloak": {
+        "enabled": false
+      },
+      "zitadel": {
+        "enabled": false
+      },
+      "security": {
+        "tls_enabled": false,
+        "rate_limit": {
+          "enabled": false
+        },
+        "mtls": {
+          "enabled": false
+        },
+        "audit": {
+          "enabled": false
+        }
+      },
+      "metrics": {
+        "enabled": false,
+        "port": 8084,
+        "path": "/metrics"
+      },
+      "api": {
+        "enabled": true,
+        "port": 9091,
+        "version": "v1"
+      },
+      "logging": {
+        "level": "info",
+        "format": "json",
+        "output": "stdout"
+      },
+      "protocol": {
+        "auto_select": true,
+        "preferred": "quic",
+        "fallback": "http2"
+      },
+      "quic": {
+        "enabled": true,
+        "port": 9090,
+        "max_streams": 100,
+        "keep_alive": true,
+        "idle_timeout": "30s",
+        "handshake_timeout": "10s"
+      },
+      "zero_trust": {
+        "enabled": false,
+        "authentication": {
+          "enabled": false
+        }
+      },
+      "enhanced_quic": {
+        "enabled": true,
+        "port": 9092,
+        "max_streams": 100,
+        "keep_alive": true,
+        "idle_timeout": "30s",
+        "handshake_timeout": "10s"
+      },
+      "wireguard": {
+        "enabled": false
+      },
+      "quantum": {
+        "enabled": false
+      },
+      "ai": {
+        "enabled": false
+      },
+      "cadence": {
+        "enabled": false
+      },
+      "grpc": {
+        "enabled": false
+      }
+    }

@@ -15,25 +15,25 @@ spec:
     - name: main-server
       port: 5550
       targetPort: 5550
-      nodePort: 30080
+      nodePort: 30090
       protocol: TCP
     # Metrics
     - name: metrics
       port: 5551
       targetPort: 5551
-      nodePort: 30081
+      nodePort: 30091
       protocol: TCP
     # P2P API  
     - name: p2p-api
       port: 5552
       targetPort: 5552
-      nodePort: 32500
+      nodePort: 30092
       protocol: TCP
     # HTTP API
     - name: http-api
       port: 5553
       targetPort: 5553
-      nodePort: 30087
+      nodePort: 30093
       protocol: TCP
     # STUN Server
     - name: stun-server
@@ -45,25 +45,25 @@ spec:
     - name: quic-transport
       port: 9090
       targetPort: 9090
-      nodePort: 30090
+      nodePort: 30094
       protocol: UDP
     # MASQUE Proxy
     - name: masque-proxy
       port: 8443
       targetPort: 8443
-      nodePort: 30443
+      nodePort: 30095
       protocol: TCP
     # Enhanced QUIC
     - name: enhanced-quic
       port: 9092
       targetPort: 9092
-      nodePort: 30092
+      nodePort: 30096
       protocol: UDP
     # P2P QUIC Server
     - name: p2p-quic
       port: 5553
       targetPort: 5553
-      nodePort: 30553
+      nodePort: 30097
       protocol: UDP
 ---
 apiVersion: v1

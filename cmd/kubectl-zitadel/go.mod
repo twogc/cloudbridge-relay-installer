@@ -1,6 +1,6 @@
 module kubectl-zitadel
 
-go 1.21
+go 1.25.1
 
 require (
 	github.com/spf13/cobra v1.7.0

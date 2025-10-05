@@ -1,6 +1,6 @@
 module github.com/twogc/cloudbridge-relay-installer/test/e2e
 
-go 1.21
+go 1.25.1
 
 require github.com/stretchr/testify v1.8.4
 
