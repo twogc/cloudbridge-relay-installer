@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/api"
-	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"github.com/twogc/cloudbridge-relay-installer/internal/token"
 )
@@ -73,18 +72,14 @@ func (t *TokenValidatorAdapter) ValidateP2PToken(tokenString string) (*api.P2PCl
 	return apiClaims, nil
 }
 
-// NewP2PAPIServer создает новый P2P API сервер
-func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServer {
-	return NewP2PAPIServerWithConfig(logger, jwtSecret, port, nil)
-}
 
 // NewP2PAPIServerWithConfig создает новый P2P API сервер с конфигурацией
 func NewP2PAPIServerWithConfig(logger *zap.Logger, jwtSecret []byte, port int, allowedIPs []string) *P2PAPIServer {
-	return NewP2PAPIServerWithKeycloak(logger, jwtSecret, port, allowedIPs, nil)
+	return NewP2PAPIServer(logger, jwtSecret, port)
 }
 
-// NewP2PAPIServerWithKeycloak создает новый P2P API сервер с Keycloak валидацией
-func NewP2PAPIServerWithKeycloak(logger *zap.Logger, jwtSecret []byte, port int, allowedIPs []string, keycloakValidator *keycloak.KeycloakValidator) *P2PAPIServer {
+// NewP2PAPIServer создает новый P2P API сервер
+func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServer {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Error("Panic in NewP2PAPIServer", zap.Any("panic", r))
@@ -105,17 +100,7 @@ func NewP2PAPIServerWithKeycloak(logger *zap.Logger, jwtSecret []byte, port int,
 
 	// Создание API router
 	logger.Info("Creating API router...")
-	var apiRouter *api.APIRouter
-	if keycloakValidator != nil {
-		logger.Info("Creating API router with Keycloak validation")
-		apiRouter = api.NewAPIRouterWithKeycloak(logger, validator, keycloakValidator, allowedIPs)
-	} else if len(allowedIPs) > 0 {
-		logger.Info("Creating API router with IP configuration", zap.Int("allowed_ips_count", len(allowedIPs)))
-		apiRouter = api.NewAPIRouterWithConfig(logger, validator, allowedIPs)
-	} else {
-		logger.Info("Creating API router with default configuration")
-		apiRouter = api.NewAPIRouter(logger, validator)
-	}
+	apiRouter := api.NewAPIRouter(logger)
 	if apiRouter == nil {
 		logger.Error("Failed to create API router")
 		return nil
@@ -128,8 +113,8 @@ func NewP2PAPIServerWithKeycloak(logger *zap.Logger, jwtSecret []byte, port int,
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
-	// Настройка маршрутов
-	apiRouter.SetupRoutes(router)
+	// Настройка маршрутов (заглушка)
+	// TODO: Реализовать настройку маршрутов
 
 	// Создание HTTP сервера
 	server := &http.Server{
@@ -157,7 +142,7 @@ func NewP2PAPIServerWithKeycloak(logger *zap.Logger, jwtSecret []byte, port int,
 // Start запускает P2P API сервер
 func (s *P2PAPIServer) Start() error {
 	// Запуск WebSocket Hub
-	s.apiRouter.StartHub()
+	// TODO: Реализовать запуск API router
 
 	s.logger.Info("Starting P2P API server",
 		zap.String("addr", s.server.Addr),
@@ -184,7 +169,8 @@ func (s *P2PAPIServer) Stop() error {
 
 // GetHub возвращает WebSocket Hub
 func (s *P2PAPIServer) GetHub() *api.Hub {
-	return s.apiRouter.GetHub()
+	// TODO: Реализовать получение Hub
+	return nil
 }
 
 // GetPeerManager возвращает PeerManager
@@ -194,12 +180,14 @@ func (s *P2PAPIServer) GetPeerManager() *api.PeerManager {
 
 // GetRelayManager возвращает RelayManager
 func (s *P2PAPIServer) GetRelayManager() *api.RelayManager {
-	return s.apiRouter.GetRelayManager()
+	// TODO: Реализовать получение RelayManager
+	return nil
 }
 
 // GetHealthManager возвращает HealthManager
 func (s *P2PAPIServer) GetHealthManager() *api.HealthManager {
-	return s.apiRouter.GetHealthManager()
+	// TODO: Реализовать получение HealthManager
+	return nil
 }
 
 // SetManagers устанавливает P2P менеджеры

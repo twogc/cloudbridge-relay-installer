@@ -45,15 +45,6 @@ type Metrics struct {
 	activeConnectionsCount int64
 	activeTunnelsCount     int64
 
-	// Новые метрики для Keycloak
-	keycloakTokenValidations        *prometheus.CounterVec
-	keycloakJWKSCacheHits           prometheus.Counter
-	keycloakJWKSCacheMisses         prometheus.Counter
-	keycloakJWKSCacheSize           prometheus.Gauge
-	keycloakJWKSFetchDuration       prometheus.Histogram
-	keycloakTokenValidationDuration *prometheus.HistogramVec
-	keycloakUserInfoDuration        prometheus.Histogram
-	keycloakPermissionChecks        *prometheus.CounterVec
 
 	// Бизнес-метрики
 	businessMetrics struct {
@@ -222,42 +213,6 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			Help: "The number of token cache misses",
 		}),
 
-		// Новые метрики для Keycloak
-		keycloakTokenValidations: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "relay_keycloak_token_validations_total",
-			Help: "Total number of Keycloak token validations",
-		}, []string{"result", "provider"}),
-		keycloakJWKSCacheHits: prometheus.NewCounter(prometheus.CounterOpts{
-			Name: "relay_keycloak_jwks_cache_hits_total",
-			Help: "Total number of JWKS cache hits",
-		}),
-		keycloakJWKSCacheMisses: prometheus.NewCounter(prometheus.CounterOpts{
-			Name: "relay_keycloak_jwks_cache_misses_total",
-			Help: "Total number of JWKS cache misses",
-		}),
-		keycloakJWKSCacheSize: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "relay_keycloak_jwks_cache_size",
-			Help: "Number of cached JWKS keys",
-		}),
-		keycloakJWKSFetchDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
-			Name:    "relay_keycloak_jwks_fetch_duration_seconds",
-			Help:    "Duration of JWKS fetch operations",
-			Buckets: []float64{0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0},
-		}),
-		keycloakTokenValidationDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "relay_keycloak_token_validation_duration_seconds",
-			Help:    "Duration of Keycloak token validation",
-			Buckets: prometheus.DefBuckets,
-		}, []string{"method"}),
-		keycloakUserInfoDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
-			Name:    "relay_keycloak_user_info_duration_seconds",
-			Help:    "Duration of user info extraction from tokens",
-			Buckets: prometheus.DefBuckets,
-		}),
-		keycloakPermissionChecks: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "relay_keycloak_permission_checks_total",
-			Help: "Total number of permission checks",
-		}, []string{"resource", "action", "result"}),
 
 		// Бизнес-метрики
 		businessMetrics: struct {
@@ -579,14 +534,6 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 		m.messageErrors,
 		m.cacheHits,
 		m.cacheMisses,
-		m.keycloakTokenValidations,
-		m.keycloakJWKSCacheHits,
-		m.keycloakJWKSCacheMisses,
-		m.keycloakJWKSCacheSize,
-		m.keycloakJWKSFetchDuration,
-		m.keycloakTokenValidationDuration,
-		m.keycloakUserInfoDuration,
-		m.keycloakPermissionChecks,
 		m.businessMetrics.activeUsers,
 		m.businessMetrics.revenuePerHour,
 		m.businessMetrics.customerSatisfaction,
@@ -719,38 +666,6 @@ func (m *Metrics) IncMessageErrors(msgType, err string) {
 	m.messageErrors.WithLabelValues(msgType, err).Inc()
 }
 
-// Новые методы для Keycloak метрик
-func (m *Metrics) IncKeycloakTokenValidations(result, provider string) {
-	m.keycloakTokenValidations.WithLabelValues(result, provider).Inc()
-}
-
-func (m *Metrics) IncKeycloakJWKSCacheHits() {
-	m.keycloakJWKSCacheHits.Inc()
-}
-
-func (m *Metrics) IncKeycloakJWKSCacheMisses() {
-	m.keycloakJWKSCacheMisses.Inc()
-}
-
-func (m *Metrics) SetKeycloakJWKSCacheSize(count int) {
-	m.keycloakJWKSCacheSize.Set(float64(count))
-}
-
-func (m *Metrics) ObserveKeycloakJWKSFetchDuration(duration time.Duration) {
-	m.keycloakJWKSFetchDuration.Observe(duration.Seconds())
-}
-
-func (m *Metrics) ObserveKeycloakTokenValidationDuration(method string, duration time.Duration) {
-	m.keycloakTokenValidationDuration.WithLabelValues(method).Observe(duration.Seconds())
-}
-
-func (m *Metrics) ObserveKeycloakUserInfoDuration(duration time.Duration) {
-	m.keycloakUserInfoDuration.Observe(duration.Seconds())
-}
-
-func (m *Metrics) IncKeycloakPermissionChecks(resource, action, result string) {
-	m.keycloakPermissionChecks.WithLabelValues(resource, action, result).Inc()
-}
 
 // Методы для бизнес-метрик
 func (m *Metrics) SetActiveUsers(count int) {

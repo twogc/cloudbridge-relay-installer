@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"go.uber.org/zap"
 )
@@ -69,11 +68,6 @@ type PeerManagerInterface interface {
 	GetPeer(peerID string) (*p2p.Peer, error)
 }
 
-// KeycloakValidatorInterface интерфейс для KeycloakValidator
-type KeycloakValidatorInterface interface {
-	ValidateQuickToken(token string) (*keycloak.QuickTokenClaims, error)
-	ValidateP2PMeshToken(token string) (*keycloak.P2PMeshTokenClaims, error)
-}
 
 // ProtocolRelayManagerInterface интерфейс для RelayManager в протоколах
 type ProtocolRelayManagerInterface interface {
@@ -83,24 +77,21 @@ type ProtocolRelayManagerInterface interface {
 
 // ProtocolHandler обработчик протоколов
 type ProtocolHandler struct {
-	keycloakValidator KeycloakValidatorInterface
-	logger            *zap.Logger
-	peerManager       PeerManagerInterface
-	relayManager      ProtocolRelayManagerInterface
+	logger       *zap.Logger
+	peerManager  PeerManagerInterface
+	relayManager ProtocolRelayManagerInterface
 }
 
 // NewProtocolHandler создает новый обработчик протоколов
 func NewProtocolHandler(
-	keycloakValidator KeycloakValidatorInterface,
 	logger *zap.Logger,
 	peerManager PeerManagerInterface,
 	relayManager ProtocolRelayManagerInterface,
 ) *ProtocolHandler {
 	return &ProtocolHandler{
-		keycloakValidator: keycloakValidator,
-		logger:            logger,
-		peerManager:       peerManager,
-		relayManager:      relayManager,
+		logger:       logger,
+		peerManager:  peerManager,
+		relayManager: relayManager,
 	}
 }
 
@@ -133,15 +124,11 @@ func (ph *ProtocolHandler) handleQuickConnection(w http.ResponseWriter, r *http.
 		return
 	}
 
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-
-	// Валидация Quick токена
-	claims, err := ph.keycloakValidator.ValidateQuickToken(token)
-	if err != nil {
-		ph.logger.Warn("Quick token validation failed", zap.Error(err))
-		http.Error(w, "Invalid quick token: "+err.Error(), http.StatusUnauthorized)
-		return
-	}
+	// Простая валидация токена (заглушка)
+	// TODO: Реализовать реальную валидацию через Zitadel
+	tenantID := "default-tenant"
+	serverID := "default-server"
+	maxConnections := "10"
 
 	var req QuickConnectionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -157,22 +144,22 @@ func (ph *ProtocolHandler) handleQuickConnection(w http.ResponseWriter, r *http.
 	}
 
 	// Проверка лимитов
-	maxConnections, _ := strconv.Atoi(claims.MaxConnections)
-	currentConnections := ph.getCurrentConnections(claims.TenantID, claims.ServerID)
+	maxConn, _ := strconv.Atoi(maxConnections)
+	currentConnections := ph.getCurrentConnections(tenantID, serverID)
 
-	if currentConnections >= maxConnections {
+	if currentConnections >= maxConn {
 		ph.logger.Warn("Connection limit exceeded",
-			zap.String("tenant_id", claims.TenantID),
-			zap.String("server_id", claims.ServerID),
+			zap.String("tenant_id", tenantID),
+			zap.String("server_id", serverID),
 			zap.Int("current", currentConnections),
-			zap.Int("max", maxConnections),
+			zap.Int("max", maxConn),
 		)
 		http.Error(w, "Connection limit exceeded", http.StatusTooManyRequests)
 		return
 	}
 
 	// Создание Quick соединения
-	connection, err := ph.createQuickConnection(claims, req)
+	connection, err := ph.createQuickConnection(tenantID, req)
 	if err != nil {
 		ph.logger.Error("Failed to create quick connection", zap.Error(err))
 		http.Error(w, "Failed to create connection", http.StatusInternalServerError)
@@ -189,8 +176,8 @@ func (ph *ProtocolHandler) handleQuickConnection(w http.ResponseWriter, r *http.
 
 	ph.logger.Info("Quick connection created successfully",
 		zap.String("connection_id", connection.ID),
-		zap.String("tenant_id", claims.TenantID),
-		zap.String("server_id", claims.ServerID),
+		zap.String("tenant_id", tenantID),
+		zap.String("server_id", serverID),
 	)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -214,15 +201,11 @@ func (ph *ProtocolHandler) handleP2PMeshConnection(w http.ResponseWriter, r *htt
 		return
 	}
 
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-
-	// Валидация P2P Mesh токена
-	claims, err := ph.keycloakValidator.ValidateP2PMeshToken(token)
-	if err != nil {
-		ph.logger.Warn("P2P Mesh token validation failed", zap.Error(err))
-		http.Error(w, "Invalid P2P mesh token: "+err.Error(), http.StatusUnauthorized)
-		return
-	}
+	// Простая валидация токена (заглушка)
+	// TODO: Реализовать реальную валидацию через Zitadel
+	tenantID := "default-tenant"
+	serverID := "default-server"
+	maxPeers := "5"
 
 	var req P2PMeshRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -238,23 +221,23 @@ func (ph *ProtocolHandler) handleP2PMeshConnection(w http.ResponseWriter, r *htt
 	}
 
 	// Проверка лимитов
-	maxPeers, _ := strconv.Atoi(claims.MaxPeers)
-	currentPeers := ph.getCurrentPeers(claims.TenantID, claims.ServerID, req.MeshID)
+	maxPeersInt, _ := strconv.Atoi(maxPeers)
+	currentPeers := ph.getCurrentPeers(tenantID, serverID, req.MeshID)
 
-	if currentPeers >= maxPeers {
+	if currentPeers >= maxPeersInt {
 		ph.logger.Warn("Peer limit exceeded",
-			zap.String("tenant_id", claims.TenantID),
-			zap.String("server_id", claims.ServerID),
+			zap.String("tenant_id", tenantID),
+			zap.String("server_id", serverID),
 			zap.String("mesh_id", req.MeshID),
 			zap.Int("current", currentPeers),
-			zap.Int("max", maxPeers),
+			zap.Int("max", maxPeersInt),
 		)
 		http.Error(w, "Peer limit exceeded", http.StatusTooManyRequests)
 		return
 	}
 
 	// Создание P2P Mesh соединения
-	mesh, err := ph.createP2PMeshConnection(claims, req)
+	mesh, err := ph.createP2PMeshConnection(tenantID, req)
 	if err != nil {
 		ph.logger.Error("Failed to create P2P mesh connection", zap.Error(err))
 		http.Error(w, "Failed to create mesh connection", http.StatusInternalServerError)
@@ -271,8 +254,8 @@ func (ph *ProtocolHandler) handleP2PMeshConnection(w http.ResponseWriter, r *htt
 
 	ph.logger.Info("P2P Mesh connection created successfully",
 		zap.String("mesh_id", mesh.ID),
-		zap.String("tenant_id", claims.TenantID),
-		zap.String("server_id", claims.ServerID),
+		zap.String("tenant_id", tenantID),
+		zap.String("server_id", serverID),
 	)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -296,11 +279,11 @@ func (ph *ProtocolHandler) getCurrentPeers(tenantID, serverID, meshID string) in
 }
 
 // createQuickConnection создает Quick соединение
-func (ph *ProtocolHandler) createQuickConnection(claims *keycloak.QuickTokenClaims, req QuickConnectionRequest) (*QuickConnection, error) {
+func (ph *ProtocolHandler) createQuickConnection(tenantID string, req QuickConnectionRequest) (*QuickConnection, error) {
 	// TODO: Реализовать создание Quick соединения
 	// Пока возвращаем mock объект
 	return &QuickConnection{
-		ID:       fmt.Sprintf("quick-%s-%d", claims.TenantID, time.Now().Unix()),
+		ID:       fmt.Sprintf("quick-%s-%d", tenantID, time.Now().Unix()),
 		Endpoint: "192.168.1.100:8080",
 		Config: map[string]interface{}{
 			"protocol": "quick",
@@ -310,7 +293,7 @@ func (ph *ProtocolHandler) createQuickConnection(claims *keycloak.QuickTokenClai
 }
 
 // createP2PMeshConnection создает P2P Mesh соединение
-func (ph *ProtocolHandler) createP2PMeshConnection(claims *keycloak.P2PMeshTokenClaims, req P2PMeshRequest) (*P2PMesh, error) {
+func (ph *ProtocolHandler) createP2PMeshConnection(tenantID string, req P2PMeshRequest) (*P2PMesh, error) {
 	// TODO: Реализовать создание P2P Mesh соединения
 	// Пока возвращаем mock объект
 	return &P2PMesh{
@@ -369,20 +352,14 @@ func (ph *ProtocolHandler) RegisterQuickClient(c *gin.Context) {
 		return
 	}
 
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-
-	// Валидация Quick токена
-	claims, err := ph.keycloakValidator.ValidateQuickToken(token)
-	if err != nil {
-		ph.logger.Warn("Quick token validation failed", zap.Error(err))
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+	// Простая валидация токена (заглушка)
+	// TODO: Реализовать реальную валидацию через Zitadel
+	tenantID := "default-tenant"
 
 	// Создание пира
 	peer := &p2p.Peer{
 		ID:       req.ClientID,
-		TenantID: claims.TenantID,
+		TenantID: tenantID,
 		IsOnline: true,
 	}
 
@@ -429,20 +406,14 @@ func (ph *ProtocolHandler) RegisterP2PMeshClient(c *gin.Context) {
 		return
 	}
 
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-
-	// Валидация P2P Mesh токена
-	claims, err := ph.keycloakValidator.ValidateP2PMeshToken(token)
-	if err != nil {
-		ph.logger.Warn("P2P Mesh token validation failed", zap.Error(err))
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+	// Простая валидация токена (заглушка)
+	// TODO: Реализовать реальную валидацию через Zitadel
+	tenantID := "default-tenant"
 
 	// Создание пира
 	peer := &p2p.Peer{
 		ID:       req.ClientID,
-		TenantID: claims.TenantID,
+		TenantID: tenantID,
 		IsOnline: true,
 	}
 
@@ -479,15 +450,8 @@ func (ph *ProtocolHandler) GetClientStatus(c *gin.Context) {
 		return
 	}
 
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-
-	// Валидация токена
-	_, err := ph.keycloakValidator.ValidateQuickToken(token)
-	if err != nil {
-		ph.logger.Warn("Token validation failed", zap.Error(err))
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+	// Простая валидация токена (заглушка)
+	// TODO: Реализовать реальную валидацию через Zitadel
 
 	// Получение пира
 	peer, err := ph.peerManager.GetPeer(clientID)

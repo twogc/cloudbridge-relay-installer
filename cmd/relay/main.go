@@ -28,7 +28,6 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/cadence"
 	"github.com/twogc/cloudbridge-relay-installer/internal/circuitbreaker"
 	"github.com/twogc/cloudbridge-relay-installer/internal/health"
-	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	kubeauthz "github.com/twogc/cloudbridge-relay-installer/internal/kube/authz_policy"
 	clusterreg "github.com/twogc/cloudbridge-relay-installer/internal/kube/cluster_registry"
 	kubemetrics "github.com/twogc/cloudbridge-relay-installer/internal/kube/metrics"
@@ -130,7 +129,6 @@ type Server struct {
 	tenantManager        *tenant.Manager
 	loadBalancer         *balancer.Balancer
 	ipRateLimit          *ratelimit.IPLimiter
-	enhancedKeycloakAuth *auth.EnhancedKeycloakAuth
 	enhancedEnabled      bool
 	p2pQUICEnabled       bool
 
@@ -288,7 +286,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	var tenantMgr *tenant.Manager
 	var loadBal *balancer.Balancer
 	var ipRateLimit *ratelimit.IPLimiter
-	var enhancedKeycloakAuth *auth.EnhancedKeycloakAuth
 
 	if enhancedEnabled {
 		// Конвертируем logger.Logger в *zap.Logger для Enhanced компонентов
@@ -302,17 +299,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		loadBal = balancer.NewBalancerWithEnhanced()
 		ipRateLimit = ratelimit.NewIPLimiterWithEnhanced(100.0, 1000) // 100 req/sec, burst 1000
 
-		// Инициализируем Enhanced Keycloak Auth
-		keycloakConfig := &auth.KeycloakConfig{
-			ServerURL:    "https://auth.2gc.ru",
-			Realm:        "cloudbridge",
-			ClientID:     "quic-client",
-			ClientSecret: "secret",
-		}
-		enhancedKeycloakAuth = auth.NewEnhancedKeycloakAuth(keycloakConfig, zapLogger)
 
 		// Настраиваем интеграции
-		if err := enhancedQUICManager.SetupIntegrations(tenantMgr, loadBal, ipRateLimit, enhancedKeycloakAuth); err != nil {
+		if err := enhancedQUICManager.SetupIntegrations(tenantMgr, loadBal, ipRateLimit, nil); err != nil {
 			loggerInstance.Error("Failed to setup Enhanced QUIC integrations", zap.Error(err))
 			enhancedEnabled = false
 		} else {
@@ -328,10 +317,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		tenantMgr = tenant.NewManager(loggerInstance, nil)
 		loadBal = balancer.NewBalancer()
 		ipRateLimit = ratelimit.NewIPLimiter(100.0, 1000)
-		enhancedKeycloakAuth = auth.NewKeycloakAuthCompatible(&auth.KeycloakConfig{
-			ServerURL: "https://auth.2gc.ru",
-			Realm:     "cloudbridge",
-		}, zap.NewNop())
 	}
 	// P2P is now enabled by default for QUIC relay functionality
 	p2pEnabled := true // Always enable P2P for QUIC relay
@@ -445,23 +430,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	allowedIPs := cfg.Security.AllowedIPs
 	loggerInstance.Info("Using allowed IPs from configuration", zap.Int("count", len(allowedIPs)))
 
-	// Создаем Keycloak валидатор если включен
-	var keycloakValidator *keycloak.KeycloakValidator
-	if cfg.Keycloak.Enabled {
-		loggerInstance.Info("Initializing Keycloak validator",
-			zap.String("jwks_url", cfg.Keycloak.JWKSURL),
-			zap.String("issuer", cfg.Keycloak.TokenValidation.Issuer),
-			zap.String("audience", cfg.Keycloak.TokenValidation.Audience),
-		)
-
-		keycloakValidator = keycloak.NewKeycloakValidator(
-			cfg.Keycloak.JWKSURL,
-			cfg.Keycloak.TokenValidation.Audience,
-			cfg.Keycloak.TokenValidation.Issuer,
-			cfg.Keycloak.FallbackSecret,
-			loggerInstance.GetZapLogger(),
-		)
-	}
 
 	// Ensure API port is set correctly
 	apiPort := cfg.API.Port
@@ -472,7 +440,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	loggerInstance.Info("API Config", zap.Int("port", apiPort), zap.Bool("enabled", cfg.API.Enabled))
 	loggerInstance.Info("DEBUG: About to create P2P API Server")
-	p2pAPIServer = NewP2PAPIServerWithKeycloak(loggerInstance.GetZapLogger(), jwtSecret, apiPort, allowedIPs, keycloakValidator)
+	p2pAPIServer = NewP2PAPIServer(loggerInstance.GetZapLogger(), jwtSecret, apiPort)
 	loggerInstance.Info("NewP2PAPIServer call completed", zap.Bool("server_created", p2pAPIServer != nil))
 
 	if p2pAPIServer != nil {
@@ -918,7 +886,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		tenantManager:        tenantMgr,
 		loadBalancer:         loadBal,
 		ipRateLimit:          ipRateLimit,
-		enhancedKeycloakAuth: enhancedKeycloakAuth,
 		enhancedEnabled:      enhancedEnabled,
 		p2pQUICEnabled:       true, // P2P QUIC enabled
 		p2pAPIServer:         p2pAPIServer,
@@ -1773,9 +1740,9 @@ func (s *Server) processConnection(conn net.Conn) error {
 		tokenLog = token
 	}
 
-	// Проверяем через Enhanced Keycloak Auth, если включен
-	if s.enhancedEnabled && s.enhancedKeycloakAuth != nil {
-		if isValid, err := s.enhancedKeycloakAuth.ValidateTokenEnhanced(token); err != nil || !isValid {
+	// Проверяем токен через стандартную аутентификацию
+	if s.authAdapter != nil {
+		if _, err := s.authAdapter.ValidateToken(context.Background(), token); err != nil {
 			resp := map[string]interface{}{
 				"type":    "auth_response",
 				"status":  "error",
@@ -1785,7 +1752,7 @@ func (s *Server) processConnection(conn net.Conn) error {
 				s.logger.Error("Failed to send auth response", zap.Error(err))
 				return err
 			}
-			s.logger.Warn("Enhanced auth failed", zap.Error(err), zap.Bool("is_valid", isValid))
+			s.logger.Warn("Auth validation failed", zap.Error(err))
 			authAttemptsTotal.WithLabelValues("failed", "enhanced").Inc()
 			return nil
 		}

@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"go.uber.org/zap"
 )

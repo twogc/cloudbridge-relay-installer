@@ -7,16 +7,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/twogc/cloudbridge-relay-installer/config"
-	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
 	"go.uber.org/zap"
 )
 
-// KeycloakClientInterface defines the interface for Keycloak client
-type KeycloakClientInterface interface {
-	ValidateToken(ctx context.Context, token string) (*keycloak.TokenInfo, error)
-	CheckPermission(tokenInfo *keycloak.TokenInfo, resource, action string) bool
-}
 
 // Provider represents authentication provider interface
 type Provider interface {
@@ -58,10 +52,9 @@ type UserInfo struct {
 
 // Adapter represents authentication adapter
 type Adapter struct {
-	keycloakProvider KeycloakClientInterface
-	config           *config.Config
-	logger           *logger.Logger
-	provider         Provider
+	config   *config.Config
+	logger   *logger.Logger
+	provider Provider
 }
 
 // NewAdapter creates a new authentication adapter
@@ -76,34 +69,6 @@ func NewAdapter(cfg *config.Config, logger *logger.Logger) (*Adapter, error) {
 		// Аутентификация отключена - создаем no-op provider
 		adapter.provider = &NoOpProvider{}
 		logger.Info("Authentication disabled - using no-op provider")
-	} else if cfg.Keycloak.Enabled {
-		// Initialize Keycloak provider
-		keycloakConfig := &keycloak.Config{
-			ServerURL:    cfg.Keycloak.ServerURL,
-			Realm:        cfg.Keycloak.Realm,
-			ClientID:     cfg.Keycloak.ClientID,
-			ClientSecret: cfg.Keycloak.ClientSecret,
-			PublicKey:    cfg.Keycloak.PublicKey,
-			TokenValidation: struct {
-				Issuer    string        `json:"issuer"`
-				Audience  string        `json:"audience"`
-				ClockSkew time.Duration `json:"clock_skew"`
-			}{
-				Issuer:    cfg.Keycloak.TokenValidation.Issuer,
-				Audience:  cfg.Keycloak.TokenValidation.Audience,
-				ClockSkew: cfg.Keycloak.TokenValidation.ClockSkew,
-			},
-			HTTPClient: nil, // Will be set by keycloak client
-			Logger:     logger,
-		}
-
-		keycloakClient, err := keycloak.NewClient(keycloakConfig)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create Keycloak client: %v", err)
-		}
-
-		adapter.keycloakProvider = keycloakClient
-		adapter.provider = &KeycloakProvider{client: keycloakClient}
 	} else if cfg.Zitadel.Enabled {
 		// Initialize Zitadel provider with proper JWT validation
 		zitadelProvider, err := NewZitadelProvider(cfg, logger)
@@ -113,7 +78,7 @@ func NewAdapter(cfg *config.Config, logger *logger.Logger) (*Adapter, error) {
 		adapter.provider = zitadelProvider
 		logger.Info("Zitadel authentication provider initialized")
 	} else {
-		return nil, fmt.Errorf("authentication enabled but no provider configured - Keycloak or Zitadel must be enabled")
+		return nil, fmt.Errorf("authentication enabled but no provider configured - Zitadel must be enabled")
 	}
 
 	return adapter, nil
@@ -136,87 +101,12 @@ func (a *Adapter) CheckPermission(ctx context.Context, token string, resource, a
 
 // GetProvider returns the current authentication provider name
 func (a *Adapter) GetProvider() string {
-	if a.config.Keycloak.Enabled {
-		return "keycloak"
-	}
 	if a.config.Zitadel.Enabled {
 		return "zitadel"
 	}
 	return "none"
 }
 
-// KeycloakProvider implements Provider interface for Keycloak
-type KeycloakProvider struct {
-	client KeycloakClientInterface
-}
-
-// ValidateToken validates token using Keycloak
-func (p *KeycloakProvider) ValidateToken(ctx context.Context, token string) (*TokenInfo, error) {
-	tokenInfo, err := p.client.ValidateToken(ctx, token)
-	if err != nil {
-		return nil, err
-	}
-
-	return &TokenInfo{
-		Subject:   tokenInfo.Subject,
-		Issuer:    tokenInfo.Issuer,
-		Audience:  tokenInfo.Audience,
-		ExpiresAt: tokenInfo.ExpiresAt,
-		IssuedAt:  tokenInfo.IssuedAt,
-		NotBefore: tokenInfo.NotBefore,
-		Username:  tokenInfo.Username,
-		Email:     tokenInfo.Email,
-		FullName:  tokenInfo.FullName,
-		Groups:    tokenInfo.Groups,
-		Roles:     tokenInfo.Roles,
-		Claims:    tokenInfo.Claims,
-		Provider:  "keycloak",
-	}, nil
-}
-
-// GetUserInfo gets user information from Keycloak token
-func (p *KeycloakProvider) GetUserInfo(ctx context.Context, token string) (*UserInfo, error) {
-	tokenInfo, err := p.ValidateToken(ctx, token)
-	if err != nil {
-		return nil, err
-	}
-
-	return &UserInfo{
-		ID:       tokenInfo.Subject,
-		Username: tokenInfo.Username,
-		Email:    tokenInfo.Email,
-		FullName: tokenInfo.FullName,
-		Groups:   tokenInfo.Groups,
-		Roles:    tokenInfo.Roles,
-		Active:   true, // Keycloak tokens are only issued for active users
-		Claims:   tokenInfo.Claims,
-		Provider: "keycloak",
-	}, nil
-}
-
-// CheckPermission checks permission using Keycloak roles and groups
-func (p *KeycloakProvider) CheckPermission(ctx context.Context, token string, resource, action string) (bool, error) {
-	tokenInfo, err := p.ValidateToken(ctx, token)
-	if err != nil {
-		return false, err
-	}
-
-	kt := &keycloak.TokenInfo{
-		Subject:   tokenInfo.Subject,
-		Issuer:    tokenInfo.Issuer,
-		Audience:  tokenInfo.Audience,
-		ExpiresAt: tokenInfo.ExpiresAt,
-		IssuedAt:  tokenInfo.IssuedAt,
-		NotBefore: tokenInfo.NotBefore,
-		Username:  tokenInfo.Username,
-		Email:     tokenInfo.Email,
-		FullName:  tokenInfo.FullName,
-		Groups:    tokenInfo.Groups,
-		Roles:     tokenInfo.Roles,
-		Claims:    tokenInfo.Claims,
-	}
-	return p.client.CheckPermission(kt, resource, action), nil
-}
 
 // NewZitadelProvider создает новый Zitadel провайдер с правильной JWT валидацией
 func NewZitadelProvider(cfg *config.Config, logger *logger.Logger) (*ZitadelProvider, error) {

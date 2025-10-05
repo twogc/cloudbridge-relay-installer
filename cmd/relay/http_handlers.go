@@ -128,7 +128,7 @@ func (s *Server) handleHealthHTTP(conn net.Conn) error {
 			"tenant_manager":    s.tenantManager != nil,
 			"load_balancer":     s.loadBalancer != nil,
 			"rate_limiter":      s.ipRateLimit != nil,
-			"enhanced_keycloak": s.enhancedKeycloakAuth != nil,
+			"enhanced_keycloak": false, // Keycloak удален
 		},
 	}
 
