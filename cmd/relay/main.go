@@ -108,6 +108,7 @@ type Server struct {
 	httpServer    *http.Server
 	tunnelManager *tunnel.Manager
 	metricsServer *metrics.Server
+	metrics       *metrics.Metrics
 	authAdapter   *auth.Adapter
 
 	// Zero Trust components
@@ -274,8 +275,11 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// Initialize metrics server
 	var metricsServer *metrics.Server
+	var metricsInstance *metrics.Metrics
 	if cfg.Metrics.Enabled {
 		metricsServer = metrics.NewServer(fmt.Sprintf(":%d", cfg.Metrics.Port), cfg.Metrics.Path)
+		// Create main metrics instance
+		metricsInstance = metrics.NewMetrics(prometheus.DefaultRegisterer)
 	}
 
 	// Initialize Enhanced QUIC components
@@ -291,7 +295,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		zapLogger := zap.NewNop() // Fallback
 
 		// Инициализируем Enhanced QUIC Manager
-		enhancedQUICManager = NewEnhancedQUICManager(zapLogger)
+		enhancedQUICManager = NewEnhancedQUICManager(zapLogger, metricsInstance)
 
 		// Инициализируем дополнительные компоненты для Enhanced режима
 		tenantMgr = tenant.NewManagerWithEnhanced(loggerInstance, nil)
@@ -619,7 +623,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize WireGuard Profile Manager
 	var wgProfileManager *WGProfileManager
 	if cfg.WireGuard.Enabled {
-		wgProfileManager, err = NewWGProfileManager(cfg, loggerInstance.GetZapLogger())
+		wgProfileManager, err = NewWGProfileManager(cfg, loggerInstance.GetZapLogger(), metricsInstance)
 		if err != nil {
 			cancel()
 			return nil, fmt.Errorf("failed to initialize WG profile manager: %v", err)
@@ -902,6 +906,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		logger:               loggerInstance,
 		tunnelManager:        tunnelManager,
 		metricsServer:        metricsServer,
+		metrics:              metricsInstance,
 		authAdapter:          authAdapter,
 		circuitBreaker:       circuitBreaker,
 		healthChecker:        healthChecker,

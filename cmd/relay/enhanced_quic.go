@@ -7,6 +7,7 @@ import (
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
 	"github.com/twogc/cloudbridge-relay-installer/internal/balancer"
+	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 	"github.com/twogc/cloudbridge-relay-installer/internal/quic"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
@@ -29,11 +30,14 @@ type EnhancedQUICManager struct {
 	relayRateLimit     *ratelimit.IPLimiter
 	relayKeycloakAuth  *auth.EnhancedKeycloakAuth
 
+	// Метрики
+	metrics *metrics.Metrics
+
 	enabled bool
 }
 
 // NewEnhancedQUICManager создает новый Enhanced QUIC Manager
-func NewEnhancedQUICManager(logger *zap.Logger) *EnhancedQUICManager {
+func NewEnhancedQUICManager(logger *zap.Logger, metrics *metrics.Metrics) *EnhancedQUICManager {
 	config := &quic.EnhancedConfig{
 		MaxStreams:                     100,
 		KeepAlive:                      true,
@@ -59,6 +63,7 @@ func NewEnhancedQUICManager(logger *zap.Logger) *EnhancedQUICManager {
 		ddosProtection: quic.NewDDoSProtection(),
 		geoRouter:      quic.NewGeographicRouter(),
 		logger:         logger,
+		metrics:        metrics,
 		enabled:        false, // По умолчанию отключено
 	}
 }
@@ -153,7 +158,21 @@ func (eqm *EnhancedQUICManager) CreateConnection(network, address, tenantID stri
 		zap.String("tenant_id", tenantID),
 	)
 
-	return quic.DialWithTenant(network, address, tenantID, eqm.config)
+	// Записываем метрики создания соединения
+	if eqm.metrics != nil {
+		eqm.metrics.IncQUICConnections()
+	}
+
+	conn, err := quic.DialWithTenant(network, address, tenantID, eqm.config)
+	if err != nil {
+		// Записываем метрики ошибки соединения
+		if eqm.metrics != nil {
+			eqm.metrics.IncQUICConnectionsFailed("dial_failed", "unknown")
+		}
+		return nil, err
+	}
+
+	return conn, nil
 }
 
 // ValidateConnection проверяет соединение через все интегрированные компоненты
@@ -169,6 +188,10 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 				zap.String("client_ip", clientIP),
 				zap.Error(err),
 			)
+			// Записываем метрики DDoS блокировки
+			if eqm.metrics != nil {
+				eqm.metrics.IncQUICConnectionsFailed("ddos_protection", "unknown")
+			}
 			return err
 		}
 	}
@@ -180,6 +203,10 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 				zap.String("tenant_id", tenantID),
 				zap.Error(err),
 			)
+			// Записываем метрики превышения лимитов тенанта
+			if eqm.metrics != nil {
+				eqm.metrics.IncQUICConnectionsFailed("tenant_limits", "unknown")
+			}
 			return err
 		}
 	}
@@ -190,6 +217,10 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 			eqm.logger.Warn("Rate limit exceeded",
 				zap.String("client_ip", clientIP),
 			)
+			// Записываем метрики превышения rate limit
+			if eqm.metrics != nil {
+				eqm.metrics.IncQUICConnectionsFailed("rate_limit", "unknown")
+			}
 			return fmt.Errorf("rate limit exceeded for IP %s", clientIP)
 		}
 	}
@@ -202,6 +233,10 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 				zap.Error(err),
 				zap.Bool("is_valid", isValid),
 			)
+			// Записываем метрики ошибок аутентификации
+			if eqm.metrics != nil {
+				eqm.metrics.IncQUICAuthenticationFailures("token_validation", "unknown")
+			}
 			return fmt.Errorf("authentication failed: %v", err)
 		}
 	}
@@ -375,4 +410,108 @@ func (eqm *EnhancedQUICManager) loadTenantsFromConfig() error {
 	)
 
 	return nil
+}
+
+// RecordConnectionMetrics записывает метрики производительности соединения
+func (eqm *EnhancedQUICManager) RecordConnectionMetrics(connectionID string, metrics map[string]interface{}) {
+	if eqm.metrics == nil {
+		return
+	}
+
+	// Записываем метрики производительности
+	if rtt, ok := metrics["rtt"].(float64); ok {
+		eqm.metrics.ObserveQUICRTT(connectionID, rtt)
+	}
+
+	if latency, ok := metrics["latency"].(float64); ok {
+		eqm.metrics.ObserveQUICConnectionLatency(connectionID, latency)
+	}
+
+	if throughput, ok := metrics["throughput_bytes"].(int64); ok {
+		direction := "unknown"
+		if dir, exists := metrics["direction"].(string); exists {
+			direction = dir
+		}
+		eqm.metrics.IncQUICThroughputBytes(connectionID, direction, throughput)
+	}
+
+	if packets, ok := metrics["throughput_packets"].(int64); ok {
+		direction := "unknown"
+		if dir, exists := metrics["direction"].(string); exists {
+			direction = dir
+		}
+		eqm.metrics.IncQUICThroughputPackets(connectionID, direction, packets)
+	}
+
+	if packetLoss, ok := metrics["packet_loss_rate"].(float64); ok {
+		eqm.metrics.SetQUICPacketLossRate(connectionID, packetLoss)
+	}
+
+	if congestionWindow, ok := metrics["congestion_window"].(int64); ok {
+		eqm.metrics.SetQUICCongestionWindow(connectionID, congestionWindow)
+	}
+
+	if bytesInFlight, ok := metrics["bytes_in_flight"].(int64); ok {
+		eqm.metrics.SetQUICBytesInFlight(connectionID, bytesInFlight)
+	}
+
+	if packetsInFlight, ok := metrics["packets_in_flight"].(int64); ok {
+		eqm.metrics.SetQUICPacketsInFlight(connectionID, packetsInFlight)
+	}
+
+	// Записываем метрики ресурсов
+	if memoryUsage, ok := metrics["memory_usage"].(int64); ok {
+		component := "connection"
+		if comp, exists := metrics["component"].(string); exists {
+			component = comp
+		}
+		eqm.metrics.SetQUICMemoryUsage(connectionID, component, memoryUsage)
+	}
+
+	if cpuUsage, ok := metrics["cpu_usage"].(float64); ok {
+		component := "connection"
+		if comp, exists := metrics["component"].(string); exists {
+			component = comp
+		}
+		eqm.metrics.SetQUICCPUUsage(connectionID, component, cpuUsage)
+	}
+
+	if goroutineCount, ok := metrics["goroutine_count"].(int); ok {
+		component := "connection"
+		if comp, exists := metrics["component"].(string); exists {
+			component = comp
+		}
+		eqm.metrics.SetQUICGoroutineCount(connectionID, component, goroutineCount)
+	}
+}
+
+// RecordStreamMetrics записывает метрики потоков
+func (eqm *EnhancedQUICManager) RecordStreamMetrics(streamType, direction, reason string) {
+	if eqm.metrics == nil {
+		return
+	}
+
+	eqm.metrics.IncQUICStreamsCreated(streamType, direction)
+}
+
+// RecordErrorMetrics записывает метрики ошибок
+func (eqm *EnhancedQUICManager) RecordErrorMetrics(errorType, connectionID, streamID string) {
+	if eqm.metrics == nil {
+		return
+	}
+
+	switch errorType {
+	case "packet_error":
+		eqm.metrics.IncQUICPacketErrors("packet_corruption", connectionID)
+	case "connection_error":
+		eqm.metrics.IncQUICConnectionErrors("connection_failed", connectionID)
+	case "stream_error":
+		eqm.metrics.IncQUICStreamErrors("stream_reset", streamID)
+	case "timeout":
+		eqm.metrics.IncQUICTimeoutEvents("connection_timeout", connectionID)
+	case "retransmission":
+		eqm.metrics.IncQUICRetransmissions(connectionID, "packet_loss")
+	case "encryption_failure":
+		eqm.metrics.IncQUICEncryptionFailures("key_rotation", connectionID)
+	}
 }

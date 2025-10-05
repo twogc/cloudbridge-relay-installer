@@ -20,7 +20,7 @@ func TestWGProfileManager(t *testing.T) {
 	logger := zap.NewNop()
 
 	// Создаем WG-профиль менеджер
-	manager, err := NewWGProfileManager(cfg, logger)
+	manager, err := NewWGProfileManager(cfg, logger, nil)
 	if err != nil {
 		t.Fatalf("Failed to create WG profile manager: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestWGProfileManagerDisabled(t *testing.T) {
 	logger := zap.NewNop()
 
 	// Создаем WG-профиль менеджер
-	manager, err := NewWGProfileManager(cfg, logger)
+	manager, err := NewWGProfileManager(cfg, logger, nil)
 	if err != nil {
 		t.Fatalf("Failed to create WG profile manager: %v", err)
 	}

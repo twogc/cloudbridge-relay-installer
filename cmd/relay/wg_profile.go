@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/config"
+	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 	"go.uber.org/zap"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -62,10 +63,13 @@ type WGProfileManager struct {
 	// Site-to-site VPN management
 	siteToSiteConnections map[string]*SiteToSiteConnection
 	routingRules          map[string]*RoutingRule
+
+	// Метрики
+	metrics *metrics.Metrics
 }
 
 // NewWGProfileManager создает новый менеджер WG-профилей
-func NewWGProfileManager(cfg *config.Config, logger *zap.Logger) (*WGProfileManager, error) {
+func NewWGProfileManager(cfg *config.Config, logger *zap.Logger, metrics *metrics.Metrics) (*WGProfileManager, error) {
 	client, err := wgctrl.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create wgctrl client: %w", err)
@@ -77,6 +81,7 @@ func NewWGProfileManager(cfg *config.Config, logger *zap.Logger) (*WGProfileMana
 		client:                client,
 		config:                cfg,
 		logger:                logger,
+		metrics:               metrics,
 		ctx:                   ctx,
 		cancel:                cancel,
 		devices:               make(map[string]*wgtypes.Device),
@@ -98,6 +103,13 @@ func (w *WGProfileManager) Start() error {
 		zap.Int("port", w.config.WireGuard.Interface.ListenPort),
 		zap.String("address", w.config.WireGuard.Interface.Address),
 	)
+
+	// Записываем метрики запуска интерфейса
+	if w.metrics != nil {
+		w.metrics.IncWireGuardInterfaces()
+		w.metrics.IncWireGuardInterfacesCreated(w.config.WireGuard.Interface.Name, "main")
+		w.metrics.SetWireGuardInterfaceStatus(w.config.WireGuard.Interface.Name, "starting", true)
+	}
 
 	// Запускаем мониторинг устройств
 	w.wg.Add(1)
@@ -238,6 +250,13 @@ func (w *WGProfileManager) AddPeer(interfaceName string, peerConfig wgtypes.Peer
 		zap.String("endpoint", peerConfig.Endpoint.String()),
 	)
 
+	// Записываем метрики добавления пира
+	if w.metrics != nil {
+		w.metrics.IncWireGuardPeers()
+		w.metrics.IncWireGuardPeersAdded(interfaceName, peerConfig.PublicKey.String())
+		w.metrics.SetWireGuardPeersConnected(interfaceName, peerConfig.PublicKey.String(), 1)
+	}
+
 	return nil
 }
 
@@ -289,6 +308,13 @@ func (w *WGProfileManager) RemovePeer(interfaceName string, publicKey wgtypes.Ke
 		zap.String("interface", interfaceName),
 		zap.String("public_key", publicKey.String()),
 	)
+
+	// Записываем метрики удаления пира
+	if w.metrics != nil {
+		w.metrics.DecWireGuardPeers()
+		w.metrics.IncWireGuardPeersRemoved(interfaceName, publicKey.String(), "manual")
+		w.metrics.SetWireGuardPeersConnected(interfaceName, publicKey.String(), 0)
+	}
 
 	return nil
 }
@@ -567,4 +593,161 @@ func (w *WGProfileManager) GetRoutingRules() []*RoutingRule {
 	}
 
 	return rules
+}
+
+// RecordTrafficMetrics записывает метрики трафика
+func (w *WGProfileManager) RecordTrafficMetrics(interfaceName, peer string, bytesReceived, bytesSent, packetsReceived, packetsSent int64) {
+	if w.metrics == nil {
+		return
+	}
+
+	w.metrics.IncWireGuardTrafficBytesReceived(interfaceName, peer, bytesReceived)
+	w.metrics.IncWireGuardTrafficBytesSent(interfaceName, peer, bytesSent)
+	w.metrics.IncWireGuardTrafficPacketsReceived(interfaceName, peer, packetsReceived)
+	w.metrics.IncWireGuardTrafficPacketsSent(interfaceName, peer, packetsSent)
+}
+
+// RecordPerformanceMetrics записывает метрики производительности
+func (w *WGProfileManager) RecordPerformanceMetrics(interfaceName, peer string, metrics map[string]interface{}) {
+	if w.metrics == nil {
+		return
+	}
+
+	// Записываем метрики производительности
+	if handshakeDuration, ok := metrics["handshake_duration"].(float64); ok {
+		w.metrics.ObserveWireGuardHandshakeDuration(interfaceName, peer, handshakeDuration)
+	}
+
+	if connectionLatency, ok := metrics["connection_latency"].(float64); ok {
+		w.metrics.ObserveWireGuardConnectionLatency(interfaceName, peer, connectionLatency)
+	}
+
+	if throughputBytes, ok := metrics["throughput_bytes"].(int64); ok {
+		direction := "unknown"
+		if dir, exists := metrics["direction"].(string); exists {
+			direction = dir
+		}
+		w.metrics.IncWireGuardThroughputBytes(interfaceName, peer, direction, throughputBytes)
+	}
+
+	if throughputPackets, ok := metrics["throughput_packets"].(int64); ok {
+		direction := "unknown"
+		if dir, exists := metrics["direction"].(string); exists {
+			direction = dir
+		}
+		w.metrics.IncWireGuardThroughputPackets(interfaceName, peer, direction, throughputPackets)
+	}
+
+	if bandwidthUtilization, ok := metrics["bandwidth_utilization"].(float64); ok {
+		w.metrics.SetWireGuardBandwidthUtilization(interfaceName, peer, bandwidthUtilization)
+	}
+
+	if trafficRate, ok := metrics["traffic_rate"].(float64); ok {
+		direction := "unknown"
+		if dir, exists := metrics["direction"].(string); exists {
+			direction = dir
+		}
+		w.metrics.SetWireGuardTrafficRate(interfaceName, peer, direction, trafficRate)
+	}
+}
+
+// RecordConnectionQualityMetrics записывает метрики качества соединения
+func (w *WGProfileManager) RecordConnectionQualityMetrics(interfaceName, peer string, metrics map[string]interface{}) {
+	if w.metrics == nil {
+		return
+	}
+
+	if keepaliveInterval, ok := metrics["keepalive_interval"].(float64); ok {
+		w.metrics.SetWireGuardKeepaliveInterval(interfaceName, peer, keepaliveInterval)
+	}
+
+	if lastHandshake, ok := metrics["last_handshake"].(float64); ok {
+		w.metrics.SetWireGuardLastHandshake(interfaceName, peer, lastHandshake)
+	}
+
+	if handshakeAttempts, ok := metrics["handshake_attempts"].(int); ok {
+		for i := 0; i < handshakeAttempts; i++ {
+			w.metrics.IncWireGuardHandshakeAttempts(interfaceName, peer)
+		}
+	}
+
+	if connectionUptime, ok := metrics["connection_uptime"].(float64); ok {
+		w.metrics.SetWireGuardConnectionUptime(interfaceName, peer, connectionUptime)
+	}
+}
+
+// RecordErrorMetrics записывает метрики ошибок
+func (w *WGProfileManager) RecordErrorMetrics(interfaceName, peer, errorType string) {
+	if w.metrics == nil {
+		return
+	}
+
+	switch errorType {
+	case "interface_error":
+		w.metrics.IncWireGuardInterfaceErrors(interfaceName, "interface_failed")
+	case "peer_error":
+		w.metrics.IncWireGuardPeerErrors(interfaceName, peer, "peer_failed")
+	case "handshake_error":
+		w.metrics.IncWireGuardHandshakeErrors(interfaceName, peer, "handshake_failed")
+	case "timeout":
+		w.metrics.IncWireGuardTimeoutEvents(interfaceName, peer, "connection_timeout")
+	case "reconnection":
+		w.metrics.IncWireGuardReconnectionAttempts(interfaceName, peer)
+	case "authentication_failure":
+		w.metrics.IncWireGuardAuthenticationFailures(interfaceName, peer, "auth_failed")
+	case "encryption_failure":
+		w.metrics.IncWireGuardEncryptionFailures(interfaceName, peer, "encryption_failed")
+	case "unauthorized_access":
+		w.metrics.IncWireGuardUnauthorizedAccess(interfaceName, peer, "access_denied")
+	}
+}
+
+// RecordSiteToSiteMetrics записывает метрики site-to-site соединений
+func (w *WGProfileManager) RecordSiteToSiteMetrics(connectionID string, metrics map[string]interface{}) {
+	if w.metrics == nil {
+		return
+	}
+
+	if status, ok := metrics["status"].(string); ok {
+		count := 1
+		if c, exists := metrics["count"].(int); exists {
+			count = c
+		}
+		w.metrics.SetWireGuardSiteToSiteConnections(connectionID, status, count)
+	}
+
+	if active, ok := metrics["active"].(int); ok {
+		w.metrics.SetWireGuardSiteToSiteActive(connectionID, active)
+	}
+
+	if bandwidth, ok := metrics["bandwidth"].(float64); ok {
+		w.metrics.SetWireGuardSiteToSiteBandwidth(connectionID, bandwidth)
+	}
+
+	if latency, ok := metrics["latency"].(float64); ok {
+		w.metrics.ObserveWireGuardSiteToSiteLatency(connectionID, latency)
+	}
+}
+
+// RecordResourceMetrics записывает метрики ресурсов
+func (w *WGProfileManager) RecordResourceMetrics(interfaceName, component string, metrics map[string]interface{}) {
+	if w.metrics == nil {
+		return
+	}
+
+	if memoryUsage, ok := metrics["memory_usage"].(int64); ok {
+		w.metrics.SetWireGuardMemoryUsage(interfaceName, component, memoryUsage)
+	}
+
+	if cpuUsage, ok := metrics["cpu_usage"].(float64); ok {
+		w.metrics.SetWireGuardCPUUsage(interfaceName, component, cpuUsage)
+	}
+
+	if goroutineCount, ok := metrics["goroutine_count"].(int); ok {
+		w.metrics.SetWireGuardGoroutineCount(interfaceName, component, goroutineCount)
+	}
+
+	if fileDescriptorCount, ok := metrics["file_descriptor_count"].(int); ok {
+		w.metrics.SetWireGuardFileDescriptorCount(interfaceName, fileDescriptorCount)
+	}
 }
