@@ -1,4 +1,4 @@
-FROM ubercadence/server:0.24.0
+FROM ubercadence/server:v1.3.5
 
 # Устанавливаем необходимые пакеты
 RUN apk add --no-cache netcat-openbsd
