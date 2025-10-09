@@ -558,7 +558,17 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	if p2pAPIServer != nil {
 		// Use the peerStore from p2pAPIServer
 		peerManager := p2pAPIServer.GetPeerManager()
-		peerStoreAdapter := api.NewPeerStoreAdapter(peerManager.GetPeerStore())
+		zapLogger.Info("DEBUG: Got PeerManager from p2pAPIServer",
+			zap.String("peerManager_type", fmt.Sprintf("%T", peerManager)))
+
+		peerStore := peerManager.GetPeerStore()
+		zapLogger.Info("DEBUG: Got PeerStore from PeerManager",
+			zap.String("peerStore_type", fmt.Sprintf("%T", peerStore)))
+
+		peerStoreAdapter := api.NewPeerStoreAdapter(peerStore)
+		zapLogger.Info("DEBUG: Created PeerStoreAdapter",
+			zap.String("adapter_type", fmt.Sprintf("%T", peerStoreAdapter)))
+
 		directPeerDiscovery = p2p.NewDirectPeerDiscovery(
 			peerStoreAdapter, // Use peerStore from p2pAPIServer
 			"mesh-network-test",

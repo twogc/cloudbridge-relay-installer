@@ -67,6 +67,7 @@ func (ps *PeerStore) Store(tenantID, peerID string, peer *p2p.Peer) {
 		ps.peers[tenantID] = make(map[string]*p2p.Peer)
 	}
 	ps.peers[tenantID][peerID] = peer
+	fmt.Printf("DEBUG: PeerStore.Store called for tenantID=%s, peerID=%s\n", tenantID, peerID)
 }
 
 // Get получает пира
@@ -104,6 +105,7 @@ func (ps *PeerStore) GetAll(tenantID string) []*p2p.Peer {
 			peers = append(peers, peer)
 		}
 	}
+	fmt.Printf("DEBUG: PeerStore.GetAll called for tenantID=%s, found %d peers\n", tenantID, len(peers))
 	return peers
 }
 
@@ -452,6 +454,11 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 	}
 
 	// Сохранение пира в peerStore
+	pm.logger.Info("DEBUG: About to store peer in peerStore",
+		zap.String("tenant_id", tenantID),
+		zap.String("peer_id", peerID),
+		zap.String("peerStore_type", fmt.Sprintf("%T", pm.peerStore)))
+
 	pm.peerStore.Store(tenantID, peerID, peer)
 
 	pm.logger.Info("Debug: peer stored in peerStore",

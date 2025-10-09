@@ -197,6 +197,10 @@ func (mc *MetricsCollector) SendMetricsToSentry() {
 			zap.Int("gauges", len(mc.gauges)),
 			zap.Int("timers", len(mc.timers)),
 		)
+	} else {
+		// Fallback logging if zap.L() returns nil
+		fmt.Printf("Metrics sent to Sentry: counters=%d, gauges=%d, timers=%d\n", 
+			len(mc.counters), len(mc.gauges), len(mc.timers))
 	}
 }
 

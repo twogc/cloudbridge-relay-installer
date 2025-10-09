@@ -1,7 +1,9 @@
 package p2p
 
 import (
+	"fmt"
 	"time"
+
 	"go.uber.org/zap"
 )
 
@@ -46,12 +48,26 @@ func (dpd *DirectPeerDiscovery) Stop() error {
 
 // DiscoverPeers обнаруживает пиров напрямую из peerStore
 func (dpd *DirectPeerDiscovery) DiscoverPeers() ([]*DiscoveredPeer, error) {
+	dpd.logger.Info("DirectPeerDiscovery.DiscoverPeers called",
+		zap.String("tenant_id", dpd.tenantID),
+		zap.String("peerStore_type", fmt.Sprintf("%T", dpd.peerStore)))
+
 	// Получаем пиров напрямую из peerStore
 	peers := dpd.peerStore.GetAll(dpd.tenantID)
 
-	dpd.logger.Debug("Direct peer discovery",
+	dpd.logger.Info("Direct peer discovery",
 		zap.String("tenant_id", dpd.tenantID),
 		zap.Int("peers_count", len(peers)))
+
+	// Логируем детали каждого пира
+	for i, peer := range peers {
+		dpd.logger.Info("Found peer",
+			zap.Int("index", i),
+			zap.String("peer_id", peer.ID),
+			zap.String("tenant_id", peer.TenantID),
+			zap.Bool("is_online", peer.IsOnline),
+			zap.String("allocated_ip", peer.AllocatedIP))
+	}
 
 	// Конвертируем Peer в DiscoveredPeer
 	var discoveredPeers []*DiscoveredPeer
@@ -72,7 +88,7 @@ func (dpd *DirectPeerDiscovery) DiscoverPeers() ([]*DiscoveredPeer, error) {
 		discoveredPeers = append(discoveredPeers, discoveredPeer)
 	}
 
-	dpd.logger.Debug("Discovered peers via direct access",
+	dpd.logger.Info("Discovered peers via direct access",
 		zap.String("tenant_id", dpd.tenantID),
 		zap.Int("peers_count", len(discoveredPeers)))
 

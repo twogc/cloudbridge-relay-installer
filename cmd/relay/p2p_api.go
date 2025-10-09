@@ -189,7 +189,10 @@ func (s *P2PAPIServer) GetHub() *api.Hub {
 
 // GetPeerManager возвращает PeerManager
 func (s *P2PAPIServer) GetPeerManager() *api.PeerManager {
-	return s.peerManager
+	// Используем PeerManager из APIRouter, а не отдельный экземпляр
+	// Это обеспечивает синхронизацию между API и DirectPeerDiscovery
+	s.logger.Info("DEBUG: P2PAPIServer.GetPeerManager() called, returning APIRouter.PeerManager")
+	return s.apiRouter.GetPeerManager()
 }
 
 // GetRelayManager возвращает RelayManager

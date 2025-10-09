@@ -17,7 +17,20 @@ type SentryZapCore struct {
 
 // NewSentryZapCore создает новый Sentry zap core
 func NewSentryZapCore(level zapcore.Level) *SentryZapCore {
+	// Создаем базовый core
+	config := zap.NewProductionConfig()
+	config.Level = zap.NewAtomicLevelAt(level)
+	config.EncoderConfig.TimeKey = "timestamp"
+	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+
+	baseCore, err := config.Build()
+	if err != nil {
+		// Fallback к простому core если не удалось создать
+		baseCore, _ = zap.NewProduction()
+	}
+
 	return &SentryZapCore{
+		Core:  baseCore.Core(),
 		level: level,
 	}
 }
@@ -33,10 +46,10 @@ func (s *SentryZapCore) Enabled(level zapcore.Level) bool {
 // Write записывает лог в Sentry
 func (s *SentryZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
 	// Проверяем, что Sentry инициализирован
-	if s == nil {
+	if s == nil || s.Core == nil {
 		return nil
 	}
-	
+
 	// Создаем scope для Sentry
 	sentrygo.ConfigureScope(func(scope *sentrygo.Scope) {
 		// Устанавливаем уровень логирования
@@ -147,12 +160,12 @@ func SetupLogging() (*zap.Logger, error) {
 		config.Level = zap.NewAtomicLevelAt(level)
 		config.EncoderConfig.TimeKey = "timestamp"
 		config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-		
+
 		logger, err := config.Build()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create logger: %w", err)
 		}
-		
+
 		return logger, nil
 	}
 

@@ -1,7 +1,9 @@
 package api
 
 import (
+	"fmt"
 	"time"
+
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 )
 
@@ -37,7 +39,17 @@ func (psa *PeerStoreAdapter) Update(tenantID, peerID string, peer *p2p.Peer) {
 // GetAll получает всех пиров для тенанта
 func (psa *PeerStoreAdapter) GetAll(tenantID string) []*p2p.Peer {
 	// api.PeerStore уже работает с p2p.Peer, просто возвращаем напрямую
-	return psa.apiStore.GetAll(tenantID)
+	peers := psa.apiStore.GetAll(tenantID)
+	// Debug log для отладки
+	fmt.Printf("DEBUG: PeerStoreAdapter.GetAll called for tenantID=%s, found %d peers\n", tenantID, len(peers))
+
+	// Логируем детали каждого пира
+	for i, peer := range peers {
+		fmt.Printf("DEBUG: PeerStoreAdapter found peer[%d]: ID=%s, TenantID=%s, IsOnline=%v, AllocatedIP=%s\n",
+			i, peer.ID, peer.TenantID, peer.IsOnline, peer.AllocatedIP)
+	}
+
+	return peers
 }
 
 // IsPeerOnline проверяет, онлайн ли пир

@@ -480,6 +480,7 @@ func (r *APIRouter) GetHub() *Hub {
 
 // GetPeerManager возвращает PeerManager
 func (r *APIRouter) GetPeerManager() *PeerManager {
+	r.logger.Info("DEBUG: APIRouter.GetPeerManager() called, returning peerManager")
 	return r.peerManager
 }
 

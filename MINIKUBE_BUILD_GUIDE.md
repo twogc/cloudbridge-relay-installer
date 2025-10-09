@@ -143,6 +143,139 @@ kubectl set image deployment/cloudbridge-relay cloudbridge-relay=cloudbridge-rel
 kubectl rollout status deployment/cloudbridge-relay -n cloudbridge
 ```
 
+### **⚠️ ВАЖНО: Восстановление переменных Sentry после обновления**
+
+После обновления образа переменные Sentry могут сброситься. Восстановите их:
+
+```bash
+# Восстановить переменные Sentry из .env файла
+source .env
+
+# Применить переменные Sentry
+kubectl patch deployment cloudbridge-relay -n cloudbridge -p "{
+  \"spec\": {
+    \"template\": {
+      \"spec\": {
+        \"containers\": [{
+          \"name\": \"cloudbridge-relay\",
+          \"env\": [
+            {\"name\": \"SENTRY_DSN\", \"value\": \"$SENTRY_DSN\"},
+            {\"name\": \"SENTRY_ENVIRONMENT\", \"value\": \"$SENTRY_ENVIRONMENT\"},
+            {\"name\": \"SENTRY_RELEASE\", \"value\": \"$SENTRY_RELEASE\"},
+            {\"name\": \"SENTRY_DEBUG\", \"value\": \"$SENTRY_DEBUG\"},
+            {\"name\": \"SENTRY_SERVER_NAME\", \"value\": \"$SENTRY_SERVER_NAME\"},
+            {\"name\": \"SENTRY_TRACES_SAMPLE_RATE\", \"value\": \"$SENTRY_TRACES_SAMPLE_RATE\"},
+            {\"name\": \"SENTRY_SAMPLE_RATE\", \"value\": \"$SENTRY_SAMPLE_RATE\"},
+            {\"name\": \"SENTRY_MAX_BREADCRUMBS\", \"value\": \"$SENTRY_MAX_BREADCRUMBS\"}
+          ]
+        }]
+      }
+    }
+  }
+}"
+
+# Проверить, что Sentry работает
+kubectl logs deployment/cloudbridge-relay -n cloudbridge | grep "Integration installed"
+```
+
+## 📊 **Настройка Sentry (мониторинг и логирование)**
+
+### **1. Конфигурация Sentry:**
+
+CloudBridge Relay поддерживает интеграцию с Sentry для мониторинга ошибок и метрик.
+
+```bash
+# Настроить переменные Sentry в deployment
+kubectl patch deployment cloudbridge-relay -n cloudbridge -p '{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [{
+          "name": "cloudbridge-relay",
+          "env": [
+            {"name": "SENTRY_DSN", "value": "https://YOUR_DSN@sentry.io/YOUR_PROJECT_ID"},
+            {"name": "SENTRY_ENVIRONMENT", "value": "production"},
+            {"name": "SENTRY_RELEASE", "value": "cloudbridge-relay@1.0.0"},
+            {"name": "SENTRY_DEBUG", "value": "true"},
+            {"name": "SENTRY_SERVER_NAME", "value": "cloudbridge-relay"},
+            {"name": "SENTRY_TRACES_SAMPLE_RATE", "value": "0.1"},
+            {"name": "SENTRY_SAMPLE_RATE", "value": "1.0"},
+            {"name": "SENTRY_MAX_BREADCRUMBS", "value": "50"}
+          ]
+        }]
+      }
+    }
+  }
+}'
+```
+
+### **2. Проверка работы Sentry:**
+
+```bash
+# Проверить логи Sentry
+kubectl logs deployment/cloudbridge-relay -n cloudbridge | grep -i sentry
+
+# Проверить отправку событий в Sentry
+kubectl logs deployment/cloudbridge-relay -n cloudbridge | grep "Sending.*event"
+
+# Проверить метрики Sentry
+kubectl logs deployment/cloudbridge-relay -n cloudbridge | grep "sentry/metrics.go"
+```
+
+### **3. Настройка из .env файла:**
+
+Если у вас есть `.env` файл с конфигурацией Sentry:
+
+```bash
+# Загрузить переменные из .env файла
+source .env
+
+# Применить все переменные Sentry
+kubectl patch deployment cloudbridge-relay -n cloudbridge -p "{
+  \"spec\": {
+    \"template\": {
+      \"spec\": {
+        \"containers\": [{
+          \"name\": \"cloudbridge-relay\",
+          \"env\": [
+            {\"name\": \"SENTRY_DSN\", \"value\": \"$SENTRY_DSN\"},
+            {\"name\": \"SENTRY_ENVIRONMENT\", \"value\": \"$SENTRY_ENVIRONMENT\"},
+            {\"name\": \"SENTRY_RELEASE\", \"value\": \"$SENTRY_RELEASE\"},
+            {\"name\": \"SENTRY_DEBUG\", \"value\": \"$SENTRY_DEBUG\"},
+            {\"name\": \"SENTRY_SERVER_NAME\", \"value\": \"$SENTRY_SERVER_NAME\"},
+            {\"name\": \"SENTRY_TRACES_SAMPLE_RATE\", \"value\": \"$SENTRY_TRACES_SAMPLE_RATE\"},
+            {\"name\": \"SENTRY_SAMPLE_RATE\", \"value\": \"$SENTRY_SAMPLE_RATE\"},
+            {\"name\": \"SENTRY_MAX_BREADCRUMBS\", \"value\": \"$SENTRY_MAX_BREADCRUMBS\"}
+          ]
+        }]
+      }
+    }
+  }
+}"
+```
+
+### **4. Проверка в Sentry Dashboard:**
+
+1. Откройте [Sentry Dashboard](https://sentry.io/)
+2. Перейдите в ваш проект
+3. Проверьте разделы:
+   - **Issues** - ошибки и исключения
+   - **Performance** - метрики производительности
+   - **Releases** - информация о релизах
+
+### **5. Отладка Sentry:**
+
+```bash
+# Проверить инициализацию Sentry
+kubectl logs deployment/cloudbridge-relay -n cloudbridge | grep "Integration installed"
+
+# Проверить отправку событий
+kubectl logs deployment/cloudbridge-relay -n cloudbridge | grep "Sending.*event.*to"
+
+# Проверить ошибки Sentry
+kubectl logs deployment/cloudbridge-relay -n cloudbridge | grep "Sentry.*error"
+```
+
 ## 🐛 **Отладка**
 
 ```bash
@@ -181,6 +314,13 @@ minikube image rm cloudbridge-relay:$TAG
 - [ ] Pods работают
 - [ ] Port forwarding настроен
 - [ ] API endpoints отвечают
+
+### **✅ Проверки Sentry:**
+- [ ] Переменные Sentry настроены
+- [ ] Sentry инициализирован (`Integration installed`)
+- [ ] События отправляются в Sentry (`Sending.*event.*to`)
+- [ ] Метрики собираются (`sentry/metrics.go`)
+- [ ] Dashboard Sentry показывает данные
 
 ---
 
