@@ -38,6 +38,9 @@ COPY --from=builder /app/cloudbridge-relay .
 # Copy config files
 COPY --from=builder /app/configs ./configs
 
+# Copy TLS certificates
+COPY certs/ ./certs/
+
 # Create directories for enhanced components
 RUN mkdir -p /app/data /app/certs && \
     chown -R appuser:appgroup /app/data /app/certs

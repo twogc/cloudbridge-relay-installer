@@ -1,0 +1,22 @@
+[Unit]
+Description=CloudBridge Relay Port Forwarding
+Documentation=https://github.com/twogc/cloudbridge-relay-installer
+After=network.target
+
+[Service]
+Type=forking
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
+ExecStart=/bin/bash -c 'kubectl port-forward -n cloudbridge service/cloudbridge-relay-external 5550:5550 & kubectl port-forward -n cloudbridge service/cloudbridge-relay-external 5551:5551 & kubectl port-forward -n cloudbridge service/cloudbridge-relay-external 5552:5552 &'
+ExecStop=/bin/bash -c 'pkill -f "kubectl port-forward"'
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment=KUBECONFIG=/home/ubuntu/.kube/config
+
+[Install]
+WantedBy=multi-user.target

@@ -561,8 +561,8 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 		cadenceMetrics:   NewCadenceMetrics(nil),
 	}
 
-	// Регистрация всех метрик
-	reg.MustRegister(
+	// Регистрация всех метрик с проверкой на дублирование
+	metricsToRegister := []prometheus.Collector{
 		m.connectionsTotal,
 		m.rejectedConnections,
 		m.errorsTotal,
@@ -639,7 +639,17 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 		m.tenantMetrics.usageHeatmap,
 		m.tenantMetrics.comparisonMetrics,
 		m.tenantMetrics.resourceUtilizationPercent,
-	)
+	}
+
+	// Безопасная регистрация метрик
+	for _, metric := range metricsToRegister {
+		if err := reg.Register(metric); err != nil {
+			// Игнорируем ошибки дублирования
+			if _, ok := err.(prometheus.AlreadyRegisteredError); !ok {
+				panic(err)
+			}
+		}
+	}
 
 	return m
 }

@@ -1,31 +1,66 @@
 [Unit]
-Description=CloudBridge Relay Production Stack
+Description=CloudBridge Relay Server
 Documentation=https://github.com/twogc/cloudbridge-relay-installer
-After=docker.service
+After=network.target docker.service
 Requires=docker.service
-Wants=network-online.target
 
 [Service]
-Type=oneshot
-RemainAfterExit=yes
-User=root
-Group=root
-WorkingDirectory=/home/ubuntu/cloudbridge-relay-installer
-Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/bin/bash /home/ubuntu/cloudbridge-relay-installer/scripts/start_production.sh --env .env.production
-ExecStop=/usr/bin/docker-compose down
-ExecReload=/usr/bin/docker-compose restart
-TimeoutStartSec=300
-TimeoutStopSec=60
-Restart=on-failure
-RestartSec=30
+Type=notify
+NotifyAccess=all
+TimeoutStartSec=0
+Restart=always
+RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Environment variables
+Environment=RELAY_JWT_SECRET=85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=
+Environment=KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+Environment=KEYCLOAK_PUBLIC_KEY=${KEYCLOAK_PUBLIC_KEY}
+Environment=ZITADEL_PROJECT_ID=${ZITADEL_PROJECT_ID}
+Environment=ZITADEL_CLIENT_ID=${ZITADEL_CLIENT_ID}
+Environment=ZITADEL_CLIENT_SECRET=${ZITADEL_CLIENT_SECRET}
+
+# Working directory
+WorkingDirectory=/opt/cloudbridge-relay
+
+# User and group
+User=cloudbridge
+Group=cloudbridge
 
 # Security settings
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/home/ubuntu/cloudbridge-relay-installer
+ReadWritePaths=/opt/cloudbridge-relay/data /var/log/cloudbridge
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=32768
+
+# ExecStart command
+ExecStart=/usr/bin/docker run --rm \
+    --name cloudbridge-relay \
+    --network host \
+    --user 1001:1001 \
+    -v /opt/cloudbridge-relay/data:/app/data \
+    -v /opt/cloudbridge-relay/certs:/app/certs \
+    -v /var/log/cloudbridge:/var/log \
+    -e RELAY_JWT_SECRET=${RELAY_JWT_SECRET} \
+    -e KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET} \
+    -e KEYCLOAK_PUBLIC_KEY=${KEYCLOAK_PUBLIC_KEY} \
+    -e ZITADEL_PROJECT_ID=${ZITADEL_PROJECT_ID} \
+    -e ZITADEL_CLIENT_ID=${ZITADEL_CLIENT_ID} \
+    -e ZITADEL_CLIENT_SECRET=${ZITADEL_CLIENT_SECRET} \
+    cloudbridge-relay:production
+
+# ExecStop command
+ExecStop=/usr/bin/docker stop cloudbridge-relay
+
+# Health check
+ExecStartPost=/bin/sleep 10
+ExecStartPost=/bin/bash -c 'for i in {1..30}; do if curl -f http://localhost:9090/health >/dev/null 2>&1; then exit 0; fi; sleep 2; done; exit 1'
 
 [Install]
-WantedBy=multi-user.target 
+WantedBy=multi-user.target

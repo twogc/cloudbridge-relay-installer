@@ -54,7 +54,7 @@ spec:
             drop:
             - ALL
       - name: cloudbridge-relay
-        image: cloudbridge-relay:zitadel
+        image: cloudbridge-relay:p2p-debug-v6-20251009-004307
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
@@ -196,8 +196,8 @@ spec:
         secret:
           secretName: wireguard-keys
       - name: tls-certs
-        secret:
-          secretName: cloudbridge-tls
+        configMap:
+          name: cloudbridge-certs
       nodeSelector:
         kubernetes.io/os: linux
       tolerations:

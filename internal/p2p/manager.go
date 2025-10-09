@@ -66,19 +66,35 @@ func (pm *P2PManager) SetCadenceIntegration(cadenceIntegration CadenceP2PIntegra
 	pm.logger.Info("Cadence интеграция установлена для P2P Manager")
 }
 
+// Start запускает P2P Manager
+func (pm *P2PManager) Start(ctx context.Context) error {
+	return pm.Initialize(ctx)
+}
+
 // Initialize инициализирует P2P компоненты
 func (pm *P2PManager) Initialize(ctx context.Context) error {
+	pm.logger.Info("P2P Manager: Initialize method called")
+
 	if !pm.isInitialized {
+		pm.logger.Error("P2P Manager: not properly initialized")
 		return fmt.Errorf("P2P Manager not properly initialized")
 	}
+	pm.logger.Info("P2P Manager: isInitialized check passed")
+
+	pm.logger.Info("P2P Manager: starting initialization")
 
 	// Запускаем peer discovery
+	pm.logger.Info("P2P Manager: starting peer discovery")
 	if err := pm.peerDiscovery.Start(); err != nil {
+		pm.logger.Error("P2P Manager: failed to start peer discovery", zap.Error(err))
 		return fmt.Errorf("failed to start peer discovery: %w", err)
 	}
+	pm.logger.Info("P2P Manager: peer discovery started successfully")
 
 	// Добавляем обнаруженных пиров в mesh topology
+	pm.logger.Info("P2P Manager: starting processDiscoveredPeers goroutine")
 	go pm.processDiscoveredPeers(ctx)
+	pm.logger.Info("P2P Manager: processDiscoveredPeers goroutine started")
 
 	pm.logger.Info("P2P Manager initialized successfully")
 	return nil
@@ -86,25 +102,37 @@ func (pm *P2PManager) Initialize(ctx context.Context) error {
 
 // processDiscoveredPeers обрабатывает обнаруженных пиров
 func (pm *P2PManager) processDiscoveredPeers(ctx context.Context) {
+	pm.logger.Info("Starting processDiscoveredPeers goroutine")
 	ticker := time.NewTicker(30 * time.Second) // Проверяем каждые 30 секунд
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
+			pm.logger.Info("processDiscoveredPeers goroutine stopping due to context cancellation")
 			return
 		case <-ticker.C:
+			pm.logger.Info("processDiscoveredPeers: starting peer discovery")
 			peers, err := pm.peerDiscovery.DiscoverPeers()
 			if err != nil {
 				pm.logger.Error("Failed to discover peers", zap.Error(err))
 				continue
 			}
+			pm.logger.Info("processDiscoveredPeers: discovered peers", zap.Int("count", len(peers)))
 
 			for _, peer := range peers {
+				pm.logger.Info("processDiscoveredPeers: processing peer",
+					zap.String("peer_id", peer.PeerID),
+					zap.String("endpoint", peer.Endpoint),
+					zap.String("tenant_id", peer.TenantID))
+
 				// Проверяем, не добавлен ли уже этот peer
 				if pm.isPeerConnected(peer.PeerID) {
+					pm.logger.Info("processDiscoveredPeers: peer already connected, skipping",
+						zap.String("peer_id", peer.PeerID))
 					continue
 				}
+
 				p2pPeer := &Peer{
 					ID:             peer.PeerID,
 					PeerID:         peer.PeerID,

@@ -439,10 +439,25 @@ func (pm *PeerManager) RegisterPeer(c *gin.Context) {
 		RegisteredAt:   time.Now(),
 		MeshStatus:     "connected",
 		AllocatedIP:    allocatedIP, // Добавляем выделенный IP
+		// Инициализируем все поля для корректной JSON сериализации
+		QuicConfig:        &p2p.QuicConfig{},
+		MeshConfig:        &p2p.MeshConfig{},
+		PeerWhitelist:     &p2p.PeerWhitelist{},
+		NetworkConfig:     &p2p.NetworkConfig{},
+		ICECandidates:     []*p2p.ICECandidate{},
+		STUNServers:       []string{},
+		ActiveConnections: 0,
+		LatencyMS:         0,
+		Status:            "active",
 	}
 
 	// Сохранение пира в peerStore
 	pm.peerStore.Store(tenantID, peerID, peer)
+
+	pm.logger.Info("Debug: peer stored in peerStore",
+		zap.String("tenant_id", tenantID),
+		zap.String("peer_id", peerID),
+	)
 
 	pm.logger.Info("Peer registered successfully for P2P mesh mode",
 		zap.String("peer_id", peerID),
@@ -501,6 +516,11 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 	// Получение пиров из peerStore
 	peers := pm.peerStore.GetAll(tenantID)
 
+	pm.logger.Info("Debug: peerStore.GetAll result",
+		zap.String("tenant_id", tenantID),
+		zap.Int("peers_count", len(peers)),
+	)
+
 	// Обновление статуса и возврат всех пиров для P2P mesh
 	var filteredPeers []*p2p.Peer
 	for _, peer := range peers {
@@ -509,6 +529,11 @@ func (pm *PeerManager) DiscoverPeers(c *gin.Context) {
 		peer.LastSeen = pm.getLastSeen(peer.PeerID)
 		filteredPeers = append(filteredPeers, peer)
 	}
+
+	pm.logger.Info("Debug: filteredPeers result",
+		zap.String("tenant_id", tenantID),
+		zap.Int("filtered_peers_count", len(filteredPeers)),
+	)
 
 	// P2P mesh не требует синтетического relay peer
 
@@ -672,6 +697,11 @@ func (pm *PeerManager) isPeerOnline(peerID string) bool {
 // getLastSeen возвращает время последнего контакта с пиром
 func (pm *PeerManager) getLastSeen(peerID string) time.Time {
 	return pm.peerStore.GetLastSeen(peerID)
+}
+
+// GetPeerStore возвращает peerStore для прямого доступа
+func (pm *PeerManager) GetPeerStore() PeerStoreInterface {
+	return pm.peerStore
 }
 
 // GetPeer получает пира по ID (для интерфейса PeerManagerInterface)

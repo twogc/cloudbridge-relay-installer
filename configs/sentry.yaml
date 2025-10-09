@@ -1,0 +1,58 @@
+# CloudBridge Relay - Sentry Configuration
+sentry:
+  # Sentry DSN (получите из Sentry dashboard)
+  dsn: "${SENTRY_DSN}"
+  
+  # Environment (development, staging, production)
+  environment: "${SENTRY_ENVIRONMENT:-production}"
+  
+  # Release version
+  release: "${SENTRY_RELEASE:-cloudbridge-relay@1.0.0}"
+  
+  # Tracing configuration
+  enable_tracing: true
+  traces_sample_rate: 0.1  # 10% в production, 1.0 в development
+  
+  # Logging configuration
+  enable_logs: true
+  
+  # Debug mode
+  debug: "${SENTRY_DEBUG:-false}"
+  
+  # Server name
+  server_name: "${SENTRY_SERVER_NAME:-cloudbridge-relay}"
+  
+  # Stack trace configuration
+  attach_stacktrace: true
+  max_breadcrumbs: 50
+  
+  # Sample rate for events
+  sample_rate: 1.0
+  
+  # Transport configuration
+  transport:
+    timeout: "30s"
+    max_retries: 3
+    
+  # Before send hook
+  before_send:
+    enabled: true
+    filter_sensitive_data: true
+    mask_ips: true
+    mask_emails: true
+    
+  # Tags for CloudBridge
+  tags:
+    service: "cloudbridge-relay"
+    component: "relay-server"
+    version: "1.0.0"
+    
+  # Context for CloudBridge
+  context:
+    tenant_isolation: true
+    p2p_mesh: true
+    quic_protocol: true
+    masque_support: true
+
+
+

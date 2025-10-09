@@ -1,0 +1,158 @@
+# CloudBridge Relay Production Configuration
+# Конфигурация для развертывания на внешнем сервере edge.2gc.ru
+
+server:
+  address: "0.0.0.0"
+  port: 9090
+  timeout: "30s"
+  max_tunnels: 10000
+  ping_interval: "30s"
+  cleanup_interval: "60s"
+
+# Production API Configuration
+api:
+  enabled: true
+  port: 8082  # P2P API Server port
+  version: "v1"
+  host: "0.0.0.0"
+
+# HTTP API Configuration
+http_api:
+  enabled: true
+  port: 9090
+  host: "0.0.0.0"
+  cors_enabled: true
+  rate_limit:
+    enabled: true
+    requests_per_minute: 1000
+
+# HTTPS API Configuration
+https_api:
+  enabled: true
+  port: 8443
+  host: "0.0.0.0"
+  tls:
+    enabled: true
+    cert_file: "/app/certs/tls.crt"
+    key_file: "/app/certs/tls.key"
+  cors_enabled: true
+  rate_limit:
+    enabled: true
+    requests_per_minute: 1000
+
+# Keycloak Integration (Production)
+keycloak:
+  enabled: true
+  server_url: "https://edge.2gc.ru/oauth/v2"
+  realm: "cloudbridge"
+  client_id: "cloudbridge-relay"
+  client_secret: "${KEYCLOAK_CLIENT_SECRET}"
+  public_key: "${KEYCLOAK_PUBLIC_KEY}"
+  fallback_secret: "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
+  jwks_url: "https://edge.2gc.ru/oauth/v2/.well-known/jwks.json"
+  token_validation:
+    issuer: "https://edge.2gc.ru/oauth/v2"
+    audience: "cloudbridge-relay"
+    clock_skew: "30s"
+  jwks_cache_ttl: "1h"
+  http_timeout: "30s"
+
+# Zitadel Integration (Fallback)
+zitadel:
+  enabled: false
+  domain: "https://edge.2gc.ru"
+  project_id: "${ZITADEL_PROJECT_ID}"
+  client_id: "${ZITADEL_CLIENT_ID}"
+  client_secret: "${ZITADEL_CLIENT_SECRET}"
+  fallback_secret: "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
+  token_validation:
+    audience: "cloudbridge-relay"
+    clock_skew: "30s"
+  cache_ttl: "5m"
+  http_timeout: "30s"
+
+# Security Configuration
+security:
+  tls_enabled: true
+  cert_file: "/app/certs/tls.crt"
+  key_file: "/app/certs/tls.key"
+  allowed_ips: []
+  rate_limit:
+    enabled: true
+    requests_per_second: 100.0
+    burst: 1000
+  mtls:
+    enabled: false
+  cipher_suites: []
+  min_tls_version: "TLS1.3"
+  audit:
+    enabled: true
+    log_file: "/var/log/relay_audit.log"
+
+# Metrics Configuration
+metrics:
+  enabled: true
+  port: 8084
+  path: "/metrics"
+
+# Logging Configuration
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+  file: "/var/log/relay.log"
+  max_size: "100m"
+  max_age: "720h"
+  max_backups: 10
+
+# QUIC Configuration
+quic:
+  enabled: true
+  max_streams: 1000
+  keep_alive: true
+  idle_timeout: "60s"
+  handshake_timeout: "10s"
+  connection_migration: true
+  multiplexing: true
+
+# Zero Trust Configuration
+zero_trust:
+  enabled: true
+  client_daemon: false
+  service_discovery: true
+  auto_reconnect: true
+  circuit_breaker:
+    enabled: true
+    failure_threshold: 5
+    success_threshold: 2
+    timeout: "30s"
+    window_size: "60s"
+  health_check:
+    enabled: true
+    interval: "30s"
+    timeout: "10s"
+    checks: []
+  rate_limit:
+    enabled: true
+    requests_per: 1000
+    window_size: 60
+  authentication:
+    enabled: true
+    type: "jwt"
+    jwt_secret: "${RELAY_JWT_SECRET}"
+    keycloak_url: "https://edge.2gc.ru/oauth/v2"
+
+# Enhanced QUIC Configuration
+enhanced_quic:
+  enabled: true
+  port: 9092
+  ddos_protection: true
+  geographic_routing: true
+  keycloak_integration: true
+  tenant_isolation: true
+  bandwidth_management: true
+  latency_optimization: true
+  connection_pooling: true
+  adaptive_compression: true
+  encryption_rotation: true
+  monitoring_integration: true

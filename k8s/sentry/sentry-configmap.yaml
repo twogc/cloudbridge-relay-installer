@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sentry-config
+  namespace: cloudbridge
+  labels:
+    app: cloudbridge-relay
+    component: sentry
+data:
+  # Sentry Configuration
+  SENTRY_ENVIRONMENT: "production"
+  SENTRY_RELEASE: "cloudbridge-relay@1.0.0"
+  SENTRY_DEBUG: "false"
+  SENTRY_SERVER_NAME: "cloudbridge-relay"
+  
+  # CloudBridge Configuration
+  CLOUDBRIDGE_TENANT_ID: "default"
+  CLOUDBRIDGE_USER_ID: "admin"
+  CLOUDBRIDGE_CONNECTION_ID: "main"
+  
+  # Performance Configuration
+  SENTRY_TRACES_SAMPLE_RATE: "0.1"
+  SENTRY_SAMPLE_RATE: "1.0"
+  SENTRY_MAX_BREADCRUMBS: "50"
+  
+  # Transport Configuration
+  SENTRY_TIMEOUT: "30s"
+  SENTRY_MAX_RETRIES: "3"
+
+
+

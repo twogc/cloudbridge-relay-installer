@@ -68,7 +68,8 @@ data:
       },
       "zitadel": {
         "enabled": true,
-        "domain": "https://zitadel.cloudbridge.svc.cluster.local",
+        "domain": "zitadel.zitadel.svc.cluster.local:8080",
+        "insecure": true,
         "project_id": "cloudbridge-project",
         "client_id": "cloudbridge-relay",
         "client_secret": "cloudbridge-relay-secret",
@@ -93,8 +94,8 @@ data:
       },
       "security": {
         "tls_enabled": true,
-        "cert_file": "/app/certs/server.crt",
-        "key_file": "/app/certs/server.key",
+        "cert_file": "/app/certs/tls.crt",
+        "key_file": "/app/certs/tls.key",
         "allowed_ips": [],
         "rate_limit": {
           "enabled": true,

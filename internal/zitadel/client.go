@@ -139,7 +139,13 @@ func (c *Client) initJWKSProvider(ctx context.Context) error {
 
 // initGRPCConnection инициализирует gRPC соединение для management API
 func (c *Client) initGRPCConnection(ctx context.Context) error {
-	apiURL := fmt.Sprintf("%s:443", c.config.Domain)
+	// Не добавляем порт, если он уже указан в домене
+	var apiURL string
+	if strings.Contains(c.config.Domain, ":") {
+		apiURL = c.config.Domain
+	} else {
+		apiURL = fmt.Sprintf("%s:443", c.config.Domain)
+	}
 
 	var opts []grpc.DialOption
 

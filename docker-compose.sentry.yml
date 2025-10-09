@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # Sentry Web Server
+  sentry-web:
+    image: sentry:latest
+    ports:
+      - "9000:9000"
+    environment:
+      - SENTRY_SECRET_KEY=your-secret-key-here
+      - SENTRY_POSTGRES_HOST=postgres
+      - SENTRY_REDIS_HOST=redis
+      - SENTRY_EMAIL_HOST=smtp
+      - SENTRY_EMAIL_PORT=587
+      - SENTRY_EMAIL_USER=alerts@cloudbridge.com
+      - SENTRY_EMAIL_PASSWORD=your-email-password
+      - SENTRY_EMAIL_USE_TLS=true
+      - SENTRY_SERVER_EMAIL=alerts@cloudbridge.com
+      - SENTRY_EMAIL_SUBJECT_PREFIX="[CloudBridge] "
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - sentry-data:/var/lib/sentry/files
+    networks:
+      - sentry-network
+
+  # Sentry Worker
+  sentry-worker:
+    image: sentry:latest
+    command: run worker
+    environment:
+      - SENTRY_SECRET_KEY=your-secret-key-here
+      - SENTRY_POSTGRES_HOST=postgres
+      - SENTRY_REDIS_HOST=redis
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - sentry-data:/var/lib/sentry/files
+    networks:
+      - sentry-network
+
+  # Sentry Cron
+  sentry-cron:
+    image: sentry:latest
+    command: run cron
+    environment:
+      - SENTRY_SECRET_KEY=your-secret-key-here
+      - SENTRY_POSTGRES_HOST=postgres
+      - SENTRY_REDIS_HOST=redis
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - sentry-data:/var/lib/sentry/files
+    networks:
+      - sentry-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=sentry
+      - POSTGRES_USER=sentry
+      - POSTGRES_PASSWORD=your-postgres-password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - sentry-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    networks:
+      - sentry-network
+
+  # SMTP Server (для тестирования)
+  smtp:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - sentry-network
+
+volumes:
+  sentry-data:
+  postgres-data:
+  redis-data:
+
+networks:
+  sentry-network:
+    driver: bridge
+
+
+

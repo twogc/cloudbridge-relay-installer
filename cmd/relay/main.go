@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/twogc/cloudbridge-relay-installer/config"
+	"github.com/twogc/cloudbridge-relay-installer/internal/api"
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
 	"github.com/twogc/cloudbridge-relay-installer/internal/balancer"
 	"github.com/twogc/cloudbridge-relay-installer/internal/cadence"
@@ -42,6 +43,7 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/protocol"
 	"github.com/twogc/cloudbridge-relay-installer/internal/quantum"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
+	"github.com/twogc/cloudbridge-relay-installer/internal/sentry"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	grpcTransport "github.com/twogc/cloudbridge-relay-installer/internal/transport/grpc"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
@@ -54,14 +56,7 @@ var (
 	logLevel   = flag.String("log-level", "info", "Log level (debug, info, warn, error)")
 	logFile    = flag.String("log-file", "", "Log file path")
 
-	// Prometheus metrics
-	connectionsTotal = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "relay_connections_total",
-			Help: "Total number of connections",
-		},
-		[]string{"status"},
-	)
+	// Prometheus metrics - moved to internal/metrics/metrics.go to avoid conflicts
 
 	authAttemptsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -463,12 +458,12 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		)
 	}
 
-	// Ensure API port is set correctly
-	apiPort := cfg.API.Port
-	if apiPort == 0 {
-		apiPort = 8082 // fallback to default port
-		loggerInstance.Warn("API port was 0, using fallback port 8082")
+	// Ensure API port is set correctly - use different port to avoid conflicts
+	apiPort := 8082 // Use fixed port 8082 for P2P API Server
+	if cfg.API.Port != 0 && cfg.API.Port != 9091 {
+		apiPort = cfg.API.Port
 	}
+	loggerInstance.Info("Using API port for P2P API Server", zap.Int("port", apiPort))
 
 	loggerInstance.Info("API Config", zap.Int("port", apiPort), zap.Bool("enabled", cfg.API.Enabled))
 	loggerInstance.Info("DEBUG: About to create P2P API Server")
@@ -522,6 +517,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		cadenceClient, err = cadence.NewClient(cadenceConfig, loggerInstance.GetZapLogger())
 		if err != nil {
 			loggerInstance.Error("Failed to initialize Cadence client", zap.Error(err))
+			cancel()
 			return nil, fmt.Errorf("failed to initialize Cadence client: %v", err)
 		}
 
@@ -540,7 +536,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 
 	// Initialize Multiprotocol components
 	// Convert logger.Logger to *zap.Logger for protocol components
-	zapLogger := zap.NewNop() // Fallback to no-op logger
+	zapLogger := loggerInstance.GetZapLogger() // Use actual logger
 
 	protocolSelector := protocol.NewIntelligentProtocolSelector(protocol.ProtocolSelectorConfig{
 		Strategy:            protocol.PerformanceBased,
@@ -551,10 +547,40 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	})
 
 	protocolEngine := protocol.NewProtocolEngine([]protocol.Protocol{protocol.QUIC, protocol.HTTP2, protocol.WebSocket}, cfg.Protocol.SwitchThreshold, zapLogger)
+
+	// Initialize P2P components
+	meshTopology := p2p.NewSimpleMeshTopology(zapLogger)
+	hybridRouter := p2p.NewSimpleHybridRouter(zapLogger)
+
+	// Create direct peer discovery for mesh-network-test tenant
+	// Use the same peerStore that is used in p2pAPIServer
+	var directPeerDiscovery p2p.PeerDiscoveryInterface
+	if p2pAPIServer != nil {
+		// Use the peerStore from p2pAPIServer
+		peerManager := p2pAPIServer.GetPeerManager()
+		peerStoreAdapter := api.NewPeerStoreAdapter(peerManager.GetPeerStore())
+		directPeerDiscovery = p2p.NewDirectPeerDiscovery(
+			peerStoreAdapter, // Use peerStore from p2pAPIServer
+			"mesh-network-test",
+			zapLogger,
+		)
+		zapLogger.Info("Using shared peerStore from p2pAPIServer for DirectPeerDiscovery")
+	} else {
+		// Fallback: create new peerStore if p2pAPIServer is not available
+		apiPeerStore := api.NewPeerStore()
+		peerStoreAdapter := api.NewPeerStoreAdapter(apiPeerStore)
+		directPeerDiscovery = p2p.NewDirectPeerDiscovery(
+			peerStoreAdapter,
+			"mesh-network-test",
+			zapLogger,
+		)
+		zapLogger.Info("Using new peerStore for DirectPeerDiscovery (p2pAPIServer not available)")
+	}
+
 	p2pManager := p2p.NewP2PManager(
-		nil, // P2P mesh handled by QUIC relay
-		nil, // P2P peer discovery handled by QUIC relay
-		nil, // hybridRouter - not needed for QUIC relay
+		meshTopology,
+		directPeerDiscovery,
+		hybridRouter,
 		nil, // siteToSiteManager - not needed for QUIC relay
 		zapLogger,
 	)
@@ -1332,6 +1358,8 @@ func (s *Server) Start() error {
 
 		log.Printf("kubectl proxy endpoint registered: /kube/")
 	}()
+
+	// P2P API Server will be started later in the function
 	// P2P QUIC functionality is handled by the QUIC relay server
 
 	// Start QUIC UDP server on port 9090
@@ -1515,9 +1543,22 @@ func (s *Server) Start() error {
 		s.logger.Info("AutoSwitchManager started")
 	}
 	if s.p2pManager != nil {
+		s.logger.Info("Starting P2P Manager initialization...")
 		go func() {
-			s.logger.Info("P2P Manager initialized successfully (QUIC relay mode)")
+			s.logger.Info("P2P Manager: calling Initialize method")
+			defer func() {
+				if r := recover(); r != nil {
+					s.logger.Error("P2P Manager: panic in Initialize", zap.Any("panic", r))
+				}
+			}()
+			if err := s.p2pManager.Initialize(s.ctx); err != nil {
+				s.logger.Error("Failed to start P2P Manager", zap.Error(err))
+			} else {
+				s.logger.Info("P2P Manager started successfully")
+			}
 		}()
+	} else {
+		s.logger.Warn("P2P Manager is nil, skipping initialization")
 	}
 
 	// Запуск P2P API сервера
@@ -1606,7 +1647,7 @@ func (s *Server) Start() error {
 func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	connectionsTotal.WithLabelValues("accepted").Inc()
+	// connectionsTotal moved to internal/metrics
 	activeConnections.Inc()
 	atomic.AddInt64(&activeConnCount, 1)
 	defer activeConnections.Dec()
@@ -1619,17 +1660,17 @@ func (s *Server) handleConnection(conn net.Conn) {
 		})
 		if err != nil {
 			s.logger.Error("Circuit breaker blocked connection", zap.Error(err))
-			connectionsTotal.WithLabelValues("blocked").Inc()
+			// connectionsTotal moved to internal/metrics
 			return
 		}
 	} else {
 		if err := s.processConnection(conn); err != nil {
 			s.logger.Error("Failed to process connection", zap.Error(err))
-			connectionsTotal.WithLabelValues("failed").Inc()
+			// connectionsTotal moved to internal/metrics
 		}
 	}
 
-	connectionsTotal.WithLabelValues("completed").Inc()
+	// connectionsTotal moved to internal/metrics
 	atomic.AddInt64(&totalConnCount, 1)
 }
 
@@ -2192,6 +2233,39 @@ func (s *Server) Stop() {
 
 func main() {
 	flag.Parse()
+
+	// Initialize Sentry early
+	sentryConfig := sentry.DefaultConfig()
+
+	// Проверяем, что DSN настроен
+	if sentryConfig.DSN == "" {
+		log.Printf("Sentry DSN not configured, skipping Sentry initialization")
+		// Создаем простой logger без Sentry
+		logger, err := zap.NewProduction()
+		if err != nil {
+			log.Fatalf("Failed to create logger: %v", err)
+		}
+		zap.ReplaceGlobals(logger)
+	} else {
+		if err := sentry.Init(sentryConfig); err != nil {
+			log.Printf("Failed to initialize Sentry: %v", err)
+			// Continue without Sentry if initialization fails
+		}
+		defer sentry.Flush(5 * time.Second)
+
+		// Setup Sentry logging integration
+		logger, err := sentry.SetupLogging()
+		if err != nil {
+			log.Printf("Failed to setup Sentry logging: %v", err)
+			// Continue without Sentry logging
+		} else {
+			// Replace global logger
+			zap.ReplaceGlobals(logger)
+		}
+
+		// Start metrics reporter only if Sentry is configured
+		sentry.StartGlobalMetricsReporter(30 * time.Second)
+	}
 
 	// Load configuration
 	cfg, err := config.Load(*configFile)

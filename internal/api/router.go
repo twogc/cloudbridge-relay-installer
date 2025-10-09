@@ -13,6 +13,7 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/predictive"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai/routing"
 	"github.com/twogc/cloudbridge-relay-installer/internal/keycloak"
+	"github.com/twogc/cloudbridge-relay-installer/internal/sentry"
 	"go.uber.org/zap"
 )
 
@@ -275,6 +276,18 @@ func (r *APIRouter) SetupRoutesWithSecurity(router *gin.Engine, environment stri
 	// Security middleware (должен быть первым)
 	r.SetupSecurityMiddleware(router, environment, allowedOrigins)
 
+	// Sentry middleware (должен быть вторым)
+	router.Use(sentry.NewMiddleware(sentry.DefaultMiddlewareOptions()))
+	router.Use(sentry.NewCloudBridgeMiddleware())
+
+	// Logging and metrics middleware
+	router.Use(sentry.LoggingMiddleware())
+	router.Use(sentry.MetricsMiddleware())
+	router.Use(sentry.SentryContextMiddleware())
+	router.Use(sentry.HealthCheckMiddleware())
+	router.Use(sentry.ErrorHandlingMiddleware())
+	router.Use(sentry.PerformanceMonitoringMiddleware())
+
 	// Standard middleware
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
@@ -294,6 +307,7 @@ func (r *APIRouter) SetupRoutesWithSecurity(router *gin.Engine, environment stri
 
 		// Tenant-namespaced peers endpoints (new, preferred): /api/v1/tenants/:tenant_id/peers/...
 		tenant := v1.Group("/tenants/:tenant_id")
+		tenant.Use(r.authMiddleware.RequireAuth()) // Добавляем аутентификацию для всех tenant endpoints
 		{
 			tenantPeers := tenant.Group("/peers")
 			{
