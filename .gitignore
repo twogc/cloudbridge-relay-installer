@@ -181,3 +181,6 @@ reference-repos/
 # Submodules with untracked content
 tools/cadence-web
 .current-tag
+# Sensitive connection scripts
+test-connection.sh
+*-connection.sh
