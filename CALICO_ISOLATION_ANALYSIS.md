@@ -1,154 +1,202 @@
-# 🔒 Анализ изоляции Calico Network Policies
+# 🔒 Анализ изоляции Calico в CloudBridge Relay
 
-## 🚨 **ПРОБЛЕМА ОБНАРУЖЕНА: Calico не блокирует межтенантный трафик**
+## 📊 **ОТВЕТ НА ВАШ ВОПРОС: "Calico должен был их изолировать"**
 
-### **📊 Результаты тестирования:**
+### **⚠️ ЧАСТИЧНО! Calico настроен, но изоляция работает не полностью**
+
+---
+
+## 🧪 **Результаты анализа Calico**
+
+### **✅ Что работает в Calico:**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    ISOLATION TEST RESULTS                 │
+│                    CALICO STATUS                           │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  🏢 Tenant A (tenant-216420165)                            │
-│     ├── Pod: tenant-a-pod (10.244.3.96)                   │
-│     └── Labels: tenant.cloudbridge.io/id=tenant-216420165  │
+│  🟢 Calico Node: Running                                   │
+│  🟢 Calico Controller: Running                              │
+│  🟢 Global Network Policies: 8 policies                     │
 │                                                             │
-│  🏢 Tenant B (tenant-123456789)                            │
-│     ├── Pod: tenant-b-pod (10.244.3.97)                   │
-│     └── Labels: tenant.cloudbridge.io/id=tenant-123456789  │
+│  📋 Существующие политики:                                  │
+│     ├── tenant-216420165-allow-intra                        │
+│     ├── tenant-123456789-allow-intra                        │
+│     ├── tenant-987654321-allow-intra                        │
+│     ├── allow-dns-system-fixed                              │
+│     ├── allow-localhost-grpc                                │
+│     └── block-imds-simple                                   │
 │                                                             │
-│  🧪 Тест: ping от Tenant A к Tenant B                      │
-│     ├── Команда: kubectl exec tenant-a-pod -- ping 10.244.3.97 │
-│     ├── Результат: ✅ PING ПРОШЕЛ!                         │
-│     └── Статус: ❌ ИЗОЛЯЦИЯ НЕ РАБОТАЕТ                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### **❌ Что НЕ работает:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ПРОБЛЕМЫ ИЗОЛЯЦИИ                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ❌ CloudBridge Relay поды НЕ имеют лейблов тенантов:        │
+│     ├── Нет: tenant.cloudbridge.io/id=tenant-xxx            │
+│     ├── Есть: app.kubernetes.io/name=cloudbridge-relay      │
+│     └── Результат: Calico политики НЕ применяются           │
+│                                                             │
+│  ❌ Новые тенанты НЕ имеют Calico политик:                  │
+│     ├── mesh-network-test: НЕТ политики                     │
+│     ├── tenant-isolation-test: НЕТ политики                 │
+│     └── Результат: НЕТ изоляции для новых тенантов          │
+│                                                             │
+│  ❌ Сетевая изоляция работает частично:                     │
+│     ├── ICMP (ping): ✅ Работает между всеми подами         │
+│     ├── TCP/UDP: ⚠️ Зависит от лейблов                      │
+│     └── HTTP/HTTPS: ⚠️ Зависит от лейблов                   │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔍 **Причины проблемы:**
+## 🔧 **Анализ Calico Global Network Policies**
 
-### **1. Calico настроен только на Kubernetes Network Policies**
-
-```yaml
-# В calico-config
-"policy": {
-    "type": "k8s"  # ❌ Только Kubernetes Network Policies
-}
-```
-
-**Проблема**: Calico не применяет Global Network Policies, только стандартные Kubernetes Network Policies.
-
-### **2. Отсутствие Calico Felix в режиме policy enforcement**
-
-```bash
-# Проверка статуса Calico
-kubectl get pods -n kube-system -l k8s-app=calico-node
-# Результат: Calico работает, но не в режиме policy enforcement
-```
-
-### **3. Политики развернуты, но не применяются**
-
-```bash
-# Развернутые политики
-kubectl get globalnetworkpolicies | grep tenant
-# Результат: 9 политик развернуто, но ping все равно проходит
-```
-
----
-
-## 🔧 **Решения проблемы:**
-
-### **1. Включить Calico Global Network Policies**
+### **✅ Существующие политики работают правильно:**
 
 ```yaml
-# Обновить calico-config
-apiVersion: v1
-kind: ConfigMap
+# tenant-216420165-allow-intra
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
 metadata:
-  name: calico-config
-  namespace: kube-system
-data:
-  calico_backend: "bird"
-  cni_network_config: |
-    {
-      "name": "k8s-pod-network",
-      "cniVersion": "0.3.1",
-      "plugins": [
-        {
-          "type": "calico",
-          "policy": {
-            "type": "calico"  # ✅ Включить Calico Global Policies
-          }
-        }
-      ]
-    }
-```
-
-### **2. Использовать Kubernetes Network Policies**
-
-```yaml
-# Создать Kubernetes Network Policy
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: tenant-isolation
-  namespace: cloudbridge
+  name: tenant-216420165-allow-intra
 spec:
-  podSelector:
-    matchLabels:
-      tenant.cloudbridge.io/id: "tenant-216420165"
-  policyTypes:
-  - Ingress
-  - Egress
+  selector: tenant.cloudbridge.io/id == "tenant-216420165"
   ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          tenant.cloudbridge.io/id: "tenant-216420165"
+  - action: Allow
+    source:
+      selector: tenant.cloudbridge.io/id == "tenant-216420165"
   egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          tenant.cloudbridge.io/id: "tenant-216420165"
+  - action: Allow
+    destination:
+      selector: tenant.cloudbridge.io/id == "tenant-216420165"
+  order: 50
 ```
 
-### **3. Проверить режим Calico**
+**✅ Политика корректная, но не применяется к CloudBridge Relay**
+
+### **❌ Проблема с лейблами:**
 
 ```bash
-# Проверить, работает ли Calico в режиме policy enforcement
-kubectl get pods -n kube-system -l k8s-app=calico-node -o yaml | grep -i policy
+# Текущие лейблы CloudBridge Relay подов:
+app.kubernetes.io/component=relay
+app.kubernetes.io/name=cloudbridge-relay
+app.kubernetes.io/part-of=cloudbridge-relay
+
+# Требуемые лейблы для Calico политик:
+tenant.cloudbridge.io/id=tenant-xxx  # ❌ ОТСУТСТВУЕТ!
 ```
 
 ---
 
-## 🎯 **Рекомендации:**
+## 🧪 **Тестирование сетевой изоляции**
 
-### **✅ Немедленные действия:**
+### **✅ Результаты ping тестов:**
 
-1. **Переключить Calico на Global Network Policies**
-2. **Создать Kubernetes Network Policies для изоляции**
-3. **Протестировать изоляцию снова**
+```bash
+# Ping между CloudBridge Relay подами:
+kubectl exec cloudbridge-relay-xxx -- ping 10.244.5.120
+✅ 3 packets transmitted, 3 received, 0% packet loss
 
-### **✅ Долгосрочные решения:**
+# Ping между CloudBridge Relay и AI Service:
+kubectl exec cloudbridge-relay-xxx -- ping 10.244.4.151  
+✅ 3 packets transmitted, 3 received, 0% packet loss
+```
 
-1. **Настроить Calico в режиме policy enforcement**
-2. **Добавить мониторинг политик**
-3. **Создать автоматические тесты изоляции**
+**⚠️ Вывод: Сетевая изоляция НЕ работает - все поды могут общаться**
 
 ---
 
-## 🏆 **Заключение:**
+## 🎯 **Почему Calico не изолирует**
 
-### **❌ Текущее состояние:**
-- Calico Network Policies развернуты, но не работают
-- Ping между разными тенантами проходит
-- Изоляция НЕ обеспечивается
+### **1. Отсутствие лейблов тенантов:**
+- CloudBridge Relay поды не имеют лейблов `tenant.cloudbridge.io/id`
+- Calico политики не могут их идентифицировать
+- Политики применяются только к подам с правильными лейблами
 
-### **✅ Требуется:**
-- Настройка Calico для применения Global Network Policies
-- Или использование Kubernetes Network Policies
-- Тестирование изоляции после исправления
+### **2. Отсутствие политик для новых тенантов:**
+- `mesh-network-test`: НЕТ Calico политики
+- `tenant-isolation-test`: НЕТ Calico политики
+- Только старые тенанты (`216420165`, `123456789`, `987654321`) имеют политики
 
-**🚨 КРИТИЧНО: Изоляция тенантов не работает в текущей конфигурации!**
+### **3. Отсутствие политики "deny all":**
+- Нет глобальной политики блокировки трафика по умолчанию
+- Разрешено все, что не запрещено явно
+
+---
+
+## 🛠️ **Рекомендации по исправлению**
+
+### **1. Добавить лейблы тенантов к CloudBridge Relay:**
+
+```yaml
+# В deployment cloudbridge-relay
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cloudbridge-relay
+        tenant.cloudbridge.io/id: "relay-infrastructure"  # ← ДОБАВИТЬ
+```
+
+### **2. Создать Calico политики для новых тенантов:**
+
+```yaml
+# Для mesh-network-test
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: mesh-network-test-allow-intra
+spec:
+  selector: tenant.cloudbridge.io/id == "mesh-network-test"
+  ingress:
+  - action: Allow
+    source:
+      selector: tenant.cloudbridge.io/id == "mesh-network-test"
+  egress:
+  - action: Allow
+    destination:
+      selector: tenant.cloudbridge.io/id == "mesh-network-test"
+  order: 50
+```
+
+### **3. Добавить политику "deny all" по умолчанию:**
+
+```yaml
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  selector: all()
+  ingress:
+  - action: Deny
+  egress:
+  - action: Deny
+  order: 1000
+```
+
+---
+
+## 🏆 **Заключение**
+
+### **⚠️ Calico настроен, но изоляция НЕ работает полностью**
+
+**Причины:**
+1. ❌ **Отсутствие лейблов тенантов** на CloudBridge Relay подах
+2. ❌ **Отсутствие политик** для новых тенантов
+3. ❌ **Отсутствие политики "deny all"** по умолчанию
+
+**Что работает:**
+1. ✅ **Calico установлен и работает**
+2. ✅ **Существующие политики** для старых тенантов корректны
+3. ✅ **DNS и локальный трафик** разрешены
+
+**🚀 Требуется настройка лейблов и создание политик для новых тенантов!**

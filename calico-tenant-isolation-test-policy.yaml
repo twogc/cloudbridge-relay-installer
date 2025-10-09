@@ -1,0 +1,37 @@
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-isolation-test-allow-intra
+spec:
+  selector: tenant.cloudbridge.io/id == "tenant-isolation-test"
+  ingress:
+  - action: Allow
+    source:
+      selector: tenant.cloudbridge.io/id == "tenant-isolation-test"
+  egress:
+  - action: Allow
+    destination:
+      selector: tenant.cloudbridge.io/id == "tenant-isolation-test"
+  order: 50
+  types:
+  - Ingress
+  - Egress
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-isolation-test-allow-services
+spec:
+  selector: tenant.cloudbridge.io/id == "tenant-isolation-test"
+  ingress:
+  - action: Allow
+    source:
+      selector: tenant.cloudbridge.io/id == "relay-infrastructure"
+  egress:
+  - action: Allow
+    destination:
+      selector: tenant.cloudbridge.io/id == "relay-infrastructure"
+  order: 40
+  types:
+  - Ingress
+  - Egress

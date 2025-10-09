@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cadence-mock
+  namespace: cloudbridge
+  labels:
+    app: cadence-mock
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cadence-mock
+  template:
+    metadata:
+      labels:
+        app: cadence-mock
+        app.kubernetes.io/name: cadence
+    spec:
+      containers:
+      - name: cadence-mock
+        image: nginx:alpine
+        ports:
+        - containerPort: 7933
+          name: grpc
+        - containerPort: 7934
+          name: tchannel
+        - containerPort: 8000
+          name: http
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "Starting Cadence Mock Server..."
+          
+          # Create simple HTTP server
+          cat > /tmp/server.py << 'EOF'
+          import http.server
+          import socketserver
+          import json
+          
+          class CadenceMockHandler(http.server.BaseHTTPRequestHandler):
+              def do_GET(self):
+                  if self.path == '/health':
+                      self.send_response(200)
+                      self.send_header('Content-type', 'application/json')
+                      self.end_headers()
+                      response = {"status": "healthy", "service": "cadence-mock"}
+                      self.wfile.write(json.dumps(response).encode())
+                  else:
+                      self.send_response(404)
+                      self.end_headers()
+              
+              def do_POST(self):
+                  if self.path.startswith('/api/v1/domains/'):
+                      self.send_response(200)
+                      self.send_header('Content-type', 'application/json')
+                      self.end_headers()
+                      response = {"status": "success", "domain": "cloudbridge-p2p"}
+                      self.wfile.write(json.dumps(response).encode())
+                  else:
+                      self.send_response(404)
+                      self.end_headers()
+          
+          # Start server on multiple ports
+          import threading
+          
+          def start_server(port):
+              with socketserver.TCPServer(("0.0.0.0", port), CadenceMockHandler) as httpd:
+                  print(f"Mock Cadence server listening on port {port}")
+                  httpd.serve_forever()
+          
+          # Start servers
+          threading.Thread(target=start_server, args=(8000,)).start()
+          threading.Thread(target=start_server, args=(7933,)).start()
+          threading.Thread(target=start_server, args=(7934,)).start()
+          
+          # Keep main thread alive
+          import time
+          while True:
+              time.sleep(1)
+          EOF
+          
+          # Install Python and start server
+          apk add --no-cache python3 py3-pip
+          python3 /tmp/server.py
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
