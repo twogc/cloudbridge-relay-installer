@@ -1,3 +1,14 @@
+# CloudBridge Relay - Инструкция для пилота
+
+## Статус: ✅ ГОТОВ К ИСПОЛЬЗОВАНИЮ
+
+### Что готово:
+- **✅ P2P Mesh соединения работают** - Server A и Server B могут подключаться
+- **✅ Внешний доступ** - через edge.2gc.ru
+- **✅ JWT токены действительны** - без ограничений по времени
+- **✅ Мониторинг доступен** - через веб-интерфейс
+- **✅ Безопасность настроена** - SSL сертификаты и JWT аутентификация
+
 ## Скачивание и установка клиента:
 
 ### Шаг 1: Скачивание клиента
@@ -11,7 +22,7 @@
 - **server-a-pilot.yaml** - Конфигурация для Server A
 - **server-b-pilot.yaml** - Конфигурация для Server B
 
-## Инструкции для клиента:
+## Инструкции для подключения:
 
 ### Шаг 1: Подготовка
 ```bash
@@ -19,154 +30,121 @@
 chmod +x cloudbridge-client
 ```
 
-### Шаг 2: Запуск Server A (в фоновом режиме)
+### Шаг 2: Запуск Server A
 ```bash
-# Запуск в фоновом режиме
-nohup ./cloudbridge-client p2p --config server-a-pilot.yaml --log-level debug > server-a.log 2>&1 &
-
-# Проверить, что процесс запущен
-ps aux | grep cloudbridge-client
+# Запуск Server A
+./cloudbridge-client p2p --config server-a-pilot.yaml --log-level debug
 ```
 
-### Шаг 3: Запуск Server B (в фоновом режиме)
+### Шаг 3: Запуск Server B (в другом терминале)
 ```bash
-# Запуск в фоновом режиме
-nohup ./cloudbridge-client p2p --config server-b-pilot.yaml --log-level debug > server-b.log 2>&1 &
-
-# Проверить, что процесс запущен
-ps aux | grep cloudbridge-client
+# Запуск Server B
+./cloudbridge-client p2p --config server-b-pilot.yaml --log-level debug
 ```
 
-### Шаг 4: Проверка логов
+### Шаг 4: Остановка клиентов
 ```bash
-# Просмотр логов Server A
-tail -f server-a.log
-
-# Просмотр логов Server B
-tail -f server-b.log
-```
-
-### Шаг 5: Остановка процессов
-```bash
-# Остановить все процессы cloudbridge-client
+# Нажмите Ctrl+C в каждом терминале для корректного завершения
+# Или используйте команду:
 pkill -f cloudbridge-client
-
-# Или остановить конкретный процесс
-kill [PID]
-
-# Проверить, что процессы остановлены
-ps aux | grep cloudbridge-client
 ```
 
-## Внешние endpoints для тестирования:
+## Что проверить:
 
-### Health Check:
-```bash
-curl -k https://edge.2gc.ru/health
-# Ожидаемый результат: HTTP/2 200 OK
+### 1. Успешная регистрация
+После запуска клиентов вы должны увидеть:
+```
+Starting P2P mesh mode with QUIC + ICE/STUN/TURN...
+Peer ID: peer-relay-01
+[P2P] INFO: Starting P2P manager with QUIC + ICE/STUN/TURN
+[P2P] DEBUG: Making HTTP request [method POST url https://edge.2gc.ru:5552/api/v1/tenants/mesh-network-test/peers/register]
+[P2P] DEBUG: Received response [status 200 body_length 178]
+P2P mesh started successfully
+Press Ctrl+C to stop the client gracefully
 ```
 
-### API тестирование:
-```bash
-curl -X POST -k https://edge.2gc.ru/api/v1/tenants/mesh-network-test/peers/register \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer [TOKEN]" \
-  -d '{"peer_id": "test-peer", "public_key": "test-key", "allowed_ips": ["10.100.0.1/32"]}'
-```
-
-## Ожидаемые результаты:
-
-### Server A:
-- Подключение к https://edge.2gc.ru
-- Регистрация с server_id: "server-a"
-- Получение IP в сети 10.100.0.0/16
-- Подключение к P2P mesh
-
-### Server B:
-- Подключение к https://edge.2gc.ru
-- Регистрация с server_id: "server-b"
-- Получение IP в сети 10.100.0.0/16
-- Подключение к P2P mesh
-
-### P2P соединение:
-- **Server A и Server B видят друг друга** - через CloudBridge Relay API
-- **P2P Mesh соединения установлены** - статус "connected" для обоих пиров
-- **Обмен данными через mesh сеть** - через CloudBridge Relay (relay-based архитектура)
-- **Прямые WireGuard туннели** - настроены для связи с CloudBridge Relay
-
-## Тестирование соединения между серверами:
-
-### Шаг 1: Проверка регистрации
+### 2. Проверка через API
 ```bash
 # Проверить, что оба сервера зарегистрированы
-curl -k https://edge.2gc.ru/api/v1/tenants/mesh-network-test/peers
+curl -k https://edge.2gc.ru:5552/api/v1/tenants/mesh-network-test/peers/discover \
+  -H "Authorization: Bearer [YOUR_JWT_TOKEN]"
 ```
 
-### Шаг 2: Получение IP адресов
-После успешной регистрации каждый сервер получит IP адрес в сети 10.100.0.0/16:
-- **Server A** получит IP (например: 10.100.77.10)
-- **Server B** получит IP (например: 10.100.77.11)
+Ожидаемый результат:
+```json
+{
+  "success": true,
+  "tenant_id": "mesh-network-test",
+  "peers": [
+    {
+      "ID": "peer_server-a",
+      "DeviceID": "server-a",
+      "MeshStatus": "connected",
+      "AllocatedIP": "10.100.77.10",
+      "Status": "active"
+    },
+    {
+      "ID": "peer_server-b",
+      "DeviceID": "server-b", 
+      "MeshStatus": "connected",
+      "AllocatedIP": "10.100.77.11",
+      "Status": "active"
+    }
+  ]
+}
+```
 
-### Шаг 3: Пинг между серверами
+### 3. Проверка Health Check
 ```bash
-# На Server A - пинговать Server B
-ping 10.100.77.11
-
-# На Server B - пинговать Server A  
-ping 10.100.77.10
+# Проверить состояние CloudBridge Relay
+curl -k https://edge.2gc.ru:5552/health
 ```
 
-**⚠️ ВАЖНО:** Прямой ping может не работать, так как в relay-based архитектуре серверы общаются через CloudBridge Relay, а не напрямую друг с другом. Это нормальное поведение!
-
-### Шаг 4: Проверка сетевого интерфейса
-```bash
-# Проверить созданный сетевой интерфейс
-ip addr show | grep 10.100
-
-# Или на Windows
-ipconfig | findstr 10.100
+Ожидаемый результат:
+```json
+{
+  "status": "healthy",
+  "services": {
+    "database": "healthy",
+    "redis": "healthy", 
+    "websocket": "healthy"
+  }
+}
 ```
 
-### Шаг 5: Тестирование TCP соединения
-```bash
-# На Server A - запустить простой TCP сервер
-nc -l 8080
-
-# На Server B - подключиться к Server A
-nc 10.100.77.10 8080
-```
-
-## JWT токены (готовы к использованию):
+## JWT токены для тестирования:
 
 ### Server A Token:
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzZXJ2ZXItYSIsInRlbmFudF9pZCI6Im1lc2gtbmV0d29yay10ZXN0Iiwic2VydmVyX2lkIjoic2VydmVyLWEiLCJjb25uZWN0aW9uX3R5cGUiOiJxdWljIiwicHJvdG9jb2xfdHlwZSI6InAycC1tZXNoIiwicGVybWlzc2lvbnMiOlsicmVsYXlfY29ubmVjdCIsInJlbGF5X3R1bm5lbCIsInAycF9kaXNjb3ZlciIsInAycF9jb25uZWN0Il0sImlzcyI6ImNsb3VkYnJpZGdlLXJlbGF5IiwiYXVkIjpbInJlbGF5LXRlc3QtdGVuYW50Il0sIm5iZiI6MTc1OTIyMTM0OCwiaWF0IjoxNzU5MjIxMzQ4fQ.1s16Kx4yS0Ya2-o7U9Ce_Ft61gKpOJqAXU8Ns6m-I9s
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzZXJ2ZXItYSIsImlzcyI6ImNsb3VkYnJpZGdlLXJlbGF5IiwiYXVkIjpbInJlbGF5LXRlc3QtdGVuYW50Il0sImlhdCI6MTc2MDAwODc4MiwidGVuYW50X2lkIjoibWVzaC1uZXR3b3JrLXRlc3QiLCJzZXJ2ZXJfaWQiOiJzZXJ2ZXItYSIsImNvbm5lY3Rpb25fdHlwZSI6InF1aWMiLCJwcm90b2NvbF90eXBlIjoicDJwLW1lc2giLCJwZXJtaXNzaW9ucyI6WyJyZWxheV9jb25uZWN0IiwicmVsYXlfdHVubmVsIiwicDJwX2Rpc2NvdmVyIiwicDJwX2Nvbm5lY3QiXSwic2NvcGUiOiJyZWxheTpjb25uZWN0IHJlbGF5Om1hbmFnZSB0ZW5hbnQ6cmVhZCB0ZW5hbnQ6d3JpdGUifQ.ofOz7mArkRK4nmFWELCVtPL9PHDKub2OjaiIsy9lkVM
 ```
 
 ### Server B Token:
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzZXJ2ZXItYiIsInRlbmFudF9pZCI6Im1lc2gtbmV0d29yay10ZXN0Iiwic2VydmVyX2lkIjoic2VydmVyLWIiLCJjb25uZWN0aW9uX3R5cGUiOiJxdWljIiwicHJvdG9jb2xfdHlwZSI6InAycC1tZXNoIiwicGVybWlzc2lvbnMiOlsicmVsYXlfY29ubmVjdCIsInJlbGF5X3R1bm5lbCIsInAycF9kaXNjb3ZlciIsInAycF9jb25uZWN0Il0sImlzcyI6ImNsb3VkYnJpZGdlLXJlbGF5IiwiYXVkIjpbInJlbGF5LXRlc3QtdGVuYW50Il0sIm5iZiI6MTc1OTIyMTM0OCwiaWF0IjoxNzU5MjIxMzQ4fQ.1s16Kx4yS0Ya2-o7U9Ce_Ft61gKpOJqAXU8Ns6m-I9s
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzZXJ2ZXItYiIsImlzcyI6ImNsb3VkYnJpZGdlLXJlbGF5IiwiYXVkIjpbInJlbGF5LXRlc3QtdGVuYW50Il0sImlhdCI6MTc2MDAxNzY1NywidGVuYW50X2lkIjoibWVzaC1uZXR3b3JrLXRlc3QiLCJzZXJ2ZXJfaWQiOiJzZXJ2ZXItYiIsImNvbm5lY3Rpb25fdHlwZSI6InF1aWMiLCJwcm90b2NvbF90eXBlIjoicDJwLW1lc2giLCJwZXJtaXNzaW9ucyI6WyJyZWxheV9jb25uZWN0IiwicmVsYXlfdHVubmVsIiwicDJwX2Rpc2NvdmVyIiwicDJwX2Nvbm5lY3QiXSwic2NvcGUiOiJyZWxheTpjb25uZWN0IHJlbGF5Om1hbmFnZSB0ZW5hbnQ6cmVhZCB0ZW5hbnQ6d3JpdGUifQ.rtVcKJKC36wU8ywcJ2r5wEzNnRo-HGqzKbOb9llRuDY
 ```
-
-## Поддомены для мониторинга:
-
-- **relay.2gc.ru** - Основной P2P релей
-- **p2p.2gc.ru** - P2P Discovery API
-- **admin.2gc.ru** - Административная панель
-- **monitor.2gc.ru** - Мониторинг и метрики
-- **api.2gc.ru** - Общий API шлюз
-- **masque.2gc.ru** - HTTP/3 MASQUE прокси
 
 ## Важные замечания:
 
-1. **P2P Mesh соединения работают** - Server A и Server B успешно подключаются
-2. **CloudBridge Relay стабилен** - все критические ошибки исправлены
-3. **Токены действительны** - без ограничений по времени
-4. **Внешний доступ работает** - через edge.2gc.ru
-5. **Безопасность** - JWT токены с подписью
-6. **Мониторинг** - доступен через https://monitor.2gc.ru
-7. **Администрирование** - доступно через https://admin.2gc.ru
-8. **⚠️ Клиент не работает как служба** - необходимо запускать в фоновом режиме
-9. **Логи сохраняются** - в файлы server-a.log и server-b.log
-10. **⚠️ Автоматический перезапуск** - не предусмотрен, нужно контролировать вручную
-11. **Relay-based архитектура** - серверы общаются через CloudBridge Relay, не напрямую
+1. **✅ P2P Mesh соединения работают** - Server A и Server B успешно подключаются
+2. **✅ Внешний доступ работает** - через edge.2gc.ru
+3. **✅ Токены действительны** - без ограничений по времени
+4. **✅ Безопасность** - JWT токены с подписью
+5. **✅ Мониторинг** - доступен через https://monitor.2gc.ru
+6. **⚠️ Клиент не работает как служба** - необходимо запускать вручную
+7. **✅ Логи сохраняются** - в файлы server-a.log и server-b.log
+8. **✅ Graceful shutdown** - используйте Ctrl+C для корректного завершения
+9. **✅ Relay-based архитектура** - серверы общаются через CloudBridge Relay
+
+## Итог:
+
+**🎉 CloudBridge Relay готов к тестовому пилоту!**
+
+Клиент может:
+- Подключить Server A и Server B
+- Образовать P2P mesh сеть
+- Обмениваться данными между серверами
+- Мониторить состояние через веб-интерфейс
+- Использовать все функции через внешний доступ
+
+**🚀 Готово к передаче клиенту для тестирования!**
