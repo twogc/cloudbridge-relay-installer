@@ -883,19 +883,33 @@ func replaceEnvVars(s string) string {
 		return s
 	}
 
-	// Регулярное выражение для поиска ${VAR_NAME}
+	// Регулярное выражение для поиска ${VAR_NAME} или ${VAR_NAME:-default}
 	re := regexp.MustCompile(`\$\{([^}]+)\}`)
 
 	return re.ReplaceAllStringFunc(s, func(match string) string {
-		// Извлекаем имя переменной из ${VAR_NAME}
-		varName := match[2 : len(match)-1]
+		// Извлекаем содержимое из ${...}
+		content := match[2 : len(match)-1]
+
+		// Проверяем, есть ли дефолтное значение (синтаксис ${VAR:-default})
+		varName := content
+		defaultValue := ""
+		
+		if idx := strings.Index(content, ":-"); idx != -1 {
+			varName = content[:idx]
+			defaultValue = content[idx+2:]
+		}
 
 		// Получаем значение из переменной окружения
 		if value := os.Getenv(varName); value != "" {
 			return value
 		}
 
-		// Если переменная не найдена, возвращаем оригинальную строку
+		// Если есть дефолтное значение, возвращаем его
+		if defaultValue != "" {
+			return defaultValue
+		}
+
+		// Если переменная не найдена и нет дефолтного значения, возвращаем оригинальную строку
 		return match
 	})
 }
