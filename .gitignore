@@ -167,6 +167,10 @@ test/config-*.yaml
 !test/config-server-a.yaml
 !test/config-server-b.yaml
 
+# Build system files (keep these)
+!test/relay-client/Makefile
+!test/relay-client/build-all-platforms.sh
+
 # Generated files
 generated/
 gen/
