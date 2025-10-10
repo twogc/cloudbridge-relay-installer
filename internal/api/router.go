@@ -6,20 +6,21 @@ import (
 
 // APIRouter основной роутер API
 type APIRouter struct {
-	logger               *zap.Logger
-	peerManager          *PeerManager
-	relayManager         *RelayManager
-	healthManager        *HealthManager
-	p2pManager           *PeerManager
-	iceManager           *PeerManager
-	hub                  *Hub
-	authMiddleware       interface{}
-	rateLimiter          interface{}
-	aiMiddleware         interface{}
-	aiEndpoints          *AIEndpoints
+	logger                *zap.Logger
+	peerManager           *PeerManager
+	relayManager          *RelayManager
+	healthManager         *HealthManager
+	p2pManager            *PeerManager
+	iceManager            *PeerManager
+	hub                   *Hub
+	authMiddleware        interface{}
+	rateLimiter           interface{}
+	aiMiddleware          interface{}
+	aiEndpoints           *AIEndpoints
 	dataPipelineEndpoints *DataPipelineEndpoints
-	monitoringEndpoints  *MonitoringEndpoints
-	heartbeatHandler     *HeartbeatHandler
+	monitoringEndpoints   *MonitoringEndpoints
+	heartbeatHandler      *HeartbeatHandler
+	wireguardEndpoints    *WireGuardSimpleEndpoints
 }
 
 // NewAPIRouter создает новый APIRouter
@@ -28,22 +29,37 @@ func NewAPIRouter(logger *zap.Logger, validator TokenValidator) *APIRouter {
 	hub := &Hub{}
 	peers := make(map[string]*Peer)
 	connections := make(map[string]*PeerConnection)
-	
+
+	// Создаем менеджеры
+	peerManager := NewPeerManager(logger, validator)
+	relayManager := NewRelayManager(hub, peers, connections, logger, validator)
+
+	// Создаем WireGuard endpoints (пока с заглушками)
+	wireguardEndpoints := NewWireGuardSimpleEndpoints(
+		peerManager,
+		nil, // RelayManager будет nil пока не интегрируем с p2p.RelayManager
+		nil, // RelayManagerHybrid будет nil пока не интегрируем
+		nil, // WireGuardTenantManager будет nil пока не интегрируем
+		nil, // ConfigManager будет nil пока не интегрируем
+		logger,
+	)
+
 	return &APIRouter{
-		logger:               logger,
-		peerManager:          NewPeerManager(logger, validator),
-		relayManager:         NewRelayManager(hub, peers, connections, logger, validator),
-		healthManager:        NewHealthManager(hub, peers, connections, logger),
-		p2pManager:           NewPeerManager(logger, validator),
-		iceManager:           NewPeerManager(logger, validator),
-		hub:                  hub,
-		authMiddleware:       nil, // Заглушка
-		rateLimiter:         nil, // Заглушка
-		aiMiddleware:        nil, // Заглушка
-		aiEndpoints:         NewAIEndpoints(nil, logger), // nil для AIServiceInterface
+		logger:                logger,
+		peerManager:           peerManager,
+		relayManager:          relayManager,
+		healthManager:         NewHealthManager(hub, peers, connections, logger),
+		p2pManager:            NewPeerManager(logger, validator),
+		iceManager:            NewPeerManager(logger, validator),
+		hub:                   hub,
+		authMiddleware:        nil,                                   // Заглушка
+		rateLimiter:           nil,                                   // Заглушка
+		aiMiddleware:          nil,                                   // Заглушка
+		aiEndpoints:           NewAIEndpoints(nil, logger),           // nil для AIServiceInterface
 		dataPipelineEndpoints: NewDataPipelineEndpoints(nil, logger), // nil для DataPipeline
-		monitoringEndpoints:  NewMonitoringEndpoints(logger),
-		heartbeatHandler:     NewHeartbeatHandler(nil, nil, logger), // nil для HeartbeatManager и RelayManager
+		monitoringEndpoints:   NewMonitoringEndpoints(logger),
+		heartbeatHandler:      NewHeartbeatHandler(nil, nil, logger), // nil для HeartbeatManager и RelayManager
+		wireguardEndpoints:    wireguardEndpoints,
 	}
 }
 
@@ -102,6 +118,11 @@ func (r *APIRouter) GetDataPipelineEndpoints() *DataPipelineEndpoints {
 // GetMonitoringEndpoints возвращает MonitoringEndpoints
 func (r *APIRouter) GetMonitoringEndpoints() *MonitoringEndpoints {
 	return r.monitoringEndpoints
+}
+
+// GetWireGuardEndpoints возвращает WireGuardEndpoints
+func (r *APIRouter) GetWireGuardEndpoints() *WireGuardSimpleEndpoints {
+	return r.wireguardEndpoints
 }
 
 // rateLimitMiddleware возвращает rate limiter middleware

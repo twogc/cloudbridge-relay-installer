@@ -3,31 +3,75 @@ package database
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+// JSONB is a generic JSONB helper that handles nil receivers and string/[]byte conversion
+type JSONB[T any] struct {
+	V T
+}
+
+// Value implements driver.Valuer for database storage
+func (j JSONB[T]) Value() (driver.Value, error) {
+	return json.Marshal(j.V)
+}
+
+// Scan implements sql.Scanner for database retrieval
+func (j *JSONB[T]) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	var data []byte
+	switch v := value.(type) {
+	case []byte:
+		data = v
+	case string:
+		data = []byte(v)
+	default:
+		return fmt.Errorf("JSONB: unsupported Scan type %T", value)
+	}
+
+	if len(data) == 0 {
+		return nil
+	}
+
+	return json.Unmarshal(data, &j.V)
+}
+
+// PeerStatus represents the status of a peer
+type PeerStatus string
+
+const (
+	PeerStatusOnline   PeerStatus = "online"
+	PeerStatusOffline  PeerStatus = "offline"
+	PeerStatusDegraded PeerStatus = "degraded"
+)
+
 // Peer represents a peer in the database
 type Peer struct {
-	ID                uuid.UUID      `json:"id" db:"id"`
-	PeerID            string         `json:"peer_id" db:"peer_id"`
-	TenantID          string         `json:"tenant_id" db:"tenant_id"`
-	OrgID             string         `json:"org_id" db:"org_id"`
-	DeviceID          string         `json:"device_id" db:"device_id"`
-	ConnectionType    string         `json:"connection_type" db:"connection_type"`
-	QUICConfig        *QUICConfig    `json:"quic_config" db:"quic_config"`
-	MeshConfig        *MeshConfig    `json:"mesh_config" db:"mesh_config"`
-	PeerWhitelist     *PeerWhitelist `json:"peer_whitelist" db:"peer_whitelist"`
-	NetworkConfig     *NetworkConfig `json:"network_config" db:"network_config"`
-	IsOnline          bool           `json:"is_online" db:"is_online"`
-	LastSeen          time.Time      `json:"last_seen" db:"last_seen"`
-	RegisteredAt      time.Time      `json:"registered_at" db:"registered_at"`
-	ActiveConnections int            `json:"active_connections" db:"active_connections"`
-	MeshStatus        string         `json:"mesh_status" db:"mesh_status"`
-	LatencyMS         int            `json:"latency_ms" db:"latency_ms"`
-	CreatedAt         time.Time      `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time      `json:"updated_at" db:"updated_at"`
+	ID                uuid.UUID            `json:"id" db:"id"`
+	PeerID            string               `json:"peer_id" db:"peer_id"`
+	TenantID          string               `json:"tenant_id" db:"tenant_id"`
+	OrgID             string               `json:"org_id" db:"org_id"`
+	DeviceID          string               `json:"device_id" db:"device_id"`
+	ConnectionType    string               `json:"connection_type" db:"connection_type"`
+	QUICConfig        JSONB[QUICConfig]    `json:"quic_config" db:"quic_config"`
+	MeshConfig        JSONB[MeshConfig]    `json:"mesh_config" db:"mesh_config"`
+	PeerWhitelist     JSONB[PeerWhitelist] `json:"peer_whitelist" db:"peer_whitelist"`
+	NetworkConfig     JSONB[NetworkConfig] `json:"network_config" db:"network_config"`
+	IsOnline          bool                 `json:"is_online" db:"is_online"`
+	LastSeen          time.Time            `json:"last_seen" db:"last_seen"`
+	RegisteredAt      time.Time            `json:"registered_at" db:"registered_at"`
+	ActiveConnections int                  `json:"active_connections" db:"active_connections"`
+	Status            PeerStatus           `json:"status" db:"status"`
+	LatencyMS         *int                 `json:"latency_ms" db:"latency_ms"` // NULLable for unknown latency
+	Version           int                  `json:"version" db:"version"`       // Optimistic locking
+	CreatedAt         time.Time            `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time            `json:"updated_at" db:"updated_at"`
 }
 
 // PeerConnection represents a connection between peers
@@ -35,12 +79,14 @@ type PeerConnection struct {
 	ID               uuid.UUID `json:"id" db:"id"`
 	FromPeerID       string    `json:"from_peer_id" db:"from_peer_id"`
 	ToPeerID         string    `json:"to_peer_id" db:"to_peer_id"`
+	TenantID         string    `json:"tenant_id" db:"tenant_id"` // For faster tenant-scoped queries
 	ConnectionType   string    `json:"connection_type" db:"connection_type"`
 	IsActive         bool      `json:"is_active" db:"is_active"`
 	EstablishedAt    time.Time `json:"established_at" db:"established_at"`
 	LastActivity     time.Time `json:"last_activity" db:"last_activity"`
 	BytesTransferred int64     `json:"bytes_transferred" db:"bytes_transferred"`
-	LatencyMS        int       `json:"latency_ms" db:"latency_ms"`
+	LatencyMS        *int      `json:"latency_ms" db:"latency_ms"` // NULLable for unknown latency
+	Version          int       `json:"version" db:"version"`       // Optimistic locking
 	CreatedAt        time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -94,27 +140,7 @@ type QUICConfig struct {
 	AllowedIPs []string `json:"allowed_ips"`
 }
 
-// Value implements driver.Valuer for database storage
-func (qc *QUICConfig) Value() (driver.Value, error) {
-	if qc == nil {
-		return nil, nil
-	}
-	return json.Marshal(qc)
-}
-
-// Scan implements sql.Scanner for database retrieval
-func (qc *QUICConfig) Scan(value interface{}) error {
-	if value == nil {
-		return nil
-	}
-
-	bytes, ok := value.([]byte)
-	if !ok {
-		return nil
-	}
-
-	return json.Unmarshal(bytes, qc)
-}
+// QUICConfig methods are now handled by JSONB[QUICConfig]
 
 // MeshConfig represents mesh network configuration
 type MeshConfig struct {
@@ -123,27 +149,7 @@ type MeshConfig struct {
 	Encryption    string `json:"encryption"`
 }
 
-// Value implements driver.Valuer for database storage
-func (mc *MeshConfig) Value() (driver.Value, error) {
-	if mc == nil {
-		return nil, nil
-	}
-	return json.Marshal(mc)
-}
-
-// Scan implements sql.Scanner for database retrieval
-func (mc *MeshConfig) Scan(value interface{}) error {
-	if value == nil {
-		return nil
-	}
-
-	bytes, ok := value.([]byte)
-	if !ok {
-		return nil
-	}
-
-	return json.Unmarshal(bytes, mc)
-}
+// MeshConfig methods are now handled by JSONB[MeshConfig]
 
 // PeerWhitelist represents peer whitelist configuration
 type PeerWhitelist struct {
@@ -152,27 +158,7 @@ type PeerWhitelist struct {
 	MaxPeers     int      `json:"max_peers"`
 }
 
-// Value implements driver.Valuer for database storage
-func (pwl *PeerWhitelist) Value() (driver.Value, error) {
-	if pwl == nil {
-		return nil, nil
-	}
-	return json.Marshal(pwl)
-}
-
-// Scan implements sql.Scanner for database retrieval
-func (pwl *PeerWhitelist) Scan(value interface{}) error {
-	if value == nil {
-		return nil
-	}
-
-	bytes, ok := value.([]byte)
-	if !ok {
-		return nil
-	}
-
-	return json.Unmarshal(bytes, pwl)
-}
+// PeerWhitelist methods are now handled by JSONB[PeerWhitelist]
 
 // NetworkConfig represents network configuration
 type NetworkConfig struct {
@@ -181,38 +167,34 @@ type NetworkConfig struct {
 	MTU    int      `json:"mtu"`
 }
 
-// Value implements driver.Valuer for database storage
-func (nc *NetworkConfig) Value() (driver.Value, error) {
-	if nc == nil {
-		return nil, nil
-	}
-	return json.Marshal(nc)
-}
-
-// Scan implements sql.Scanner for database retrieval
-func (nc *NetworkConfig) Scan(value interface{}) error {
-	if value == nil {
-		return nil
-	}
-
-	bytes, ok := value.([]byte)
-	if !ok {
-		return nil
-	}
-
-	return json.Unmarshal(bytes, nc)
-}
+// NetworkConfig methods are now handled by JSONB[NetworkConfig]
 
 // TenantNetwork represents a network allocated to a tenant for IPAM
 type TenantNetwork struct {
-	ID            uuid.UUID `json:"id" db:"id"`
-	TenantID      string    `json:"tenant_id" db:"tenant_id"`
-	NetworkCIDR   string    `json:"network_cidr" db:"network_cidr"`
-	SubnetCounter int       `json:"subnet_counter" db:"subnet_counter"`
-	AllocatedAt   time.Time `json:"allocated_at" db:"allocated_at"`
-	IsActive      bool      `json:"is_active" db:"is_active"`
-	CreatedAt     time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
+	ID            uuid.UUID  `json:"id" db:"id"`
+	TenantID      string     `json:"tenant_id" db:"tenant_id"`
+	NetworkCIDR   string     `json:"network_cidr" db:"network_cidr"`
+	SubnetCounter int        `json:"subnet_counter" db:"subnet_counter"`
+	AllocatedAt   time.Time  `json:"allocated_at" db:"allocated_at"`
+	IsActive      bool       `json:"is_active" db:"is_active"`
+	DeactivatedAt *time.Time `json:"deactivated_at" db:"deactivated_at"` // For audit trail
+	Version       int        `json:"version" db:"version"`               // Optimistic locking
+	CreatedAt     time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at" db:"updated_at"`
+}
+
+// PeerIPAllocation represents an IP address allocated to a peer within a tenant
+type PeerIPAllocation struct {
+	ID          uuid.UUID  `json:"id" db:"id"`
+	TenantID    string     `json:"tenant_id" db:"tenant_id"`
+	PeerID      string     `json:"peer_id" db:"peer_id"`
+	AllocatedIP string     `json:"allocated_ip" db:"allocated_ip"`
+	AllocatedAt time.Time  `json:"allocated_at" db:"allocated_at"`
+	ReleasedAt  *time.Time `json:"released_at" db:"released_at"`
+	IsActive    bool       `json:"is_active" db:"is_active"`
+	Version     int        `json:"version" db:"version"` // Optimistic locking for IPAM operations
+	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // Labels represents metric labels

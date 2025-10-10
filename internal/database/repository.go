@@ -24,6 +24,11 @@ func NewRepository(db *sqlx.DB, logger *zap.Logger) *Repository {
 	}
 }
 
+// GetDB returns the underlying database connection
+func (r *Repository) GetDB() *sql.DB {
+	return r.db.DB
+}
+
 // PeerRepository methods
 
 // CreatePeer creates a new peer in the database

@@ -33,8 +33,9 @@ CREATE TABLE IF NOT EXISTS peers (
     last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     registered_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     active_connections INTEGER DEFAULT 0,
-    mesh_status VARCHAR(50) DEFAULT 'disconnected',
-    latency_ms INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'offline' CHECK (status IN ('online', 'offline', 'degraded')),
+    latency_ms INTEGER,
+    version INTEGER DEFAULT 1,
     
     -- Metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -54,12 +55,14 @@ CREATE TABLE IF NOT EXISTS peer_connections (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     from_peer_id VARCHAR(255) NOT NULL,
     to_peer_id VARCHAR(255) NOT NULL,
+    tenant_id VARCHAR(255) NOT NULL,
     connection_type VARCHAR(50) NOT NULL DEFAULT 'direct',
     is_active BOOLEAN DEFAULT true,
     established_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     bytes_transferred BIGINT DEFAULT 0,
-    latency_ms INTEGER DEFAULT 0,
+    latency_ms INTEGER,
+    version INTEGER DEFAULT 1,
     
     -- Metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -138,6 +141,8 @@ CREATE TABLE IF NOT EXISTS tenant_networks (
     subnet_counter INTEGER NOT NULL,
     allocated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     is_active BOOLEAN DEFAULT true,
+    deactivated_at TIMESTAMP WITH TIME ZONE,
+    version INTEGER DEFAULT 1,
     
     -- Metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -146,7 +151,34 @@ CREATE TABLE IF NOT EXISTS tenant_networks (
     -- Constraints
     CONSTRAINT tenant_networks_tenant_id_check CHECK (tenant_id != ''),
     CONSTRAINT tenant_networks_network_cidr_check CHECK (network_cidr != ''),
-    CONSTRAINT tenant_networks_subnet_counter_check CHECK (subnet_counter >= 0 AND subnet_counter <= 255)
+    CONSTRAINT tenant_networks_subnet_counter_check CHECK (subnet_counter >= 0 AND subnet_counter <= 65535)
+);
+
+-- Peer IP allocations table (for per-peer IPAM)
+CREATE TABLE IF NOT EXISTS peer_ip_allocations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id VARCHAR(255) NOT NULL,
+    peer_id VARCHAR(255) NOT NULL,
+    allocated_ip VARCHAR(15) NOT NULL,
+    allocated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    released_at TIMESTAMP WITH TIME ZONE,
+    is_active BOOLEAN DEFAULT true,
+    version INTEGER DEFAULT 1,
+    
+    -- Metadata
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Constraints
+    CONSTRAINT peer_ip_allocations_tenant_id_check CHECK (tenant_id != ''),
+    CONSTRAINT peer_ip_allocations_peer_id_check CHECK (peer_id != ''),
+    CONSTRAINT peer_ip_allocations_allocated_ip_check CHECK (allocated_ip != ''),
+    CONSTRAINT peer_ip_allocations_unique_peer UNIQUE (peer_id),
+    CONSTRAINT peer_ip_allocations_unique_ip_per_tenant UNIQUE (tenant_id, allocated_ip),
+    
+    -- Foreign keys
+    FOREIGN KEY (tenant_id) REFERENCES tenant_networks(tenant_id) ON DELETE CASCADE,
+    FOREIGN KEY (peer_id) REFERENCES peers(peer_id) ON DELETE CASCADE
 );
 
 -- Relay messages table (for audit and debugging)
@@ -177,18 +209,71 @@ CREATE TABLE IF NOT EXISTS relay_messages (
 );
 
 -- Create indexes for better performance
+-- Peer indexes
 CREATE INDEX IF NOT EXISTS idx_peers_tenant_id ON peers(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_peers_org_id ON peers(org_id);
 CREATE INDEX IF NOT EXISTS idx_peers_device_id ON peers(device_id);
+CREATE INDEX IF NOT EXISTS idx_peers_status ON peers(status);
 CREATE INDEX IF NOT EXISTS idx_peers_is_online ON peers(is_online);
 CREATE INDEX IF NOT EXISTS idx_peers_last_seen ON peers(last_seen);
-CREATE INDEX IF NOT EXISTS idx_peers_mesh_status ON peers(mesh_status);
 
+-- PeerConnection indexes
 CREATE INDEX IF NOT EXISTS idx_peer_connections_from_peer_id ON peer_connections(from_peer_id);
 CREATE INDEX IF NOT EXISTS idx_peer_connections_to_peer_id ON peer_connections(to_peer_id);
+CREATE INDEX IF NOT EXISTS idx_peer_connections_tenant_id ON peer_connections(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_peer_connections_is_active ON peer_connections(is_active);
-CREATE INDEX IF NOT EXISTS idx_peer_connections_connection_type ON peer_connections(connection_type);
 CREATE INDEX IF NOT EXISTS idx_peer_connections_last_activity ON peer_connections(last_activity);
+
+-- TenantNetwork indexes
+CREATE INDEX IF NOT EXISTS idx_tenant_networks_tenant_id ON tenant_networks(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_networks_network_cidr ON tenant_networks(network_cidr);
+CREATE INDEX IF NOT EXISTS idx_tenant_networks_is_active ON tenant_networks(is_active);
+
+-- PeerIPAllocation indexes
+CREATE INDEX IF NOT EXISTS idx_peer_ip_allocations_tenant_id ON peer_ip_allocations(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_peer_ip_allocations_peer_id ON peer_ip_allocations(peer_id);
+CREATE INDEX IF NOT EXISTS idx_peer_ip_allocations_allocated_ip ON peer_ip_allocations(allocated_ip);
+CREATE INDEX IF NOT EXISTS idx_peer_ip_allocations_is_active ON peer_ip_allocations(is_active);
+CREATE INDEX IF NOT EXISTS idx_peer_ip_allocations_released_at ON peer_ip_allocations(released_at);
+
+-- PeerMetric indexes
+CREATE INDEX IF NOT EXISTS idx_peer_metrics_peer_id ON peer_metrics(peer_id);
+CREATE INDEX IF NOT EXISTS idx_peer_metrics_metric_type ON peer_metrics(metric_type);
+CREATE INDEX IF NOT EXISTS idx_peer_metrics_timestamp ON peer_metrics(timestamp);
+
+-- RelayMessage indexes
+CREATE INDEX IF NOT EXISTS idx_relay_messages_from_peer_id ON relay_messages(from_peer_id);
+CREATE INDEX IF NOT EXISTS idx_relay_messages_to_peer_id ON relay_messages(to_peer_id);
+CREATE INDEX IF NOT EXISTS idx_relay_messages_timestamp ON relay_messages(timestamp);
+CREATE INDEX IF NOT EXISTS idx_relay_messages_success ON relay_messages(success);
+
+-- Create unique constraints for data integrity
+-- Peer unique constraints
+ALTER TABLE peers ADD CONSTRAINT IF NOT EXISTS peers_peer_id_unique UNIQUE (peer_id);
+
+-- PeerConnection unique constraints (normalize peer order to avoid A↔B duplicates)
+ALTER TABLE peer_connections ADD CONSTRAINT IF NOT EXISTS peer_connections_unique_connection 
+    UNIQUE (LEAST(from_peer_id, to_peer_id), GREATEST(from_peer_id, to_peer_id), connection_type);
+
+-- TenantNetwork unique constraints
+ALTER TABLE tenant_networks ADD CONSTRAINT IF NOT EXISTS tenant_networks_tenant_id_unique UNIQUE (tenant_id);
+ALTER TABLE tenant_networks ADD CONSTRAINT IF NOT EXISTS tenant_networks_network_cidr_unique UNIQUE (network_cidr);
+
+-- PeerIPAllocation unique constraints for race-free IPAM
+-- For PostgreSQL: partial unique indexes
+CREATE UNIQUE INDEX IF NOT EXISTS uq_peer_ip_active 
+    ON peer_ip_allocations(tenant_id, allocated_ip) 
+    WHERE is_active = true;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_peer_active_allocation 
+    ON peer_ip_allocations(peer_id) 
+    WHERE is_active = true;
+
+-- For SQLite/MySQL: regular unique constraints
+ALTER TABLE peer_ip_allocations ADD CONSTRAINT IF NOT EXISTS peer_ip_allocations_tenant_ip_active_unique 
+    UNIQUE (tenant_id, allocated_ip, is_active);
+ALTER TABLE peer_ip_allocations ADD CONSTRAINT IF NOT EXISTS peer_ip_allocations_peer_active_unique 
+    UNIQUE (peer_id, is_active);
 
 CREATE INDEX IF NOT EXISTS idx_peer_metrics_peer_id ON peer_metrics(peer_id);
 CREATE INDEX IF NOT EXISTS idx_peer_metrics_metric_type ON peer_metrics(metric_type);

@@ -21,13 +21,13 @@ spec:
     - name: metrics
       port: 5551
       targetPort: 5551
-      nodePort: 30091
+      nodePort: 30191
       protocol: TCP
     # P2P API  
     - name: p2p-api
       port: 5552
-      targetPort: 5552
-      nodePort: 30092
+      targetPort: 9091
+      nodePort: 30192
       protocol: TCP
     # HTTP API
     - name: http-api
@@ -92,7 +92,7 @@ spec:
     # P2P API
     - name: p2p-api
       port: 5552
-      targetPort: 5552
+      targetPort: 9091
       protocol: TCP
     # HTTP API
     - name: http-api

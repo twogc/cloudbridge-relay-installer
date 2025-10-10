@@ -66,8 +66,8 @@ data:
         "http_timeout": "30s"
       },
       "zitadel": {
-        "enabled": true,
-        "domain": "https://zitadel.cloudbridge.svc.cluster.local",
+        "enabled": false,
+        "domain": "zitadel.zitadel.svc.cluster.local",
         "project_id": "cloudbridge-project",
         "client_id": "cloudbridge-relay",
         "client_secret": "cloudbridge-relay-secret",
@@ -121,6 +121,16 @@ data:
         "enabled": true,
         "port": 9091,
         "version": "v1"
+      },
+      "http": {
+        "enabled": true,
+        "port": 9090,
+        "host": "0.0.0.0"
+      },
+      "https_api": {
+        "enabled": true,
+        "port": 9090,
+        "host": "0.0.0.0"
       },
       "logging": {
         "level": "info",

@@ -72,7 +72,6 @@ func (t *TokenValidatorAdapter) ValidateP2PToken(tokenString string) (*api.P2PCl
 	return apiClaims, nil
 }
 
-
 // NewP2PAPIServerWithConfig создает новый P2P API сервер с конфигурацией
 func NewP2PAPIServerWithConfig(logger *zap.Logger, jwtSecret []byte, port int, allowedIPs []string) *P2PAPIServer {
 	return NewP2PAPIServer(logger, jwtSecret, port)
@@ -85,6 +84,11 @@ func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServ
 			logger.Error("Panic in NewP2PAPIServer", zap.Any("panic", r))
 		}
 	}()
+
+	// JWT secret sanity check
+	if len(jwtSecret) == 0 {
+		logger.Fatal("JWT secret is empty")
+	}
 
 	logger.Info("Creating token validator...")
 	// Создание валидатора токенов
@@ -113,20 +117,131 @@ func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServ
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
-	// Настройка маршрутов (заглушка)
-	// TODO: Реализовать настройку маршрутов
+	// Настройка маршрутов для P2P API
+	// Health endpoints
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":    "healthy",
+			"timestamp": time.Now().Format(time.RFC3339),
+			"version":   "1.0.0",
+		})
+	})
 
-	// Создание HTTP сервера
-	server := &http.Server{
-		Addr:         fmt.Sprintf("0.0.0.0:%d", port),
-		Handler:      router,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  120 * time.Second,
+	// Smart ready endpoint with dependency checks
+	router.GET("/ready", func(c *gin.Context) {
+		ready := apiRouter != nil &&
+			apiRouter.GetPeerManager() != nil &&
+			apiRouter.GetRelayManager() != nil
+
+		status := "degraded"
+		if ready {
+			status = "ready"
+		}
+
+		c.JSON(200, gin.H{
+			"status": status,
+			"services": gin.H{
+				"http":     true,
+				"p2p_quic": apiRouter.GetRelayManager() != nil,
+				"quic":     false,
+			},
+		})
+	})
+
+	// P2P API endpoints
+	v1 := router.Group("/api/v1")
+	{
+		// Tenant endpoints
+		tenants := v1.Group("/tenants/:tenant_id")
+		{
+			// Peer registration with nil check
+			tenants.POST("/peers/register", func(c *gin.Context) {
+				if apiRouter.GetPeerManager() == nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "peer manager unavailable"})
+					return
+				}
+				apiRouter.GetPeerManager().RegisterPeer(c)
+			})
+
+			tenants.GET("/peers", func(c *gin.Context) {
+				if apiRouter.GetPeerManager() == nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "peer manager unavailable"})
+					return
+				}
+				apiRouter.GetPeerManager().DiscoverPeers(c)
+			})
+
+			tenants.GET("/peers/:peer_id", func(c *gin.Context) {
+				if apiRouter.GetPeerManager() == nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "peer manager unavailable"})
+					return
+				}
+				apiRouter.GetPeerManager().GetPeerInfo(c)
+			})
+
+			tenants.PUT("/peers/:peer_id/status", func(c *gin.Context) {
+				if apiRouter.GetPeerManager() == nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "peer manager unavailable"})
+					return
+				}
+				apiRouter.GetPeerManager().UpdatePeerStatus(c)
+			})
+
+			// WireGuard configuration endpoint
+			tenants.GET("/peers/:peer_id/wireguard-config", func(c *gin.Context) {
+				if apiRouter.GetWireGuardEndpoints() == nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "wireguard endpoints unavailable"})
+					return
+				}
+				apiRouter.GetWireGuardEndpoints().GetWireGuardConfig(c)
+			})
+		}
+
+		// P2P endpoints
+		p2pGrp := v1.Group("/p2p")
+		{
+			p2pGrp.GET("/discover", func(c *gin.Context) {
+				if apiRouter.GetPeerManager() == nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "peer manager unavailable"})
+					return
+				}
+				apiRouter.GetPeerManager().DiscoverPeers(c)
+			})
+		}
+
+		// Relay endpoints
+		relay := v1.Group("/relay")
+		{
+			relay.POST("/route", func(c *gin.Context) {
+				if apiRouter.GetRelayManager() == nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "relay manager unavailable"})
+					return
+				}
+				apiRouter.GetRelayManager().RouteThroughRelay(c)
+			})
+
+			relay.GET("/stats", func(c *gin.Context) {
+				if apiRouter.GetRelayManager() == nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "relay manager unavailable"})
+					return
+				}
+				apiRouter.GetRelayManager().GetRelayStats(c)
+			})
+		}
 	}
 
-	// Создание Peer Manager
-	peerManager := api.NewPeerManager(logger, validator)
+	// Создание HTTP сервера с улучшенными таймаутами
+	server := &http.Server{
+		Addr:              fmt.Sprintf("0.0.0.0:%d", port),
+		Handler:           router,
+		ReadTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20, // 1MB
+	}
+
+	// Peer Manager уже создан в apiRouter
 
 	return &P2PAPIServer{
 		router:         router,
@@ -134,24 +249,21 @@ func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServ
 		logger:         logger,
 		validator:      validator,
 		tokenValidator: tokenValidator,
-		peerManager:    peerManager,
+		peerManager:    apiRouter.GetPeerManager(),
 		server:         server,
 	}
 }
 
 // Start запускает P2P API сервер
 func (s *P2PAPIServer) Start() error {
-	// Запуск WebSocket Hub
-	// TODO: Реализовать запуск API router
+	s.logger.Info("Starting P2P API server", zap.String("addr", s.server.Addr))
 
-	s.logger.Info("Starting P2P API server",
-		zap.String("addr", s.server.Addr),
-	)
-
-	// Запуск HTTP сервера
-	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		return err
-	}
+	// Запуск HTTP сервера в горутине для неблокирующего старта
+	go func() {
+		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			s.logger.Fatal("HTTP server error", zap.Error(err))
+		}
+	}()
 
 	return nil
 }
@@ -164,13 +276,18 @@ func (s *P2PAPIServer) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	return s.server.Shutdown(ctx)
+	if err := s.server.Shutdown(ctx); err != nil {
+		s.logger.Error("HTTP server shutdown error", zap.Error(err))
+		return err
+	}
+
+	s.logger.Info("P2P API server stopped")
+	return nil
 }
 
 // GetHub возвращает WebSocket Hub
 func (s *P2PAPIServer) GetHub() *api.Hub {
-	// TODO: Реализовать получение Hub
-	return nil
+	return s.apiRouter.GetHub()
 }
 
 // GetPeerManager возвращает PeerManager
@@ -180,14 +297,12 @@ func (s *P2PAPIServer) GetPeerManager() *api.PeerManager {
 
 // GetRelayManager возвращает RelayManager
 func (s *P2PAPIServer) GetRelayManager() *api.RelayManager {
-	// TODO: Реализовать получение RelayManager
-	return nil
+	return s.apiRouter.GetRelayManager()
 }
 
 // GetHealthManager возвращает HealthManager
 func (s *P2PAPIServer) GetHealthManager() *api.HealthManager {
-	// TODO: Реализовать получение HealthManager
-	return nil
+	return s.apiRouter.GetHealthManager()
 }
 
 // SetManagers устанавливает P2P менеджеры
