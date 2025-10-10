@@ -1,0 +1,110 @@
+# CloudBridge Relay Client - Server A Configuration
+# Конфигурация для сервера А в P2P mesh сети
+
+# Relay Configuration
+relay:
+  host: "edge.2gc.ru"           # Внешний CloudBridge Relay
+  port: 5552                    # CloudBridge Relay P2P API порт
+  base_url: "https://edge.2gc.ru:5552"
+  timeout: "30s"
+  tls:
+    enabled: true               # Включить TLS для HTTPS API
+    verify_cert: true
+    insecure_skip_verify: false
+    server_name: "edge.2gc.ru"
+
+# Authentication Configuration - бесрочный токен для сервера А (пилотное тестирование)
+auth:
+  type: "jwt"
+  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzZXJ2ZXItYSIsInRlbmFudF9pZCI6Im1lc2gtbmV0d29yay10ZXN0Iiwic2VydmVyX2lkIjoic2VydmVyLWEiLCJjb25uZWN0aW9uX3R5cGUiOiJxdWljIiwicHJvdG9jb2xfdHlwZSI6InAycC1tZXNoIiwic2NvcGUiOiJwMnAiLCJwZXJtaXNzaW9ucyI6WyJyZWxheV9jb25uZWN0IiwicmVsYXlfdHVubmVsIiwicDJwX2Rpc2NvdmVyIiwicDJwX2Nvbm5lY3QiXSwiaXNzIjoiY2xvdWRicmlkZ2UtcmVsYXkiLCJhdWQiOlsicmVsYXktdGVzdC10ZW5hbnQiXSwibmJmIjoxNzYwMTE3NzU4LCJpYXQiOjE3NjAxMTc3NTgsImV4cCI6OTk5OTk5OTk5OX0.8K9X2mNpQ7RvF3sL5YtE6wH4jC1bA9zX8kM2nP5qR7"
+  secret: "default-jwt-secret"
+  skip_validation: true          # Отключить валидацию токена для тестирования
+  disable_token_validation: true
+
+# P2P Configuration - сервер А
+p2p:
+  server_id: "server-a"          # ID сервера А
+  tenant_id: "mesh-network-test" # Общий тенант для P2P mesh
+  max_connections: 100
+  session_timeout: "300s"
+  peer_discovery_interval: "10s"
+  connection_retry_interval: "5s"
+  max_retry_attempts: 5
+  fallback_enabled: true
+  derp_fallback: true
+  websocket_fallback: true
+  auto_relay: true
+
+# ICE Configuration для NAT traversal
+ice:
+  stun_servers:
+    - "edge.2gc.ru:19302"        # STUN сервер внешний
+    - "stun.l.google.com:19302"   # Backup STUN
+  turn_servers:
+    - "edge.2gc.ru:3478"          # TURN сервер внешний
+  timeout: "30s"
+  max_binding_requests: 7
+  connectivity_checks: true
+  candidate_gathering: true
+
+# QUIC Configuration
+quic:
+  handshake_timeout: "10s"
+  idle_timeout: "60s"
+  max_streams: 100
+  max_stream_data: 1048576
+  keep_alive_period: "15s"
+  insecure_skip_verify: false    # Проверять сертификаты
+  masque_support: true            # Включить поддержку MASQUE
+  http_datagrams: true            # Включить HTTP Datagrams
+  enable_0rtt: true
+
+# WebSocket Configuration (fallback)
+websocket:
+  enabled: true
+  endpoint: "wss://edge.2gc.ru:5552/ws/peers"
+  timeout: "30s"
+  ping_interval: "10s"
+  max_reconnect_attempts: 10
+  reconnect_delay: "2s"
+
+# Logging Configuration
+logging:
+  level: "debug"                 # Включить debug для тестирования
+  format: "text"                 # Текстовый формат для удобства
+  output: "stdout"               # stdout, stderr, file
+
+# Metrics Configuration
+metrics:
+  enabled: true
+  prometheus_port: 9091
+  tenant_metrics: true
+  buffer_metrics: true
+  connection_metrics: true
+  p2p_metrics: true
+
+# Performance Configuration
+performance:
+  enabled: true
+  optimization_mode: "balanced"  # balanced, high_throughput, low_latency
+  gc_percent: 100
+  memory_ballast: true
+  cpu_profile: false
+
+# Heartbeat Configuration
+heartbeat:
+  interval: "10s"
+  timeout: "5s"
+  max_missed: 3
+
+# API Configuration
+api:
+  base_url: "https://edge.2gc.ru:5552"              # Основной API через порт 5552
+  p2p_api_url: "https://edge.2gc.ru:5552/api"       # P2P API через порт 5552
+  heartbeat_url: "https://edge.2gc.ru:5552/api/v1/tenants/mesh-network-test/peers/register" # Правильный endpoint
+  health_url: "https://edge.2gc.ru:5552/health"    # Health через порт 5552
+  metrics_url: "https://edge.2gc.ru:5552/metrics"  # Metrics через порт 5552
+  timeout: "30s"
+  max_retries: 3
+  backoff_multiplier: 2.0
+  max_backoff: "60s"

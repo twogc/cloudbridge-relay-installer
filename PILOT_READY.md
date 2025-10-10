@@ -1,13 +1,3 @@
-# CloudBridge Relay - Готов к тестовому пилоту!
-
-## Статус: ГОТОВ К ИСПОЛЬЗОВАНИЮ
-
-### Что готово:
-- **Внешний доступ работает** - через edge.2gc.ru
-- **JWT токены действительны** - без ограничений по времени
-- **P2P mesh сеть** - Server A и Server B смогут подключиться
-- **Мониторинг доступен** - через поддомены
-- **Безопасность настроена** - SSL сертификаты и JWT аутентификация
 
 ## Скачивание и установка клиента:
 
@@ -19,8 +9,8 @@
 
 ### Шаг 2: Конфигурационные файлы
 Скопируйте эти файлы в папку с клиентом:
-- **server-a-pilot.yaml** - Конфигурация для Server A
-- **server-b-pilot.yaml** - Конфигурация для Server B
+- **config-server-a.yaml** - Конфигурация для Server A (бесрочный токен)
+- **config-server-b.yaml** - Конфигурация для Server B (бесрочный токен)
 
 ## Инструкции для клиента:
 
@@ -33,7 +23,7 @@ chmod +x cloudbridge-client
 ### Шаг 2: Запуск Server A (в фоновом режиме)
 ```bash
 # Запуск в фоновом режиме
-nohup ./cloudbridge-client p2p --config server-a-pilot.yaml --log-level debug > server-a.log 2>&1 &
+nohup ./cloudbridge-client p2p --config config-server-a.yaml --log-level debug > server-a.log 2>&1 &
 
 # Проверить, что процесс запущен
 ps aux | grep cloudbridge-client
@@ -42,7 +32,7 @@ ps aux | grep cloudbridge-client
 ### Шаг 3: Запуск Server B (в фоновом режиме)
 ```bash
 # Запуск в фоновом режиме
-nohup ./cloudbridge-client p2p --config server-b-pilot.yaml --log-level debug > server-b.log 2>&1 &
+nohup ./cloudbridge-client p2p --config config-server-b.yaml --log-level debug > server-b.log 2>&1 &
 
 # Проверить, что процесс запущен
 ps aux | grep cloudbridge-client
@@ -144,37 +134,17 @@ nc -l 8080
 nc 10.100.77.10 8080
 ```
 
-## JWT токены (готовы к использованию):
-
-### Server A Token:
-```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzZXJ2ZXItYSIsInRlbmFudF9pZCI6Im1lc2gtbmV0d29yay10ZXN0Iiwic2VydmVyX2lkIjoic2VydmVyLWEiLCJjb25uZWN0aW9uX3R5cGUiOiJxdWljIiwicHJvdG9jb2xfdHlwZSI6InAycC1tZXNoIiwicGVybWlzc2lvbnMiOlsicmVsYXlfY29ubmVjdCIsInJlbGF5X3R1bm5lbCIsInAycF9kaXNjb3ZlciIsInAycF9jb25uZWN0Il0sImlzcyI6ImNsb3VkYnJpZGdlLXJlbGF5IiwiYXVkIjpbInJlbGF5LXRlc3QtdGVuYW50Il0sIm5iZiI6MTc1OTIyMTM0OCwiaWF0IjoxNzU5MjIxMzQ4fQ.1s16Kx4yS0Ya2-o7U9Ce_Ft61gKpOJqAXU8Ns6m-I9s
-```
-
-### Server B Token:
-```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzZXJ2ZXItYiIsInRlbmFudF9pZCI6Im1lc2gtbmV0d29yay10ZXN0Iiwic2VydmVyX2lkIjoic2VydmVyLWIiLCJjb25uZWN0aW9uX3R5cGUiOiJxdWljIiwicHJvdG9jb2xfdHlwZSI6InAycC1tZXNoIiwicGVybWlzc2lvbnMiOlsicmVsYXlfY29ubmVjdCIsInJlbGF5X3R1bm5lbCIsInAycF9kaXNjb3ZlciIsInAycF9jb25uZWN0Il0sImlzcyI6ImNsb3VkYnJpZGdlLXJlbGF5IiwiYXVkIjpbInJlbGF5LXRlc3QtdGVuYW50Il0sIm5iZiI6MTc1OTIyMTM0OCwiaWF0IjoxNzU5MjIxMzQ4fQ.1s16Kx4yS0Ya2-o7U9Ce_Ft61gKpOJqAXU8Ns6m-I9s
-```
-
-## Поддомены для мониторинга:
-
-- **relay.2gc.ru** - Основной P2P релей
-- **p2p.2gc.ru** - P2P Discovery API
-- **admin.2gc.ru** - Административная панель
-- **monitor.2gc.ru** - Мониторинг и метрики
-- **api.2gc.ru** - Общий API шлюз
-- **masque.2gc.ru** - HTTP/3 MASQUE прокси
-
 ## Важные замечания:
 
-1. **Токены действительны** - без ограничений по времени
-2. **Внешний доступ работает** - через edge.2gc.ru
-3. **Безопасность** - JWT токены с подписью
+1. **Бесрочные токены** - JWT токены с `exp: 9999999999` (действительны до 2033 года)
+2. **Внешний доступ работает** - через edge.2gc.ru:5552
+3. **Безопасность** - JWT токены с подписью `default-jwt-secret`
 4. **Мониторинг** - доступен через https://monitor.2gc.ru
 5. **Администрирование** - доступно через https://admin.2gc.ru
 6. **Клиент не работает как служба** - необходимо запускать в фоновом режиме
 7. **Логи сохраняются** - в файлы server-a.log и server-b.log
 8. **Автоматический перезапуск** - не предусмотрен, нужно контролировать вручную
+9. **Пилотное тестирование** - конфигурации готовы для передачи партнерам
 
 ## Итог:
 
@@ -184,7 +154,4 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzZXJ2ZXItYiIsInRlbmFudF9pZCI6Im1
 - Подключить Server A и Server B
 - Образовать P2P mesh сеть
 - Обмениваться данными между серверами
-- Мониторить состояние через веб-интерфейс
-- Использовать все функции через внешний доступ
 
-**Готово к передаче клиенту для тестирования!**
