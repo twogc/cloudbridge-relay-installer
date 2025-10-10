@@ -13,6 +13,33 @@ import (
 	"go.uber.org/zap"
 )
 
+// Безопасные type assertion функции для предотвращения паник
+func asInt64(m map[string]interface{}, key string) (int64, bool) {
+	switch v := m[key].(type) {
+	case int64:
+		return v, true
+	case int:
+		return int64(v), true
+	case float64:
+		return int64(v), true
+	default:
+		return 0, false
+	}
+}
+
+func asFloat64(m map[string]interface{}, key string) (float64, bool) {
+	switch v := m[key].(type) {
+	case float64:
+		return v, true
+	case int64:
+		return float64(v), true
+	case int:
+		return float64(v), true
+	default:
+		return 0, false
+	}
+}
+
 // Service represents the main AI service
 type Service struct {
 	config          *Config
@@ -25,6 +52,7 @@ type Service struct {
 	metrics         *AIMetrics
 
 	// Service state
+	mu        sync.Mutex // CRITICAL: защита от гонок
 	started   bool
 	startTime time.Time
 	stopCh    chan struct{}
@@ -109,7 +137,7 @@ func (s *Service) Initialize() error {
 
 	// Initialize monitoring
 	s.monitoring = NewAIMonitoring()
-	s.metrics = NewAIMetrics()
+	// s.metrics = NewAIMetrics() // УДАЛЕНО: уже создано в NewService()
 
 	s.logger.Info("AI service initialized successfully")
 	return nil
@@ -117,9 +145,15 @@ func (s *Service) Initialize() error {
 
 // Start starts the AI service
 func (s *Service) Start() error {
+	s.mu.Lock()
 	if s.started {
+		s.mu.Unlock()
 		return fmt.Errorf("AI service is already started")
 	}
+	s.stopCh = make(chan struct{}) // CRITICAL: пересоздаем канал при каждом старте
+	s.started = true
+	s.startTime = time.Now()
+	s.mu.Unlock()
 
 	s.logger.Info("Starting AI service...")
 
@@ -158,17 +192,20 @@ func (s *Service) Start() error {
 	s.wg.Add(1)
 	go s.backgroundProcessing()
 
-	s.started = true
-	s.startTime = time.Now()
 	s.logger.Info("AI service started successfully")
 	return nil
 }
 
 // Stop stops the AI service
 func (s *Service) Stop() error {
+	s.mu.Lock()
 	if !s.started {
+		s.mu.Unlock()
 		return nil
 	}
+	s.started = false
+	close(s.stopCh) // CRITICAL: закрываем под локом
+	s.mu.Unlock()
 
 	s.logger.Info("Stopping AI service...")
 
@@ -211,10 +248,8 @@ func (s *Service) Stop() error {
 	}
 
 	// Wait for background processing to finish
-	close(s.stopCh)
 	s.wg.Wait()
 
-	s.started = false
 	s.logger.Info("AI service stopped successfully")
 	return nil
 }
@@ -223,7 +258,15 @@ func (s *Service) Stop() error {
 func (s *Service) backgroundProcessing() {
 	defer s.wg.Done()
 
-	ticker := time.NewTicker(s.config.AI.DataPipeline.ProcessingInterval)
+	// CRITICAL: защита от паники при нулевом интервале
+	interval := s.config.AI.DataPipeline.ProcessingInterval
+	if interval <= 0 {
+		interval = 5 * time.Second // дефолт
+		s.logger.Warn("ProcessingInterval is zero or negative, using default",
+			zap.Duration("default_interval", interval))
+	}
+
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {
@@ -241,7 +284,7 @@ func (s *Service) backgroundProcessing() {
 // processData processes incoming data
 func (s *Service) processData() {
 	start := time.Now()
-	s.logger.Info("Starting data processing cycle")
+	s.logger.Debug("Starting data processing cycle") // CRITICAL: Debug вместо Info для частых вызовов
 
 	// Collect data from pipeline
 	data, err := s.dataPipeline.CollectData()
@@ -383,25 +426,34 @@ func (s *Service) getRelayMetrics() (*anomaly.NetworkMetrics, error) {
 		}
 	} else {
 		// Если нет данных о протоколах, используем активные соединения для оценки
-		activeConnections := int(relayData["connections_active"].(int64))
+		activeConnections, _ := asInt64(relayData, "connections_active")
 		if activeConnections > 0 {
 			// Распределяем активные соединения по протоколам на основе типичных паттернов
-			protocolDistribution["QUIC"] = activeConnections / 2
-			protocolDistribution["P2P_QUIC"] = activeConnections / 3
-			protocolDistribution["TCP"] = activeConnections / 6
+			protocolDistribution["QUIC"] = int(activeConnections / 2)
+			protocolDistribution["P2P_QUIC"] = int(activeConnections / 3)
+			protocolDistribution["TCP"] = int(activeConnections / 6)
 		}
 	}
 
+	// CRITICAL: безопасные type assertion для предотвращения паник
+	activeConn, _ := asInt64(relayData, "connections_active")
+	bytesTx, _ := asInt64(relayData, "bytes_transferred")
+	errRate, _ := asFloat64(relayData, "error_rate")
+	avgLat, _ := asFloat64(relayData, "average_latency")
+	totalConn, _ := asInt64(relayData, "connections_total")
+	cpuUsage, _ := asFloat64(systemMetrics, "cpu_usage")
+	memUsage, _ := asFloat64(systemMetrics, "memory_usage")
+
 	metrics := &anomaly.NetworkMetrics{
 		Timestamp:            time.Now(),
-		ConnectionsPerSecond: int(relayData["connections_active"].(int64)),
-		BytesPerSecond:       relayData["bytes_transferred"].(int64),
-		PacketLossRate:       relayData["error_rate"].(float64),
-		AverageLatency:       relayData["average_latency"].(float64),
-		CPUUsage:             systemMetrics["cpu_usage"].(float64),
-		MemoryUsage:          systemMetrics["memory_usage"].(float64),
-		ActiveConnections:    int(relayData["connections_active"].(int64)),
-		FailedConnections:    int(relayData["error_rate"].(float64) * float64(relayData["connections_total"].(int64))),
+		ConnectionsPerSecond: 0, // TODO: вычислять из временных рядов, не CPS
+		BytesPerSecond:       bytesTx,
+		PacketLossRate:       errRate,
+		AverageLatency:       avgLat,
+		CPUUsage:             cpuUsage,
+		MemoryUsage:          memUsage,
+		ActiveConnections:    int(activeConn),
+		FailedConnections:    int(errRate * float64(totalConn)),
 		ProtocolDistribution: protocolDistribution,
 	}
 
@@ -415,18 +467,18 @@ func (s *Service) shouldProcessData(data []pipeline.DataPoint) bool {
 		return false
 	}
 
-	// Проверяем активность в данных
+	// Проверяем активность в данных с безопасными type assertion
 	for _, dataPoint := range data {
 		if dataPoint.Source == "relay" && dataPoint.Type == "metrics" {
 			// Проверяем активные подключения
-			if activeConnections, ok := dataPoint.Data["connections_active"].(int64); ok {
+			if activeConnections, ok := asInt64(dataPoint.Data, "connections_active"); ok {
 				if activeConnections > 0 {
 					return true
 				}
 			}
 
 			// Проверяем переданные байты
-			if bytesTransferred, ok := dataPoint.Data["bytes_transferred"].(int64); ok {
+			if bytesTransferred, ok := asInt64(dataPoint.Data, "bytes_transferred"); ok {
 				if bytesTransferred > 0 {
 					return true
 				}
@@ -436,14 +488,14 @@ func (s *Service) shouldProcessData(data []pipeline.DataPoint) bool {
 		// Проверяем системную нагрузку
 		if dataPoint.Source == "system" {
 			if dataPoint.Type == "cpu" {
-				if cpuUsage, ok := dataPoint.Data["cpu_usage_percent"].(float64); ok {
+				if cpuUsage, ok := asFloat64(dataPoint.Data, "cpu_usage_percent"); ok {
 					if cpuUsage > 10.0 { // Если CPU > 10%
 						return true
 					}
 				}
 			}
 			if dataPoint.Type == "memory" {
-				if memoryUsage, ok := dataPoint.Data["memory_usage_percent"].(float64); ok {
+				if memoryUsage, ok := asFloat64(dataPoint.Data, "memory_usage_percent"); ok {
 					if memoryUsage > 50.0 { // Если Memory > 50%
 						return true
 					}
@@ -599,8 +651,14 @@ func (s *Service) GetAnomalyStats() map[string]interface{} {
 
 // GetStatus returns the current status of the AI service
 func (s *Service) GetStatus() *ServiceStatus {
+	// CRITICAL: безопасный доступ к started под мьютексом
+	s.mu.Lock()
+	running := s.started
+	uptime := time.Since(s.startTime)
+	s.mu.Unlock()
+
 	status := "stopped"
-	if s.started {
+	if running {
 		status = "running"
 	}
 
@@ -629,9 +687,9 @@ func (s *Service) GetStatus() *ServiceStatus {
 		Status:      status,
 		Components:  components,
 		Performance: performance,
-		Health:      s.started && s.anomalyDetector != nil && s.loadPredictor != nil && s.routeOptimizer != nil,
+		Health:      running && s.anomalyDetector != nil && s.loadPredictor != nil && s.routeOptimizer != nil,
 		Resources:   resources,
-		Uptime:      time.Since(s.startTime),
+		Uptime:      uptime,
 		LastUpdate:  time.Now(),
 	}
 }

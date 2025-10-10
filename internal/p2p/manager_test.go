@@ -114,7 +114,7 @@ func TestNewP2PManager(t *testing.T) {
 		assert.Equal(t, mockSiteToSite, manager.siteToSiteManager)
 		assert.NotNil(t, manager.metrics)
 		assert.Equal(t, logger, manager.logger)
-		assert.True(t, manager.isInitialized)
+		assert.False(t, manager.isStarted)
 		assert.Nil(t, manager.cadenceIntegration)
 	})
 }
@@ -130,7 +130,7 @@ func TestNewP2PManagerWithCadence(t *testing.T) {
 		manager := NewP2PManagerWithCadence(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, nil, logger)
 
 		assert.NotNil(t, manager)
-		assert.True(t, manager.isInitialized)
+		assert.False(t, manager.isStarted)
 		// Cadence integration is not set in the current implementation
 		assert.Nil(t, manager.cadenceIntegration)
 	})
@@ -173,7 +173,7 @@ func TestP2PManager_Initialize(t *testing.T) {
 		mockDiscovery.AssertExpectations(t)
 	})
 
-	t.Run("fails when not initialized", func(t *testing.T) {
+	t.Run("fails when already started", func(t *testing.T) {
 		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
@@ -181,13 +181,13 @@ func TestP2PManager_Initialize(t *testing.T) {
 		logger := zap.NewNop()
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
-		manager.isInitialized = false
+		manager.isStarted = true
 
 		ctx := context.Background()
 		err := manager.Initialize(ctx)
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "P2P Manager not properly initialized")
+		assert.Contains(t, err.Error(), "P2P Manager already started")
 	})
 
 	t.Run("fails when peer discovery start fails", func(t *testing.T) {
@@ -262,7 +262,7 @@ func TestP2PManager_IsAvailable(t *testing.T) {
 		mockDiscovery.AssertExpectations(t)
 	})
 
-	t.Run("returns false when not initialized", func(t *testing.T) {
+	t.Run("returns false when not started", func(t *testing.T) {
 		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
@@ -270,7 +270,7 @@ func TestP2PManager_IsAvailable(t *testing.T) {
 		logger := zap.NewNop()
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
-		manager.isInitialized = false
+		manager.isStarted = false
 
 		ctx := context.Background()
 		available := manager.IsAvailable(ctx, "192.168.1.100", "tenant-123")
@@ -306,7 +306,7 @@ func TestP2PManager_HandleConnection(t *testing.T) {
 		}
 
 		mockDiscovery.On("DiscoverPeers").Return(peers, nil)
-		mockMesh.On("GetOptimalRoute", "192.168.1.100:12345").Return([]string{"route1"}, nil)
+		mockMesh.On("GetOptimalRoute", "192.168.1.100").Return([]string{"route1"}, nil)
 
 		ctx := context.Background()
 		err := manager.HandleConnection(ctx, conn, "tenant-123")
@@ -317,7 +317,7 @@ func TestP2PManager_HandleConnection(t *testing.T) {
 		mockMesh.AssertExpectations(t)
 	})
 
-	t.Run("fails when not initialized", func(t *testing.T) {
+	t.Run("fails when not started", func(t *testing.T) {
 		mockMesh := new(MockP2PMeshTopology)
 		mockDiscovery := new(MockPeerDiscovery)
 		mockRouter := new(MockHybridRouter)
@@ -325,7 +325,7 @@ func TestP2PManager_HandleConnection(t *testing.T) {
 		logger := zap.NewNop()
 
 		manager := NewP2PManager(mockMesh, mockDiscovery, mockRouter, mockSiteToSite, logger)
-		manager.isInitialized = false
+		manager.isStarted = false
 
 		conn := &mockConn{remoteAddr: "192.168.1.100:12345"}
 
@@ -333,7 +333,7 @@ func TestP2PManager_HandleConnection(t *testing.T) {
 		err := manager.HandleConnection(ctx, conn, "tenant-123")
 
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "P2P Manager not initialized")
+		assert.Contains(t, err.Error(), "P2P Manager not started")
 	})
 }
 
@@ -399,7 +399,7 @@ func TestP2PManager_GetStatus(t *testing.T) {
 		status := manager.GetStatus()
 
 		assert.NotNil(t, status)
-		assert.True(t, status["initialized"].(bool))
+		assert.False(t, status["started"].(bool))
 		assert.NotNil(t, status["metrics"])
 		assert.Equal(t, 2, status["discovered_peers"])
 		assert.Equal(t, stats, status["routing_stats"])
@@ -1186,7 +1186,8 @@ func TestP2PManager_isDirectRouteAvailable(t *testing.T) {
 		}
 
 		// This will likely fail in test environment, but we test the method exists
-		_ = manager.isDirectRouteAvailable("192.168.1.100", peer)
+		ctx := context.Background()
+		_ = manager.isDirectRouteAvailable(ctx, peer)
 
 		// The result depends on whether localhost:8080 is reachable
 		// We just verify the method exists and can be called
@@ -1213,7 +1214,8 @@ func TestP2PManager_isDirectRouteAvailable(t *testing.T) {
 			TrustLevel: "basic",
 		}
 
-		available := manager.isDirectRouteAvailable("192.168.1.100", peer)
+		ctx := context.Background()
+		available := manager.isDirectRouteAvailable(ctx, peer)
 
 		assert.False(t, available)
 	})

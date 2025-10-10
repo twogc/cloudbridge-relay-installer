@@ -45,7 +45,6 @@ type Metrics struct {
 	activeConnectionsCount int64
 	activeTunnelsCount     int64
 
-
 	// Бизнес-метрики
 	businessMetrics struct {
 		activeUsers          prometheus.Gauge
@@ -213,7 +212,6 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			Help: "The number of token cache misses",
 		}),
 
-
 		// Бизнес-метрики
 		businessMetrics: struct {
 			activeUsers          prometheus.Gauge
@@ -315,7 +313,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			status: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "relay_tunnel_status",
 				Help: "Tunnel status (1=active, 0=inactive)",
-			}, []string{"tunnel_id", "remote_host", "remote_port", "status", "duration_seconds", "bytes_transferred", "last_activity"}),
+			}, []string{"tunnel_id", "remote_host", "remote_port"}),
 			activityHeatmap: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "relay_tunnel_activity_heatmap",
 				Help: "Tunnel activity heatmap",
@@ -373,7 +371,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			failedLoginsByIP: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "relay_security_failed_logins_by_ip",
 				Help: "Failed login attempts by IP",
-			}, []string{"client_ip", "failed_attempts", "last_attempt", "geolocation", "threat_level"}),
+			}, []string{"client_ip"}),
 			tlsCertificateStatus: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "relay_tls_certificate_status",
 				Help: "TLS certificate status (1=valid, 0=invalid)",
@@ -500,9 +498,9 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 				Help: "Usage heatmap per tenant",
 			}, []string{"tenant_id", "hour", "day"}),
 			comparisonMetrics: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-				Name: "relay_tenant_comparison_metrics",
-				Help: "Comparison metrics per tenant",
-			}, []string{"tenant_id", "tenant_name", "active_tunnels", "active_connections", "bandwidth_mbps", "data_transfer_gb", "response_time_ms", "error_rate_percent", "sla_compliance_percent", "risk_score", "revenue_per_hour", "customer_satisfaction"}),
+				Name: "relay_tenant_comparison_metric",
+				Help: "Comparison metric per tenant",
+			}, []string{"tenant_id", "tenant_name", "metric"}),
 			resourceUtilizationPercent: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "relay_tenant_resource_utilization_percent",
 				Help: "Overall resource utilization percentage",
@@ -516,77 +514,9 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 		cadenceMetrics:   NewCadenceMetrics(nil),
 	}
 
-	// Регистрация всех метрик
-	reg.MustRegister(
-		m.connectionsTotal,
-		m.rejectedConnections,
-		m.errorsTotal,
-		m.heartbeatsTotal,
-		m.heartbeatErrorsTotal,
-		m.activeConnections,
-		m.activeTunnels,
-		m.cacheSize,
-		m.connectionDuration,
-		m.heartbeatLatency,
-		m.tokenValidationDuration,
-		m.messageLatency,
-		m.tokenValidations,
-		m.messageErrors,
-		m.cacheHits,
-		m.cacheMisses,
-		m.businessMetrics.activeUsers,
-		m.businessMetrics.revenuePerHour,
-		m.businessMetrics.customerSatisfaction,
-		m.businessMetrics.totalRevenue,
-		m.technicalMetrics.memoryUsage,
-		m.technicalMetrics.gcPauseDuration,
-		m.technicalMetrics.networkLatency,
-		m.technicalMetrics.diskIO,
-		m.tunnelMetrics.creationsTotal,
-		m.tunnelMetrics.closuresTotal,
-		m.tunnelMetrics.durationSeconds,
-		m.tunnelMetrics.bytesFromClientTotal,
-		m.tunnelMetrics.bytesToClientTotal,
-		m.tunnelMetrics.bandwidthUtilization,
-		m.tunnelMetrics.errorsTotal,
-		m.tunnelMetrics.status,
-		m.tunnelMetrics.activityHeatmap,
-		m.tunnelMetrics.latencySeconds,
-		m.tunnelMetrics.operationsTotal,
-		m.tunnelMetrics.cleanupOperationsTotal,
-		m.tunnelMetrics.memoryUsageBytes,
-		m.tunnelMetrics.cpuUsageSecondsTotal,
-		m.securityMetrics.suspiciousActivitiesTotal,
-		m.securityMetrics.rateLimitViolationsTotal,
-		m.securityMetrics.ddosAttemptsTotal,
-		m.securityMetrics.securityEventsTotal,
-		m.securityMetrics.failedLoginsByIP,
-		m.securityMetrics.tlsCertificateStatus,
-		m.securityMetrics.tlsHandshakeFailuresTotal,
-		m.securityMetrics.tlsCertificateExpirationDays,
-		m.mlMetrics.anomalyScore,
-		m.mlMetrics.threatPredictionsTotal,
-		m.tenantMetrics.activeCount,
-		m.tenantMetrics.activeTunnels,
-		m.tenantMetrics.activeConnections,
-		m.tenantMetrics.bandwidthBytesTotal,
-		m.tenantMetrics.dataTransferGB,
-		m.tenantMetrics.responseTimeSeconds,
-		m.tenantMetrics.errorsTotal,
-		m.tenantMetrics.slaCompliancePercent,
-		m.tenantMetrics.uptimePercent,
-		m.tenantMetrics.securityIncidentsTotal,
-		m.tenantMetrics.authFailuresTotal,
-		m.tenantMetrics.riskScore,
-		m.tenantMetrics.isolationViolationsTotal,
-		m.tenantMetrics.accessPatternsTotal,
-		m.tenantMetrics.revenueTotal,
-		m.tenantMetrics.customerSatisfaction,
-		m.tenantMetrics.dailyActiveUsers,
-		m.tenantMetrics.usageHeatmap,
-		m.tenantMetrics.comparisonMetrics,
-		m.tenantMetrics.resourceUtilizationPercent,
-	)
+	// Регистрация только основных метрик (подметрики уже зарегистрированы в своих конструкторах)
+	// Убираем регистрацию всех метрик, так как они уже зарегистрированы в подметриках
+	// reg.MustRegister(...)
 
 	return m
 }
@@ -666,7 +596,6 @@ func (m *Metrics) IncMessageErrors(msgType, err string) {
 	m.messageErrors.WithLabelValues(msgType, err).Inc()
 }
 
-
 // Методы для бизнес-метрик
 func (m *Metrics) SetActiveUsers(count int) {
 	m.businessMetrics.activeUsers.Set(float64(count))
@@ -739,8 +668,12 @@ func (m *Metrics) IncTunnelErrors(tunnelID, errorType string) {
 	m.tunnelMetrics.errorsTotal.WithLabelValues(tunnelID, errorType).Inc()
 }
 
-func (m *Metrics) SetTunnelStatus(tunnelID, remoteHost string, remotePort int, status string, durationSeconds float64, bytesTransferred int64, lastActivity string) {
-	m.tunnelMetrics.status.WithLabelValues(tunnelID, remoteHost, fmt.Sprintf("%d", remotePort), status, fmt.Sprintf("%.2f", durationSeconds), fmt.Sprintf("%d", bytesTransferred), lastActivity).Set(1)
+func (m *Metrics) SetTunnelStatus(tunnelID, remoteHost string, remotePort int, active bool) {
+	v := 0.0
+	if active {
+		v = 1.0
+	}
+	m.tunnelMetrics.status.WithLabelValues(tunnelID, remoteHost, fmt.Sprintf("%d", remotePort)).Set(v)
 }
 
 func (m *Metrics) SetTunnelActivityHeatmap(tunnelID, hour, day string, value float64) {
@@ -784,8 +717,8 @@ func (m *Metrics) IncSecurityEvents(eventType, severity string) {
 	m.securityMetrics.securityEventsTotal.WithLabelValues(eventType, severity).Inc()
 }
 
-func (m *Metrics) SetFailedLoginsByIP(clientIP, failedAttempts, lastAttempt, geolocation, threatLevel string) {
-	m.securityMetrics.failedLoginsByIP.WithLabelValues(clientIP, failedAttempts, lastAttempt, geolocation, threatLevel).Set(1)
+func (m *Metrics) SetFailedLoginsByIP(clientIP string, failedAttempts int) {
+	m.securityMetrics.failedLoginsByIP.WithLabelValues(clientIP).Set(float64(failedAttempts))
 }
 
 func (m *Metrics) SetTLSCertificateStatus(certType string, valid bool) {
@@ -886,20 +819,8 @@ func (m *Metrics) SetTenantUsageHeatmap(tenantID, hour, day string, value float6
 	m.tenantMetrics.usageHeatmap.WithLabelValues(tenantID, hour, day).Set(value)
 }
 
-func (m *Metrics) SetTenantComparisonMetrics(tenantID, tenantName string, activeTunnels, activeConnections int, bandwidthMbps, dataTransferGB, responseTimeMs, errorRatePercent, slaCompliancePercent, riskScore, revenuePerHour, customerSatisfaction float64) {
-	m.tenantMetrics.comparisonMetrics.WithLabelValues(
-		tenantID, tenantName,
-		fmt.Sprintf("%d", activeTunnels),
-		fmt.Sprintf("%d", activeConnections),
-		fmt.Sprintf("%.2f", bandwidthMbps),
-		fmt.Sprintf("%.2f", dataTransferGB),
-		fmt.Sprintf("%.2f", responseTimeMs),
-		fmt.Sprintf("%.2f", errorRatePercent),
-		fmt.Sprintf("%.2f", slaCompliancePercent),
-		fmt.Sprintf("%.2f", riskScore),
-		fmt.Sprintf("%.2f", revenuePerHour),
-		fmt.Sprintf("%.2f", customerSatisfaction),
-	).Set(1)
+func (m *Metrics) SetTenantComparisonMetric(tenantID, tenantName, metric string, value float64) {
+	m.tenantMetrics.comparisonMetrics.WithLabelValues(tenantID, tenantName, metric).Set(value)
 }
 
 func (m *Metrics) SetTenantResourceUtilization(utilization float64) {
@@ -1794,10 +1715,7 @@ func (m *Metrics) IncCadenceWorkflows(workflowType, domain string) {
 }
 
 func (m *Metrics) SetCadenceWorkflowsActive(workflowType, domain string, count int) {
-	// Set active workflows using WorkflowStatus gauge
-	for i := 0; i < count; i++ {
-		m.cadenceMetrics.WorkflowStatus.WithLabelValues(workflowType, "", domain).Set(1.0)
-	}
+	m.cadenceMetrics.ActiveWorkflows.WithLabelValues(workflowType, domain).Set(float64(count))
 }
 
 func (m *Metrics) IncCadenceWorkflowsCompleted(workflowType, domain string) {

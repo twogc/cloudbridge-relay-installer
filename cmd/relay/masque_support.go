@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/quic-go/quic-go/http3"
 	"github.com/quic-go/quic-go/quicvarint"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
 
 	"github.com/twogc/cloudbridge-relay-installer/config"
 	"github.com/twogc/cloudbridge-relay-installer/internal/logger"
@@ -47,10 +49,15 @@ func errToStatus(err error) int {
 
 // MASQUEServer представляет MASQUE сервер для обхода корпоративных сетей
 type MASQUEServer struct {
-	logger      *logger.Logger
-	config      *config.Config
+	logger *logger.Logger
+	config *config.Config
+
+	// H3 сервер (UDP/QUIC)
 	http3Server *http3.Server
-	
+
+	// H2/H1 сервер (TCP/TLS) - fallback
+	httpServer *http.Server
+
 	// MASQUE protocol components
 	udpProxy       *masque.MASQUEProxy
 	connectIPProxy *masque.ConnectIPProxy
@@ -149,9 +156,9 @@ func (mc *MASQUEConnection) ReceiveDatagram(ctx context.Context) ([]byte, error)
 func NewMASQUEServer(logger *logger.Logger, config *config.Config) *MASQUEServer {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Create MASQUE proxy configuration
+	// Create MASQUE proxy configuration - PORT 443 for corporate proxy bypass
 	masqueConfig := &masque.Config{
-		ListenAddr: ":8443",
+		ListenAddr: ":443", // CRITICAL: Use port 443 to bypass corporate firewalls
 		CertFile:   config.Security.CertFile,
 		KeyFile:    config.Security.KeyFile,
 	}
@@ -193,38 +200,62 @@ func (ms *MASQUEServer) Start() error {
 	}
 	ms.logger.Info("TLS configuration created successfully")
 
-	// Создаем HTTP/3 сервер
-	ms.logger.Info("Creating HTTP/3 server...")
+	// Создаем HTTP/3 сервер (UDP/QUIC) на порту 443
+	ms.logger.Info("Creating HTTP/3 server (UDP/QUIC) on port 443...")
 	ms.http3Server = &http3.Server{
-		Addr:            ":8443",
-		Handler:         ms.createHTTPHandler(),
+		Addr:            ":443",               // CRITICAL: Port 443 to bypass corporate firewalls
+		Handler:         ms.createH3Handler(), // Только H3/MASQUE + datagrams
 		TLSConfig:       tlsConfig,
 		EnableDatagrams: true, // Критично для MASQUE HTTP Datagrams
 		QUICConfig: &quic.Config{
 			MaxIdleTimeout:  30 * time.Second,
 			EnableDatagrams: true, // Включаем QUIC datagrams
+			// Anti-amplification protection
+			MaxIncomingStreams:    100,
+			MaxIncomingUniStreams: 100,
 		},
 	}
 	ms.logger.Info("HTTP/3 server created successfully")
 
-	// Запускаем сервер
+	// Создаем HTTP/2/1 сервер (TCP/TLS) на том же порту 443
+	ms.logger.Info("Creating HTTP/2/1 server (TCP/TLS) on port 443...")
+	tcpMux := http.NewServeMux()
+	tcpMux.HandleFunc("/.well-known/masque/udp/", ms.handleConnectUDPH2)
+	tcpMux.HandleFunc("/.well-known/masque/ip/", ms.handleConnectIPH2)
+	tcpMux.HandleFunc("/api/v1/connect", ms.handleFallbackConnect)
+	tcpMux.HandleFunc("/ws", ms.handleWebSocketFallback)
+	tcpMux.HandleFunc("/tcp", ms.handleTCPFallback)
+	tcpMux.HandleFunc("/health", ms.handleHealth)
+	tcpMux.HandleFunc("/", ms.handleRoot)
+
+	ms.httpServer = &http.Server{
+		Addr:      ":443",
+		Handler:   tcpMux,
+		TLSConfig: tlsConfig,
+	}
+
+	// Включаем HTTP/2
+	if err := http2.ConfigureServer(ms.httpServer, &http2.Server{}); err != nil {
+		ms.logger.Error("Failed to configure HTTP/2", zap.Error(err))
+		return fmt.Errorf("failed to configure HTTP/2: %v", err)
+	}
+	ms.logger.Info("HTTP/2/1 server created successfully")
+
+	// Запускаем H3 сервер (UDP/QUIC)
 	go func() {
-		addr := ":8443" // MASQUE порт по умолчанию
-		ms.logger.Info("MASQUE HTTP/3 server starting", zap.String("addr", addr))
-
-		// Запускаем HTTP/3 сервер
-		ms.logger.Info("Starting HTTP/3 server ListenAndServe...")
-		ms.logger.Info("HTTP/3 server configuration",
-			zap.String("addr", addr),
-			zap.Bool("tls_config_present", ms.http3Server.TLSConfig != nil),
-			zap.Bool("handler_present", ms.http3Server.Handler != nil))
-
-		// Используем ListenAndServe с явным указанием адреса
+		ms.logger.Info("Starting HTTP/3 server (UDP/QUIC) on port 443...")
 		if err := ms.http3Server.ListenAndServe(); err != nil {
-			ms.logger.Error("MASQUE HTTP/3 server error", zap.Error(err))
+			ms.logger.Error("HTTP/3 server error", zap.Error(err))
 			ms.isRunning = false
-		} else {
-			ms.logger.Info("HTTP/3 server ListenAndServe completed without error")
+		}
+	}()
+
+	// Запускаем H2/H1 сервер (TCP/TLS)
+	go func() {
+		ms.logger.Info("Starting HTTP/2/1 server (TCP/TLS) on port 443...")
+		if err := ms.httpServer.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			ms.logger.Error("HTTP/2/1 server error", zap.Error(err))
+			ms.isRunning = false
 		}
 	}()
 
@@ -255,16 +286,14 @@ func (ms *MASQUEServer) createTLSConfig() (*tls.Config, error) {
 		ms.logger.Info("Let's Encrypt certificate loaded successfully")
 	}
 
-	ms.logger.Info("Creating TLS configuration...")
+	ms.logger.Info("Creating TLS configuration with HTTPS masquerading...")
 	tlsConfig := &tls.Config{
-		MinVersion: tls.VersionTLS12,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		},
+		// CRITICAL: TLS 1.3 required for H3
+		MinVersion: tls.VersionTLS13,
+		// Remove manual cipher suites - let TLS 1.3 choose automatically
 		Certificates: []tls.Certificate{cert},
-		NextProtos:   ms.config.MASQUE.ALPNProtocols,
+		// CRITICAL: ALPN protocols for HTTPS masquerading to bypass corporate proxies
+		NextProtos: []string{"h3", "h2", "http/1.1"}, // Support HTTP/3, HTTP/2, and HTTP/1.1
 	}
 
 	ms.logger.Info("TLS configuration created successfully",
@@ -354,9 +383,9 @@ func (ms *MASQUEServer) generateSelfSignedCert() (tls.Certificate, error) {
 	return tlsCert, nil
 }
 
-// createHTTPHandler создает HTTP обработчик для MASQUE
+// createHTTPHandler создает HTTP обработчик для MASQUE с fallback поддержкой
 func (ms *MASQUEServer) createHTTPHandler() http.Handler {
-	ms.logger.Info("Creating HTTP handler for MASQUE server...")
+	ms.logger.Info("Creating HTTP handler for MASQUE server with fallback support...")
 	mux := http.NewServeMux()
 
 	// CONNECT-UDP обработчик
@@ -371,12 +400,187 @@ func (ms *MASQUEServer) createHTTPHandler() http.Handler {
 	mux.HandleFunc("/.well-known/masque/datagrams/", ms.handleHTTPDatagrams)
 	ms.logger.Info("HTTP Datagrams handler registered", zap.String("path", "/.well-known/masque/datagrams/"))
 
+	// Fallback handlers for corporate proxy bypass
+	mux.HandleFunc("/api/v1/connect", ms.handleFallbackConnect) // HTTP/2 CONNECT fallback
+	mux.HandleFunc("/ws", ms.handleWebSocketFallback)           // WebSocket fallback
+	mux.HandleFunc("/tcp", ms.handleTCPFallback)                // TCP fallback
+
 	// Health check
 	mux.HandleFunc("/health", ms.handleHealth)
 	ms.logger.Info("Health check handler registered", zap.String("path", "/health"))
 
-	ms.logger.Info("HTTP handler created successfully")
+	// Root handler for HTTPS masquerading
+	mux.HandleFunc("/", ms.handleRoot)
+
+	ms.logger.Info("HTTP handler created successfully with fallback support")
 	return mux
+}
+
+// createH3Handler создает HTTP/3 обработчик (только H3/MASQUE + datagrams)
+func (ms *MASQUEServer) createH3Handler() http.Handler {
+	ms.logger.Info("Creating HTTP/3 handler for MASQUE...")
+	mux := http.NewServeMux()
+
+	// CONNECT-UDP обработчик (H3 native datagrams)
+	mux.HandleFunc("/.well-known/masque/udp/", ms.handleConnectUDPH3)
+	ms.logger.Info("CONNECT-UDP H3 handler registered", zap.String("path", "/.well-known/masque/udp/"))
+
+	// CONNECT-IP обработчик (H3 native datagrams)
+	mux.HandleFunc("/.well-known/masque/ip/", ms.handleConnectIPH3)
+	ms.logger.Info("CONNECT-IP H3 handler registered", zap.String("path", "/.well-known/masque/ip/"))
+
+	// HTTP Datagrams обработчик (H3 native datagrams)
+	mux.HandleFunc("/.well-known/masque/datagrams/", ms.handleHTTPDatagramsH3)
+	ms.logger.Info("HTTP Datagrams H3 handler registered", zap.String("path", "/.well-known/masque/datagrams/"))
+
+	// Health check
+	mux.HandleFunc("/health", ms.handleHealth)
+	ms.logger.Info("Health check handler registered", zap.String("path", "/health"))
+
+	ms.logger.Info("HTTP/3 handler created successfully")
+	return mux
+}
+
+// handleConnectUDPH3 обрабатывает CONNECT-UDP запросы для H3 (native datagrams)
+func (ms *MASQUEServer) handleConnectUDPH3(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("CONNECT-UDP H3 request received",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()),
+		zap.String("host", r.Host))
+
+	// CRITICAL: CONNECT parsing из :authority header (RFC 9298)
+	target := r.Host
+	if target == "" {
+		// Fallback на path parsing для совместимости
+		target = strings.TrimPrefix(r.URL.Path, "/.well-known/masque/udp/")
+		if target == "" {
+			http.Error(w, "Missing target in :authority header or URL path", http.StatusBadRequest)
+			return
+		}
+	}
+
+	ms.logger.Info("CONNECT-UDP H3 target resolved", zap.String("target", target))
+
+	// H3 native datagrams - не нужен Capsule-Protocol
+	w.WriteHeader(http.StatusOK)
+
+	// Создаем MASQUE соединение для H3
+	connection, err := ms.createMASQUEConnection(r, target, "udp")
+	if err != nil {
+		ms.logger.Error("Failed to create MASQUE connection", zap.Error(err))
+		http.Error(w, "Failed to create connection", http.StatusInternalServerError)
+		return
+	}
+
+	ms.logger.Info("CONNECT-UDP H3 connection established", zap.String("connection_id", connection.ID))
+}
+
+// handleConnectIPH3 обрабатывает CONNECT-IP запросы для H3
+func (ms *MASQUEServer) handleConnectIPH3(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("CONNECT-IP H3 request received",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()),
+		zap.String("host", r.Host))
+
+	// CONNECT parsing из :authority header
+	target := r.Host
+	if target == "" {
+		target = strings.TrimPrefix(r.URL.Path, "/.well-known/masque/ip/")
+		if target == "" {
+			http.Error(w, "Missing target in :authority header or URL path", http.StatusBadRequest)
+			return
+		}
+	}
+
+	ms.logger.Info("CONNECT-IP H3 target resolved", zap.String("target", target))
+
+	// H3 native datagrams
+	w.WriteHeader(http.StatusOK)
+
+	connection, err := ms.createMASQUEConnection(r, target, "ip")
+	if err != nil {
+		ms.logger.Error("Failed to create MASQUE connection", zap.Error(err))
+		http.Error(w, "Failed to create connection", http.StatusInternalServerError)
+		return
+	}
+
+	ms.logger.Info("CONNECT-IP H3 connection established", zap.String("connection_id", connection.ID))
+}
+
+// handleHTTPDatagramsH3 обрабатывает HTTP Datagrams для H3
+func (ms *MASQUEServer) handleHTTPDatagramsH3(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("HTTP Datagrams H3 request received",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()))
+
+	// H3 native datagrams - не требуем Capsule-Protocol
+	w.WriteHeader(http.StatusOK)
+
+	ms.logger.Info("HTTP Datagrams H3 handler completed")
+}
+
+// handleConnectUDPH2 обрабатывает CONNECT-UDP запросы для H2/H1 (Capsule-Protocol)
+func (ms *MASQUEServer) handleConnectUDPH2(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("CONNECT-UDP H2/H1 request received",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()),
+		zap.String("host", r.Host))
+
+	// Проверяем Capsule-Protocol header для H2/H1
+	if r.Header.Get("Capsule-Protocol") != "?1" {
+		http.Error(w, "Capsule-Protocol header required for H2/H1", http.StatusBadRequest)
+		return
+	}
+
+	// CONNECT parsing из :authority header
+	target := r.Host
+	if target == "" {
+		target = strings.TrimPrefix(r.URL.Path, "/.well-known/masque/udp/")
+		if target == "" {
+			http.Error(w, "Missing target in :authority header or URL path", http.StatusBadRequest)
+			return
+		}
+	}
+
+	ms.logger.Info("CONNECT-UDP H2/H1 target resolved", zap.String("target", target))
+
+	// H2/H1 с Capsule-Protocol
+	w.Header().Set("Capsule-Protocol", "?1")
+	w.WriteHeader(http.StatusOK)
+
+	ms.logger.Info("CONNECT-UDP H2/H1 connection established")
+}
+
+// handleConnectIPH2 обрабатывает CONNECT-IP запросы для H2/H1
+func (ms *MASQUEServer) handleConnectIPH2(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("CONNECT-IP H2/H1 request received",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()),
+		zap.String("host", r.Host))
+
+	// Проверяем Capsule-Protocol header
+	if r.Header.Get("Capsule-Protocol") != "?1" {
+		http.Error(w, "Capsule-Protocol header required for H2/H1", http.StatusBadRequest)
+		return
+	}
+
+	// CONNECT parsing из :authority header
+	target := r.Host
+	if target == "" {
+		target = strings.TrimPrefix(r.URL.Path, "/.well-known/masque/ip/")
+		if target == "" {
+			http.Error(w, "Missing target in :authority header or URL path", http.StatusBadRequest)
+			return
+		}
+	}
+
+	ms.logger.Info("CONNECT-IP H2/H1 target resolved", zap.String("target", target))
+
+	// H2/H1 с Capsule-Protocol
+	w.Header().Set("Capsule-Protocol", "?1")
+	w.WriteHeader(http.StatusOK)
+
+	ms.logger.Info("CONNECT-IP H2/H1 connection established")
 }
 
 // handleConnectUDP обрабатывает CONNECT-UDP запросы
@@ -401,7 +605,7 @@ func (ms *MASQUEServer) handleConnectUDP(w http.ResponseWriter, r *http.Request)
 
 	// Create MASQUE request with target address
 	req := &masque.Request{Host: target}
-	
+
 	// Handle connection using MASQUE proxy
 	if err := ms.udpProxy.Proxy(w, req); err != nil {
 		ms.logger.Error("Failed to handle UDP proxy connection", zap.Error(err))
@@ -432,7 +636,7 @@ func (ms *MASQUEServer) handleConnectIP(w http.ResponseWriter, r *http.Request) 
 
 	// Create CONNECT-IP request
 	connectIPReq := &masque.ConnectIPRequest{TargetIP: target}
-	
+
 	// Handle connection using CONNECT-IP proxy
 	if _, err := ms.connectIPProxy.Proxy(w, connectIPReq); err != nil {
 		ms.logger.Error("Failed to handle IP proxy connection", zap.Error(err))
@@ -576,7 +780,7 @@ func (ms *MASQUEServer) processIPCapsule(data []byte, remoteAddr string, context
 
 	// Для простоты, мы просто логируем получение IP capsule
 	// В полной реализации здесь была бы обработка IP пакетов
-	ms.logger.Debug("IP capsule received", 
+	ms.logger.Debug("IP capsule received",
 		zap.String("remote_addr", remoteAddr),
 		zap.Uint64("context_id", contextID),
 		zap.Int("data_len", len(data)))
@@ -604,6 +808,79 @@ func (ms *MASQUEServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}`, ms.config.MASQUE.Enabled, connectionCount, time.Now().UTC().Format(time.RFC3339))
 
 	w.Write([]byte(response))
+}
+
+// handleRoot обрабатывает корневые запросы для HTTPS маскировки
+func (ms *MASQUEServer) handleRoot(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("Root request received for HTTPS masquerading",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()),
+		zap.String("user_agent", r.UserAgent()))
+
+	// Возвращаем обычный HTTP ответ для маскировки под веб-сервер
+	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Server", "nginx/1.20.2") // Маскируемся под nginx
+
+	// CRITICAL: Alt-Svc для H3 клиентов
+	w.Header().Set("Alt-Svc", `h3=":443"; ma=86400`)
+
+	w.WriteHeader(http.StatusOK)
+
+	html := `<!DOCTYPE html>
+<html>
+<head>
+    <title>CloudBridge Relay</title>
+</head>
+<body>
+    <h1>CloudBridge Relay Service</h1>
+    <p>Service is running normally.</p>
+</body>
+</html>`
+
+	w.Write([]byte(html))
+}
+
+// handleFallbackConnect обрабатывает HTTP/2 CONNECT fallback
+func (ms *MASQUEServer) handleFallbackConnect(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("HTTP/2 CONNECT fallback request received",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()))
+
+	if r.Method != http.MethodConnect {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Обрабатываем как обычный CONNECT-UDP
+	ms.handleConnectUDP(w, r)
+}
+
+// handleWebSocketFallback обрабатывает WebSocket fallback
+func (ms *MASQUEServer) handleWebSocketFallback(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("WebSocket fallback request received",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()))
+
+	// Проверяем WebSocket upgrade
+	if r.Header.Get("Upgrade") != "websocket" {
+		http.Error(w, "WebSocket upgrade required", http.StatusBadRequest)
+		return
+	}
+
+	// Здесь должна быть логика WebSocket fallback
+	// Пока что возвращаем ошибку
+	http.Error(w, "WebSocket fallback not implemented", http.StatusNotImplemented)
+}
+
+// handleTCPFallback обрабатывает TCP fallback
+func (ms *MASQUEServer) handleTCPFallback(w http.ResponseWriter, r *http.Request) {
+	ms.logger.Info("TCP fallback request received",
+		zap.String("method", r.Method),
+		zap.String("url", r.URL.String()))
+
+	// Здесь должна быть логика TCP fallback
+	// Пока что возвращаем ошибку
+	http.Error(w, "TCP fallback not implemented", http.StatusNotImplemented)
 }
 
 // createMASQUEConnection создает новое MASQUE соединение

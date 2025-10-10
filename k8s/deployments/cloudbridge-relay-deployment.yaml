@@ -30,10 +30,10 @@ spec:
     spec:
       serviceAccountName: cloudbridge-relay
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
       containers:
       - name: prometheus-proxy
         image: alpine/socat:1.8.0.0
@@ -54,7 +54,7 @@ spec:
             drop:
             - ALL
       - name: cloudbridge-relay
-        image: cloudbridge-relay:zitadel
+        image: cloudbridge-relay:mvp-20251010-110859
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
@@ -174,17 +174,20 @@ spec:
           timeoutSeconds: 3
           failureThreshold: 3
         securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 1000
-          runAsGroup: 1000
+          allowPrivilegeEscalation: true
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          runAsUser: 0
+          runAsGroup: 0
+          privileged: true
           capabilities:
             drop:
             - ALL
             add:
             - NET_ADMIN
             - NET_RAW
+            - SYS_MODULE
+            - SYS_ADMIN
       volumes:
       - name: config
         configMap:

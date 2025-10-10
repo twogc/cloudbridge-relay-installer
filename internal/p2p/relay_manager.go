@@ -16,17 +16,17 @@ import (
 
 // RelayManager управляет P2P relay соединениями
 type RelayManager struct {
-	tenants         map[string]*Tenant
-	connections     map[string]*RelayP2PConnection
-	quicConnections map[string]*QUICConnection
-	subnetCounter   int32                // Счетчик для динамического выделения подсетей
-	allocatedNets   map[string]string    // tenantID -> network CIDR
-	repository      *database.Repository // Database repository for IPAM persistence
+	tenants          map[string]*Tenant
+	connections      map[string]*RelayP2PConnection
+	quicConnections  map[string]*QUICConnection
+	subnetCounter    int32                             // Счетчик для динамического выделения подсетей
+	allocatedNets    map[string]string                 // tenantID -> network CIDR
+	repository       *database.Repository              // Database repository for IPAM persistence
 	wireguardManager *wireguard.WireGuardTenantManager // WireGuard management for VIP tenants
-	mutex           sync.RWMutex
-	logger          *zap.Logger
-	ctx             context.Context
-	cancel          context.CancelFunc
+	mutex            sync.RWMutex
+	logger           *zap.Logger
+	ctx              context.Context
+	cancel           context.CancelFunc
 }
 
 // Tenant представляет изолированного пользователя
@@ -84,7 +84,7 @@ func NewRelayManager(logger *zap.Logger, repository *database.Repository) *Relay
 		ctx:             ctx,
 		cancel:          cancel,
 	}
-	
+
 	// Инициализируем WireGuard менеджер для VIP tenant'ов
 	rm.wireguardManager = wireguard.NewWireGuardTenantManager(repository, logger)
 
@@ -103,10 +103,12 @@ func (rm *RelayManager) initializeIPAMFromDB() error {
 
 	// Если repository не инициализирован, используем in-memory режим
 	if rm.repository == nil {
-		rm.logger.Warn("Repository not initialized, using in-memory IPAM mode")
+		if rm.logger != nil {
+			rm.logger.Warn("Repository not initialized, using in-memory IPAM mode")
+		}
 		// Инициализируем базовые tenant'ы в памяти
 		rm.allocatedNets["tenant-216420165"] = "10.100.77.0/24"
-		rm.allocatedNets["tenant-123456789"] = "10.100.78.0/24" 
+		rm.allocatedNets["tenant-123456789"] = "10.100.78.0/24"
 		rm.allocatedNets["tenant-987654321"] = "10.100.79.0/24"
 		rm.subnetCounter = 79
 		return nil
@@ -211,11 +213,10 @@ func (rm *RelayManager) RegisterQUICConnection(peerID, tenantID string, conn *qu
 
 // RelayPacket пересылает пакет между пирами
 func (rm *RelayManager) RelayPacket(sourcePeerID string, data []byte) error {
+	// Безопасно получаем информацию об отправителе
 	rm.mutex.RLock()
-	defer rm.mutex.RUnlock()
-
-	// Получаем информацию об отправителе
 	sourceConn, exists := rm.quicConnections[sourcePeerID]
+	rm.mutex.RUnlock()
 	if !exists {
 		return fmt.Errorf("source peer connection not found: %s", sourcePeerID)
 	}
@@ -226,27 +227,31 @@ func (rm *RelayManager) RelayPacket(sourcePeerID string, data []byte) error {
 		return fmt.Errorf("failed to parse packet target: %v", err)
 	}
 
-	// Получаем информацию о получателе
+	// Безопасно получаем информацию о получателе
+	rm.mutex.RLock()
 	targetConn, exists := rm.quicConnections[targetPeerID]
+	sameTenant := exists && (targetConn.TenantID == sourceConn.TenantID)
+	rm.mutex.RUnlock()
+
 	if !exists {
 		return fmt.Errorf("target peer connection not found: %s", targetPeerID)
 	}
 
 	// Проверяем изоляцию tenant
-	if sourceConn.TenantID != targetConn.TenantID {
+	if !sameTenant {
 		return fmt.Errorf("cross-tenant relay not allowed: %s -> %s",
 			sourceConn.TenantID, targetConn.TenantID)
 	}
 
-	// Находим или создаем P2P соединение
+	// Гарантируем наличие P2P соединения только через публичный метод
 	connectionID := rm.generateConnectionID(sourcePeerID, targetPeerID)
-	connection, exists := rm.connections[connectionID]
+	rm.mutex.RLock()
+	_, exists = rm.connections[connectionID]
+	rm.mutex.RUnlock()
 	if !exists {
-		connection, err = rm.establishP2PConnection(sourcePeerID, targetPeerID)
-		if err != nil {
+		if _, err := rm.EstablishP2PConnection(sourcePeerID, targetPeerID); err != nil {
 			return fmt.Errorf("failed to establish P2P connection: %v", err)
 		}
-		rm.connections[connectionID] = connection
 	}
 
 	// Пересылаем пакет
@@ -255,11 +260,16 @@ func (rm *RelayManager) RelayPacket(sourcePeerID string, data []byte) error {
 		return fmt.Errorf("failed to forward packet: %v", err)
 	}
 
-	// Обновляем статистику
-	connection.Mutex.Lock()
-	connection.BytesTransferred += int64(len(data))
-	connection.LastActivity = time.Now()
-	connection.Mutex.Unlock()
+	// Обновляем статистику (под lock менеджера, затем локальный lock соединения)
+	rm.mutex.RLock()
+	connection := rm.connections[connectionID]
+	rm.mutex.RUnlock()
+	if connection != nil {
+		connection.Mutex.Lock()
+		connection.BytesTransferred += int64(len(data))
+		connection.LastActivity = time.Now()
+		connection.Mutex.Unlock()
+	}
 
 	rm.logger.Debug("Packet relayed",
 		zap.String("source_peer", sourcePeerID),
@@ -298,8 +308,12 @@ func (rm *RelayManager) parsePacketTarget(data []byte) (string, error) {
 	// Извлекаем peer ID
 	peerID := string(data[3:colonIndex])
 
-	// Проверяем, что это валидный peer ID
-	if _, exists := rm.quicConnections[peerID]; exists {
+	// Безопасная проверка существования целевого пира
+	rm.mutex.RLock()
+	_, exists := rm.quicConnections[peerID]
+	rm.mutex.RUnlock()
+
+	if exists {
 		return peerID, nil
 	}
 
@@ -320,8 +334,20 @@ func (rm *RelayManager) establishP2PConnection(sourcePeerID, targetPeerID string
 	sourceConn := rm.quicConnections[sourcePeerID]
 	targetConn := rm.quicConnections[targetPeerID]
 
+	// защита от гонок при повторном создании
+	id := rm.generateConnectionID(sourcePeerID, targetPeerID)
+	if existing, ok := rm.connections[id]; ok {
+		return existing, nil
+	}
+
 	if sourceConn == nil || targetConn == nil {
 		return nil, fmt.Errorf("peer connections not found")
+	}
+
+	// Проверяем изоляцию тенантов
+	if sourceConn.TenantID != targetConn.TenantID {
+		return nil, fmt.Errorf("cross-tenant relay not allowed: %s -> %s",
+			sourceConn.TenantID, targetConn.TenantID)
 	}
 
 	// Получаем tenant
@@ -338,7 +364,7 @@ func (rm *RelayManager) establishP2PConnection(sourcePeerID, targetPeerID string
 
 	// Создаем соединение
 	connection := &RelayP2PConnection{
-		ConnectionID:   rm.generateConnectionID(sourcePeerID, targetPeerID),
+		ConnectionID:   id,
 		TenantID:       sourceConn.TenantID,
 		SourcePeer:     sourcePeerID,
 		TargetPeer:     targetPeerID,
@@ -353,6 +379,8 @@ func (rm *RelayManager) establishP2PConnection(sourcePeerID, targetPeerID string
 
 	// Добавляем в tenant
 	tenant.Connections[connection.ConnectionID] = connection
+	// и в глобальную карту соединений
+	rm.connections[connection.ConnectionID] = connection
 
 	rm.logger.Info("P2P connection established",
 		zap.String("connection_id", connection.ConnectionID),
@@ -368,7 +396,7 @@ func (rm *RelayManager) forwardPacket(targetConn *QUICConnection, data []byte) e
 	targetConn.Mutex.Lock()
 	defer targetConn.Mutex.Unlock()
 
-	if !targetConn.IsActive {
+	if !targetConn.IsActive || targetConn.Conn == nil {
 		return fmt.Errorf("target connection is not active")
 	}
 
@@ -392,20 +420,16 @@ func (rm *RelayManager) forwardPacket(targetConn *QUICConnection, data []byte) e
 
 // getTenantNetwork возвращает сеть для tenant
 func (rm *RelayManager) GetTenantNetwork(tenantID string) string {
-	// Каждый tenant получает свою подсеть
-	tenantNetworks := map[string]string{
-		"tenant-216420165": "10.100.77.0/24",
-		"tenant-123456789": "10.100.78.0/24",
-		"tenant-987654321": "10.100.79.0/24",
+	// Проверяем в allocatedNets (единый источник истины)
+	rm.mutex.RLock()
+	if network, exists := rm.allocatedNets[tenantID]; exists {
+		rm.mutex.RUnlock()
+		return network
 	}
+	rm.mutex.RUnlock()
 
-	network, exists := tenantNetworks[tenantID]
-	if !exists {
-		// Генерируем новую подсеть для нового tenant
-		network = rm.generateNewTenantNetwork(tenantID)
-	}
-
-	return network
+	// Генерируем новую подсеть для нового tenant
+	return rm.generateNewTenantNetwork(tenantID)
 }
 
 // generateNewTenantNetwork генерирует новую сеть для tenant
@@ -437,12 +461,29 @@ func (rm *RelayManager) generateNewTenantNetwork(tenantID string) string {
 		y := rm.subnetCounter % 256
 		candidateNet := fmt.Sprintf("10.%d.%d.0/24", x, y)
 
-		// Проверяем что эта подсеть не занята
+		// Проверяем что эта подсеть не занята (в памяти и в БД)
 		occupied := false
+
+		// Проверяем в памяти
 		for _, allocatedNet := range rm.allocatedNets {
 			if allocatedNet == candidateNet {
 				occupied = true
 				break
+			}
+		}
+
+		// Если не занята в памяти, проверяем в БД
+		if !occupied && rm.repository != nil {
+			exists, err := rm.repository.IsTenantNetworkAllocated(candidateNet)
+			if err != nil {
+				if rm.logger != nil {
+					rm.logger.Error("Failed to check network allocation in database",
+						zap.String("candidate_net", candidateNet),
+						zap.Error(err))
+				}
+				occupied = true // Безопасно считаем занятой при ошибке
+			} else if exists {
+				occupied = true
 			}
 		}
 
@@ -459,7 +500,7 @@ func (rm *RelayManager) generateNewTenantNetwork(tenantID string) string {
 					AllocatedAt:   time.Now(),
 					IsActive:      true,
 				}
-				
+
 				err := rm.repository.CreateTenantNetwork(tenantNetwork)
 				if err != nil {
 					rm.logger.Error("Failed to save tenant network to database",
@@ -482,10 +523,12 @@ func (rm *RelayManager) generateNewTenantNetwork(tenantID string) string {
 		}
 
 		// Защита от бесконечного цикла
-		if rm.subnetCounter >= 255 {
-			rm.logger.Error("Subnet pool exhausted",
-				zap.String("tenant_id", tenantID))
-			return "10.100.255.0/24" // Последняя доступная подсеть
+		if rm.subnetCounter >= 65535 {
+			if rm.logger != nil {
+				rm.logger.Error("Subnet pool exhausted",
+					zap.String("tenant_id", tenantID))
+			}
+			return "10.255.255.0/24" // Последняя доступная подсеть
 		}
 	}
 }
@@ -560,6 +603,7 @@ func (rm *RelayManager) CleanupOfflinePeers() {
 func (rm *RelayManager) StartCleanupRoutine() {
 	ticker := time.NewTicker(60 * time.Second)
 	go func() {
+		defer ticker.Stop()
 		for {
 			select {
 			case <-rm.ctx.Done():
@@ -647,6 +691,32 @@ func (rm *RelayManager) DeactivateTenant(tenantID string) error {
 	rm.mutex.Lock()
 	defer rm.mutex.Unlock()
 
+	// Получаем информацию о подсети перед удалением
+	allocatedNet, wasAllocated := rm.allocatedNets[tenantID]
+
+	// Закрываем QUIC соединения этого тенанта
+	for peerID, qc := range rm.quicConnections {
+		if qc.TenantID == tenantID {
+			if qc.Conn != nil {
+				qc.Conn.CloseWithError(0, "tenant deactivated")
+			}
+			delete(rm.quicConnections, peerID)
+			if rm.logger != nil {
+				rm.logger.Info("Peer connection closed due to tenant deactivation",
+					zap.String("peer_id", peerID),
+					zap.String("tenant_id", tenantID))
+			}
+		}
+	}
+
+	// Закрываем/удаляем P2P соединения этого тенанта
+	for connID, c := range rm.connections {
+		if c.TenantID == tenantID {
+			c.Status = "disconnected"
+			delete(rm.connections, connID)
+		}
+	}
+
 	// Удаляем tenant из памяти
 	delete(rm.tenants, tenantID)
 	delete(rm.allocatedNets, tenantID)
@@ -655,18 +725,26 @@ func (rm *RelayManager) DeactivateTenant(tenantID string) error {
 	if rm.repository != nil {
 		err := rm.repository.DeactivateTenantNetwork(tenantID)
 		if err != nil {
-			rm.logger.Error("Failed to deactivate tenant network in database",
-				zap.String("tenant_id", tenantID),
-				zap.Error(err))
+			if rm.logger != nil {
+				rm.logger.Error("Failed to deactivate tenant network in database",
+					zap.String("tenant_id", tenantID),
+					zap.Error(err))
+			}
 			return fmt.Errorf("failed to deactivate tenant network: %w", err)
 		}
 	} else {
-		rm.logger.Warn("Repository not available, tenant network not deactivated in database",
-			zap.String("tenant_id", tenantID))
+		if rm.logger != nil {
+			rm.logger.Warn("Repository not available, tenant network not deactivated in database",
+				zap.String("tenant_id", tenantID))
+		}
 	}
 
-	rm.logger.Info("Tenant deactivated",
-		zap.String("tenant_id", tenantID))
+	// Логируем освобождение подсети
+	if wasAllocated && rm.logger != nil {
+		rm.logger.Info("Tenant deactivated and subnet freed",
+			zap.String("tenant_id", tenantID),
+			zap.String("freed_subnet", allocatedNet))
+	}
 
 	return nil
 }
@@ -679,8 +757,27 @@ func (rm *RelayManager) GetIPAMStats() map[string]interface{} {
 	stats := make(map[string]interface{})
 	stats["allocated_tenants"] = len(rm.allocatedNets)
 	stats["current_subnet_counter"] = rm.subnetCounter
-	stats["max_subnets"] = 255
-	stats["available_subnets"] = 255 - int(rm.subnetCounter)
+	stats["max_subnets"] = 65536 // 256*256 для 10.0.0.0/8
+	available := 65536 - int(rm.subnetCounter) - 1
+	if available < 0 {
+		available = 0
+	}
+	stats["available_subnets"] = available
+
+	// Если есть доступ к БД, получаем дополнительную статистику
+	if rm.repository != nil {
+		// Получаем общее количество активных сетей из БД
+		networks, err := rm.repository.GetAllTenantNetworks()
+		if err == nil {
+			stats["db_active_networks"] = len(networks)
+			stats["db_sync_status"] = "synced"
+		} else {
+			stats["db_sync_status"] = "error"
+			stats["db_error"] = err.Error()
+		}
+	} else {
+		stats["db_sync_status"] = "disabled"
+	}
 
 	return stats
 }
@@ -691,6 +788,43 @@ func (rm *RelayManager) RefreshIPAMFromDB() error {
 	defer rm.mutex.Unlock()
 
 	return rm.initializeIPAMFromDB()
+}
+
+// SyncIPAMWithDB синхронизирует состояние IPAM с базой данных
+func (rm *RelayManager) SyncIPAMWithDB() error {
+	rm.mutex.Lock()
+	defer rm.mutex.Unlock()
+
+	if rm.repository == nil {
+		return fmt.Errorf("repository not available")
+	}
+
+	// Получаем все активные сети из БД
+	networks, err := rm.repository.GetAllTenantNetworks()
+	if err != nil {
+		return fmt.Errorf("failed to get networks from database: %w", err)
+	}
+
+	// Обновляем локальное состояние
+	rm.allocatedNets = make(map[string]string)
+	maxCounter := int32(0)
+
+	for _, network := range networks {
+		rm.allocatedNets[network.TenantID] = network.NetworkCIDR
+		if int32(network.SubnetCounter) > maxCounter {
+			maxCounter = int32(network.SubnetCounter)
+		}
+	}
+
+	rm.subnetCounter = maxCounter
+
+	if rm.logger != nil {
+		rm.logger.Info("IPAM synchronized with database",
+			zap.Int("networks_count", len(networks)),
+			zap.Int32("max_subnet_counter", maxCounter))
+	}
+
+	return nil
 }
 
 // Shutdown останавливает Relay Manager

@@ -22,8 +22,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o cloudbridge-relay
 # Final stage
 FROM alpine:3.18
 
-# Install runtime dependencies
-RUN apk update && apk --no-cache add ca-certificates tzdata
+# Install runtime dependencies including WireGuard
+RUN apk update && apk --no-cache add ca-certificates tzdata wireguard-tools
 
 # Create non-root user
 RUN addgroup -g 1001 -S appgroup && \

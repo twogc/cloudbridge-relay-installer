@@ -345,6 +345,18 @@ type configRaw struct {
 		MaxSendMsgSize   int    `json:"max_send_msg_size"`
 	} `json:"grpc"`
 
+	// WebSocket Fallback Configuration
+	WebSocketFallback struct {
+		Enabled    bool   `json:"enabled"`
+		ListenAddr string `json:"listen_addr"`
+	} `json:"websocket_fallback"`
+
+	// TCP Fallback Configuration
+	TCPFallback struct {
+		Enabled    bool   `json:"enabled"`
+		ListenAddr string `json:"listen_addr"`
+	} `json:"tcp_fallback"`
+
 	// Kubernetes clusters for kube proxy
 	Kubernetes struct {
 		Clusters []struct {
@@ -893,7 +905,7 @@ func replaceEnvVars(s string) string {
 		// Проверяем, есть ли дефолтное значение (синтаксис ${VAR:-default})
 		varName := content
 		defaultValue := ""
-		
+
 		if idx := strings.Index(content, ":-"); idx != -1 {
 			varName = content[:idx]
 			defaultValue = content[idx+2:]
@@ -1146,6 +1158,11 @@ func Load(path string) (*Config, error) {
 		config.Server.MaxTunnels = 1000
 	}
 
+	// Set default metrics path
+	if config.Metrics.Path == "" {
+		config.Metrics.Path = "/metrics"
+	}
+
 	// Enhanced QUIC
 	config.EnhancedQUIC.Enabled = raw.EnhancedQUIC.Enabled
 	config.EnhancedQUIC.MaxStreams = raw.EnhancedQUIC.MaxStreams
@@ -1205,6 +1222,14 @@ func Load(path string) (*Config, error) {
 	config.MASQUE.ProxyURL = raw.MASQUE.ProxyURL
 	config.MASQUE.ALPNProtocols = raw.MASQUE.ALPNProtocols
 	config.MASQUE.FallbackEnabled = raw.MASQUE.FallbackEnabled
+
+	// WebSocket Fallback
+	config.WebSocketFallback.Enabled = raw.WebSocketFallback.Enabled
+	config.WebSocketFallback.ListenAddr = raw.WebSocketFallback.ListenAddr
+
+	// TCP Fallback
+	config.TCPFallback.Enabled = raw.TCPFallback.Enabled
+	config.TCPFallback.ListenAddr = raw.TCPFallback.ListenAddr
 
 	// gRPC
 	config.GRPC.Enabled = raw.GRPC.Enabled
@@ -1293,6 +1318,14 @@ func Load(path string) (*Config, error) {
 
 // Validate validates the configuration
 func (c *Config) Validate() error {
+	// Validate Server.Address/Port conflict
+	if c.Server.Address != "" && c.Server.Port != 0 {
+		// Check if Address contains port
+		if !strings.Contains(c.Server.Address, ":") {
+			return fmt.Errorf("use either server.address (with port) or server.port, not both")
+		}
+	}
+
 	if c.Server.MaxTunnels < 0 {
 		return fmt.Errorf("max_tunnels must be positive")
 	}

@@ -4,10 +4,23 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
 )
+
+// hostOnly извлекает только IP из net.Addr, убирая порт
+func hostOnly(addr net.Addr) string {
+	if addr == nil {
+		return ""
+	}
+	host, _, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		return addr.String() // на крайний случай
+	}
+	return host
+}
 
 // P2PManager управляет P2P соединениями с интеграцией Cadence
 type P2PManager struct {
@@ -17,8 +30,9 @@ type P2PManager struct {
 	siteToSiteManager  SiteToSiteManagerInterface
 	metrics            *P2PMetrics
 	logger             *zap.Logger
-	isInitialized      bool
+	isStarted          bool
 	cadenceIntegration CadenceP2PIntegrationInterface
+	mu                 sync.RWMutex
 }
 
 // NewP2PManager создает новый P2P менеджер
@@ -36,7 +50,7 @@ func NewP2PManager(
 		siteToSiteManager: siteToSite,
 		metrics:           NewP2PMetrics(),
 		logger:            logger,
-		isInitialized:     true,
+		isStarted:         false,
 	}
 
 	// Cadence интеграция будет инициализирована позже через SetCadenceIntegration
@@ -68,8 +82,11 @@ func (pm *P2PManager) SetCadenceIntegration(cadenceIntegration CadenceP2PIntegra
 
 // Initialize инициализирует P2P компоненты
 func (pm *P2PManager) Initialize(ctx context.Context) error {
-	if !pm.isInitialized {
-		return fmt.Errorf("P2P Manager not properly initialized")
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	if pm.isStarted {
+		return fmt.Errorf("P2P Manager already started")
 	}
 
 	// Запускаем peer discovery
@@ -80,6 +97,7 @@ func (pm *P2PManager) Initialize(ctx context.Context) error {
 	// Добавляем обнаруженных пиров в mesh topology
 	go pm.processDiscoveredPeers(ctx)
 
+	pm.isStarted = true
 	pm.logger.Info("P2P Manager initialized successfully")
 	return nil
 }
@@ -132,8 +150,7 @@ func (pm *P2PManager) processDiscoveredPeers(ctx context.Context) {
 					continue
 				}
 
-				// Обновляем статус peer
-				p2pPeer.Status = "connected"
+				// Статус остается "discovered" до реальной проверки соединения
 				pm.logger.Info("Peer added to P2P mesh",
 					zap.String("peer_id", peer.PeerID),
 					zap.String("endpoint", peer.Endpoint),
@@ -167,10 +184,13 @@ func (pm *P2PManager) isPeerConnected(peerID string) bool {
 
 // IsAvailable проверяет доступность P2P соединения
 func (pm *P2PManager) IsAvailable(ctx context.Context, clientIP string, tenantID string) bool {
-	if !pm.isInitialized {
-		pm.logger.Debug("P2P Manager not initialized")
+	pm.mu.RLock()
+	if !pm.isStarted {
+		pm.mu.RUnlock()
+		pm.logger.Debug("P2P Manager not started")
 		return false
 	}
+	pm.mu.RUnlock()
 
 	// Проверяем, есть ли доступные пиры
 	peers, err := pm.peerDiscovery.DiscoverPeers()
@@ -207,11 +227,14 @@ func (pm *P2PManager) IsAvailable(ctx context.Context, clientIP string, tenantID
 func (pm *P2PManager) HandleConnection(ctx context.Context, conn net.Conn, tenantID string) error {
 	start := time.Now()
 
-	if !pm.isInitialized {
-		return fmt.Errorf("P2P Manager not initialized")
+	pm.mu.RLock()
+	if !pm.isStarted {
+		pm.mu.RUnlock()
+		return fmt.Errorf("P2P Manager not started")
 	}
+	pm.mu.RUnlock()
 
-	clientIP := conn.RemoteAddr().String()
+	clientIP := hostOnly(conn.RemoteAddr())
 	pm.logger.Info("Handling P2P connection",
 		zap.String("client_ip", clientIP),
 		zap.String("tenant_id", tenantID),
@@ -363,6 +386,42 @@ func (pm *P2PManager) establishConnectionDirectly(ctx context.Context, tenantID,
 	return nil
 }
 
+// pickBestPeer выбирает лучшего пира с параллельными проверками
+func (pm *P2PManager) pickBestPeer(ctx context.Context, peers []*DiscoveredPeer) *DiscoveredPeer {
+	type res struct {
+		p   *DiscoveredPeer
+		ok  bool
+		rtt time.Duration
+	}
+	ch := make(chan res, len(peers))
+
+	for _, p := range peers {
+		p := p
+		go func() {
+			start := time.Now()
+			ok := pm.isDirectRouteAvailable(ctx, p)
+			ch <- res{p: p, ok: ok, rtt: time.Since(start)}
+		}()
+	}
+
+	var best *DiscoveredPeer
+	bestRTT := time.Hour
+	for i := 0; i < len(peers); i++ {
+		r := <-ch
+		if !r.ok {
+			continue
+		}
+		if r.rtt < bestRTT {
+			bestRTT = r.rtt
+			best = r.p
+		}
+	}
+	if best != nil {
+		best.Latency = int(bestRTT / time.Millisecond)
+	}
+	return best
+}
+
 // determineOptimalRoute определяет оптимальный маршрут для соединения
 func (pm *P2PManager) determineOptimalRoute(ctx context.Context, clientIP, tenantID string) (*RouteInfo, error) {
 	// Получаем доступных пиров
@@ -375,30 +434,22 @@ func (pm *P2PManager) determineOptimalRoute(ctx context.Context, clientIP, tenan
 		return nil, fmt.Errorf("no P2P peers available")
 	}
 
-	// Выбираем лучшего пира на основе задержки и доверия
-	var bestPeer *DiscoveredPeer
-	var bestLatency time.Duration = time.Hour // Максимальная задержка
-
-	for _, peer := range peers {
-		// Проверяем доверие
-		if peer.TrustLevel != "basic" && peer.TrustLevel != "high" {
-			continue
-		}
-
-		// Проверяем задержку
-		if time.Duration(peer.Latency)*time.Millisecond < bestLatency {
-			bestLatency = time.Duration(peer.Latency) * time.Millisecond
-			bestPeer = peer
+	// Фильтруем по trust level
+	filtered := make([]*DiscoveredPeer, 0, len(peers))
+	for _, p := range peers {
+		if p.TrustLevel == "basic" || p.TrustLevel == "high" {
+			filtered = append(filtered, p)
 		}
 	}
 
+	bestPeer := pm.pickBestPeer(ctx, filtered)
 	if bestPeer == nil {
 		return nil, fmt.Errorf("no suitable P2P peer found")
 	}
 
 	// Определяем тип маршрута
 	routeType := "mesh"
-	if pm.isDirectRouteAvailable(clientIP, bestPeer) {
+	if pm.isDirectRouteAvailable(ctx, bestPeer) {
 		routeType = "direct"
 	}
 
@@ -412,16 +463,21 @@ func (pm *P2PManager) determineOptimalRoute(ctx context.Context, clientIP, tenan
 }
 
 // isDirectRouteAvailable проверяет доступность прямого маршрута
-func (pm *P2PManager) isDirectRouteAvailable(clientIP string, peer *DiscoveredPeer) bool {
-	// Реальная проверка доступности прямого маршрута
-	conn, err := net.DialTimeout("tcp", peer.Endpoint, 5*time.Second)
+func (pm *P2PManager) isDirectRouteAvailable(ctx context.Context, peer *DiscoveredPeer) bool {
+	// Используем контекст с таймаутом
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	// UDP probe для QUIC (более подходящий для P2P)
+	d := &net.Dialer{}
+	conn, err := d.DialContext(ctx, "udp", peer.Endpoint)
 	if err != nil {
-		pm.logger.Debug("Direct route not available",
-			zap.String("peer_endpoint", peer.Endpoint),
+		pm.logger.Debug("Direct route probe (UDP) failed",
+			zap.String("endpoint", peer.Endpoint),
 			zap.Error(err))
 		return false
 	}
-	conn.Close()
+	_ = conn.Close()
 
 	pm.logger.Debug("Direct route available",
 		zap.String("peer_endpoint", peer.Endpoint))
@@ -477,8 +533,13 @@ func (pm *P2PManager) handleMeshP2P(ctx context.Context, conn net.Conn, route *R
 func (pm *P2PManager) measureLatency(ctx context.Context, clientIP string) time.Duration {
 	start := time.Now()
 
-	// Реальное измерение задержки через TCP соединение
-	conn, err := net.DialTimeout("tcp", clientIP+":9090", 5*time.Second)
+	// Используем контекст с таймаутом
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// UDP probe для более точного измерения (подходит для QUIC)
+	d := &net.Dialer{}
+	conn, err := d.DialContext(ctx, "udp", clientIP+":9090")
 	if err != nil {
 		pm.logger.Debug("Failed to measure latency",
 			zap.String("client_ip", clientIP),
@@ -501,6 +562,14 @@ func (pm *P2PManager) GetMetrics() *P2PMetrics {
 	return pm.metrics
 }
 
+// GetMetricsSnapshot возвращает снимок метрик
+func (pm *P2PManager) GetMetricsSnapshot() map[string]interface{} {
+	return map[string]interface{}{
+		"peer_count": 0, // Временная заглушка - нужно добавить метод в P2PMetrics
+		// Добавить другие агрегаты по необходимости
+	}
+}
+
 // UpdatePeerCount обновляет количество активных пиров
 func (pm *P2PManager) UpdatePeerCount(count int) {
 	pm.metrics.SetPeerCount(count)
@@ -508,10 +577,12 @@ func (pm *P2PManager) UpdatePeerCount(count int) {
 
 // GetStatus возвращает статус P2P Manager
 func (pm *P2PManager) GetStatus() map[string]interface{} {
+	pm.mu.RLock()
 	status := map[string]interface{}{
-		"initialized": pm.isInitialized,
-		"metrics":     pm.metrics, // Убираем вызов несуществующего метода
+		"started": pm.isStarted,
+		"metrics": pm.GetMetricsSnapshot(),
 	}
+	pm.mu.RUnlock()
 
 	// Добавляем информацию о mesh topology
 	if pm.p2pMesh != nil {

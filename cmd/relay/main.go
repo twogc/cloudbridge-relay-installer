@@ -56,8 +56,8 @@ var (
 	// Prometheus metrics
 	connectionsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "relay_connections_total",
-			Help: "Total number of connections",
+			Name: "relay_connections_by_status_total",
+			Help: "Total number of connections by status",
 		},
 		[]string{"status"},
 	)
@@ -125,12 +125,12 @@ type Server struct {
 	wsTunnel *tunnel.WebSocketTunnel
 
 	// Enhanced QUIC components
-	enhancedQUICManager  *EnhancedQUICManager
-	tenantManager        *tenant.Manager
-	loadBalancer         *balancer.Balancer
-	ipRateLimit          *ratelimit.IPLimiter
-	enhancedEnabled      bool
-	p2pQUICEnabled       bool
+	enhancedQUICManager *EnhancedQUICManager
+	tenantManager       *tenant.Manager
+	loadBalancer        *balancer.Balancer
+	ipRateLimit         *ratelimit.IPLimiter
+	enhancedEnabled     bool
+	p2pQUICEnabled      bool
 
 	// P2P Integration
 	p2pIntegration   *P2PIntegration
@@ -299,7 +299,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		loadBal = balancer.NewBalancerWithEnhanced()
 		ipRateLimit = ratelimit.NewIPLimiterWithEnhanced(100.0, 1000) // 100 req/sec, burst 1000
 
-
 		// Настраиваем интеграции
 		if err := enhancedQUICManager.SetupIntegrations(tenantMgr, loadBal, ipRateLimit, nil); err != nil {
 			loggerInstance.Error("Failed to setup Enhanced QUIC integrations", zap.Error(err))
@@ -333,56 +332,12 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Initialize WebSocket tunnel components
 	var wsTunnel *tunnel.WebSocketTunnel
 
-	// Initialize TURN pool
-	turnPoolConfig := &nat.TURNPoolConfig{
-		DefaultPoolName:         "default",
-		AllocationTimeout:       30 * time.Second,
-		HealthCheckInterval:     30 * time.Second,
-		HealthCheckTimeout:      5 * time.Second,
-		MaxAllocationsPerClient: 10,
-		LoadBalancingStrategy:   "round_robin",
-		WeightedThreshold:       0.8,
-		MetricsEnabled:          true,
-		StatsInterval:           60 * time.Second,
-		LatencyHistorySize:      100,
-		FailoverEnabled:         true,
-		FailoverTimeout:         10 * time.Second,
-		MaxRetries:              3,
-		BackoffMultiplier:       2.0,
-	}
-	turnPool = nat.NewTURNPoolManager(turnPoolConfig, loggerInstance.GetZapLogger())
+	// CRITICAL: Убираем дублирование TURN Pool
+	// Используем только конфиг-ориентированный подход
 
-	// Add default TURN server to pool
-	defaultTURNServer := &nat.TURNServerPool{
-		Address:        "127.0.0.1:3478",
-		Username:       "cloudbridge",
-		Password:       "turnpassword",
-		Realm:          "cloudbridge.local",
-		Priority:       1,
-		Weight:         100,
-		MaxConnections: 1000,
-		Region:         "default",
-		Provider:       "cloudbridge",
-		Capabilities:   []string{"udp", "tcp", "tls"},
-		Tags:           map[string]string{"env": "development"},
-	}
-
-	// Create TURNServerInfo from TURNServerPool
-	serverInfo := &nat.TURNServerInfo{
-		TURNServerPool: defaultTURNServer,
-		Region:         "default",
-		Provider:       "cloudbridge",
-		Capabilities:   []string{"udp", "tcp", "tls"},
-		Tags:           map[string]string{"env": "development"},
-		Status:         "active",
-		StatusChanged:  time.Now(),
-	}
-
-	// Add server to default pool
-	err = turnPool.AddServerToPool("default", serverInfo)
-	if err != nil {
-		loggerInstance.Error("Failed to add default TURN server to pool", zap.Error(err))
-	}
+	// CRITICAL: Убираем дублирование - используем только конфиг-ориентированный подход
+	// defaultTURNServer := &nat.TURNServerPool{...}
+	// err = turnPool.AddServerToPool("default", serverInfo)
 
 	// Initialize Enhanced TURN server
 	if cfg.ICEStunTurn.Enabled {
@@ -429,7 +384,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	// Передаем allowed_ips из конфигурации
 	allowedIPs := cfg.Security.AllowedIPs
 	loggerInstance.Info("Using allowed IPs from configuration", zap.Int("count", len(allowedIPs)))
-
 
 	// Ensure API port is set correctly
 	apiPort := cfg.API.Port
@@ -870,47 +824,47 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}()
 
 	return &Server{
-		config:               cfg,
-		logger:               loggerInstance,
-		tunnelManager:        tunnelManager,
-		metricsServer:        metricsServer,
-		metrics:              metricsInstance,
-		authAdapter:          authAdapter,
-		circuitBreaker:       circuitBreaker,
-		healthChecker:        healthChecker,
-		turnServer:           turnServer,
-		turnPool:             turnPool,
-		derpServer:           derpServer,
-		wsTunnel:             wsTunnel,
-		enhancedQUICManager:  enhancedQUICManager,
-		tenantManager:        tenantMgr,
-		loadBalancer:         loadBal,
-		ipRateLimit:          ipRateLimit,
-		enhancedEnabled:      enhancedEnabled,
-		p2pQUICEnabled:       true, // P2P QUIC enabled
-		p2pAPIServer:         p2pAPIServer,
-		quantumEnabled:       quantumEnabled,
-		quantumConfig:        quantumConfig,
-		quantumP2PQUIC:       quantumP2PQUIC,
-		quantumEnhancedQUIC:  quantumEnhancedQUIC,
-		aiComponents:         aiComponents,
-		protocolSelector:     protocolSelector,
-		protocolEngine:       protocolEngine,
-		p2pManager:           p2pManager,
-		p2cManager:           p2cManager,
-		connectionHandler:    connectionHandler,
-		autoSwitchManager:    autoSwitchManager,
-		cadenceClient:        cadenceClient,
-		p2pIntegration:       p2pIntegration,
-		quicRelayHandler:     quicRelayHandler,
-		wgProfileManager:     wgProfileManager,
-		masqueIntegration:    masqueIntegration,
-		zitadelIntegration:   zitadelIntegration,
-		turnPoolManager:      turnPoolManager,
-		grpcIntegration:      grpcIntegration,
-		ctx:                  ctx,
-		cancel:               cancel,
-		startTime:            time.Now(),
+		config:              cfg,
+		logger:              loggerInstance,
+		tunnelManager:       tunnelManager,
+		metricsServer:       metricsServer,
+		metrics:             metricsInstance,
+		authAdapter:         authAdapter,
+		circuitBreaker:      circuitBreaker,
+		healthChecker:       healthChecker,
+		turnServer:          turnServer,
+		turnPool:            turnPool,
+		derpServer:          derpServer,
+		wsTunnel:            wsTunnel,
+		enhancedQUICManager: enhancedQUICManager,
+		tenantManager:       tenantMgr,
+		loadBalancer:        loadBal,
+		ipRateLimit:         ipRateLimit,
+		enhancedEnabled:     enhancedEnabled,
+		p2pQUICEnabled:      true, // P2P QUIC enabled
+		p2pAPIServer:        p2pAPIServer,
+		quantumEnabled:      quantumEnabled,
+		quantumConfig:       quantumConfig,
+		quantumP2PQUIC:      quantumP2PQUIC,
+		quantumEnhancedQUIC: quantumEnhancedQUIC,
+		aiComponents:        aiComponents,
+		protocolSelector:    protocolSelector,
+		protocolEngine:      protocolEngine,
+		p2pManager:          p2pManager,
+		p2cManager:          p2cManager,
+		connectionHandler:   connectionHandler,
+		autoSwitchManager:   autoSwitchManager,
+		cadenceClient:       cadenceClient,
+		p2pIntegration:      p2pIntegration,
+		quicRelayHandler:    quicRelayHandler,
+		wgProfileManager:    wgProfileManager,
+		masqueIntegration:   masqueIntegration,
+		zitadelIntegration:  zitadelIntegration,
+		turnPoolManager:     turnPoolManager,
+		grpcIntegration:     grpcIntegration,
+		ctx:                 ctx,
+		cancel:              cancel,
+		startTime:           time.Now(),
 	}, nil
 }
 
@@ -1291,10 +1245,7 @@ func (s *Server) Start() error {
 			}()
 		}
 
-		// Wait for kubectl proxy components to initialize
-		time.Sleep(1 * time.Second)
-
-		// Kube proxy endpoint
+		// Kube proxy endpoint - регистрируем сразу
 		httpMux.HandleFunc("/kube/", kubeProxyHTTPHandler)
 
 		log.Printf("kubectl proxy endpoint registered: /kube/")
@@ -1327,19 +1278,44 @@ func (s *Server) Start() error {
 
 			s.logger.Info("QUIC UDP server started on port 9090")
 
+			// CRITICAL: Worker pool для обработки пакетов
+			type packetJob struct {
+				addr *net.UDPAddr
+				data []byte
+			}
+
+			jobChan := make(chan packetJob, 4096)
+			workerCount := runtime.GOMAXPROCS(0) * 2
+
+			// Запускаем воркеры
+			for i := 0; i < workerCount; i++ {
+				go func() {
+					for job := range jobChan {
+						s.handleQUICPacket(udpConn, job.addr, job.data)
+					}
+				}()
+			}
+
 			buffer := make([]byte, 4096)
 			for {
 				n, addr, err := udpConn.ReadFromUDP(buffer)
 				if err != nil {
 					if s.ctx.Err() != nil {
+						close(jobChan)
 						return // Server is shutting down
 					}
 					s.logger.Error("Failed to read from QUIC UDP", zap.Error(err))
 					continue
 				}
 
-				// Handle QUIC packet
-				go s.handleQUICPacket(udpConn, addr, buffer[:n])
+				// Отправляем в пул воркеров
+				data := make([]byte, n)
+				copy(data, buffer[:n])
+				select {
+				case jobChan <- packetJob{addr: addr, data: data}:
+				default:
+					s.logger.Warn("Packet dropped: worker pool full")
+				}
 			}
 		}()
 	}
@@ -1371,19 +1347,44 @@ func (s *Server) Start() error {
 
 			s.logger.Info("STUN UDP server started on port 19302")
 
+			// CRITICAL: Worker pool для STUN пакетов
+			type stunPacketJob struct {
+				addr *net.UDPAddr
+				data []byte
+			}
+
+			stunJobChan := make(chan stunPacketJob, 1024)
+			stunWorkerCount := runtime.GOMAXPROCS(0)
+
+			// Запускаем воркеры для STUN
+			for i := 0; i < stunWorkerCount; i++ {
+				go func() {
+					for job := range stunJobChan {
+						s.handleSTUNPacket(udpConn, job.addr, job.data)
+					}
+				}()
+			}
+
 			buffer := make([]byte, 4096)
 			for {
 				n, addr, err := udpConn.ReadFromUDP(buffer)
 				if err != nil {
 					if s.ctx.Err() != nil {
+						close(stunJobChan)
 						return // Server is shutting down
 					}
 					s.logger.Error("Failed to read from STUN UDP", zap.Error(err))
 					continue
 				}
 
-				// Handle STUN packet
-				go s.handleSTUNPacket(udpConn, addr, buffer[:n])
+				// Отправляем в пул воркеров
+				data := make([]byte, n)
+				copy(data, buffer[:n])
+				select {
+				case stunJobChan <- stunPacketJob{addr: addr, data: data}:
+				default:
+					s.logger.Warn("STUN packet dropped: worker pool full")
+				}
 			}
 		}()
 	}
@@ -1461,7 +1462,7 @@ func (s *Server) Start() error {
 	s.logger.Info("Relay server started",
 		zap.Int("tcp_port", s.config.Server.Port),
 		zap.Int("http_port", s.config.HTTPSAPI.Port),
-		zap.Int("p2p_quic_port", s.config.API.Port),
+		zap.Int("p2p_quic_port", 5553), // CRITICAL: реальный порт P2P QUIC
 		zap.Int("quic_port", 9090),
 		zap.Int("stun_port", 19302),
 		zap.Int("enhanced_quic_port", 9092),
@@ -2194,16 +2195,12 @@ func main() {
 
 // generateTLSConfig генерирует TLS конфигурацию для QUIC
 func (s *Server) generateTLSConfig() *tls.Config {
-	// Создаем простой TLS конфиг без сертификата
+	// CRITICAL: QUIC требует TLS 1.3
 	// В реальном приложении здесь должен быть загружен сертификат
 	return &tls.Config{
-		MinVersion: tls.VersionTLS12,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		},
-		NextProtos: []string{"cloudbridge-p2p", "h3", "h3-29", "h3-28", "h3-27"},
+		MinVersion: tls.VersionTLS13, // CRITICAL: TLS 1.3 для QUIC
+		// CipherSuites не нужны для TLS 1.3 - они игнорируются
+		NextProtos: []string{"h3", "h3-29", "h3-28", "h3-27", "cloudbridge-p2p"},
 	}
 }
 

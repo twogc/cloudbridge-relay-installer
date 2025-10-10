@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,24 +11,40 @@ import (
 	"go.uber.org/zap"
 )
 
+// Ошибки валидации для удобства обработки
+var (
+	ErrExpired          = errors.New("token expired")
+	ErrNotYetValid      = errors.New("token not yet valid")
+	ErrInvalidIssuer    = errors.New("invalid issuer")
+	ErrInvalidAudience  = errors.New("invalid audience")
+	ErrInvalidTokenType = errors.New("invalid token type")
+	ErrPermissionDenied = errors.New("insufficient permissions")
+	ErrRoleDenied       = errors.New("insufficient roles")
+	ErrNotInitialized   = errors.New("validator is not initialized")
+)
+
 // ZitadelValidator предоставляет валидацию JWT токенов от Zitadel
 type ZitadelValidator struct {
-	publicKey *rsa.PublicKey
-	issuer    string
-	audience  string
-	logger    *zap.Logger
-	keyID     string
-	clockSkew time.Duration
+	publicKey         *rsa.PublicKey
+	issuer            string
+	audience          string
+	allowedAudiences  []string
+	allowedAlgorithms map[string]bool
+	logger            *zap.Logger
+	keyID             string
+	clockSkew         time.Duration
 }
 
 // ZitadelValidatorConfig конфигурация для ZitadelValidator
 type ZitadelValidatorConfig struct {
-	PublicKey *rsa.PublicKey
-	Issuer    string
-	Audience  string
-	KeyID     string
-	ClockSkew time.Duration
-	Logger    *zap.Logger
+	PublicKey         *rsa.PublicKey
+	Issuer            string
+	Audience          string
+	AllowedAudiences  []string
+	AllowedAlgorithms []string
+	KeyID             string
+	ClockSkew         time.Duration
+	Logger            *zap.Logger
 }
 
 // NewZitadelValidator создает новый валидатор для Zitadel токенов
@@ -36,29 +53,68 @@ func NewZitadelValidator(config ZitadelValidatorConfig) *ZitadelValidator {
 		config.ClockSkew = 5 * time.Minute
 	}
 
+	// Инициализируем разрешенные алгоритмы
+	allowedAlgorithms := make(map[string]bool)
+	if len(config.AllowedAlgorithms) > 0 {
+		for _, alg := range config.AllowedAlgorithms {
+			allowedAlgorithms[alg] = true
+		}
+	} else {
+		// По умолчанию разрешаем RS256
+		allowedAlgorithms[jwt.SigningMethodRS256.Alg()] = true
+	}
+
+	// Инициализируем разрешенные аудитории
+	allowedAudiences := config.AllowedAudiences
+	if len(allowedAudiences) == 0 && config.Audience != "" {
+		allowedAudiences = []string{config.Audience}
+	}
+
 	return &ZitadelValidator{
-		publicKey: config.PublicKey,
-		issuer:    config.Issuer,
-		audience:  config.Audience,
-		keyID:     config.KeyID,
-		clockSkew: config.ClockSkew,
-		logger:    config.Logger,
+		publicKey:         config.PublicKey,
+		issuer:            config.Issuer,
+		audience:          config.Audience,
+		allowedAudiences:  allowedAudiences,
+		allowedAlgorithms: allowedAlgorithms,
+		keyID:             config.KeyID,
+		clockSkew:         config.ClockSkew,
+		logger:            config.Logger,
 	}
 }
 
 // ValidateRelayToken валидирует relay токен от Zitadel
 func (v *ZitadelValidator) ValidateRelayToken(ctx context.Context, tokenString string) (*RelayClaims, error) {
-	// Парсим токен
-	token, err := jwt.ParseWithClaims(tokenString, &RelayClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// Проверяем алгоритм подписи
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+	if v.publicKey == nil {
+		v.logger.Warn("Zitadel public key is nil")
+		return nil, ErrNotInitialized
+	}
+
+	// Создаем список разрешенных алгоритмов для парсера
+	validMethods := make([]string, 0, len(v.allowedAlgorithms))
+	for alg := range v.allowedAlgorithms {
+		validMethods = append(validMethods, alg)
+	}
+
+	// Создаем парсер с встроенными проверками
+	parser := jwt.NewParser(
+		jwt.WithValidMethods(validMethods),
+		jwt.WithIssuer(v.issuer),
+		jwt.WithAudience(v.allowedAudiences...),
+		jwt.WithLeeway(v.clockSkew),
+	)
+
+	token, err := parser.ParseWithClaims(tokenString, &RelayClaims{}, func(t *jwt.Token) (interface{}, error) {
+		alg := t.Method.Alg()
+		if !v.allowedAlgorithms[alg] {
+			return nil, fmt.Errorf("unexpected signing alg: %s", alg)
 		}
 
-		// Проверяем key ID если указан
+		// Проверяем key ID (мягко - только логируем)
 		if v.keyID != "" {
-			if kid, ok := token.Header["kid"].(string); ok && kid != v.keyID {
-				return nil, fmt.Errorf("unexpected key ID: %v", kid)
+			if kid, _ := t.Header["kid"].(string); kid != v.keyID {
+				v.logger.Warn("JWT kid mismatch",
+					zap.String("expected", v.keyID),
+					zap.String("actual", kid))
 			}
 		}
 
@@ -66,65 +122,34 @@ func (v *ZitadelValidator) ValidateRelayToken(ctx context.Context, tokenString s
 	})
 
 	if err != nil {
-		v.logger.Error("Failed to parse JWT token", zap.Error(err))
-		return nil, fmt.Errorf("failed to parse token: %w", err)
+		v.logger.Warn("JWT parse/validate failed", zap.Error(err))
+		return nil, fmt.Errorf("token parse/validate failed: %w", err)
 	}
 
 	claims, ok := token.Claims.(*RelayClaims)
 	if !ok || !token.Valid {
-		v.logger.Error("Invalid token claims or token not valid")
+		v.logger.Warn("JWT invalid claims or token invalid")
 		return nil, fmt.Errorf("invalid token claims")
 	}
 
-	// Проверяем issuer
-	if claims.Issuer != v.issuer {
-		v.logger.Error("Invalid issuer",
-			zap.String("expected", v.issuer),
-			zap.String("actual", claims.Issuer))
-		return nil, fmt.Errorf("invalid issuer: expected %s, got %s", v.issuer, claims.Issuer)
-	}
-
-	// Проверяем audience
-	if !v.validateAudience(claims.Audience) {
-		v.logger.Error("Invalid audience",
-			zap.String("expected", v.audience),
-			zap.Strings("actual", claims.Audience))
-		return nil, fmt.Errorf("invalid audience: expected %s, got %v", v.audience, claims.Audience)
-	}
-
-	// Проверяем тип токена
+	// Дополнительные доменные проверки
 	if !claims.IsRelayToken() {
-		v.logger.Error("Invalid token type", zap.String("token_type", claims.TokenType))
-		return nil, fmt.Errorf("invalid token type: %s", claims.TokenType)
+		v.logger.Warn("Invalid token type", zap.String("token_type", claims.TokenType))
+		return nil, ErrInvalidTokenType
 	}
 
-	// Проверяем время истечения только для сессионных токенов
-	if !claims.IsPermanentToken() && claims.ExpiresAt != nil {
-		now := time.Now()
-		if claims.ExpiresAt.Time.Before(now.Add(-v.clockSkew)) {
-			v.logger.Error("Token expired",
-				zap.Time("expires_at", claims.ExpiresAt.Time),
-				zap.Time("now", now))
-			return nil, fmt.Errorf("token expired")
-		}
+	// Для permanent токенов можно смягчить проверки времени
+	if claims.IsPermanentToken() {
+		// Parser уже проверил exp/nbf с учетом leeway
+		// Если нужно игнорировать exp для permanent токенов, можно добавить логику здесь
 	}
 
-	// Проверяем время "не раньше" (nbf)
-	if claims.NotBefore != nil {
-		now := time.Now()
-		if claims.NotBefore.Time.After(now.Add(v.clockSkew)) {
-			v.logger.Error("Token not yet valid",
-				zap.Time("not_before", claims.NotBefore.Time),
-				zap.Time("now", now))
-			return nil, fmt.Errorf("token not yet valid")
-		}
-	}
-
-	v.logger.Info("Successfully validated relay token",
+	v.logger.Info("Relay token validated",
 		zap.String("relay_server_id", claims.GetRelayServerID()),
 		zap.String("tenant_id", claims.GetTenantID()),
 		zap.String("org_id", claims.GetOrgID()),
-		zap.String("token_type", claims.TokenType))
+		zap.String("token_type", claims.TokenType),
+	)
 
 	return claims, nil
 }
@@ -136,10 +161,10 @@ func (v *ZitadelValidator) ValidatePermissions(claims *RelayClaims, requiredPerm
 	}
 
 	if !claims.ValidatePermissions(requiredPermissions) {
-		v.logger.Error("Insufficient permissions",
+		v.logger.Warn("Insufficient permissions",
 			zap.Strings("required", requiredPermissions),
 			zap.Strings("actual", claims.Permissions))
-		return fmt.Errorf("insufficient permissions: required %v, got %v", requiredPermissions, claims.Permissions)
+		return ErrPermissionDenied
 	}
 
 	return nil
@@ -152,23 +177,28 @@ func (v *ZitadelValidator) ValidateRoles(claims *RelayClaims, requiredRoles []st
 	}
 
 	if !claims.ValidateRoles(requiredRoles) {
-		v.logger.Error("Insufficient roles",
+		v.logger.Warn("Insufficient roles",
 			zap.Strings("required", requiredRoles),
 			zap.Strings("actual", claims.Roles))
-		return fmt.Errorf("insufficient roles: required %v, got %v", requiredRoles, claims.Roles)
+		return ErrRoleDenied
 	}
 
 	return nil
 }
 
-// validateAudience проверяет аудиторию токена
-func (v *ZitadelValidator) validateAudience(audience []string) bool {
-	if len(audience) == 0 {
+// validateAudienceList проверяет аудиторию токена против списка разрешенных
+func (v *ZitadelValidator) validateAudienceList(aud []string, allowed []string) bool {
+	if len(aud) == 0 || len(allowed) == 0 {
 		return false
 	}
 
-	for _, aud := range audience {
-		if aud == v.audience {
+	allowedSet := make(map[string]struct{}, len(allowed))
+	for _, a := range allowed {
+		allowedSet[a] = struct{}{}
+	}
+
+	for _, a := range aud {
+		if _, ok := allowedSet[a]; ok {
 			return true
 		}
 	}

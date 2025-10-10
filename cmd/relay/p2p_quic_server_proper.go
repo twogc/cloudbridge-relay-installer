@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"runtime"
 	"sync"
 	"time"
 
@@ -37,7 +38,7 @@ type P2PQUICServerProper struct {
 	udpConn *net.UDPConn
 
 	// Управление соединениями
-	connections      map[string]*quic.Conn
+	connections      map[string]*quic.Conn // CRITICAL: правильный тип
 	connectionsMutex sync.RWMutex
 
 	// StatelessResetKey для корректного завершения соединений
@@ -57,6 +58,16 @@ type P2PQUICServerProper struct {
 
 	// NAT Traversal Manager для NAT traversal
 	natTraversalManager *p2p.NATTraversalManager
+
+	// Worker pool для обработки non-QUIC пакетов (DoS protection)
+	nonQUICPacketChan chan nonQUICPacket
+	nonQUICWorkers    int
+}
+
+// nonQUICPacket представляет пакет для обработки в worker pool
+type nonQUICPacket struct {
+	addr net.Addr
+	data []byte
 }
 
 // NewP2PQUICServerProper создает новый правильный P2P QUIC сервер
@@ -94,13 +105,16 @@ func NewP2PQUICServerProper(logger *logger.Logger, ctx context.Context, quicRela
 		ctx:                   ctx,
 		quicRelayHandler:      quicRelayHandler,
 		config:                config,
-		connections:           make(map[string]*quic.Conn),
+		connections:           make(map[string]*quic.Conn), // CRITICAL: правильный тип
 		statelessResetManager: statelessResetManager,
 		iceSupport:            iceSupport,
 		masqueServer:          masqueServer,
 		tunnelManager:         tunnelManager,
 		quicUnderlayManager:   quicUnderlayManager,
 		natTraversalManager:   natTraversalManager,
+		// Инициализируем worker pool для DoS protection
+		nonQUICPacketChan: make(chan nonQUICPacket, 4096), // Буферизованный канал
+		nonQUICWorkers:    runtime.GOMAXPROCS(0) * 2,      // 2x CPU cores
 	}
 }
 
@@ -177,6 +191,9 @@ func (pqs *P2PQUICServerProper) Start() error {
 			zap.Int("read_buffer_size", 7*1024*1024),
 			zap.Int("write_buffer_size", 7*1024*1024))
 
+		// Запускаем worker pool для обработки non-QUIC пакетов (DoS protection)
+		pqs.startNonQUICWorkers()
+
 		// Создаем QUIC Transport - центральная точка для всех QUIC соединений
 		pqs.transport = &quic.Transport{
 			Conn: udpConn,
@@ -246,7 +263,7 @@ func (pqs *P2PQUICServerProper) handleIncomingConnections() {
 			pqs.connectionsMutex.Unlock()
 
 			// Обрабатываем соединение в отдельной горутине
-			go pqs.handleQUICConnection(conn, addrStr)
+			go pqs.handleQUICConnection(conn, addrStr) // conn уже quic.Connection
 		}
 	}
 }
@@ -282,8 +299,18 @@ func (pqs *P2PQUICServerProper) handleNonQUICPackets() {
 				zap.Int("size", n),
 				zap.String("first_bytes", fmt.Sprintf("%x", buffer[:logBytes])))
 
-			// Определяем тип пакета и обрабатываем
-			go pqs.processNonQUICPacket(addr, buffer[:n])
+			// Отправляем пакет в worker pool (DoS protection)
+			packetData := make([]byte, n)
+			copy(packetData, buffer[:n])
+			select {
+			case pqs.nonQUICPacketChan <- nonQUICPacket{addr: addr, data: packetData}:
+				// Пакет успешно отправлен в worker pool
+			default:
+				// Worker pool перегружен, логируем и пропускаем пакет
+				pqs.logger.Warn("Non-QUIC packet dropped: worker pool overloaded",
+					zap.String("from", addr.String()),
+					zap.Int("size", n))
+			}
 		}
 	}
 }
@@ -389,15 +416,11 @@ func (pqs *P2PQUICServerProper) Dial(ctx context.Context, addr string) (*quic.Co
 		return nil, fmt.Errorf("failed to resolve address: %v", err)
 	}
 
+	// CRITICAL: TLS 1.3 для QUIC, InsecureSkipVerify для dev
 	tlsConf := &tls.Config{
-		InsecureSkipVerify: false,
-		NextProtos:         []string{"cloudbridge-p2p", "h3", "h3-29", "h3-28", "h3-27"},
-		MinVersion:         tls.VersionTLS12,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		},
+		MinVersion:         tls.VersionTLS13,                  // CRITICAL: QUIC требует TLS 1.3
+		InsecureSkipVerify: true,                              // DEV: включить для самоподписанных сертификатов
+		NextProtos:         []string{"cloudbridge-p2p", "h3"}, // Убираем устаревшие h3-29/28/27
 	}
 
 	conn, err := pqs.transport.Dial(ctx, raddr, tlsConf, &quic.Config{
@@ -425,14 +448,9 @@ func (pqs *P2PQUICServerProper) generateTLSConfig() *tls.Config {
 	}
 
 	return &tls.Config{
-		MinVersion: tls.VersionTLS12,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		},
+		MinVersion:   tls.VersionTLS13, // CRITICAL: QUIC требует TLS 1.3
 		Certificates: []tls.Certificate{cert},
-		NextProtos:   []string{"cloudbridge-p2p", "h3", "h3-29", "h3-28", "h3-27"},
+		NextProtos:   []string{"cloudbridge-p2p", "h3"}, // Убираем устаревшие h3-29/28/27
 	}
 }
 
@@ -510,7 +528,7 @@ func (pqs *P2PQUICServerProper) Stop() error {
 				zap.Error(err))
 		}
 	}
-	pqs.connections = make(map[string]*quic.Conn)
+	pqs.connections = make(map[string]*quic.Conn) // CRITICAL: правильный тип
 	pqs.connectionsMutex.Unlock()
 
 	// Закрываем ICE поддержку
@@ -539,4 +557,26 @@ func (pqs *P2PQUICServerProper) Stop() error {
 
 	pqs.logger.Info("P2P QUIC server stopped successfully")
 	return nil
+}
+
+// startNonQUICWorkers запускает worker pool для обработки non-QUIC пакетов
+func (pqs *P2PQUICServerProper) startNonQUICWorkers() {
+	pqs.logger.Info("Starting non-QUIC packet workers",
+		zap.Int("workers", pqs.nonQUICWorkers),
+		zap.Int("channel_buffer", cap(pqs.nonQUICPacketChan)))
+
+	for i := 0; i < pqs.nonQUICWorkers; i++ {
+		go func(workerID int) {
+			pqs.logger.Debug("Non-QUIC worker started", zap.Int("worker_id", workerID))
+			for {
+				select {
+				case packet := <-pqs.nonQUICPacketChan:
+					pqs.processNonQUICPacket(packet.addr, packet.data)
+				case <-pqs.ctx.Done():
+					pqs.logger.Debug("Non-QUIC worker stopped", zap.Int("worker_id", workerID))
+					return
+				}
+			}
+		}(i)
+	}
 }

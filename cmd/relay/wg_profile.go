@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -128,15 +130,17 @@ func (w *WGProfileManager) Start() error {
 // Stop останавливает WG-профиль менеджер
 func (w *WGProfileManager) Stop() error {
 	w.logger.Info("Stopping WG Profile Manager")
-
 	w.cancel()
 	w.wg.Wait()
+
+	if w.metrics != nil {
+		w.metrics.SetWireGuardInterfaceStatus(w.config.WireGuard.Interface.Name, "stopped", false)
+	}
 
 	if err := w.client.Close(); err != nil {
 		w.logger.Error("Failed to close wgctrl client", zap.Error(err))
 		return err
 	}
-
 	w.logger.Info("WG Profile Manager stopped")
 	return nil
 }
@@ -163,6 +167,11 @@ func (w *WGProfileManager) initializeMainInterface() error {
 		zap.String("interface", interfaceName),
 		zap.Int("port", w.config.WireGuard.Interface.ListenPort),
 	)
+
+	// Создаем интерфейс с помощью ip команды
+	if err := w.createInterface(interfaceName); err != nil {
+		return fmt.Errorf("failed to create interface: %w", err)
+	}
 
 	// Генерируем ключи
 	privateKey, err := wgtypes.GeneratePrivateKey()
@@ -203,51 +212,78 @@ func (w *WGProfileManager) initializeMainInterface() error {
 	return nil
 }
 
+// createInterface создает WireGuard интерфейс с помощью ip команды
+func (w *WGProfileManager) createInterface(interfaceName string) error {
+	if _, err := w.client.Device(interfaceName); err == nil {
+		w.logger.Info("WireGuard interface already exists", zap.String("interface", interfaceName))
+		return nil
+	}
+
+	// ip link add <if> type wireguard
+	if out, err := exec.Command("ip", "link", "add", interfaceName, "type", "wireguard").CombinedOutput(); err != nil {
+		if strings.Contains(string(out), "File exists") {
+			w.logger.Info("WireGuard interface already exists", zap.String("interface", interfaceName))
+		} else {
+			return fmt.Errorf("ip link add failed: %w, output: %s", err, string(out))
+		}
+	}
+
+	// ip address add <cidr> dev <if>
+	addr := w.config.WireGuard.Interface.Address // например "10.20.30.1/24"
+	if addr != "" {
+		if out, err := exec.Command("ip", "address", "add", addr, "dev", interfaceName).CombinedOutput(); err != nil {
+			// адрес мог уже быть назначен — не фейлимся жёстко
+			if !strings.Contains(string(out), "File exists") {
+				return fmt.Errorf("ip address add failed: %w, output: %s", err, string(out))
+			}
+		}
+	}
+
+	// ip link set <if> up
+	if out, err := exec.Command("ip", "link", "set", interfaceName, "up").CombinedOutput(); err != nil {
+		return fmt.Errorf("ip link set up failed: %w, output: %s", err, string(out))
+	}
+
+	w.logger.Info("WireGuard interface created and brought up", zap.String("interface", interfaceName))
+	return nil
+}
+
 // AddPeer добавляет нового пира к интерфейсу
 func (w *WGProfileManager) AddPeer(interfaceName string, peerConfig wgtypes.PeerConfig) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	device, exists := w.devices[interfaceName]
-	if !exists {
+	// убедимся, что интерфейс существует
+	if _, exists := w.devices[interfaceName]; !exists {
 		return fmt.Errorf("interface %s not found", interfaceName)
 	}
 
-	// Получаем текущую конфигурацию
-	var existingPeers []wgtypes.PeerConfig
-	for _, peer := range device.Peers {
-		existingPeers = append(existingPeers, wgtypes.PeerConfig{
-			PublicKey:  peer.PublicKey,
-			Endpoint:   peer.Endpoint,
-			AllowedIPs: peer.AllowedIPs,
-		})
+	// передаём только то, что меняем
+	cfg := wgtypes.Config{
+		ReplacePeers: false, // не затирать остальных
+		Peers:        []wgtypes.PeerConfig{peerConfig},
 	}
-
-	config := wgtypes.Config{
-		PrivateKey:   &device.PrivateKey,
-		ListenPort:   &device.ListenPort,
-		ReplacePeers: false,
-		Peers:        append(existingPeers, peerConfig),
-	}
-
-	err := w.client.ConfigureDevice(interfaceName, config)
-	if err != nil {
+	if err := w.client.ConfigureDevice(interfaceName, cfg); err != nil {
 		return fmt.Errorf("failed to add peer: %w", err)
 	}
 
-	// Обновляем локальную информацию
-	device, err = w.client.Device(interfaceName)
+	// перечитываем актуальное состояние
+	device, err := w.client.Device(interfaceName)
 	if err != nil {
 		return fmt.Errorf("failed to get updated device info: %w", err)
 	}
-
 	w.devices[interfaceName] = device
 	w.peers[peerConfig.PublicKey.String()] = peerConfig
 
 	w.logger.Info("Peer added successfully",
 		zap.String("interface", interfaceName),
 		zap.String("public_key", peerConfig.PublicKey.String()),
-		zap.String("endpoint", peerConfig.Endpoint.String()),
+		func() zap.Field {
+			if peerConfig.Endpoint != nil {
+				return zap.String("endpoint", peerConfig.Endpoint.String())
+			}
+			return zap.String("endpoint", "")
+		}(),
 	)
 
 	// Записываем метрики добавления пира
@@ -265,42 +301,25 @@ func (w *WGProfileManager) RemovePeer(interfaceName string, publicKey wgtypes.Ke
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	device, exists := w.devices[interfaceName]
-	if !exists {
+	if _, exists := w.devices[interfaceName]; !exists {
 		return fmt.Errorf("interface %s not found", interfaceName)
 	}
 
-	// Создаем новый список пиров без удаляемого
-	var newPeers []wgtypes.PeerConfig
-	for _, peer := range device.Peers {
-		if peer.PublicKey != publicKey {
-			newPeers = append(newPeers, wgtypes.PeerConfig{
-				PublicKey:  peer.PublicKey,
-				Endpoint:   peer.Endpoint,
-				AllowedIPs: peer.AllowedIPs,
-			})
-		}
+	cfg := wgtypes.Config{
+		ReplacePeers: false,
+		Peers: []wgtypes.PeerConfig{{
+			PublicKey: publicKey,
+			Remove:    true,
+		}},
 	}
-
-	// Конфигурируем устройство с обновленным списком пиров
-	config := wgtypes.Config{
-		PrivateKey:   &device.PrivateKey,
-		ListenPort:   &device.ListenPort,
-		ReplacePeers: true,
-		Peers:        newPeers,
-	}
-
-	err := w.client.ConfigureDevice(interfaceName, config)
-	if err != nil {
+	if err := w.client.ConfigureDevice(interfaceName, cfg); err != nil {
 		return fmt.Errorf("failed to remove peer: %w", err)
 	}
 
-	// Обновляем локальную информацию
-	device, err = w.client.Device(interfaceName)
+	device, err := w.client.Device(interfaceName)
 	if err != nil {
 		return fmt.Errorf("failed to get updated device info: %w", err)
 	}
-
 	w.devices[interfaceName] = device
 	delete(w.peers, publicKey.String())
 
@@ -378,10 +397,14 @@ func (w *WGProfileManager) updateDeviceStatus() {
 
 		// Логируем статистику пиров
 		for _, peer := range device.Peers {
+			endpoint := ""
+			if peer.Endpoint != nil {
+				endpoint = peer.Endpoint.String()
+			}
 			w.logger.Debug("Peer status",
 				zap.String("interface", interfaceName),
 				zap.String("public_key", peer.PublicKey.String()),
-				zap.String("endpoint", peer.Endpoint.String()),
+				zap.String("endpoint", endpoint),
 				zap.Int64("rx_bytes", peer.ReceiveBytes),
 				zap.Int64("tx_bytes", peer.TransmitBytes),
 				zap.Time("last_handshake", peer.LastHandshakeTime),
@@ -392,28 +415,40 @@ func (w *WGProfileManager) updateDeviceStatus() {
 
 // CreatePeerConfig создает конфигурацию пира
 func (w *WGProfileManager) CreatePeerConfig(publicKeyStr, endpoint, allowedIPs string) (wgtypes.PeerConfig, error) {
-	// Парсим публичный ключ
-	publicKey, err := wgtypes.ParseKey(publicKeyStr)
+	pub, err := wgtypes.ParseKey(publicKeyStr)
 	if err != nil {
 		return wgtypes.PeerConfig{}, fmt.Errorf("invalid public key: %w", err)
 	}
 
-	// Парсим endpoint
-	udpAddr, err := net.ResolveUDPAddr("udp", endpoint)
-	if err != nil {
-		return wgtypes.PeerConfig{}, fmt.Errorf("invalid endpoint: %w", err)
+	var ep *net.UDPAddr
+	if strings.TrimSpace(endpoint) != "" {
+		udp, err := net.ResolveUDPAddr("udp", endpoint)
+		if err != nil {
+			return wgtypes.PeerConfig{}, fmt.Errorf("invalid endpoint: %w", err)
+		}
+		ep = udp
 	}
 
-	// Парсим allowed IPs
-	_, allowedIPNet, err := net.ParseCIDR(allowedIPs)
-	if err != nil {
-		return wgtypes.PeerConfig{}, fmt.Errorf("invalid allowed IPs: %w", err)
+	var ipnets []net.IPNet
+	// поддержим "10.0.0.0/24,10.0.1.0/24" и пробелы
+	for _, part := range strings.FieldsFunc(allowedIPs, func(r rune) bool { return r == ',' || r == ' ' || r == ';' }) {
+		if part = strings.TrimSpace(part); part == "" {
+			continue
+		}
+		_, n, err := net.ParseCIDR(part)
+		if err != nil {
+			return wgtypes.PeerConfig{}, fmt.Errorf("invalid allowed IPs %q: %w", part, err)
+		}
+		ipnets = append(ipnets, *n)
+	}
+	if len(ipnets) == 0 {
+		return wgtypes.PeerConfig{}, fmt.Errorf("allowed IPs cannot be empty")
 	}
 
 	return wgtypes.PeerConfig{
-		PublicKey:  publicKey,
-		Endpoint:   udpAddr,
-		AllowedIPs: []net.IPNet{*allowedIPNet},
+		PublicKey:  pub,
+		Endpoint:   ep,
+		AllowedIPs: ipnets,
 	}, nil
 }
 
@@ -489,11 +524,15 @@ func (w *WGProfileManager) ActivateSiteToSiteConnection(connID string) error {
 		return fmt.Errorf("site-to-site connection not found: %s", connID)
 	}
 
-	// Создаем peer конфигурацию для remote site
+	if len(connection.RemoteSite.AllowedIPs) == 0 || len(connection.LocalSite.AllowedIPs) == 0 {
+		return fmt.Errorf("site-to-site: allowed IPs must be non-empty (local=%d, remote=%d)",
+			len(connection.LocalSite.AllowedIPs), len(connection.RemoteSite.AllowedIPs))
+	}
+
 	peerConfig, err := w.CreatePeerConfig(
 		connection.RemoteSite.PublicKey,
 		connection.RemoteSite.Endpoint,
-		connection.RemoteSite.AllowedIPs[0], // Используем первый allowed IP
+		strings.Join(connection.RemoteSite.AllowedIPs, ","),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create peer config: %w", err)
@@ -508,7 +547,7 @@ func (w *WGProfileManager) ActivateSiteToSiteConnection(connID string) error {
 	// Создаем правила маршрутизации
 	for _, allowedIP := range connection.RemoteSite.AllowedIPs {
 		ruleID := fmt.Sprintf("rule_%s_%d", connID, time.Now().UnixNano())
-		rule := &RoutingRule{
+		w.routingRules[ruleID] = &RoutingRule{
 			ID:          ruleID,
 			Source:      connection.LocalSite.AllowedIPs[0],
 			Destination: allowedIP,
@@ -517,7 +556,6 @@ func (w *WGProfileManager) ActivateSiteToSiteConnection(connID string) error {
 			Priority:    100,
 			IsActive:    true,
 		}
-		w.routingRules[ruleID] = rule
 	}
 
 	connection.Status = "active"

@@ -13,8 +13,7 @@ data:
   config.json: |
     {
       "server": {
-        "address": "0.0.0.0",
-        "port": 9090,
+        "address": "0.0.0.0:9090",
         "timeout": "30s",
         "max_tunnels": 1000,
         "ping_interval": "30s",

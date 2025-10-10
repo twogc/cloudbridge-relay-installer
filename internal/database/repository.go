@@ -535,7 +535,7 @@ func (r *Repository) UpdateTenantNetwork(tenantID string, networkCIDR string, su
 
 // DeactivateTenantNetwork deactivates a tenant network (soft delete)
 func (r *Repository) DeactivateTenantNetwork(tenantID string) error {
-	query := `UPDATE tenant_networks SET is_active = false, updated_at = NOW() WHERE tenant_id = $1`
+	query := `UPDATE tenant_networks SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE tenant_id = $1`
 
 	result, err := r.db.Exec(query, tenantID)
 	if err != nil {
@@ -636,7 +636,7 @@ func (r *Repository) CreateTenant(tenant *Tenant) error {
 		}
 	}
 
-	r.logger.Info("Tenant created", 
+	r.logger.Info("Tenant created",
 		zap.String("tenant_id", tenant.TenantID),
 		zap.Int("id", tenant.ID))
 
@@ -646,7 +646,7 @@ func (r *Repository) CreateTenant(tenant *Tenant) error {
 // GetTenant retrieves a tenant by ID
 func (r *Repository) GetTenant(tenantID string) (*Tenant, error) {
 	query := `SELECT * FROM tenants WHERE tenant_id = $1`
-	
+
 	var tenant Tenant
 	err := r.db.Get(&tenant, query, tenantID)
 	if err != nil {
@@ -659,7 +659,7 @@ func (r *Repository) GetTenant(tenantID string) (*Tenant, error) {
 // DeleteTenant deletes a tenant
 func (r *Repository) DeleteTenant(tenantID string) error {
 	query := `DELETE FROM tenants WHERE tenant_id = $1`
-	
+
 	result, err := r.db.Exec(query, tenantID)
 	if err != nil {
 		return fmt.Errorf("failed to delete tenant: %w", err)
@@ -705,7 +705,7 @@ func (r *Repository) ListTenants(limit, offset int, status string) ([]*Tenant, e
 // GetTenantSubnetCount returns the number of active subnets for a tenant
 func (r *Repository) GetTenantSubnetCount(tenantID string) (int, error) {
 	query := `SELECT COUNT(*) FROM tenant_networks WHERE tenant_id = $1 AND is_active = true`
-	
+
 	var count int
 	err := r.db.Get(&count, query, tenantID)
 	if err != nil {
@@ -718,7 +718,7 @@ func (r *Repository) GetTenantSubnetCount(tenantID string) (int, error) {
 // DeactivateAllTenantSubnets deactivates all subnets for a tenant
 func (r *Repository) DeactivateAllTenantSubnets(tenantID string) error {
 	query := `UPDATE tenant_networks SET is_active = false, updated_at = $1 WHERE tenant_id = $2`
-	
+
 	_, err := r.db.Exec(query, time.Now(), tenantID)
 	if err != nil {
 		return fmt.Errorf("failed to deactivate tenant subnets: %w", err)
@@ -755,7 +755,7 @@ func (r *Repository) GetIPAMStats() (*IPAMStats, error) {
 // DeactivateTenantSubnet deactivates a specific subnet for a tenant
 func (r *Repository) DeactivateTenantSubnet(tenantID, subnetCIDR string) error {
 	query := `UPDATE tenant_networks SET is_active = false, updated_at = $1 WHERE tenant_id = $2 AND network_cidr = $3`
-	
+
 	result, err := r.db.Exec(query, time.Now(), tenantID, subnetCIDR)
 	if err != nil {
 		return fmt.Errorf("failed to deactivate tenant subnet: %w", err)
@@ -770,7 +770,7 @@ func (r *Repository) DeactivateTenantSubnet(tenantID, subnetCIDR string) error {
 		return fmt.Errorf("subnet not found")
 	}
 
-	r.logger.Info("Tenant subnet deactivated", 
+	r.logger.Info("Tenant subnet deactivated",
 		zap.String("tenant_id", tenantID),
 		zap.String("subnet_cidr", subnetCIDR))
 	return nil
@@ -779,7 +779,7 @@ func (r *Repository) DeactivateTenantSubnet(tenantID, subnetCIDR string) error {
 // GetTenantSubnets returns all subnets for a tenant
 func (r *Repository) GetTenantSubnets(tenantID string) ([]*TenantNetwork, error) {
 	query := `SELECT * FROM tenant_networks WHERE tenant_id = $1 ORDER BY created_at DESC`
-	
+
 	var subnets []*TenantNetwork
 	err := r.db.Select(&subnets, query, tenantID)
 	if err != nil {
@@ -792,7 +792,7 @@ func (r *Repository) GetTenantSubnets(tenantID string) ([]*TenantNetwork, error)
 // GetNextSubnetCounter returns the next available subnet counter
 func (r *Repository) GetNextSubnetCounter() (int, error) {
 	query := `SELECT COALESCE(MAX(subnet_counter), 0) + 1 FROM tenant_networks`
-	
+
 	var counter int
 	err := r.db.Get(&counter, query)
 	if err != nil {
@@ -800,4 +800,17 @@ func (r *Repository) GetNextSubnetCounter() (int, error) {
 	}
 
 	return counter, nil
+}
+
+// IsTenantNetworkAllocated checks if a network CIDR is already allocated
+func (r *Repository) IsTenantNetworkAllocated(networkCIDR string) (bool, error) {
+	query := `SELECT COUNT(*) FROM tenant_networks WHERE network_cidr = $1 AND is_active = true`
+
+	var count int
+	err := r.db.Get(&count, query, networkCIDR)
+	if err != nil {
+		return false, fmt.Errorf("failed to check network allocation: %w", err)
+	}
+
+	return count > 0, nil
 }
