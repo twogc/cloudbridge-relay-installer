@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
+	"github.com/twogc/cloudbridge-relay-installer/internal/zitadel"
 	"go.uber.org/zap"
 )
 
@@ -15,9 +16,9 @@ type MockZitadelClient struct {
 }
 
 type MockTenant struct {
-	ID          string
-	Name        string
-	Quotas      *MockQuotas
+	ID     string
+	Name   string
+	Quotas *MockQuotas
 }
 
 type MockQuotas struct {
@@ -40,25 +41,27 @@ func (m *MockTenantManager) ListTenants(ctx context.Context) ([]*MockTenant, err
 
 func TestNewTenantSync(t *testing.T) {
 	logger := zap.NewNop()
-	
+
 	// Создаем mock клиенты
-	mockZitadelClient := &MockZitadelClient{}
+	// mockZitadelClient := &MockZitadelClient{} // Не используется
 	mockRelayManager := &tenant.Manager{}
-	
-	sync := NewTenantSync(mockZitadelClient, mockRelayManager, logger)
-	
+
+	// Создаем реальный Zitadel клиент для тестов
+	zitadelClient := &zitadel.Client{}
+	sync := NewTenantSync(zitadelClient, mockRelayManager, logger)
+
 	if sync == nil {
 		t.Fatal("TenantSync is nil")
 	}
-	
+
 	if sync.logger != logger {
 		t.Error("Logger not set correctly")
 	}
-	
-	if sync.zitadelClient != mockZitadelClient {
+
+	if sync.zitadelClient != zitadelClient {
 		t.Error("ZitadelClient not set correctly")
 	}
-	
+
 	if sync.relayManager != mockRelayManager {
 		t.Error("RelayManager not set correctly")
 	}
@@ -66,26 +69,28 @@ func TestNewTenantSync(t *testing.T) {
 
 func TestTenantSyncStartStop(t *testing.T) {
 	logger := zap.NewNop()
-	
-	mockZitadelClient := &MockZitadelClient{}
+
+	// mockZitadelClient := &MockZitadelClient{} // Не используется
 	mockRelayManager := &tenant.Manager{}
-	
-	sync := NewTenantSync(mockZitadelClient, mockRelayManager, logger)
-	
+
+	// Создаем реальный Zitadel клиент для тестов
+	zitadelClient := &zitadel.Client{}
+	sync := NewTenantSync(zitadelClient, mockRelayManager, logger)
+
 	// Тест что изначально не запущен
 	if sync.IsRunning() {
 		t.Error("Expected sync to not be running initially")
 	}
-	
+
 	// Запускаем синхронизацию
 	sync.Start(1 * time.Second)
-	
+
 	// Ждем немного
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Останавливаем
 	sync.Stop()
-	
+
 	// Проверяем что остановлен
 	if sync.IsRunning() {
 		t.Error("Expected sync to be stopped")
@@ -103,7 +108,7 @@ func TestParseBandwidthLimit(t *testing.T) {
 		{"", 1000000.0},
 		{"unknown", 1000000.0},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			result := parseBandwidthLimit(tt.input)
@@ -116,19 +121,21 @@ func TestParseBandwidthLimit(t *testing.T) {
 
 func TestTenantSyncStats(t *testing.T) {
 	logger := zap.NewNop()
-	
-	mockZitadelClient := &MockZitadelClient{}
+
+	// mockZitadelClient := &MockZitadelClient{} // Не используется
 	mockRelayManager := &tenant.Manager{}
-	
-	sync := NewTenantSync(mockZitadelClient, mockRelayManager, logger)
-	
+
+	// Создаем реальный Zitadel клиент для тестов
+	zitadelClient := &zitadel.Client{}
+	sync := NewTenantSync(zitadelClient, mockRelayManager, logger)
+
 	// Получаем статистику
 	stats := sync.GetStats()
-	
+
 	if stats == nil {
 		t.Fatal("Stats should not be nil")
 	}
-	
+
 	// Проверяем что есть нужные поля
 	expectedFields := []string{"running", "last_sync_time", "sync_errors", "tenants_processed", "limits_changed"}
 	for _, field := range expectedFields {
@@ -137,5 +144,3 @@ func TestTenantSyncStats(t *testing.T) {
 		}
 	}
 }
-
-

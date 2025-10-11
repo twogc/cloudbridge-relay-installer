@@ -435,7 +435,10 @@ func TestRelayManager_getPeerIP(t *testing.T) {
 	t.Run("returns peer IP", func(t *testing.T) {
 		peerID := "peer-123"
 
-		ip := manager.getPeerIP(peerID)
+		ip, err := manager.getPeerIP(peerID)
+		if err != nil {
+			t.Fatalf("Failed to get peer IP: %v", err)
+		}
 
 		// Should return a valid IP (currently returns a hardcoded IP)
 		assert.NotEmpty(t, ip)
@@ -446,8 +449,14 @@ func TestRelayManager_getPeerIP(t *testing.T) {
 		peerID1 := "peer-1"
 		peerID2 := "peer-2"
 
-		ip1 := manager.getPeerIP(peerID1)
-		ip2 := manager.getPeerIP(peerID2)
+		ip1, err := manager.getPeerIP(peerID1)
+		if err != nil {
+			t.Fatalf("Failed to get peer1 IP: %v", err)
+		}
+		ip2, err := manager.getPeerIP(peerID2)
+		if err != nil {
+			t.Fatalf("Failed to get peer2 IP: %v", err)
+		}
 
 		// Currently returns the same IP for all peers (hardcoded implementation)
 		assert.Equal(t, ip1, ip2)

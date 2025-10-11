@@ -1,0 +1,40 @@
+# Улучшенный Dockerfile для Cadence сервера
+FROM ubercadence/server:latest
+
+# Устанавливаем необходимые пакеты
+RUN apk add --no-cache \
+    curl \
+    jq \
+    postgresql-client
+
+# Создаем директории для конфигурации
+RUN mkdir -p /etc/cadence/config \
+    && mkdir -p /var/log/cadence \
+    && mkdir -p /var/lib/cadence
+
+# Копируем конфигурацию
+COPY configs/cadence/docker.yaml /etc/cadence/config/docker.yaml
+
+# Создаем скрипт инициализации
+COPY scripts/cadence/init-cadence.sh /usr/local/bin/init-cadence.sh
+RUN chmod +x /usr/local/bin/init-cadence.sh
+
+# Создаем скрипт health check
+COPY scripts/cadence/health-check.sh /usr/local/bin/health-check.sh
+RUN chmod +x /usr/local/bin/health-check.sh
+
+# Устанавливаем переменные окружения
+ENV CADENCE_HOME=/etc/cadence
+ENV CADENCE_CONFIG_DIR=/etc/cadence/config
+ENV CADENCE_LOG_DIR=/var/log/cadence
+ENV CADENCE_DATA_DIR=/var/lib/cadence
+
+# Открываем порты
+EXPOSE 7933 7934 7935 7939
+
+# Добавляем health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD /usr/local/bin/health-check.sh
+
+# Запускаем инициализацию и сервер
+CMD ["/usr/local/bin/init-cadence.sh"]

@@ -80,8 +80,14 @@ func TestTenantIsolation(t *testing.T) {
 	tenantB := "tenant-isolation-test-b"
 
 	// Выделяем подсети для тенантов
-	subnetA := rm.GetTenantNetwork(tenantA)
-	subnetB := rm.GetTenantNetwork(tenantB)
+	subnetA, err := rm.GetTenantNetwork(tenantA)
+	if err != nil {
+		t.Fatalf("Failed to get tenant A network: %v", err)
+	}
+	subnetB, err := rm.GetTenantNetwork(tenantB)
+	if err != nil {
+		t.Fatalf("Failed to get tenant B network: %v", err)
+	}
 
 	// Проверяем, что подсети разные
 	if subnetA == subnetB {
@@ -195,7 +201,10 @@ func TestTenantIsolation(t *testing.T) {
 	t.Run("Unique tenant subnets", func(t *testing.T) {
 		// Создаем еще один тенант
 		tenantC := "tenant-isolation-test-c"
-		subnetC := rm.GetTenantNetwork(tenantC)
+		subnetC, err := rm.GetTenantNetwork(tenantC)
+		if err != nil {
+			t.Fatalf("Failed to get tenant C network: %v", err)
+		}
 
 		// Проверяем, что все подсети уникальны
 		subnets := []string{subnetA, subnetB, subnetC}
@@ -316,7 +325,10 @@ func TestTenantSubnetAllocation(t *testing.T) {
 		subnets := make(map[string]string)
 
 		for _, tenant := range tenants {
-			subnet := rm.GetTenantNetwork(tenant)
+			subnet, err := rm.GetTenantNetwork(tenant)
+			if err != nil {
+				t.Fatalf("Failed to get tenant network: %v", err)
+			}
 			subnets[tenant] = subnet
 
 			// Проверяем, что подсеть не пустая
@@ -345,10 +357,16 @@ func TestTenantSubnetAllocation(t *testing.T) {
 		tenant := "tenant-consistency-test"
 
 		// Получаем подсеть первый раз
-		subnet1 := rm.GetTenantNetwork(tenant)
+		subnet1, err := rm.GetTenantNetwork(tenant)
+		if err != nil {
+			t.Fatalf("Failed to get tenant network: %v", err)
+		}
 
 		// Получаем подсеть второй раз
-		subnet2 := rm.GetTenantNetwork(tenant)
+		subnet2, err := rm.GetTenantNetwork(tenant)
+		if err != nil {
+			t.Fatalf("Failed to get tenant network: %v", err)
+		}
 
 		// Подсети должны быть одинаковыми
 		if subnet1 != subnet2 {

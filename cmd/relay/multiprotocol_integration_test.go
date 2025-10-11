@@ -14,11 +14,7 @@ import (
 func TestMultiprotocolIntegration(t *testing.T) {
 	// Создание тестовой конфигурации
 	cfg := createTestConfig()
-	// Включаем Keycloak для тестов
-	cfg.Keycloak.Enabled = true
-	cfg.Keycloak.ServerURL = "https://test-keycloak.example.com"
-	cfg.Keycloak.Realm = "test-realm"
-	cfg.Keycloak.ClientID = "test-client"
+	// Keycloak больше не используется в конфигурации
 
 	server, err := NewServer(cfg)
 	require.NoError(t, err)
@@ -107,23 +103,21 @@ func createTestConfig() *config.Config {
 			HealthCheckInterval: 30 * time.Second,
 		},
 		EnhancedQUIC: struct {
-			Enabled             bool          `json:"enabled"`
-			MaxStreams          int           `json:"max_streams"`
-			KeepAlive           bool          `json:"keep_alive"`
-			IdleTimeout         time.Duration `json:"idle_timeout"`
-			HandshakeTimeout    time.Duration `json:"handshake_timeout"`
-			DDoSProtection      bool          `json:"ddos_protection"`
-			GeographicRouting   bool          `json:"geographic_routing"`
-			KeycloakIntegration bool          `json:"keycloak_integration"`
+			Enabled           bool          `json:"enabled"`
+			MaxStreams        int           `json:"max_streams"`
+			KeepAlive         bool          `json:"keep_alive"`
+			IdleTimeout       time.Duration `json:"idle_timeout"`
+			HandshakeTimeout  time.Duration `json:"handshake_timeout"`
+			DDoSProtection    bool          `json:"ddos_protection"`
+			GeographicRouting bool          `json:"geographic_routing"`
 		}{
-			Enabled:             true,
-			MaxStreams:          100,
-			KeepAlive:           true,
-			IdleTimeout:         30 * time.Second,
-			HandshakeTimeout:    10 * time.Second,
-			DDoSProtection:      true,
-			GeographicRouting:   true,
-			KeycloakIntegration: true,
+			Enabled:           true,
+			MaxStreams:        100,
+			KeepAlive:         true,
+			IdleTimeout:       30 * time.Second,
+			HandshakeTimeout:  10 * time.Second,
+			DDoSProtection:    true,
+			GeographicRouting: true,
 		},
 		// Добавляем минимальные настройки для других компонентов
 		ZeroTrust: struct {

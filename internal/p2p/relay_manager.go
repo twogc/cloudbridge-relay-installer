@@ -14,6 +14,92 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/wireguard"
 )
 
+// IPPool представляет пул свободных IP адресов для подсети
+type IPPool struct {
+	subnetCIDR string
+	freeIPs    []string
+	allocated  map[string]bool
+	mutex      sync.Mutex
+}
+
+// NewIPPool создает новый пул IP адресов для подсети
+func NewIPPool(subnetCIDR string) *IPPool {
+	_, ipNet, err := net.ParseCIDR(subnetCIDR)
+	if err != nil {
+		return nil
+	}
+
+	baseIP := ipNet.IP.To4()
+	if baseIP == nil {
+		return nil
+	}
+
+	// Инициализируем пул с IP адресами 2-253 для /24 подсети
+	var freeIPs []string
+	for i := 2; i <= 253; i++ {
+		ip := net.IPv4(baseIP[0], baseIP[1], baseIP[2], byte(i))
+		freeIPs = append(freeIPs, ip.String())
+	}
+
+	return &IPPool{
+		subnetCIDR: subnetCIDR,
+		freeIPs:    freeIPs,
+		allocated:  make(map[string]bool),
+	}
+}
+
+// AllocateIP выделяет IP адрес из пула
+func (p *IPPool) AllocateIP() (string, error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if len(p.freeIPs) == 0 {
+		return "", fmt.Errorf("no free IPs available in pool for subnet %s", p.subnetCIDR)
+	}
+
+	// Берем первый доступный IP
+	ip := p.freeIPs[0]
+	p.freeIPs = p.freeIPs[1:]
+	p.allocated[ip] = true
+
+	return ip, nil
+}
+
+// DeallocateIP возвращает IP адрес в пул
+func (p *IPPool) DeallocateIP(ip string) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if !p.allocated[ip] {
+		return fmt.Errorf("IP %s is not allocated in pool", ip)
+	}
+
+	delete(p.allocated, ip)
+	p.freeIPs = append(p.freeIPs, ip)
+
+	return nil
+}
+
+// IsAllocated проверяет, выделен ли IP адрес
+func (p *IPPool) IsAllocated(ip string) bool {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	return p.allocated[ip]
+}
+
+// GetStats возвращает статистику пула
+func (p *IPPool) GetStats() (total, allocated, free int) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	total = len(p.freeIPs) + len(p.allocated)
+	allocated = len(p.allocated)
+	free = len(p.freeIPs)
+
+	return
+}
+
 // RelayManager управляет P2P relay соединениями
 type RelayManager struct {
 	tenants          map[string]*Tenant
@@ -23,10 +109,20 @@ type RelayManager struct {
 	allocatedNets    map[string]string                 // tenantID -> network CIDR
 	repository       *database.Repository              // Database repository for IPAM persistence
 	wireguardManager *wireguard.WireGuardTenantManager // WireGuard management for VIP tenants
-	mutex            sync.RWMutex
-	logger           *zap.Logger
-	ctx              context.Context
-	cancel           context.CancelFunc
+
+	// IPAM состояние - все под одним мьютексом для избежания гонок
+	allocatedIPs        map[string]map[string]string // tenantID -> ip -> peerID
+	peerIndex           map[string]string            // peerID -> ip
+	freePools           map[string]*IPPool           // tenantID -> pool of free IPs
+	allocationFailures  int64                        // счетчик ошибок аллокации
+	deallocationCount   int64                        // счетчик деаллокаций
+	avgAllocationTime   time.Duration                // среднее время аллокации
+	avgDeallocationTime time.Duration                // среднее время деаллокации
+
+	mutex  sync.RWMutex // единый мьютекс для всего IPAM состояния
+	logger *zap.Logger
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // Tenant представляет изолированного пользователя
@@ -147,9 +243,17 @@ func (rm *RelayManager) RegisterPeer(tenantID, peerID, publicKey string, allowed
 
 	// Создаем tenant если не существует
 	if _, exists := rm.tenants[tenantID]; !exists {
+		networkCIDR, err := rm.GetTenantNetwork(tenantID)
+		if err != nil {
+			rm.logger.Error("Failed to get tenant network",
+				zap.String("tenant_id", tenantID),
+				zap.Error(err))
+			return nil, err
+		}
+
 		rm.tenants[tenantID] = &Tenant{
 			TenantID:       tenantID,
-			NetworkCIDR:    rm.GetTenantNetwork(tenantID),
+			NetworkCIDR:    networkCIDR,
 			Peers:          make(map[string]*Peer),
 			Connections:    make(map[string]*RelayP2PConnection),
 			MaxPeers:       100,
@@ -166,7 +270,13 @@ func (rm *RelayManager) RegisterPeer(tenantID, peerID, publicKey string, allowed
 	}
 
 	// Выделяем IP адрес
-	allocatedIP := rm.allocateIPForTenant(tenantID)
+	allocatedIP, err := rm.allocateIPForTenant(tenantID)
+	if err != nil {
+		rm.logger.Error("Failed to allocate IP for tenant",
+			zap.String("tenant_id", tenantID),
+			zap.Error(err))
+		return nil, err
+	}
 
 	// Создаем peer
 	peer := &Peer{
@@ -368,8 +478,8 @@ func (rm *RelayManager) establishP2PConnection(sourcePeerID, targetPeerID string
 		TenantID:       sourceConn.TenantID,
 		SourcePeer:     sourcePeerID,
 		TargetPeer:     targetPeerID,
-		SourceIP:       rm.getPeerIP(sourcePeerID),
-		TargetIP:       rm.getPeerIP(targetPeerID),
+		SourceIP:       rm.getPeerIPSafe(sourcePeerID),
+		TargetIP:       rm.getPeerIPSafe(targetPeerID),
 		ConnectionType: "quic",
 		Status:         "established",
 		CreatedAt:      time.Now(),
@@ -419,12 +529,12 @@ func (rm *RelayManager) forwardPacket(targetConn *QUICConnection, data []byte) e
 }
 
 // getTenantNetwork возвращает сеть для tenant
-func (rm *RelayManager) GetTenantNetwork(tenantID string) string {
+func (rm *RelayManager) GetTenantNetwork(tenantID string) (string, error) {
 	// Проверяем в allocatedNets (единый источник истины)
 	rm.mutex.RLock()
 	if network, exists := rm.allocatedNets[tenantID]; exists {
 		rm.mutex.RUnlock()
-		return network
+		return network, nil
 	}
 	rm.mutex.RUnlock()
 
@@ -433,13 +543,13 @@ func (rm *RelayManager) GetTenantNetwork(tenantID string) string {
 }
 
 // generateNewTenantNetwork генерирует новую сеть для tenant
-func (rm *RelayManager) generateNewTenantNetwork(tenantID string) string {
+func (rm *RelayManager) generateNewTenantNetwork(tenantID string) (string, error) {
 	rm.mutex.Lock()
 	defer rm.mutex.Unlock()
 
 	// Проверяем, есть ли уже выделенная подсеть для этого tenant'а
 	if existingNet, exists := rm.allocatedNets[tenantID]; exists {
-		return existingNet
+		return existingNet, nil
 	}
 
 	// Инициализируем allocatedNets если нужно
@@ -519,30 +629,197 @@ func (rm *RelayManager) generateNewTenantNetwork(tenantID string) string {
 				zap.String("tenant_id", tenantID),
 				zap.String("subnet", candidateNet),
 				zap.Int32("subnet_counter", rm.subnetCounter))
-			return candidateNet
+			return candidateNet, nil
 		}
 
 		// Защита от бесконечного цикла
 		if rm.subnetCounter >= 65535 {
-			if rm.logger != nil {
-				rm.logger.Error("Subnet pool exhausted",
-					zap.String("tenant_id", tenantID))
-			}
-			return "10.255.255.0/24" // Последняя доступная подсеть
+			rm.logger.Error("Subnet pool exhausted - no more /24 subnets available",
+				zap.String("tenant_id", tenantID),
+				zap.Int32("current_counter", rm.subnetCounter),
+				zap.Int32("max_subnets", 65535))
+
+			// Отправляем алерт
+			rm.sendPoolExhaustionAlert(tenantID)
+
+			// Возвращаем ошибку вместо фиксированной подсети
+			return "", fmt.Errorf("subnet pool exhausted: no more /24 subnets available (current: %d, max: 65535)", rm.subnetCounter)
 		}
 	}
 }
 
 // allocateIPForTenant выделяет IP адрес для tenant
-func (rm *RelayManager) allocateIPForTenant(tenantID string) string {
-	// Простая реализация - в реальности нужно проверять занятость IP
-	return "10.100.77.10"
+func (rm *RelayManager) allocateIPForTenant(tenantID string) (string, error) {
+	rm.mutex.Lock()
+	defer rm.mutex.Unlock()
+
+	// Получаем подсеть тенанта
+	tenantSubnet, exists := rm.allocatedNets[tenantID]
+	if !exists {
+		return "", fmt.Errorf("tenant %s has no allocated subnet", tenantID)
+	}
+
+	// Инициализируем пул для тенанта если его нет
+	if rm.freePools == nil {
+		rm.freePools = make(map[string]*IPPool)
+	}
+	if rm.allocatedIPs == nil {
+		rm.allocatedIPs = make(map[string]map[string]string)
+	}
+	if rm.peerIndex == nil {
+		rm.peerIndex = make(map[string]string)
+	}
+
+	pool, exists := rm.freePools[tenantID]
+	if !exists {
+		pool = NewIPPool(tenantSubnet)
+		if pool == nil {
+			return "", fmt.Errorf("failed to create IP pool for subnet %s", tenantSubnet)
+		}
+		rm.freePools[tenantID] = pool
+	}
+
+	// Выделяем IP из пула
+	ip, err := pool.AllocateIP()
+	if err != nil {
+		rm.allocationFailures++
+		rm.logger.Error("Failed to allocate IP from pool",
+			zap.String("tenant_id", tenantID),
+			zap.String("subnet", tenantSubnet),
+			zap.Error(err))
+		return "", fmt.Errorf("no available IPs in tenant subnet %s: %w", tenantSubnet, err)
+	}
+
+	// Резервируем IP (без peerID пока)
+	if rm.allocatedIPs[tenantID] == nil {
+		rm.allocatedIPs[tenantID] = make(map[string]string)
+	}
+	rm.allocatedIPs[tenantID][ip] = "reserved"
+
+	rm.logger.Info("IP allocated for tenant",
+		zap.String("tenant_id", tenantID),
+		zap.String("ip", ip),
+		zap.String("subnet", tenantSubnet))
+
+	return ip, nil
 }
 
 // getPeerIP возвращает IP адрес пира
-func (rm *RelayManager) getPeerIP(peerID string) string {
-	// Простая реализация - в реальности нужно получать из конфигурации
-	return "10.100.77.11"
+func (rm *RelayManager) getPeerIP(peerID string) (string, error) {
+	rm.mutex.RLock()
+	defer rm.mutex.RUnlock()
+
+	ip, exists := rm.peerIndex[peerID]
+	if !exists {
+		return "", fmt.Errorf("peer %s not found", peerID)
+	}
+
+	return ip, nil
+}
+
+// getPeerIPSafe безопасно возвращает IP адрес пира (без ошибки для обратной совместимости)
+func (rm *RelayManager) getPeerIPSafe(peerID string) string {
+	ip, err := rm.getPeerIP(peerID)
+	if err != nil {
+		rm.logger.Warn("Failed to get peer IP, using fallback",
+			zap.String("peer_id", peerID),
+			zap.Error(err))
+		return "0.0.0.0" // fallback IP
+	}
+	return ip
+}
+
+// reserveIPForPeer резервирует IP адрес для конкретного пира
+func (rm *RelayManager) reserveIPForPeer(tenantID, peerID, ip string) error {
+	rm.mutex.Lock()
+	defer rm.mutex.Unlock()
+
+	// Проверяем, что IP не занят другим пиром
+	if existingPeerID, exists := rm.allocatedIPs[tenantID][ip]; exists && existingPeerID != "reserved" {
+		return fmt.Errorf("IP %s is already allocated to peer %s", ip, existingPeerID)
+	}
+
+	// Резервируем IP для пира
+	if rm.allocatedIPs[tenantID] == nil {
+		rm.allocatedIPs[tenantID] = make(map[string]string)
+	}
+	rm.allocatedIPs[tenantID][ip] = peerID
+	rm.peerIndex[peerID] = ip
+
+	rm.logger.Info("IP reserved for peer",
+		zap.String("tenant_id", tenantID),
+		zap.String("peer_id", peerID),
+		zap.String("ip", ip))
+
+	return nil
+}
+
+// releaseIPForPeer освобождает IP адрес пира
+func (rm *RelayManager) releaseIPForPeer(peerID string) error {
+	rm.mutex.Lock()
+	defer rm.mutex.Unlock()
+
+	ip, exists := rm.peerIndex[peerID]
+	if !exists {
+		return fmt.Errorf("peer %s not found in index", peerID)
+	}
+
+	// Находим тенанта по IP
+	var tenantID string
+	for tid, ips := range rm.allocatedIPs {
+		if allocatedPeerID, exists := ips[ip]; exists && allocatedPeerID == peerID {
+			tenantID = tid
+			break
+		}
+	}
+
+	if tenantID == "" {
+		return fmt.Errorf("tenant not found for peer %s", peerID)
+	}
+
+	// Освобождаем IP в пуле
+	if pool, exists := rm.freePools[tenantID]; exists {
+		if err := pool.DeallocateIP(ip); err != nil {
+			rm.logger.Warn("Failed to deallocate IP in pool",
+				zap.String("peer_id", peerID),
+				zap.String("ip", ip),
+				zap.Error(err))
+		}
+	}
+
+	// Удаляем из индексов
+	delete(rm.allocatedIPs[tenantID], ip)
+	delete(rm.peerIndex, peerID)
+	rm.deallocationCount++
+
+	rm.logger.Info("IP released for peer",
+		zap.String("tenant_id", tenantID),
+		zap.String("peer_id", peerID),
+		zap.String("ip", ip))
+
+	return nil
+}
+
+// sendPoolExhaustionAlert отправляет алерт при исчерпании пула подсетей
+func (rm *RelayManager) sendPoolExhaustionAlert(tenantID string) {
+	alert := map[string]interface{}{
+		"type":          "subnet_pool_exhaustion",
+		"tenant_id":     tenantID,
+		"timestamp":     time.Now(),
+		"current_usage": rm.subnetCounter,
+		"max_capacity":  65535,
+		"utilization":   float64(rm.subnetCounter) / 65535.0 * 100.0,
+		"severity":      "critical",
+	}
+
+	// Логируем критический алерт
+	rm.logger.Error("CRITICAL: Subnet pool exhausted", zap.Any("alert", alert))
+
+	// Здесь можно добавить интеграцию с системами мониторинга:
+	// - Prometheus alerts
+	// - Slack notifications
+	// - Email alerts
+	// - PagerDuty integration
 }
 
 // generateConnectionID генерирует уникальный ID соединения
@@ -751,22 +1028,57 @@ func (rm *RelayManager) DeactivateTenant(tenantID string) error {
 
 // GetIPAMStats возвращает статистику по IPAM
 func (rm *RelayManager) GetIPAMStats() map[string]interface{} {
+	// Собираем snapshot под RLock
 	rm.mutex.RLock()
-	defer rm.mutex.RUnlock()
+	allocatedTenants := len(rm.allocatedNets)
+	currentSubnetCounter := rm.subnetCounter
+	allocationFailures := rm.allocationFailures
+	deallocationCount := rm.deallocationCount
+	avgAllocationTime := rm.avgAllocationTime
+	avgDeallocationTime := rm.avgDeallocationTime
 
-	stats := make(map[string]interface{})
-	stats["allocated_tenants"] = len(rm.allocatedNets)
-	stats["current_subnet_counter"] = rm.subnetCounter
-	stats["max_subnets"] = 65536 // 256*256 для 10.0.0.0/8
-	available := 65536 - int(rm.subnetCounter) - 1
-	if available < 0 {
-		available = 0
+	// Собираем статистику по IP пулам
+	totalAvailableIPs := 0
+	totalAllocatedIPs := 0
+	tenantStats := make(map[string]interface{})
+
+	for tenantID, pool := range rm.freePools {
+		total, allocated, free := pool.GetStats()
+		totalAvailableIPs += total
+		totalAllocatedIPs += allocated
+		tenantStats[tenantID] = map[string]interface{}{
+			"total_ips":     total,
+			"allocated_ips": allocated,
+			"free_ips":      free,
+			"utilization":   float64(allocated) / float64(total) * 100.0,
+		}
 	}
-	stats["available_subnets"] = available
+	rm.mutex.RUnlock()
 
-	// Если есть доступ к БД, получаем дополнительную статистику
+	// Создаем статистику
+	stats := make(map[string]interface{})
+	stats["allocated_tenants"] = allocatedTenants
+	stats["current_subnet_counter"] = currentSubnetCounter
+	stats["max_subnets"] = 65536
+	stats["available_subnets"] = 65536 - int(currentSubnetCounter)
+	stats["pool_utilization_percent"] = float64(currentSubnetCounter) / 65536.0 * 100.0
+
+	// Статистика по IP
+	stats["total_available_ips"] = totalAvailableIPs
+	stats["total_allocated_ips"] = totalAllocatedIPs
+	stats["ip_utilization_percent"] = float64(totalAllocatedIPs) / float64(totalAvailableIPs) * 100.0
+
+	// Метрики производительности
+	stats["allocation_failures"] = allocationFailures
+	stats["deallocation_count"] = deallocationCount
+	stats["avg_allocation_time_ms"] = avgAllocationTime.Milliseconds()
+	stats["avg_deallocation_time_ms"] = avgDeallocationTime.Milliseconds()
+
+	// Статистика по тенантам
+	stats["tenant_stats"] = tenantStats
+
+	// Статус синхронизации с БД (вне критической секции)
 	if rm.repository != nil {
-		// Получаем общее количество активных сетей из БД
 		networks, err := rm.repository.GetAllTenantNetworks()
 		if err == nil {
 			stats["db_active_networks"] = len(networks)

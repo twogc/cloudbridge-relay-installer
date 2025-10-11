@@ -15,11 +15,14 @@ import (
 
 // SCORETenantNetworkAllocatorV2 аллокатор подсетей через SCORE с CAS-защитой
 type SCORETenantNetworkAllocatorV2 struct {
-	baseURL    string
-	apiKey     string
-	httpClient *http.Client
-	logger     *zap.Logger
-	mutex      sync.Mutex
+	baseURL        string
+	apiKey         string
+	httpClient     *http.Client
+	logger         *zap.Logger
+	mutex          sync.Mutex
+	retryConfig    RetryConfig
+	circuitBreaker *CircuitBreaker
+	singleFlight   *SingleFlight
 }
 
 // NewSCORETenantNetworkAllocatorV2 создает новый аллокатор для SCORE
@@ -29,16 +32,37 @@ func NewSCORETenantNetworkAllocatorV2(baseURL, apiKey string, logger *zap.Logger
 		apiKey:  apiKey,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
+			Transport: &http.Transport{
+				MaxIdleConns:        100,
+				MaxIdleConnsPerHost: 10,
+				IdleConnTimeout:     90 * time.Second,
+			},
 		},
-		logger: logger,
+		logger:         logger,
+		retryConfig:    DefaultRetryConfig(),
+		circuitBreaker: NewCircuitBreaker(5, 30*time.Second),
+		singleFlight:   NewSingleFlight(),
 	}
 }
 
 // ReserveSubnet выделяет подсеть для тенанта с CAS-защитой
 func (a *SCORETenantNetworkAllocatorV2) ReserveSubnet(ctx context.Context, tenantID string, expected ResourceVersion) (*TenantNetwork, error) {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
+	// Используем singleflight для предотвращения дублирования запросов
+	key := fmt.Sprintf("reserve_subnet_%s", tenantID)
 
+	result, err := a.singleFlight.Do(ctx, key, func() (interface{}, error) {
+		return a.reserveSubnetInternal(ctx, tenantID, expected)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*TenantNetwork), nil
+}
+
+// reserveSubnetInternal внутренняя логика резервирования подсети
+func (a *SCORETenantNetworkAllocatorV2) reserveSubnetInternal(ctx context.Context, tenantID string, expected ResourceVersion) (*TenantNetwork, error) {
 	// Получаем следующую доступную подсеть
 	cidr, err := a.GetNextAvailableSubnet(ctx)
 	if err != nil {
@@ -56,8 +80,12 @@ func (a *SCORETenantNetworkAllocatorV2) ReserveSubnet(ctx context.Context, tenan
 		ResourceVersion: expected,
 	}
 
-	// Сохраняем в SCORE с CAS-защитой
-	_, err = a.saveTenantNetworkWithCAS(ctx, network, expected)
+	// Сохраняем в SCORE с retry логикой
+	err = a.executeWithRetry(ctx, func() error {
+		_, err := a.saveTenantNetworkWithCAS(ctx, network, expected)
+		return err
+	})
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to save tenant network: %w", err)
 	}
@@ -291,4 +319,60 @@ func (a *SCORETenantNetworkAllocatorV2) saveTenantNetworkWithCAS(ctx context.Con
 	}
 
 	return result.ResourceVersion, nil
+}
+
+// executeWithRetry выполняет операцию с retry политикой
+func (a *SCORETenantNetworkAllocatorV2) executeWithRetry(ctx context.Context, operation func() error) error {
+	var lastErr error
+
+	for attempt := 1; attempt <= a.retryConfig.MaxAttempts; attempt++ {
+		// Проверяем circuit breaker
+		if err := a.circuitBreaker.Execute(ctx, operation); err != nil {
+			lastErr = err
+
+			// Если это не retryable ошибка, не повторяем
+			if !a.isRetryableError(err) {
+				return err
+			}
+
+			if attempt == a.retryConfig.MaxAttempts {
+				break
+			}
+
+			// Вычисляем задержку
+			delay := a.retryConfig.CalculateDelay(attempt)
+
+			a.logger.Warn("SCORE operation failed, retrying",
+				zap.Int("attempt", attempt),
+				zap.Duration("delay", delay),
+				zap.Error(err))
+
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(delay):
+				continue
+			}
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("SCORE operation failed after %d attempts: %w", a.retryConfig.MaxAttempts, lastErr)
+}
+
+// isRetryableError проверяет, можно ли повторить запрос при данной ошибке
+func (a *SCORETenantNetworkAllocatorV2) isRetryableError(err error) bool {
+	// Проверяем типы ошибок, которые можно повторить
+	if err == ErrCircuitOpen {
+		return false // Circuit breaker не retryable
+	}
+
+	// Проверяем HTTP статус коды
+	if httpErr, ok := err.(*HTTPError); ok {
+		return a.retryConfig.IsRetryableError(httpErr.StatusCode)
+	}
+
+	// Сетевые ошибки и таймауты можно повторить
+	return true
 }

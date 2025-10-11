@@ -1,0 +1,33 @@
+# Конфигурация Cadence для Docker
+log:
+  level: info
+  output: stdout
+
+services:
+  frontend:
+    rpc:
+      grpcPort: 7933
+      membershipPort: 7934
+      bindOnLocalHost: false
+      bindOnIP: "0.0.0.0"
+
+persistence:
+  defaultStore: postgres
+  postgres:
+    user: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    host: ${POSTGRES_HOST}
+    port: ${POSTGRES_PORT}
+    database: ${POSTGRES_DATABASE}
+    sslmode: disable
+
+clusterMetadata:
+  enableGlobalDomain: true
+  failoverVersionIncrement: 10
+  masterClusterName: "active"
+  currentClusterName: "active"
+  clusterInformation:
+    active:
+      enabled: true
+      initialFailoverVersion: 1
+      address: "127.0.0.1:7933"

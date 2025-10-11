@@ -171,7 +171,9 @@ func TestFullSystemIntegration(t *testing.T) {
 			TokenURL        string `json:"token_url"`
 			ClientID        string `json:"client_id"`
 			ClientSecret    string `json:"client_secret"`
+			GRPCHost        string `json:"grpc_host"`
 			FallbackSecret  string `json:"fallback_secret"`
+			StrictMode      bool   `json:"strict_mode"`
 			TokenValidation struct {
 				Audience  string        `json:"audience"`
 				ClockSkew time.Duration `json:"clock_skew"`
@@ -196,9 +198,45 @@ func TestFullSystemIntegration(t *testing.T) {
 			TokenURL:       "https://zitadel.local/oauth/v2/token",
 			ClientID:       "test-client",
 			ClientSecret:   "test-secret",
+			GRPCHost:       "zitadel.local:443",
 			FallbackSecret: "test-secret",
-			HTTPTimeout:    15 * time.Second,
-			CacheTTL:       5 * time.Minute,
+			StrictMode:     false,
+			TokenValidation: struct {
+				Audience  string        `json:"audience"`
+				ClockSkew time.Duration `json:"clock_skew"`
+			}{
+				Audience:  "test-project",
+				ClockSkew: 30 * time.Second,
+			},
+			CacheTTL:    5 * time.Minute,
+			HTTPTimeout: 15 * time.Second,
+			TenantManagement: struct {
+				Enabled       bool `json:"enabled"`
+				AutoCreate    bool `json:"auto_create"`
+				DefaultQuotas struct {
+					MaxPeers       int    `json:"max_peers"`
+					MaxConnections int    `json:"max_connections"`
+					MaxTunnels     int    `json:"max_tunnels"`
+					BandwidthLimit string `json:"bandwidth_limit"`
+					StorageLimit   string `json:"storage_limit"`
+				} `json:"default_quotas"`
+			}{
+				Enabled:    true,
+				AutoCreate: true,
+				DefaultQuotas: struct {
+					MaxPeers       int    `json:"max_peers"`
+					MaxConnections int    `json:"max_connections"`
+					MaxTunnels     int    `json:"max_tunnels"`
+					BandwidthLimit string `json:"bandwidth_limit"`
+					StorageLimit   string `json:"storage_limit"`
+				}{
+					MaxPeers:       10,
+					MaxConnections: 100,
+					MaxTunnels:     5,
+					BandwidthLimit: "100Mbps",
+					StorageLimit:   "1GB",
+				},
+			},
 		},
 	}
 

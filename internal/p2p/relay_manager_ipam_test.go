@@ -52,7 +52,10 @@ func TestTenantNetworkAllocation(t *testing.T) {
 
 	// Тест 1: Выделение подсети для нового тенанта
 	tenantID1 := "tenant-test-1"
-	network1 := rm.GetTenantNetwork(tenantID1)
+	network1, err := rm.GetTenantNetwork(tenantID1)
+	if err != nil {
+		t.Fatalf("Failed to get tenant network: %v", err)
+	}
 
 	if network1 == "" {
 		t.Fatal("Expected network allocation for new tenant")
@@ -74,7 +77,10 @@ func TestTenantNetworkAllocation(t *testing.T) {
 
 	// Тест 2: Выделение подсети для второго тенанта
 	tenantID2 := "tenant-test-2"
-	network2 := rm.GetTenantNetwork(tenantID2)
+	network2, err := rm.GetTenantNetwork(tenantID2)
+	if err != nil {
+		t.Fatalf("Failed to get tenant network: %v", err)
+	}
 
 	if network2 == "" {
 		t.Fatal("Expected network allocation for second tenant")
@@ -85,7 +91,10 @@ func TestTenantNetworkAllocation(t *testing.T) {
 	}
 
 	// Тест 3: Проверка, что тенант получает ту же подсеть при повторном запросе
-	network1Again := rm.GetTenantNetwork(tenantID1)
+	network1Again, err := rm.GetTenantNetwork(tenantID1)
+	if err != nil {
+		t.Fatalf("Failed to get tenant network: %v", err)
+	}
 	if network1 != network1Again {
 		t.Fatalf("Expected same network for same tenant, got %s vs %s", network1, network1Again)
 	}
@@ -108,7 +117,10 @@ func TestTenantNetworkAllocation(t *testing.T) {
 
 	// Тест 5: Проверка, что освобожденная подсеть может быть переиспользована
 	tenantID3 := "tenant-test-3"
-	network3 := rm.GetTenantNetwork(tenantID3)
+	network3, err := rm.GetTenantNetwork(tenantID3)
+	if err != nil {
+		t.Fatalf("Failed to get tenant network: %v", err)
+	}
 
 	if network3 == "" {
 		t.Fatal("Expected network allocation for third tenant")
@@ -161,9 +173,18 @@ func TestIPAMStats(t *testing.T) {
 	}
 
 	// Выделяем несколько подсетей
-	rm.GetTenantNetwork("tenant-1")
-	rm.GetTenantNetwork("tenant-2")
-	rm.GetTenantNetwork("tenant-3")
+	_, err1 := rm.GetTenantNetwork("tenant-1")
+	if err1 != nil {
+		t.Fatalf("Failed to get tenant network: %v", err1)
+	}
+	_, err2 := rm.GetTenantNetwork("tenant-2")
+	if err2 != nil {
+		t.Fatalf("Failed to get tenant network: %v", err2)
+	}
+	_, err3 := rm.GetTenantNetwork("tenant-3")
+	if err3 != nil {
+		t.Fatalf("Failed to get tenant network: %v", err3)
+	}
 
 	// Получаем статистику
 	stats := rm.GetIPAMStats()

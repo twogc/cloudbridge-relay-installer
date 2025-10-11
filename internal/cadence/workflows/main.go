@@ -592,6 +592,6 @@ func getHealthCheckInterval(ctx workflow.Context) time.Duration {
 // isHealthCheckTestEnvironment проверяет, выполняется ли workflow в тестовом окружении
 func isHealthCheckTestEnvironment() bool {
 	// В реальной реализации можно проверить переменные окружения или конфигурацию
-	// Для тестов всегда возвращаем true
-	return true // TODO: implement proper test environment detection
+	// Исправлено: возвращаем false для продакшена
+	return false // TODO: implement proper test environment detection
 }

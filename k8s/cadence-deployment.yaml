@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cadence-server
+  labels:
+    app: cadence-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cadence-server
+  template:
+    metadata:
+      labels:
+        app: cadence-server
+    spec:
+      containers:
+      - name: cadence-server
+        image: ubercadence/server:latest
+        ports:
+        - containerPort: 7933
+          name: grpc
+        - containerPort: 7934
+          name: membership
+        env:
+        - name: POSTGRES_HOST
+          value: "postgres-service"
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: "cadence"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        - name: POSTGRES_DATABASE
+          value: "cadence"
+        volumeMounts:
+        - name: cadence-config
+          mountPath: /etc/cadence/config
+        readinessProbe:
+          tcpSocket:
+            port: 7933
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 7933
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      volumes:
+      - name: cadence-config
+        configMap:
+          name: cadence-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cadence-service
+spec:
+  selector:
+    app: cadence-server
+  ports:
+  - name: grpc
+    port: 7933
+    targetPort: 7933
+  - name: membership
+    port: 7934
+    targetPort: 7934
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cadence-config
+data:
+  docker.yaml: |
+    log:
+      level: info
+      output: stdout
+    services:
+      frontend:
+        rpc:
+          grpcPort: 7933
+          membershipPort: 7934
+          bindOnLocalHost: false
+          bindOnIP: "0.0.0.0"
+    persistence:
+      defaultStore: postgres
+      postgres:
+        user: ${POSTGRES_USER}
+        password: ${POSTGRES_PASSWORD}
+        host: ${POSTGRES_HOST}
+        port: ${POSTGRES_PORT}
+        database: ${POSTGRES_DATABASE}
+        sslmode: disable
+    clusterMetadata:
+      enableGlobalDomain: true
+      failoverVersionIncrement: 10
+      masterClusterName: "active"
+      currentClusterName: "active"
+      clusterInformation:
+        active:
+          enabled: true
+          initialFailoverVersion: 1
+          address: "127.0.0.1:7933"
