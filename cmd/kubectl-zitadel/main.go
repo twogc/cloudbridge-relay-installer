@@ -6,10 +6,11 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientauthv1beta1 "k8s.io/client-go/pkg/apis/clientauthentication/v1beta1"
+	clientauthv1 "k8s.io/client-go/pkg/apis/clientauthentication/v1"
 )
 
 const (
@@ -80,6 +81,14 @@ func runCredentialPlugin(configPath string, debug bool) error {
 		fmt.Fprintf(os.Stderr, "Debug: loaded config for domain %s\n", config.Domain)
 	}
 
+	// Устанавливаем разумные scopes по умолчанию если не заданы
+	if len(config.Scopes) == 0 {
+		config.Scopes = []string{"openid", "profile", "email"}
+		if debug {
+			fmt.Fprintf(os.Stderr, "Debug: using default scopes: %v\n", config.Scopes)
+		}
+	}
+
 	// Создание HTTP клиента с mTLS поддержкой
 	httpClient, err := createHTTPClient(config)
 	if err != nil {
@@ -97,12 +106,12 @@ func runCredentialPlugin(configPath string, debug bool) error {
 	}
 
 	// Создание ExecCredential ответа
-	execCred := &clientauthv1beta1.ExecCredential{
+	execCred := &clientauthv1.ExecCredential{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: clientauthv1beta1.SchemeGroupVersion.String(),
+			APIVersion: clientauthv1.SchemeGroupVersion.String(),
 			Kind:       "ExecCredential",
 		},
-		Status: &clientauthv1beta1.ExecCredentialStatus{
+		Status: &clientauthv1.ExecCredentialStatus{
 			ExpirationTimestamp: &metav1.Time{Time: token.Expiry},
 			Token:               token.AccessToken,
 		},
@@ -122,12 +131,17 @@ func loadConfig(configPath string) (*ZitadelConfig, error) {
 	// Если путь не указан, попробовать найти конфигурацию
 	if configPath == "" {
 		// Попробовать стандартные места
-		candidates := []string{
-			os.Getenv("KUBECTL_ZITADEL_CONFIG"),
-			"~/.kubectl-zitadel.json",
+		var candidates []string
+		if env := os.Getenv("KUBECTL_ZITADEL_CONFIG"); env != "" {
+			candidates = append(candidates, env)
+		}
+		if home, _ := os.UserHomeDir(); home != "" {
+			candidates = append(candidates, filepath.Join(home, ".kubectl-zitadel.json"))
+		}
+		candidates = append(candidates,
 			"/etc/kubectl-zitadel/config.json",
 			"/home/ubuntu/cloudbridge-relay-installer/configs/zitadel_config.json",
-		}
+		)
 
 		for _, candidate := range candidates {
 			if candidate == "" {
@@ -144,7 +158,7 @@ func loadConfig(configPath string) (*ZitadelConfig, error) {
 		}
 	}
 
-	data, err := ioutil.ReadFile(configPath)
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
@@ -185,35 +199,48 @@ func createHTTPClient(config *ZitadelConfig) (*http.Client, error) {
 	}
 
 	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
+		TLSClientConfig:       tlsConfig,
+		Proxy:                 http.ProxyFromEnvironment,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   10,
+		IdleConnTimeout:       90 * time.Second,
+		ExpectContinueTimeout: 3 * time.Second,
 	}
 	client.Transport = transport
+	client.Timeout = 30 * time.Second
 
 	return client, nil
 }
 
 func createTLSConfig(config *ZitadelConfig) (*tls.Config, error) {
-	tlsConfig := &tls.Config{
-		MinVersion:         tls.VersionTLS12,
-		InsecureSkipVerify: config.InsecureSkipVerify,
+	// Используем системный CA пул по умолчанию
+	pool, _ := x509.SystemCertPool()
+	if pool == nil {
+		pool = x509.NewCertPool()
 	}
 
-	// Загрузка CA сертификата если указан
+	// Добавляем пользовательский CA если указан
 	if config.CACertPath != "" {
-		caCert, err := ioutil.ReadFile(config.CACertPath)
+		caCert, err := os.ReadFile(config.CACertPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read CA cert: %w", err)
 		}
-
-		caCertPool := x509.NewCertPool()
-		if !caCertPool.AppendCertsFromPEM(caCert) {
+		if !pool.AppendCertsFromPEM(caCert) {
 			return nil, fmt.Errorf("failed to parse CA certificate")
 		}
-		tlsConfig.RootCAs = caCertPool
 	}
 
-	// Загрузка клиентского сертификата и ключа
-	if config.ClientCertPath != "" && config.ClientKeyPath != "" {
+	tlsConfig := &tls.Config{
+		MinVersion:         tls.VersionTLS12,
+		RootCAs:            pool,
+		InsecureSkipVerify: config.InsecureSkipVerify,
+	}
+
+	// Загрузка клиентского сертификата и ключа (mTLS)
+	if config.MTLSEnabled {
+		if config.ClientCertPath == "" || config.ClientKeyPath == "" {
+			return nil, fmt.Errorf("mTLS enabled but client cert/key not provided")
+		}
 		clientCert, err := tls.LoadX509KeyPair(config.ClientCertPath, config.ClientKeyPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load client certificate: %w", err)
@@ -270,14 +297,22 @@ func performTokenExchange(httpClient *http.Client, config *ZitadelConfig, subjec
 	}
 
 	tokenURL := fmt.Sprintf("https://%s/oauth/v2/token", config.Domain)
-	resp, err := httpClient.PostForm(tokenURL, data)
+	req, err := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("create token exchange request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// ВАЖНО: клиентская аутентификация
+	req.SetBasicAuth(config.ClientID, config.ClientSecret)
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("token exchange request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("token exchange failed with status %d: %s", resp.StatusCode, string(body))
 	}
 

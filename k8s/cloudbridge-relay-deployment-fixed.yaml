@@ -74,13 +74,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 5554
+            port: 9091
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /health
-            port: 5554
+            port: 9091
           initialDelaySeconds: 5
           periodSeconds: 5
         securityContext:

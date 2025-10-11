@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/twogc/enhanced-quic#readme",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "uuid": "^9.0.0",

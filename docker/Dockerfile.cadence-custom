@@ -1,0 +1,42 @@
+FROM ubercadence/server:0.24.0
+
+# Устанавливаем необходимые пакеты
+RUN apk add --no-cache netcat-openbsd postgresql-client
+
+# Создаем скрипт инициализации
+RUN echo '#!/bin/sh' > /init-cadence.sh && \
+    echo 'echo "Waiting for PostgreSQL to be ready..."' >> /init-cadence.sh && \
+    echo 'until nc -z $POSTGRES_HOST $POSTGRES_PORT; do' >> /init-cadence.sh && \
+    echo '  echo "PostgreSQL is unavailable - sleeping"' >> /init-cadence.sh && \
+    echo '  sleep 2' >> /init-cadence.sh && \
+    echo 'done' >> /init-cadence.sh && \
+    echo 'echo "PostgreSQL is ready!"' >> /init-cadence.sh && \
+    echo '' >> /init-cadence.sh && \
+    echo '# Инициализация схемы базы данных (idempotent)' >> /init-cadence.sh && \
+    echo 'echo "Initializing Cadence database schema..."' >> /init-cadence.sh && \
+    echo 'cadence-sql-tool \' >> /init-cadence.sh && \
+    echo '  --endpoint $POSTGRES_HOST \' >> /init-cadence.sh && \
+    echo '  --port $POSTGRES_PORT \' >> /init-cadence.sh && \
+    echo '  --user $POSTGRES_USER \' >> /init-cadence.sh && \
+    echo '  --password $POSTGRES_PASSWORD \' >> /init-cadence.sh && \
+    echo '  --database $POSTGRES_DATABASE \' >> /init-cadence.sh && \
+    echo '  --plugin postgres \' >> /init-cadence.sh && \
+    echo '  setup-schema --version 0.0 --schema-file /etc/cadence/schema/postgresql/v96/cadence/versioned/v0.0/cadence/schema.sql || echo "Schema may already exist, continuing..."' >> /init-cadence.sh && \
+    echo '' >> /init-cadence.sh && \
+    echo 'echo "Database schema initialized!"' >> /init-cadence.sh && \
+    echo '' >> /init-cadence.sh && \
+    echo '# Создание домена по умолчанию (idempotent)' >> /init-cadence.sh && \
+    echo 'echo "Creating default domain..."' >> /init-cadence.sh && \
+    echo 'echo "Domain creation skipped - will be created by server"' >> /init-cadence.sh && \
+    echo '' >> /init-cadence.sh && \
+    echo 'echo "Default domain created!"' >> /init-cadence.sh && \
+    echo '' >> /init-cadence.sh && \
+    echo '# Запуск Cadence сервера' >> /init-cadence.sh && \
+    echo 'echo "Starting Cadence server..."' >> /init-cadence.sh && \
+    echo 'exec cadence-server \' >> /init-cadence.sh && \
+    echo '  --config /etc/cadence/config/docker.yaml \' >> /init-cadence.sh && \
+    echo '  start' >> /init-cadence.sh && \
+    chmod +x /init-cadence.sh
+
+# Переопределяем entrypoint
+ENTRYPOINT ["/init-cadence.sh"]

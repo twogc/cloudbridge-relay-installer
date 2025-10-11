@@ -44,6 +44,7 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	grpcTransport "github.com/twogc/cloudbridge-relay-installer/internal/transport/grpc"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tunnel"
+	"go.uber.org/cadence/worker"
 	"go.uber.org/zap"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
@@ -140,7 +141,7 @@ type Server struct {
 	quicRelayHandler *QUICRelayHandler
 
 	// Cadence Workflow Engine
-	cadenceClient *cadence.Client
+	cadenceClient *cadence.ProductionClient
 
 	// P2P API Server
 	p2pAPIServer *P2PAPIServer
@@ -435,24 +436,45 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize Cadence Workflow Engine
-	var cadenceClient *cadence.Client
+	var cadenceClient *cadence.ProductionClient
 	if cfg.Cadence.Enabled {
-		cadenceConfig := cadence.Config{
+		cadenceConfig := cadence.ProductionConfig{
 			HostPort: cfg.Cadence.HostPort,
 			Domain:   cfg.Cadence.Domain,
 			TaskList: cfg.Cadence.TaskList,
+			WorkerOptions: worker.Options{
+				Identity: "cloudbridge-relay-worker",
+			},
+			ServiceOptions: cadence.ServiceClientOptions{
+				Timeout:     30 * time.Second,
+				ServiceName: "cloudbridge-relay",
+				EnableTLS:   false,
+			},
+			// TODO: Добавить реальные сервисы когда они будут готовы
+			P2PService:      nil,
+			QuantumService:  nil,
+			AIService:       nil,
+			SecurityService: nil,
+			ScalingService:  nil,
 		}
 
 		var err error
-		cadenceClient, err = cadence.NewClient(cadenceConfig, loggerInstance.GetZapLogger())
+		cadenceClient, err = cadence.NewProductionClient(cadenceConfig, loggerInstance.GetZapLogger())
 		if err != nil {
 			loggerInstance.Error("Failed to initialize Cadence client", zap.Error(err))
 			return nil, fmt.Errorf("failed to initialize Cadence client: %v", err)
 		}
 
+		// Запускаем Cadence worker
+		if err := cadenceClient.Start(); err != nil {
+			loggerInstance.Error("Failed to start Cadence worker", zap.Error(err))
+			return nil, fmt.Errorf("failed to start Cadence worker: %v", err)
+		}
+
 		loggerInstance.Info("Cadence Workflow Engine initialized successfully",
 			zap.String("domain", cfg.Cadence.Domain),
 			zap.String("host_port", cfg.Cadence.HostPort),
+			zap.Bool("stub_mode", cadenceClient.IsStubMode()),
 		)
 	}
 
@@ -2080,6 +2102,12 @@ func (s *Server) Stop() {
 	// Stop health checker
 	if s.healthChecker != nil {
 		s.healthChecker.Stop()
+	}
+
+	// Stop Cadence Workflow Engine
+	if s.cadenceClient != nil {
+		s.cadenceClient.Close()
+		s.logger.Info("Cadence Workflow Engine stopped")
 	}
 
 	// Shutdown AI components

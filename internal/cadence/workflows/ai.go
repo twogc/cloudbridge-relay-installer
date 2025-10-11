@@ -112,6 +112,19 @@ func ThreatAnalysisWorkflow(ctx workflow.Context, input ThreatAnalysisWorkflowIn
 		zap.Strings("threat_models", input.ThreatModels),
 	)
 
+	// Настройка ActivityOptions для всех activities в этом workflow
+	ao := workflow.ActivityOptions{
+		ScheduleToStartTimeout: time.Minute,
+		StartToCloseTimeout:    5 * time.Minute,
+		RetryPolicy: &workflow.RetryPolicy{
+			InitialInterval:    time.Second,
+			BackoffCoefficient: 2.0,
+			MaximumInterval:    30 * time.Second,
+			MaximumAttempts:    3,
+		},
+	}
+	ctx = workflow.WithActivityOptions(ctx, ao)
+
 	result := &ThreatAnalysisWorkflowResult{
 		AnalysisType:    input.AnalysisType,
 		Status:          "analyzing",
@@ -380,8 +393,8 @@ func BehaviorMonitoringWorkflow(ctx workflow.Context, input BehaviorMonitoringWo
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
 		ScheduleToStartTimeout: 1 * time.Minute,
-		StartToCloseTimeout: 10 * time.Minute,
-		HeartbeatTimeout:    1 * time.Minute,
+		StartToCloseTimeout:    10 * time.Minute,
+		HeartbeatTimeout:       1 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
 			InitialInterval:    time.Second,
 			BackoffCoefficient: 2.0,
@@ -607,8 +620,8 @@ func AutomatedResponseWorkflow(ctx workflow.Context, input AutomatedResponseWork
 	// Настройки для activities
 	activityOptions := workflow.ActivityOptions{
 		ScheduleToStartTimeout: 1 * time.Minute,
-		StartToCloseTimeout: 5 * time.Minute,
-		HeartbeatTimeout:    30 * time.Second,
+		StartToCloseTimeout:    5 * time.Minute,
+		HeartbeatTimeout:       30 * time.Second,
 		RetryPolicy: &workflow.RetryPolicy{
 			InitialInterval:    time.Second,
 			BackoffCoefficient: 2.0,
@@ -874,8 +887,8 @@ func ModelTrainingWorkflow(ctx workflow.Context, input ModelTrainingWorkflowInpu
 	// Настройки для activities (обучение может занимать много времени)
 	activityOptions := workflow.ActivityOptions{
 		ScheduleToStartTimeout: 1 * time.Minute,
-		StartToCloseTimeout: 2 * time.Hour,
-		HeartbeatTimeout:    5 * time.Minute,
+		StartToCloseTimeout:    2 * time.Hour,
+		HeartbeatTimeout:       5 * time.Minute,
 		RetryPolicy: &workflow.RetryPolicy{
 			InitialInterval:    10 * time.Second,
 			BackoffCoefficient: 1.5,
