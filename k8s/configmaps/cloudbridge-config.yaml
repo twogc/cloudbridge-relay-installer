@@ -277,7 +277,7 @@ data:
       },
       "cadence": {
         "enabled": true,
-        "host_port": "cadence-service:7933",
+        "host_port": "cadence-service.cloudbridge.svc.cluster.local:7933",
         "domain": "cloudbridge",
         "task_list": "relay-task-list"
       },

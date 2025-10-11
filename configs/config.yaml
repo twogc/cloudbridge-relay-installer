@@ -41,3 +41,17 @@ security:
   cors:
     enabled: true
     allowed_origins: ["*"]
+
+# Cadence Integration
+cadence:
+  enabled: true
+  host_port: "cadence-service.cloudbridge.svc.cluster.local:7933"
+  domain: "cloudbridge"
+  task_list: "relay-task-list"
+  client_options:
+    timeout: "30s"
+    retry_policy:
+      initial_interval: "1s"
+      backoff_coefficient: 2.0
+      maximum_interval: "30s"
+      maximum_attempts: 3

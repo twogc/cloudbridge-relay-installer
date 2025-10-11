@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: cloudbridge-relay
-        image: cloudbridge-relay:mvp-20251010-204217
+        image: cloudbridge-relay:mvp-20251011-214615
         imagePullPolicy: Never
         command: ["./cloudbridge-relay"]
         args: ["--config", "/app/configs/config.json"]
@@ -101,7 +101,7 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: cloudbridge-config
+          name: cloudbridge-config-json
       - name: tls-certs
         secret:
           secretName: cloudbridge-tls

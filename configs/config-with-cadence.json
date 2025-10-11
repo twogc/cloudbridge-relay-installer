@@ -1,0 +1,64 @@
+{
+  "server": {
+    "address": "0.0.0.0:9090",
+    "timeout": "30s",
+    "max_tunnels": 1000,
+    "ping_interval": "30s",
+    "cleanup_interval": "1m"
+  },
+  "security": {
+    "tls_enabled": false
+  },
+  "grpc": {
+    "enabled": false
+  },
+  "api": {
+    "enabled": true,
+    "port": 9091,
+    "version": "v1"
+  },
+  "cadence": {
+    "enabled": true,
+    "host_port": "cadence-service.cloudbridge.svc.cluster.local:7933",
+    "domain": "cloudbridge",
+    "task_list": "relay-task-list",
+    "client_options": {
+      "timeout": "30s",
+      "retry_policy": {
+        "initial_interval": "1s",
+        "backoff_coefficient": 2.0,
+        "maximum_interval": "30s",
+        "maximum_attempts": 3
+      }
+    }
+  },
+  "wireguard": {
+    "enabled": true,
+    "interface": {
+      "name": "wg-mesh0",
+      "listen_port": 51820,
+      "address": "10.100.1.1/24"
+    },
+    "discovery": {
+      "registry_url": "https://auth.2gc.ru/wg/peers",
+      "heartbeat_interval": "25s",
+      "max_peers": 50
+    },
+    "mesh": {
+      "enabled": true,
+      "auto_discovery": true,
+      "max_connections": 100,
+      "routing_strategy": "hybrid"
+    }
+  },
+  "metrics": {
+    "enabled": true,
+    "port": 9090,
+    "path": "/metrics"
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "output": "stdout"
+  }
+}
