@@ -5,12 +5,13 @@
 **CloudBridge Relay** - это enterprise-grade P2P mesh networking платформа с полной multi-tenancy изоляцией, интеграцией с Zitadel IdP и AI/ML компонентами для создания безопасных виртуальных локальных сетей между удаленными серверами.
 
 ### 🎯 Ключевые характеристики:
-- **10+ микросервисов** в архитектуре
-- **30+ внутренних компонентов** (internal/)
-- **Multi-tenant изоляция** с уникальными подсетями
+- **12+ микросервисов** в архитектуре (включая tenant-policy-controller)
+- **35+ внутренних компонентов** (internal/) с IPAM и контроллерами
+- **Multi-tenant изоляция** с Calico Network Policies
+- **Deterministic IPAM** с PostgreSQL и транзакционной безопасностью
 - **Enterprise security** с JWT, RBAC, TLS 1.3
 - **AI/ML pipeline** для аналитики и предсказаний
-- **Kubernetes-native** deployment
+- **Kubernetes-native** deployment с operator pattern
 - **Post-quantum cryptography** поддержка
 
 ### 🚀 Уникальные технологические особенности:
@@ -106,7 +107,150 @@ graph TB
 
 ---
 
-## 🔧 2. Архитектура микросервисов
+## 🎛️ 2. Tenant Policy Controller & IPAM Architecture
+
+### 🏗️ Kubernetes Operator Pattern
+
+```mermaid
+graph TB
+    subgraph "Kubernetes Cluster"
+        subgraph "cloudbridge-system namespace"
+            TPC[Tenant Policy Controller]
+            POSTGRES[PostgreSQL IPAM Database]
+        end
+        
+        subgraph "Tenant Namespaces"
+            TA[tenant-a-test]
+            TB[tenant-b-test]
+            TC[tenant-c-test]
+        end
+        
+        subgraph "Calico Network Policies"
+            GNP1[tenant-123456789-allow-intra]
+            GNP2[tenant-216420165-allow-intra]
+            GNP3[tenant-123456789-default-deny]
+            GNP4[tenant-216420165-default-deny]
+        end
+    end
+    
+    subgraph "External Resources"
+        PODS[Pods with tenant.cloudbridge.io/id labels]
+        CALICO[Calico CNI]
+    end
+    
+    TPC --> POSTGRES
+    TPC --> PODS
+    TPC --> GNP1
+    TPC --> GNP2
+    TPC --> GNP3
+    TPC --> GNP4
+    
+    PODS --> TA
+    PODS --> TB
+    PODS --> TC
+    
+    GNP1 --> CALICO
+    GNP2 --> CALICO
+    GNP3 --> CALICO
+    GNP4 --> CALICO
+```
+
+### 🔧 Tenant Policy Controller Features
+
+| Функция | Описание | Статус |
+|---------|----------|--------|
+| **Pod Label Detection** | Автоматическое обнаружение подов с tenant лейблами | ✅ Production |
+| **Calico Policy Creation** | Создание GlobalNetworkPolicy для изоляции | ✅ Production |
+| **Idempotent Updates** | Безопасные обновления политик | ✅ Production |
+| **DNS Rules** | Разрешение DNS трафика для подов | ✅ Production |
+| **Cleanup** | Удаление orphaned политик | ✅ Production |
+| **Leader Election** | HA с leader election | ✅ Production |
+| **Health Checks** | Health/ready endpoints | ✅ Production |
+
+### 🗄️ IPAM Database Schema
+
+```mermaid
+erDiagram
+    TENANTS {
+        text tenant_id PK
+        text status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    
+    TENANT_SUBNETS {
+        serial id PK
+        text tenant_id FK
+        cidr subnet_cidr
+        inet gateway
+        text status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    
+    IP_USAGE_TRACKING {
+        integer subnet_id PK,FK
+        inet ip_address PK
+        text status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    
+    TENANT_IP_ALLOCATIONS {
+        serial id PK
+        text tenant_id FK
+        text peer_id
+        inet ip_address
+        integer subnet_id FK
+        text status
+        timestamptz allocated_at
+    }
+    
+    EXCLUDED_CIDRS {
+        serial id PK
+        cidr cidr
+        text reason
+        timestamptz created_at
+    }
+    
+    TENANTS ||--o{ TENANT_SUBNETS : "has"
+    TENANT_SUBNETS ||--o{ IP_USAGE_TRACKING : "tracks"
+    TENANT_SUBNETS ||--o{ TENANT_IP_ALLOCATIONS : "allocates"
+    TENANTS ||--o{ TENANT_IP_ALLOCATIONS : "owns"
+```
+
+### 🔄 IPAM Workflow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as API Gateway
+    participant IPAM as IPAM Service
+    participant DB as PostgreSQL
+    participant CALICO as Calico CNI
+    
+    C->>API: Create Tenant Request
+    API->>IPAM: Create Tenant Subnet
+    IPAM->>DB: INSERT tenant_subnets
+    IPAM->>DB: Initialize IP pool (2-254)
+    IPAM->>DB: INSERT ip_usage_tracking
+    DB->>IPAM: Subnet Created
+    IPAM->>API: Subnet Ready
+    API->>C: Tenant Created
+    
+    Note over C,CALICO: Peer Registration
+    C->>API: Register Peer
+    API->>IPAM: Allocate IP
+    IPAM->>DB: SELECT allocate_ip_for_peer()
+    DB->>IPAM: IP Allocated
+    IPAM->>CALICO: Update Network Policies
+    IPAM->>API: IP Assigned
+    API->>C: Peer Registered
+```
+
+---
+
+## 🔧 3. Архитектура микросервисов
 
 ### 📊 Карта сервисов
 
@@ -117,6 +261,7 @@ graph TB
 | **api** | 5552 | REST API Gateway | ✅ Production |
 | **cadence-service** | 8082 | Workflow orchestration | ✅ Production |
 | **ipam-service** | 8080 | IP Address Management | ✅ Production |
+| **tenant-policy-controller** | 8080, 8081 | Kubernetes controller для изоляции | ✅ Production |
 | **quic-service** | 8081 | QUIC protocol handler | ✅ Production |
 | **quantum-service** | 8084 | Post-quantum cryptography | ✅ Production |
 | **ai-analytics** | 8085 | AI Analytics Engine | ✅ Production |
@@ -223,6 +368,7 @@ graph TB
         IPAM[ipam/]
         CNI[cni/]
         TENANT[tenant/]
+        CONTROLLERS[controllers/]
     end
     
     subgraph "Monitoring & Metrics"
@@ -1198,6 +1344,8 @@ graph TB
 | **Core Infrastructure** | 100% | ✅ Production Ready |
 | **P2P Mesh Networking** | 100% | ✅ Production Ready |
 | **Multi-Tenancy** | 100% | ✅ Production Ready |
+| **Tenant Policy Controller** | 100% | ✅ Production Ready |
+| **IPAM System** | 100% | ✅ Production Ready |
 | **Security** | 95% | ✅ Production Ready |
 | **AI/ML Pipeline** | 90% | ✅ Production Ready |
 | **Kubernetes Deployment** | 100% | ✅ Production Ready |
@@ -1221,12 +1369,43 @@ graph TB
 - **Vendor independence** vs lock-in у крупных вендоров
 - **Cost efficiency** vs premium pricing у SASE решений
 
-### 🔧 Критические исправления (10 октября 2025)
+### 🔧 Критические исправления (10-11 октября 2025)
 
 #### **Проблема:** Отсутствующие API endpoints
 - **Симптомы:** 404 ошибки для всех API endpoints (`/api/v1/tenants/{tenant_id}/peers/register`)
 - **Причина:** В `cmd/relay/p2p_api.go` были только TODO комментарии вместо реальных маршрутов
 - **Решение:** Полная реализация API endpoints с защищенными маршрутами
+
+#### **Новая функциональность: Tenant Policy Controller & IPAM (11 октября 2025)**
+
+**Реализована полнофункциональная система изоляции тенантов с детерминированным IPAM:**
+
+1. **✅ Tenant Policy Controller:**
+   - Kubernetes operator для автоматического создания Calico Network Policies
+   - Идемпотентные операции с CreateOrUpdate
+   - Безопасный cleanup orphaned политик по индексу
+   - DNS правила с правильными портами/протоколами
+   - Leader election для HA
+   - Health/ready checks
+
+2. **✅ PostgreSQL-based IPAM:**
+   - Детерминированная аллокация IP с транзакционной безопасностью
+   - PostgreSQL функции с FOR UPDATE SKIP LOCKED
+   - Привязка IP к подсетям для изоляции
+   - Исключенные CIDR для избежания конфликтов
+   - Batch операции для эффективности
+
+3. **✅ Calico Network Policies:**
+   - Автоматическое создание allow-intra политик
+   - Default-deny политики для изоляции
+   - DNS правила для разрешения DNS трафика
+   - Правильный order для приоритизации
+
+4. **✅ Комплексное тестирование:**
+   - Unit тесты для контроллера
+   - Integration тесты для IPAM
+   - End-to-end тесты в Minikube
+   - Проверка изоляции между тенантами
 
 #### **Новая функциональность: L3-overlay сеть с IPAM (10 октября 2025)**
 
@@ -1390,8 +1569,8 @@ graph TB
 
 ---
 
-**Последнее обновление:** 10 октября 2025  
-**Статус проекта:** ✅ L3-overlay сеть реализована, готов к production deployment  
-**Архитектура:** Enterprise-grade, Kubernetes-native, AI-powered, L3-overlay  
-**Критические исправления:** ✅ API endpoints + L3-overlay + IPAM полностью реализованы  
-**Новые возможности:** ✅ Per-peer IPAM, WireGuard API, гибридная архитектура SCORE+DB
+**Последнее обновление:** 11 октября 2025  
+**Статус проекта:** ✅ Tenant Policy Controller + IPAM реализованы, готов к production deployment  
+**Архитектура:** Enterprise-grade, Kubernetes-native, AI-powered, L3-overlay, Multi-tenant isolation  
+**Критические исправления:** ✅ API endpoints + L3-overlay + IPAM + Tenant Controller полностью реализованы  
+**Новые возможности:** ✅ Per-peer IPAM, WireGuard API, Tenant Policy Controller, PostgreSQL IPAM, Calico Network Policies
