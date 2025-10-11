@@ -65,12 +65,14 @@ type configRaw struct {
 	} `json:"keycloak"`
 
 	Zitadel struct {
-		Enabled      bool   `json:"enabled"`
-		Domain       string `json:"domain"`
-		ProjectID    string `json:"project_id"`
-		ClientID     string `json:"client_id"`
-		ClientSecret string `json:"client_secret"`
-
+		Enabled        bool   `json:"enabled"`
+		Issuer         string `json:"issuer"`
+		Audience       string `json:"audience"`
+		TokenURL       string `json:"token_url"`
+		GRPCHost       string `json:"grpc_host"`
+		StrictMode     bool   `json:"strict_mode"`
+		ClientID       string `json:"client_id"`
+		ClientSecret   string `json:"client_secret"`
 		FallbackSecret string `json:"fallback_secret"`
 
 		TokenValidation struct {
@@ -189,10 +191,9 @@ type configRaw struct {
 		} `json:"rate_limit"`
 
 		Authentication struct {
-			Enabled     bool   `json:"enabled"`
-			Type        string `json:"type"`
-			JWTSecret   string `json:"jwt_secret,omitempty"`
-			KeycloakURL string `json:"keycloak_url,omitempty"`
+			Enabled   bool   `json:"enabled"`
+			Type      string `json:"type"`
+			JWTSecret string `json:"jwt_secret,omitempty"`
 		} `json:"authentication"`
 	} `json:"zero_trust"`
 
@@ -404,34 +405,17 @@ type Config struct {
 		RESTRetryDelay time.Duration `json:"rest_retry_delay"`
 	} `json:"django"`
 
-	// Новый блок конфигурации для Keycloak
-	Keycloak struct {
-		Enabled         bool   `json:"enabled"`
-		ServerURL       string `json:"server_url"`
-		Realm           string `json:"realm"`
-		ClientID        string `json:"client_id"`
-		ClientSecret    string `json:"client_secret"`
-		PublicKey       string `json:"public_key"`
-		FallbackSecret  string `json:"fallback_secret"`
-		JWKSURL         string `json:"jwks_url"`
-		TokenValidation struct {
-			Issuer    string        `json:"issuer"`
-			Audience  string        `json:"audience"`
-			ClockSkew time.Duration `json:"clock_skew"`
-		} `json:"token_validation"`
-		JWKSCacheTTL time.Duration `json:"jwks_cache_ttl"`
-		HTTPTimeout  time.Duration `json:"http_timeout"`
-	} `json:"keycloak"`
-
 	// Новый блок конфигурации для Zitadel
 	Zitadel struct {
-		Enabled      bool   `json:"enabled"`
-		Domain       string `json:"domain"`
-		ProjectID    string `json:"project_id"`
-		ClientID     string `json:"client_id"`
-		ClientSecret string `json:"client_secret"`
-
+		Enabled        bool   `json:"enabled"`
+		Issuer         string `json:"issuer"`    // https://domain.zitadel.cloud
+		Audience       string `json:"audience"`  // project ID or client ID
+		TokenURL       string `json:"token_url"` // issuer + "/oauth/v2/token"
+		ClientID       string `json:"client_id"`
+		ClientSecret   string `json:"client_secret"`
+		GRPCHost       string `json:"grpc_host"` // zitadel.domain:443
 		FallbackSecret string `json:"fallback_secret"`
+		StrictMode     bool   `json:"strict_mode"` // отключает заголовки X-Tenant-ID
 
 		TokenValidation struct {
 			Audience  string        `json:"audience"`
@@ -645,14 +629,13 @@ type Config struct {
 
 	// Enhanced QUIC Configuration
 	EnhancedQUIC struct {
-		Enabled             bool          `json:"enabled"`
-		MaxStreams          int           `json:"max_streams"`
-		KeepAlive           bool          `json:"keep_alive"`
-		IdleTimeout         time.Duration `json:"idle_timeout"`
-		HandshakeTimeout    time.Duration `json:"handshake_timeout"`
-		DDoSProtection      bool          `json:"ddos_protection"`
-		GeographicRouting   bool          `json:"geographic_routing"`
-		KeycloakIntegration bool          `json:"keycloak_integration"`
+		Enabled           bool          `json:"enabled"`
+		MaxStreams        int           `json:"max_streams"`
+		KeepAlive         bool          `json:"keep_alive"`
+		IdleTimeout       time.Duration `json:"idle_timeout"`
+		HandshakeTimeout  time.Duration `json:"handshake_timeout"`
+		DDoSProtection    bool          `json:"ddos_protection"`
+		GeographicRouting bool          `json:"geographic_routing"`
 	} `json:"enhanced_quic"`
 
 	// WireGuard P2P Mesh Configuration
@@ -967,29 +950,16 @@ func Load(path string) (*Config, error) {
 	config.Django.RESTMaxRetries = raw.Django.RESTMaxRetries
 	config.Django.RESTRetryDelay = parseDuration(raw.Django.RESTRetryDelay, 100*time.Millisecond)
 
-	// Keycloak
-	config.Keycloak.Enabled = raw.Keycloak.Enabled
-	config.Keycloak.ServerURL = raw.Keycloak.ServerURL
-	config.Keycloak.Realm = raw.Keycloak.Realm
-	config.Keycloak.ClientID = raw.Keycloak.ClientID
-	config.Keycloak.ClientSecret = raw.Keycloak.ClientSecret
-	config.Keycloak.PublicKey = raw.Keycloak.PublicKey
-	// Assign JWKS URL from raw JSON if provided
-	config.Keycloak.JWKSURL = raw.Keycloak.JWKSURL
-	config.Keycloak.FallbackSecret = raw.Keycloak.FallbackSecret
-	config.Keycloak.TokenValidation.Issuer = raw.Keycloak.TokenValidation.Issuer
-	config.Keycloak.TokenValidation.Audience = raw.Keycloak.TokenValidation.Audience
-	config.Keycloak.TokenValidation.ClockSkew = parseDuration(raw.Keycloak.TokenValidation.ClockSkew, 30*time.Second)
-	config.Keycloak.JWKSCacheTTL = parseDuration(raw.Keycloak.JWKSCacheTTL, time.Hour)
-	config.Keycloak.HTTPTimeout = parseDuration(raw.Keycloak.HTTPTimeout, 30*time.Second)
-
 	// Zitadel
 	config.Zitadel.Enabled = raw.Zitadel.Enabled
-	config.Zitadel.Domain = raw.Zitadel.Domain
-	config.Zitadel.ProjectID = raw.Zitadel.ProjectID
+	config.Zitadel.Issuer = raw.Zitadel.Issuer
+	config.Zitadel.Audience = raw.Zitadel.Audience
+	config.Zitadel.TokenURL = raw.Zitadel.TokenURL
 	config.Zitadel.ClientID = raw.Zitadel.ClientID
 	config.Zitadel.ClientSecret = raw.Zitadel.ClientSecret
+	config.Zitadel.GRPCHost = raw.Zitadel.GRPCHost
 	config.Zitadel.FallbackSecret = raw.Zitadel.FallbackSecret
+	config.Zitadel.StrictMode = raw.Zitadel.StrictMode
 	config.Zitadel.TokenValidation.Audience = raw.Zitadel.TokenValidation.Audience
 	config.Zitadel.TokenValidation.ClockSkew = parseDuration(raw.Zitadel.TokenValidation.ClockSkew, 30*time.Second)
 	config.Zitadel.CacheTTL = parseDuration(raw.Zitadel.CacheTTL, 5*time.Minute)
@@ -1074,7 +1044,6 @@ func Load(path string) (*Config, error) {
 	config.ZeroTrust.Authentication.Enabled = raw.ZeroTrust.Authentication.Enabled
 	config.ZeroTrust.Authentication.Type = raw.ZeroTrust.Authentication.Type
 	config.ZeroTrust.Authentication.JWTSecret = raw.ZeroTrust.Authentication.JWTSecret
-	config.ZeroTrust.Authentication.KeycloakURL = raw.ZeroTrust.Authentication.KeycloakURL
 
 	// Load JWT secret from environment if not set
 	if config.Django.JWTSecret == "${RELAY_JWT_SECRET}" {
@@ -1082,54 +1051,6 @@ func Load(path string) (*Config, error) {
 			config.Django.JWTSecret = secret
 		} else {
 			return nil, fmt.Errorf("JWT secret must be set via RELAY_JWT_SECRET environment variable")
-		}
-	}
-
-	// Load Keycloak configuration from environment
-	if config.Keycloak.Enabled {
-		if config.Keycloak.ServerURL == "${KEYCLOAK_SERVER_URL}" {
-			if url := os.Getenv("KEYCLOAK_SERVER_URL"); url != "" {
-				config.Keycloak.ServerURL = url
-			}
-		}
-		if config.Keycloak.Realm == "${KEYCLOAK_REALM}" {
-			if realm := os.Getenv("KEYCLOAK_REALM"); realm != "" {
-				config.Keycloak.Realm = realm
-			}
-		}
-		if config.Keycloak.ClientID == "${KEYCLOAK_CLIENT_ID}" {
-			if clientID := os.Getenv("KEYCLOAK_CLIENT_ID"); clientID != "" {
-				config.Keycloak.ClientID = clientID
-			}
-		}
-		if config.Keycloak.ClientSecret == "${KEYCLOAK_CLIENT_SECRET}" {
-			if secret := os.Getenv("KEYCLOAK_CLIENT_SECRET"); secret != "" {
-				config.Keycloak.ClientSecret = secret
-			}
-		}
-		if config.Keycloak.PublicKey == "${KEYCLOAK_PUBLIC_KEY}" {
-			if key := os.Getenv("KEYCLOAK_PUBLIC_KEY"); key != "" {
-				config.Keycloak.PublicKey = key
-			} else {
-				// If env var is not provided, clear placeholder to avoid PEM parsing on a literal placeholder
-				config.Keycloak.PublicKey = ""
-			}
-		}
-		if config.Keycloak.TokenValidation.Issuer == "${KEYCLOAK_ISSUER}" {
-			if issuer := os.Getenv("KEYCLOAK_ISSUER"); issuer != "" {
-				config.Keycloak.TokenValidation.Issuer = issuer
-			}
-		}
-		if config.Keycloak.TokenValidation.Audience == "${KEYCLOAK_AUDIENCE}" {
-			if audience := os.Getenv("KEYCLOAK_AUDIENCE"); audience != "" {
-				config.Keycloak.TokenValidation.Audience = audience
-			}
-		}
-		// Load JWKS URL from environment if set
-		if config.Keycloak.JWKSURL == "" || config.Keycloak.JWKSURL == "${KEYCLOAK_JWKS_URL}" {
-			if jwksURL := os.Getenv("KEYCLOAK_JWKS_URL"); jwksURL != "" {
-				config.Keycloak.JWKSURL = jwksURL
-			}
 		}
 	}
 
@@ -1171,7 +1092,6 @@ func Load(path string) (*Config, error) {
 	config.EnhancedQUIC.HandshakeTimeout = parseDuration(raw.EnhancedQUIC.HandshakeTimeout, 10*time.Second)
 	config.EnhancedQUIC.DDoSProtection = raw.EnhancedQUIC.DDoSProtection
 	config.EnhancedQUIC.GeographicRouting = raw.EnhancedQUIC.GeographicRouting
-	config.EnhancedQUIC.KeycloakIntegration = raw.EnhancedQUIC.KeycloakIntegration
 
 	// WireGuard
 	config.WireGuard.Enabled = raw.WireGuard.Enabled
@@ -1354,34 +1274,6 @@ func (c *Config) Validate() error {
 	}
 	if c.Django.RESTRetryDelay < 0 {
 		return fmt.Errorf("rest_retry_delay must be non-negative")
-	}
-
-	// Validate Keycloak configuration
-	if c.Keycloak.Enabled {
-		if c.Keycloak.ServerURL == "" {
-			return fmt.Errorf("keycloak.server_url is required when keycloak is enabled")
-		}
-		if c.Keycloak.Realm == "" {
-			return fmt.Errorf("keycloak.realm is required when keycloak is enabled")
-		}
-		if c.Keycloak.ClientID == "" {
-			return fmt.Errorf("keycloak.client_id is required when keycloak is enabled")
-		}
-		if c.Keycloak.TokenValidation.Issuer == "" {
-			return fmt.Errorf("keycloak.token_validation.issuer is required when keycloak is enabled")
-		}
-		if c.Keycloak.TokenValidation.Audience == "" {
-			return fmt.Errorf("keycloak.token_validation.audience is required when keycloak is enabled")
-		}
-		if c.Keycloak.TokenValidation.ClockSkew < 0 {
-			return fmt.Errorf("keycloak.token_validation.clock_skew must be non-negative")
-		}
-		if c.Keycloak.JWKSCacheTTL < time.Second {
-			return fmt.Errorf("keycloak.jwks_cache_ttl must be at least 1 second")
-		}
-		if c.Keycloak.HTTPTimeout < time.Second {
-			return fmt.Errorf("keycloak.http_timeout must be at least 1 second")
-		}
 	}
 
 	if c.Security.TLSEnabled {

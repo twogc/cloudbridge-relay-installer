@@ -1,0 +1,183 @@
+# Per-tenant Network Policies с правильными селекторами
+# Эти политики генерируются для каждого тенанта отдельно
+
+---
+# DNS разрешения для всех подов
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-dns-resolution
+spec:
+  order: 10
+  selector: all()
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Allow
+    protocol: UDP
+    source: {}
+    destination:
+      selector: 'k8s-app == "kube-dns"'
+      ports: [53]
+  - action: Allow
+    protocol: TCP
+    source: {}
+    destination:
+      selector: 'k8s-app == "kube-dns"'
+      ports: [53]
+  egress:
+  - action: Allow
+    protocol: UDP
+    destination:
+      selector: 'k8s-app == "kube-dns"'
+      ports: [53]
+  - action: Allow
+    protocol: TCP
+    destination:
+      selector: 'k8s-app == "kube-dns"'
+      ports: [53]
+
+---
+# Разрешаем доступ к системным сервисам
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-system-services
+spec:
+  order: 20
+  selector: all()
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Allow
+    source:
+      namespaceSelector: 'kubernetes.io/metadata.name == "kube-system"'
+    destination: {}
+  egress:
+  - action: Allow
+    destination:
+      namespaceSelector: 'kubernetes.io/metadata.name == "kube-system"'
+
+---
+# Разрешаем мониторинг
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: allow-monitoring
+spec:
+  order: 30
+  selector: all()
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Allow
+    source:
+      selector: 'app == "prometheus"'
+    destination: {}
+  egress:
+  - action: Allow
+    destination:
+      selector: 'app == "prometheus"'
+
+---
+# Пример per-tenant политики для tenant-216420165
+# Эта политика должна генерироваться для каждого тенанта
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-216420165-allow-intra
+spec:
+  order: 100
+  selector: 'tenant.cloudbridge.io/id == "tenant-216420165"'
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Allow
+    source:
+      selector: 'tenant.cloudbridge.io/id == "tenant-216420165"'
+    destination:
+      selector: 'tenant.cloudbridge.io/id == "tenant-216420165"'
+  egress:
+  - action: Allow
+    destination:
+      selector: 'tenant.cloudbridge.io/id == "tenant-216420165"'
+
+---
+# Default deny для tenant-216420165
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-216420165-default-deny
+spec:
+  order: 200
+  selector: 'tenant.cloudbridge.io/id == "tenant-216420165"'
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Deny
+  egress:
+  - action: Deny
+
+---
+# Пример per-tenant политики для tenant-123456789
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-123456789-allow-intra
+spec:
+  order: 100
+  selector: 'tenant.cloudbridge.io/id == "tenant-123456789"'
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Allow
+    source:
+      selector: 'tenant.cloudbridge.io/id == "tenant-123456789"'
+    destination:
+      selector: 'tenant.cloudbridge.io/id == "tenant-123456789"'
+  egress:
+  - action: Allow
+    destination:
+      selector: 'tenant.cloudbridge.io/id == "tenant-123456789"'
+
+---
+# Default deny для tenant-123456789
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: tenant-123456789-default-deny
+spec:
+  order: 200
+  selector: 'tenant.cloudbridge.io/id == "tenant-123456789"'
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Deny
+  egress:
+  - action: Deny
+
+---
+# Глобальный default deny для всех остальных подов
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: global-default-deny
+spec:
+  order: 1000
+  selector: all()
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Deny
+  egress:
+  - action: Deny
+
+

@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-
 // Provider represents authentication provider interface
 type Provider interface {
 	ValidateToken(ctx context.Context, token string) (*TokenInfo, error)
@@ -59,6 +58,10 @@ type Adapter struct {
 
 // NewAdapter creates a new authentication adapter
 func NewAdapter(cfg *config.Config, logger *logger.Logger) (*Adapter, error) {
+	if logger == nil {
+		return nil, fmt.Errorf("logger is required")
+	}
+
 	adapter := &Adapter{
 		config: cfg,
 		logger: logger,
@@ -107,12 +110,11 @@ func (a *Adapter) GetProvider() string {
 	return "none"
 }
 
-
 // NewZitadelProvider создает новый Zitadel провайдер с правильной JWT валидацией
 func NewZitadelProvider(cfg *config.Config, logger *logger.Logger) (*ZitadelProvider, error) {
 	// Создаем Zitadel клиент
 	zitadelClient, err := NewZitadelClient(ZitadelClientConfig{
-		Domain:     cfg.Zitadel.Domain,
+		Domain:     cfg.Zitadel.Issuer,
 		HTTPClient: nil, // Используем дефолтный клиент
 		Logger:     logger.GetZapLogger(),
 	})
@@ -130,7 +132,7 @@ func NewZitadelProvider(cfg *config.Config, logger *logger.Logger) (*ZitadelProv
 	// Создаем валидатор (пока с fallback secret)
 	validator := NewZitadelValidator(ZitadelValidatorConfig{
 		PublicKey: nil, // Будет установлен позже при получении ключа из JWKS
-		Issuer:    cfg.Zitadel.Domain + "/oauth/v2",
+		Issuer:    cfg.Zitadel.Issuer + "/oauth/v2",
 		Audience:  "cloudbridge-relay",
 		KeyID:     "", // Будет установлен позже
 		ClockSkew: 5 * time.Minute,
@@ -138,8 +140,8 @@ func NewZitadelProvider(cfg *config.Config, logger *logger.Logger) (*ZitadelProv
 	})
 
 	return &ZitadelProvider{
-		domain:         cfg.Zitadel.Domain,
-		projectID:      cfg.Zitadel.ProjectID,
+		domain:         cfg.Zitadel.Issuer,
+		projectID:      cfg.Zitadel.Audience,
 		clientID:       cfg.Zitadel.ClientID,
 		fallbackSecret: cfg.Zitadel.FallbackSecret,
 		logger:         logger,

@@ -158,6 +158,42 @@ func (m *Manager) UpdateTenantActivity(id string) {
 	}
 }
 
+// UpdateTenantLimits updates tenant limits
+func (m *Manager) UpdateTenantLimits(id string, limits *TenantLimits) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	tenant, exists := m.tenants[id]
+	if !exists {
+		return fmt.Errorf("tenant %s not found", id)
+	}
+
+	// Update tenant limits
+	tenant.MaxTunnels = limits.MaxTunnels
+	tenant.MaxConnections = limits.MaxConnections
+	tenant.RateLimit = limits.RateLimit
+	tenant.Burst = limits.Burst
+
+	// Update limits map
+	m.tenantLimits[id] = limits
+
+	// Update Enhanced TenantManager if enabled
+	if m.enhancedEnabled && m.enhancedTenantManager != nil {
+		// TODO: Implement UpdateTenantLimits in quic.TenantManager
+		// For now, we just log that enhanced mode is enabled
+		m.logger.Debug("Enhanced mode enabled, limits updated in standard manager only",
+			zap.String("tenant_id", id))
+	}
+
+	m.logger.Info("Tenant limits updated",
+		zap.String("tenant_id", id),
+		zap.Int("max_tunnels", limits.MaxTunnels),
+		zap.Int("max_connections", limits.MaxConnections),
+	)
+
+	return nil
+}
+
 // CheckTenantLimits checks if tenant can create more tunnels/connections
 func (m *Manager) CheckTenantLimits(tenantID string, currentTunnels, currentConnections int) error {
 	m.mu.RLock()

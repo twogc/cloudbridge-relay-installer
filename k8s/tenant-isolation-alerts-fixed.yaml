@@ -1,0 +1,187 @@
+# Исправленные алерты с правильными лейблами
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tenant-isolation-alerts
+  namespace: cloudbridge
+  labels:
+    app: cloudbridge
+    component: monitoring
+spec:
+  groups:
+  - name: tenant.isolation
+    rules:
+    # Алерт на нарушения изоляции между тенантами
+    - alert: TenantIsolationViolation
+      expr: increase(cloudbridge_tenant_isolation_violations_total[5m]) > 0
+      for: 1m
+      labels:
+        severity: critical
+        component: network
+        service: tenant-isolation
+      annotations:
+        summary: "Tenant isolation violation detected"
+        description: "Cross-tenant communication detected between {{ $labels.src_tenant }} and {{ $labels.dst_tenant }} using {{ $labels.protocol }} ({{ $labels.violation_type }})"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-isolation-violation"
+        
+    # Алерт на нарушения политик
+    - alert: TenantPolicyViolation
+      expr: increase(cloudbridge_tenant_policy_violations_total[5m]) > 0
+      for: 1m
+      labels:
+        severity: warning
+        component: security
+        service: tenant-policies
+      annotations:
+        summary: "Tenant policy violation detected"
+        description: "Policy violation detected for tenant {{ $labels.tenant_id }} ({{ $labels.policy_type }}): {{ $labels.violation_reason }}"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-policy-violation"
+        
+    # Алерт на деградацию здоровья тенанта
+    - alert: TenantHealthDegraded
+      expr: cloudbridge_tenant_health{status="isolation_violation"} == 0
+      for: 2m
+      labels:
+        severity: warning
+        component: health
+        service: tenant-health
+      annotations:
+        summary: "Tenant health degraded"
+        description: "Tenant {{ $labels.tenant_id }} health is degraded in {{ $labels.component }} component"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-health-degraded"
+        
+    # Алерт на отсутствие политик для тенанта
+    - alert: TenantMissingPolicies
+      expr: cloudbridge_tenant_policy_count{policy_type="allow-intra"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        component: policies
+        service: tenant-policies
+      annotations:
+        summary: "Tenant missing required policies"
+        description: "Tenant {{ $labels.tenant_id }} is missing required network policies"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-missing-policies"
+        
+    # Алерт на высокую задержку reconciliation
+    - alert: TenantPolicyReconcileSlow
+      expr: histogram_quantile(0.95, cloudbridge_tenant_policy_reconcile_duration_seconds_bucket) > 10
+      for: 5m
+      labels:
+        severity: warning
+        component: performance
+        service: tenant-controller
+      annotations:
+        summary: "Tenant policy reconciliation is slow"
+        description: "95th percentile of policy reconciliation for tenant {{ $labels.tenant_id }} is {{ $value }}s"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-policy-slow"
+        
+    # Алерт на высокую задержку выделения IP
+    - alert: TenantIPAllocationSlow
+      expr: histogram_quantile(0.95, cloudbridge_tenant_ip_allocation_duration_seconds_bucket) > 5
+      for: 5m
+      labels:
+        severity: warning
+        component: performance
+        service: tenant-ipam
+      annotations:
+        summary: "Tenant IP allocation is slow"
+        description: "95th percentile of IP allocation for tenant {{ $labels.tenant_id }} is {{ $value }}s"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-ip-allocation-slow"
+        
+    # Алерт на исчерпание IP адресов
+    - alert: TenantIPExhaustion
+      expr: cloudbridge_tenant_available_ips < 10
+      for: 2m
+      labels:
+        severity: warning
+        component: capacity
+        service: tenant-ipam
+      annotations:
+        summary: "Tenant running out of IP addresses"
+        description: "Tenant {{ $labels.tenant_id }} has only {{ $value }} available IP addresses"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-ip-exhaustion"
+        
+    # Алерт на слишком много тенантов
+    - alert: TooManyTenants
+      expr: cloudbridge_tenant_total > 1000
+      for: 5m
+      labels:
+        severity: warning
+        component: capacity
+        service: tenant-management
+      annotations:
+        summary: "Too many tenants in the system"
+        description: "System has {{ $value }} tenants, which may impact performance"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/too-many-tenants"
+        
+    # Алерт на неактивные политики
+    - alert: TenantPolicyInactive
+      expr: cloudbridge_tenant_policy_status{status="inactive"} == 1
+      for: 1m
+      labels:
+        severity: critical
+        component: policies
+        service: tenant-policies
+      annotations:
+        summary: "Tenant policy is inactive"
+        description: "Policy {{ $labels.policy_name }} for tenant {{ $labels.tenant_id }} is inactive"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-policy-inactive"
+
+  - name: tenant.capacity
+    rules:
+    # Алерт на высокое использование IP адресов
+    - alert: HighIPUsage
+      expr: (cloudbridge_tenant_allocated_ips_total / (cloudbridge_tenant_allocated_ips_total + cloudbridge_tenant_available_ips_total)) > 0.8
+      for: 10m
+      labels:
+        severity: warning
+        component: capacity
+        service: tenant-ipam
+      annotations:
+        summary: "High IP address usage"
+        description: "IP address usage is {{ $value | humanizePercentage }}"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/high-ip-usage"
+        
+    # Алерт на исчерпание подсетей
+    - alert: SubnetExhaustion
+      expr: cloudbridge_tenant_subnets_total > 1000
+      for: 5m
+      labels:
+        severity: critical
+        component: capacity
+        service: tenant-ipam
+      annotations:
+        summary: "Subnet exhaustion warning"
+        description: "System has {{ $value }} subnets, approaching limit"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/subnet-exhaustion"
+
+  - name: tenant.performance
+    rules:
+    # Алерт на медленную работу контроллера
+    - alert: TenantControllerSlow
+      expr: rate(cloudbridge_tenant_policy_reconcile_duration_seconds_sum[5m]) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+        component: performance
+        service: tenant-controller
+      annotations:
+        summary: "Tenant controller is slow"
+        description: "Tenant controller reconciliation rate is {{ $value }} operations/second"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-controller-slow"
+        
+    # Алерт на ошибки в контроллере
+    - alert: TenantControllerErrors
+      expr: rate(cloudbridge_tenant_policy_violations_total[5m]) > 0.01
+      for: 2m
+      labels:
+        severity: critical
+        component: errors
+        service: tenant-controller
+      annotations:
+        summary: "High error rate in tenant controller"
+        description: "Tenant controller error rate is {{ $value }} errors/second"
+        runbook_url: "https://docs.cloudbridge.io/runbooks/tenant-controller-errors"
+
+

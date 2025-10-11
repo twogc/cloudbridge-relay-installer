@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	jwtSecret = "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=" // Секрет с сервера
+	jwtSecret = "default-jwt-secret" // Секрет по умолчанию с сервера
 	issuer    = "cloudbridge-relay"
 	audience  = "relay-test-tenant"
 	tenantID  = "mesh-network-test"
@@ -20,6 +20,7 @@ type P2PClaims struct {
 	ServerID       string   `json:"server_id"`
 	ConnectionType string   `json:"connection_type"`
 	ProtocolType   string   `json:"protocol_type"`
+	Scope          string   `json:"scope"`
 	Permissions    []string `json:"permissions"`
 	jwt.RegisteredClaims
 }
@@ -31,6 +32,7 @@ func generateToken(serverID string) (string, error) {
 		ServerID:       serverID,
 		ConnectionType: "quic",
 		ProtocolType:   "p2p-mesh",
+		Scope:          "p2p",
 		Permissions:    []string{"relay_connect", "relay_tunnel", "p2p_discover", "p2p_connect"},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    issuer,
@@ -79,4 +81,3 @@ func main() {
 	fmt.Println("Purpose: P2P mesh connectivity")
 	fmt.Println("Secret: Updated to match server")
 }
-

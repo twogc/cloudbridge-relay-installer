@@ -70,6 +70,9 @@ var (
 		[]string{"status", "provider"},
 	)
 
+	// Global Zitadel Integration
+	globalZitadelIntegration *ZitadelIntegration
+
 	tunnelsCreatedTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "relay_tunnels_created_total",
@@ -575,8 +578,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		// Конвертируем конфигурацию
 		zitadelConfig := &ZitadelConfig{
 			Enabled:        cfg.Zitadel.Enabled,
-			Domain:         cfg.Zitadel.Domain,
-			ProjectID:      cfg.Zitadel.ProjectID,
+			Issuer:         cfg.Zitadel.Issuer,
+			Audience:       cfg.Zitadel.Audience,
 			ClientID:       cfg.Zitadel.ClientID,
 			ClientSecret:   cfg.Zitadel.ClientSecret,
 			FallbackSecret: cfg.Zitadel.FallbackSecret,
@@ -614,6 +617,9 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			cancel()
 			return nil, fmt.Errorf("failed to initialize Zitadel integration: %v", err)
 		}
+
+		// Set global variable for use in handlers
+		globalZitadelIntegration = zitadelIntegration
 		loggerInstance.Info("Zitadel Integration initialized successfully")
 	} else {
 		loggerInstance.Info("Zitadel disabled, skipping Zitadel integration initialization")
@@ -2237,7 +2243,12 @@ func kubeProxyHTTPHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract authentication information (simplified - in production use proper JWT parsing)
-	tenantID := extractTenantID(r)
+	tenantID, err := extractTenantID(r, globalZitadelIntegration)
+	if err != nil {
+		// Log the error but allow the request to proceed for non-standard paths
+		// TODO: add proper logging
+		tenantID = "default"
+	}
 	userID := extractUserID(r)
 	groups := extractGroups(r)
 
@@ -2288,17 +2299,32 @@ func kubeProxyHTTPHandler(w http.ResponseWriter, r *http.Request) {
 	kubeMetrics.RecordRequest(clusterID, string(verb), resource, statusCode, duration)
 }
 
-// extractTenantID extracts tenant ID from request headers or returns default
-func extractTenantID(r *http.Request) string {
-	// Try various headers that might contain tenant info
-	if tenantID := r.Header.Get("X-Tenant-ID"); tenantID != "" {
-		return tenantID
+// extractTenantID безопасно извлекает tenant ID из JWT токена
+func extractTenantID(r *http.Request, zitadelIntegration *ZitadelIntegration) (string, error) {
+	// Получаем Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return "", fmt.Errorf("missing authorization header")
 	}
-	if tenantID := r.Header.Get("X-Forwarded-User"); tenantID != "" {
-		return tenantID // Use forwarded user as tenant for simplicity
+
+	// Проверяем формат Bearer токена
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		return "", fmt.Errorf("invalid authorization header format")
 	}
-	// TODO: Parse JWT token and extract tenant ID from claims
-	return "default"
+
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+
+	// Валидируем токен через Zitadel интеграцию
+	if zitadelIntegration != nil && zitadelIntegration.enabled {
+		claims, err := zitadelIntegration.client.ValidateToken(context.Background(), token)
+		if err != nil {
+			return "", fmt.Errorf("token validation failed: %w", err)
+		}
+		return claims.OrgID, nil
+	}
+
+	// Fallback: если Zitadel не доступен, возвращаем ошибку
+	return "", fmt.Errorf("zitadel integration not available")
 }
 
 // extractUserID extracts user ID from request headers

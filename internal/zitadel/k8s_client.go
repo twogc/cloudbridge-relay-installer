@@ -28,6 +28,9 @@ type K8sConfig struct {
 	// Service discovery
 	EnableServiceDiscovery bool `json:"enable_service_discovery"`
 
+	// HTTP settings
+	HTTPTimeout time.Duration `json:"http_timeout"`
+
 	// Health check settings
 	HealthCheckPath     string        `json:"health_check_path"`
 	HealthCheckInterval time.Duration `json:"health_check_interval"`
@@ -49,7 +52,7 @@ func NewK8sClient(ctx context.Context, config *K8sConfig, logger *zap.Logger) (*
 		zap.String("namespace", config.ZitadelNamespace))
 
 	// Update base config with resolved URL
-	config.Config.Domain = zitadelURL
+	config.Config.Issuer = zitadelURL
 
 	// Create HTTP client with k8s-specific settings
 	httpClient := createK8sHTTPClient(config)
@@ -134,9 +137,9 @@ func (c *Client) monitorZitadelHealth(ctx context.Context, config *K8sConfig, lo
 	ticker := time.NewTicker(config.HealthCheckInterval)
 	defer ticker.Stop()
 
-	healthURL := fmt.Sprintf("%s%s", config.Domain, config.HealthCheckPath)
+	healthURL := fmt.Sprintf("%s%s", config.Issuer, config.HealthCheckPath)
 	if config.HealthCheckPath == "" {
-		healthURL = fmt.Sprintf("%s/debug/healthz", config.Domain)
+		healthURL = fmt.Sprintf("%s/debug/healthz", config.Issuer)
 	}
 
 	logger.Info("Starting Zitadel health monitoring",

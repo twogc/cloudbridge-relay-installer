@@ -158,19 +158,6 @@ perf.data.old
 test_*
 *_test.go.bak
 
-# Temporary configuration files for testing
-test/relay-client/config-test.yaml
-test/relay-client/config-*.yaml
-test/config-*.yaml
-
-# Pilot testing configuration files (keep these)
-!test/config-server-a.yaml
-!test/config-server-b.yaml
-
-# Build system files (keep these)
-!test/relay-client/Makefile
-!test/relay-client/build-all-platforms.sh
-
 # Generated files
 generated/
 gen/
@@ -178,7 +165,7 @@ gen/
 # Local configuration overrides
 config.local.json
 config.dev.json test/quck-test/
-# test/ - commented out to allow pilot config files
+test/
 # Sensitive configuration files
 test/relay-client/config.yaml
 test/relay-client/config/config.yaml

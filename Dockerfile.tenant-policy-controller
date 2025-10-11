@@ -1,0 +1,49 @@
+# Multi-stage build для tenant-policy-controller
+FROM golang:1.25.1-alpine AS builder
+
+# Установка зависимостей
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Установка рабочей директории
+WORKDIR /app
+
+# Копирование go mod файлов
+COPY go.mod go.sum ./
+
+# Загрузка зависимостей
+RUN go mod download
+
+# Копирование исходного кода
+COPY . .
+
+# Сборка приложения
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o tenant-policy-controller ./cmd/tenant-policy-controller
+
+# Финальный образ
+FROM alpine:latest
+
+# Установка необходимых пакетов
+RUN apk --no-cache add ca-certificates tzdata
+
+# Создание пользователя
+RUN addgroup -g 1001 -S tenant-controller && \
+    adduser -u 1001 -S tenant-controller -G tenant-controller
+
+# Копирование бинарного файла
+COPY --from=builder /app/tenant-policy-controller /usr/local/bin/tenant-policy-controller
+
+# Установка прав доступа
+RUN chmod +x /usr/local/bin/tenant-policy-controller
+
+# Переключение на непривилегированного пользователя
+USER tenant-controller
+
+# Установка рабочей директории
+WORKDIR /app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD /usr/local/bin/tenant-policy-controller --help > /dev/null || exit 1
+
+# Команда запуска
+ENTRYPOINT ["/usr/local/bin/tenant-policy-controller"]

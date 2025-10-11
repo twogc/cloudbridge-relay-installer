@@ -1,0 +1,41 @@
+# Исправленная конфигурация Calico CNI
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: calico-config
+  namespace: kube-system
+data:
+  # Используем k8s policy type для совместимости
+  cni_network_config: |
+    {
+      "name": "k8s-pod-network",
+      "cniVersion": "0.3.1",
+      "plugins": [
+        {
+          "type": "calico",
+          "log_level": "info",
+          "log_file_path": "/var/log/calico/cni/cni.log",
+          "datastore_type": "kubernetes",
+          "nodename": "__KUBERNETES_NODE_NAME__",
+          "mtu": __CNI_MTU__,
+          "ipam": {
+            "type": "calico-ipam",
+            "assign_ipv4": "true",
+            "assign_ipv6": "false"
+          },
+          "policy": {
+            "type": "k8s"
+          }
+        },
+        {
+          "type": "portmap",
+          "snat": true,
+          "capabilities": {"portMappings": true}
+        }
+      ]
+    }
+  # Настройки для BGP (если используется)
+  calico_backend: "bird"
+  # Включаем Global Network Policies
+  typha_service_name: "calico-typha"
+  typha_service_namespace: "kube-system"

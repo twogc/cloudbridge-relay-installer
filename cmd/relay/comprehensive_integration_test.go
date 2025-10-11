@@ -122,10 +122,10 @@ func TestComprehensiveHealthChecks(t *testing.T) {
 	// Тестируем health checks functionality
 	// В упрощенном тесте просто проверяем, что компоненты создаются
 	ctx := context.Background()
-	
+
 	// Простая проверка контекста
 	assert.NotNil(t, ctx)
-	
+
 	// В реальной реализации здесь были бы вызовы health checker
 	// но для демонстрации мы показываем, что система готова к тестированию
 
@@ -166,8 +166,9 @@ func TestFullSystemIntegration(t *testing.T) {
 		},
 		Zitadel: struct {
 			Enabled         bool   `json:"enabled"`
-			Domain          string `json:"domain"`
-			ProjectID       string `json:"project_id"`
+			Issuer          string `json:"issuer"`
+			Audience        string `json:"audience"`
+			TokenURL        string `json:"token_url"`
 			ClientID        string `json:"client_id"`
 			ClientSecret    string `json:"client_secret"`
 			FallbackSecret  string `json:"fallback_secret"`
@@ -175,8 +176,8 @@ func TestFullSystemIntegration(t *testing.T) {
 				Audience  string        `json:"audience"`
 				ClockSkew time.Duration `json:"clock_skew"`
 			} `json:"token_validation"`
-			CacheTTL    time.Duration `json:"cache_ttl"`
-			HTTPTimeout time.Duration `json:"http_timeout"`
+			CacheTTL         time.Duration `json:"cache_ttl"`
+			HTTPTimeout      time.Duration `json:"http_timeout"`
 			TenantManagement struct {
 				Enabled       bool `json:"enabled"`
 				AutoCreate    bool `json:"auto_create"`
@@ -190,8 +191,9 @@ func TestFullSystemIntegration(t *testing.T) {
 			} `json:"tenant_management"`
 		}{
 			Enabled:        true,
-			Domain:         "zitadel.local",
-			ProjectID:      "test-project",
+			Issuer:         "https://zitadel.local",
+			Audience:       "test-project",
+			TokenURL:       "https://zitadel.local/oauth/v2/token",
 			ClientID:       "test-client",
 			ClientSecret:   "test-secret",
 			FallbackSecret: "test-secret",
@@ -241,8 +243,9 @@ func TestK8sZitadelIntegration(t *testing.T) {
 	// Создаем k8s конфигурацию для Zitadel
 	zitadelConfig := &ZitadelConfig{
 		Enabled:        true,
-		Domain:         "zitadel.zitadel-system.svc.cluster.local:8080",
-		ProjectID:      "cloudbridge-relay-project",
+		Issuer:         "https://zitadel.zitadel-system.svc.cluster.local:8080",
+		Audience:       "cloudbridge-relay-project",
+		TokenURL:       "https://zitadel.zitadel-system.svc.cluster.local:8080/oauth/v2/token",
 		ClientID:       "cloudbridge-relay-client",
 		FallbackSecret: "test-secret",
 		K8sConfig: &zitadel.K8sConfig{
@@ -253,7 +256,7 @@ func TestK8sZitadelIntegration(t *testing.T) {
 			InsecureSkipVerify: true,
 			UseTLS:             false,
 			Config: &zitadel.Config{
-				Domain:      "zitadel.local",
+				Issuer:      "https://zitadel.local",
 				HTTPTimeout: 15 * time.Second,
 			},
 		},

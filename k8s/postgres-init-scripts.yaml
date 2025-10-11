@@ -1,0 +1,208 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-scripts
+  namespace: cloudbridge-system
+data:
+  01-create-tables.sql: |
+    -- Создание схемы IPAM для CloudBridge
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    
+    -- Таблица тенантов
+    CREATE TABLE IF NOT EXISTS tenants (
+        tenant_id TEXT PRIMARY KEY,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    
+    -- Таблица подсетей тенантов
+    CREATE TABLE IF NOT EXISTS tenant_subnets (
+        id SERIAL PRIMARY KEY,
+        tenant_id TEXT NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+        subnet_cidr CIDR NOT NULL UNIQUE,
+        gateway INET NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    
+    -- Уникальный индекс для tenant_id + subnet_cidr
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_tenant_subnets_tenant_cidr 
+    ON tenant_subnets(tenant_id, subnet_cidr);
+    
+    -- Таблица отслеживания использования IP
+    CREATE TABLE IF NOT EXISTS ip_usage_tracking (
+        subnet_id INTEGER NOT NULL REFERENCES tenant_subnets(id) ON DELETE CASCADE,
+        ip_address INET NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('available','allocated','reserved')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (subnet_id, ip_address)
+    );
+    
+    -- Таблица аллокаций IP для пиров
+    CREATE TABLE IF NOT EXISTS tenant_ip_allocations (
+        id SERIAL PRIMARY KEY,
+        tenant_id TEXT NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+        peer_id TEXT NOT NULL,
+        ip_address INET NOT NULL,
+        subnet_id INTEGER NOT NULL REFERENCES tenant_subnets(id) ON DELETE CASCADE,
+        status TEXT NOT NULL DEFAULT 'active',
+        allocated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (tenant_id, peer_id),
+        UNIQUE (subnet_id, ip_address)
+    );
+    
+    -- Таблица исключенных CIDR (для избежания конфликтов)
+    CREATE TABLE IF NOT EXISTS excluded_cidrs (
+        id SERIAL PRIMARY KEY,
+        cidr CIDR NOT NULL UNIQUE,
+        reason TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    
+    -- Вставка некоторых стандартных исключений
+    INSERT INTO excluded_cidrs (cidr, reason) VALUES 
+        ('10.0.0.0/8', 'RFC1918 private range'),
+        ('172.16.0.0/12', 'RFC1918 private range'),
+        ('192.168.0.0/16', 'RFC1918 private range')
+    ON CONFLICT (cidr) DO NOTHING;
+    
+    -- Функция для аллокации IP
+    CREATE OR REPLACE FUNCTION allocate_ip_for_peer(
+        p_tenant_id text, 
+        p_peer_id text, 
+        p_subnet_cidr cidr
+    ) RETURNS inet AS $$
+    DECLARE
+        v_subnet_id integer;
+        v_ip inet;
+    BEGIN
+        -- Найдем подсеть и заблокируем её
+        SELECT id INTO v_subnet_id 
+        FROM tenant_subnets 
+        WHERE tenant_id = p_tenant_id 
+          AND subnet_cidr = p_subnet_cidr 
+          AND status='active' 
+        FOR UPDATE;
+        
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Subnet % not found for tenant %', p_subnet_cidr, p_tenant_id;
+        END IF;
+        
+        -- Проверим, есть ли уже аллокация для этого пира
+        SELECT ip_address INTO v_ip 
+        FROM tenant_ip_allocations 
+        WHERE tenant_id = p_tenant_id 
+          AND peer_id = p_peer_id 
+          AND status='active' 
+        LIMIT 1;
+        
+        IF FOUND THEN
+            RETURN v_ip;
+        END IF;
+        
+        -- Возьмем первый доступный IP
+        SELECT ip_address INTO v_ip 
+        FROM ip_usage_tracking 
+        WHERE subnet_id = v_subnet_id 
+          AND status='available' 
+        ORDER BY ip_address 
+        FOR UPDATE SKIP LOCKED 
+        LIMIT 1;
+        
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'No available IPs for subnet %', p_subnet_cidr 
+            USING ERRCODE = 'resource_exhausted';
+        END IF;
+        
+        -- Обновим статус IP на allocated
+        UPDATE ip_usage_tracking 
+        SET status='allocated', updated_at=now()
+        WHERE subnet_id=v_subnet_id AND ip_address=v_ip;
+        
+        -- Создадим запись об аллокации
+        INSERT INTO tenant_ip_allocations(
+            tenant_id, peer_id, ip_address, subnet_id, status, allocated_at
+        ) VALUES (
+            p_tenant_id, p_peer_id, v_ip, v_subnet_id, 'active', now()
+        ) ON CONFLICT (tenant_id, peer_id) 
+        DO UPDATE SET 
+            ip_address = EXCLUDED.ip_address,
+            status='active',
+            allocated_at=now()
+        RETURNING ip_address INTO v_ip;
+        
+        RETURN v_ip;
+    END;
+    $$ LANGUAGE plpgsql;
+    
+    -- Функция для деаллокации IP
+    CREATE OR REPLACE FUNCTION deallocate_ip_for_peer(
+        p_tenant_id text, 
+        p_peer_id text
+    ) RETURNS boolean AS $$
+    DECLARE
+        v_ip inet;
+        v_subnet_id integer;
+    BEGIN
+        -- Найдем аллокацию и заблокируем её
+        SELECT ip_address, subnet_id INTO v_ip, v_subnet_id 
+        FROM tenant_ip_allocations 
+        WHERE tenant_id=p_tenant_id 
+          AND peer_id=p_peer_id 
+          AND status='active' 
+        FOR UPDATE;
+        
+        IF NOT FOUND THEN
+            RETURN FALSE;
+        END IF;
+        
+        -- Обновим статус аллокации
+        UPDATE tenant_ip_allocations 
+        SET status='released' 
+        WHERE tenant_id=p_tenant_id AND peer_id=p_peer_id;
+        
+        -- Вернем IP в пул доступных
+        UPDATE ip_usage_tracking 
+        SET status='available', updated_at=now()
+        WHERE subnet_id=v_subnet_id AND ip_address=v_ip;
+        
+        RETURN TRUE;
+    END;
+    $$ LANGUAGE plpgsql;
+    
+    -- Функция для создания подсети тенанта
+    CREATE OR REPLACE FUNCTION create_tenant_subnet(
+        p_tenant_id text,
+        p_subnet_cidr cidr,
+        p_gateway inet
+    ) RETURNS integer AS $$
+    DECLARE
+        v_subnet_id integer;
+        v_ip inet;
+        v_base_ip inet;
+        v_last_octet integer;
+    BEGIN
+        -- Создадим запись о подсети
+        INSERT INTO tenant_subnets(tenant_id, subnet_cidr, gateway, status)
+        VALUES (p_tenant_id, p_subnet_cidr, p_gateway, 'active')
+        RETURNING id INTO v_subnet_id;
+        
+        -- Инициализируем IP пул (исключаем .1 для gateway, .0 для сети, .255 для broadcast)
+        -- Используем диапазон .2 - .254 (253 IP)
+        v_base_ip := network(p_subnet_cidr);
+        
+        FOR v_last_octet IN 2..254 LOOP
+            v_ip := v_base_ip + v_last_octet;
+            
+            INSERT INTO ip_usage_tracking (subnet_id, ip_address, status)
+            VALUES (v_subnet_id, v_ip, 'available')
+            ON CONFLICT (subnet_id, ip_address) DO NOTHING;
+        END LOOP;
+        
+        RETURN v_subnet_id;
+    END;
+    $$ LANGUAGE plpgsql;
+

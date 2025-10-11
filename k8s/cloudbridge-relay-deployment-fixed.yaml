@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: cloudbridge-relay
-        image: cloudbridge-relay:mvp-20250922-210400
+        image: cloudbridge-relay:mvp-20251010-204217
         imagePullPolicy: Never
         command: ["./cloudbridge-relay"]
         args: ["--config", "/app/configs/config.json"]
@@ -84,11 +84,11 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 1001
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
+          privileged: true
           capabilities:
+            add:
+            - NET_ADMIN
+            - NET_RAW
             drop:
             - ALL
         volumeMounts:

@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tenant-policy-controller
+  namespace: cloudbridge-system
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tenant-policy-controller
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["crd.projectcalico.org"]
+  resources: ["globalnetworkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["crd.projectcalico.org"]
+  resources: ["networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tenant-policy-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tenant-policy-controller
+subjects:
+- kind: ServiceAccount
+  name: tenant-policy-controller
+  namespace: cloudbridge-system
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenant-policy-controller
+  namespace: cloudbridge-system
+  labels:
+    app: tenant-policy-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tenant-policy-controller
+  template:
+    metadata:
+      labels:
+        app: tenant-policy-controller
+    spec:
+      serviceAccountName: tenant-policy-controller
+      containers:
+      - name: tenant-policy-controller
+        image: tenant-policy-controller:tenant-controller-20251011-020400
+        imagePullPolicy: Never  # Используем локальный образ
+        args:
+        - --metrics-bind-address=:8080
+        - --health-probe-bind-address=:8081
+        - --leader-elect=true
+        - --concurrency=2
+        ports:
+        - containerPort: 8080
+          name: metrics
+        - containerPort: 8081
+          name: health
+        env:
+        - name: WATCH_NAMESPACE
+          value: ""
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
