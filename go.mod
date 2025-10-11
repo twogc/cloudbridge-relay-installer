@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/pion/ice/v2 v2.3.38
 	github.com/prometheus/client_golang v1.23.2
-	github.com/quic-go/quic-go v0.54.0
+	github.com/quic-go/quic-go v0.55.0
 	github.com/stretchr/testify v1.11.1
 	// github.com/zitadel/zitadel-go/v2 v2.2.8 // TODO: добавить когда будет доступен
 	go.uber.org/cadence v1.3.0
@@ -36,7 +36,6 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/pion/stun v0.6.1
-	github.com/pkg/errors v0.9.1
 	github.com/projectcalico/api v0.0.0-20250916150628-d4009e4d7c50
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/zitadel/oidc/v3 v3.45.0
@@ -119,6 +118,7 @@ require (
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/transport/v2 v2.2.10 // indirect
 	github.com/pion/turn/v2 v2.1.6 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
