@@ -1,0 +1,122 @@
+# Main CloudBridge certificate for all subdomains
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cloudbridge-main-tls
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: tls
+spec:
+  # Secret name where the certificate will be stored
+  secretName: cloudbridge-main-tls
+  # Certificate duration
+  duration: 2160h # 90 days
+  # Renewal window
+  renewBefore: 360h # 15 days before expiry
+  # Issuer reference
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  # DNS names for the certificate
+  dnsNames:
+  - "2gc.ru"
+  - "*.2gc.ru"
+  - "relay.2gc.ru"
+  - "masque.2gc.ru"
+  - "p2p.2gc.ru"
+  - "admin.2gc.ru"
+  - "monitor.2gc.ru"
+  - "api.2gc.ru"
+  - "edge.2gc.ru"
+  - "auth.2gc.ru"
+  - "zitadel.2gc.ru"
+---
+# gRPC mTLS certificate for internal communication
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cloudbridge-grpc-tls
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: grpc-tls
+spec:
+  secretName: cloudbridge-grpc-tls
+  duration: 2160h
+  renewBefore: 360h
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - "cloudbridge-relay"
+  - "cloudbridge-relay.cloudbridge"
+  - "cloudbridge-relay.cloudbridge.svc"
+  - "cloudbridge-relay.cloudbridge.svc.cluster.local"
+  - "localhost"
+  ipAddresses:
+  - "127.0.0.1"
+  - "::1"
+---
+# API certificate for external API access
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cloudbridge-api-tls
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: api-tls
+spec:
+  secretName: cloudbridge-api-tls
+  duration: 2160h
+  renewBefore: 360h
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - "api.2gc.ru"
+  - "relay.2gc.ru"
+  - "masque.2gc.ru"
+---
+# Monitoring certificate for Prometheus/Grafana
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cloudbridge-monitoring-tls
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: monitoring-tls
+spec:
+  secretName: cloudbridge-monitoring-tls
+  duration: 2160h
+  renewBefore: 360h
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - "monitor.2gc.ru"
+  - "prometheus.2gc.ru"
+  - "grafana.2gc.ru"
+---
+# Zitadel certificate for authentication
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cloudbridge-zitadel-tls
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cloudbridge-relay
+    app.kubernetes.io/component: zitadel-tls
+spec:
+  secretName: cloudbridge-zitadel-tls
+  duration: 2160h
+  renewBefore: 360h
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+  - "auth.2gc.ru"
+  - "zitadel.2gc.ru"
+  - "admin.2gc.ru"

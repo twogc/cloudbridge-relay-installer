@@ -1,0 +1,67 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: issuer
+    app.kubernetes.io/instance: letsencrypt-prod
+spec:
+  acme:
+    # Let's Encrypt production server
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # Email address for ACME registration
+    email: admin@2gc.ru
+    # Name of a secret used to store the ACME account private key
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    # Enable the HTTP-01 challenge provider
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+    # Enable the DNS-01 challenge provider for wildcard certificates
+    - dns01:
+        # Using Cloudflare DNS (if available)
+        cloudflare:
+          email: admin@2gc.ru
+          apiTokenSecretRef:
+            name: cloudflare-api-token
+            key: api-token
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: issuer
+    app.kubernetes.io/instance: letsencrypt-staging
+spec:
+  acme:
+    # Let's Encrypt staging server (for testing)
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@2gc.ru
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+---
+# Secret for Cloudflare API token (if using DNS-01 challenges)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/component: dns
+type: Opaque
+data:
+  # Base64 encoded Cloudflare API token
+  # To generate: echo -n "your-cloudflare-api-token" | base64
+  api-token: ""
