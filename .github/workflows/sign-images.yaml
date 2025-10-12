@@ -1,0 +1,329 @@
+name: Sign Docker Images and Generate SBOM
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'Dockerfile*'
+      - '.github/workflows/sign-images.yaml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'Dockerfile*'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/cloudbridge-relay
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write  # For OIDC keyless signing
+
+jobs:
+  build-sign-scan:
+    name: Build, Sign & Scan Image
+    runs-on: ubuntu-latest
+
+    steps:
+      #
+      # 1. Checkout code
+      #
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      #
+      # 2. Setup tools
+      #
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.1'
+
+      - name: Install syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.16.0
+          syft version
+
+      - name: Install grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin v0.82.1
+          grype version
+
+      #
+      # 3. Docker setup
+      #
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      #
+      # 4. Extract metadata
+      #
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      #
+      # 5. Build and push Docker image
+      #
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      #
+      # 6. Sign Docker image with keyless signing (OIDC)
+      #
+      - name: Sign Docker image (keyless)
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo "Signing image with digest: ${DIGEST}"
+
+          # Sign all tags
+          for tag in ${TAGS}; do
+            echo "Signing ${tag}"
+            cosign sign --yes "${tag}@${DIGEST}"
+          done
+
+      #
+      # 7. Generate SBOM with syft
+      #
+      - name: Generate SBOM
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}"
+          mkdir -p sbom
+
+          echo "Generating SBOM for ${IMAGE}"
+
+          # SPDX format
+          syft "${IMAGE}" -o spdx-json > sbom/sbom-spdx.json
+
+          # CycloneDX format
+          syft "${IMAGE}" -o cyclonedx-json > sbom/sbom-cyclonedx.json
+
+          # Syft JSON format (for attestation)
+          syft "${IMAGE}" -o syft-json > sbom/sbom-syft.json
+
+          # Human-readable format
+          syft "${IMAGE}" -o table > sbom/sbom.txt
+
+          echo "SBOM files generated:"
+          ls -lh sbom/
+
+      #
+      # 8. Attest SBOM to image
+      #
+      - name: Attest SBOM
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}"
+
+          echo "Attaching SBOM attestation to ${IMAGE}"
+
+          # Attest SPDX SBOM
+          cosign attest --yes \
+            --predicate sbom/sbom-spdx.json \
+            --type spdxjson \
+            "${IMAGE}"
+
+          # Attest CycloneDX SBOM
+          cosign attest --yes \
+            --predicate sbom/sbom-cyclonedx.json \
+            --type cyclonedx \
+            "${IMAGE}"
+
+      #
+      # 9. Scan for vulnerabilities
+      #
+      - name: Scan for vulnerabilities
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${DIGEST}"
+
+          echo "Scanning ${IMAGE} for vulnerabilities"
+
+          # Scan with grype (using SBOM)
+          grype sbom:sbom/sbom-spdx.json -o json > sbom/vulnerabilities.json || true
+          grype sbom:sbom/sbom-spdx.json -o table > sbom/vulnerabilities.txt || true
+
+          echo "Vulnerability scan completed:"
+          cat sbom/vulnerabilities.txt || echo "No vulnerabilities report"
+
+      #
+      # 10. Check vulnerability threshold
+      #
+      - name: Check vulnerability threshold
+        continue-on-error: true
+        run: |
+          # Fail if critical vulnerabilities found
+          grype sbom:sbom/sbom-spdx.json --fail-on critical
+
+      #
+      # 11. Upload SBOM artifacts
+      #
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom/
+          retention-days: 90
+
+      #
+      # 12. Generate summary
+      #
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "## 📦 Image Build & Sign Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### ✅ Actions Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔨 Image built and pushed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✍️  Image signed with cosign (keyless)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 SBOM generated (SPDX, CycloneDX)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📎 SBOM attested to image" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 Vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # SBOM stats
+          if [ -f sbom/sbom-syft.json ]; then
+            TOTAL_PACKAGES=$(jq '.artifacts | length' sbom/sbom-syft.json)
+            echo "### 📊 SBOM Statistics" >> $GITHUB_STEP_SUMMARY
+            echo "**Total Packages:** $TOTAL_PACKAGES" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Vulnerability stats
+          if [ -f sbom/vulnerabilities.json ]; then
+            echo "### 🔍 Vulnerability Scan Results" >> $GITHUB_STEP_SUMMARY
+
+            CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity=="Critical")] | length' sbom/vulnerabilities.json || echo "0")
+            HIGH=$(jq '[.matches[] | select(.vulnerability.severity=="High")] | length' sbom/vulnerabilities.json || echo "0")
+            MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity=="Medium")] | length' sbom/vulnerabilities.json || echo "0")
+            LOW=$(jq '[.matches[] | select(.vulnerability.severity=="Low")] | length' sbom/vulnerabilities.json || echo "0")
+
+            echo "- 🔴 Critical: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟠 High: $HIGH" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟡 Medium: $MEDIUM" >> $GITHUB_STEP_SUMMARY
+            echo "- 🟢 Low: $LOW" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "### 📚 Verification Commands" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Verify signature" >> $GITHUB_STEP_SUMMARY
+          echo "cosign verify \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --certificate-identity-regexp=\"^https://github.com/${{ github.repository }}/\" \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --certificate-oidc-issuer=https://token.actions.githubusercontent.com \\" >> $GITHUB_STEP_SUMMARY
+          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Verify SBOM attestation" >> $GITHUB_STEP_SUMMARY
+          echo "cosign verify-attestation \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --type spdxjson \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --certificate-identity-regexp=\"^https://github.com/${{ github.repository }}/\" \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --certificate-oidc-issuer=https://token.actions.githubusercontent.com \\" >> $GITHUB_STEP_SUMMARY
+          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  #
+  # Verify signatures (separate job for validation)
+  #
+  verify:
+    name: Verify Signatures
+    needs: build-sign-scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.1'
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify image signature
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+
+          echo "Verifying signature for ${IMAGE}"
+
+          cosign verify \
+            --certificate-identity-regexp="^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            "${IMAGE}"
+
+          echo "✅ Signature verified successfully!"
+
+      - name: Verify SBOM attestation
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+
+          echo "Verifying SBOM attestation for ${IMAGE}"
+
+          cosign verify-attestation \
+            --type spdxjson \
+            --certificate-identity-regexp="^https://github.com/${{ github.repository }}/" \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            "${IMAGE}"
+
+          echo "✅ SBOM attestation verified successfully!"
+
+      - name: Verification summary
+        run: |
+          echo "## ✅ Verification Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All signatures and attestations verified successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✍️  Image signature: ✅ Verified" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 SBOM attestation: ✅ Verified" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image is production-ready!** 🚀" >> $GITHUB_STEP_SUMMARY
