@@ -38,26 +38,37 @@ func ExampleEnhancedQUIC() {
 	}
 
 	// Пример создания соединения для тенанта
-	conn, err := DialWithTenant("tcp", "127.0.0.1:8080", "tenant1", config)
+	conn, err := NewEnhancedPolicies("tenant1", config)
 	if err != nil {
 		log.Fatalf("Failed to create enhanced connection: %v", err)
 	}
 	defer conn.Close()
 
-	// Пример отправки данных
+	// Пример использования хуков для отправки данных
 	data := []byte("Hello, Enhanced QUIC!")
-	_, err = conn.Write(data)
-	if err != nil {
-		log.Printf("Failed to write data: %v", err)
+	remoteAddr := "192.168.1.100:8080"
+	
+	// Проверяем лимиты перед записью
+	if err := conn.BeforeWrite(remoteAddr, len(data)); err != nil {
+		log.Printf("Write blocked by policies: %v", err)
+	} else {
+		// В реальном коде здесь был бы вызов quic.Stream.Write(data)
+		fmt.Printf("Data would be written: %s\n", string(data))
+		conn.AfterWrite(len(data))
 	}
 
-	// Пример чтения данных
+	// Пример использования хуков для чтения данных
 	buffer := make([]byte, 1024)
-	n, err := conn.Read(buffer)
-	if err != nil {
-		log.Printf("Failed to read data: %v", err)
+	
+	// Проверяем лимиты перед чтением
+	if err := conn.BeforeRead(remoteAddr, len(buffer)); err != nil {
+		log.Printf("Read blocked by policies: %v", err)
 	} else {
-		fmt.Printf("Received: %s\n", string(buffer[:n]))
+		// В реальном коде здесь был бы вызов quic.Stream.Read(buffer)
+		// Симулируем успешное чтение
+		n := 20
+		fmt.Printf("Data would be read: %d bytes\n", n)
+		conn.AfterRead(n)
 	}
 
 	// Получаем статистику

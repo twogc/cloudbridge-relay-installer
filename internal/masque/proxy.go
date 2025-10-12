@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/quic-go/quic-go"
 	"github.com/quic-go/quic-go/http3"
@@ -40,6 +41,9 @@ type MASQUEProxy struct {
 	closed   bool
 	refCount sync.WaitGroup
 	closers  map[io.Closer]struct{}
+
+	// Metrics
+	metrics *MASQUEMetrics
 }
 
 // Config конфигурация MASQUE прокси
@@ -75,6 +79,7 @@ func NewMASQUEProxy(logger *logger.Logger, config *Config) *MASQUEProxy {
 		ctx:     ctx,
 		cancel:  cancel,
 		closers: make(map[io.Closer]struct{}),
+		metrics: NewMASQUEMetrics(),
 	}
 }
 
@@ -120,6 +125,9 @@ func (mp *MASQUEProxy) Start() error {
 
 	mp.logger.Info("MASQUE proxy started", zap.String("addr", mp.config.ListenAddr))
 
+	// Устанавливаем статус прокси как активный
+	mp.metrics.SetProxyStatus(true)
+
 	// Запускаем обработку соединений
 	go mp.handleQUICConnections()
 
@@ -144,6 +152,9 @@ func (mp *MASQUEProxy) Stop() error {
 	mp.cancel()
 	mp.refCount.Wait() // Wait for all proxy operations to complete
 	mp.wg.Wait()
+
+	// Устанавливаем статус прокси как неактивный
+	mp.metrics.SetProxyStatus(false)
 
 	if mp.quicServer != nil {
 		return mp.quicServer.Close()
@@ -172,10 +183,17 @@ func (mp *MASQUEProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Proxy proxies a CONNECT-UDP request (based on masque-go reference implementation)
 func (mp *MASQUEProxy) Proxy(w http.ResponseWriter, r *Request) error {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime).Seconds()
+		mp.metrics.ObserveRequestDuration(duration)
+	}()
+
 	mp.mx.Lock()
 	if mp.closed {
 		mp.mx.Unlock()
 		w.WriteHeader(http.StatusServiceUnavailable)
+		mp.metrics.IncrementConnectionErrors()
 		return net.ErrClosed
 	}
 	mp.mx.Unlock()
@@ -194,14 +212,17 @@ func (mp *MASQUEProxy) Proxy(w http.ResponseWriter, r *Request) error {
 	udpAddr, err := net.ResolveUDPAddr("udp", r.Host)
 	if err != nil {
 		mp.logger.Error("Failed to resolve target", zap.String("target", r.Host), zap.Error(err))
+		mp.metrics.IncrementTargetResolutionErrors()
 		w.WriteHeader(errToStatus(err))
 		return writeProxyStatus(err)
 	}
+	mp.metrics.IncrementTargetResolutions()
 
 	// Create UDP connection to target
 	udpConn, err := net.DialUDP("udp", nil, udpAddr)
 	if err != nil {
 		mp.logger.Error("Failed to dial target", zap.String("target", r.Host), zap.Error(err))
+		mp.metrics.IncrementConnectionErrors()
 		w.WriteHeader(errToStatus(err))
 		return writeProxyStatus(err)
 	}
@@ -232,6 +253,9 @@ func (mp *MASQUEProxy) Proxy(w http.ResponseWriter, r *Request) error {
 	mp.refCount.Add(1)
 	mp.mx.Unlock()
 
+	// Increment connection metrics
+	mp.metrics.IncrementConnections()
+
 	// Start data relaying
 	go func() {
 		defer func() {
@@ -240,6 +264,9 @@ func (mp *MASQUEProxy) Proxy(w http.ResponseWriter, r *Request) error {
 			mp.mx.Unlock()
 			entry.Close()
 			mp.refCount.Done()
+			// Decrement active connections when proxy entry is closed
+			mp.metrics.DecrementConnections()
+			mp.metrics.IncrementClosedConnections()
 		}()
 
 		mp.relayData(str, udpConn)
@@ -328,6 +355,7 @@ func (mp *MASQUEProxy) relayFromStreamToUDP(stream *http3.Stream, udpConn *net.U
 			if err != nil {
 				if !errors.Is(err, context.Canceled) {
 					mp.logger.Debug("Failed to receive datagram", zap.Error(err))
+					mp.metrics.IncrementUDPErrors()
 				}
 				return
 			}
@@ -350,8 +378,13 @@ func (mp *MASQUEProxy) relayFromStreamToUDP(stream *http3.Stream, udpConn *net.U
 			_, err = udpConn.Write(payload)
 			if err != nil {
 				mp.logger.Debug("Failed to write to UDP", zap.Error(err))
+				mp.metrics.IncrementUDPErrors()
 				return
 			}
+
+			// Update metrics
+			mp.metrics.AddBytesSent(int64(len(payload)))
+			mp.metrics.IncrementPacketsSent()
 		}
 	}
 }
@@ -370,6 +403,7 @@ func (mp *MASQUEProxy) relayFromUDPToStream(udpConn *net.UDPConn, stream *http3.
 			if err != nil {
 				if !errors.Is(err, net.ErrClosed) {
 					mp.logger.Debug("Failed to read from UDP", zap.Error(err))
+					mp.metrics.IncrementUDPErrors()
 				}
 				return
 			}
@@ -383,8 +417,13 @@ func (mp *MASQUEProxy) relayFromUDPToStream(udpConn *net.UDPConn, stream *http3.
 			err = stream.SendDatagram(data)
 			if err != nil {
 				mp.logger.Debug("Failed to send datagram", zap.Error(err))
+				mp.metrics.IncrementUDPErrors()
 				return
 			}
+
+			// Update metrics
+			mp.metrics.AddBytesReceived(int64(n))
+			mp.metrics.IncrementPacketsReceived()
 		}
 	}
 }

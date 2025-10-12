@@ -36,6 +36,38 @@ type Config struct {
 	// Enhanced QUIC settings
 	EnableEnhancedQUIC bool            `json:"enable_enhanced_quic"`
 	EnhancedConfig     *EnhancedConfig `json:"enhanced_config,omitempty"`
+
+	// QLog tracing settings
+	EnableQLogTracing bool        `json:"enable_qlog_tracing"`
+	QLogConfig        *QLogConfig `json:"qlog_config,omitempty"`
+
+	// Experimental features (integrated from quic-test)
+	EnableExperimental   bool                       `json:"enable_experimental"`
+	ExperimentalFeatures *ExperimentalFeaturesConfig `json:"experimental_features,omitempty"`
+}
+
+// ExperimentalFeaturesConfig holds experimental QUIC features configuration
+type ExperimentalFeaturesConfig struct {
+	// BBRv2 congestion control
+	EnableBBRv2           bool   `json:"enable_bbrv2"`
+	CongestionControl     string `json:"congestion_control"` // cubic, bbr, bbrv2, reno
+
+	// ACK Frequency optimization
+	EnableACKFrequency    bool                  `json:"enable_ack_frequency"`
+	ACKFrequencyConfig    *ACKFrequencyConfig   `json:"ack_frequency_config,omitempty"`
+
+	// Forward Error Correction (TODO)
+	EnableFEC             bool   `json:"enable_fec"`
+	FECRedundancy         float64 `json:"fec_redundancy"` // 0.1 = 10% redundancy
+
+	// QUIC Bit Greasing (RFC 9287)
+	EnableGreasing        bool   `json:"enable_greasing"`
+
+	// Advanced performance features
+	EnableGSO             bool   `json:"enable_gso"` // UDP GSO
+	EnableGRO             bool   `json:"enable_gro"` // UDP GRO
+	SocketBufferSize      int    `json:"socket_buffer_size"`
+	EnableNUMA            bool   `json:"enable_numa"` // NUMA pinning
 }
 
 // DefaultConfig returns default QUIC configuration
@@ -55,6 +87,8 @@ func DefaultConfig() *Config {
 		CongestionControlAlgorithm:     "cubic",
 		EnableDebugLogs:                false,
 		EnableEnhancedQUIC:             false, // По умолчанию отключено
+		EnableQLogTracing:              false, // По умолчанию отключено
+		QLogConfig:                     DefaultQLogConfig(),
 	}
 }
 
@@ -184,4 +218,55 @@ func (c *Config) DisableEnhanced() {
 // IsEnhancedEnabled проверяет, включен ли Enhanced QUIC
 func (c *Config) IsEnhancedEnabled() bool {
 	return c.EnableEnhancedQUIC && c.EnhancedConfig != nil
+}
+
+// DefaultExperimentalFeaturesConfig возвращает конфигурацию экспериментальных функций по умолчанию
+func DefaultExperimentalFeaturesConfig() *ExperimentalFeaturesConfig {
+	return &ExperimentalFeaturesConfig{
+		// BBRv2 congestion control
+		EnableBBRv2:       true,
+		CongestionControl: "bbrv2", // Use BBRv2 by default
+
+		// ACK Frequency optimization
+		EnableACKFrequency: true,
+		ACKFrequencyConfig: DefaultACKFrequencyConfig(),
+
+		// FEC (disabled by default - adds overhead)
+		EnableFEC:     false,
+		FECRedundancy: 0.1, // 10% redundancy
+
+		// QUIC Bit Greasing (RFC 9287)
+		EnableGreasing: true,
+
+		// Advanced performance features
+		EnableGSO:        true,  // Enable if supported by OS
+		EnableGRO:        true,  // Enable if supported by OS
+		SocketBufferSize: 1024 * 1024, // 1MB socket buffer
+		EnableNUMA:       false, // NUMA pinning disabled by default
+	}
+}
+
+// EnableExperimentalFeatures включает экспериментальные функции
+func (c *Config) EnableExperimentalFeatures() {
+	c.EnableExperimental = true
+	if c.ExperimentalFeatures == nil {
+		c.ExperimentalFeatures = DefaultExperimentalFeaturesConfig()
+	}
+
+	// Update congestion control algorithm if BBRv2 is enabled
+	if c.ExperimentalFeatures.EnableBBRv2 {
+		c.CongestionControlAlgorithm = "bbrv2"
+	}
+}
+
+// DisableExperimentalFeatures отключает экспериментальные функции
+func (c *Config) DisableExperimentalFeatures() {
+	c.EnableExperimental = false
+	c.ExperimentalFeatures = nil
+	c.CongestionControlAlgorithm = "cubic" // Reset to default
+}
+
+// IsExperimentalEnabled проверяет, включены ли экспериментальные функции
+func (c *Config) IsExperimentalEnabled() bool {
+	return c.EnableExperimental && c.ExperimentalFeatures != nil
 }

@@ -159,22 +159,24 @@ func (s *AIService) DetectAnomaly(c *gin.Context) {
 	}
 
 	// Получаем AI сервис и детектор аномалий
-	status := s.aiService.GetStatus()
-	if !status.Components["anomaly_detector"] {
+	detector := s.aiService.GetAnomalyDetector()
+	if detector == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "anomaly detector not available"})
 		return
 	}
 
-	// Здесь нужно получить доступ к детектору аномалий
-	// Пока что возвращаем заглушку
-	result := &anomaly.AnomalyResult{
-		Score:       0.3,
-		IsAnomaly:   false,
-		Timestamp:   time.Now(),
-		Features:    map[string]float64{"connections": 100, "bytes": 1000000, "loss": 0.01, "latency": 50, "cpu": 45, "memory": 60},
-		Confidence:  0.85,
-		AnomalyType: "normal",
-		Severity:    "low",
+	// Используем метрики из запроса
+	metrics := req.Metrics
+	if metrics == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "metrics are required"})
+		return
+	}
+
+	// Вызываем реальный детектор аномалий
+	result, err := detector.DetectAnomaly(metrics)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("anomaly detection failed: %v", err)})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

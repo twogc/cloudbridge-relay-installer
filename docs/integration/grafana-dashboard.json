@@ -1,0 +1,698 @@
+{
+  "dashboard": {
+    "title": "CloudBridge QUIC Experimental Features",
+    "tags": ["cloudbridge", "quic", "experimental", "bbrv2", "fec", "greasing"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "BBRv2 State Distribution",
+        "type": "piechart",
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "sum by (tenant_id) (cloudbridge_quic_bbrv2_state)",
+            "legendFormat": "{{ tenant_id }}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "bottom",
+            "values": ["value", "percent"]
+          },
+          "pieType": "pie",
+          "displayLabels": ["name", "percent"]
+        }
+      },
+      {
+        "id": 2,
+        "title": "BBRv2 Congestion Window (bytes)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 9, "x": 6, "y": 0},
+        "targets": [
+          {
+            "expr": "cloudbridge_quic_bbrv2_congestion_window_bytes",
+            "legendFormat": "{{ connection_id }} - {{ tenant_id }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "bytes",
+            "label": "Congestion Window",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "points": false
+      },
+      {
+        "id": 3,
+        "title": "BBRv2 Throughput (Mbps)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 9, "x": 15, "y": 0},
+        "targets": [
+          {
+            "expr": "cloudbridge_quic_bbrv2_throughput_mbps",
+            "legendFormat": "{{ connection_id }} - {{ tenant_id }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "Mbps",
+            "label": "Throughput",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "points": false
+      },
+      {
+        "id": 4,
+        "title": "BBRv2 Packet Loss Rate (%)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "cloudbridge_quic_bbrv2_loss_rate * 100",
+            "legendFormat": "{{ connection_id }} - {{ tenant_id }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "Loss Rate",
+            "logBase": 1,
+            "show": true,
+            "min": 0,
+            "max": 100
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "points": false,
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [5],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "BBRv2 High Loss Rate",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 5,
+        "title": "ACK Frequency - Total ACKs vs Delayed ACKs",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+        "targets": [
+          {
+            "expr": "rate(cloudbridge_quic_ack_freq_total_acks[5m])",
+            "legendFormat": "Total ACKs",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(cloudbridge_quic_ack_freq_delayed_acks_total[5m])",
+            "legendFormat": "Delayed ACKs",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(cloudbridge_quic_ack_freq_adaptive_acks_total[5m])",
+            "legendFormat": "Adaptive ACKs",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "ACKs/sec",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "points": false
+      },
+      {
+        "id": 6,
+        "title": "ACK Frequency - Bandwidth Savings",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+        "targets": [
+          {
+            "expr": "cloudbridge_quic_ack_freq_bandwidth_saved_bytes",
+            "legendFormat": "Total Saved",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "value",
+          "reduceOptions": {
+            "values": false,
+            "fields": "",
+            "calcs": ["lastNotNull"]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 1000000, "color": "yellow"},
+                {"value": 10000000, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "ACK Average Delay (P50, P95, P99)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, rate(cloudbridge_quic_ack_freq_average_delay_seconds_bucket[5m]))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(cloudbridge_quic_ack_freq_average_delay_seconds_bucket[5m]))",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(cloudbridge_quic_ack_freq_average_delay_seconds_bucket[5m]))",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Delay",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 0,
+        "linewidth": 2,
+        "points": false
+      },
+      {
+        "id": 8,
+        "title": "FEC Recovery Rate",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "cloudbridge_quic_fec_recovery_rate",
+            "legendFormat": "Recovery Rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "orientation": "auto",
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "min": 0,
+            "max": 1,
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 0.85, "color": "yellow"},
+                {"value": 0.95, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "FEC Total Groups & Active Groups",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "rate(cloudbridge_quic_fec_total_groups[5m])",
+            "legendFormat": "Total Groups (rate)",
+            "refId": "A"
+          },
+          {
+            "expr": "cloudbridge_quic_fec_active_groups",
+            "legendFormat": "Active Groups",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Count",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "points": false
+      },
+      {
+        "id": 10,
+        "title": "FEC Efficiency & Latency",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "cloudbridge_quic_fec_efficiency",
+            "legendFormat": "Efficiency (recovered/redundancy)",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(cloudbridge_quic_fec_latency_seconds_bucket[5m]))",
+            "legendFormat": "Latency P95 (seconds)",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Efficiency",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "s",
+            "label": "Latency",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 0,
+        "linewidth": 2,
+        "points": false
+      },
+      {
+        "id": 11,
+        "title": "FEC Bytes Saved",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 32},
+        "targets": [
+          {
+            "expr": "cloudbridge_quic_fec_bytes_saved_total",
+            "legendFormat": "Total Saved",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "value",
+          "reduceOptions": {
+            "values": false,
+            "fields": "",
+            "calcs": ["lastNotNull"]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 10000000, "color": "yellow"},
+                {"value": 100000000, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "QUIC Bit Greasing - Application Types",
+        "type": "bargauge",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 32},
+        "targets": [
+          {
+            "expr": "cloudbridge_quic_greasing_version_total",
+            "legendFormat": "Version Greasing",
+            "refId": "A"
+          },
+          {
+            "expr": "cloudbridge_quic_greasing_transport_param_total",
+            "legendFormat": "Transport Param Greasing",
+            "refId": "B"
+          },
+          {
+            "expr": "cloudbridge_quic_greasing_frame_type_total",
+            "legendFormat": "Frame Type Greasing",
+            "refId": "C"
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient",
+          "showUnfilled": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        }
+      },
+      {
+        "id": 13,
+        "title": "Greasing Compatibility Issues",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 32},
+        "targets": [
+          {
+            "expr": "rate(cloudbridge_quic_greasing_compatibility_issues_total[5m])",
+            "legendFormat": "Compatibility Issues (rate)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Issues/sec",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "points": false,
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.01],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "Greasing Compatibility Issues",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 14,
+        "title": "Experimental Features - Throughput Improvement by Feature",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 40},
+        "targets": [
+          {
+            "expr": "avg by (feature) (cloudbridge_quic_experimental_throughput_improvement_percent)",
+            "legendFormat": "{{ feature }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "Throughput Improvement",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "points": false
+      },
+      {
+        "id": 15,
+        "title": "Experimental Features - Latency Improvement by Feature",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 40},
+        "targets": [
+          {
+            "expr": "avg by (feature) (cloudbridge_quic_experimental_latency_improvement_percent)",
+            "legendFormat": "{{ feature }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "Latency Improvement",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "points": false
+      },
+      {
+        "id": 16,
+        "title": "Experimental Features - Active Connections by Feature",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 48},
+        "targets": [
+          {
+            "expr": "sum by (feature) (cloudbridge_quic_experimental_connections_active)",
+            "legendFormat": "{{ feature }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Active Connections",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "short",
+            "logBase": 1,
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "points": false,
+        "stack": true
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "allValue": null,
+          "datasource": "Prometheus",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Tenant",
+          "multi": true,
+          "name": "tenant_id",
+          "options": [],
+          "query": "label_values(cloudbridge_quic_bbrv2_state, tenant_id)",
+          "refresh": 1,
+          "regex": "",
+          "type": "query"
+        },
+        {
+          "allValue": null,
+          "datasource": "Prometheus",
+          "hide": 0,
+          "includeAll": true,
+          "label": "Feature",
+          "multi": true,
+          "name": "feature",
+          "options": [],
+          "query": "label_values(cloudbridge_quic_experimental_connections_active, feature)",
+          "refresh": 1,
+          "regex": "",
+          "type": "query"
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"BBRv2.*|ACK.*|FEC.*|Greasing.*\"}",
+          "iconColor": "red",
+          "name": "Experimental Feature Alerts",
+          "tagKeys": "alertname",
+          "textFormat": "{{ alertname }}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  }
+}

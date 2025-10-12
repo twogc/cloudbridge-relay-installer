@@ -1,7 +1,11 @@
 package ai
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -333,8 +337,16 @@ func (ba *BehaviorAnalyzer) Start() error {
 		return fmt.Errorf("behavior analyzer is disabled")
 	}
 
-	// Инициализируем базовые профили пользователей
-	ba.initializeDefaultProfiles()
+	// Загружаем сохраненные профили
+	if err := ba.loadUserProfiles(); err != nil {
+		// Логируем ошибку но продолжаем работу
+		fmt.Printf("Warning: failed to load user profiles: %v\n", err)
+	}
+
+	// Инициализируем базовые профили пользователей (если не загрузились)
+	if len(ba.UserProfiles) == 0 {
+		ba.initializeDefaultProfiles()
+	}
 
 	return nil
 }
@@ -456,11 +468,58 @@ func (ba *BehaviorAnalyzer) initializeDefaultProfiles() {
 	}
 }
 
-// saveUserProfiles сохраняет профили пользователей
+// saveUserProfiles сохраняет профили пользователей в JSON файл
 func (ba *BehaviorAnalyzer) saveUserProfiles() {
-	// В реальной реализации здесь было бы сохранение в базу данных
-	// Пока что просто логируем количество профилей
-	// log.Printf("Saving %d user profiles", len(ba.UserProfiles))
+	ba.mutex.RLock()
+	defer ba.mutex.RUnlock()
+
+	// Определяем путь к файлу профилей
+	profilesPath := filepath.Join("data", "ai", "user_profiles.json")
+
+	// Создаем директорию если не существует
+	dir := filepath.Dir(profilesPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		// Логируем ошибку но не прерываем работу
+		return
+	}
+
+	// Сериализуем профили в JSON
+	data, err := json.MarshalIndent(ba.UserProfiles, "", "  ")
+	if err != nil {
+		return
+	}
+
+	// Сохраняем в файл
+	if err := os.WriteFile(profilesPath, data, 0644); err != nil {
+		return
+	}
+}
+
+// loadUserProfiles загружает профили пользователей из JSON файла
+func (ba *BehaviorAnalyzer) loadUserProfiles() error {
+	ba.mutex.Lock()
+	defer ba.mutex.Unlock()
+
+	profilesPath := filepath.Join("data", "ai", "user_profiles.json")
+
+	// Проверяем существование файла
+	if _, err := os.Stat(profilesPath); os.IsNotExist(err) {
+		// Файл не существует - это нормально при первом запуске
+		return nil
+	}
+
+	// Читаем файл
+	data, err := os.ReadFile(profilesPath)
+	if err != nil {
+		return fmt.Errorf("failed to read profiles: %w", err)
+	}
+
+	// Десериализуем JSON
+	if err := json.Unmarshal(data, &ba.UserProfiles); err != nil {
+		return fmt.Errorf("failed to unmarshal profiles: %w", err)
+	}
+
+	return nil
 }
 
 // analyzeEvent анализирует событие и обновляет профиль
@@ -654,22 +713,52 @@ func getBoolFromEvent(event map[string]interface{}, key string) bool {
 }
 
 func getIntFromEvent(event map[string]interface{}, key string) int {
-	if val, ok := event[key].(int); ok {
-		return val
+	val := event[key]
+	switch v := val.(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case float64:
+		return int(v) // Поддержка JSON чисел
+	case string:
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
 	}
 	return 0
 }
 
 func getInt64FromEvent(event map[string]interface{}, key string) int64 {
-	if val, ok := event[key].(int64); ok {
-		return val
+	val := event[key]
+	switch v := val.(type) {
+	case int64:
+		return v
+	case int:
+		return int64(v)
+	case float64:
+		return int64(v) // Поддержка JSON чисел
+	case string:
+		if i, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return i
+		}
 	}
 	return 0
 }
 
 func getDurationFromEvent(event map[string]interface{}, key string) time.Duration {
-	if val, ok := event[key].(time.Duration); ok {
-		return val
+	val := event[key]
+	switch v := val.(type) {
+	case time.Duration:
+		return v
+	case int64:
+		return time.Duration(v)
+	case float64:
+		return time.Duration(v) // Поддержка JSON чисел
+	case string:
+		if d, err := time.ParseDuration(v); err == nil {
+			return d // Поддержка строковых длительностей ("5s", "1m", etc.)
+		}
 	}
 	return 0
 }

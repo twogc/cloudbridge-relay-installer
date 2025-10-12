@@ -36,6 +36,13 @@ type QUICConnection struct {
 	tenantID       string
 	enhancedConfig *EnhancedConfig
 	enhancedMode   bool
+
+	// QLog tracing support
+	qlogTracer *QLogTracer
+	connID     string
+
+	// Network connection management
+	pktConn net.PacketConn
 }
 
 // Stream represents a QUIC stream
@@ -56,6 +63,15 @@ func NewQUICConnection(config *Config, logger *zap.Logger) *QUICConnection {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Генерируем уникальный ID для соединения
+	connID := fmt.Sprintf("conn_%d", time.Now().UnixNano())
+
+	// Создаем qlog трейсер если включен
+	var qlogTracer *QLogTracer
+	if config.EnableQLogTracing {
+		qlogTracer = NewQLogTracer(logger, config.QLogConfig)
+	}
+
 	return &QUICConnection{
 		streams:      make(map[uint64]*Stream),
 		config:       config,
@@ -65,6 +81,8 @@ func NewQUICConnection(config *Config, logger *zap.Logger) *QUICConnection {
 		cancel:       cancel,
 		lastActivity: time.Now(),
 		enhancedMode: false, // По умолчанию обычный режим
+		qlogTracer:   qlogTracer,
+		connID:       connID,
 	}
 }
 
@@ -80,6 +98,15 @@ func NewEnhancedQUICConnection(config *Config, enhancedConfig *EnhancedConfig, t
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// Генерируем уникальный ID для соединения
+	connID := fmt.Sprintf("enhanced_conn_%s_%d", tenantID, time.Now().UnixNano())
+
+	// Создаем qlog трейсер если включен
+	var qlogTracer *QLogTracer
+	if config.EnableQLogTracing {
+		qlogTracer = NewQLogTracer(logger, config.QLogConfig)
+	}
+
 	return &QUICConnection{
 		streams:        make(map[uint64]*Stream),
 		config:         config,
@@ -91,6 +118,8 @@ func NewEnhancedQUICConnection(config *Config, enhancedConfig *EnhancedConfig, t
 		tenantID:       tenantID,
 		enhancedConfig: enhancedConfig,
 		enhancedMode:   true,
+		qlogTracer:     qlogTracer,
+		connID:         connID,
 	}
 }
 
@@ -119,6 +148,7 @@ func (qc *QUICConnection) dialRegular(ctx context.Context, addr string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create UDP connection: %v", err)
 	}
+	qc.pktConn = udpConn
 
 	// Create QUIC config
 	quicConfig := &quic.Config{
@@ -126,6 +156,7 @@ func (qc *QUICConnection) dialRegular(ctx context.Context, addr string) error {
 		MaxIncomingUniStreams:          int64(qc.config.MaxIncomingUniStreams),
 		HandshakeIdleTimeout:           qc.config.HandshakeTimeout,
 		MaxIdleTimeout:                 qc.config.IdleTimeout,
+		KeepAlivePeriod:                20 * time.Second,
 		InitialStreamReceiveWindow:     qc.config.InitialStreamReceiveWindow,
 		MaxStreamReceiveWindow:         qc.config.MaxStreamReceiveWindow,
 		InitialConnectionReceiveWindow: qc.config.InitialConnectionReceiveWindow,
@@ -141,8 +172,14 @@ func (qc *QUICConnection) dialRegular(ctx context.Context, addr string) error {
 	qc.conn = conn
 	qc.lastActivity = time.Now()
 
+	// Начинаем qlog трейсинг если включен
+	if qc.qlogTracer != nil {
+		qc.qlogTracer.StartConnection(qc.connID, conn)
+	}
+
 	qc.logger.Info("QUIC connection established",
 		zap.String("addr", addr),
+		zap.String("conn_id", qc.connID),
 	)
 
 	// Start stream management
@@ -158,22 +195,35 @@ func (qc *QUICConnection) dialEnhanced(ctx context.Context, addr string) error {
 		zap.String("tenant_id", qc.tenantID),
 	)
 
-	// Создаем Enhanced соединение
-	enhancedConn, err := DialWithTenant("udp", addr, qc.tenantID, qc.enhancedConfig)
+	// Сначала устанавливаем обычное QUIC соединение
+	err := qc.dialRegular(ctx, addr)
 	if err != nil {
-		return fmt.Errorf("failed to establish Enhanced QUIC connection: %v", err)
+		return fmt.Errorf("failed to establish base QUIC connection for enhanced mode: %v", err)
+	}
+
+	// Затем создаем Enhanced политики
+	enhancedConn, err := NewEnhancedPolicies(qc.tenantID, qc.enhancedConfig)
+	if err != nil {
+		// Если Enhanced политики не удалось создать, закрываем базовое
+		if qc.conn != nil {
+			_ = qc.conn.CloseWithError(0, "enhanced policies failed")
+		}
+		return fmt.Errorf("failed to create Enhanced policies: %v", err)
 	}
 
 	qc.enhancedConn = enhancedConn
 	qc.lastActivity = time.Now()
 
+	// Начинаем qlog трейсинг если включен
+	if qc.qlogTracer != nil {
+		qc.qlogTracer.StartConnection(qc.connID, qc.conn)
+	}
+
 	qc.logger.Info("Enhanced QUIC connection established",
 		zap.String("addr", addr),
 		zap.String("tenant_id", qc.tenantID),
+		zap.String("conn_id", qc.connID),
 	)
-
-	// Start stream management
-	go qc.manageStreams()
 
 	return nil
 }
@@ -278,9 +328,17 @@ func (qc *QUICConnection) cleanupStreams() {
 
 	cutoff := time.Now().Add(-5 * time.Minute)
 	for id, stream := range qc.streams {
-		if stream.closed || stream.lastActivity.Before(cutoff) {
+		stream.mu.RLock()
+		closed := stream.closed
+		inactive := stream.lastActivity.Before(cutoff)
+		stream.mu.RUnlock()
+		
+		if closed || inactive {
+			_ = stream.Close() // аккуратно закрыть перед delete
 			delete(qc.streams, id)
-			qc.streamCount--
+			if qc.streamCount > 0 {
+				qc.streamCount--
+			}
 			qc.logger.Debug("Cleaned up QUIC stream",
 				zap.Uint64("stream_id", id),
 			)
@@ -299,6 +357,11 @@ func (qc *QUICConnection) Close() error {
 
 	qc.closed = true
 	qc.cancel()
+
+	// Завершаем qlog трейсинг если включен
+	if qc.qlogTracer != nil {
+		qc.qlogTracer.EndConnection(qc.connID, "connection_closed")
+	}
 
 	// Close all streams
 	for _, stream := range qc.streams {
@@ -321,7 +384,15 @@ func (qc *QUICConnection) Close() error {
 		}
 	}
 
-	qc.logger.Info("QUIC connection closed")
+	// Close packet connection
+	if qc.pktConn != nil {
+		_ = qc.pktConn.Close()
+		qc.pktConn = nil
+	}
+
+	qc.logger.Info("QUIC connection closed",
+		zap.String("conn_id", qc.connID),
+	)
 	return nil
 }
 
@@ -330,12 +401,21 @@ func (qc *QUICConnection) IsHealthy() bool {
 	qc.mu.RLock()
 	defer qc.mu.RUnlock()
 
-	if qc.closed || qc.conn == nil {
+	if qc.closed {
 		return false
 	}
 
-	// Check if connection is still active
-	return time.Since(qc.lastActivity) < qc.config.IdleTimeout
+	// Проверяем обычное соединение
+	if qc.conn != nil && time.Since(qc.lastActivity) < qc.config.IdleTimeout {
+		return true
+	}
+
+	// Если enhanced-режим, проверяем enhanced соединение
+	if qc.enhancedMode && qc.enhancedConn != nil {
+		return qc.enhancedConn.IsHealthy()
+	}
+
+	return false
 }
 
 // GetStats returns connection statistics
@@ -344,6 +424,7 @@ func (qc *QUICConnection) GetStats() map[string]interface{} {
 	defer qc.mu.RUnlock()
 
 	stats := map[string]interface{}{
+		"conn_id":        qc.connID,
 		"bytes_received": qc.bytesReceived,
 		"bytes_sent":     qc.bytesSent,
 		"stream_count":   qc.streamCount,
@@ -366,16 +447,19 @@ func (qc *QUICConnection) GetStats() map[string]interface{} {
 
 // Read reads data from the stream
 func (s *Stream) Read(p []byte) (n int, err error) {
-	s.mu.Lock()
-	s.lastActivity = time.Now()
-	s.mu.Unlock()
-
-	// Используем Enhanced соединение, если доступно
+	// Вызываем BeforeRead хук если есть Enhanced политики
 	if s.conn.enhancedMode && s.conn.enhancedConn != nil {
-		n, err = s.conn.enhancedConn.Read(p)
-	} else {
-		n, err = (*s.stream).Read(p)
+		remoteAddr := "unknown"
+		if s.conn.conn != nil {
+			remoteAddr = s.conn.conn.RemoteAddr().String()
+		}
+		if err := s.conn.enhancedConn.BeforeRead(remoteAddr, len(p)); err != nil {
+			return 0, err
+		}
 	}
+
+	// Читаем из QUIC потока
+	n, err = (*s.stream).Read(p)
 
 	if err != nil {
 		if err == io.EOF {
@@ -386,30 +470,55 @@ func (s *Stream) Read(p []byte) (n int, err error) {
 		return n, err
 	}
 
+	// Вызываем AfterRead хук если есть Enhanced политики
+	if s.conn.enhancedMode && s.conn.enhancedConn != nil {
+		s.conn.enhancedConn.AfterRead(n)
+	}
+
 	// Update connection metrics
 	s.conn.mu.Lock()
 	s.conn.bytesReceived += int64(n)
 	s.conn.lastActivity = time.Now()
 	s.conn.mu.Unlock()
 
+	// Update stream activity after successful read
+	s.mu.Lock()
+	s.lastActivity = time.Now()
+	s.mu.Unlock()
+
+	// Логируем получение данных в qlog если включен
+	if s.conn.qlogTracer != nil && n > 0 {
+		s.conn.qlogTracer.LogStreamEvent(s.conn.connID, s.id, "stream_data_received", map[string]interface{}{
+			"bytes": n,
+		})
+	}
+
 	return n, nil
 }
 
 // Write writes data to the stream
 func (s *Stream) Write(p []byte) (n int, err error) {
-	s.mu.Lock()
-	s.lastActivity = time.Now()
-	s.mu.Unlock()
-
-	// Используем Enhanced соединение, если доступно
+	// Вызываем BeforeWrite хук если есть Enhanced политики
 	if s.conn.enhancedMode && s.conn.enhancedConn != nil {
-		n, err = s.conn.enhancedConn.Write(p)
-	} else {
-		n, err = (*s.stream).Write(p)
+		remoteAddr := "unknown"
+		if s.conn.conn != nil {
+			remoteAddr = s.conn.conn.RemoteAddr().String()
+		}
+		if err := s.conn.enhancedConn.BeforeWrite(remoteAddr, len(p)); err != nil {
+			return 0, err
+		}
 	}
+
+	// Записываем в QUIC поток
+	n, err = (*s.stream).Write(p)
 
 	if err != nil {
 		return n, err
+	}
+
+	// Вызываем AfterWrite хук если есть Enhanced политики
+	if s.conn.enhancedMode && s.conn.enhancedConn != nil {
+		s.conn.enhancedConn.AfterWrite(n)
 	}
 
 	// Update connection metrics
@@ -417,6 +526,18 @@ func (s *Stream) Write(p []byte) (n int, err error) {
 	s.conn.bytesSent += int64(n)
 	s.conn.lastActivity = time.Now()
 	s.conn.mu.Unlock()
+
+	// Update stream activity after successful write
+	s.mu.Lock()
+	s.lastActivity = time.Now()
+	s.mu.Unlock()
+
+	// Логируем отправку данных в qlog если включен
+	if s.conn.qlogTracer != nil && n > 0 {
+		s.conn.qlogTracer.LogStreamEvent(s.conn.connID, s.id, "stream_data_sent", map[string]interface{}{
+			"bytes": n,
+		})
+	}
 
 	return n, nil
 }
@@ -452,7 +573,7 @@ func (qc *QUICConnection) CreateEnhancedConnection(tenantID string, config *Enha
 	defer qc.mu.Unlock()
 
 	if qc.enhancedConn != nil {
-		return fmt.Errorf("Enhanced connection already exists")
+		return fmt.Errorf("enhanced connection already exists")
 	}
 
 	if config == nil {
@@ -467,10 +588,10 @@ func (qc *QUICConnection) CreateEnhancedConnection(tenantID string, config *Enha
 	config.MaxIncomingUniStreams = qc.config.MaxIncomingUniStreams
 	config.TLSConfig = qc.tlsConfig
 
-	// Создаем Enhanced соединение
-	enhancedConn, err := DialWithTenant("udp", qc.conn.RemoteAddr().String(), tenantID, config)
+	// Создаем Enhanced политики
+	enhancedConn, err := NewEnhancedPolicies(tenantID, config)
 	if err != nil {
-		return fmt.Errorf("failed to create Enhanced connection: %v", err)
+		return fmt.Errorf("failed to create Enhanced policies: %v", err)
 	}
 
 	qc.enhancedConn = enhancedConn
@@ -504,4 +625,42 @@ func (qc *QUICConnection) GetTenantID() string {
 	qc.mu.RLock()
 	defer qc.mu.RUnlock()
 	return qc.tenantID
+}
+
+// GetConnectionID возвращает ID соединения
+func (qc *QUICConnection) GetConnectionID() string {
+	qc.mu.RLock()
+	defer qc.mu.RUnlock()
+	return qc.connID
+}
+
+// GetQLogTracer возвращает qlog трейсер
+func (qc *QUICConnection) GetQLogTracer() *QLogTracer {
+	qc.mu.RLock()
+	defer qc.mu.RUnlock()
+	return qc.qlogTracer
+}
+
+// EnableQLogTracing включает qlog трейсинг
+func (qc *QUICConnection) EnableQLogTracing() {
+	qc.mu.Lock()
+	defer qc.mu.Unlock()
+
+	if qc.qlogTracer == nil {
+		qc.qlogTracer = NewQLogTracer(qc.logger, qc.config.QLogConfig)
+		if qc.conn != nil {
+			qc.qlogTracer.StartConnection(qc.connID, qc.conn)
+		}
+	}
+}
+
+// DisableQLogTracing отключает qlog трейсинг
+func (qc *QUICConnection) DisableQLogTracing() {
+	qc.mu.Lock()
+	defer qc.mu.Unlock()
+
+	if qc.qlogTracer != nil {
+		qc.qlogTracer.EndConnection(qc.connID, "tracing_disabled")
+		qc.qlogTracer = nil
+	}
 }

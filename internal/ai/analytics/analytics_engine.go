@@ -22,6 +22,8 @@ type AIAnalyticsEngine struct {
 	reports            []*Report
 	maxReports         int
 	config             *AnalyticsConfig
+	ctx                context.Context    // Контекст для graceful shutdown
+	cancel             context.CancelFunc // Функция отмены
 }
 
 // DataCollector интерфейс для сборщиков данных
@@ -167,6 +169,7 @@ type AIServiceConfig struct {
 
 // NewAIAnalyticsEngine создает новый движок AI-аналитики
 func NewAIAnalyticsEngine(config *AnalyticsConfig, logger *zap.Logger) *AIAnalyticsEngine {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &AIAnalyticsEngine{
 		dataCollectors: make(map[string]DataCollector),
 		scheduler:      nil, // Будет инициализирован позже
@@ -174,6 +177,8 @@ func NewAIAnalyticsEngine(config *AnalyticsConfig, logger *zap.Logger) *AIAnalyt
 		reports:        make([]*Report, 0),
 		maxReports:     config.MaxReports,
 		config:         config,
+		ctx:            ctx,
+		cancel:         cancel,
 	}
 }
 
@@ -206,14 +211,39 @@ func (e *AIAnalyticsEngine) SetReportGenerator(generator interface{}) {
 	e.reportGenerator = generator
 }
 
-// StartScheduler запускает планировщик
+// StartScheduler запускает планировщик генерации отчетов
 func (e *AIAnalyticsEngine) StartScheduler() {
 	if e.config.Schedule == "" {
-		e.config.Schedule = "*/15 * * * *" // Каждые 15 минут по умолчанию
+		e.config.Schedule = "15m" // Каждые 15 минут по умолчанию
 	}
 
-	// Планировщик будет реализован позже
-	e.logger.Info("Scheduler started", zap.String("schedule", e.config.Schedule))
+	// Парсим интервал планирования
+	interval, err := time.ParseDuration(e.config.Schedule)
+	if err != nil {
+		e.logger.Error("Invalid schedule format, using default", zap.Error(err))
+		interval = 15 * time.Minute
+	}
+
+	e.logger.Info("Scheduler started", zap.Duration("interval", interval))
+
+	// Запускаем планировщик в горутине
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				ctx := context.Background()
+				if err := e.GenerateReport(ctx); err != nil {
+					e.logger.Error("Failed to generate scheduled report", zap.Error(err))
+				}
+			case <-e.ctx.Done():
+				e.logger.Info("Scheduler stopped")
+				return
+			}
+		}
+	}()
 }
 
 // GenerateReport генерирует отчет
@@ -477,6 +507,9 @@ func (e *AIAnalyticsEngine) handleGetStatus(c *gin.Context) {
 
 // Stop останавливает движок аналитики
 func (e *AIAnalyticsEngine) Stop() {
-	// Планировщик будет реализован позже
+	// Отменяем контекст для остановки планировщика
+	if e.cancel != nil {
+		e.cancel()
+	}
 	e.logger.Info("AI Analytics Engine stopped")
 }

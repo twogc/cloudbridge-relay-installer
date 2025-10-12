@@ -163,7 +163,8 @@ func (eqm *EnhancedQUICManager) CreateConnection(network, address, tenantID stri
 		eqm.metrics.IncQUICConnections()
 	}
 
-	conn, err := quic.DialWithTenant(network, address, tenantID, eqm.config)
+	// Создаем Enhanced политики для QUIC соединения
+	enhancedConn, err := quic.NewEnhancedPolicies(tenantID, eqm.config)
 	if err != nil {
 		// Записываем метрики ошибки соединения
 		if eqm.metrics != nil {
@@ -172,7 +173,7 @@ func (eqm *EnhancedQUICManager) CreateConnection(network, address, tenantID stri
 		return nil, err
 	}
 
-	return conn, nil
+	return enhancedConn, nil
 }
 
 // ValidateConnection проверяет соединение через все интегрированные компоненты

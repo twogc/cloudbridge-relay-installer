@@ -704,3 +704,18 @@ type ServiceStatus struct {
 	Uptime      time.Duration          `json:"uptime"`
 	LastUpdate  time.Time              `json:"last_update"`
 }
+
+// GetAnomalyDetector returns the anomaly detector instance
+func (s *Service) GetAnomalyDetector() *anomaly.NetworkAnomalyDetector {
+	return s.anomalyDetector
+}
+
+// GetLoadPredictor returns the load predictor instance
+func (s *Service) GetLoadPredictor() *predictive.LoadPredictor {
+	return s.loadPredictor
+}
+
+// GetRouteOptimizer returns the route optimizer instance
+func (s *Service) GetRouteOptimizer() *routing.RouteOptimizer {
+	return s.routeOptimizer
+}

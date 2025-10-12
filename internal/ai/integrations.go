@@ -12,7 +12,7 @@ func (ba *BehaviorAnalyzer) AnalyzeP2PQUICBehavior(peerID string, event interfac
 	// Создаем событие для анализа
 	p2pQuicEvent := map[string]interface{}{
 		"peer_id":     peerID,
-		"event_type":  "p2p_quic_connection",
+		"type":        "p2p_quic_connection", // Исправлено: было "event_type"
 		"timestamp":   time.Now(),
 		"data_volume": 0,
 		"protocol":    "p2p_quic",
@@ -38,7 +38,7 @@ func (ba *BehaviorAnalyzer) AnalyzeQUICBehavior(connectionID string, event inter
 	// Создаем событие для анализа
 	quicEvent := map[string]interface{}{
 		"connection_id": connectionID,
-		"event_type":    "quic_connection",
+		"type":          "quic_connection", // Исправлено: было "event_type"
 		"timestamp":     time.Now(),
 		"data_volume":   0,
 		"protocol":      "quic",

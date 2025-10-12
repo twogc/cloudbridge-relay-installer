@@ -36,7 +36,6 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/pion/stun v0.6.1
-	github.com/pkg/errors v0.9.1
 	github.com/projectcalico/api v0.0.0-20250916150628-d4009e4d7c50
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/zitadel/oidc/v3 v3.45.0
@@ -96,6 +95,7 @@ require (
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20250827001030-24949be3fa54 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -119,6 +119,7 @@ require (
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/transport/v2 v2.2.10 // indirect
 	github.com/pion/turn/v2 v2.1.6 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
@@ -136,7 +137,7 @@ require (
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/uber-go/tally v3.5.8+incompatible // indirect
 	github.com/uber/cadence-idl v0.0.0-20251004002458-fb4b40e429c0 // indirect
-	github.com/uber/tchannel-go v1.34.6 // indirect
+	github.com/uber/tchannel-go v1.34.4 // indirect
 	github.com/ugorji/go/codec v1.3.0 // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
@@ -185,3 +186,7 @@ require (
 )
 
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250106144421-5f5ef82da422
+
+// Workaround for tchannel-go macOS Darwin sockio redeclaration issue
+// See: https://github.com/uber/tchannel-go/issues/646
+exclude github.com/uber/tchannel-go v1.34.6

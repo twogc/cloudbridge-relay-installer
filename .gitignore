@@ -181,3 +181,12 @@ reference-repos/
 # Submodules with untracked content
 tools/cadence-web
 .current-tag
+
+# OSS Repositories (excluded from main project)
+# Contains external OSS repositories for integration analysis
+oss-repositories/
+# But allow documentation and configuration files
+!oss-repositories/README.md
+!oss-repositories/*.md
+!oss-repositories/*.sh
+!oss-repositories/.gitkeep
