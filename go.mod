@@ -35,6 +35,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/pion/ice/v3 v3.0.16
 	github.com/pion/stun v0.6.1
 	github.com/projectcalico/api v0.0.0-20250916150628-d4009e4d7c50
 	github.com/shirou/gopsutil/v3 v3.24.5
@@ -114,7 +115,6 @@ require (
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pion/dtls/v2 v2.2.12 // indirect
-	github.com/pion/ice/v3 v3.0.16 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/mdns v0.0.12 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect

@@ -49,7 +49,11 @@ type CheckResult struct {
 func NewConnectivityChecker(logger *logger.Logger, metrics *NATMetrics) *ConnectivityChecker {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	prometheusMetrics := NewNATPrometheusMetrics()
+	// Создаем Prometheus метрики только если они еще не созданы
+	var prometheusMetrics *NATPrometheusMetrics
+	if metrics != nil {
+		prometheusMetrics = NewNATPrometheusMetrics()
+	}
 
 	return &ConnectivityChecker{
 		logger:            logger,

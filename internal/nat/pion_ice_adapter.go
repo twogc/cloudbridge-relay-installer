@@ -323,8 +323,8 @@ func (pa *PionICEAdapter) GatherCandidates() error {
 }
 
 // AddRemoteCandidate добавляет удаленный кандидат
-func (pa *PionICEAdapter) AddRemoteCandidate(candidateInit ice.CandidateInit) error {
-	candidate, err := ice.UnmarshalCandidate(candidateInit.Candidate)
+func (pa *PionICEAdapter) AddRemoteCandidate(candidateStr string) error {
+	candidate, err := ice.UnmarshalCandidate(candidateStr)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal candidate: %w", err)
 	}
@@ -379,12 +379,12 @@ func (pa *PionICEAdapter) GetSelectedPair() *ice.CandidatePair {
 }
 
 // GetLocalParameters возвращает локальные ICE параметры
-func (pa *PionICEAdapter) GetLocalParameters() (ice.ConnectionRole, string, string, error) {
+func (pa *PionICEAdapter) GetLocalParameters() (ice.Role, string, string, error) {
 	ufrag, pwd, err := pa.agent.GetLocalUserCredentials()
 	if err != nil {
-		return ice.ConnectionRoleControlled, "", "", fmt.Errorf("failed to get local credentials: %w", err)
+		return ice.Controlled, "", "", fmt.Errorf("failed to get local credentials: %w", err)
 	}
-	return ice.ConnectionRoleControlling, ufrag, pwd, nil
+	return ice.Controlling, ufrag, pwd, nil
 }
 
 // SetRemoteCredentials устанавливает удаленные ICE credentials
@@ -457,8 +457,19 @@ func (pa *PionICEAdapter) GetMetrics() *NATMetrics {
 }
 
 // GetStats возвращает статистику pion ICE agent
-func (pa *PionICEAdapter) GetStats() ice.AgentStats {
-	return pa.agent.GetStats()
+func (pa *PionICEAdapter) GetStats() map[string]interface{} {
+	// В pion/ice v3 нет метода GetStats, возвращаем базовую информацию
+	pa.mu.RLock()
+	defer pa.mu.RUnlock()
+	
+	return map[string]interface{}{
+		"connection_state":     pa.connectionState.String(),
+		"gathering_state":     pa.gatheringState.String(),
+		"local_candidates":     len(pa.localCandidates),
+		"remote_candidates":    len(pa.remoteCandidates),
+		"gathering_complete":  pa.gatheringComplete,
+		"selected_pair":       pa.selectedPair != nil,
+	}
 }
 
 // Restart перезапускает ICE agent

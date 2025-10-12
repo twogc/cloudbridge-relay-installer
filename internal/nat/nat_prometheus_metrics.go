@@ -1,6 +1,8 @@
 package nat
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -43,9 +45,15 @@ type NATPrometheusMetrics struct {
 	jitter prometheus.Gauge
 }
 
-// NewNATPrometheusMetrics создает новые Prometheus метрики для NAT
+var (
+	prometheusMetricsInstance *NATPrometheusMetrics
+	prometheusMetricsOnce     sync.Once
+)
+
+// NewNATPrometheusMetrics создает новые Prometheus метрики для NAT (синглтон)
 func NewNATPrometheusMetrics() *NATPrometheusMetrics {
-	return &NATPrometheusMetrics{
+	prometheusMetricsOnce.Do(func() {
+		prometheusMetricsInstance = &NATPrometheusMetrics{
 		// STUN метрики
 		stunRequestsTotal: promauto.NewCounterVec(
 			prometheus.CounterOpts{
@@ -241,7 +249,9 @@ func NewNATPrometheusMetrics() *NATPrometheusMetrics {
 				Help:      "Jitter in milliseconds",
 			},
 		),
-	}
+		}
+	})
+	return prometheusMetricsInstance
 }
 
 // UpdateFromNATMetrics обновляет Prometheus метрики из NATMetrics

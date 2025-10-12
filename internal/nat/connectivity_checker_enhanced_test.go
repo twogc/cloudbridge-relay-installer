@@ -11,7 +11,14 @@ import (
 )
 
 func TestNewConnectivityChecker(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	metrics := NewNATMetrics()
 
 	checker := NewConnectivityChecker(logger, metrics)
@@ -26,8 +33,16 @@ func TestNewConnectivityChecker(t *testing.T) {
 }
 
 func TestConnectivityChecker_CreateCandidatePairs(t *testing.T) {
-	logger := logger.NewLogger()
-	checker := NewConnectivityChecker(logger, nil)
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
+	metrics := NewNATMetrics()
+	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()
 
 	local := []*ICECandidate{
@@ -77,8 +92,16 @@ func TestConnectivityChecker_CreateCandidatePairs(t *testing.T) {
 }
 
 func TestConnectivityChecker_CalculatePairPriority(t *testing.T) {
-	logger := logger.NewLogger()
-	checker := NewConnectivityChecker(logger, nil)
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
+	metrics := NewNATMetrics()
+	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()
 
 	local := &ICECandidate{Priority: 126}
@@ -94,8 +117,16 @@ func TestConnectivityChecker_CalculatePairPriority(t *testing.T) {
 }
 
 func TestConnectivityChecker_SortPairsByPriority(t *testing.T) {
-	logger := logger.NewLogger()
-	checker := NewConnectivityChecker(logger, nil)
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
+	metrics := NewNATMetrics()
+	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()
 
 	pairs := []*CandidatePair{
@@ -113,8 +144,16 @@ func TestConnectivityChecker_SortPairsByPriority(t *testing.T) {
 }
 
 func TestConnectivityChecker_CheckConnectivity_Localhost(t *testing.T) {
-	logger := logger.NewLogger()
-	checker := NewConnectivityChecker(logger, nil)
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
+	metrics := NewNATMetrics()
+	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()
 
 	// Тестируем connectivity с localhost (должен работать)
@@ -141,8 +180,16 @@ func TestConnectivityChecker_CheckConnectivity_Localhost(t *testing.T) {
 }
 
 func TestConnectivityChecker_GetSuccessRate(t *testing.T) {
-	logger := logger.NewLogger()
-	checker := NewConnectivityChecker(logger, nil)
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
+	metrics := NewNATMetrics()
+	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()
 
 	// Начальный success rate должен быть 0
@@ -162,8 +209,16 @@ func TestConnectivityChecker_GetSuccessRate(t *testing.T) {
 }
 
 func TestConnectivityChecker_GetBestPair(t *testing.T) {
-	logger := logger.NewLogger()
-	checker := NewConnectivityChecker(logger, nil)
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
+	metrics := NewNATMetrics()
+	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()
 
 	// Нет результатов - должен вернуть nil
@@ -205,8 +260,16 @@ func TestConnectivityChecker_GetBestPair(t *testing.T) {
 }
 
 func TestConnectivityChecker_GetSuccessfulPairs(t *testing.T) {
-	logger := logger.NewLogger()
-	checker := NewConnectivityChecker(logger, nil)
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
+	metrics := NewNATMetrics()
+	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()
 
 	// Добавляем результаты
@@ -234,8 +297,16 @@ func TestConnectivityChecker_GetSuccessfulPairs(t *testing.T) {
 }
 
 func TestConnectivityChecker_PerformConnectivityCheck(t *testing.T) {
-	logger := logger.NewLogger()
-	checker := NewConnectivityChecker(logger, nil)
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
+	metrics := NewNATMetrics()
+	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()
 
 	// Устанавливаем короткий таймаут для теста
@@ -273,7 +344,14 @@ func TestConnectivityChecker_PerformConnectivityCheck(t *testing.T) {
 }
 
 func TestConnectivityChecker_PrometheusMetrics(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	metrics := NewNATMetrics()
 	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()
@@ -287,7 +365,14 @@ func TestConnectivityChecker_PrometheusMetrics(t *testing.T) {
 }
 
 func TestConnectivityChecker_MetricsIntegration(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	metrics := NewNATMetrics()
 	checker := NewConnectivityChecker(logger, metrics)
 	defer checker.Close()

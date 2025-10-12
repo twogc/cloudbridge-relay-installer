@@ -13,7 +13,14 @@ import (
 )
 
 func TestNewPionICEAdapter(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	config := DefaultPionICEConfig()
 	metrics := NewNATMetrics()
 
@@ -27,7 +34,14 @@ func TestNewPionICEAdapter(t *testing.T) {
 }
 
 func TestPionICEAdapter_GatherCandidates(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	config := DefaultPionICEConfig()
 	config.STUNServers = []string{
 		"stun:stun.l.google.com:19302",
@@ -95,7 +109,14 @@ collecting:
 }
 
 func TestPionICEAdapter_LocalParameters(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	adapter, err := NewPionICEAdapter(logger, nil, nil)
 	require.NoError(t, err)
 	defer adapter.Close()
@@ -104,13 +125,20 @@ func TestPionICEAdapter_LocalParameters(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, ufrag)
 	assert.NotEmpty(t, pwd)
-	assert.Equal(t, ice.ConnectionRoleControlling, role)
+		assert.Equal(t, ice.Controlling, role)
 
 	t.Logf("Local parameters: role=%s, ufrag=%s, pwd=%s", role, ufrag, pwd)
 }
 
 func TestPionICEAdapter_ConnectionStateChanges(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	adapter, err := NewPionICEAdapter(logger, nil, nil)
 	require.NoError(t, err)
 	defer adapter.Close()
@@ -138,7 +166,14 @@ func TestPionICEAdapter_ConnectionStateChanges(t *testing.T) {
 }
 
 func TestPionICEAdapter_Restart(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	adapter, err := NewPionICEAdapter(logger, nil, nil)
 	require.NoError(t, err)
 	defer adapter.Close()
@@ -169,7 +204,14 @@ func TestPionICEAdapter_Restart(t *testing.T) {
 }
 
 func TestPionICEAdapter_WaitForGatheringComplete(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	adapter, err := NewPionICEAdapter(logger, nil, nil)
 	require.NoError(t, err)
 	defer adapter.Close()
@@ -186,7 +228,14 @@ func TestPionICEAdapter_WaitForGatheringComplete(t *testing.T) {
 }
 
 func TestPionICEAdapter_GetStats(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	adapter, err := NewPionICEAdapter(logger, nil, nil)
 	require.NoError(t, err)
 	defer adapter.Close()
@@ -206,7 +255,14 @@ func TestPionICEAdapter_GetStats(t *testing.T) {
 }
 
 func TestPionICEAdapter_MultipleAdapters(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 
 	// Создаем два адаптера для имитации двух пиров
 	adapter1, err := NewPionICEAdapter(logger, nil, nil)
@@ -233,18 +289,23 @@ func TestPionICEAdapter_MultipleAdapters(t *testing.T) {
 }
 
 func TestPionICEAdapter_AddRemoteCandidate(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	adapter, err := NewPionICEAdapter(logger, nil, nil)
 	require.NoError(t, err)
 	defer adapter.Close()
 
 	// Пример удаленного кандидата (host candidate)
-	candidateInit := ice.CandidateInit{
-		Candidate: "candidate:1 1 UDP 2130706431 192.168.1.100 54321 typ host",
-	}
+	candidateStr := "candidate:1 1 UDP 2130706431 192.168.1.100 54321 typ host"
 
 	// Добавляем удаленный кандидат
-	err = adapter.AddRemoteCandidate(candidateInit)
+	err = adapter.AddRemoteCandidate(candidateStr)
 	require.NoError(t, err)
 
 	// Проверяем, что кандидат добавлен
@@ -256,7 +317,14 @@ func TestPionICEAdapter_AddRemoteCandidate(t *testing.T) {
 }
 
 func TestPionICEAdapter_MetricsIntegration(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	metrics := NewNATMetrics()
 
 	adapter, err := NewPionICEAdapter(logger, nil, metrics)
@@ -282,7 +350,14 @@ func TestPionICEAdapter_MetricsIntegration(t *testing.T) {
 }
 
 func TestPionICEAdapter_CandidateTypes(t *testing.T) {
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 	config := DefaultPionICEConfig()
 	// Используем только публичный STUN сервер
 	config.STUNServers = []string{"stun:stun.l.google.com:19302"}
@@ -324,7 +399,14 @@ func TestPionICEAdapter_CandidateTypes(t *testing.T) {
 func TestPionICEAdapter_Dial_Accept_Integration(t *testing.T) {
 	t.Skip("Skipping full dial/accept integration test - requires network setup")
 
-	logger := logger.NewLogger()
+	logger, err := logger.New(logger.Config{
+		Level:  logger.DEBUG,
+		Output: "stdout",
+		JSON:   false,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create logger: %v", err)
+	}
 
 	// Создаем два адаптера
 	adapter1, err := NewPionICEAdapter(logger, nil, nil)
@@ -359,19 +441,13 @@ func TestPionICEAdapter_Dial_Accept_Integration(t *testing.T) {
 	// Обмениваем кандидаты
 	candidates1 := adapter1.GetLocalCandidates()
 	for _, candidate := range candidates1 {
-		init := ice.CandidateInit{
-			Candidate: candidate.String(),
-		}
-		err = adapter2.AddRemoteCandidate(init)
+		err = adapter2.AddRemoteCandidate(candidate.String())
 		require.NoError(t, err)
 	}
 
 	candidates2 := adapter2.GetLocalCandidates()
 	for _, candidate := range candidates2 {
-		init := ice.CandidateInit{
-			Candidate: candidate.String(),
-		}
-		err = adapter1.AddRemoteCandidate(init)
+		err = adapter1.AddRemoteCandidate(candidate.String())
 		require.NoError(t, err)
 	}
 
