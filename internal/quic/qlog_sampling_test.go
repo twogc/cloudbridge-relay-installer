@@ -16,7 +16,7 @@ func TestNewQLogSampler(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  0.01,
 		GlobalEnabled: false,
 		OutputDir:     tmpDir,
@@ -53,7 +53,7 @@ func TestShouldSample_GlobalDisabled(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0, // 100% sampling rate
 		GlobalEnabled: false, // But globally disabled
 		OutputDir:     tmpDir,
@@ -72,7 +72,7 @@ func TestShouldSample_TenantOverride(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: false,
 		OutputDir:     tmpDir,
@@ -98,7 +98,7 @@ func TestShouldSample_SamplingRate(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  0.5, // 50% sampling
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -131,7 +131,7 @@ func TestShouldSample_Deterministic(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  0.5,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -156,7 +156,7 @@ func TestStartCapture(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0, // 100% for testing
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -184,7 +184,7 @@ func TestStartCapture_NotSampled(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  0.0, // 0% sampling
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -208,7 +208,7 @@ func TestLogEvent(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -227,8 +227,8 @@ func TestLogEvent(t *testing.T) {
 
 	// Log event
 	event := QLogEvent{
-		Time:     time.Now().UnixMilli(),
-		Name:     "connectivity:connection_started",
+		Time:     time.Now(),
+		Event:    "connectivity:connection_started",
 		Category: "connectivity",
 		Data: map[string]interface{}{
 			"src_ip":   "192.168.1.100",
@@ -255,7 +255,7 @@ func TestLogEvent_NotSampled(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  0.0, // Not sampled
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -267,8 +267,8 @@ func TestLogEvent_NotSampled(t *testing.T) {
 
 	// Try to log event for non-sampled connection
 	event := QLogEvent{
-		Time: time.Now().UnixMilli(),
-		Name: "test_event",
+		Time:  time.Now(),
+		Event: "test_event",
 	}
 
 	err = sampler.LogEvent("conn-1", event)
@@ -284,7 +284,7 @@ func TestRedactPII_IPv4(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -314,7 +314,7 @@ func TestRedactPII_Ports(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -341,7 +341,7 @@ func TestRedactPII_Tokens(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -371,7 +371,7 @@ func TestRedactPII_ConnectionID(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -400,7 +400,7 @@ func TestRedactPII_NestedData(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -435,7 +435,7 @@ func TestStopCapture(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -452,8 +452,8 @@ func TestStopCapture(t *testing.T) {
 	// Log some events
 	for i := 0; i < 10; i++ {
 		event := QLogEvent{
-			Time: time.Now().UnixMilli(),
-			Name: fmt.Sprintf("event_%d", i),
+			Time:  time.Now(),
+			Event: fmt.Sprintf("event_%d", i),
 		}
 		err = sampler.LogEvent("conn-1", event)
 		require.NoError(t, err)
@@ -477,7 +477,7 @@ func TestSetSamplingRate(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  0.01,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -504,7 +504,7 @@ func TestEnableDisableForTenant(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: false,
 		OutputDir:     tmpDir,
@@ -533,7 +533,7 @@ func TestSetGlobalEnabled(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: false,
 		OutputDir:     tmpDir,
@@ -558,11 +558,11 @@ func TestSetGlobalEnabled(t *testing.T) {
 	assert.False(t, shouldSample)
 }
 
-func TestGetStats(t *testing.T) {
+func TestQLogSampler_GetStats(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  0.5,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -591,7 +591,7 @@ func TestCleanupOldLogs(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -633,7 +633,7 @@ func TestClose(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := t.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -665,7 +665,7 @@ func BenchmarkShouldSample(b *testing.B) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := b.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  0.01,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
@@ -685,7 +685,7 @@ func BenchmarkRedactPII(b *testing.B) {
 	logger, _ := zap.NewDevelopment()
 	tmpDir := b.TempDir()
 
-	config := &QLogConfig{
+	config := &QLogSamplingConfig{
 		SamplingRate:  1.0,
 		GlobalEnabled: true,
 		OutputDir:     tmpDir,
