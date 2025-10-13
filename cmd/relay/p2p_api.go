@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/api"
+	"github.com/twogc/cloudbridge-relay-installer/internal/api/compatibility"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"github.com/twogc/cloudbridge-relay-installer/internal/token"
 )
@@ -117,13 +118,26 @@ func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServ
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
+	// Add Client Compatibility Layer middleware
+	logger.Info("Initializing Client Compatibility Layer")
+	router.Use(compatibility.TenantIDMiddleware())
+	router.Use(compatibility.LogCompatibilityMiddleware(logger))
+
+	// Initialize compatibility metrics
+	compatMetrics := &compatibility.CompatibilityMetrics{
+		PathTranslations: make(map[string]int64),
+	}
+	router.Use(compatibility.MetricsMiddleware(compatMetrics))
+
 	// Настройка маршрутов для P2P API
 	// Health endpoints
+	ccl := compatibility.NewClientCompatibilityLayer(logger)
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"status":    "healthy",
-			"timestamp": time.Now().Format(time.RFC3339),
-			"version":   "1.0.0",
+			"status":             "healthy",
+			"timestamp":          time.Now().Format(time.RFC3339),
+			"version":            "1.0.0",
+			"compatibility_layer": ccl.HealthCheck(),
 		})
 	})
 
