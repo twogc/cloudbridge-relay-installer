@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/go-jose/go-jose/v4"
 	"github.com/zitadel/oidc/v3/pkg/client"
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 	"go.uber.org/zap"
@@ -30,7 +30,7 @@ type ZitadelClient struct {
 // JWKSCache кеш для JWKS с thread-safe доступом
 type JWKSCache struct {
 	mu        sync.RWMutex
-	jwks      *oidc.KeySet
+	jwks      *jose.JSONWebKeySet
 	expiresAt time.Time
 }
 
@@ -53,16 +53,10 @@ func NewZitadelClient(config ZitadelClientConfig) (*ZitadelClient, error) {
 		return nil, fmt.Errorf("failed to discover Zitadel configuration: %w", err)
 	}
 
-	// Проверяем, что получили правильный тип
-	oidcConfig, ok := discoveryConfig.(*oidc.DiscoveryConfiguration)
-	if !ok {
-		return nil, fmt.Errorf("unexpected discovery config type")
-	}
-
 	return &ZitadelClient{
 		domain:          config.Domain,
 		httpClient:      config.HTTPClient,
-		discoveryConfig: oidcConfig,
+		discoveryConfig: discoveryConfig,
 		logger:          config.Logger,
 		jwksCache: &JWKSCache{
 			expiresAt: time.Time{}, // Инициализируем с нулевым временем
@@ -72,7 +66,7 @@ func NewZitadelClient(config ZitadelClientConfig) (*ZitadelClient, error) {
 }
 
 // GetJWKS возвращает JSON Web Key Set для валидации JWT токенов
-func (c *ZitadelClient) GetJWKS(ctx context.Context) (*oidc.KeySet, error) {
+func (c *ZitadelClient) GetJWKS(ctx context.Context) (*jose.JSONWebKeySet, error) {
 	// Проверяем кеш
 	c.jwksCache.mu.RLock()
 	if c.jwksCache.jwks != nil && time.Now().Before(c.jwksCache.expiresAt) {
@@ -110,7 +104,7 @@ func (c *ZitadelClient) GetJWKS(ctx context.Context) (*oidc.KeySet, error) {
 	}
 
 	// Парсим JWKS
-	var jwks oidc.KeySet
+	var jwks jose.JSONWebKeySet
 	if err := json.NewDecoder(resp.Body).Decode(&jwks); err != nil {
 		return nil, fmt.Errorf("failed to decode JWKS: %w", err)
 	}
@@ -144,19 +138,19 @@ func (c *ZitadelClient) GetPublicKey(ctx context.Context, keyID string) (*rsa.Pu
 	for _, key := range jwks.Keys {
 		if key.KeyID == keyID {
 			// Проверяем что это RSA ключ
-			if key.Algorithm != "RS256" {
+			if key.Algorithm != string(jose.RS256) {
 				c.logger.Warn("Unsupported key algorithm",
 					zap.String("key_id", keyID),
 					zap.String("algorithm", key.Algorithm))
 				continue
 			}
 
-			// Конвертируем в RSA public key
-			pubKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(key.PublicKeyPEM()))
-			if err != nil {
-				c.logger.Error("Failed to parse RSA public key",
-					zap.String("key_id", keyID),
-					zap.Error(err))
+			// Получаем публичный ключ из jose.JSONWebKey
+			// Key содержит интерфейс{}, нужно type assertion
+			rsaKey, ok := key.Key.(*rsa.PublicKey)
+			if !ok {
+				c.logger.Error("Key is not RSA public key",
+					zap.String("key_id", keyID))
 				continue
 			}
 
@@ -164,7 +158,7 @@ func (c *ZitadelClient) GetPublicKey(ctx context.Context, keyID string) (*rsa.Pu
 				zap.String("key_id", keyID),
 				zap.String("algorithm", key.Algorithm))
 
-			return pubKey, nil
+			return rsaKey, nil
 		}
 	}
 
@@ -186,14 +180,14 @@ func (c *ZitadelClient) GetPublicKeyByIndex(ctx context.Context, index int) (*rs
 	key := jwks.Keys[index]
 
 	// Проверяем что это RSA ключ
-	if key.Algorithm != "RS256" {
+	if key.Algorithm != string(jose.RS256) {
 		return nil, fmt.Errorf("unsupported key algorithm: %s", key.Algorithm)
 	}
 
-	// Конвертируем в RSA public key
-	pubKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(key.PublicKeyPEM()))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse RSA public key: %w", err)
+	// Получаем публичный ключ из jose.JSONWebKey
+	rsaKey, ok := key.Key.(*rsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("key at index %d is not RSA public key", index)
 	}
 
 	c.logger.Debug("Public key found by index",
@@ -201,7 +195,7 @@ func (c *ZitadelClient) GetPublicKeyByIndex(ctx context.Context, index int) (*rs
 		zap.String("key_id", key.KeyID),
 		zap.String("algorithm", key.Algorithm))
 
-	return pubKey, nil
+	return rsaKey, nil
 }
 
 // ValidateTokenWithIntrospection валидирует токен через introspection endpoint

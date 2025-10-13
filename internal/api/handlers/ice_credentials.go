@@ -167,9 +167,10 @@ func (h *ICECredentialsHandler) extractPeerID(c *gin.Context) string {
 // getTURNURIs returns list of TURN server URIs
 func (h *ICECredentialsHandler) getTURNURIs() []string {
 	turnServers := h.turnIntegration.GetTURNServers()
-	uris := make([]string, 0, len(turnServers))
+	uris := make([]string, 0)
 	for _, server := range turnServers {
-		uris = append(uris, server.URLs)
+		// server.URLs is []string, append all URLs
+		uris = append(uris, server.URLs...)
 	}
 	return uris
 }
