@@ -247,8 +247,17 @@ func (qs *QLogSampler) LogEvent(connectionID string, event QLogEvent) error {
 		return fmt.Errorf("writer already closed")
 	}
 
+	// Convert QLogEvent to QLogSamplingEvent
+	samplingEvent := QLogSamplingEvent{
+		Time:     event.Time.UnixNano() / 1e6, // Convert to milliseconds
+		Name:     event.Event,
+		Category: event.Category,
+		// Type field not available in QLogEvent, leave empty
+		Data:     event.Data,
+	}
+
 	// Add event to buffer
-	writer.events = append(writer.events, event)
+	writer.events = append(writer.events, samplingEvent)
 
 	// Flush if buffer is large
 	if len(writer.events) >= 100 {

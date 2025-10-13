@@ -11,12 +11,14 @@ import (
 
 // ICEServerConfig represents ICE server configuration loaded from file
 type ICEServerConfig struct {
-	STUNServers []string           `json:"stun_servers"`
-	TURNServers []TURNServerConfig `json:"turn_servers"`
+	STUNServers []string                `json:"stun_servers"`
+	TURNServers []TURNServerConfigFile  `json:"turn_servers"`
 }
 
-// TURNServerConfig represents a TURN server configuration
-type TURNServerConfig struct {
+// TURNServerConfigFile represents a TURN server configuration from JSON file
+// Uses string URLs (not array) to match JSON config format
+// This is different from TURNServerConfig in pion_ice_adapter.go which uses []string
+type TURNServerConfigFile struct {
 	URLs       string `json:"urls"`
 	Username   string `json:"username"`
 	Credential string `json:"credential"`
@@ -28,6 +30,7 @@ type TURNIntegration struct {
 	logger      *zap.Logger
 	config      *ICEServerConfig
 	stunServers []string
+	// Use pion's TURNServerConfig for runtime (defined in pion_ice_adapter.go)
 	turnServers []TURNServerConfig
 }
 
@@ -70,7 +73,17 @@ func (ti *TURNIntegration) LoadICEServersFromConfig(configPath string) error {
 
 	ti.config = &config
 	ti.stunServers = config.STUNServers
-	ti.turnServers = config.TURNServers
+
+	// Convert TURNServerConfigFile (from JSON) to TURNServerConfig (runtime format)
+	ti.turnServers = make([]TURNServerConfig, 0, len(config.TURNServers))
+	for _, fileConfig := range config.TURNServers {
+		ti.turnServers = append(ti.turnServers, TURNServerConfig{
+			URLs:       []string{fileConfig.URLs},  // Convert string to []string
+			Username:   fileConfig.Username,
+			Credential: fileConfig.Credential,
+			Realm:      fileConfig.Realm,
+		})
+	}
 
 	ti.logger.Info("Loaded ICE servers configuration",
 		zap.Int("stun_servers", len(config.STUNServers)),
@@ -109,8 +122,8 @@ func (ti *TURNIntegration) LoadFromEnvironment() error {
 		// Parse multiple TURN URLs if provided (comma-separated)
 		turnURLs := strings.Split(turnURL, ",")
 		for _, url := range turnURLs {
-			ti.turnServers = append(ti.turnServers, TURNServer{
-				URLs:       strings.TrimSpace(url),
+			ti.turnServers = append(ti.turnServers, TURNServerConfig{
+				URLs:       []string{strings.TrimSpace(url)},  // Convert to []string for pion format
 				Username:   turnUsername,
 				Credential: turnPassword,
 				Realm:      turnRealm,
@@ -131,7 +144,7 @@ func (ti *TURNIntegration) GetSTUNServers() []string {
 }
 
 // GetTURNServers returns configured TURN servers
-func (ti *TURNIntegration) GetTURNServers() []TURNServer {
+func (ti *TURNIntegration) GetTURNServers() []TURNServerConfig {
 	return ti.turnServers
 }
 
@@ -177,10 +190,13 @@ func (ti *TURNIntegration) ValidateConfiguration() error {
 
 	// Validate TURN servers
 	for i, turnServer := range ti.turnServers {
-		if !strings.HasPrefix(turnServer.URLs, "turn:") && !strings.HasPrefix(turnServer.URLs, "turns:") {
-			ti.logger.Warn("Invalid TURN server URL",
-				zap.Int("index", i),
-				zap.String("url", turnServer.URLs))
+		// URLs is []string, validate each URL
+		for _, url := range turnServer.URLs {
+			if !strings.HasPrefix(url, "turn:") && !strings.HasPrefix(url, "turns:") {
+				ti.logger.Warn("Invalid TURN server URL",
+					zap.Int("index", i),
+					zap.String("url", url))
+			}
 		}
 
 		if turnServer.Username == "" {
@@ -228,7 +244,8 @@ func (ti *TURNIntegration) IntegrateWithPionICE() ([]string, error) {
 	// Note: pion/ice expects URLs in the format "turn:host:port?transport=udp"
 	// and credentials are passed separately
 	for _, turn := range ti.turnServers {
-		urls = append(urls, turn.URLs)
+		// URLs is []string, append all URLs
+		urls = append(urls, turn.URLs...)
 	}
 
 	ti.logger.Info("Prepared ICE server URLs for pion/ice",
