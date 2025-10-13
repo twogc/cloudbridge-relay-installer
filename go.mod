@@ -17,7 +17,7 @@ require (
 	go.uber.org/cadence v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.46.0
-	golang.org/x/oauth2 v0.31.0
+	golang.org/x/oauth2 v0.32.0
 	google.golang.org/grpc v1.75.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -37,6 +37,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/pion/ice/v3 v3.0.16
 	github.com/pion/stun v0.6.1
+	github.com/pion/turn/v3 v3.0.3
 	github.com/projectcalico/api v0.0.0-20250916150628-d4009e4d7c50
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/zitadel/oidc/v3 v3.45.0
@@ -123,7 +124,6 @@ require (
 	github.com/pion/transport/v2 v2.2.10 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
 	github.com/pion/turn/v2 v2.1.6 // indirect
-	github.com/pion/turn/v3 v3.0.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
