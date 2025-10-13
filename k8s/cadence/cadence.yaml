@@ -50,8 +50,8 @@ data:
           sql:
             pluginName: "sqlite3"
             databaseName: "/var/lib/cadence/cadence.db"
-            connectAddr: ""
-            connectProtocol: ""
+            connectAddr: "/var/lib/cadence/cadence.db"
+            connectProtocol: "tcp"
             user: ""
             password: ""
             maxConns: 20
@@ -61,8 +61,8 @@ data:
           sql:
             pluginName: "sqlite3"
             databaseName: "/var/lib/cadence/visibility.db"
-            connectAddr: ""
-            connectProtocol: ""
+            connectAddr: "/var/lib/cadence/visibility.db"
+            connectProtocol: "tcp"
             user: ""
             password: ""
             maxConns: 20
@@ -94,15 +94,12 @@ spec:
     spec:
       containers:
       - name: cadence
-        image: ubercadence/server:0.24.0
+        image: ubercadence/server:v0.22.4
         command: ["/bin/bash","-lc"]
         args:
           - |
-            echo "Starting Cadence"
-            exec /usr/local/bin/cadence-server \
-              --root /etc/cadence \
-              --env docker \
-              start --services=frontend,history,matching,worker
+            echo "Starting Cadence with environment variables"
+            exec /usr/local/bin/cadence-server start --services=frontend,history,matching,worker
         ports:
         - name: tchan-frontend
           containerPort: 7933
@@ -118,6 +115,18 @@ spec:
           value: "info"
         - name: SERVICES
           value: "frontend,history,matching,worker"
+        - name: DB
+          value: "sqlite"
+        - name: DB_PATH
+          value: "/var/lib/cadence/cadence.db"
+        - name: VISIBILITY_STORE
+          value: "sqlite"
+        - name: VISIBILITY_DB_PATH
+          value: "/var/lib/cadence/visibility.db"
+        - name: SKIP_SCHEMA_SETUP
+          value: "false"
+        - name: AUTO_SETUP
+          value: "true"
         resources:
           requests:
             memory: "512Mi"

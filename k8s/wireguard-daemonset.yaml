@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: wireguard-daemon
+  namespace: cloudbridge
+  labels:
+    app: wireguard-daemon
+spec:
+  selector:
+    matchLabels:
+      app: wireguard-daemon
+  template:
+    metadata:
+      labels:
+        app: wireguard-daemon
+    spec:
+      hostNetwork: true
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: wireguard
+        image: linuxserver/wireguard:latest
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - NET_ADMIN
+            - NET_RAW
+            - SYS_MODULE
+            - SYS_ADMIN
+            drop:
+            - ALL
+        env:
+        - name: PUID
+          value: "1000"
+        - name: PGID
+          value: "1000"
+        - name: TZ
+          value: "UTC"
+        - name: SERVERURL
+          value: "auto"
+        - name: SERVERPORT
+          value: "51820"
+        - name: PEERS
+          value: "10"
+        - name: PEERDNS
+          value: "auto"
+        - name: INTERNAL_SUBNET
+          value: "10.100.1.0/24"
+        - name: ALLOWEDIPS
+          value: "0.0.0.0/0"
+        - name: PERSISTENTKEEPALIVE_PEERS
+          value: ""
+        - name: LOG_CONFS
+          value: "true"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: lib-modules
+          mountPath: /lib/modules
+          readOnly: true
+        ports:
+        - name: wireguard
+          containerPort: 51820
+          protocol: UDP
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: wireguard-config-pvc
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
