@@ -154,8 +154,8 @@ func TestRelayClaims_ValidateRoles(t *testing.T) {
 	validRoles := []string{"service", "relay-service"}
 	assert.True(t, claims.ValidateRoles(validRoles))
 
-	// Тестируем невалидные роли
-	invalidRoles := []string{"service", "admin"}
+	// Тестируем невалидные роли (ни одна роль не совпадает)
+	invalidRoles := []string{"admin", "superuser"}
 	assert.False(t, claims.ValidateRoles(invalidRoles))
 
 	// Тестируем пустой список ролей

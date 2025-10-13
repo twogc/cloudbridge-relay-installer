@@ -212,10 +212,14 @@ func (v *ZitadelValidator) GetTokenInfo(claims *RelayClaims) map[string]interfac
 		return nil
 	}
 
+	// Конвертируем jwt.ClaimStrings в []string для audience
+	audienceSlice := make([]string, len(claims.Audience))
+	copy(audienceSlice, claims.Audience)
+
 	info := map[string]interface{}{
 		"subject":         claims.Subject,
 		"issuer":          claims.Issuer,
-		"audience":        claims.Audience,
+		"audience":        audienceSlice,
 		"token_type":      claims.TokenType,
 		"relay_server_id": claims.GetRelayServerID(),
 		"tenant_id":       claims.GetTenantID(),

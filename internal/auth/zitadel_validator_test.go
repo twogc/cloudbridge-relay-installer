@@ -199,7 +199,7 @@ func TestZitadelValidator_ValidateRelayToken(t *testing.T) {
 
 		_, err = validator.ValidateRelayToken(context.Background(), tokenString)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "token expired")
+		assert.Contains(t, err.Error(), "token is expired")
 	})
 }
 
