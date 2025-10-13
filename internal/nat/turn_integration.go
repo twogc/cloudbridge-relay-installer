@@ -11,12 +11,12 @@ import (
 
 // ICEServerConfig represents ICE server configuration loaded from file
 type ICEServerConfig struct {
-	STUNServers []string     `json:"stun_servers"`
-	TURNServers []TURNServer `json:"turn_servers"`
+	STUNServers []string           `json:"stun_servers"`
+	TURNServers []TURNServerConfig `json:"turn_servers"`
 }
 
-// TURNServer represents a TURN server configuration
-type TURNServer struct {
+// TURNServerConfig represents a TURN server configuration
+type TURNServerConfig struct {
 	URLs       string `json:"urls"`
 	Username   string `json:"username"`
 	Credential string `json:"credential"`
@@ -28,7 +28,7 @@ type TURNIntegration struct {
 	logger      *zap.Logger
 	config      *ICEServerConfig
 	stunServers []string
-	turnServers []TURNServer
+	turnServers []TURNServerConfig
 }
 
 // NewTURNIntegration creates a new TURN integration manager
@@ -36,7 +36,7 @@ func NewTURNIntegration(logger *zap.Logger) *TURNIntegration {
 	return &TURNIntegration{
 		logger:      logger,
 		stunServers: make([]string, 0),
-		turnServers: make([]TURNServer, 0),
+		turnServers: make([]TURNServerConfig, 0),
 	}
 }
 

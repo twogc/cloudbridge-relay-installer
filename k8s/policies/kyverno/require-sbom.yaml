@@ -1,0 +1,321 @@
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-sbom-attestation
+  annotations:
+    policies.kyverno.io/title: Require SBOM Attestation
+    policies.kyverno.io/category: Supply Chain Security (SLSA Level 2)
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Require all CloudBridge container images to have SBOM attestations.
+      This ensures software bill of materials is generated and verified.
+      Complies with SLSA Level 2 requirements.
+spec:
+  validationFailureAction: Enforce  # Change to Audit for gradual rollout
+  background: true
+  webhookTimeoutSeconds: 30
+  failurePolicy: Fail
+
+  rules:
+    - name: verify-sbom-attestation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-prod
+
+      verifyImages:
+        - imageReferences:
+            - "cr.yandex/crpblcmklr11njvr6ikg/cloudbridge-*:*"
+            - "ghcr.io/twogc/cloudbridge-*:*"
+
+          # Require SBOM attestation (SPDX or CycloneDX)
+          attestations:
+            # SPDX SBOM
+            - predicateType: https://spdx.dev/Document
+              attestors:
+                - count: 1
+                  entries:
+                    - keys:
+                        publicKeys: |-
+                          -----BEGIN PUBLIC KEY-----
+                          # TODO: Replace with actual cosign public key
+                          -----END PUBLIC KEY-----
+
+              conditions:
+                - all:
+                    # Verify SBOM has required fields
+                    - key: "{{ attestation.predicate.spdxVersion }}"
+                      operator: Equals
+                      value: "SPDX-2.3"
+
+                    # Verify packages are documented
+                    - key: "{{ length(attestation.predicate.packages) }}"
+                      operator: GreaterThan
+                      value: 0
+
+            # Alternative: CycloneDX SBOM
+            - predicateType: https://cyclonedx.org/bom
+              attestors:
+                - count: 1
+                  entries:
+                    - keys:
+                        publicKeys: |-
+                          -----BEGIN PUBLIC KEY-----
+                          # Same key as above
+                          -----END PUBLIC KEY-----
+
+              conditions:
+                - all:
+                    - key: "{{ attestation.predicate.bomFormat }}"
+                      operator: Equals
+                      value: "CycloneDX"
+
+                    - key: "{{ attestation.predicate.specVersion }}"
+                      operator: In
+                      value:
+                        - "1.4"
+                        - "1.5"
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-vulnerability-scan
+  annotations:
+    policies.kyverno.io/title: Require Vulnerability Scan Attestation
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Require vulnerability scan attestations from grype/trivy.
+      Block images with High/Critical vulnerabilities.
+spec:
+  validationFailureAction: Audit  # Start with Audit, move to Enforce
+  background: true
+
+  rules:
+    - name: verify-vulnerability-scan
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-prod
+
+      verifyImages:
+        - imageReferences:
+            - "cr.yandex/crpblcmklr11njvr6ikg/cloudbridge-*:*"
+
+          # Require vulnerability scan attestation
+          attestations:
+            - predicateType: https://cosign.sigstore.dev/attestation/vuln/v1
+              attestors:
+                - count: 1
+                  entries:
+                    - keys:
+                        publicKeys: |-
+                          -----BEGIN PUBLIC KEY-----
+                          # Cosign public key
+                          -----END PUBLIC KEY-----
+
+              # Check vulnerability counts
+              conditions:
+                - all:
+                    # No Critical vulnerabilities
+                    - key: "{{ attestation.predicate.scanner.result.counts.CRITICAL || '0' }}"
+                      operator: Equals
+                      value: "0"
+
+                    # No High vulnerabilities (or allowlist)
+                    - key: "{{ attestation.predicate.scanner.result.counts.HIGH || '0' }}"
+                      operator: LessThanOrEquals
+                      value: "5"  # Allow up to 5 High (with justification)
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-provenance-attestation
+  annotations:
+    policies.kyverno.io/title: Require SLSA Provenance
+    policies.kyverno.io/category: Supply Chain Security (SLSA Level 3)
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Require SLSA provenance attestations for build process.
+      Verifies build was performed in CI/CD with hermetic builds.
+spec:
+  validationFailureAction: Audit  # Informational for now
+  background: true
+
+  rules:
+    - name: verify-slsa-provenance
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge-prod  # Only enforce in production
+
+      verifyImages:
+        - imageReferences:
+            - "cr.yandex/crpblcmklr11njvr6ikg/cloudbridge-*:*"
+
+          attestations:
+            # SLSA Provenance v0.2 or v1.0
+            - predicateType: https://slsa.dev/provenance/v0.2
+              attestors:
+                - count: 1
+                  entries:
+                    - keys:
+                        publicKeys: |-
+                          -----BEGIN PUBLIC KEY-----
+                          # Cosign public key
+                          -----END PUBLIC KEY-----
+
+              conditions:
+                - all:
+                    # Verify builder is trusted (GitHub Actions)
+                    - key: "{{ attestation.predicate.builder.id }}"
+                      operator: In
+                      value:
+                        - "https://github.com/actions/runner/*"
+                        - "https://github.com/twogc/*"
+
+                    # Verify build type
+                    - key: "{{ attestation.predicate.buildType }}"
+                      operator: Equals
+                      value: "https://github.com/slsa-framework/slsa-github-generator/container@v1"
+
+                    # Verify materials (source code)
+                    - key: "{{ length(attestation.predicate.materials) }}"
+                      operator: GreaterThan
+                      value: 0
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: sbom-metadata-required
+  annotations:
+    policies.kyverno.io/title: SBOM Metadata Required
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Require pods to have SBOM metadata annotations.
+      Enables audit and compliance tracking.
+spec:
+  validationFailureAction: Audit
+  background: true
+
+  rules:
+    - name: require-sbom-annotations
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-*
+
+      validate:
+        message: >-
+          Pods must have SBOM metadata annotations.
+          Required annotations:
+          - sbom.cloudbridge.2gc.ru/format (SPDX or CycloneDX)
+          - sbom.cloudbridge.2gc.ru/version
+          - sbom.cloudbridge.2gc.ru/url (S3/GCS URL)
+
+        pattern:
+          metadata:
+            annotations:
+              sbom.cloudbridge.2gc.ru/format: "SPDX|CycloneDX"
+              sbom.cloudbridge.2gc.ru/version: "?*"
+              sbom.cloudbridge.2gc.ru/url: "https://*"
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: license-compliance
+  annotations:
+    policies.kyverno.io/title: License Compliance Check
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/description: >-
+      Check that container images comply with license policies.
+      Audit GPL/AGPL licenses in production.
+spec:
+  validationFailureAction: Audit
+  background: true
+
+  rules:
+    - name: check-license-compliance
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge-prod
+
+      validate:
+        message: >-
+          Image must have license compliance annotation.
+          Annotation: license.cloudbridge.2gc.ru/approved=true
+          See SBOM for dependency licenses.
+
+        pattern:
+          metadata:
+            annotations:
+              license.cloudbridge.2gc.ru/approved: "true"
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: immutable-image-tags
+  annotations:
+    policies.kyverno.io/title: Immutable Image Tags
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Prevent mutation of container image references after pod creation.
+      Ensures pod runs the intended image.
+spec:
+  validationFailureAction: Enforce
+  background: false
+
+  rules:
+    - name: immutable-image-on-update
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - UPDATE
+              namespaces:
+                - cloudbridge
+                - cloudbridge-*
+
+      validate:
+        message: >-
+          Container images cannot be changed after pod creation.
+          Delete and recreate the pod with new image.
+
+        deny:
+          conditions:
+            any:
+              # Deny if image changed
+              - key: "{{ request.object.spec.containers[*].image }}"
+                operator: NotEquals
+                value: "{{ request.oldObject.spec.containers[*].image }}"

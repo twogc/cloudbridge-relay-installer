@@ -5,7 +5,7 @@
     "AccessPatterns": [],
     "NetworkPatterns": [],
     "RiskScore": 0,
-    "LastUpdated": "2025-10-12T10:23:52.404837+03:00"
+    "LastUpdated": "2025-10-13T06:33:59.619764+03:00"
   },
   "monitor": {
     "UserID": "monitor",
@@ -13,7 +13,7 @@
     "AccessPatterns": [],
     "NetworkPatterns": [],
     "RiskScore": 0,
-    "LastUpdated": "2025-10-12T10:23:52.404837+03:00"
+    "LastUpdated": "2025-10-13T06:33:59.619765+03:00"
   },
   "system": {
     "UserID": "system",
@@ -21,13 +21,13 @@
     "AccessPatterns": [],
     "NetworkPatterns": [],
     "RiskScore": 0,
-    "LastUpdated": "2025-10-12T10:23:52.404837+03:00"
+    "LastUpdated": "2025-10-13T06:33:59.619764+03:00"
   },
   "test-user": {
     "UserID": "test-user",
     "LoginPatterns": [
       {
-        "TimeOfDay": "2025-10-12T10:23:52.404841+03:00",
+        "TimeOfDay": "2025-10-13T06:33:59.619768+03:00",
         "IPAddress": "",
         "DeviceType": "",
         "Location": "",
@@ -37,6 +37,6 @@
     "AccessPatterns": [],
     "NetworkPatterns": [],
     "RiskScore": 0.1,
-    "LastUpdated": "2025-10-12T10:23:52.404841+03:00"
+    "LastUpdated": "2025-10-13T06:33:59.619768+03:00"
   }
 }

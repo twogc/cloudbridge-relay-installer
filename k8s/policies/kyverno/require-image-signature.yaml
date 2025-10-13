@@ -1,0 +1,382 @@
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-image-signature
+  annotations:
+    policies.kyverno.io/title: Require Image Signature
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Require all container images to be signed with cosign.
+      This policy verifies image signatures using the public key
+      from the CloudBridge signing key.
+spec:
+  validationFailureAction: Enforce  # Change to Audit for testing
+  background: true
+  webhookTimeoutSeconds: 30
+  failurePolicy: Fail
+
+  rules:
+    - name: require-signature-cloudbridge-images
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-*
+
+      verifyImages:
+        - imageReferences:
+            - "cr.yandex/crpblcmklr11njvr6ikg/cloudbridge-*:*"
+            - "ghcr.io/twogc/cloudbridge-*:*"
+
+          attestors:
+            - count: 1
+              entries:
+                - keys:
+                    publicKeys: |-
+                      -----BEGIN PUBLIC KEY-----
+                      # TODO: Replace with actual cosign public key
+                      # Generate with: cosign generate-key-pair
+                      # Store in secret: kubectl create secret generic cosign-pub-key --from-file=cosign.pub
+                      -----END PUBLIC KEY-----
+
+                    # Alternative: Use secret reference
+                    # secret:
+                    #   name: cosign-pub-key
+                    #   namespace: cloudbridge
+
+          # Verify signature annotations
+          annotations:
+            - key: dev.cosignproject.cosign/signature
+              value: "*"
+
+          # Repository requirements
+          repository: "cr.yandex/crpblcmklr11njvr6ikg/*"
+
+          # Require attestations
+          attestations:
+            - predicateType: https://slsa.dev/provenance/v0.2
+              attestors:
+                - count: 1
+                  entries:
+                    - keys:
+                        publicKeys: |-
+                          -----BEGIN PUBLIC KEY-----
+                          # Same key as above
+                          -----END PUBLIC KEY-----
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-signature-third-party
+  annotations:
+    policies.kyverno.io/title: Verify Third-Party Image Signatures
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Verify signatures for trusted third-party images.
+      Uses Sigstore public keyless verification.
+spec:
+  validationFailureAction: Audit  # Less strict for third-party
+  background: true
+
+  rules:
+    - name: verify-third-party-signatures
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-*
+
+      # Exclude images we build
+      exclude:
+        any:
+          - resources:
+              selector:
+                matchLabels:
+                  app.kubernetes.io/managed-by: cloudbridge
+
+      verifyImages:
+        # Verify Prometheus images (example)
+        - imageReferences:
+            - "quay.io/prometheus/prometheus:*"
+            - "quay.io/prometheus/alertmanager:*"
+
+          # Use Sigstore Rekor for verification
+          attestors:
+            - count: 1
+              entries:
+                - keyless:
+                    rekor:
+                      url: https://rekor.sigstore.dev
+                    subject: "https://github.com/prometheus/*"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    additionalExtensions:
+                      githubWorkflowTrigger: push
+                      githubWorkflowSHA: "*"
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: block-unsigned-images
+  annotations:
+    policies.kyverno.io/title: Block Unsigned Images
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: critical
+    policies.kyverno.io/description: >-
+      Block deployment of unsigned container images in production namespaces.
+      Allows unsigned images only in dev/test environments.
+spec:
+  validationFailureAction: Enforce
+  background: false  # Only validate on admission
+
+  rules:
+    - name: block-unsigned-in-production
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-prod
+
+      # Exclude system images
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - kyverno
+          - resources:
+              selector:
+                matchLabels:
+                  kyverno.io/exclude: "true"
+
+      validate:
+        message: >-
+          Unsigned container images are not allowed in production namespaces.
+          All images must be signed with cosign and have SBOM attestations.
+          See: https://docs.cloudbridge.2gc.ru/security/image-signing
+
+        deny:
+          conditions:
+            all:
+              # Deny if image doesn't have signature annotation
+              - key: "{{ request.object.metadata.annotations.\"dev.cosignproject.cosign/signature\" || '' }}"
+                operator: Equals
+                value: ""
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-image-digest
+  annotations:
+    policies.kyverno.io/title: Require Image Digest
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Require container images to specify digest (sha256) instead of tags.
+      This prevents tag mutation attacks.
+spec:
+  validationFailureAction: Audit  # Start with audit, move to Enforce later
+  background: true
+
+  rules:
+    - name: require-digest
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-*
+
+      exclude:
+        any:
+          # Allow local development
+          - resources:
+              namespaces:
+                - cloudbridge-dev
+                - cloudbridge-local
+
+      validate:
+        message: >-
+          Container images must use digest (sha256) instead of tags.
+          Example: image@sha256:abc123... instead of image:latest
+          This prevents tag mutation and ensures immutability.
+
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  # Deny if image doesn't contain @sha256:
+                  - key: "{{ element.image }}"
+                    operator: NotIn
+                    value: "*@sha256:*"
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow :latest Tag
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Disallow using :latest tag for container images.
+      Requires explicit versioning for reproducibility.
+spec:
+  validationFailureAction: Enforce
+  background: true
+
+  rules:
+    - name: disallow-latest-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-*
+
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - cloudbridge-dev
+
+      validate:
+        message: >-
+          Using :latest tag is not allowed. Please specify an explicit version.
+          Example: cloudbridge-relay:v1.2.3 instead of cloudbridge-relay:latest
+
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.image }}"
+                    operator: In
+                    value:
+                      - "*:latest"
+                      - "*:*latest*"
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: allowed-registries
+  annotations:
+    policies.kyverno.io/title: Allowed Container Registries
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Only allow container images from approved registries.
+      Prevents pulling images from untrusted sources.
+spec:
+  validationFailureAction: Enforce
+  background: true
+
+  rules:
+    - name: allowed-registries
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-*
+
+      validate:
+        message: >-
+          Container images must be from approved registries:
+          - cr.yandex/crpblcmklr11njvr6ikg/* (CloudBridge)
+          - ghcr.io/twogc/* (GitHub)
+          - quay.io/prometheus/* (Monitoring)
+          - docker.io/library/* (Official images)
+          - gcr.io/distroless/* (Distroless)
+
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                all:
+                  # Deny if NOT in allowed registries
+                  - key: "{{ element.image }}"
+                    operator: NotIn
+                    value:
+                      - "cr.yandex/crpblcmklr11njvr6ikg/*"
+                      - "ghcr.io/twogc/*"
+                      - "quay.io/prometheus/*"
+                      - "docker.io/library/*"
+                      - "gcr.io/distroless/*"
+                      - "docker.io/prom/*"
+                      - "grafana/*"
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-nonroot
+  annotations:
+    policies.kyverno.io/title: Require Non-Root Containers
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Require containers to run as non-root users.
+      Improves security posture by limiting privileges.
+spec:
+  validationFailureAction: Enforce
+  background: true
+
+  rules:
+    - name: require-nonroot
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - cloudbridge
+                - cloudbridge-*
+
+      # Exclude special cases
+      exclude:
+        any:
+          - resources:
+              selector:
+                matchLabels:
+                  security.cloudbridge.2gc.ru/allow-root: "true"
+
+      validate:
+        message: >-
+          Containers must run as non-root user (runAsNonRoot: true).
+          Set securityContext.runAsNonRoot: true and runAsUser: 1000+
+
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  # Deny if runAsNonRoot is false or not set
+                  - key: "{{ element.securityContext.runAsNonRoot || 'false' }}"
+                    operator: Equals
+                    value: false
