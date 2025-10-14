@@ -1,0 +1,61 @@
+# Простые настройки Zitadel для VK Cloud
+
+zitadel:
+  masterkeySecretName: zitadel-masterkey
+  
+  configmapConfig:
+    ExternalDomain: 95.163.183.201
+    ExternalSecure: true
+    ExternalPort: 443
+  
+  secretConfig:
+    Database:
+      Postgres:
+        Host: postgres-service.zitadel.svc.cluster.local
+        Port: 5432
+        Database: zitadel
+        User:
+          Username: zitadel
+          Password: zitadel_password
+        Admin:
+          Username: zitadel
+          Password: zitadel_password
+        SSL:
+          Mode: disable
+    TLS:
+      Enabled: false
+      Mode: external
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "1"
+    memory: 2Gi
+
+service:
+  type: ClusterIP
+
+nodeport:
+  enabled: true
+  http:
+    port: 30080
+  grpc:
+    port: 30081
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  hosts:
+    - host: zitadel.cloudbridge.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: csi-ceph-hdd-me1

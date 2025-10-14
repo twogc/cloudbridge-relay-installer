@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cadence
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/component: workflow
+    app.kubernetes.io/name: cadence
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cadence
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cadence
+    spec:
+      containers:
+      - name: cadence
+        image: ubercadence/server:v0.22.4
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 7933
+          name: grpc
+          protocol: TCP
+        - containerPort: 7934
+          name: web
+          protocol: TCP
+        env:
+        - name: SERVICES
+          value: "history,matching,frontend,worker"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: SKIP_SCHEMA_SETUP
+          value: "false"
+        - name: AUTO_SETUP
+          value: "true"
+        - name: RINGPOP_NAME
+          value: "cadence"
+        - name: RINGPOP_BOOTSTRAP_MODE
+          value: "hosts"
+        - name: RINGPOP_BOOTSTRAP_HOSTS
+          value: "cadence:7933"
+        - name: DB
+          value: "postgres"
+        - name: DB_HOST
+          value: "postgres.cloudbridge-system.svc"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "cadence"
+        - name: DB_USER
+          value: "cadence"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cadence-db
+              key: password
+        - name: VISIBILITY_STORE
+          value: "postgres"
+        - name: VISIBILITY_DB_HOST
+          value: "postgres.cloudbridge-system.svc"
+        - name: VISIBILITY_DB_PORT
+          value: "5432"
+        - name: VISIBILITY_DB_NAME
+          value: "cadence_visibility"
+        - name: VISIBILITY_DB_USER
+          value: "cadence"
+        - name: VISIBILITY_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cadence-db
+              key: password
+        - name: CLUSTER_METADATA_ENABLE_GLOBAL_DOMAIN
+          value: "true"
+        - name: CLUSTER_METADATA_FAILOVER_VERSION_INCREMENT
+          value: "10"
+        - name: CLUSTER_METADATA_MASTER_CLUSTER_NAME
+          value: "active"
+        - name: CLUSTER_METADATA_CURRENT_CLUSTER_NAME
+          value: "active"
+        - name: CADENCE_USE_ENV_VARS
+          value: "true"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 7934
+            scheme: HTTP
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 7934
+            scheme: HTTP
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        volumeMounts:
+        - mountPath: /var/lib/cadence
+          name: cadence-data
+      nodeSelector:
+        kubernetes.io/os: linux
+      volumes:
+      - name: cadence-data
+        persistentVolumeClaim:
+          claimName: cadence-pvc
+
+

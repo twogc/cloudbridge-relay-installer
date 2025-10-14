@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default-backend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: default-backend
+  namespace: default-backend
+  labels:
+    app: default-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: default-backend
+  template:
+    metadata:
+      labels:
+        app: default-backend
+    spec:
+      containers:
+      - name: default-backend
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: default-backend
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name _;
+        
+        location / {
+            return 200 '<!DOCTYPE html>
+<html>
+<head>
+    <title>VK Cloud Kubernetes</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { color: #2c5aa0; }
+        .services { margin: 20px 0; }
+        .service { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+        .service a { color: #2c5aa0; text-decoration: none; }
+        .service a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">🚀 VK Cloud Kubernetes</h1>
+        <p>CloudBridge Relay Platform</p>
+        
+        <div class="services">
+            <h2>Available Services:</h2>
+            
+            <div class="service">
+                <strong>🔐 Zitadel (Identity Provider)</strong><br>
+                <a href="http://zitadel.cloudbridge.local">http://zitadel.cloudbridge.local</a><br>
+                <small>Authentication and Authorization</small>
+            </div>
+            
+            <div class="service">
+                <strong>📦 Docker Registry</strong><br>
+                <a href="http://edge.2gc.ru:30000">http://edge.2gc.ru:30000</a><br>
+                <small>Container Image Registry</small>
+            </div>
+            
+            <div class="service">
+                <strong>📊 Monitoring</strong><br>
+                <a href="http://prometheus.cloudbridge.local">http://prometheus.cloudbridge.local</a><br>
+                <small>Prometheus Metrics</small>
+            </div>
+            
+            <div class="service">
+                <strong>📈 Grafana</strong><br>
+                <a href="http://grafana.cloudbridge.local">http://grafana.cloudbridge.local</a><br>
+                <small>Monitoring Dashboard</small>
+            </div>
+        </div>
+        
+        <p><small>Powered by VK Cloud Kubernetes</small></p>
+    </div>
+</body>
+</html>';
+            add_header Content-Type text/html;
+        }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: default-backend
+  namespace: default-backend
+spec:
+  selector:
+    app: default-backend
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: default-ingress
+  namespace: default-backend
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: 95.163.183.201
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: default-backend
+            port:
+              number: 80
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: default-backend
+            port:
+              number: 80

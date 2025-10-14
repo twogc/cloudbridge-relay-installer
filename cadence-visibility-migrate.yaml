@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cadence-visibility-migrate
+  namespace: cloudbridge
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrate-visibility
+        image: ubercadence/server:v0.22.4
+        env:
+        - name: PGHOST
+          value: "postgres.cloudbridge-system.svc"
+        - name: PGPORT
+          value: "5432"
+        - name: PGUSER
+          valueFrom: { secretKeyRef: { name: cadence-db, key: username } }
+        - name: PGPASSWORD
+          valueFrom: { secretKeyRef: { name: cadence-db, key: password } }
+        - name: SCHEMA_DIR
+          value: "/etc/cadence/schema/postgres/visibility"
+        command: ["/bin/bash","-lc"]
+        args:
+        - |
+          set -euo pipefail
+          echo "== setup-schema visibility v0.0 =="
+          /usr/local/bin/cadence-sql-tool \
+            --plugin postgres \
+            --ep $PGHOST \
+            --port $PGPORT \
+            --user $PGUSER \
+            --password $PGPASSWORD \
+            --database cadence_visibility \
+            setup-schema -v 0.0 -f /etc/cadence/schema/postgres/visibility/schema.sql
+
+          echo "== update-schema visibility v0.4 =="
+          /usr/local/bin/cadence-sql-tool \
+            --plugin postgres \
+            --ep $PGHOST \
+            --port $PGPORT \
+            --user $PGUSER \
+            --password $PGPASSWORD \
+            --database cadence_visibility \
+            update-schema -v 0.4 -d /etc/cadence/schema/postgres/visibility/versioned
+
+          echo "== done =="

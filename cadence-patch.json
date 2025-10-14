@@ -1,0 +1,47 @@
+{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "cadence",
+            "env": [
+              {
+                "name": "CADENCE_USE_ENV_VARS",
+                "value": "false"
+              },
+              {
+                "name": "CONFIG_FILE_PATH",
+                "value": "/etc/cadence/config/docker.yaml"
+              },
+              {
+                "name": "CADENCE_DB_USER",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "cadence-db",
+                    "key": "username"
+                  }
+                }
+              },
+              {
+                "name": "CADENCE_DB_PASSWORD",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "cadence-db",
+                    "key": "password"
+                  }
+                }
+              }
+            ],
+            "command": ["/bin/bash", "-lc"],
+            "args": [
+              "echo Starting Cadence (file mode) && exec /usr/local/bin/cadence-server start --services=frontend,history,matching,worker --config=${CONFIG_FILE_PATH}"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+
+

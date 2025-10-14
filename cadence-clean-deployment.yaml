@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cadence
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/component: workflow
+    app.kubernetes.io/name: cadence
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cadence
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cadence
+    spec:
+      containers:
+      - name: cadence
+        image: ubercadence/server:v0.22.4
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-lc"]
+        args:
+          - |
+            echo "Starting Cadence (file mode)"
+            export CADENCE_CONFIG_DIR=/etc/cadence/config
+            export CADENCE_ENVIRONMENT=docker
+            exec /usr/local/bin/cadence-server start --services=frontend,history,matching,worker
+        ports:
+        - containerPort: 7933
+          name: grpc
+          protocol: TCP
+        - containerPort: 7934
+          name: web
+          protocol: TCP
+        env:
+        - name: CADENCE_USE_ENV_VARS
+          value: "false"
+        - name: CONFIG_FILE_PATH
+          value: "/etc/cadence/config/docker.yaml"
+        - name: CADENCE_DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: cadence-db
+              key: username
+        - name: CADENCE_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cadence-db
+              key: password
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 7934
+            scheme: HTTP
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 7934
+            scheme: HTTP
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        volumeMounts:
+        - mountPath: /var/lib/cadence
+          name: cadence-data
+        - mountPath: /etc/cadence/config
+          name: cadence-config
+      nodeSelector:
+        kubernetes.io/os: linux
+      volumes:
+      - name: cadence-data
+        persistentVolumeClaim:
+          claimName: cadence-pvc
+      - name: cadence-config
+        configMap:
+          name: cadence-config

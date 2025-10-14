@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cadence-visibility-update
+  namespace: cloudbridge
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: update-visibility
+        image: ubercadence/server:v0.22.4
+        command: ["/bin/bash","-lc"]
+        env:
+        - name: PGHOST
+          value: "postgres.cloudbridge-system.svc"
+        - name: PGPORT
+          value: "5432"
+        - name: PGUSER
+          value: "ipam_user"
+        - name: PGPASSWORD
+          value: "secure_password_123"
+        args:
+        - |
+          set -e
+          echo "== Updating visibility schema =="
+          /usr/local/bin/cadence-sql-tool \
+            --plugin postgres --ep $PGHOST \
+            --port $PGPORT \
+            --user $PGUSER --password $PGPASSWORD \
+            --database cadence_visibility update-schema -v 0.4 -d /etc/cadence/schema/postgres/visibility/versioned
+          echo "== Visibility schema update completed =="
+
+

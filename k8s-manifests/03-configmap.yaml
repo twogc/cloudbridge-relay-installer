@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudbridge-config
+  namespace: cloudbridge
+data:
+  config.json: |
+    {
+      "log_level": "info",
+      "gin_mode": "release",
+      "tz": "UTC",
+      "wireguard_enabled": true,
+      "grpc_enabled": true,
+      "grpc_port": 8444,
+      "grpc_tls_enabled": true,
+      "grpc_cert_file": "/app/certs/tls.crt",
+      "grpc_key_file": "/app/certs/tls.key",
+      "prometheus_url": "http://prometheus-server.monitoring.svc.cluster.local:9090"
+    }

@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cadence-visibility-fix-version
+  namespace: cloudbridge
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: fix-version
+        image: postgres:13
+        env:
+        - name: PGHOST
+          value: "postgres.cloudbridge-system.svc"
+        - name: PGPORT
+          value: "5432"
+        - name: PGUSER
+          value: "ipam_user"
+        - name: PGPASSWORD
+          value: "secure_password_123"
+        command: ["/bin/bash","-lc"]
+        args:
+        - |
+          set -euo pipefail
+          echo "== Fixing visibility schema version =="
+          psql "postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/cadence_visibility" -c "UPDATE schema_version SET version = 0.4 WHERE version = 0.0;"
+          echo "== done =="

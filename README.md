@@ -1,85 +1,359 @@
-# CloudBridge Relay - Enterprise P2P Mesh Networking Platform
+# 🚀 CloudBridge Relay - Развертывание в VK Cloud Kubernetes
 
-**CloudBridge Relay** - это enterprise-grade P2P mesh networking платформа с интеграцией Zitadel IdP для создания безопасных виртуальных локальных сетей между удаленными серверами с полным enterprise контролем, аудитом и multi-tenancy изоляцией.
+## 📋 Обзор проекта
 
-## Основные документы
+CloudBridge Relay - это высокопроизводительная система для ретрансляции и маршрутизации сетевого трафика с поддержкой:
 
-### **PILOT_READY.md** - Статус готовности к пилотам
-- Текущий статус проекта
-- Готовые компоненты
-- Ограничения и блокеры
-- План до production
+- **P2P соединения** - прямое взаимодействие между клиентами
+- **WireGuard VPN** - безопасные туннели
+- **AI/ML сервисы** - интеллектуальная обработка трафика
+- **Workflow Engine** - автоматизация процессов
+- **Мониторинг** - полная наблюдаемость системы
 
-### **DEVELOPER_BRIEFING.md** - Брифинг для разработчиков
-- Техническая архитектура
-- ROI анализ и экономия
-- Сравнение с конкурентами
-- Визуальные диаграммы
+## 🎯 Быстрый старт
 
-### **ARCHITECTURE_ANALYSIS.md** - Анализ архитектуры
-- Детальный технический анализ
-- Критические исправления
-- Performance метрики
-- File change log
+### Автоматическое развертывание (рекомендуется)
 
-### **MINIKUBE_BUILD_GUIDE.md** - Руководство по сборке
-- Пошаговая инструкция
-- Требования к окружению
-- Команды для запуска
+```bash
+# 1. Клонирование репозитория
+git clone <repository-url>
+cd cloudbridge-relay-installer
 
-## Структура проекта
+# 2. Настройка зеркал Docker Hub (для России)
+sudo ./setup-docker-mirrors.sh
 
-```
-cloudbridge-relay-installer/
-├── Основные документы
-│   ├── PILOT_READY.md              # Статус готовности
-│   ├── DEVELOPER_BRIEFING.md       # Брифинг для разработчиков
-│   ├── ARCHITECTURE_ANALYSIS.md    # Анализ архитектуры
-│   └── MINIKUBE_BUILD_GUIDE.md     # Руководство по сборке
-│
-├── docs/                        # Документация
-│   ├── analysis/                   # Аналитические отчеты
-│   ├── guides/                     # Руководства
-│   ├── network/                    # Сетевые конфигурации
-│   ├── plans/                      # Планы развития
-│   ├── reports/                    # Отчеты
-│   ├── security/                   # Безопасность
-│   └── compliance/                  # Соответствие стандартам
-│
-├── cmd/                         # Исполняемые команды
-├── internal/                    # Внутренние пакеты
-├── config/                      # Конфигурация
-├── docker/                      # Docker образы
-├── k8s/                         # Kubernetes манифесты
-├── monitoring/                  # Мониторинг и метрики
-├── security/                    # Безопасность
-├── tests/                       # Тесты
-├── services/                    # Микросервисы
-├── archive/                     # Архивные файлы
-└── tools/                       # Инструменты разработки
+# 3. Настройка окружения
+source openstack_auth.sh
+export KUBECONFIG=~/.kube/config-vkcloud
+
+# 4. Запуск автоматического развертывания
+./deploy.sh
 ```
 
-## Быстрый старт
+### Ручное развертывание
 
-1. **Прочитайте PILOT_READY.md** - для понимания текущего статуса
-2. **Изучите DEVELOPER_BRIEFING.md** - для технических деталей
-3. **Следуйте MINIKUBE_BUILD_GUIDE.md** - для запуска
+```bash
+# 1. Создание кластера
+cd terraform-k8s
+terraform init
+terraform apply -auto-approve
 
-## Статус проекта
+# 2. Установка аддонов
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace
 
-- **MVP:** ✅ Готов к пилотам (Pilot-ready)
-- **Production:** 🔄 75% готовность
-- **Критические исправления:** ✅ Завершены
-- **Качество кода:** ✅ 75 → 9 ошибок (-88%)
+# 3. Развертывание сервисов
+kubectl apply -f k8s-manifests/
+```
 
-## Полезные ссылки
+## 📚 Документация
 
-- [Pilot Ready Status](./PILOT_READY.md)
-- [Developer Briefing](./DEVELOPER_BRIEFING.md)
-- [Architecture Analysis](./ARCHITECTURE_ANALYSIS.md)
-- [Minikube Build Guide](./MINIKUBE_BUILD_GUIDE.md)
+### Основные руководства
+
+- **[VK_CLOUD_DEPLOYMENT_GUIDE.md](VK_CLOUD_DEPLOYMENT_GUIDE.md)** - Подробное руководство по развертыванию
+- **[QUICK_DEPLOYMENT_CHECKLIST.md](QUICK_DEPLOYMENT_CHECKLIST.md)** - Быстрая шпаргалка
+- **[DOCKER_MIRRORS_SETUP.md](DOCKER_MIRRORS_SETUP.md)** - Настройка зеркал Docker Hub
+- **[README_DEPLOYMENT.md](README_DEPLOYMENT.md)** - Обзор документации
+
+### Готовые манифесты
+
+```
+k8s-manifests/
+├── 00-namespace.yaml            # Namespace
+├── 01-pvc.yaml                  # PersistentVolumeClaim
+├── 02-secrets.yaml              # Секреты
+├── 03-configmap.yaml            # ConfigMap
+├── 04-registry.yaml             # Docker Registry
+├── 05-deployments.yaml          # Deployments
+├── 06-services.yaml             # Services
+├── 07-ingress.yaml              # Ingress
+└── 08-servicemonitor.yaml       # ServiceMonitor
+```
+
+### Автоматические скрипты
+
+- **`deploy.sh`** - Полное автоматическое развертывание
+- **`setup-docker-mirrors.sh`** - Настройка зеркал Docker Hub
+
+## 🛠️ Предварительные требования
+
+### Системные требования
+- Ubuntu 18.04+ или аналогичная ОС
+- Docker 20.10+ с настроенными зеркалами
+- kubectl 1.28+
+- Helm 3.12+
+- Terraform 1.5+
+
+### VK Cloud требования
+- Аккаунт в VK Cloud
+- Проект с доступом к Kubernetes
+- OpenStack RC файл v3
+- Достаточные квоты для создания кластера
+
+## 🔧 Настройка
+
+### 1. Настройка зеркал Docker Hub (для России)
+
+```bash
+# Автоматическая настройка
+sudo ./setup-docker-mirrors.sh
+
+# Проверка статуса зеркал
+./setup-docker-mirrors.sh --status
+
+# Тестирование
+./setup-docker-mirrors.sh --test
+```
+
+### 2. Настройка OpenStack CLI
+
+```bash
+# Создание файла аутентификации
+cat > openstack_auth.sh << 'EOF'
+#!/usr/bin/env bash
+
+export OS_AUTH_URL="https://infra.mail.ru:35357/v3/"
+export OS_PROJECT_ID="YOUR_PROJECT_ID"
+export OS_REGION_NAME="RegionOne"
+unset OS_PROJECT_NAME
+unset OS_PROJECT_DOMAIN_ID
+unset OS_TENANT_ID
+unset OS_TENANT_NAME
+
+export OS_USERNAME="YOUR_USERNAME"
+export OS_USER_DOMAIN_NAME="users"
+export OS_PASSWORD="YOUR_PASSWORD"
+
+export OS_INTERFACE=public
+export OS_IDENTITY_API_VERSION=3
+EOF
+
+chmod +x openstack_auth.sh
+```
+
+### 3. Создание кластера Kubernetes
+
+```bash
+# Переход в директорию Terraform
+cd terraform-k8s
+
+# Инициализация Terraform
+terraform init
+
+# Планирование развертывания
+terraform plan
+
+# Развертывание кластера
+terraform apply -auto-approve
+
+# Настройка kubeconfig
+export KUBECONFIG=~/.kube/config-vkcloud
+kubectl get nodes
+```
+
+## 📊 Мониторинг
+
+### Доступ к сервисам мониторинга
+
+```bash
+# Prometheus
+kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090:9090 -n monitoring &
+
+# Grafana
+kubectl port-forward service/prometheus-grafana 3000:80 -n monitoring &
+
+# Jaeger
+kubectl port-forward service/jaeger-query 16686:16686 -n jaeger &
+```
+
+### Полезные команды
+
+```bash
+# Статус всех ресурсов
+kubectl get all -n cloudbridge
+
+# Логи CloudBridge Relay
+kubectl logs -f -l app.kubernetes.io/name=cloudbridge-relay -n cloudbridge
+
+# События
+kubectl get events -n cloudbridge --sort-by='.lastTimestamp'
+
+# Масштабирование
+kubectl scale deployment cloudbridge-relay --replicas=5 -n cloudbridge
+
+# Обновление образа
+kubectl set image deployment/cloudbridge-relay cloudbridge-relay=localhost:5000/cloudbridge-relay:v2.0 -n cloudbridge
+```
+
+## 🚨 Устранение неполадок
+
+### Проблема: Pod в состоянии ImagePullBackOff
+
+```bash
+# Проверка секрета для registry
+kubectl get secret k8s-registry-creds -n cloudbridge -o yaml
+
+# Пересоздание секрета
+kubectl delete secret k8s-registry-creds -n cloudbridge
+kubectl create secret docker-registry k8s-registry-creds \
+  --docker-server=http://docker-registry:5000 \
+  --docker-username=admin \
+  --docker-password=admin \
+  --namespace=cloudbridge
+```
+
+### Проблема: PVC в состоянии Pending
+
+```bash
+# Проверка доступных storage classes
+kubectl get storageclass
+
+# Обновление PVC с правильным storage class
+kubectl patch pvc cloudbridge-logs-pvc -n cloudbridge -p '{"spec":{"storageClassName":"csi-ceph-hdd-me1"}}'
+```
+
+### Проблема: Docker Hub недоступен
+
+```bash
+# Проверка зеркал
+./setup-docker-mirrors.sh --status
+
+# Перезапуск Docker
+sudo systemctl restart docker
+
+# Тестирование загрузки
+docker pull alpine:latest
+```
+
+## 📈 Масштабирование
+
+### Горизонтальное масштабирование
+
+```bash
+# Увеличение количества реплик
+kubectl scale deployment cloudbridge-relay --replicas=5 -n cloudbridge
+
+# Автоматическое масштабирование
+kubectl autoscale deployment cloudbridge-relay --min=2 --max=10 --cpu-percent=70 -n cloudbridge
+```
+
+### Вертикальное масштабирование
+
+```bash
+# Обновление ресурсов в deployment
+kubectl patch deployment cloudbridge-relay -n cloudbridge -p '{"spec":{"template":{"spec":{"containers":[{"name":"cloudbridge-relay","resources":{"requests":{"memory":"1Gi","cpu":"500m"},"limits":{"memory":"2Gi","cpu":"1000m"}}}]}}}}'
+```
+
+## 🔄 Обновление
+
+### Обновление образов
+
+```bash
+# Сборка нового образа
+docker build -f docker/Dockerfile -t cloudbridge-relay:v2.0 .
+
+# Загрузка в registry
+kubectl port-forward service/docker-registry 5000:5000 -n cloudbridge &
+docker tag cloudbridge-relay:v2.0 localhost:5000/cloudbridge-relay:v2.0
+docker push localhost:5000/cloudbridge-relay:v2.0
+
+# Обновление deployment
+kubectl set image deployment/cloudbridge-relay cloudbridge-relay=localhost:5000/cloudbridge-relay:v2.0 -n cloudbridge
+```
+
+### Откат изменений
+
+```bash
+# Просмотр истории развертывания
+kubectl rollout history deployment/cloudbridge-relay -n cloudbridge
+
+# Откат к предыдущей версии
+kubectl rollout undo deployment/cloudbridge-relay -n cloudbridge
+
+# Откат к конкретной версии
+kubectl rollout undo deployment/cloudbridge-relay --to-revision=2 -n cloudbridge
+```
+
+## 🗑️ Удаление
+
+### Удаление сервисов
+
+```bash
+# Удаление всех ресурсов CloudBridge
+kubectl delete namespace cloudbridge
+
+# Удаление мониторинга
+helm uninstall prometheus -n monitoring
+helm uninstall ingress-nginx -n ingress-nginx
+helm uninstall cert-manager -n cert-manager
+```
+
+### Удаление кластера
+
+```bash
+# Удаление кластера через Terraform
+cd terraform-k8s
+terraform destroy -auto-approve
+```
+
+## 🏗️ Архитектура
+
+### Компоненты системы
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    CloudBridge Relay                       │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │   P2P API   │  │  WireGuard  │  │   HTTP/3    │        │
+│  │   Server    │  │   Server    │  │   Server    │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │ AI Service  │  │   Cadence   │  │ PostgreSQL │        │
+│  │             │  │ Workflow   │  │             │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │ Prometheus  │  │   Grafana   │  │   Jaeger   │        │
+│  │             │  │             │  │             │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Сетевые порты
+
+| Сервис | Порт | Протокол | Описание |
+|--------|------|----------|----------|
+| CloudBridge Relay | 9090 | HTTP | Основной API |
+| CloudBridge Relay | 9090 | UDP | QUIC сервер |
+| CloudBridge Relay | 51820 | UDP | WireGuard |
+| CloudBridge Relay | 8084 | HTTP | Метрики |
+| AI Service | 8080 | HTTP | AI API |
+| AI Service | 9090 | HTTP | Метрики |
+| Cadence | 7933 | gRPC | Workflow API |
+| PostgreSQL | 5432 | TCP | База данных |
+| Cassandra | 9042 | TCP | NoSQL база |
+
+## 📞 Поддержка
+
+При возникновении проблем:
+
+1. Проверьте логи: `kubectl logs -f -l app.kubernetes.io/name=cloudbridge-relay -n cloudbridge`
+2. Проверьте события: `kubectl get events -n cloudbridge --sort-by='.lastTimestamp'`
+3. Проверьте статус ресурсов: `kubectl get all -n cloudbridge`
+4. Проверьте зеркала Docker: `./setup-docker-mirrors.sh --status`
+5. Обратитесь к документации VK Cloud
+6. Создайте issue в репозитории проекта
+
+## 📄 Лицензия
+
+Этот проект распространяется под лицензией MIT. См. файл [LICENSE](LICENSE) для подробностей.
+
+## 🤝 Вклад в проект
+
+Мы приветствуем вклад в развитие проекта! Пожалуйста, ознакомьтесь с [CONTRIBUTING.md](CONTRIBUTING.md) для получения информации о том, как внести свой вклад.
 
 ---
 
-**Last updated:** 2025-10-11  
-**Status:** Pilot-ready, Production-candidate после исправления LB и завершения UI
+**Удачного развертывания! 🚀**

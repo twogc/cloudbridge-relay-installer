@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cadence-db-migrate
+  namespace: cloudbridge
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrate
+        image: ubercadence/server:v0.22.4
+        command: ["/bin/bash","-lc"]
+        env:
+        - name: PGHOST
+          value: "postgres.cloudbridge-system.svc"
+        - name: PGPORT
+          value: "5432"
+        - name: PGUSER
+          valueFrom: 
+            secretKeyRef: 
+              name: cadence-db
+              key: username
+        - name: PGPASSWORD
+          valueFrom: 
+            secretKeyRef: 
+              name: cadence-db
+              key: password
+        args:
+        - |
+          set -e
+          echo "== defaultStore (cadence) =="
+          /usr/local/bin/cadence-sql-tool \
+            --plugin postgres --ep $PGHOST \
+            --port $PGPORT \
+            --user $PGUSER --password $PGPASSWORD \
+            create-database --database cadence
+          /usr/local/bin/cadence-sql-tool \
+            --plugin postgres --ep $PGHOST \
+            --port $PGPORT \
+            --user $PGUSER --password $PGPASSWORD \
+            --database cadence setup-schema -v 0.0
+          /usr/local/bin/cadence-sql-tool \
+            --plugin postgres --ep $PGHOST \
+            --port $PGPORT \
+            --user $PGUSER --password $PGPASSWORD \
+            --database cadence update-schema -v latest
+          echo "== visibilityStore (cadence_visibility) =="
+          /usr/local/bin/cadence-sql-tool \
+            --plugin postgres --ep $PGHOST \
+            --port $PGPORT \
+            --user $PGUSER --password $PGPASSWORD \
+            create-database --database cadence_visibility
+          /usr/local/bin/cadence-sql-tool \
+            --plugin postgres --ep $PGHOST \
+            --port $PGPORT \
+            --user $PGUSER --password $PGPASSWORD \
+            --database cadence_visibility setup-schema -v 0.0
+          /usr/local/bin/cadence-sql-tool \
+            --plugin postgres --ep $PGHOST \
+            --port $PGPORT \
+            --user $PGUSER --password $PGPASSWORD \
+            --database cadence_visibility update-schema -v latest

@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cloudbridge-relay
+  namespace: cloudbridge
+  labels:
+    app: cloudbridge-relay
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudbridge-relay
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ai-service
+  namespace: cloudbridge
+  labels:
+    app: ai-service
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-service
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s

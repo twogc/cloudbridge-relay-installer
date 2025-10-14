@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cadence-check-schema
+  namespace: cloudbridge
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: check-schema
+        image: postgres:13
+        env:
+        - name: PGHOST
+          value: "postgres.cloudbridge-system.svc"
+        - name: PGPORT
+          value: "5432"
+        - name: PGUSER
+          value: "ipam_user"
+        - name: PGPASSWORD
+          value: "secure_password_123"
+        command: ["/bin/bash","-lc"]
+        args:
+        - |
+          set -euo pipefail
+          echo "== Checking schema_version table structure =="
+          psql "postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/cadence_visibility" -c "\d schema_version"
+          echo "== Checking current version =="
+          psql "postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/cadence_visibility" -c "SELECT * FROM schema_version;"
+          echo "== done =="
+
+

@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cadence
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/component: workflow
+    app.kubernetes.io/name: cadence
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cadence
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cadence
+    spec:
+      containers:
+      - name: cadence
+        image: ubercadence/server:v0.22.4
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 7933
+          name: grpc
+          protocol: TCP
+        - containerPort: 7934
+          name: web
+          protocol: TCP
+        env:
+        - name: CADENCE_USE_ENV_VARS
+          value: "true"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: SERVICES
+          value: "frontend,history,matching,worker"
+        - name: DB
+          value: "postgres"
+        - name: DB_HOST
+          value: "10.105.221.45"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "cadence"
+        - name: DB_USER
+          value: "ipam_user"
+        - name: DB_PASSWORD
+          value: "secure_password_123"
+        - name: VISIBILITY_STORE
+          value: "postgres"
+        - name: VISIBILITY_DB_HOST
+          value: "10.105.221.45"
+        - name: VISIBILITY_DB_PORT
+          value: "5432"
+        - name: VISIBILITY_DB_NAME
+          value: "cadence_visibility"
+        - name: VISIBILITY_DB_USER
+          value: "ipam_user"
+        - name: VISIBILITY_DB_PASSWORD
+          value: "secure_password_123"
+        - name: CLUSTER_METADATA_ENABLE_GLOBAL_DOMAIN
+          value: "false"
+        - name: CLUSTER_METADATA_FAILOVER_VERSION_INCREMENT
+          value: "10"
+        - name: CLUSTER_METADATA_MASTER_CLUSTER_NAME
+          value: "active"
+        - name: CLUSTER_METADATA_CURRENT_CLUSTER_NAME
+          value: "active"
+        - name: SKIP_SCHEMA_SETUP
+          value: "false"
+        - name: AUTO_SETUP
+          value: "true"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 7934
+            scheme: HTTP
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 7934
+            scheme: HTTP
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        volumeMounts:
+        - mountPath: /var/lib/cadence
+          name: cadence-data
+      nodeSelector:
+        kubernetes.io/os: linux
+      volumes:
+      - name: cadence-data
+        persistentVolumeClaim:
+          claimName: cadence-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cadence
+  namespace: cloudbridge
+  labels:
+    app.kubernetes.io/name: cadence
+spec:
+  ports:
+    - name: tchan-frontend
+      port: 7933
+      targetPort: 7933
+    - name: web
+      port: 7934
+      targetPort: 7934
+    - name: metrics
+      port: 8000
+      targetPort: 8000
+  selector:
+    app.kubernetes.io/name: cadence
+
+
