@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: cadence
-        image: ubercadence/server:v0.22.4
+        image: ubercadence/server:v1.3.6
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7933

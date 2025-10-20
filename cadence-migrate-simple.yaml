@@ -9,7 +9,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: migrate
-        image: ubercadence/server:v0.22.4
+        image: ubercadence/server:v1.3.6
         command: ["/bin/bash","-lc"]
         env:
         - name: PGHOST
