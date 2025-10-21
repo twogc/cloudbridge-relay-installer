@@ -1,0 +1,52 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  labels:
+    app.kubernetes.io/component: alert-router
+    app.kubernetes.io/instance: cloudbridge
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/part-of: cloudbridge-monitoring
+    app.kubernetes.io/version: 0.28.1
+  name: cloudbridge-alertmanager
+  namespace: monitoring
+spec:
+  alertmanagerConfigSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: cloudbridge-monitoring
+  image: quay.io/prometheus/alertmanager:v0.28.1
+  nodeSelector:
+    kubernetes.io/os: linux
+  podMetadata:
+    labels:
+      app.kubernetes.io/component: alert-router
+      app.kubernetes.io/instance: cloudbridge
+      app.kubernetes.io/name: alertmanager
+      app.kubernetes.io/part-of: cloudbridge-monitoring
+      app.kubernetes.io/version: 0.28.1
+  replicas: 3
+  resources:
+    limits:
+      cpu: 200m
+      memory: 200Mi
+    requests:
+      cpu: 10m
+      memory: 200Mi
+  secrets: []
+  securityContext:
+    fsGroup: 2000
+    runAsNonRoot: true
+    runAsUser: 1000
+  serviceAccountName: alertmanager-cloudbridge
+  version: 0.28.1
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 2Gi
+
+
+
+
+

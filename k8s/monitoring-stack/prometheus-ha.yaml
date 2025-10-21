@@ -1,0 +1,83 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  labels:
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/instance: cloudbridge
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: cloudbridge-monitoring
+    app.kubernetes.io/version: 3.6.0
+  name: cloudbridge-prometheus
+  namespace: monitoring
+spec:
+  alerting:
+    alertmanagers:
+    - apiVersion: v2
+      name: cloudbridge-alertmanager
+      namespace: monitoring
+      port: web
+  enableFeatures: []
+  externalLabels:
+    cluster: cloudbridge
+    environment: production
+  image: quay.io/prometheus/prometheus:v3.6.0
+  nodeSelector:
+    kubernetes.io/os: linux
+  podMetadata:
+    labels:
+      app.kubernetes.io/component: prometheus
+      app.kubernetes.io/instance: cloudbridge
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/part-of: cloudbridge-monitoring
+      app.kubernetes.io/version: 3.6.0
+  podMonitorNamespaceSelector: {}
+  podMonitorSelector: {}
+  probeNamespaceSelector: {}
+  probeSelector: {}
+  replicas: 2
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 500m
+    limits:
+      memory: 4Gi
+      cpu: 1000m
+  retention: 15d
+  ruleNamespaceSelector: {}
+  ruleSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: cloudbridge-monitoring
+  scrapeConfigNamespaceSelector: {}
+  scrapeConfigSelector: {}
+  securityContext:
+    fsGroup: 2000
+    runAsNonRoot: true
+    runAsUser: 1000
+  serviceAccountName: prometheus-cloudbridge
+  serviceDiscoveryRole: EndpointSlice
+  serviceMonitorNamespaceSelector: {}
+  serviceMonitorSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: cloudbridge-monitoring
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 50Gi
+  version: 3.6.0
+  # Remote write to VictoriaMetrics for long-term storage
+  remoteWrite:
+  - url: http://vminsert:8480/insert/0/prometheus/
+    queueConfig:
+      maxSamplesPerSend: 10000
+      batchSendDeadline: 5s
+      maxRetries: 10
+      minBackoff: 30ms
+      maxBackoff: 100ms
+
+
+
+
+

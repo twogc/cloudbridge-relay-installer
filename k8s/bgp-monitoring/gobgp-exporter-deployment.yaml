@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gobgp-exporter
+  namespace: monitoring
+  labels:
+    app: gobgp-exporter
+    component: bgp-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gobgp-exporter
+  template:
+    metadata:
+      labels:
+        app: gobgp-exporter
+        component: bgp-monitoring
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9474"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: gobgp-exporter
+      containers:
+      - name: gobgp-exporter
+        image: greenpau/gobgp_exporter:latest
+        ports:
+        - name: metrics
+          containerPort: 9474
+          protocol: TCP
+        args:
+        - -gobgp.address=127.0.0.1:50051
+        - -gobgp.poll-interval=15
+        - -gobgp.timeout=2
+        - -web.listen-address=:9474
+        - -web.telemetry-path=/metrics
+        - -log.level=info
+        env:
+        - name: GOBGP_ADDRESS
+          value: "127.0.0.1:50051"
+        - name: GOBGP_POLL_INTERVAL
+          value: "15"
+        - name: GOBGP_TIMEOUT
+          value: "2"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9474
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 9474
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+
+
+
+

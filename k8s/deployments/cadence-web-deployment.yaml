@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: cadence-web
-        image: ubercadence/web:latest
+        image: ubercadence/web:v3.30.2
         ports:
         - containerPort: 8088
           name: http
@@ -49,3 +49,36 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "200m"
+
+        # Health checks for Cadence Web UI
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8088
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8088
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+
+        startupProbe:
+          httpGet:
+            path: /
+            port: 8088
+            scheme: HTTP
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30

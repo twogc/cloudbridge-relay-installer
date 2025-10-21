@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bird-exporter
+  namespace: monitoring
+  labels:
+    app: bird-exporter
+    component: bgp-monitoring
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 9324
+    targetPort: 9324
+    protocol: TCP
+  selector:
+    app: bird-exporter
+
+
+
+
+

@@ -1,0 +1,204 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CloudBridge BGP Overview",
+    "tags": ["cloudbridge", "bgp", "routing", "anycast"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "BGP Session Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "bird_protocol_up{proto=\"BGP\"}",
+            "legendFormat": "{{ name }} - BIRD",
+            "refId": "A"
+          },
+          {
+            "expr": "frr_bgp_peer_up",
+            "legendFormat": "{{ name }} - FRR",
+            "refId": "B"
+          },
+          {
+            "expr": "gobgp_peer_up",
+            "legendFormat": "{{ name }} - GoBGP",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "BGP Prefix Count",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "bird_protocol_prefix_count_import{proto=\"BGP\"}",
+            "legendFormat": "{{ name }} - Imported (BIRD)",
+            "refId": "A"
+          },
+          {
+            "expr": "bird_protocol_prefix_count_export{proto=\"BGP\"}",
+            "legendFormat": "{{ name }} - Exported (BIRD)",
+            "refId": "B"
+          },
+          {
+            "expr": "frr_bgp_peer_received_prefixes",
+            "legendFormat": "{{ name }} - Received (FRR)",
+            "refId": "C"
+          },
+          {
+            "expr": "frr_bgp_peer_advertised_prefixes",
+            "legendFormat": "{{ name }} - Advertised (FRR)",
+            "refId": "D"
+          },
+          {
+            "expr": "gobgp_route_total_destination_count",
+            "legendFormat": "{{ address_family }} - Destinations (GoBGP)",
+            "refId": "E"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "BGP Session Uptime",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "bird_protocol_uptime_seconds{proto=\"BGP\"}",
+            "legendFormat": "{{ name }} - BIRD",
+            "refId": "A"
+          },
+          {
+            "expr": "frr_bgp_peer_uptime_seconds",
+            "legendFormat": "{{ name }} - FRR",
+            "refId": "B"
+          },
+          {
+            "expr": "gobgp_peer_uptime_seconds",
+            "legendFormat": "{{ name }} - GoBGP",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "BGP Message Counters",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(bird_protocol_messages_received_total{proto=\"BGP\"}[5m])",
+            "legendFormat": "{{ name }} - Received (BIRD)",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(bird_protocol_messages_sent_total{proto=\"BGP\"}[5m])",
+            "legendFormat": "{{ name }} - Sent (BIRD)",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(frr_bgp_peer_received_message_total_count[5m])",
+            "legendFormat": "{{ name }} - Received (FRR)",
+            "refId": "C"
+          },
+          {
+            "expr": "rate(frr_bgp_peer_sent_message_total_count[5m])",
+            "legendFormat": "{{ name }} - Sent (FRR)",
+            "refId": "D"
+          },
+          {
+            "expr": "rate(gobgp_peer_received_message_total_count[5m])",
+            "legendFormat": "{{ name }} - Received (GoBGP)",
+            "refId": "E"
+          },
+          {
+            "expr": "rate(gobgp_peer_sent_message_total_count[5m])",
+            "legendFormat": "{{ name }} - Sent (GoBGP)",
+            "refId": "F"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 5,
+        "title": "BGP Route Changes",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(bird_protocol_route_changes_total{proto=\"BGP\"}[5m])",
+            "legendFormat": "{{ name }} - BIRD",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(frr_bgp_peer_flop_count[5m])",
+            "legendFormat": "{{ name }} - FRR",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(gobgp_peer_flop_count[5m])",
+            "legendFormat": "{{ name }} - GoBGP",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}
+
+
+
+
+

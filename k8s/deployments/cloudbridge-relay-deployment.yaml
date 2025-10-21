@@ -58,7 +58,7 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
-          containerPort: 9090
+          containerPort: 8080
           protocol: TCP
         - name: quic
           containerPort: 9090
@@ -67,7 +67,7 @@ spec:
           containerPort: 51820
           protocol: UDP
         - name: metrics
-          containerPort: 8084
+          containerPort: 9091
           protocol: TCP
         - name: grpc
           containerPort: 8444

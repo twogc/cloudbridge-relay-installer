@@ -1,0 +1,139 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CloudBridge Anycast Health",
+    "tags": ["cloudbridge", "anycast", "health", "routing"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Anycast Availability",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "anycast_health{service=\"quic\"}",
+            "legendFormat": "{{ pop }} - {{ service }}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 1
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Anycast Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "anycast_latency_seconds",
+            "legendFormat": "{{ pop }} -> {{ target }}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 8,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Anycast Availability Percentage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "anycast_availability",
+            "legendFormat": "{{ pop }}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 16,
+          "y": 0
+        }
+      },
+      {
+        "id": 4,
+        "title": "Anycast Health by PoP",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "anycast_health",
+            "legendFormat": "{{ pop }} - {{ service }}",
+            "refId": "A"
+          },
+          {
+            "expr": "anycast_latency_seconds",
+            "legendFormat": "{{ pop }} - {{ target }}",
+            "refId": "B"
+          },
+          {
+            "expr": "anycast_availability",
+            "legendFormat": "{{ pop }}",
+            "refId": "C"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 5,
+        "title": "Anycast Performance Heatmap",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "anycast_latency_seconds",
+            "legendFormat": "{{ pop }} - {{ target }}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}
+
+
+
+
+

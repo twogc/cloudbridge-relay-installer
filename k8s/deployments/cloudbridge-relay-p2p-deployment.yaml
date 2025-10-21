@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
       - name: cloudbridge-relay-p2p
-        image: cloudbridge-relay:enhanced-$(date +%Y%m%d-%H%M%S)
+        image: cr.yandex/crpblcmklr11njvr6ikg/cloudbridge-relay:v1.0.0-p2p
         imagePullPolicy: IfNotPresent
         ports:
         - name: http-api
@@ -56,11 +56,20 @@ spec:
         - name: TZ
           value: "UTC"
         - name: JWT_SECRET
-          value: "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
+          valueFrom:
+            secretKeyRef:
+              name: cloudbridge-relay-secrets
+              key: jwt-secret
         - name: KEYCLOAK_FALLBACK_SECRET
-          value: "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
+          valueFrom:
+            secretKeyRef:
+              name: cloudbridge-relay-secrets
+              key: jwt-secret
         - name: RELAY_JWT_SECRET
-          value: "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
+          valueFrom:
+            secretKeyRef:
+              name: cloudbridge-relay-secrets
+              key: jwt-secret
         - name: ICE_STUN_ENABLED
           value: "true"
         - name: MASQUE_ENABLED

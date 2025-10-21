@@ -190,3 +190,4 @@ oss-repositories/
 !oss-repositories/*.md
 !oss-repositories/*.sh
 !oss-repositories/.gitkeep
+k8s/secrets/*.yaml

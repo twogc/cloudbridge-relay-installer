@@ -1,0 +1,176 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: bgp-alerts
+  namespace: monitoring
+  labels:
+    app: bgp-monitoring
+    component: alerts
+spec:
+  groups:
+  - name: bgp.rules
+    rules:
+    # BGP Session Alerts
+    - alert: BGPSessionDown
+      expr: |
+        (
+          bird_protocol_up{proto="BGP"} == 0
+          or
+          frr_bgp_peer_up == 0
+          or
+          gobgp_peer_up == 0
+        )
+      for: 1m
+      labels:
+        severity: critical
+        component: bgp
+        service: routing
+      annotations:
+        summary: "BGP session {{ $labels.name }} is down"
+        description: "BGP session {{ $labels.name }} has been down for more than 1 minute. This may affect anycast routing."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/bgp-session-down"
+    
+    - alert: BGPSessionFlapping
+      expr: |
+        (
+          increase(bird_protocol_route_changes_total[5m]) > 100
+          or
+          increase(frr_bgp_peer_flop_count[5m]) > 10
+          or
+          increase(gobgp_peer_flop_count[5m]) > 10
+        )
+      for: 0m
+      labels:
+        severity: warning
+        component: bgp
+        service: routing
+      annotations:
+        summary: "BGP session {{ $labels.name }} is flapping"
+        description: "BGP session {{ $labels.name }} is experiencing route flapping. This may indicate network instability."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/bgp-flapping"
+    
+    # BGP Prefix Alerts
+    - alert: BGPPrefixCountAnomaly
+      expr: |
+        (
+          abs(bird_protocol_prefix_count_import - bird_protocol_prefix_count_import offset 1h) > 10000
+          or
+          abs(frr_bgp_peer_received_prefixes - frr_bgp_peer_received_prefixes offset 1h) > 10000
+          or
+          abs(gobgp_route_total_destination_count - gobgp_route_total_destination_count offset 1h) > 10000
+        )
+      for: 5m
+      labels:
+        severity: warning
+        component: bgp
+        service: routing
+      annotations:
+        summary: "BGP prefix count anomaly detected"
+        description: "BGP prefix count changed by more than 10000 in 1 hour for {{ $labels.name }}. This may indicate a routing issue."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/bgp-prefix-anomaly"
+    
+    - alert: BGPRouteTableSizeHigh
+      expr: |
+        (
+          bird_protocol_prefix_count_import > 1000000
+          or
+          frr_bgp_peer_received_prefixes > 1000000
+          or
+          gobgp_route_total_destination_count > 1000000
+        )
+      for: 5m
+      labels:
+        severity: warning
+        component: bgp
+        service: routing
+      annotations:
+        summary: "BGP route table size is high"
+        description: "BGP route table size is {{ $value }} prefixes for {{ $labels.name }}. This may impact performance."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/bgp-table-size"
+    
+    # BGP Message Alerts
+    - alert: BGPNotificationMessages
+      expr: |
+        (
+          increase(bird_protocol_messages_received_total[5m]) > 100
+          or
+          increase(frr_bgp_peer_received_notification_message_count[5m]) > 10
+          or
+          increase(gobgp_peer_received_notification_message_count[5m]) > 10
+        )
+      for: 0m
+      labels:
+        severity: warning
+        component: bgp
+        service: routing
+      annotations:
+        summary: "BGP notification messages received"
+        description: "BGP peer {{ $labels.name }} sent {{ $value }} notification messages in 5 minutes. This may indicate a configuration issue."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/bgp-notifications"
+    
+    # Anycast Health Alerts
+    - alert: AnycastHealthDown
+      expr: anycast_health == 0
+      for: 1m
+      labels:
+        severity: critical
+        component: anycast
+        service: routing
+      annotations:
+        summary: "Anycast health check failed"
+        description: "Anycast health check failed for {{ $labels.pop }}. This may affect client connectivity."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/anycast-health"
+    
+    - alert: AnycastLatencyHigh
+      expr: anycast_latency_seconds > 0.5
+      for: 5m
+      labels:
+        severity: warning
+        component: anycast
+        service: routing
+      annotations:
+        summary: "Anycast latency is high"
+        description: "Anycast latency is {{ $value }}s for {{ $labels.pop }}. This may affect user experience."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/anycast-latency"
+    
+    - alert: AnycastAvailabilityLow
+      expr: anycast_availability < 99.0
+      for: 5m
+      labels:
+        severity: warning
+        component: anycast
+        service: routing
+      annotations:
+        summary: "Anycast availability is low"
+        description: "Anycast availability is {{ $value }}% for {{ $labels.pop }}. This may affect service reliability."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/anycast-availability"
+    
+    # BGP Exporter Health
+    - alert: BGPExporterDown
+      expr: up{job=~".*bgp.*"} == 0
+      for: 1m
+      labels:
+        severity: critical
+        component: monitoring
+        service: bgp-exporter
+      annotations:
+        summary: "BGP exporter is down"
+        description: "BGP exporter {{ $labels.job }} is down. BGP metrics collection is not working."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/bgp-exporter-down"
+    
+    - alert: BGPExporterScrapeError
+      expr: up{job=~".*bgp.*"} == 0
+      for: 5m
+      labels:
+        severity: warning
+        component: monitoring
+        service: bgp-exporter
+      annotations:
+        summary: "BGP exporter scrape error"
+        description: "BGP exporter {{ $labels.job }} is experiencing scrape errors. Metrics may be incomplete."
+        runbook_url: "https://cloudbridge-docs.com/runbooks/bgp-exporter-scrape"
+
+
+
+
+

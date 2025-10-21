@@ -1,0 +1,178 @@
+# CloudBridge SLO Configuration
+# Based on Sloth reference implementation
+
+apiVersion: sloth.slok.dev/v1
+kind: AlertWindows
+metadata:
+  name: cloudbridge-alert-windows
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: slo
+    app.kubernetes.io/instance: cloudbridge
+    app.kubernetes.io/name: sloth
+    app.kubernetes.io/part-of: cloudbridge-monitoring
+spec:
+  sloPeriod: 30d
+  page:
+    quick:
+      errorBudgetPercent: 2
+      shortWindow: 5m
+      longWindow: 1h
+    slow:
+      errorBudgetPercent: 5
+      shortWindow: 30m
+      longWindow: 6h
+  ticket:
+    quick:
+      errorBudgetPercent: 10
+      shortWindow: 2h
+      longWindow: 24h
+    slow:
+      errorBudgetPercent: 20
+      shortWindow: 6h
+      longWindow: 72h
+---
+apiVersion: sloth.slok.dev/v1
+kind: SLO
+metadata:
+  name: cloudbridge-relay-availability
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: slo
+    app.kubernetes.io/instance: cloudbridge
+    app.kubernetes.io/name: sloth
+    app.kubernetes.io/part-of: cloudbridge-monitoring
+spec:
+  service: "cloudbridge-relay"
+  sloPeriod: "30d"
+  slos:
+  - name: "availability"
+    objective: 99.9
+    description: "CloudBridge Relay availability"
+    sli:
+      events:
+        error_query: |
+          sum(rate(cloudbridge_relay_requests_total{status=~"5.."}[5m]))
+        total_query: |
+          sum(rate(cloudbridge_relay_requests_total[5m]))
+    alerting:
+      name: "cloudbridge-relay-availability"
+      labels:
+        severity: "critical"
+        component: "cloudbridge"
+        service: "relay"
+      annotations:
+        summary: "CloudBridge Relay availability is below SLO"
+        description: "CloudBridge Relay availability is {{ $value }}%, below the 99.9% SLO"
+        runbook_url: "https://cloudbridge-docs.com/runbooks/relay-availability"
+---
+apiVersion: sloth.slok.dev/v1
+kind: SLO
+metadata:
+  name: cloudbridge-bgp-availability
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: slo
+    app.kubernetes.io/instance: cloudbridge
+    app.kubernetes.io/name: sloth
+    app.kubernetes.io/part-of: cloudbridge-monitoring
+spec:
+  service: "cloudbridge-bgp"
+  sloPeriod: "30d"
+  slos:
+  - name: "bgp-availability"
+    objective: 99.95
+    description: "CloudBridge BGP session availability"
+    sli:
+      events:
+        error_query: |
+          sum(rate(bird_protocol_up{proto="BGP"} == 0[5m])) + 
+          sum(rate(frr_bgp_peer_up == 0[5m])) + 
+          sum(rate(gobgp_peer_up == 0[5m]))
+        total_query: |
+          sum(rate(bird_protocol_up{proto="BGP"}[5m])) + 
+          sum(rate(frr_bgp_peer_up[5m])) + 
+          sum(rate(gobgp_peer_up[5m]))
+    alerting:
+      name: "cloudbridge-bgp-availability"
+      labels:
+        severity: "critical"
+        component: "bgp"
+        service: "routing"
+      annotations:
+        summary: "CloudBridge BGP availability is below SLO"
+        description: "CloudBridge BGP availability is {{ $value }}%, below the 99.95% SLO"
+        runbook_url: "https://cloudbridge-docs.com/runbooks/bgp-availability"
+---
+apiVersion: sloth.slok.dev/v1
+kind: SLO
+metadata:
+  name: cloudbridge-anycast-availability
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: slo
+    app.kubernetes.io/instance: cloudbridge
+    app.kubernetes.io/name: sloth
+    app.kubernetes.io/part-of: cloudbridge-monitoring
+spec:
+  service: "cloudbridge-anycast"
+  sloPeriod: "30d"
+  slos:
+  - name: "anycast-availability"
+    objective: 99.99
+    description: "CloudBridge Anycast service availability"
+    sli:
+      events:
+        error_query: |
+          sum(rate(anycast_health == 0[5m]))
+        total_query: |
+          sum(rate(anycast_health[5m]))
+    alerting:
+      name: "cloudbridge-anycast-availability"
+      labels:
+        severity: "critical"
+        component: "anycast"
+        service: "routing"
+      annotations:
+        summary: "CloudBridge Anycast availability is below SLO"
+        description: "CloudBridge Anycast availability is {{ $value }}%, below the 99.99% SLO"
+        runbook_url: "https://cloudbridge-docs.com/runbooks/anycast-availability"
+---
+apiVersion: sloth.slok.dev/v1
+kind: SLO
+metadata:
+  name: cloudbridge-latency
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: slo
+    app.kubernetes.io/instance: cloudbridge
+    app.kubernetes.io/name: sloth
+    app.kubernetes.io/part-of: cloudbridge-monitoring
+spec:
+  service: "cloudbridge-latency"
+  sloPeriod: "30d"
+  slos:
+  - name: "latency"
+    objective: 99.5
+    description: "CloudBridge latency under 100ms"
+    sli:
+      events:
+        error_query: |
+          sum(rate(cloudbridge_relay_request_duration_seconds_bucket{le="0.1"}[5m]))
+        total_query: |
+          sum(rate(cloudbridge_relay_request_duration_seconds_bucket[5m]))
+    alerting:
+      name: "cloudbridge-latency"
+      labels:
+        severity: "warning"
+        component: "cloudbridge"
+        service: "performance"
+      annotations:
+        summary: "CloudBridge latency is above SLO"
+        description: "CloudBridge latency is {{ $value }}%, above the 99.5% SLO"
+        runbook_url: "https://cloudbridge-docs.com/runbooks/latency-optimization"
+
+
+
+
+

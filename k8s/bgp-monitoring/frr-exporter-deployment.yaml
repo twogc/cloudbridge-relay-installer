@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frr-exporter
+  namespace: monitoring
+  labels:
+    app: frr-exporter
+    component: bgp-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frr-exporter
+  template:
+    metadata:
+      labels:
+        app: frr-exporter
+        component: bgp-monitoring
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9342"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: frr-exporter
+      containers:
+      - name: frr-exporter
+        image: tynany/frr_exporter:latest
+        ports:
+        - name: metrics
+          containerPort: 9342
+          protocol: TCP
+        args:
+        - --frr.socket.dir-path=/var/run/frr
+        - --web.listen-address=:9342
+        - --web.telemetry-path=/metrics
+        - --collector.bgp.peer-descriptions
+        - --collector.bgp.peer-groups
+        - --collector.bgp.peer-hostnames
+        - --collector.bgp.accepted-filtered-prefixes
+        - --collector.ospf
+        - --collector.bfd
+        - --collector.route
+        env:
+        - name: FRR_SOCKET_DIR
+          value: "/var/run/frr"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: frr-sockets
+          mountPath: /var/run/frr
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9342
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 9342
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: frr-sockets
+        hostPath:
+          path: /var/run/frr
+          type: Directory
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+
+
+
+

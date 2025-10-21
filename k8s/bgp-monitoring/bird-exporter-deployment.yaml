@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bird-exporter
+  namespace: monitoring
+  labels:
+    app: bird-exporter
+    component: bgp-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bird-exporter
+  template:
+    metadata:
+      labels:
+        app: bird-exporter
+        component: bgp-monitoring
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9324"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: bird-exporter
+      containers:
+      - name: bird-exporter
+        image: czerwonk/bird_exporter:latest
+        ports:
+        - name: metrics
+          containerPort: 9324
+          protocol: TCP
+        args:
+        - -format.new=true
+        - -bird.socket=/var/run/bird.ctl
+        - -bird.socket6=/var/run/bird6.ctl
+        - -web.listen-address=:9324
+        - -web.telemetry-path=/metrics
+        env:
+        - name: BIRD_SOCKET_PATH
+          value: "/var/run/bird.ctl"
+        - name: BIRD6_SOCKET_PATH
+          value: "/var/run/bird6.ctl"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: bird-socket
+          mountPath: /var/run/bird.ctl
+          readOnly: true
+        - name: bird6-socket
+          mountPath: /var/run/bird6.ctl
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 9324
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 9324
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: bird-socket
+        hostPath:
+          path: /var/run/bird.ctl
+          type: Socket
+      - name: bird6-socket
+        hostPath:
+          path: /var/run/bird6.ctl
+          type: Socket
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+
+
+
+
