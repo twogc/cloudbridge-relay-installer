@@ -207,7 +207,7 @@ jobs:
             --users 100
 
       - name: 📤 Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: staging-test-results
           path: test-results/
@@ -251,7 +251,7 @@ jobs:
             --users 200
 
       - name: 📤 Upload performance results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: staging-performance-results
           path: test-results/
@@ -290,7 +290,7 @@ jobs:
           ./security/scanning/security-scan.sh
 
       - name: 📤 Upload security results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: staging-security-results
           path: security_reports/
