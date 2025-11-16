@@ -190,4 +190,6 @@ oss-repositories/
 !oss-repositories/*.md
 !oss-repositories/*.sh
 !oss-repositories/.gitkeep
+# Allow cloudbridge-sdk to be tracked
+!oss-repositories/cloudbridge-sdk/
 k8s/secrets/*.yaml
