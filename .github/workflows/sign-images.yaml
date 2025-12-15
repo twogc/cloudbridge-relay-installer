@@ -198,7 +198,7 @@ jobs:
       # 11. Upload SBOM artifacts
       #
       - name: Upload SBOM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sbom-${{ github.sha }}
           path: sbom/
