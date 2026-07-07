@@ -1,0 +1,92 @@
+# CloudBridge Relay Private PoP — minimal stack for MWS B2B Store OVA.
+# Secrets: /opt/cloudbridge/.env (not baked into OVA; generated at first boot).
+# See mws/templates/env.example
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cloudbridge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zitadel
+      POSTGRES_USER: zitadel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zitadel -d zitadel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cloudbridge
+
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:v2.64.1
+    container_name: cloudbridge-zitadel
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: start-from-init --masterkeyFromEnv --tlsMode disabled
+    environment:
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY:?set ZITADEL_MASTERKEY in .env}
+      ZITADEL_DATABASE_POSTGRES_HOST: postgres
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${POSTGRES_PASSWORD}
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD}
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      ZITADEL_EXTERNALSECURE: "false"
+      ZITADEL_EXTERNALPORT: 8080
+      ZITADEL_EXTERNALDOMAIN: ${ZITADEL_DOMAIN:-localhost}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: ${ZITADEL_ADMIN_USER:-admin@cloudbridge.local}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ADMIN_PASSWORD:?set ZITADEL_ADMIN_PASSWORD in .env}
+    ports:
+      - "8080:8080"
+    networks:
+      - cloudbridge
+
+  cloudbridge-relay:
+    image: ${RELAY_IMAGE:-twogc/cloudbridge-relay:latest}
+    container_name: cloudbridge-relay
+    restart: unless-stopped
+    depends_on:
+      - zitadel
+    ports:
+      - "9090:9090/tcp"
+      - "9090:9090/udp"
+      - "51820:51820/udp"
+      - "8084:8084/tcp"
+    environment:
+      ZITADEL_DOMAIN: http://zitadel:8080
+      ZITADEL_PROJECT_ID: ${ZITADEL_PROJECT_ID:-}
+      ZITADEL_CLIENT_ID: ${ZITADEL_CLIENT_ID:-}
+      ZITADEL_CLIENT_SECRET: ${ZITADEL_CLIENT_SECRET:-}
+      LOG_LEVEL: info
+    volumes:
+      - ./configs/config.json:/app/configs/config.json:ro
+      - relay-logs:/app/logs
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    networks:
+      - cloudbridge
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres-data:
+  relay-logs:
+
+networks:
+  cloudbridge:
+    driver: bridge

@@ -1,0 +1,25 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  identity:
+    hostname: cloudbridge-relay
+    username: ubuntu
+    password: "$6$rounds=4096$packer$placeholder"
+  ssh:
+    install-server: true
+    allow-pw: true
+  storage:
+    layout:
+      name: direct
+      match:
+        size: largest
+  packages:
+    - openssh-server
+    - cloud-init
+  late-commands:
+    - curtin in-target --target=/target -- cloud-init clean --logs || true
+  user-data:
+    disable_root: false

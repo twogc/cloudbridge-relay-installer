@@ -1,0 +1,143 @@
+#cloud-config
+# CloudBridge Relay Private PoP — minimal MWS OVA bootstrap.
+# Stack: Docker + Postgres + Zitadel + CloudBridge Relay
+# Resources: 4 vCPU, 8 GB RAM, 80 GB disk (see mws/README.md)
+
+hostname: cloudbridge-relay
+manage_etc_hosts: true
+
+users:
+  - name: ubuntu
+    groups: [adm, sudo, docker]
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    lock_passwd: false
+    # ssh_authorized_keys:
+    #   - ${ssh_public_key}
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - jq
+  - git
+  - ufw
+
+write_files:
+  # docker-compose.yml and env.example are copied by packer file provisioner
+  # or mws/scripts/build-ova.sh (manual VMware path). See mws/README.md.
+
+  - path: /opt/cloudbridge/configs/config.json
+    permissions: '0644'
+    owner: ubuntu:ubuntu
+    content: |
+      {
+        "server": { "address": "0.0.0.0", "port": 9090, "timeout": "30s" },
+        "zitadel": {
+          "enabled": true,
+          "domain": "http://zitadel:8080",
+          "token_validation": { "audience": "cloudbridge-relay", "clock_skew": "30s" }
+        },
+        "metrics": { "enabled": true, "port": 8084, "path": "/metrics" },
+        "health": { "enabled": true, "port": 8084, "path": "/health" }
+      }
+
+  - path: /etc/systemd/system/cloudbridge-stack.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=CloudBridge Relay minimal stack (Docker Compose)
+      After=docker.service network-online.target
+      Requires=docker.service
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/opt/cloudbridge
+      ExecStartPre=/usr/local/bin/cloudbridge-prestart.sh
+      ExecStart=/usr/bin/docker compose up -d
+      ExecStop=/usr/bin/docker compose down
+      User=ubuntu
+      Group=ubuntu
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /usr/local/bin/cloudbridge-prestart.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      ENV_FILE=/opt/cloudbridge/.env
+      EXAMPLE=/opt/cloudbridge/env.example
+      if [[ ! -f "$ENV_FILE" ]]; then
+        if [[ -f "$EXAMPLE" ]]; then
+          cp "$EXAMPLE" "$ENV_FILE"
+          chown ubuntu:ubuntu "$ENV_FILE"
+          chmod 0600 "$ENV_FILE"
+          pw="$(openssl rand -hex 16)"
+          mk="$(openssl rand -hex 32)"
+          admin_pw="$(openssl rand -hex 12)"
+          sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=${pw}/" "$ENV_FILE"
+          sed -i "s/^ZITADEL_MASTERKEY=.*/ZITADEL_MASTERKEY=${mk}/" "$ENV_FILE"
+          sed -i "s/^ZITADEL_ADMIN_PASSWORD=.*/ZITADEL_ADMIN_PASSWORD=${admin_pw}/" "$ENV_FILE"
+        else
+          echo "Missing $ENV_FILE — create from env.example before starting stack" >&2
+          exit 1
+        fi
+      fi
+
+  - path: /usr/local/bin/cloudbridge-status
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      echo "=== CloudBridge Relay Private PoP ==="
+      docker compose -f /opt/cloudbridge/docker-compose.yml ps
+      echo ""
+      echo "Health:"
+      curl -sf http://127.0.0.1:8084/health && echo " relay: ok" || echo " relay: down"
+      curl -sf http://127.0.0.1:8080/debug/healthz && echo " zitadel: ok" || echo " zitadel: down"
+
+runcmd:
+  # Docker CE (Ubuntu 22.04 jammy)
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu jammy stable" > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  - systemctl enable --now docker
+  - usermod -aG docker ubuntu
+
+  # Layout
+  - mkdir -p /opt/cloudbridge/configs /opt/cloudbridge/logs
+  - chown -R ubuntu:ubuntu /opt/cloudbridge
+
+  # Firewall (relay + Zitadel + SSH)
+  - ufw --force enable
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow OpenSSH
+  - ufw allow 8080/tcp
+  - ufw allow 8084/tcp
+  - ufw allow 9090/tcp
+  - ufw allow 9090/udp
+  - ufw allow 51820/udp
+
+  # Pre-pull images (optional; speeds first boot on slow networks)
+  - docker pull postgres:15-alpine
+  - docker pull ghcr.io/zitadel/zitadel:v2.64.1
+  - docker pull twogc/cloudbridge-relay:latest || true
+
+  - systemctl daemon-reload
+  - systemctl enable cloudbridge-stack.service
+
+final_message: |
+  CloudBridge Relay Private PoP (minimal) is ready.
+  Configure /opt/cloudbridge/.env, then: sudo systemctl start cloudbridge-stack
+  Status: cloudbridge-status
+  Ports: 8080 (Zitadel), 9090 (relay), 8084 (metrics), 51820/udp (WireGuard)

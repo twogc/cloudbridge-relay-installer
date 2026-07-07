@@ -1,0 +1,18 @@
+# Copy to variables.pkrvars.hcl — never commit real credentials.
+
+vsphere_endpoint   = "vcenter.example.com"
+vsphere_username   = "administrator@vsphere.local"
+vsphere_password   = "CHANGE_ME"
+vsphere_datacenter = "Datacenter"
+vsphere_cluster    = "Cluster"
+vsphere_datastore  = "datastore1"
+vsphere_network    = "VM Network"
+
+ssh_username = "ubuntu"
+ssh_password = "CHANGE_ME"
+
+# Ubuntu 22.04.5 server ISO — verify checksum at https://releases.ubuntu.com/22.04/
+iso_url      = "https://releases.ubuntu.com/jammy/ubuntu-22.04.5-live-server-amd64.iso"
+iso_checksum = "sha256:REPLACE_WITH_OFFICIAL_CHECKSUM"
+
+output_ova_name = "cloudbridge-relay"
