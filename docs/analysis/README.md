@@ -164,7 +164,7 @@ go build ./cmd/ai-service/...
 
 For questions or issues, please refer to:
 - [DEVELOPER_BRIEFING.md](../../DEVELOPER_BRIEFING.md) - полная документация проекта
-- [ARCHITECTURE_ANALYSIS.md](../../ARCHITECTURE_ANALYSIS.md) - архитектура системы
+- [ARCHITECTURE_ANALYSIS.md](../architecture/ARCHITECTURE_ANALYSIS.md) - архитектура системы
 - GitHub Issues - для bug reports и feature requests
 
 ---

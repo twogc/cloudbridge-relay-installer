@@ -20,14 +20,14 @@ git clone <repository-url>
 cd cloudbridge-relay-installer
 
 # 2. Настройка зеркал Docker Hub (для России)
-sudo ./setup-docker-mirrors.sh
+sudo ./scripts/deploy/setup-docker-mirrors.sh
 
 # 3. Настройка окружения
-source openstack_auth.sh
+source scripts/deploy/openstack_auth.sh
 export KUBECONFIG=~/.kube/config-vkcloud
 
 # 4. Запуск автоматического развертывания
-./deploy.sh
+./scripts/deploy/deploy.sh
 ```
 
 ### Ручное развертывание
@@ -48,12 +48,14 @@ kubectl apply -f k8s-manifests/
 
 ## 📚 Документация
 
+См. **[docs/README.md](docs/README.md)** — навигация по всей документации. Для агентов: **[openwiki/quickstart.md](openwiki/quickstart.md)**.
+
 ### Основные руководства
 
-- **[VK_CLOUD_DEPLOYMENT_GUIDE.md](VK_CLOUD_DEPLOYMENT_GUIDE.md)** - Подробное руководство по развертыванию
-- **[QUICK_DEPLOYMENT_CHECKLIST.md](QUICK_DEPLOYMENT_CHECKLIST.md)** - Быстрая шпаргалка
-- **[DOCKER_MIRRORS_SETUP.md](DOCKER_MIRRORS_SETUP.md)** - Настройка зеркал Docker Hub
-- **[README_DEPLOYMENT.md](README_DEPLOYMENT.md)** - Обзор документации
+- **[docs/guides/VK_CLOUD_DEPLOYMENT_GUIDE.md](docs/guides/VK_CLOUD_DEPLOYMENT_GUIDE.md)** — развертывание в VK Cloud
+- **[docs/guides/QUICK_DEPLOYMENT_CHECKLIST.md](docs/guides/QUICK_DEPLOYMENT_CHECKLIST.md)** — быстрая шпаргалка
+- **[docs/guides/DOCKER_MIRRORS_SETUP.md](docs/guides/DOCKER_MIRRORS_SETUP.md)** — зеркала Docker Hub
+- **[docs/guides/README_DEPLOYMENT.md](docs/guides/README_DEPLOYMENT.md)** — обзор deployment-документации
 
 ### Готовые манифесты
 
@@ -72,8 +74,8 @@ k8s-manifests/
 
 ### Автоматические скрипты
 
-- **`deploy.sh`** - Полное автоматическое развертывание
-- **`setup-docker-mirrors.sh`** - Настройка зеркал Docker Hub
+- **`scripts/deploy/deploy.sh`** — полное автоматическое развертывание
+- **`scripts/deploy/setup-docker-mirrors.sh`** — настройка зеркал Docker Hub
 
 ## 🛠️ Предварительные требования
 
@@ -96,20 +98,20 @@ k8s-manifests/
 
 ```bash
 # Автоматическая настройка
-sudo ./setup-docker-mirrors.sh
+sudo ./scripts/deploy/setup-docker-mirrors.sh
 
 # Проверка статуса зеркал
-./setup-docker-mirrors.sh --status
+./scripts/deploy/setup-docker-mirrors.sh --status
 
 # Тестирование
-./setup-docker-mirrors.sh --test
+./scripts/deploy/setup-docker-mirrors.sh --test
 ```
 
 ### 2. Настройка OpenStack CLI
 
 ```bash
 # Создание файла аутентификации
-cat > openstack_auth.sh << 'EOF'
+cat > scripts/deploy/openstack_auth.sh << 'EOF'
 #!/usr/bin/env bash
 
 export OS_AUTH_URL="https://infra.mail.ru:35357/v3/"
@@ -128,7 +130,7 @@ export OS_INTERFACE=public
 export OS_IDENTITY_API_VERSION=3
 EOF
 
-chmod +x openstack_auth.sh
+chmod +x scripts/deploy/openstack_auth.sh
 ```
 
 ### 3. Создание кластера Kubernetes
@@ -216,7 +218,7 @@ kubectl patch pvc cloudbridge-logs-pvc -n cloudbridge -p '{"spec":{"storageClass
 
 ```bash
 # Проверка зеркал
-./setup-docker-mirrors.sh --status
+./scripts/deploy/setup-docker-mirrors.sh --status
 
 # Перезапуск Docker
 sudo systemctl restart docker
@@ -342,7 +344,7 @@ terraform destroy -auto-approve
 1. Проверьте логи: `kubectl logs -f -l app.kubernetes.io/name=cloudbridge-relay -n cloudbridge`
 2. Проверьте события: `kubectl get events -n cloudbridge --sort-by='.lastTimestamp'`
 3. Проверьте статус ресурсов: `kubectl get all -n cloudbridge`
-4. Проверьте зеркала Docker: `./setup-docker-mirrors.sh --status`
+4. Проверьте зеркала Docker: `./scripts/deploy/setup-docker-mirrors.sh --status`
 5. Обратитесь к документации VK Cloud
 6. Создайте issue в репозитории проекта
 

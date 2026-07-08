@@ -80,7 +80,7 @@ cloudbridge-relay-installer/
 ├── examples/                     # Usage examples
 ├── docs/                         # Additional documentation
 │
-├── deploy.sh                     # Automated K8s deployment script
+├── scripts/deploy/deploy.sh      # Automated K8s deployment script
 ├── Makefile                      # Build/test/deploy targets
 ├── go.mod                        # Go 1.25.1 module definition
 └── README.md                     # Project overview (Russian)
@@ -110,14 +110,14 @@ cloudbridge-relay-installer/
 
 ```bash
 # 1. Clone and configure
-source openstack_auth.sh
+source scripts/deploy/openstack_auth.sh
 export KUBECONFIG=~/.kube/config-vkcloud
 
 # 2. Provision K8s cluster (if needed)
 cd terraform-k8s && terraform init && terraform apply -auto-approve
 
 # 3. Deploy all services
-./deploy.sh
+./scripts/deploy/deploy.sh
 
 # Or manual:
 kubectl apply -f k8s-manifests/

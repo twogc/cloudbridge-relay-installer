@@ -33,5 +33,5 @@ echo "OS_USER_DOMAIN_NAME: $OS_USER_DOMAIN_NAME"
 echo "OS_INTERFACE: $OS_INTERFACE"
 echo "OS_IDENTITY_API_VERSION: $OS_IDENTITY_API_VERSION"
 echo ""
-echo "Для применения переменных выполните: source openstack_auth.sh"
+echo "Для применения переменных выполните: source scripts/deploy/openstack_auth.sh"
 

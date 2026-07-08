@@ -197,7 +197,7 @@ Bare-metal Docker deployment playbook:
 - Deploy CloudBridge Relay stack
 - Automated relay host setup
 
-### Deployment Script (`deploy.sh`)
+### Deployment Script (`scripts/deploy/deploy.sh`)
 
 Full automated K8s deployment:
 1. Dependencies check (kubectl, helm, docker, terraform)
@@ -367,6 +367,6 @@ cmd/relay/
 | BGP monitoring | `/k8s/bgp-monitoring/` |
 | OVA build | `/mws/scripts/build-ova.sh` |
 | Packer template | `/mws/packer/cloudbridge-relay.pkr.hcl` |
-| Deploy script | `/deploy.sh` |
+| Deploy script | `/scripts/deploy/deploy.sh` |
 | Makefile | `/Makefile` |
 | Compliance | `/internal/compliance/russian_compliance.go` |

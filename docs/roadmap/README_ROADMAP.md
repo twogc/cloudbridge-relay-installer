@@ -225,7 +225,7 @@ Estimated Completion: Feb 25, 2026
 ### Common Questions
 
 **Q: Where do I start?**
-A: Read [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md), then [WEEK1_ACTION_PLAN.md](WEEK1_ACTION_PLAN.md)
+A: Read [PROJECT_SUMMARY.md](../operations/PROJECT_SUMMARY.md), then [WEEK1_ACTION_PLAN.md](WEEK1_ACTION_PLAN.md)
 
 **Q: What are my tasks?**
 A: Find your role above, then check the relevant documents

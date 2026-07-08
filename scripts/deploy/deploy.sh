@@ -6,6 +6,9 @@
 
 set -e
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$REPO_ROOT"
+
 # Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
