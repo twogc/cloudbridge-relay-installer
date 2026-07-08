@@ -160,7 +160,9 @@ voly ui   # http://127.0.0.1:7788
 - [x] Residual drift (prod manifests): AI metrics 8084 removed; relay prometheus **5551**
 - [x] Ops relay + mws metrics **5551**; `go vet` Cadence cancel leak fixed
 - [x] SCORE allocator wiring (optional `SCORE_BASE_URL`); p2p-deployment ports aligned
-- [ ] Cadence dual-path merge; full k8s tree merge; hybrid SQLite repo
+- [~] Cadence: service factories unified; full Client↔ProductionClient type merge still open
+- [~] K8s: cadence fixed/simple archived; full tree merge / overlays still open
+- [ ] Hybrid SQLite repo for peer IPAM
 
 План: [docs/audit/CONSOLIDATION_PLAN.md](docs/audit/CONSOLIDATION_PLAN.md).  
 Полный чеклист: [docs/audit/MIMO_AUDIT_REPORT.md](docs/audit/MIMO_AUDIT_REPORT.md).

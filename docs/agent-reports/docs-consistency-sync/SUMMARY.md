@@ -106,3 +106,18 @@ Commit/push: не выполнялись.
 | Tests | ✅ `go test ./internal/p2p -run SCORE` |
 
 Отчёт: [step05-score-wiring-p2p-ports.md](step05-score-wiring-p2p-ports.md)
+
+---
+
+## Pass 6 (step06) — Cadence factory + K8s archive
+
+| Item | Result |
+|------|--------|
+| Cadence service client factories | ✅ unified → `CreateWorkflowServiceClientImproved` |
+| Public `NewClient` / `NewProductionClient` | ✅ kept (intentional dual entrypoint) |
+| Cadence fixed/simple/clean YAML | ✅ archived under `archive/k8s/cadence/` |
+| Tests / build relay + ai-worker | ✅ |
+
+Отчёт: [step06-cadence-shared-factory-k8s-archive.md](step06-cadence-shared-factory-k8s-archive.md)
+
+**Ещё open:** full Client↔ProductionClient type merge; k8s overlays; hybrid SQLite repo.

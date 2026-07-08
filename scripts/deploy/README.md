@@ -18,4 +18,4 @@ sudo ./scripts/deploy/setup-docker-mirrors.sh
 | `vk-cloud-rc.sh` | VK Cloud RC helper |
 | `check-zitadel-access.sh` | Zitadel connectivity check |
 
-Cadence K8s manifests: `k8s/cadence/manifests/`. Zitadel values: `k8s/zitadel/`.
+Cadence: ops deploy `k8s/cadence/cadence.yaml`; schema jobs in `k8s/cadence/manifests/` (fixed/simple variants archived). Zitadel values: `k8s/zitadel/`.
