@@ -2,7 +2,7 @@
 
 **Дата:** 2026-07-08
 **Модель:** mimo-v2.5-pro
-**Статус тестов:** Невозможно запустить (Go не установлен в среде аудита)
+**Статус тестов:** Верификация шага 5 (2026-07-09): `go build ./cmd/relay/` OK; `go test -short ./internal/auth/... ./internal/zitadel/... ./config/...` OK
 
 ---
 
@@ -188,15 +188,17 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 
 ### 2. Средний срок (1-2 недели)
 
-- [ ] **Консолидировать дубликаты реализаций:** выбрать одну версию для `score_allocator`, `retry_config`, `cadence/client`, `cadence/service_client`, `nat/turn_server`, `ai/anomaly/detector`, `ai/predictive/load_predictor`, `ai/ml/models`, `ai/data/collectors`, `ai/routing/optimizer`
-- [ ] **Объединить K8s-манифесты:** `k8s/` + `k8s-manifests/` → единая структура
-- [ ] **Объединить Terraform:** `terraform/` + `infra/` → `terraform-k8s/`
-- [ ] **Объединить Prometheus/Grafana/Zabbix** в `monitoring/`
-- [ ] **Объединить `test/` + `tests/`** в `test/`
+- [x] **Инвентаризация дубликатов реализаций:** `docs/audit/DUPLICATES_INVENTORY.md`; удалён мёртвый `internal/nat/turn_server.go` (winner — `turn_server_enhanced.go`) — *шаг 1, 2026-07-09*
+- [ ] **Консолидировать дубликаты реализаций (merge API):** выбрать одну версию для `score_allocator`, `retry_config`, `cadence/client`, `cadence/service_client`, `ai/anomaly/detector`, `ai/predictive/load_predictor`, `ai/ml/models`, `ai/data/collectors`, `ai/routing/optimizer` — *инвентарь готов, merge отложен*
+- [ ] **Объединить K8s-манифесты:** `k8s/` + `k8s-manifests/` → единая структура — *только план, шаг 4*
+- [ ] **Объединить Terraform:** `terraform/` + `infra/` → `terraform-k8s/` — *только план, шаг 4*
+- [ ] **Объединить Prometheus/Grafana/Zabbix** в `monitoring/` — *только план, шаг 4*
+- [ ] **Объединить `test/` + `tests/`** в `test/` — *только план, шаг 4*
 - [ ] **Объединить Dockerfile-дубликаты** в `docker/`
-- [ ] **Синхронизировать портовую схему** во всех документах (canonical → `openwiki/`)
-- [ ] **Обновить архитектурные диаграммы** — удалить Keycloak/Django
-- [ ] **Переместить `github_actions/`** в `docker/cadence/` или удалить
+- [x] **Синхронизировать портовую схему** во всех документах (canonical → `openwiki/port-scheme.md`, sync `openwiki/` + `docs/network/`) — *шаг 2, 2026-07-09*
+- [x] **Обновить архитектурные диаграммы** — Zitadel-only; Keycloak/Django только как legacy/removed — *шаг 3, 2026-07-09*
+- [x] **Удалить `github_actions/`** (Cadence CI leftovers, не GitHub Actions; move в `docker/cadence/` отклонён — Dockerfile нерабочий) — *шаг 4, 2026-07-09*
+- [x] **План консолидации инфраструктуры:** `docs/audit/CONSOLIDATION_PLAN.md` (k8s, terraform, monitoring, test/) — *шаг 4, 2026-07-09*
 - [ ] **Очистить `docs/legacy/`** — оценить, можно ли удалить 142 файла
 
 ### 3. Стратегические (1+ месяц)

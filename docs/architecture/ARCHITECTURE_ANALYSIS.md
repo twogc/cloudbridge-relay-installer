@@ -338,7 +338,6 @@ graph TB
         
         subgraph "Identity & Auth"
             ZT[Zitadel IdP]
-            KC[Keycloak]
         end
         
         subgraph "Core Services"
@@ -661,7 +660,6 @@ graph TB
     
     subgraph "External Integrations"
         ZITADEL[zitadel/]
-        KEYCLOAK[keycloak/]
         CLOUDFLARE[cloudflare/]
     end
     
@@ -897,7 +895,6 @@ graph TB
     
     subgraph "Identity & Auth"
         ZITADEL[Zitadel IdP]
-        KEYCLOAK[Keycloak]
     end
     
     subgraph "Infrastructure"
@@ -929,7 +926,6 @@ graph TB
     end
     
     RELAY --> ZITADEL
-    RELAY --> KEYCLOAK
     RELAY --> K8S
     RELAY --> CLOUDFLARE
     RELAY --> STUN_TURN
@@ -2191,8 +2187,8 @@ export class D1TenantService implements TenantService {
     // Создание тенанта с изоляцией
     const tenantId = await this.createTenant(realm, normalizedName, ownerId);
     
-    // Создание Keycloak группы для тенанта
-    await this.createTenantKeycloakGroup(tenantId);
+    // Создание Zitadel org/project для тенанта
+    await this.createTenantZitadelOrg(tenantId);
     
     return { success: true, tenantId, realm };
   }
@@ -2222,7 +2218,7 @@ export class GroupPermissionService {
 // Relay Service
 export class RelayService {
   async createRelayServer(data: CreateRelayServerData): Promise<string> {
-    // Создание Keycloak клиентов для протоколов
+    // Создание Zitadel OIDC-клиентов для протоколов
     if (data.quick_enabled !== false) {
       const quickClient = await multitenancyService.createQuickClient(tenantId, id, {
         max_connections: data.max_connections,
@@ -2303,7 +2299,6 @@ graph TB
     
     subgraph "Identity & Auth"
         ZITADEL[Zitadel IdP]
-        KEYCLOAK[Keycloak]
     end
     
     subgraph "Data Storage"
@@ -2322,7 +2317,7 @@ graph TB
     API_GATEWAY --> RELAY_MGMT
     
     TENANT_MGMT --> ZITADEL
-    USER_MGMT --> KEYCLOAK
+    USER_MGMT --> ZITADEL
     RELAY_MGMT --> RELAY_CORE
     
     RELAY_CORE --> P2P_MANAGER
@@ -2330,7 +2325,7 @@ graph TB
     IPAM --> TENANT_CONTROLLER
     
     ZITADEL --> D1_DB
-    KEYCLOAK --> POSTGRES
+    ZITADEL --> POSTGRES
     RELAY_CORE --> KV_STORAGE
 ```
 

@@ -135,20 +135,23 @@ voly ui   # http://127.0.0.1:7788
 
 ## Текущие приоритеты (из аудита)
 
-### Quick wins (в работе / частично)
+### Quick wins (выполнено 2026-07-09)
 
 - [x] `go.mod` → 1.25.12
 - [x] `Makefile` `test-critical` → `./internal/zitadel/...`
-- [ ] Удалить Keycloak-код и скрипты
-- [ ] Удалить Django/quantum/`src/`
-- [ ] Удалить `.github/workflows/*.disabled`
-- [ ] Синхронизировать keycloak-блоки в k8s configmaps
+- [x] Удалить Keycloak-код и скрипты
+- [x] Удалить Django/quantum/`src/`
+- [x] Удалить `.github/workflows/*.disabled`
+- [x] Синхронизировать keycloak-блоки в k8s configmaps
+- [ ] `systemd/enhanced-quic-proxy.service` — не удалять (порты 9090 vs 9092)
 
-### Средний срок
+### Средний срок (миссия VOLY `cloudbridge-relay-medium`)
 
 - Консолидация дубликатов (`*_improved`, `*_enhanced`, `*_production`)
 - Объединение `k8s/` + `k8s-manifests/`, terraform-директорий
-- Единая портовая схема (canonical → `openwiki/`)
+- [x] Единая портовая схема (canonical → `openwiki/port-scheme.md`)
+- [x] Архитектурные docs без Keycloak/Django (IAM → Zitadel canonical)
+- План `docs/audit/CONSOLIDATION_PLAN.md`
 
 Полный список: [docs/audit/MIMO_AUDIT_REPORT.md](docs/audit/MIMO_AUDIT_REPORT.md).
 

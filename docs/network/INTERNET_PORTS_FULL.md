@@ -54,10 +54,10 @@
 - **Безопасность**: Низкая (публичные метрики)
 - **Пример**: `ufw allow 9090/udp`
 
-### 9. **WebRTC (UDP 51820)**
-- **Назначение**: WebRTC P2P соединения
+### 9. **WireGuard (UDP 51820)**
+- **Назначение**: WireGuard VPN mesh (`wireguard.interface.listen_port`)
 - **Протокол**: UDP
-- **Безопасность**: Средняя (защищено WebRTC)
+- **Безопасность**: Высокая (WireGuard crypto)
 - **Пример**: `ufw allow 51820/udp`
 
 ## Команды для открытия портов:
@@ -75,7 +75,7 @@ sudo ufw allow 9090/udp comment "QUIC Transport"
 sudo ufw allow 8443/tcp comment "MASQUE HTTP/3"
 
 # Дополнительные порты
-sudo ufw allow 51820/udp comment "WebRTC P2P"
+sudo ufw allow 51820/udp comment "WireGuard VPN"
 ```
 
 ### iptables (альтернатива):

@@ -19,14 +19,14 @@ CloudBridge Relay is a **multi-service Go monorepo** with 13 cmd/ entrypoints (1
                     │  ┌────────▼───────────────┐  │
                     │  │   CloudBridge Relay     │  │
                     │  │   (3 replicas)          │  │
-                    │  │   Port 9090             │  │
-                    │  │   QUIC/HTTP/TCP/WS      │  │
+                    │  │   :5550 TCP, :9090 QUIC │  │
+                    │  │   see port-scheme.md    │  │
                     │  └──┬─────┬──────┬────────┘  │
                     │     │     │      │            │
                     │  ┌──▼──┐ ┌▼────┐ ┌▼────────┐│
                     │  │ AI  │ │IPAM │ │ Cadence  ││
                     │  │Svc  │ │Svc  │ │ Engine   ││
-                    │  │:8082│ │     │ │ :7933    ││
+                    │  │:8080│ │:8083│ │ :7933    ││
                     │  └─────┘ └─────┘ └────┬─────┘│
                     │                        │      │
                     │  ┌─────────────────────▼────┐│
@@ -80,8 +80,7 @@ The relay server (`cmd/relay/server.go`) is the central component. Its `Server` 
 - `ProtocolEngine` — Auto-switching between QUIC/HTTP2/WebSocket
 
 **Security:**
-- `AuthAdapter` — Multi-provider auth (Zitadel, Keycloak, Django)
-- `ZitadelIntegration` — OIDC/JWT token validation
+- `ZitadelIntegration` — Canonical IAM: OIDC/JWT validation via JWKS (Keycloak/Django removed)
 - `CircuitBreaker` — Failure detection and isolation
 - `RateLimiter` — Request throttling
 - `QuantumService` — Post-quantum cryptography
@@ -145,13 +144,11 @@ TLS-encrypted TCP tunnels as last-resort transport when QUIC and WebSocket are u
 
 ## Authentication
 
-### Multi-Provider Auth (`internal/auth/`)
+### Zitadel IAM (`internal/auth/`, `internal/zitadel/`)
 
-The system supports three authentication providers with a unified interface:
+**Zitadel** is the sole identity provider. OIDC/JWT tokens are validated via JWKS (RS256).
 
-1. **Zitadel** (primary) — OIDC identity provider with JWKS validation
-2. **Keycloak** — Alternative OIDC provider
-3. **Django** — Legacy token-based auth
+> **Removed (legacy):** Keycloak and Django auth providers were deleted from the codebase; do not reintroduce them.
 
 ### Token Structure (`internal/auth/relay_claims.go`)
 
