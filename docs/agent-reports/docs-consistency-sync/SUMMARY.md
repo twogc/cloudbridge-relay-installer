@@ -120,7 +120,20 @@ Commit/push: не выполнялись.
 
 Отчёт: [step06-cadence-shared-factory-k8s-archive.md](step06-cadence-shared-factory-k8s-archive.md)
 
-**Ещё open:** wire overlays into deploy.sh e2e; full k8s tree merge; Postgres IPAM for hybrid in prod.
+**Ещё open:** live-cluster e2e for overlay-as-default; full k8s tree merge; Postgres IPAM for hybrid in prod.
+
+---
+
+## Pass 8 (step08) — deploy.sh --use-overlay
+
+| Item | Result |
+|------|--------|
+| `--use-overlay` / `--render-overlay` / `--dry-run` | ✅ |
+| Default manifests path | ✅ unchanged |
+| Overlay resources list fixed (08-servicemonitor) | ✅ |
+| Docs deploy.md + CONSOLIDATION_PLAN | ✅ |
+
+Отчёт: [step08-deploy-overlay-flag.md](step08-deploy-overlay-flag.md)
 
 ---
 

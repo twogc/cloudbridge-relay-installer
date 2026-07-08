@@ -19,3 +19,12 @@ sudo ./scripts/deploy/setup-docker-mirrors.sh
 | `check-zitadel-access.sh` | Zitadel connectivity check |
 
 Cadence: ops deploy `k8s/cadence/cadence.yaml`; schema jobs in `k8s/cadence/manifests/` (fixed/simple variants archived). Zitadel values: `k8s/zitadel/`.
+
+### deploy.sh modes
+
+```bash
+./scripts/deploy/deploy.sh                 # default: k8s-manifests/ file-by-file
+./scripts/deploy/deploy.sh --use-overlay   # kustomize k8s/overlays/production
+./scripts/deploy/deploy.sh --render-overlay
+./scripts/deploy/deploy.sh --help
+```

@@ -1,10 +1,12 @@
-# Production overlay (skeleton) — optional path for future deploy.sh integration.
-# Canonical apply today remains: scripts/deploy/deploy.sh → k8s-manifests/00–15.
+# Production overlay — optional path for deploy.sh --use-overlay
+# Default (canonical): scripts/deploy/deploy.sh applies k8s-manifests/ file-by-file.
 #
-# Usage (when ready):
+# Usage:
+#   ./scripts/deploy/deploy.sh --use-overlay
 #   kubectl apply -k k8s/overlays/production
+#   kubectl kustomize k8s/overlays/production   # render only
 #
-# Do not replace deploy.sh until this overlay is validated end-to-end.
+# Zitadel (09–15) is not included — deploy separately after core stack.
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -20,7 +22,8 @@ resources:
   - ../../../k8s-manifests/05-deployments.yaml
   - ../../../k8s-manifests/06-services.yaml
   - ../../../k8s-manifests/07-ingress.yaml
-  - ../../../k8s-manifests/08-network-policies.yaml
+  - ../../../k8s-manifests/08-servicemonitor.yaml
 
-# Ops-only components stay under k8s/ (Zitadel Helm, Cadence schema jobs, BGP).
-# See docs/audit/CONSOLIDATION_PLAN.md §1 step 4.
+commonLabels:
+  app.kubernetes.io/part-of: cloudbridge-relay
+  app.kubernetes.io/managed-by: kustomize-overlay

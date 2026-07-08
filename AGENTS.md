@@ -162,7 +162,8 @@ voly ui   # http://127.0.0.1:7788
 - [x] SCORE allocator wiring (optional `SCORE_BASE_URL`); p2p-deployment ports aligned
 - [x] Cadence: Client wraps ProductionClient; service factories unified
 - [x] Hybrid SQLite peer IPAM (`SCORE_SQLITE_PATH`) when SCORE hybrid enabled
-- [~] K8s: overlays skeleton `k8s/overlays/production/`; deploy.sh e2e + full tree merge still open
+- [x] K8s: `deploy.sh --use-overlay` + `k8s/overlays/production/` (default still manifests)
+- [ ] Full k8s tree merge; live-cluster e2e for overlay as default
 
 План: [docs/audit/CONSOLIDATION_PLAN.md](docs/audit/CONSOLIDATION_PLAN.md).  
 Полный чеклист: [docs/audit/MIMO_AUDIT_REPORT.md](docs/audit/MIMO_AUDIT_REPORT.md).
