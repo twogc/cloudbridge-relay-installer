@@ -69,14 +69,24 @@ go test -short ./internal/auth/... ./internal/zitadel/... ./internal/network/...
 
 ---
 
-## Открытые пункты (не блокируют сборку)
+## Открытые пункты (на момент next)
 
-1. **CI `go vet` на `cmd/relay`** — падает на `multiprotocol_integration_test.go:123` (legacy `KeycloakURL` в struct literal); workflow добавлен, код не исправлялся.
-2. **Wiring `NewSCORETenantNetworkAllocatorProduction`** — allocator не подключён к рантайму (step 1).
-3. **Runtime drift IPAM/AI** — `cmd/ipam-service` :8080, `cmd/ai-worker` :8085 vs catalog 8083/8086 (step 2 задокументирован как drift).
-4. **Cadence / AI / остальные дубликаты** — инвентарь есть, merge отложен (`DUPLICATES_INVENTORY.md`).
-5. **Инфра-консолидация** — только план (`CONSOLIDATION_PLAN.md`), миграция k8s/terraform/monitoring не выполнялась.
-6. **Commit/push** — не выполнялись (по инструкции).
+1. **CI `go vet` на `cmd/relay`** — падает на `multiprotocol_integration_test.go:123` (legacy `KeycloakURL`); workflow есть, код не чинился — **ещё open**.
+2. **Wiring `NewSCORETenantNetworkAllocatorProduction`** — не wired — **ещё open** (подтверждено score-ports).
+3. **Runtime drift IPAM/AI vs catalog 8083/8086** — *на момент next catalog ещё legacy*.
+4. **Cadence / AI дубликаты** — merge отложен.
+5. **Инфра-консолидация** — только plan.
+6. **Commit/push** — не выполнялись.
+
+### Superseded by later missions (2026-07-09)
+
+| Open item (next) | Статус |
+|------------------|--------|
+| Catalog ports 8083/8085/**8086** vs runtime | **score-ports**: SoT = `cmd/*` → IPAM **8080**, AI **8083**, Worker **8085**; catalog выровнен |
+| AI real/optimized duplicates | **cadence-ai**: удалены |
+| Cadence dual-path | **cadence-ai**: intentional dual-path, merge API ⏳ |
+| k8s-manifests nginx/AI port stubs | **k8s-prod-fix**: P0 fixed (8083/8084, no nginx) |
+| SCORE wiring / full infra merge / go vet KeycloakURL | **ещё open** |
 
 ---
 

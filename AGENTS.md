@@ -129,7 +129,10 @@ voly ui   # http://127.0.0.1:7788
 | **cursor** | Правки файлов, реализация, quick wins |
 | **mimo** | Дешёвый текстовый анализ (без записи файлов) |
 
-Активные миссии: `cloudbridge-relay-audit`, `cloudbridge-relay-fixes` (по `MIMO_AUDIT_REPORT.md`).
+Миссии VOLY (2026-07-09, см. [docs/agent-reports/](docs/agent-reports/README.md)):  
+`fixes` → `medium` → `next` → `cadence-ai` → `k8s-consol` → `score-ports` → `k8s-prod-fix` (+ `docs-consistency-sync`).
+
+**SoT при расхождении docs:** `openwiki/port-scheme.md` · `openwiki/deploy.md` · чеклист [MIMO_AUDIT_REPORT.md](docs/audit/MIMO_AUDIT_REPORT.md) > SUMMARY с Superseded > `docs/legacy/`.
 
 ---
 
@@ -142,18 +145,22 @@ voly ui   # http://127.0.0.1:7788
 - [x] Удалить Keycloak-код и скрипты
 - [x] Удалить Django/quantum/`src/`
 - [x] Удалить `.github/workflows/*.disabled`
-- [x] Синхронизировать keycloak-блоки в k8s configmaps
-- [ ] `systemd/enhanced-quic-proxy.service` — не удалять (порты 9090 vs 9092)
+- [x] Синхронизировать keycloak-блоки в k8s configmaps (top-level)
+- [x] `systemd/enhanced-quic-proxy.service` — **оставить** (9090 vs 9092, не дубликат)
 
-### Средний срок (миссия VOLY `cloudbridge-relay-medium`)
+### Средний / follow-up (после medium–k8s-prod-fix)
 
-- Консолидация дубликатов (`*_improved`, `*_enhanced`, `*_production`)
-- Объединение `k8s/` + `k8s-manifests/`, terraform-директорий
-- [x] Единая портовая схема (canonical → `openwiki/port-scheme.md`)
-- [x] Архитектурные docs без Keycloak/Django (IAM → Zitadel canonical)
-- План `docs/audit/CONSOLIDATION_PLAN.md`
+- [x] Единая портовая схема → `openwiki/port-scheme.md` (+ network docs sync)
+- [x] IAM docs → Zitadel-only
+- [x] Network score/retry + AI real/optimized consolidation
+- [x] P0 `k8s-manifests/05–06` nginx stubs → production images
+- [x] `openwiki/deploy.md` + k8s roles (prod vs ops)
+- [ ] Cadence dual-path merge API; wire SCORE allocator
+- [ ] Full merge `k8s/`+`k8s-manifests/`, terraform, monitoring
+- [ ] Residual drift: AI metrics Service 8084 vs runtime 8083; prometheus annotations
 
-Полный список: [docs/audit/MIMO_AUDIT_REPORT.md](docs/audit/MIMO_AUDIT_REPORT.md).
+План: [docs/audit/CONSOLIDATION_PLAN.md](docs/audit/CONSOLIDATION_PLAN.md).  
+Полный чеклист: [docs/audit/MIMO_AUDIT_REPORT.md](docs/audit/MIMO_AUDIT_REPORT.md).
 
 ---
 

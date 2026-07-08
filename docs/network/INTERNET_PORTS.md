@@ -1,65 +1,115 @@
-# CloudBridge Relay - Порты для интернет-доступа
+# CloudBridge Relay — порты для интернет-доступа
 
-## Обзор архитектуры
+> **Canonical:** [openwiki/port-scheme.md](../../openwiki/port-scheme.md).  
+> Этот файл — firewall / LB / internet exposure; не переопределяет SoT.
 
-CloudBridge Relay использует несколько портов для различных функций:
-- **HTTP API** - для регистрации клиентов и управления
-- **P2P QUIC** - для P2P соединений
-- **ICE/STUN/TURN** - для NAT traversal
-- **Health Check** - для мониторинга
-- **Metrics** - для метрик
+## Обзор
 
-## Критические порты для интернета
+| Роль | Порт | Протокол | Примечание |
+|------|-----:|----------|------------|
+| P2P REST API | **5552** | TCP | Публичный API клиентов |
+| P2P QUIC | **5553** | UDP | P2P data plane |
+| STUN | **19302** | UDP | NAT discovery |
+| QUIC transport | **9090** | UDP | Основной QUIC listener |
+| HTTP API | **9090** | TCP | Health/REST via ingress (не metrics) |
+| HTTPS API | **5553** | TCP | TLS API (ingress) |
+| Prometheus metrics | **5551** | TCP | **Внутренний** scrape target |
+| Health / TLS tunnel | **9091** | TCP | Internal |
+| MASQUE | **8443** | TCP/UDP | Optional |
+| TURN | **3478** | UDP/TCP | Built-in or coturn |
+| WireGuard | **51820** | UDP | Mesh (when enabled) |
+| gRPC | **8444** | TCP | Control plane (internal) |
 
-### 1. HTTP API (Обязательно)
+**Не путать:**
+
+- **5551 TCP** = relay Prometheus metrics (`metrics.port`)
+- **9090 UDP** = QUIC transport
+- **9090 TCP** = HTTP API (`http_api.port`), **не** metrics
+- Host Prometheus UI часто тоже **9090 TCP** — внешний к installer (см. port-scheme host note)
+
+## Критические (обязательно снаружи)
+
+### 1. P2P REST API — TCP 5552
+
 ```
 Порт: 5552 (TCP)
-Назначение: P2P API для регистрации клиентов
-Доступ: Публичный
-Безопасность: HTTPS рекомендуется
+Назначение: регистрация peers / P2P API
+Доступ: публичный
+Безопасность: JWT (Zitadel)
 ```
 
-### 2. P2P QUIC (Обязательно)
+### 2. P2P QUIC — UDP 5553
+
 ```
 Порт: 5553 (UDP)
-Назначение: P2P соединения между клиентами
-Доступ: Публичный
+Назначение: P2P data plane
+Доступ: публичный
 Протокол: QUIC over UDP
 ```
 
-### 3. ICE/STUN (Обязательно)
+### 3. STUN — UDP 19302
+
 ```
 Порт: 19302 (UDP)
-Назначение: STUN сервер для NAT traversal
-Доступ: Публичный
-Протокол: STUN over UDP
+Назначение: NAT traversal
+Доступ: публичный
 ```
 
-## Дополнительные порты
+## Рекомендуемые
 
-### 4. Health Check (Рекомендуется)
-```
-Порт: 5551 (TCP)
-Назначение: Health check для load balancer
-Доступ: Публичный (только для LB)
-Безопасность: Внутренний доступ
-```
+### 4. QUIC transport — UDP 9090
 
-### 5. Metrics (Опционально)
 ```
-Порт: 9090 (TCP)
-Назначение: Prometheus метрики
-Доступ: Ограниченный (только для мониторинга)
-Безопасность: Аутентификация обязательна
+Порт: 9090 (UDP)
+Назначение: основной QUIC transport relay
 ```
 
-## Конфигурация для продакшена
+### 5. MASQUE — TCP 8443 (optional)
 
-### Минимальная конфигурация (3 порта)
+```
+Порт: 8443 (TCP/UDP)
+Назначение: HTTP/3 MASQUE
+```
+
+### 6. TURN — UDP/TCP 3478 (optional)
+
+```
+Порт: 3478
+Назначение: relay для restrictive NAT
+```
+
+### 7. WireGuard — UDP 51820 (optional)
+
+```
+Порт: 51820 (UDP)
+Назначение: WireGuard mesh
+```
+
+## Внутренние (не открывать в интернет)
+
+| Порт | Протокол | Назначение |
+|-----:|----------|------------|
+| 5550 | TCP | Main TCP server |
+| **5551** | TCP | **Prometheus metrics** |
+| 9091 | TCP | Health / TLS tunnel |
+| 8444 | TCP | gRPC |
+| 9090 | TCP | HTTP API — только через ingress / private LB |
+
+## Конфигурация firewall
+
+### Минимальная (P2P)
+
+```bash
+sudo ufw allow 5552/tcp comment "CloudBridge P2P API"
+sudo ufw allow 5553/udp comment "CloudBridge P2P QUIC"
+sudo ufw allow 19302/udp comment "CloudBridge STUN"
+```
+
+### Полная публичная поверхность
+
 ```yaml
-# Обязательные порты для работы
 ports:
-  - port: 5552    # HTTP API
+  - port: 5552    # P2P REST API
     protocol: TCP
     public: true
   - port: 5553    # P2P QUIC
@@ -68,282 +118,68 @@ ports:
   - port: 19302   # STUN
     protocol: UDP
     public: true
-```
-
-### Полная конфигурация (5 портов)
-```yaml
-# Все порты для полной функциональности
-ports:
-  - port: 5551    # Health Check
-    protocol: TCP
-    public: true
-  - port: 5552    # HTTP API
-    protocol: TCP
-    public: true
-  - port: 5553    # P2P QUIC
+  - port: 9090    # QUIC transport
     protocol: UDP
     public: true
-  - port: 19302   # STUN
+  - port: 8443    # MASQUE (optional)
+    protocol: TCP
+    public: true
+  - port: 3478    # TURN (optional)
     protocol: UDP
     public: true
-  - port: 9090    # Metrics (опционально)
-    protocol: TCP
-    public: false  # Только для мониторинга
+  - port: 51820   # WireGuard (optional)
+    protocol: UDP
+    public: true
+  # Internal only:
+  # 5551/TCP metrics — scrape from Prometheus network
 ```
 
-## Настройка Load Balancer
+### UFW (рекомендуемые + metrics private)
 
-### Nginx конфигурация
+```bash
+# Public
+sudo ufw allow 5552/tcp comment "CloudBridge P2P API"
+sudo ufw allow 5553/udp comment "CloudBridge P2P QUIC"
+sudo ufw allow 19302/udp comment "CloudBridge STUN"
+sudo ufw allow 9090/udp comment "CloudBridge QUIC Transport"
+sudo ufw allow 8443/tcp comment "CloudBridge MASQUE"
+sudo ufw allow 51820/udp comment "CloudBridge WireGuard"
+
+# Metrics: only from monitoring CIDR (example)
+# sudo ufw allow from 10.0.0.0/8 to any port 5551 proto tcp comment "CloudBridge metrics"
+```
+
+## Load balancer / Nginx
+
+Проксируйте **P2P API (5552)** и при необходимости **HTTP API (9090)**; не публикуйте **5551** наружу без auth/network policy.
+
 ```nginx
-# HTTP API
-upstream cloudbridge_api {
-    server 192.168.58.2:32500;
+upstream cloudbridge_p2p_api {
+    server RELAY_IP:5552;
 }
 
 server {
     listen 443 ssl;
-    server_name edge.2gc.ru;
-    
-    # P2P API
+    server_name edge.example.com;
+
     location /api/ {
-        proxy_pass http://cloudbridge_api;
+        proxy_pass http://cloudbridge_p2p_api;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    
-    # Health check
-    location /health {
-        proxy_pass http://cloudbridge_api;
     }
 }
 ```
 
-### Kubernetes Service
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: cloudbridge-relay-external
-  namespace: cloudbridge
-spec:
-  type: LoadBalancer
-  ports:
-  - name: p2p-api
-    port: 5552
-    targetPort: 5552
-    protocol: TCP
-  - name: p2p-quic
-    port: 5553
-    targetPort: 5553
-    protocol: UDP
-  - name: stun
-    port: 19302
-    targetPort: 19302
-    protocol: UDP
-  - name: health
-    port: 5551
-    targetPort: 5551
-    protocol: TCP
-  selector:
-    app: cloudbridge-relay
-```
+## Проверка
 
-## Firewall правила
-
-### UFW (Ubuntu)
 ```bash
-# HTTP API
-sudo ufw allow 5552/tcp comment "CloudBridge HTTP API"
-
-# P2P QUIC
-sudo ufw allow 5553/udp comment "CloudBridge P2P QUIC"
-
-# STUN
-sudo ufw allow 19302/udp comment "CloudBridge STUN"
-
-# Health Check
-sudo ufw allow 5551/tcp comment "CloudBridge Health Check"
-
-# Metrics (опционально)
-sudo ufw allow from 10.0.0.0/8 to any port 9090 comment "CloudBridge Metrics"
-```
-
-### iptables
-```bash
-# HTTP API
-iptables -A INPUT -p tcp --dport 5552 -j ACCEPT
-
-# P2P QUIC
-iptables -A INPUT -p udp --dport 5553 -j ACCEPT
-
-# STUN
-iptables -A INPUT -p udp --dport 19302 -j ACCEPT
-
-# Health Check
-iptables -A INPUT -p tcp --dport 5551 -j ACCEPT
-```
-
-## Безопасность
-
-### 1. HTTPS для HTTP API
-```yaml
-# Включить TLS для HTTP API
-tls:
-  enabled: true
-  cert_file: "/app/certs/tls.crt"
-  key_file: "/app/certs/tls.key"
-```
-
-### 2. Аутентификация
-```yaml
-# Включить JWT аутентификацию
-auth:
-  enabled: true
-  jwt_secret: "your-secret-key"
-  audience: "relay-production"
-```
-
-### 3. Rate Limiting
-```yaml
-# Ограничить количество запросов
-rate_limit:
-  enabled: true
-  requests_per_minute: 100
-  burst_size: 20
-```
-
-## Мониторинг портов
-
-### Проверка открытых портов
-```bash
-# Проверить, что порты слушают
-netstat -tulpn | grep -E "(5551|5552|5553|19302|9090)"
-
-# Проверить доступность извне
-telnet your-server.com 5552
-nc -u your-server.com 5553
-nc -u your-server.com 19302
-```
-
-### Тестирование соединения
-```bash
-# Тест HTTP API
-curl -X GET https://edge.2gc.ru/health
-
-# Тест P2P регистрации
-curl -X POST https://edge.2gc.ru/api/v1/tenants/test/peers/register \
-  -H "Content-Type: application/json" \
-  -d '{"peer_id": "test-peer", "endpoint": "1.2.3.4:5553"}'
-```
-
-## Рекомендации по развертыванию
-
-### 1. Минимальная конфигурация
-- **Порты**: 5552 (TCP), 5553 (UDP), 19302 (UDP)
-- **Безопасность**: HTTPS + JWT
-- **Мониторинг**: Внутренний health check
-
-### 2. Продакшен конфигурация
-- **Порты**: 5551 (TCP), 5552 (TCP), 5553 (UDP), 19302 (UDP)
-- **Безопасность**: HTTPS + JWT + Rate Limiting
-- **Мониторинг**: Prometheus + Grafana
-- **Load Balancer**: Nginx/HAProxy
-
-### 3. Высокая доступность
-- **Множественные инстансы**: 3+ реплики
-- **Load Balancer**: Round-robin
-- **Health Checks**: Автоматическое восстановление
-- **Мониторинг**: Полный стек наблюдения
-
-## Устранение неполадок
-
-### Порт не доступен
-```bash
-# Проверить, что сервис запущен
-kubectl get pods -n cloudbridge
-kubectl logs -n cloudbridge deployment/cloudbridge-relay
-
-# Проверить порты
-kubectl get services -n cloudbridge
-```
-
-### Firewall блокирует
-```bash
-# Проверить firewall
 sudo ufw status
-sudo iptables -L
-
-# Открыть порты
-sudo ufw allow 5552/tcp
-sudo ufw allow 5553/udp
-sudo ufw allow 19302/udp
+ss -tulpn | grep -E '(5551|5552|5553|8443|9090|19302|51820|3478)'
+curl -sS "http://127.0.0.1:5551/metrics" | head
 ```
 
-### NAT проблемы
-```bash
-# Проверить NAT
-nmap -sU -p 5553 your-server.com
-nmap -sU -p 19302 your-server.com
+## См. также
 
-# Тест STUN
-stun-client your-server.com:19302
-```
-
-## Примеры конфигурации
-
-### Docker Compose
-```yaml
-version: '3.8'
-services:
-  cloudbridge-relay:
-    image: cloudbridge-relay:latest
-    ports:
-      - "5551:5551"    # Health Check
-      - "5552:5552"    # HTTP API
-      - "5553:5553/udp" # P2P QUIC
-      - "19302:19302/udp" # STUN
-    environment:
-      - AUTH_ENABLED=true
-      - RELAY_JWT_SECRET=your-secret
-```
-
-### Kubernetes
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: cloudbridge-relay-external
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 5552
-    targetPort: 5552
-    protocol: TCP
-  - port: 5553
-    targetPort: 5553
-    protocol: UDP
-  - port: 19302
-    targetPort: 19302
-    protocol: UDP
-```
-
-## Заключение
-
-Для работы CloudBridge Relay через интернет необходимо открыть:
-
-**Обязательные порты:**
-- `5552/TCP` - HTTP API
-- `5553/UDP` - P2P QUIC
-- `19302/UDP` - STUN
-
-**Рекомендуемые порты:**
-- `5551/TCP` - Health Check
-- `9090/TCP` - Metrics (опционально)
-
-**Безопасность:**
-- HTTPS для HTTP API
-- JWT аутентификация
-- Rate limiting
-- Firewall правила
+- [PORTS_SUMMARY.md](PORTS_SUMMARY.md) — Minikube NodePort + firewall checklist
+- [INTERNET_PORTS_FULL.md](INTERNET_PORTS_FULL.md) — expanded tables
+- [docs/operations/SERVICE_CATALOG.md](../operations/SERVICE_CATALOG.md)

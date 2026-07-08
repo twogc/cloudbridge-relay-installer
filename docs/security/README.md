@@ -1,125 +1,119 @@
-# **Безопасность CloudBridge Relay**
+# Безопасность CloudBridge Relay
 
-## **Обзор**
+## Обзор
 
-Этот раздел содержит документы по безопасности CloudBridge Relay, включая аутентификацию, авторизацию и интеграцию с Keycloak.
+Документы по безопасности: аутентификация/авторизация, TLS, zero-trust, compliance.  
+**Canonical IAM: [Zitadel](../guides/ZITADEL_SETUP.md)** (Keycloak удалён — не восстанавливать).
 
-## **Документы**
+> Порты: [openwiki/port-scheme.md](../../openwiki/port-scheme.md).  
+> Deploy: [openwiki/deploy.md](../../openwiki/deploy.md).
 
-### **Анализ и тестирование:**
-- [**Keycloak Analysis Results**](KEYCLOAK_ANALYSIS_RESULTS.md) - Результаты анализа интеграции с Keycloak
-- [**Keycloak Testing Results**](KEYCLOAK_TESTING_RESULTS.md) - Результаты тестирования Keycloak
-- [**Keycloak Connection Issue Report**](KEYCLOAK_CONNECTION_ISSUE_REPORT.md) - Отчет о проблемах подключения
-- [**Quick Keycloak Fix**](QUICK_KEYCLOAK_FIX.md) - Быстрое исправление проблем Keycloak
+## Документы
 
-## **Модель безопасности**
+| Документ | Описание |
+|----------|----------|
+| [SECURITY.md](SECURITY.md) | Security policy, reporting, supported versions |
+| [ENTERPRISE_SECURITY_COMPLETE.md](ENTERPRISE_SECURITY_COMPLETE.md) | Enterprise security features |
+| [guides/ZITADEL_SETUP.md](../guides/ZITADEL_SETUP.md) | Zitadel integration setup |
+| [guides/ZITADEL_DEPLOYMENT_GUIDE.md](../guides/ZITADEL_DEPLOYMENT_GUIDE.md) | Zitadel K8s deployment |
+| [guides/ZITADEL_SERVICE_USER_PERMISSIONS.md](../guides/ZITADEL_SERVICE_USER_PERMISSIONS.md) | Service user permissions |
 
-### **Zero-Trust архитектура:**
+Устаревшие отчёты Keycloak (если встречались во внешних копиях) — архив; в этом репозитории **нет** `KEYCLOAK_*.md` в `docs/security/`. Исторический контекст: `docs/legacy/`, миссия `cloudbridge-relay-fixes`.
+
+## Модель безопасности
+
+### Zero-Trust
+
 - Проверка каждого соединения
 - Минимальные привилегии
-- Постоянная верификация
+- Постоянная верификация (JWT / mTLS где применимо)
 
-### **Аутентификация:**
-- **Keycloak** - Централизованная аутентификация
-- **JWT токены** - Безопасные токены доступа
-- **OAuth 2.0** - Стандартный протокол авторизации
+### Аутентификация (canonical)
 
-### **Авторизация:**
-- **RBAC** - Role-Based Access Control
-- **ABAC** - Attribute-Based Access Control
-- **Политики доступа** - Гибкие правила
+- **Zitadel** — OIDC IdP, JWKS (RS256)
+- **JWT** — access tokens для API / clients
+- **OAuth 2.0 / OIDC** — standard flows
 
-##  **Компоненты безопасности**
+### Авторизация
 
-### **Keycloak интеграция:**
-- **Server URL**: https://auth.2gc.ru
-- **Realm**: cloudbridge
-- **Client ID**: quic-client
-- **JWKS URL**: Автоматическое получение ключей
+- **RBAC** — Role-Based Access Control (Zitadel roles / project grants)
+- Tenant isolation — network + policy controller
+- Политики доступа на уровне tenant / peer
 
-### **JWT валидация:**
-- **Issuer validation** - Проверка издателя
-- **Audience validation** - Проверка аудитории
-- **Clock skew** - Допустимое расхождение времени
-- **Signature verification** - Проверка подписи
+## Компоненты
 
-### **TLS/SSL:**
-- **TLS 1.2+** - Современные версии TLS
-- **Perfect Forward Secrecy** - PFS поддержка
-- **Certificate validation** - Проверка сертификатов
+### Zitadel
 
-## **Защита от угроз**
+- Server / instance: per-environment (см. `k8s-manifests/09–15`, guides)
+- JWT validation via JWKS in `internal/auth/`, `internal/zitadel/`
+- Не использовать Keycloak env (`KEYCLOAK_*`) — только Zitadel config
 
-### **DDoS защита:**
-- **Rate limiting** - Ограничение скорости запросов
-- **Circuit breaker** - Автоматическое отключение при перегрузке
-- **Connection limits** - Ограничение количества соединений
+### JWT валидация
 
-### **NAT traversal:**
-- **STUN сервер** - Обнаружение NAT
-- **TURN сервер** - Relay для сложных NAT
-- **ICE протокол** - Автоматический выбор пути
+- Issuer / audience checks
+- Clock skew tolerance
+- Signature verification (JWKS)
 
-### **Мониторинг безопасности:**
-- **Audit logs** - Логи аудита
-- **Security metrics** - Метрики безопасности
-- **Anomaly detection** - Обнаружение аномалий
+### TLS / QUIC
 
-## **Конфигурация безопасности**
+- TLS 1.2+ / 1.3 where configured
+- QUIC built-in crypto (UDP 9090 / P2P 5553)
+- Certificate validation for HTTPS API (5553) and MASQUE (8443)
 
-### **Переменные окружения:**
+## Защита от угроз
+
+- Rate limiting, circuit breaker, connection limits
+- STUN / TURN / ICE для NAT traversal
+- Audit logs, security metrics, anomaly detection (AI optional)
+
+## Конфигурация (пример env)
+
 ```bash
-KEYCLOAK_SERVER_URL=https://auth.2gc.ru
-KEYCLOAK_REALM=cloudbridge
-KEYCLOAK_CLIENT_ID=quic-client
-KEYCLOAK_CLIENT_SECRET=your-secret
+# Zitadel (names vary by config key — prefer configs/config.json zitadel section)
+ZITADEL_DOMAIN=https://auth.example.com
+ZITADEL_PROJECT_ID=...
+# Client credentials / machine user — see ZITADEL_SERVICE_USER_PERMISSIONS.md
 ```
 
-### **Политики доступа:**
-- **IP whitelist** - Разрешенные IP адреса
-- **Rate limits** - Ограничения скорости
-- **Session timeout** - Таймаут сессий
+Не задавать `KEYCLOAK_*` в production.
 
-## **Диагностика безопасности**
+## Диагностика
 
-### **Проверка подключения:**
 ```bash
-# Проверка Keycloak
-curl -k https://auth.2gc.ru/realms/cloudbridge/.well-known/openid_configuration
+# OIDC discovery (подставьте ваш Zitadel domain)
+curl -sS "https://auth.example.com/.well-known/openid-configuration" | head
 
-# Проверка JWT токена
-jwt decode your-token-here
-```
+# JWT decode (локально, без отправки секретов)
+jwt decode "$ACCESS_TOKEN"
 
-### **Логи безопасности:**
-```bash
-# Логи аутентификации
+# Auth logs on relay
 kubectl logs -f deployment/cloudbridge-relay -n cloudbridge | grep -i auth
 
-# Логи Keycloak
-kubectl logs -f deployment/keycloak -n cloudbridge
+# Zitadel (not keycloak)
+kubectl logs -f deployment/zitadel -n cloudbridge
 ```
 
-## **Чек-лист безопасности**
+## Чек-лист
 
-### **Аутентификация:**
-- [ ] Keycloak доступен
-- [ ] JWT токены валидны
-- [ ] Пользователи могут аутентифицироваться
-- [ ] Токены обновляются корректно
+### Аутентификация
 
-### **Авторизация:**
-- [ ] Роли назначены правильно
-- [ ] Доступ ограничен по ролям
-- [ ] Политики работают
-- [ ] Административный доступ защищен
+- [ ] Zitadel доступен (OIDC discovery)
+- [ ] JWKS reachable from relay
+- [ ] JWT audience/issuer совпадают с config
+- [ ] Clients могут получить токен
 
-### **Мониторинг:**
-- [ ] Логи аудита включены
-- [ ] Метрики безопасности собираются
-- [ ] Аномалии обнаруживаются
-- [ ] Алерты настроены
+### Авторизация
+
+- [ ] Роли / project grants назначены
+- [ ] Tenant isolation проверена
+- [ ] Admin paths защищены
+
+### Мониторинг
+
+- [ ] Audit logs
+- [ ] Metrics scrape (`metrics.port` **5551** на relay)
+- [ ] Alerts on auth failures
 
 ---
 
-**Безопасность CloudBridge Relay под контролем!**
+**SoT IAM:** Zitadel. Security policy details: [SECURITY.md](SECURITY.md).

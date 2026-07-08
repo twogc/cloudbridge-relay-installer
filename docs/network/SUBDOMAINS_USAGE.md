@@ -1,5 +1,8 @@
 # CloudBridge Relay - Использование поддоменов
 
+> **Ports SoT:** [openwiki/port-scheme.md](../../openwiki/port-scheme.md).  
+> Hostnames below are examples (`*.2gc.ru`); map backends to canonical ports.
+
 ## Назначение поддоменов
 
 ### 1. **relay.2gc.ru** - Основной P2P релей
@@ -34,27 +37,19 @@
   - `POST /p2p/connect`
   - `GET /p2p/peers`
 
-### 4. **admin.2gc.ru** - Административная панель
-- **Порт**: 5551 (Admin API)
+### 4. **admin.2gc.ru** - Административная / HTTP API
+- **Порт**: **9090** TCP (`http_api.port`) — не metrics
 - **Функции**:
-  - Управление пирами
-  - Статистика соединений
-  - Конфигурация
-- **API endpoints**:
-  - `GET /admin/stats`
-  - `POST /admin/config`
-  - `GET /admin/peers`
+  - Управление / REST (via ingress)
+  - Health на HTTP API
+- **См.:** [ADMIN_API.md](../ADMIN_API.md), [port-scheme.md](../../openwiki/port-scheme.md)
 
-### 5. **monitor.2gc.ru** - Мониторинг и метрики
-- **Порт**: 9090 (Metrics)
-- **Функции**:
-  - Prometheus метрики
-  - Grafana дашборды
-  - Алерты
-- **API endpoints**:
-  - `GET /metrics/`
-  - `GET /prometheus/`
-  - `GET /grafana/`
+### 5. **monitor.2gc.ru** - Мониторинг
+- **Relay metrics**: **5551** TCP (`metrics.port`, `/metrics`) — scrape target
+- **Prometheus UI** (если отдельный stack): часто **9090** TCP на Prometheus pod/host — **не** listener metrics relay
+- **Не путать:** 9090 **UDP** = QUIC transport relay
+- **API endpoints (relay):**
+  - `GET :5551/metrics`
 
 ### 6. **api.2gc.ru** - Общий API шлюз
 - **Порт**: 5552 (General API)

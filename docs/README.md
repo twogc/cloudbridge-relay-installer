@@ -2,6 +2,18 @@
 
 Human-oriented documentation index for CloudBridge Relay. For agent-oriented overview, see [openwiki/quickstart.md](../openwiki/quickstart.md).
 
+**Canonical sources of truth (do not contradict these):**
+
+| Topic | Document |
+|-------|----------|
+| Ports | [openwiki/port-scheme.md](../openwiki/port-scheme.md) |
+| Deploy (VK Cloud K8s) | [openwiki/deploy.md](../openwiki/deploy.md) |
+| IAM | **Zitadel** only — [guides/ZITADEL_SETUP.md](guides/ZITADEL_SETUP.md) |
+| Audit status / backlog | [audit/MIMO_AUDIT_REPORT.md](audit/MIMO_AUDIT_REPORT.md) |
+| Agent mission reports | [agent-reports/README.md](agent-reports/README.md) |
+
+`docs/legacy/` is archive — not operational SoT.
+
 ---
 
 ## Guides (deployment, setup, developer)
@@ -67,11 +79,13 @@ See [analysis/README.md](analysis/README.md) and service-specific analyses in `a
 
 | Directory | Description |
 |-----------|-------------|
-| [network/](network/) | Ports, tokens, subdomains reference |
-| [security/](security/) | Security policies and guides |
+| [network/](network/) | Ports (→ port-scheme), tokens, subdomains |
+| [security/](security/) | Security policy; IAM = Zitadel (not Keycloak) |
 | [compliance/](compliance/) | Compliance documentation |
 | [troubleshooting/](troubleshooting/) | Incident runbooks |
 | [monitoring/](monitoring/) | Monitoring stack overview |
+| [audit/](audit/) | MiMo audit, consolidation plan, inventories |
+| [agent-reports/](agent-reports/) | VOLY / agent step reports |
 
 ## Deployment
 
