@@ -95,12 +95,6 @@ func (hc *EnhancedHealthChecker) addDefaultChecks() {
 		logger: hc.logger,
 	})
 
-	// Keycloak check
-	hc.AddCheck(&KeycloakHealthCheck{
-		name:   "keycloak",
-		logger: hc.logger,
-	})
-
 	// TCP Proxy check
 	hc.AddCheck(&TCPProxyHealthCheck{
 		name:   "tcp_proxy",
@@ -329,26 +323,6 @@ func (r *RedisHealthCheck) Name() string {
 
 func (r *RedisHealthCheck) Description() string {
 	return "Redis connectivity check"
-}
-
-// KeycloakHealthCheck проверка Keycloak
-type KeycloakHealthCheck struct {
-	name   string
-	logger *zap.Logger
-}
-
-func (k *KeycloakHealthCheck) Check(ctx context.Context) error {
-	// TODO: Реализовать проверку Keycloak
-	// Пока возвращаем nil (успех)
-	return nil
-}
-
-func (k *KeycloakHealthCheck) Name() string {
-	return k.name
-}
-
-func (k *KeycloakHealthCheck) Description() string {
-	return "Keycloak connectivity check"
 }
 
 // TCPProxyHealthCheck проверка TCP прокси

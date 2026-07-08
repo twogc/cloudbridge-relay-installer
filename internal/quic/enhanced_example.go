@@ -25,16 +25,9 @@ func ExampleEnhancedQUIC() {
 		MaxIncomingUniStreams: 100,
 
 		// Enhanced features
-		TenantManager:             tenantManager,
-		EnableDDoSProtection:      true,
-		EnableGeographicRouting:   true,
-		EnableKeycloakIntegration: true,
-		KeycloakConfig: &KeycloakConfig{
-			ServerURL:    "https://keycloak.example.com",
-			Realm:        "cloudbridge",
-			ClientID:     "quic-client",
-			ClientSecret: "secret",
-		},
+		TenantManager:           tenantManager,
+		EnableDDoSProtection:    true,
+		EnableGeographicRouting: true,
 	}
 
 	// Пример создания соединения для тенанта
@@ -47,7 +40,7 @@ func ExampleEnhancedQUIC() {
 	// Пример использования хуков для отправки данных
 	data := []byte("Hello, Enhanced QUIC!")
 	remoteAddr := "192.168.1.100:8080"
-	
+
 	// Проверяем лимиты перед записью
 	if err := conn.BeforeWrite(remoteAddr, len(data)); err != nil {
 		log.Printf("Write blocked by policies: %v", err)
@@ -59,7 +52,7 @@ func ExampleEnhancedQUIC() {
 
 	// Пример использования хуков для чтения данных
 	buffer := make([]byte, 1024)
-	
+
 	// Проверяем лимиты перед чтением
 	if err := conn.BeforeRead(remoteAddr, len(buffer)); err != nil {
 		log.Printf("Read blocked by policies: %v", err)
@@ -79,16 +72,6 @@ func ExampleEnhancedQUIC() {
 	if conn.geoRouter != nil {
 		route := conn.geoRouter.RouteByLocation("192.168.1.1")
 		fmt.Printf("Geographic route: %s\n", route)
-	}
-
-	// Пример аутентификации через Keycloak
-	if conn.keycloakAuth != nil {
-		authenticated, err := conn.keycloakAuth.AuthenticateUser("sample-token")
-		if err != nil {
-			log.Printf("Authentication failed: %v", err)
-		} else {
-			fmt.Printf("Authentication successful: %t\n", authenticated)
-		}
 	}
 }
 
@@ -140,34 +123,5 @@ func ExampleGeographicRouting() {
 	for _, ip := range testIPs {
 		route := router.RouteByLocation(ip)
 		fmt.Printf("IP %s -> Route: %s\n", ip, route)
-	}
-}
-
-// ExampleKeycloakIntegration демонстрирует интеграцию с Keycloak
-func ExampleKeycloakIntegration() {
-	keycloakConfig := &KeycloakConfig{
-		ServerURL:    "https://keycloak.example.com",
-		Realm:        "cloudbridge",
-		ClientID:     "quic-client",
-		ClientSecret: "secret",
-	}
-
-	auth := NewKeycloakAuth(keycloakConfig)
-
-	// Тестируем аутентификацию
-	token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..." //nosec G101 - тестовый токен
-	authenticated, err := auth.AuthenticateUser(token)
-	if err != nil {
-		fmt.Printf("Authentication error: %v\n", err)
-	} else {
-		fmt.Printf("Authentication result: %t\n", authenticated)
-	}
-
-	// Тестируем валидацию токена
-	valid, err := auth.ValidateToken(token)
-	if err != nil {
-		fmt.Printf("Token validation error: %v\n", err)
-	} else {
-		fmt.Printf("Token validation result: %t\n", valid)
 	}
 }

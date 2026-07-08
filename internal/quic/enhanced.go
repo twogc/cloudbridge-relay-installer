@@ -3,7 +3,6 @@ package quic
 import (
 	"crypto/tls"
 	"fmt"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,11 +32,9 @@ type EnhancedConfig struct {
 	CongestionControlAlgorithm string
 
 	// Enhanced features
-	TenantManager             *TenantManager
-	EnableDDoSProtection      bool
-	EnableGeographicRouting   bool
-	EnableKeycloakIntegration bool
-	KeycloakConfig            *KeycloakConfig
+	TenantManager           *TenantManager
+	EnableDDoSProtection    bool
+	EnableGeographicRouting bool
 
 	// Experimental features managers
 	ExperimentalFeatures *ExperimentalFeaturesConfig
@@ -69,16 +66,6 @@ type TenantInfo struct {
 	LastActivity      time.Time
 }
 
-// KeycloakConfig конфигурация Keycloak
-type KeycloakConfig struct {
-	ServerURL     string
-	Realm         string
-	ClientID      string
-	ClientSecret  string
-	AdminUsername string
-	AdminPassword string
-}
-
 // EnhancedConnection представляет Enhanced QUIC политики и телеметрию
 type EnhancedConnection struct {
 	tenantID       string
@@ -91,7 +78,6 @@ type EnhancedConnection struct {
 	tenantInfo     *TenantInfo
 	ddosProtection *DDoSProtection
 	geoRouter      *GeographicRouter
-	keycloakAuth   *KeycloakAuth
 }
 
 // DDoSProtection обеспечивает защиту от DDoS атак
@@ -118,11 +104,6 @@ type AnomalyDetector struct {
 // GeographicRouter географический роутер
 type GeographicRouter struct {
 	routes map[string]string
-}
-
-// KeycloakAuth интеграция с Keycloak
-type KeycloakAuth struct {
-	config *KeycloakConfig
 }
 
 // NewTenantManager создает новый менеджер тенантов
@@ -262,10 +243,6 @@ func NewEnhancedPolicies(tenantID string, config *EnhancedConfig) (*EnhancedConn
 
 	if config.EnableGeographicRouting {
 		enhancedConn.geoRouter = NewGeographicRouter()
-	}
-
-	if config.EnableKeycloakIntegration && config.KeycloakConfig != nil {
-		enhancedConn.keycloakAuth = NewKeycloakAuth(config.KeycloakConfig)
 	}
 
 	// Получаем информацию о тенанте
@@ -664,68 +641,4 @@ func (gr *GeographicRouter) isUSIP(ip string) bool {
 func (gr *GeographicRouter) isEUIP(ip string) bool {
 	// Упрощенная логика для примера
 	return len(ip) > 0 && ip[0] == '2'
-}
-
-// NewKeycloakAuth создает новую интеграцию с Keycloak
-func NewKeycloakAuth(config *KeycloakConfig) *KeycloakAuth {
-	return &KeycloakAuth{
-		config: config,
-	}
-}
-
-// AuthenticateUser аутентифицирует пользователя через Keycloak
-func (ka *KeycloakAuth) AuthenticateUser(token string) (bool, error) {
-	if ka.config == nil {
-		return false, fmt.Errorf("keycloak config not provided")
-	}
-	
-	if token == "" {
-		return false, fmt.Errorf("token is empty")
-	}
-	
-	// Реальная интеграция с Keycloak
-	// Проверяем конфигурацию
-	if ka.config.ServerURL == "" || ka.config.Realm == "" {
-		return false, fmt.Errorf("keycloak server URL or realm not configured")
-	}
-	
-	// В реальной реализации здесь будет HTTP запрос к Keycloak
-	// Для демонстрации проверяем базовые условия
-	if len(token) < 10 {
-		return false, fmt.Errorf("invalid token format")
-	}
-	
-	// Симуляция успешной аутентификации
-	return true, nil
-}
-
-// ValidateToken валидирует токен
-func (ka *KeycloakAuth) ValidateToken(token string) (bool, error) {
-	if ka.config == nil {
-		return false, fmt.Errorf("keycloak config not provided")
-	}
-	
-	if token == "" {
-		return false, fmt.Errorf("token is empty")
-	}
-	
-	// Реальная валидация токена через Keycloak
-	// Проверяем конфигурацию
-	if ka.config.ServerURL == "" || ka.config.Realm == "" {
-		return false, fmt.Errorf("keycloak server URL or realm not configured")
-	}
-	
-	// В реальной реализации здесь будет JWT валидация
-	// Для демонстрации проверяем базовые условия
-	if len(token) < 20 {
-		return false, fmt.Errorf("invalid token format")
-	}
-	
-	// Проверяем, что токен содержит базовые JWT части (две точки)
-	if strings.Count(token, ".") != 2 {
-		return false, fmt.Errorf("invalid JWT token structure")
-	}
-	
-	// Симуляция успешной валидации
-	return true, nil
 }

@@ -50,7 +50,7 @@ cloudbridge-relay-installer/
 │   ├── tunnel/                   # TCP tunnel proxy
 │   ├── protocol/                 # Protocol engine (QUIC/HTTP2/WebSocket switching)
 │   ├── masque/                   # MASQUE protocol (RFC 9297 capsules)
-│   ├── auth/                     # Authentication (Zitadel, Keycloak, JWT)
+│   ├── auth/                     # Authentication (Zitadel OIDC/JWT)
 │   ├── token/                    # Token validation and claims
 │   ├── ai/                       # AI/ML (anomaly detection, prediction, routing)
 │   ├── cadence/                  # Cadence workflow definitions
@@ -149,7 +149,8 @@ cd terraform-k8s && terraform init && terraform apply -auto-approve
 kubectl apply -f k8s-manifests/
 ```
 
-See: [Operations Guide](operations.md) for full deployment details.
+See: **[Canonical Deployment Path](deploy.md)** for the full production flow (`terraform-k8s` → `deploy.sh` → Zitadel).  
+See also: [Operations Guide](operations.md) for CI/CD, monitoring, and OVA builds.
 
 ### Path 2: Build and Run Locally
 
@@ -230,16 +231,22 @@ The Makefile injects version and commit via ldflags. CGO is required (`CGO_ENABL
 
 ## Core Ports
 
+Full canonical table: **[Port Scheme](port-scheme.md)** (from `configs/config.json` + SERVICE_CATALOG + k8s-manifests).
+
 | Port | Protocol | Service |
 |---|---|---|
-| 9090 | TCP/UDP | Main relay (HTTP + QUIC) |
-| 8082 | TCP | AI service API |
-| 8443 | TCP | HTTPS API |
-| 8085 | TCP | Cadence worker health |
-| 5553 | UDP | WireGuard |
+| 5550 | TCP | Main relay TCP (`server.port`) |
+| 5551 | TCP | Prometheus metrics |
+| 5552 | TCP | P2P REST API (`api.port`) |
+| 5553 | TCP/UDP | HTTPS API (TCP) / P2P QUIC (UDP) |
+| 9090 | TCP/UDP | HTTP API (TCP) / QUIC transport (UDP) |
+| 9092 | UDP | Enhanced QUIC |
+| 8443 | TCP/UDP | MASQUE HTTP/3 |
+| 8444 | TCP | gRPC control plane |
+| 3478 | UDP/TCP | TURN (built-in + external pool) |
 | 19302 | UDP | STUN |
-| 9090 | UDP | QUIC transport |
-| 9092 | UDP | QUIC secondary |
+| 51820 | UDP | WireGuard |
+| 7933 | TCP | Cadence frontend |
 
 ---
 
@@ -247,9 +254,11 @@ The Makefile injects version and commit via ldflags. CGO is required (`CGO_ENABL
 
 | Page | Content |
 |---|---|
+| [Port Scheme](port-scheme.md) | Canonical service → port table |
 | [Architecture](architecture.md) | System architecture, transport layers, auth, inter-service patterns |
 | [Networking Domain](domain-networking.md) | P2P, NAT traversal, WireGuard, IPAM, protocol engine, MASQUE |
 | [Services Domain](domain-services.md) | AI/ML, Cadence workflows, K8s controllers, CNI plugin |
-| [Operations](operations.md) | Deployment, CI/CD, monitoring, infrastructure, compliance |
+| [Deploy](deploy.md) | **Canonical** VK Cloud K8s path: terraform-k8s → deploy.sh → Zitadel |
+| [Operations](operations.md) | CI/CD, monitoring, infrastructure details, compliance |
 | [Audit](audit.md) | Documentation restructuring audit — what was moved, canonical sources |
 | [Human Docs Index](../docs/README.md) | Human-readable documentation index with links to guides, architecture specs, and business docs |

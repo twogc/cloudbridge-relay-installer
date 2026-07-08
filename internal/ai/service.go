@@ -582,29 +582,12 @@ func (s *Service) PredictLoad(ctx context.Context, horizon int) (*predictive.Loa
 }
 
 // OptimizeRoute optimizes network routes
-func (s *Service) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.Route, error) {
+func (s *Service) OptimizeRoute(ctx context.Context, source, destination string, constraints map[string]interface{}) (*routing.OptimizedRoute, error) {
 	if s.routeOptimizer == nil {
 		return nil, fmt.Errorf("route optimizer not initialized")
 	}
 
-	optimizedRoute, err := s.routeOptimizer.OptimizeRoute(source, destination)
-	if err != nil {
-		return nil, err
-	}
-
-	// Конвертируем OptimizedRoute в Route
-	route := &routing.Route{
-		ID:           fmt.Sprintf("route_%d", time.Now().Unix()),
-		Source:       source,
-		Destination:  destination,
-		Nodes:        optimizedRoute.Path,
-		TotalLatency: optimizedRoute.PredictedLatency,
-		Reliability:  optimizedRoute.Confidence,
-		Score:        optimizedRoute.Confidence,
-		Algorithm:    "optimized",
-	}
-
-	return route, nil
+	return s.routeOptimizer.OptimizeRoute(source, destination)
 }
 
 // GetAnomalyStats returns real-time statistics from the anomaly detector
@@ -674,8 +657,7 @@ func (s *Service) GetStatus() *ServiceStatus {
 		"metrics": s.metrics.GetMetrics(),
 	}
 
-	// Собираем реальные системные ресурсы из ResourceManager OptimizedService отсутствует здесь,
-	// поэтому возвращаем данные из мониторинга метрик, если доступны
+	// Возвращаем данные из мониторинга метрик, если доступны
 	resources := map[string]interface{}{}
 	if s.dataPipeline != nil {
 		if sys, err := s.getSystemMetrics(); err == nil {

@@ -1,5 +1,7 @@
 # CloudBridge Relay - Сводка по портам
 
+> **Canonical source:** [openwiki/port-scheme.md](../../openwiki/port-scheme.md) — единая таблица service → port из `configs/config.json`, SERVICE_CATALOG и k8s-manifests. Этот файл — Minikube NodePort и firewall для продакшена.
+
 ## Текущая конфигурация Minikube
 
 ### Открытые порты:

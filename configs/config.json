@@ -63,31 +63,6 @@
     "port": 5552,
     "version": "v1"
   },
-  "http_api": {
-    "enabled": true,
-    "port": 5553,
-    "host": "0.0.0.0",
-    "cors_enabled": true,
-    "rate_limit": {
-      "enabled": true,
-      "requests_per_minute": 100
-    }
-  },
-  "https_api": {
-    "enabled": true,
-    "port": 5554,
-    "host": "0.0.0.0",
-    "tls": {
-      "enabled": true,
-      "cert_file": "/app/certs/tls.crt",
-      "key_file": "/app/certs/tls.key"
-    },
-    "cors_enabled": true,
-    "rate_limit": {
-      "enabled": true,
-      "requests_per_minute": 100
-    }
-  },
   "logging": {
     "level": "info",
     "format": "json",

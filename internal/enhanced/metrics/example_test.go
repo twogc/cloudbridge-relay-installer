@@ -86,7 +86,7 @@ func TestEnhancedHealthChecker(t *testing.T) {
 	}
 
 	// Проверяем количество checks
-	expectedChecks := 5 // database, redis, keycloak, tcp_proxy, system
+	expectedChecks := 4 // database, redis, tcp_proxy, system
 	if len(status.Checks) != expectedChecks {
 		t.Errorf("Expected %d checks, got %d", expectedChecks, len(status.Checks))
 	}

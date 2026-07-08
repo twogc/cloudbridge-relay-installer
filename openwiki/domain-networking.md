@@ -2,6 +2,8 @@
 
 This page covers the core networking subsystems: P2P connectivity, NAT traversal, WireGuard VPN, IP address management, protocol selection, and the MASQUE protocol.
 
+**Ports:** canonical service → port mapping is in **[Port Scheme](port-scheme.md)** (`configs/config.json` + k8s-manifests). Relay listeners include **5550** (TCP), **5552** (P2P API), **5553** (P2P QUIC UDP), **9090** (QUIC UDP), **19302** (STUN), **3478** (TURN), **51820** (WireGuard), **8443** (MASQUE).
+
 ---
 
 ## P2P Networking (`internal/p2p/`)
@@ -97,16 +99,7 @@ New → Gathering → Gathered → Checking → Connected → Completed
 | prflx | prflx | Peer reflexive (discovered during checks) |
 | relay | relay | TURN relay allocation |
 
-### Built-in TURN Server (`internal/nat/turn_server.go`)
-
-A complete TURN server (RFC 5766) embedded in the relay:
-
-- UDP listener for TURN protocol messages
-- Per-client `TURNServerAllocation` with relay address
-- Permission model: per-peer address with creation/expiry
-- Background goroutines for packet relay and allocation cleanup
-
-### TURN Server Enhanced (`internal/nat/turn_server_enhanced.go`)
+### Built-in TURN Server (`internal/nat/turn_server_enhanced.go`)
 
 Extended TURN with:
 - Connection pooling
@@ -337,7 +330,7 @@ Three-state circuit breaker (Closed → Open → Half-Open):
 | P2P manager | `/internal/p2p/manager.go` |
 | P2P connections | `/internal/p2p/connection_manager.go` |
 | ICE agent | `/internal/nat/ice_agent.go` |
-| TURN server | `/internal/nat/turn_server.go` |
+| TURN server | `/internal/nat/turn_server_enhanced.go` |
 | STUN client | `/internal/nat/stun_client.go` |
 | WireGuard config | `/internal/wireguard/config_manager.go` |
 | WireGuard tenants | `/internal/wireguard/tenant_manager.go` |

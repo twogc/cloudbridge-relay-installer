@@ -222,9 +222,8 @@ func TestService_OptimizeRoute(t *testing.T) {
 	route, err := service.OptimizeRoute(ctx, source, destination, constraints)
 	require.NoError(t, err)
 	assert.NotNil(t, route)
-	assert.Equal(t, source, route.Source)
-	assert.Equal(t, destination, route.Destination)
-	assert.NotEmpty(t, route.ID)
+	assert.NotEmpty(t, route.Path)
+	assert.Greater(t, route.Confidence, 0.0)
 }
 
 func TestService_OptimizeRoute_NotInitialized(t *testing.T) {

@@ -2,7 +2,7 @@
 
 **Дата:** 2026-07-08
 **Модель:** mimo-v2.5-pro
-**Статус тестов:** Невозможно запустить (Go не установлен в среде аудита)
+**Статус тестов:** Верификация score-ports step 4 (2026-07-09): `go build ./cmd/relay/ ./cmd/ipam-service/ ./cmd/ai-worker/ ./cmd/ai-service/` OK; auxiliary порты IPAM **8080**, AI **8083**, AI Worker **8085** совпадают с `openwiki/port-scheme.md` + `cmd/*` + `k8s/` ops. Cadence-ai step 4: `go test -short` — cadence/activities, cadence/workflows, ai/pipeline OK; частичные FAIL в cadence/client_test, ai/integrations_test, ai/routing/*_real_data_test (pre-existing). Go 1.25.12.
 
 ---
 
@@ -17,7 +17,10 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 | Проверка | Статус | Примечание |
 |---|---|---|
 | `go build ./...` | Частично | Сборка основного кода OK; `go build ./...` падает из‑за `rep/` (в .gitignore, сторонние примеры go-rod) |
-| `go test ./...` | Частично | `internal/auth` — OK; `internal/zitadel` — FAIL (интеграционные тесты без mock, 404 от test.zitadel.cloud) |
+| `go test -short ./internal/auth/... ./internal/zitadel/... ./internal/network/... ./config/...` | ✅ OK | Шаг 5 (2026-07-09): auth + zitadel pass с `-short`; network/config — нет test files |
+| `go build ./cmd/relay/ ./cmd/ipam-service/ ./cmd/ai-worker/ ./cmd/ai-service/` | ✅ OK | score-ports step 4 (2026-07-09) |
+| `go test -short ./internal/cadence/... ./internal/ai/...` | Частично | cadence-ai step 4: activities/workflows/pipeline OK; FAIL client_test (stub без Cadence), integrations_test, routing real_data, cadence_integration_real_test |
+| `go test ./...` (полный) | Частично | Без `-short` zitadel может FAIL (интеграционные тесты без mock, 404 от test.zitadel.cloud) |
 | `make test-critical` | Исправлено | `./internal/keycloak/...` заменён на `./internal/zitadel/...` (шаг 1) |
 | go.mod Go version | ✅ Обновлено | Было `1.25.1`, каноническая версия: **`1.25.12`** (Jul 2026) |
 | Статический анализ | Выполнен | 174 902 строки Go-кода, 16 тест-файлов, 42+ пакета |
@@ -63,25 +66,25 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 
 | Пакет | Файл v1 | Файл v2/v3 | Рекомендация |
 |---|---|---|---|
-| `internal/network/` | `score_tenant_network_allocator.go` (11K) | `score_allocator_production.go` (14K), `score_tenant_network_allocator_improved.go` (15K) | Оставить одну версию, удалить две другие |
-| `internal/network/` | `retry_config.go` (51 строк) | `retry_config_improved.go` (157 строк) | Оставить improved, удалить v1 |
-| `internal/cadence/` | `service_client.go` (70 строк) | `service_client_improved.go` (149 строк) | Оставить improved, удалить v1 |
-| `internal/cadence/` | `client.go` (314 строк) | `client_production.go` (983 строки) | Оставить production, удалить v1 |
+| `internal/network/` | ~~`score_tenant_network_allocator.go`~~, ~~`score_tenant_network_allocator_improved.go`~~ | `score_allocator_production.go` (14K) | ✅ Удалены v1/v2 improved; canonical — production (шаг 1, 2026-07-09) |
+| `internal/network/` | ~~`retry_config.go`~~ (51 строк) | `retry_config_improved.go` (157 строк) | ✅ Удалён v1; canonical — improved (шаг 1, 2026-07-09) |
+| `internal/cadence/` | `service_client.go` (70 строк) | `service_client_improved.go` (149 строк) | ✅ Dual-path intentional: ai-worker vs relay; merge отложен (cadence-ai step 2–4) |
+| `internal/cadence/` | `client.go` (314 строк) | `client_production.go` (983 строки) | ✅ Dual-path intentional; stale `integration_test/cadence_integration_test.go` удалён (step 2) |
 | `internal/nat/` | `turn_server.go` (8K) | `turn_server_enhanced.go` (24K) | Оставить enhanced, удалить v1 |
 | `internal/health/` | `health.go` | `health_checker.go`, `comprehensive_checker.go` | Три разных health-checker'а — объединить |
-| `internal/ai/anomaly/` | `detector.go` (22K) | `optimized_detector.go` (16K), `real_anomaly_detector.go` (16K) | Три детектора аномалий — оставить один |
-| `internal/ai/anomaly/` | `isolation_forest.go` (5K) | `real_isolation_forest.go` (6K) | Две реализации — оставить одну |
-| `internal/ai/predictive/` | `load_predictor.go` (8K) | `optimized_predictor.go` (21K), `real_load_predictor.go` (16K) | Три предиктора — оставить один |
-| `internal/ai/ml/` | `model_implementations.go` (17K) | `real_models.go` (16K) | Две реализации моделей — оставить одну |
-| `internal/ai/data/` | `collectors.go` (20K) | `real_data_collector.go` (11K) | Два коллектора — оставить один |
-| `internal/ai/routing/` | `optimizer.go` (9K) | `optimized_optimizer.go` (27K) | Два оптимизатора — оставить один |
+| `internal/ai/anomaly/` | `detector.go` + `isolation_forest.go` | ~~`optimized_detector.go`~~, ~~`real_anomaly_detector.go`~~, ~~`real_isolation_forest.go`~~ | ✅ Canonical — detector path `ai.Service`; удалены step 3 (cadence-ai) |
+| `internal/ai/predictive/` | `load_predictor.go` | ~~`optimized_predictor.go`~~, ~~`real_load_predictor.go`~~ | ✅ Canonical — load_predictor; удалены step 3 |
+| `internal/ai/ml/` | `model_implementations.go` + `types.go` | ~~`real_models.go`~~, ~~`integration.go`~~ | ✅ Типы вынесены в `types.go`; удалены step 3 |
+| `internal/ai/pipeline/` | `collectors.go` | ~~`real_data_collector.go`~~ | ✅ Canonical — collectors; удалён step 3 (аудит: `internal/ai/data/`) |
+| `internal/ai/routing/` | `optimizer.go` | ~~`optimized_optimizer.go`~~ | ✅ Canonical — optimizer; удалён step 3 |
+| `internal/ai/` | `service.go` (canonical) | ~~`real_service.go`~~, ~~`optimized_service.go`~~, ~~`cache/optimized_cache.go`~~ | ✅ Удалены step 3; 0 prod entrypoints у Real/Optimized |
 
 ### Дублирование инфраструктуры
 
 | Дубликат | Где | Рекомендация |
 |---|---|---|
 | Terraform | `terraform/` vs `terraform-k8s/` vs `infra/` | Объединить в `terraform-k8s/`, удалить `terraform/` и `infra/` |
-| K8s-манифесты | `k8s/` vs `k8s-manifests/` | Объединить в одну структуру |
+| K8s-манифесты | `k8s/` vs `k8s-manifests/` | ✅ First step (k8s-consol, 2026-07-09): роли разделены — `k8s-manifests/` prod deploy, `k8s/` ops; README, архив 4× `*-fixed.yaml`, drift в docs; полный merge — отложено |
 | Prometheus | `prometheus/` vs `prometheus_multiclusters/` | Объединить (различие — 4 строки в prometheus.yml) |
 | Zabbix | `zabbix-agent/` vs `scripts/zabbix/` | Объединить в `monitoring/zabbix/` |
 | Deploy | `deploy/` vs `scripts/deploy/` | Объединить в `scripts/deploy/` |
@@ -108,16 +111,18 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 
 ### 1. Несогласованность портовой схемы
 
-| Источник | Main Relay Port | AI Service Port | WireGuard Port |
-|---|---|---|---|
-| `openwiki/quickstart.md` | 9090 (TCP/UDP) | 8082 | 5553 |
-| `docs/operations/SERVICE_CATALOG.md` | 8080 (HTTP) | 8082 | — |
-| `docs/network/PORTS_SUMMARY.md` | 5550 (Main Server) | — | 5553 |
-| `configs/config.json` | 5550 | 8082 | 51820 |
+| Источник | Main Relay Port | AI Service Port | IPAM Port | WireGuard Port |
+|---|---|---|---|---|
+| `openwiki/port-scheme.md` (canonical) | 5550 + 9090 http_api | **8083** | **8080** | 51820 |
+| `cmd/*` runtime | — | **8083** | **8080** | — |
+| `k8s/` ops manifests | 9090 probes | **8083** | CNI → **8080** | 51820 |
+| `docs/operations/SERVICE_CATALOG.md` | 5550 + 9090 (sync step 2) | **8083** | **8080** | 51820 |
+| `configs/config.json` | 5550 (+ 9090 http_api) | — | — | 51820 |
+| `k8s-manifests/06-services.yaml` | 9090 | **8083/8084** | — | 51820 |
 
-**Влияние:** Разработчики и операторы получают противоречивую информацию о портах. Деплой по quickstart.md не будет работать, если реальный порт — 5550.
+**Статус (k8s-prod-fix step 4, 2026-07-09):** Canonical — `openwiki/port-scheme.md`; auxiliary microservices выровнены: IPAM **8080**, AI **8083**, AI Worker **8085** (`cmd/*` + `k8s/` + `SERVICE_CATALOG`). **P0 stub fix ✅:** `k8s-manifests/05–06` — убраны `nginx:latest`/port 80/AI 8080 stubs; production images + `deploy.sh` load_images. **Остаточный drift:** `k8s/services/ai-service.yaml` metrics **8084** vs runtime `/metrics` on **8083**; ops `k8s/deployments/` relay http **8080** legacy; prometheus annotation **8084** vs **5551**; dev `config/config.json` `server.port` 9090.
 
-**Рекомендация:** Создать единственный источник правды для портов (например, в `openwiki/`) и синхронизировать все остальные документы.
+**Wiring (не в scope score-ports):** `NewSCORETenantNetworkAllocatorProduction` — 0 prod-вызовов; `relay_manager_hybrid.go` принимает `TenantNetworkAllocator`, но allocator не подключён (см. `DUPLICATES_INVENTORY.md` §SCORE).
 
 ### 2. Auth: три провайдера, один реальный
 
@@ -135,9 +140,9 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 
 | Путь | Описание | Статус |
 |---|---|---|
-| `scripts/deploy/deploy.sh` | Основной скрипт деплоя | Актуальный |
-| `k8s-manifests/00-15*.yaml` | Нумерованные манифесты | Актуальный |
-| `k8s/deployments/`, `k8s/services/` | Манифесты по доменам | Дублирует k8s-manifests |
+| `scripts/deploy/deploy.sh` | Основной скрипт деплоя | Актуальный (не изменён k8s-consol) |
+| `k8s-manifests/00-15*.yaml` | Нумерованные манифесты | **Canonical prod deploy** — см. `k8s-manifests/README.md` |
+| `k8s/deployments/`, `k8s/services/` | Манифесты по доменам | **Canonical ops** — актуальные образы/порты; drift с numbered manifests зафиксирован |
 | `terraform-k8s/` | Провижининг K8s-кластера | Актуальный |
 | `terraform/` | Альтернативный terraform | Дублирует terraform-k8s |
 | `infra/` | Третий terraform-набор | Дублирует оба |
@@ -188,15 +193,20 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 
 ### 2. Средний срок (1-2 недели)
 
-- [ ] **Консолидировать дубликаты реализаций:** выбрать одну версию для `score_allocator`, `retry_config`, `cadence/client`, `cadence/service_client`, `nat/turn_server`, `ai/anomaly/detector`, `ai/predictive/load_predictor`, `ai/ml/models`, `ai/data/collectors`, `ai/routing/optimizer`
-- [ ] **Объединить K8s-манифесты:** `k8s/` + `k8s-manifests/` → единая структура
-- [ ] **Объединить Terraform:** `terraform/` + `infra/` → `terraform-k8s/`
-- [ ] **Объединить Prometheus/Grafana/Zabbix** в `monitoring/`
-- [ ] **Объединить `test/` + `tests/`** в `test/`
+- [x] **Инвентаризация дубликатов реализаций:** `docs/audit/DUPLICATES_INVENTORY.md`; удалён мёртвый `internal/nat/turn_server.go` (winner — `turn_server_enhanced.go`) — *шаг 1, 2026-07-09*
+- [x] **Консолидировать `internal/network/` дубликаты:** `score_allocator_production.go` + `retry_config_improved.go`; удалены `score_tenant_network_allocator.go`, `score_tenant_network_allocator_improved.go`, `retry_config.go` — *шаг 1, 2026-07-09*
+- [x] **Консолидировать AI-дубликаты:** `real_service` / `optimized_service` и exclusive `real_*` / `optimized_*` удалены; canonical — `ai.Service` + detector/load_predictor/optimizer/collectors — *cadence-ai step 3, 2026-07-09*
+- [ ] **Консолидировать Cadence dual-path (merge API):** `cadence/client`, `cadence/service_client` — *intentional dual entrypoint relay/ai-worker; merge отложен (medium risk)*
+- [~] **Объединить K8s-манифесты (first step):** canonical paths + README (`k8s/`, `k8s-manifests/`), архив 4× `*-fixed.yaml` → `archive/k8s/`, diff relay/AI/Cadence в `openwiki/port-scheme.md` + `CONSOLIDATION_PLAN §1` шаги 1–2 — *k8s-consol step 2–4, 2026-07-09; полный merge — отложено*
+- [x] **P0: убрать nginx-stubs из `k8s-manifests/05–06` + `deploy.sh` load_images** — production images/ports, cadence с Docker Hub — *k8s-prod-fix steps 2–4, 2026-07-09*
+- [ ] **Объединить Terraform:** `terraform/` + `infra/` → `terraform-k8s/` — *только план, шаг 4*
+- [ ] **Объединить Prometheus/Grafana/Zabbix** в `monitoring/` — *только план, шаг 4*
+- [ ] **Объединить `test/` + `tests/`** в `test/` — *только план, шаг 4*
 - [ ] **Объединить Dockerfile-дубликаты** в `docker/`
-- [ ] **Синхронизировать портовую схему** во всех документах (canonical → `openwiki/`)
-- [ ] **Обновить архитектурные диаграммы** — удалить Keycloak/Django
-- [ ] **Переместить `github_actions/`** в `docker/cadence/` или удалить
+- [x] **Синхронизировать портовую схему** во всех документах (canonical → `openwiki/port-scheme.md`, sync `openwiki/` + `docs/network/` + auxiliary IPAM/AI/Worker) — *score-ports step 2–4, 2026-07-09; верификация `go build` + port grep OK*
+- [x] **Обновить архитектурные диаграммы** — Zitadel-only; Keycloak/Django только как legacy/removed — *шаг 3, 2026-07-09*
+- [x] **Удалить `github_actions/`** (Cadence CI leftovers, не GitHub Actions; move в `docker/cadence/` отклонён — Dockerfile нерабочий) — *шаг 4, 2026-07-09*
+- [x] **План консолидации инфраструктуры:** `docs/audit/CONSOLIDATION_PLAN.md` (k8s, terraform, monitoring, test/) — *шаг 4, 2026-07-09*
 - [ ] **Очистить `docs/legacy/`** — оценить, можно ли удалить 142 файла
 
 ### 3. Стратегические (1+ месяц)
@@ -204,9 +214,9 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 - [ ] **Разбить `cmd/relay/main.go`** (2391 строка) на модули
 - [ ] **Разбить `internal/metrics/metrics.go`** (1833 строки) на per-subsystem файлы
 - [ ] **Разбить `internal/ai/ai.go`** (1664 строки) на модули
-- [ ] **Ввести CI-проверку** `go vet`, `golangci-lint` в GitHub Actions
+- [x] **Ввести CI-проверку** `go vet`, `golangci-lint` в GitHub Actions — *`.github/workflows/lint.yml`, шаг 3, 2026-07-09; `go vet` на `cmd/relay` падает на legacy test (см. step03)*
 - [ ] **Добавить интеграционные тесты** для auth-провайдера (Zitadel)
-- [ ] **Документировать canonical deployment path** — единый рекомендуемый путь деплоя
+- [x] **Документировать canonical deployment path** — `openwiki/deploy.md` (terraform-k8s → deploy.sh + k8s-manifests → Zitadel); ссылки в quickstart/operations/AGENTS.md — *шаг 4, 2026-07-09*
 - [ ] **Пересмотреть архитектуру internal/p2p/** — 30 файлов, много переплетений
 
 ---

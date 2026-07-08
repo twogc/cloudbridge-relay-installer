@@ -6,6 +6,9 @@ This page covers deployment, CI/CD, monitoring, infrastructure provisioning, and
 
 ## Kubernetes Deployment
 
+> **Canonical production path:** [Deploy Guide](deploy.md) — `terraform-k8s/` → `scripts/deploy/deploy.sh` + `k8s-manifests/` → Zitadel.  
+> Legacy/alternate trees (`k8s/`, `terraform/`, `infra/`) are documented as non-canonical in [CONSOLIDATION_PLAN](../docs/audit/CONSOLIDATION_PLAN.md).
+
 ### Manifest Organization
 
 Kubernetes manifests are organized in two locations:
@@ -97,7 +100,7 @@ FROM alpine:3.18
 # Health check on port 9091
 ```
 
-**Exposed ports:** 9091, 8082, 8443, 5553/udp, 19302/udp, 9090/udp, 9092/udp
+**Exposed ports (Dockerfile):** 9091, 8082, 8443, 5553/udp, 19302/udp, 9090/udp, 9092/udp — see [Port Scheme](port-scheme.md) for installer config (`configs/config.json`: main **5550**, API **5552**, metrics **5551**)
 
 ### Container Registries
 
@@ -145,7 +148,7 @@ services:
   postgres:   # PostgreSQL 15 Alpine
   zitadel:    # Zitadel IAM v2.64.1
   cloudbridge-relay:  # Main relay service
-# Ports: 8080 (Zitadel), 9090 (relay), 51820 (WireGuard)
+# Ports: 8080 (Zitadel), 5550/9090 (relay TCP/QUIC), 51820 (WireGuard) — see port-scheme.md
 ```
 
 ### Cloud-Init (`mws/cloud-init/cloudbridge-relay-minimal.yaml`)
@@ -308,8 +311,7 @@ Network routing monitoring for anycast deployments:
 
 ### Authentication
 
-- Zitadel OIDC (primary)
-- Keycloak (alternative)
+- Zitadel OIDC (canonical IAM; Keycloak removed)
 - JWT tokens with short TTL
 - JWKS-based key rotation
 

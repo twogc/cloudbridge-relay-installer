@@ -31,10 +31,23 @@ spec:
       - name: k8s-registry-creds
       containers:
       - name: cloudbridge-relay
-        image: nginx:latest
+        image: docker-registry:5000/cloudbridge-relay:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
-          containerPort: 80
+          containerPort: 9090
+          protocol: TCP
+        - name: quic
+          containerPort: 9090
+          protocol: UDP
+        - name: wireguard
+          containerPort: 51820
+          protocol: UDP
+        - name: grpc
+          containerPort: 8444
+          protocol: TCP
+        - name: health
+          containerPort: 9091
           protocol: TCP
         env:
         - name: CONFIG_PATH
@@ -183,17 +196,18 @@ spec:
         app.kubernetes.io/version: "1.0.0"
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "9090"
+        prometheus.io/port: "8083"
         prometheus.io/path: "/metrics"
     spec:
       imagePullSecrets:
       - name: k8s-registry-creds
       containers:
       - name: ai-service
-        image: nginx:latest
+        image: docker-registry:5000/ai-service:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - name: http
-          containerPort: 80
+          containerPort: 8083
           protocol: TCP
         env:
         - name: LOG_LEVEL
@@ -222,7 +236,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 8083
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -230,7 +244,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 8083
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3
@@ -271,10 +285,20 @@ spec:
       - name: k8s-registry-creds
       containers:
       - name: cadence
-        image: nginx:latest
+        image: ubercadence/server:v0.22.4
+        imagePullPolicy: IfNotPresent
         ports:
-        - name: http
-          containerPort: 80
+        - name: grpc
+          containerPort: 7933
+          protocol: TCP
+        - name: grpc-membership
+          containerPort: 7934
+          protocol: TCP
+        - name: grpc-frontend
+          containerPort: 7935
+          protocol: TCP
+        - name: grpc-history
+          containerPort: 7939
           protocol: TCP
         env:
         - name: TZ
@@ -287,16 +311,14 @@ spec:
             memory: "512Mi"
             cpu: "200m"
         livenessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 7933
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 7933
           initialDelaySeconds: 5
           periodSeconds: 5

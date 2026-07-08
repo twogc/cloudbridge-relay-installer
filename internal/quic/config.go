@@ -108,10 +108,9 @@ func DefaultEnhancedConfig() *EnhancedConfig {
 		CongestionControlAlgorithm:     "cubic",
 
 		// Enhanced features
-		TenantManager:             NewTenantManager(),
-		EnableDDoSProtection:      true,
-		EnableGeographicRouting:   true,
-		EnableKeycloakIntegration: false, // Отключено по умолчанию
+		TenantManager:           NewTenantManager(),
+		EnableDDoSProtection:    true,
+		EnableGeographicRouting: true,
 	}
 }
 
@@ -194,10 +193,9 @@ func (c *Config) CreateEnhancedConfig() *EnhancedConfig {
 		CongestionControlAlgorithm:     c.CongestionControlAlgorithm,
 
 		// Enhanced features (по умолчанию включены)
-		TenantManager:             NewTenantManager(),
-		EnableDDoSProtection:      true,
-		EnableGeographicRouting:   true,
-		EnableKeycloakIntegration: false,
+		TenantManager:           NewTenantManager(),
+		EnableDDoSProtection:    true,
+		EnableGeographicRouting: true,
 	}
 }
 
