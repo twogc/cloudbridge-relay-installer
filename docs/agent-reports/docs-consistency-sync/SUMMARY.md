@@ -62,4 +62,18 @@ Commit/push: не выполнялись.
 | `docs/README.md` + `AGENTS.md` | SoT table; missions index; updated backlog |
 | Отчёт | [step02-active-docs-ports-security.md](step02-active-docs-ports-security.md) |
 
-**Остаётся (не docs-only):** SCORE wiring, Cadence merge, k8s full merge, AI metrics 8084 drift, `docs/legacy/` archive, roadmap typos.
+**Остаётся:** SCORE wiring, Cadence merge, k8s full merge, ops/mws 8084/8080 legacy, main.go vet context leak, `docs/legacy/`, roadmap typos.
+
+---
+
+## Pass 3 (step03) — residual port fix
+
+| Item | Result |
+|------|--------|
+| Relay prometheus **8084** → **5551** | ✅ `k8s-manifests/05–06` |
+| AI Service metrics **8084** | ✅ removed; **8083** only |
+| Root README ports | ✅ aligned |
+| go build relay/ai-service | ✅ |
+| go vet cmd/relay | pre-existing cancel leak (not KeycloakURL) |
+
+Отчёт: [step03-residual-port-fix.md](step03-residual-port-fix.md)

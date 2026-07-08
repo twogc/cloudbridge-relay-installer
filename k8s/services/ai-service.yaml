@@ -16,10 +16,7 @@ spec:
     port: 8083
     targetPort: 8083
     protocol: TCP
-  - name: metrics
-    port: 8084
-    targetPort: 8084
-    protocol: TCP
+  # /metrics on same port as HTTP (AI_PORT default 8083)
   selector:
     app.kubernetes.io/name: ai-service
     app.kubernetes.io/component: ai
@@ -42,11 +39,6 @@ spec:
     port: 8083
     targetPort: 8083
     nodePort: 30083
-    protocol: TCP
-  - name: metrics
-    port: 8084
-    targetPort: 8084
-    nodePort: 30084
     protocol: TCP
   selector:
     app.kubernetes.io/name: ai-service

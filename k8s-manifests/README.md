@@ -36,8 +36,8 @@ kubectl apply -f k8s-manifests/09-zitadel.yaml
 
 | Компонент | Image | Источник | Порты (deployment / service) |
 |-----------|-------|----------|------------------------------|
-| cloudbridge-relay | `docker-registry:5000/cloudbridge-relay:latest` | in-cluster registry (`deploy.sh` build + push) | 9090 TCP/UDP, 51820 UDP, 8444 TCP, 9091 TCP |
-| ai-service | `docker-registry:5000/ai-service:latest` | in-cluster registry (`docker/dockerfiles/Dockerfile.ai-service`) | 8083 HTTP, 8084 metrics (Service) |
+| cloudbridge-relay | `docker-registry:5000/cloudbridge-relay:latest` | in-cluster registry (`deploy.sh` build + push) | 9090 TCP/UDP, 51820 UDP, 8444 TCP, 9091 health, **5551** metrics |
+| ai-service | `docker-registry:5000/ai-service:latest` | in-cluster registry (`docker/dockerfiles/Dockerfile.ai-service`) | **8083** HTTP + `/metrics` (same port) |
 | cadence | `ubercadence/server:v0.22.4` | Docker Hub (push в локальный registry **не** нужен) | 7933–7935, 7939 (tcpSocket probe на 7933) |
 
 ### Стратегия pull (step 3, 2026-07-09)

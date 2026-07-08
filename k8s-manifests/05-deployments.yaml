@@ -24,7 +24,7 @@ spec:
         app.kubernetes.io/version: "1.0.0"
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8084"
+        prometheus.io/port: "5551"
         prometheus.io/path: "/metrics"
     spec:
       imagePullSecrets:
@@ -48,6 +48,9 @@ spec:
           protocol: TCP
         - name: health
           containerPort: 9091
+        - name: metrics
+          containerPort: 5551
+          protocol: TCP
           protocol: TCP
         env:
         - name: CONFIG_PATH

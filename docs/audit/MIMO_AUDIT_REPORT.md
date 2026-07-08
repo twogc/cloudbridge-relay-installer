@@ -117,14 +117,15 @@ CloudBridge Relay Installer — Go-монорепозиторий (~175 000 ст
 
 **AI Worker:** **8085** (`cmd/ai-worker` + catalog + port-scheme).
 
-**Остаточный drift (не P0):**
+**Остаточный drift:**
 
-| Item | Проблема |
-|------|----------|
-| AI metrics Service **8084** | Runtime `/metrics` на **8083** |
-| Relay `prometheus.io/port` **8084** | Runtime metrics **5551** |
-| Ops `k8s/deployments/` relay http **8080** | Legacy vs prod **9090** |
-| Dev `config/config.json` `server.port` | **9090** (dev-only) |
+| Item | Статус |
+|------|--------|
+| AI metrics Service **8084** vs **8083** | ✅ Prod + ops Services: only **8083** (residual-port-fix) |
+| Relay `prometheus.io/port` / Service metrics | ✅ **5551** in `k8s-manifests/05–06` |
+| Ops `k8s/deployments/` relay http **8080** | ⏳ Legacy ops tree |
+| Dev `config/config.json` `server.port` | ⏳ **9090** (dev-only) |
+| `mws/*` metrics **8084** | ⏳ B2B OVA templates |
 
 **SCORE wiring:** `NewSCORETenantNetworkAllocatorProduction` — 0 prod callers (см. `DUPLICATES_INVENTORY.md`).
 
