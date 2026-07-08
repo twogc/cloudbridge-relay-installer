@@ -246,8 +246,8 @@
 ### **Unit Economics (Model assumptions, to be validated in pilots):**
 - **CAC**: ₽200k-500k
 - **LTV**: ₽3M-10M (3-5 years retention)
-- **LTV/CAC**: 6-10x ✅
-- **Gross Margin**: 70-80% ✅
+- **LTV/CAC**: 6-10x
+- **Gross Margin**: 70-80%
 - **Payback**: 6-12 months
 
 ## Текущий статус

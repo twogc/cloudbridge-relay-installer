@@ -1,10 +1,10 @@
 # CloudBridge Pilot Project - Готовое решение
 
 **Дата:** $(date)  
-**Статус:** ✅ ГОТОВО ДЛЯ ПИЛОТНОГО ПРОЕКТА  
+**Статус:** ГОТОВО ДЛЯ ПИЛОТНОГО ПРОЕКТА  
 **Архитектура:** Kubernetes + VK Cloud LoadBalancer  
 
-## 🚀 Готовые endpoints для пилотного проекта
+## Готовые endpoints для пилотного проекта
 
 ### Прямой доступ к Kubernetes (рекомендуется для пилота)
 
@@ -12,11 +12,11 @@
 
 | Endpoint | URL | Описание | Статус |
 |----------|-----|----------|--------|
-| Health Check | `http://192.168.49.2:32500/health` | Проверка здоровья системы | ✅ OK |
-| API v1 | `http://192.168.49.2:32500/api/v1/` | REST API | ✅ OK |
-| WebSocket | `ws://192.168.49.2:32500/ws/` | WebSocket соединения | ✅ OK |
-| Metrics | `http://192.168.49.2:32500/metrics` | Prometheus метрики | ✅ OK |
-| P2P API | `http://192.168.49.2:32500/api/v1/peers/` | P2P управление | ✅ OK |
+| Health Check | `http://192.168.49.2:32500/health` | Проверка здоровья системы | K |
+| API v1 | `http://192.168.49.2:32500/api/v1/` | REST API | K |
+| WebSocket | `ws://192.168.49.2:32500/ws/` | WebSocket соединения | K |
+| Metrics | `http://192.168.49.2:32500/metrics` | Prometheus метрики | K |
+| P2P API | `http://192.168.49.2:32500/api/v1/peers/` | P2P управление | K |
 
 ### Доступ через домены (через VK Cloud LB)
 
@@ -29,7 +29,7 @@
 | masque.2gc.ru | `https://masque.2gc.ru/health` | ⚠️ Редирект |
 | api.2gc.ru | `https://api.2gc.ru/health` | ⚠️ Редирект |
 
-## 🎯 Рекомендации для пилотного проекта
+## Рекомендации для пилотного проекта
 
 ### Вариант 1: Прямой доступ (быстрый старт)
 
@@ -46,10 +46,10 @@ curl "$BASE_URL/metrics"
 ```
 
 **Преимущества**:
-- ✅ Работает немедленно
-- ✅ Нет проблем с редиректами
-- ✅ Полная функциональность API
-- ✅ Подходит для разработки и тестирования
+- аботает немедленно
+- ет проблем с редиректами
+- олная функциональность API
+- одходит для разработки и тестирования
 
 **Недостатки**:
 - ⚠️ Нет SSL (HTTP только)
@@ -78,7 +78,7 @@ curl "https://relay.2gc.ru/health"
 curl "https://api.2gc.ru/api/v1/peers/discover"
 ```
 
-## 📋 API Endpoints для пилотного проекта
+## API Endpoints для пилотного проекта
 
 ### Health & Status
 
@@ -170,7 +170,7 @@ GET http://192.168.49.2:32500/api/v1/metrics/system
 GET http://192.168.49.2:32500/api/v1/metrics/performance
 ```
 
-## 🔧 Настройка клиента для пилотного проекта
+##  Настройка клиента для пилотного проекта
 
 ### Конфигурация CloudBridge Client
 
@@ -231,7 +231,7 @@ func main() {
 }
 ```
 
-## 📊 Мониторинг для пилотного проекта
+## Мониторинг для пилотного проекта
 
 ### Проверка доступности
 
@@ -246,25 +246,25 @@ echo "=== CloudBridge Pilot Health Check ==="
 # Health endpoint
 echo -n "Health Check: "
 if curl -s "$BASE_URL/health" > /dev/null; then
-    echo "✅ OK"
+    echo " OK"
 else
-    echo "❌ FAIL"
+    echo " FAIL"
 fi
 
 # API endpoint
 echo -n "API Check: "
 if curl -s "$BASE_URL/api/v1/peers/discover" > /dev/null; then
-    echo "✅ OK"
+    echo " OK"
 else
-    echo "❌ FAIL"
+    echo " FAIL"
 fi
 
 # Metrics endpoint
 echo -n "Metrics Check: "
 if curl -s "$BASE_URL/metrics" > /dev/null; then
-    echo "✅ OK"
+    echo " OK"
 else
-    echo "❌ FAIL"
+    echo " FAIL"
 fi
 
 echo "=== End Health Check ==="
@@ -283,9 +283,9 @@ kubectl get pods,svc -n cloudbridge
 curl -s "http://192.168.49.2:32500/metrics" | grep cloudbridge
 ```
 
-## 🎉 Готовность к пилотному проекту
+## Готовность к пилотному проекту
 
-### ✅ Что готово:
+### то готово:
 
 1. **Kubernetes кластер** - полностью функционален
 2. **CloudBridge сервисы** - все компоненты работают
@@ -295,7 +295,7 @@ curl -s "http://192.168.49.2:32500/metrics" | grep cloudbridge
 6. **P2P функциональность** - готова к тестированию
 7. **Метрики** - Prometheus интеграция активна
 
-### 📋 Чек-лист для запуска пилота:
+### Чек-лист для запуска пилота:
 
 - [x] Kubernetes кластер запущен
 - [x] CloudBridge сервисы развернуты  
@@ -305,7 +305,7 @@ curl -s "http://192.168.49.2:32500/metrics" | grep cloudbridge
 - [x] Примеры клиентского кода подготовлены
 - [x] Мониторинг настроен
 
-## 🚀 Запуск пилотного проекта
+## Запуск пилотного проекта
 
 **Система готова к использованию!**
 

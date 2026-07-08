@@ -2,7 +2,7 @@
 
 ## System Overview
 
-CloudBridge Relay is a **multi-service Go monorepo** with 10 independently deployable binaries. The core relay server (`cmd/relay`) is a large aggregation point that composes 30+ internal packages into a single process. Auxiliary services (AI, IPAM, Cadence, etc.) run as separate microservices.
+CloudBridge Relay is a **multi-service Go monorepo** with 13 cmd/ entrypoints (10 main services + 3 utilities/demos). The core relay server (`cmd/relay`) is a large aggregation point that composes 30+ internal packages into a single process. Auxiliary services (AI, IPAM, Cadence, etc.) run as separate microservices.
 
 ### Service Topology
 
@@ -55,6 +55,9 @@ CloudBridge Relay is a **multi-service Go monorepo** with 10 independently deplo
 | `ipam-service` | `cmd/ipam-service/` | IP address management REST API |
 | `tenant-policy-controller` | `cmd/tenant-policy-controller/` | K8s CRD controller for tenant network policies |
 | `cni-plugin` | `cmd/cni-plugin/` | CNI plugin for K8s pod networking |
+| `kubectl-zitadel` | `cmd/kubectl-zitadel/` | kubectl plugin for Zitadel IAM management |
+| `quantum-service` | `cmd/quantum-service/` | Post-quantum cryptography (currently disabled) |
+| `zerotrust-demo` | `cmd/zerotrust-demo/` | Zero-trust connectivity demo client |
 
 ---
 

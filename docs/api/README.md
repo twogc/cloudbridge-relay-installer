@@ -1,15 +1,15 @@
-# 🔌 **API CloudBridge Relay**
+#  **API CloudBridge Relay**
 
 ## **Обзор**
 
 Этот раздел содержит документацию по API CloudBridge Relay, включая протоколы, эндпоинты и интеграции.
 
-## 📚 **Документы**
+## **Документы**
 
 ### **API документация:**
 - [**MASQUE HTTP3 QUIC Validation Report**](MASQUE_HTTP3_QUIC_VALIDATION_REPORT.md) - Валидация MASQUE HTTP3 QUIC протокола
 
-## 🎯 **API архитектура**
+## **API архитектура**
 
 ### **Основные протоколы:**
 - **QUIC/HTTP-3** - Базовый транспортный протокол
@@ -85,7 +85,7 @@ GET /metrics
 ```
 **Ответ:** Prometheus метрики в текстовом формате
 
-## 🚀 **QUIC API**
+## **QUIC API**
 
 ### **QUIC Transport:**
 - **Порт**: 5555 (UDP)
@@ -110,7 +110,7 @@ GET /metrics
 /.well-known/masque/tcp/{host}:{port}
 ```
 
-## 📊 **WebSocket API**
+## **WebSocket API**
 
 ### **WebSocket соединения:**
 - **Порт**: 5553 (TCP)
@@ -128,7 +128,7 @@ ws.onmessage = (event) => console.log('Message:', event.data);
 ws.onclose = () => console.log('Disconnected');
 ```
 
-## 🔐 **Аутентификация**
+## **Аутентификация**
 
 ### **JWT токены:**
 ```http
@@ -178,11 +178,11 @@ curl http://localhost:5551/metrics
 ./quic-client --host=localhost --port=5555
 ```
 
-## 📝 **OpenAPI спецификация**
+## **OpenAPI спецификация**
 
 *OpenAPI спецификация будет добавлена в будущих версиях*
 
-## 🔍 **Диагностика API**
+## **Диагностика API**
 
 ### **Проверка доступности:**
 ```bash
@@ -207,4 +207,4 @@ netstat -ulnp | grep -E "555[0-5]|909[0-2]|19302|8443"
 
 ---
 
-**🔌 API CloudBridge Relay готово к использованию!**
+** API CloudBridge Relay готово к использованию!**

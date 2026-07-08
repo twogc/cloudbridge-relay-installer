@@ -147,11 +147,11 @@ This is a **clean layered architecture**, not duplication:
 ## Current State Assessment
 
 ### cmd/quic-service Status
-- ✅ Metrics exposure works
-- ✅ Health checks work
-- ❌ Connection endpoints are stubs
-- ❌ No real QUIC connection handling
-- ❌ No integration with relay
+- Metrics exposure works
+- ealth checks work
+-  Connection endpoints are stubs
+-  No real QUIC connection handling
+-  No integration with relay
 
 ### Deployment Status
 Let me check if deployment manifests exist...
@@ -162,18 +162,18 @@ Let me check if deployment manifests exist...
 
 #### Option A: Keep as Metrics Sidecar (Recommended)
 If metrics collection from separate pod is valuable:
-- ✅ Keep cmd/quic-service
-- ✅ Deploy alongside relay
-- ✅ Use for centralized QUIC metrics
+- eep cmd/quic-service
+- eploy alongside relay
+- se for centralized QUIC metrics
 - ⚠️ Remove stub connection endpoints
 - ⚠️ Document as "metrics-only service"
 
 #### Option B: Remove (Alternative)
 If relay's built-in metrics are sufficient:
-- ❌ Remove cmd/quic-service
-- ✅ Use relay's `/metrics` endpoint
-- ✅ Simpler deployment
-- ✅ Less infrastructure overhead
+-  Remove cmd/quic-service
+- se relay's `/metrics` endpoint
+- impler deployment
+- ess infrastructure overhead
 
 ### Long-term (Post-MVP)
 
@@ -201,11 +201,11 @@ Keep it as foundation for future QUIC service extraction
 ### Found in scripts/migrate-to-kubernetes.sh
 
 **quic-service is referenced but NOT deployed in k8s/ directory**:
-- ✅ Docker build defined: `cloudbridge/quic-service:v1.0.0`
-- ✅ Deployment YAML generated in migration script (lines 572-632)
-- ✅ Ingress route configured: `/quic/*` → quic-service:8081
-- ❌ NO deployment manifest in `k8s/deployments/` directory
-- ❌ NO service manifest in `k8s/services/` directory
+- ocker build defined: `cloudbridge/quic-service:v1.0.0`
+- eployment YAML generated in migration script (lines 572-632)
+- ngress route configured: `/quic/*` → quic-service:8081
+-  NO deployment manifest in `k8s/deployments/` directory
+-  NO service manifest in `k8s/services/` directory
 
 **Conclusion**: quic-service was planned during migration but never deployed to actual cluster.
 

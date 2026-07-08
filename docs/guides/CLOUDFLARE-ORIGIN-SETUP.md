@@ -1,15 +1,15 @@
-# 🚀 CloudBridge Relay как Cloudflare Origin - Полная настройка
+# CloudBridge Relay как Cloudflare Origin - Полная настройка
 
-## 🎯 Цель
+## Цель
 Настроить CloudBridge Relay (`edge.2gc.ru`) как Origin endpoint для Cloudflare через Magic WAN туннель, чтобы клиенты `cloudflared` подключались через ваш сервер.
 
-## 🏗️ Архитектура
+## Архитектура
 
 ```
 [Cloudflared Clients] → [Cloudflare] → [Magic WAN туннель] → [edge.2gc.ru:443] → [nginx] → [CloudBridge Relay в подах]
 ```
 
-## 📋 Пошаговая настройка
+## Пошаговая настройка
 
 ### 1. **Автоматическая настройка (рекомендуется)**
 
@@ -167,7 +167,7 @@ sudo systemctl enable cloudflared
 sudo systemctl start cloudflared
 ```
 
-## 🔍 Проверка работы
+## Проверка работы
 
 ### 1. **Проверка Magic WAN туннеля**
 ```bash
@@ -219,7 +219,7 @@ cloudflared tunnel info <TUNNEL_NAME>
 curl -k https://app.yourdomain.com/health
 ```
 
-## 📊 Мониторинг
+## Мониторинг
 
 ### 1. **Автоматический мониторинг**
 ```bash
@@ -286,7 +286,7 @@ sudo certbot certificates
 sudo nginx -t
 ```
 
-## 🎯 Готовые конфигурации
+## Готовые конфигурации
 
 ### 1. **Простая конфигурация (только основной API)**
 ```yaml
@@ -315,7 +315,7 @@ ingress:
   - service: http_status:404
 ```
 
-## 🚀 Результат
+## Результат
 
 После настройки клиенты смогут подключаться к CloudBridge Relay через:
 

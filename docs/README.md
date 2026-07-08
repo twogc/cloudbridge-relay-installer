@@ -1,18 +1,27 @@
-# Documentation index
+# Documentation
 
-Navigation for project documentation. Agent-oriented overview: [openwiki/quickstart.md](../openwiki/quickstart.md).
+Human-oriented documentation index for CloudBridge Relay. For agent-oriented overview, see [openwiki/quickstart.md](../openwiki/quickstart.md).
 
-## Guides (deployment & setup)
+---
+
+## Guides (deployment, setup, developer)
 
 | Document | Description |
 |----------|-------------|
 | [VK_CLOUD_DEPLOYMENT_GUIDE.md](guides/VK_CLOUD_DEPLOYMENT_GUIDE.md) | Full VK Cloud Kubernetes deployment |
 | [QUICK_DEPLOYMENT_CHECKLIST.md](guides/QUICK_DEPLOYMENT_CHECKLIST.md) | Quick deployment checklist |
-| [DOCKER_MIRRORS_SETUP.md](guides/DOCKER_MIRRORS_SETUP.md) | Docker Hub mirrors (RU) |
-| [README_DEPLOYMENT.md](guides/README_DEPLOYMENT.md) | Deployment docs overview |
+| [DOCKER_MIRRORS_SETUP.md](guides/DOCKER_MIRRORS_SETUP.md) | Docker Hub mirrors for Russia |
+| [DEVELOPER_BRIEFING.md](guides/DEVELOPER_BRIEFING.md) | Developer onboarding |
 | [CADENCE_SETUP_GUIDE.md](guides/CADENCE_SETUP_GUIDE.md) | Cadence workflow engine setup |
 | [MINIKUBE_BUILD_GUIDE.md](guides/MINIKUBE_BUILD_GUIDE.md) | Local Minikube builds |
-| [DEVELOPER_BRIEFING.md](guides/DEVELOPER_BRIEFING.md) | Developer onboarding |
+| [ZITADEL_DEPLOYMENT_GUIDE.md](guides/ZITADEL_DEPLOYMENT_GUIDE.md) | Zitadel IAM deployment |
+| [CLIENT_CONNECTION_GUIDE.md](guides/CLIENT_CONNECTION_GUIDE.md) | Client connection setup |
+| [CLOUDFLARE-ORIGIN-SETUP.md](guides/CLOUDFLARE-ORIGIN-SETUP.md) | Cloudflare origin server setup |
+| [TURN_POOL_USAGE_GUIDE.md](guides/TURN_POOL_USAGE_GUIDE.md) | TURN pool usage reference |
+| [TENANT_CONTROLLER_README.md](guides/TENANT_CONTROLLER_README.md) | K8s tenant policy controller |
+| [ZITADEL_SETUP.md](guides/ZITADEL_SETUP.md) | Zitadel integration setup |
+| [ZITADEL_GET_ADMIN_TOKEN.md](guides/ZITADEL_GET_ADMIN_TOKEN.md) | Zitadel admin token guide |
+| [ZITADEL_SERVICE_USER_PERMISSIONS.md](guides/ZITADEL_SERVICE_USER_PERMISSIONS.md) | Zitadel service user permissions |
 
 ## Architecture
 
@@ -20,39 +29,63 @@ Navigation for project documentation. Agent-oriented overview: [openwiki/quickst
 |----------|-------------|
 | [ARCHITECTURE_ANALYSIS.md](architecture/ARCHITECTURE_ANALYSIS.md) | Main architecture analysis |
 | [CLOUDBRIDGE_COMPLETE_ARCHITECTURE.md](architecture/CLOUDBRIDGE_COMPLETE_ARCHITECTURE.md) | Complete system architecture |
-| [CLOUDBRIDGE_TCP_TUNNEL_TECHNICAL_SPEC.md](architecture/CLOUDBRIDGE_TCP_TUNNEL_TECHNICAL_SPEC.md) | TCP tunnel spec |
+| [CLOUDBRIDGE_TCP_TUNNEL_TECHNICAL_SPEC.md](architecture/CLOUDBRIDGE_TCP_TUNNEL_TECHNICAL_SPEC.md) | TCP tunnel technical spec |
+| [MASQUE_USAGE_GUIDE.md](architecture/MASQUE_USAGE_GUIDE.md) | MASQUE protocol usage guide |
 
 ## Analysis
 
 See [analysis/README.md](analysis/README.md) and service-specific analyses in `analysis/`.
 
-## Roadmap & planning
+## Roadmap
 
 | Document | Description |
 |----------|-------------|
 | [README_ROADMAP.md](roadmap/README_ROADMAP.md) | Roadmap index |
-| [WEEK1_ACTION_PLAN.md](roadmap/WEEK1_ACTION_PLAN.md) | Week 1 plan |
+| [CLOUDBRIDGE_STRATEGIC_ROADMAP.md](roadmap/CLOUDBRIDGE_STRATEGIC_ROADMAP.md) | Strategic roadmap |
 | [MVP_IMPLEMENTATION_PLAN.md](roadmap/MVP_IMPLEMENTATION_PLAN.md) | MVP plan |
+| [COMPLETE_4MONTH_ROADMAP.md](roadmap/COMPLETE_4MONTH_ROADMAP.md) | 4-month roadmap |
+| [MONTH1_STABILIZATION_ROADMAP.md](roadmap/MONTH1_STABILIZATION_ROADMAP.md) | Month 1 stabilization |
 
-## Operations & status
+## Operations
 
 | Document | Description |
 |----------|-------------|
-| [PILOT_READINESS_CHECKLIST.md](operations/PILOT_READINESS_CHECKLIST.md) | Pilot readiness |
 | [SERVICE_CATALOG.md](operations/SERVICE_CATALOG.md) | Service catalog |
-| [SECURITY_AUDIT_WEEK2.md](operations/SECURITY_AUDIT_WEEK2.md) | Security audit |
+| [ADMIN_API.md](ADMIN_API.md) | Admin API reference |
+| [TENANT_ISOLATION_OPERATIONS_GUIDE.md](TENANT_ISOLATION_OPERATIONS_GUIDE.md) | Tenant isolation operations |
 
 ## Business
 
-Investor and market materials in [business/](business/).
+| Document | Description |
+|----------|-------------|
+| [EXECUTIVE_SUMMARY.md](business/EXECUTIVE_SUMMARY.md) | Executive summary |
+| [INVESTOR_PITCH_RU.md](business/INVESTOR_PITCH_RU.md) | Investor pitch (Russian) |
+| [INVESTOR_SUMMARY.md](business/INVESTOR_SUMMARY.md) | Investor summary |
+| [MARKET_ANALYSIS_RU.md](business/MARKET_ANALYSIS_RU.md) | Market analysis (Russian) |
 
-## Reports, network, security
+## Network, Security & Compliance
 
-- [reports/](reports/) — status and integration reports
-- [network/](network/) — networking analysis
-- [security/](security/) — security documentation
-- [troubleshooting/](troubleshooting/) — incident guides
+| Directory | Description |
+|-----------|-------------|
+| [network/](network/) | Ports, tokens, subdomains reference |
+| [security/](security/) | Security policies and guides |
+| [compliance/](compliance/) | Compliance documentation |
+| [troubleshooting/](troubleshooting/) | Incident runbooks |
+| [monitoring/](monitoring/) | Monitoring stack overview |
 
-## Deploy scripts
+## Deployment
 
-Shell entrypoints moved to [../scripts/deploy/](../scripts/deploy/).
+| Document | Description |
+|----------|-------------|
+| [deployment/README.md](deployment/README.md) | Deployment docs index |
+| [deployment/EXTERNAL_LB_SETUP.md](deployment/EXTERNAL_LB_SETUP.md) | External load balancer setup |
+| [deployment/KYVERNO_DEPLOYMENT_GUIDE.md](deployment/KYVERNO_DEPLOYMENT_GUIDE.md) | Kyverno deployment |
+| [deployment/RELAY_SERVER_SETUP.md](deployment/RELAY_SERVER_SETUP.md) | Relay server setup |
+
+## Archive
+
+Legacy and archived documentation is in [legacy/_index.md](legacy/_index.md) with a full migration table.
+
+---
+
+**Agent-oriented overview:** [openwiki/quickstart.md](../openwiki/quickstart.md)

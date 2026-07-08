@@ -20,14 +20,15 @@ k8s/
 ├── configmaps/           # Configuration
 ├── rbac/                 # Role-based access control
 ├── network-policies/     # Network segmentation
-├── security/             # Security policies
+├── security/             # Security policies (cert-manager, mTLS, external secrets)
 ├── persistentvolumeclaims/ # Storage
 ├── storageclasses/       # Storage class definitions
 ├── monitoring/           # Prometheus/Grafana
-├── cadence/              # Cadence workflow engine
-├── zitadel/              # Zitadel IAM
+├── monitoring-stack/     # Production monitoring (VictoriaMetrics, AlertManager, SLO)
+├── cadence/              # Cadence workflow engine (manifests/ subdir for detailed YAMLs)
+├── zitadel/              # Zitadel IAM (Helm values, nginx configs, ingress)
 ├── bgp-monitoring/       # BGP routing monitoring
-├── monitoring-stack/     # Production monitoring
+├── policies/             # Kyverno pod security policies
 └── cronjobs/             # Scheduled tasks
 ```
 
@@ -45,6 +46,12 @@ k8s/
 | `07-ingress.yaml` | NGINX Ingress with TLS |
 | `08-servicemonitor.yaml` | Prometheus ServiceMonitor |
 | `09-zitadel.yaml` | Zitadel IAM |
+| `10-zitadel-complete.yaml` | Zitadel complete deployment |
+| `11-postgres-zitadel.yaml` | PostgreSQL for Zitadel |
+| `12-default-backend*.yaml` | NGINX default backend (multiple variants) |
+| `13-beautiful-homepage.yaml` | Landing page |
+| `14-default-backend-with-config.yaml` | Default backend with ConfigMap |
+| `15-zitadel-root-ingress.yaml` | Zitadel root domain ingress |
 
 ### Core Deployment (`k8s-manifests/05-deployments.yaml`)
 

@@ -1,17 +1,17 @@
-# 🚀 **Развертывание CloudBridge Relay**
+# **Развертывание CloudBridge Relay**
 
 ## **Обзор**
 
 Этот раздел содержит документы по развертыванию CloudBridge Relay в различных средах.
 
-## 📚 **Документы**
+## **Документы**
 
 ### **Отчеты о развертывании:**
 - [**Minikube Deployment Report**](MINIKUBE_DEPLOYMENT_REPORT.md) - Подробный отчет о развертывании в Minikube
 - [**Minikube Testing Report**](MINIKUBE_TESTING_REPORT.md) - Результаты тестирования в Minikube
 - [**Implementation Progress Report**](IMPLEMENTATION_PROGRESS_REPORT.md) - Отчет о прогрессе реализации
 
-## 🎯 **Среды развертывания**
+## **Среды развертывания**
 
 ### **Minikube (Разработка):**
 - Локальная разработка и тестирование
@@ -37,7 +37,7 @@
 - **Services** - Сетевые сервисы
 - **Ingress** - Входящий трафик
 
-## 📊 **Порты и сервисы**
+## **Порты и сервисы**
 
 ### **CloudBridge Relay порты:**
 - **5550**: Main TCP Server
@@ -65,7 +65,7 @@
 - Grafana
 - UFW Firewall
 
-## 📝 **Чек-лист развертывания**
+## **Чек-лист развертывания**
 
 ### **Подготовка:**
 - [ ] Minikube запущен

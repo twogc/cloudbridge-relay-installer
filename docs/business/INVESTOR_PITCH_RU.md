@@ -6,7 +6,7 @@
 
 ---
 
-## 🎯 Elevator Pitch (30 секунд)
+## Elevator Pitch (30 секунд)
 
 **CloudBridge** — это open source P2P relay сервер нового поколения на базе QUIC/MASQUE с AI-оптимизацией и quantum-safe защитой.
 
@@ -20,7 +20,7 @@
 
 ---
 
-## 📊 Проблема
+## Проблема
 
 ### Pain Points
 
@@ -73,49 +73,49 @@
 | Возможность | CloudBridge | Tailscale | UserGate |
 |-------------|-------------|-----------|----------|
 | **Цена** | ₽150k-500k/год | ₽1.5M-2M/год (100 users) | ₽500k-2M/год |
-| **Open Source** | ✅ Да | ⚠️ Partial | ❌ Нет |
-| **Self-hosted** | ✅ Да | ✅ Да | ✅ Да |
-| **QUIC Protocol** | ✅ Да | ❌ Нет | ❌ Нет |
-| **AI Optimization** | ✅ Да | ❌ Нет | ❌ Нет |
-| **РФ Available** | ✅ Да | ⚠️ Ограничено | ✅ Да |
-| **152-ФЗ Ready** | ✅ Да | ❌ Нет | ✅ Да |
+| **Open Source** | Да | ⚠️ Partial |  Нет |
+| **Self-hosted** | а | Да| Да |
+| **QUIC Protocol** | а |  Нет |  Нет |
+| **AI Optimization** | а |  Нет |  Нет |
+| **РФ Available** | а | ⚠️ Ограничено | Да|
+| **152-ФЗ Ready** | а |  Нет | Да|
 
 **Экономия**: 60-80% vs Tailscale, 40-60% vs UserGate
 
 ---
 
-## 🚀 Traction
+## Traction
 
 ### Current Status
 
 **Product**:
-- ✅ MVP 98% готов
-- ✅ 14 микросервисов
-- ✅ Kubernetes deployments
-- ✅ Comprehensive documentation (3000+ строк)
+- VP 98% готов
+- 4 микросервисов
+- ubernetes deployments
+- omprehensive documentation (3000+ строк)
 
 **Technology**:
-- ✅ QUIC/MASQUE relay
-- ✅ JWKS authentication (Zitadel)
-- ✅ TURN server integration
-- ✅ Multi-tenancy isolation (Calico)
-- ✅ AI-powered optimization (Cloudflare AI)
+- UIC/MASQUE relay
+- WKS authentication (Zitadel)
+- URN server integration
+- ulti-tenancy isolation (Calico)
+- I-powered optimization (Cloudflare AI)
 
 **Pipeline**:
-- 🎯 2-3 early adopters в обсуждении
-- 🎯 10-15 qualified leads
-- 🎯 Community: начало в Q4 2025
+- 2-3 early adopters в обсуждении
+- 10-15 qualified leads
+- Community: начало в Q4 2025
 
 ### Milestones Achieved
 
-- ✅ **2025 Q3**: Architecture design completed
-- ✅ **2025 Q3**: Core relay implementation
-- ✅ **2025 Q3**: JWKS auth integrated
-- ✅ **2025 Q3**: TURN server deployed
-- ✅ **2025 Q4**: MVP 98% (manual testing next)
-- 🎯 **2025 Q4**: Launch + first customers
-- 🎯 **2026 Q1**: ФСТЭК process started
-- 🎯 **2026 Q2**: Series A fundraising
+- *2025 Q3**: Architecture design completed
+- *2025 Q3**: Core relay implementation
+- *2025 Q3**: JWKS auth integrated
+- *2025 Q3**: TURN server deployed
+- *2025 Q4**: MVP 98% (manual testing next)
+- **2025 Q4**: Launch + first customers
+- **2026 Q1**: ФСТЭК process started
+- **2026 Q2**: Series A fundraising
 
 ---
 
@@ -179,7 +179,7 @@ Training: ₽50k-100k/course
 
 ---
 
-## 📈 Financial Projections
+## Financial Projections
 
 ### Revenue Forecast (Realistic Scenario)
 
@@ -291,7 +291,7 @@ Use of Funds:
 
 ---
 
-## 🎯 Go-to-Market
+## Go-to-Market
 
 ### Phase 1: Early Adopters (Q4 2025)
 
@@ -328,22 +328,22 @@ Use of Funds:
 
 ---
 
-## 🏆 Competitive Advantages
+## Competitive Advantages
 
 ### Defensibility
 
-**1. Technology Moat** 🔒
+**1. Technology Moat**
 - QUIC/MASQUE expertise (rare in RU)
 - AI optimization algorithms (proprietary)
 - Quantum-safe architecture (future-proof)
 - 2-3 years lead vs competitors
 
-**2. Network Effects** 🌐
+**2. Network Effects**
 - Open source community
 - Ecosystem of integrations
 - Developer community contributions
 
-**3. Compliance** ✅
+**3. Compliance**
 - ФСТЭК/ФСБ certification (18-24 months)
 - ГОСТ crypto compliance
 - High barrier for new entrants
@@ -355,10 +355,10 @@ Use of Funds:
 
 ### Execution Advantages
 
-- ✅ **First-mover**: First QUIC/MASQUE relay in RU
-- ✅ **Open source**: Community support & trust
-- ✅ **Timing**: Perfect market timing (импортозамещение)
-- ✅ **Team**: Strong technical team
+- *First-mover**: First QUIC/MASQUE relay in RU
+- *Open source**: Community support & trust
+- *Timing**: Perfect market timing (импортозамещение)
+- *Team**: Strong technical team
 
 ---
 
@@ -427,7 +427,7 @@ Use of Funds:
 
 ### Why Invest in CloudBridge?
 
-**1. Large & Growing Market** 📈
+**1. Large & Growing Market**
 - TAM: ₽71-89 млрд к 2027 (18% CAGR)
 - SAM: ₽25-35 млрд (Enterprise + IoT)
 - SOM: ₽2-4 млрд realistic к 2027
@@ -437,7 +437,7 @@ Use of Funds:
 - Open source community
 - ФСТЭК certification (18-24 months barrier)
 
-**3. Proven Demand** ✅
+**3. Proven Demand**
 - Tailscale $100M ARR globally (2023)
 - ZeroTier 2M+ users
 - Strong replacement market in RU
@@ -447,7 +447,7 @@ Use of Funds:
 - LTV/CAC: 6-10x
 - Scalable business model
 
-**5. Exit Potential** 🚀
+**5. Exit Potential**
 - **Strategic buyers**: Yandex, Mail.ru, Kaspersky, Sber
 - **IPO**: After ₽500M-1B ARR (2028-2030)
 - **Valuation**: 5-10x ARR (software SaaS multiples)
@@ -480,27 +480,27 @@ Use of Funds:
 ### Milestones (18 months)
 
 **Product**:
-- ✅ MVP → Production (Q4 2025)
-- ✅ ФСТЭК process started (Q4 2025)
-- ✅ Enterprise Edition (Q1 2026)
+- VP → Production (Q4 2025)
+- СТЭК process started (Q4 2025)
+- nterprise Edition (Q1 2026)
 
 **Revenue**:
-- ✅ ₽2M-5M (2025)
-- ✅ ₽20M-40M ARR (2026)
-- ✅ 20-30 customers (2026)
+- 2M-5M (2025)
+- 20M-40M ARR (2026)
+- 0-30 customers (2026)
 
 **Team**:
-- ✅ 8-12 → 20-25 people
-- ✅ Enterprise sales team
-- ✅ Customer success team
+- -12 → 20-25 people
+- nterprise sales team
+- ustomer success team
 
 **Fundraising**:
-- ✅ Series A ready (2026 H2)
-- ✅ ₽200M-500M at ₽1B-2B valuation
+- eries A ready (2026 H2)
+- 200M-500M at ₽1B-2B valuation
 
 ---
 
-## 📊 Investment Summary
+## Investment Summary
 
 | Metric | Value |
 |--------|-------|
@@ -520,7 +520,7 @@ Use of Funds:
 
 ---
 
-## 🎯 Next Steps
+## Next Steps
 
 **For Investors**:
 1. **Review**: Full pitch deck & financials
@@ -546,7 +546,7 @@ Use of Funds:
 
 **Follow-up**:
 - 📄 Full pitch deck (20-30 slides)
-- 📊 Financial model (3-way forecast)
+- Financial model (3-way forecast)
 - 🎥 Product demo video
 - 📑 Technical documentation
 

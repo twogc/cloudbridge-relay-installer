@@ -18,7 +18,7 @@ log() {
 }
 
 success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN} $1${NC}"
 }
 
 warning() {
@@ -26,7 +26,7 @@ warning() {
 }
 
 error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED} $1${NC}"
 }
 
 # Проверка прав root
@@ -70,7 +70,7 @@ cp /etc/nginx/conf.d/edge-2gc-ru.conf /etc/nginx/conf.d/edge-2gc-ru.conf.backup.
 success "Резервная копия создана"
 
 # 5. Установка новой nginx конфигурации для порта 9090
-log "🔧 Установка nginx конфигурации для порта 9090..."
+log " Установка nginx конфигурации для порта 9090..."
 if [ -f "nginx/cloudflare-port-9090.conf" ]; then
     cp nginx/cloudflare-port-9090.conf /etc/nginx/conf.d/edge-2gc-ru.conf
     success "nginx конфигурация обновлена для порта 9090"
@@ -96,7 +96,7 @@ ufw allow 9090/tcp comment "CloudBridge Relay HTTPS"
 success "Порт 9090 открыт в файрволе"
 
 # 8. Перезагрузка nginx
-log "🔄 Перезагрузка nginx..."
+log " Перезагрузка nginx..."
 systemctl reload nginx
 success "nginx перезагружен"
 
@@ -130,7 +130,7 @@ echo "========================================"
 
 # Magic WAN туннель
 echo "📡 Magic WAN Tunnel:"
-sudo swanctl --list-sas | grep -E "(ESTABLISHED|INSTALLED)" || echo "❌ Tunnel not active"
+sudo swanctl --list-sas | grep -E "(ESTABLISHED|INSTALLED)" || echo " Tunnel not active"
 
 # CloudBridge Relay поды
 echo ""
@@ -145,17 +145,17 @@ systemctl is-active nginx
 # Health check на порту 9090
 echo ""
 echo "💚 Health Check (Port 9090):"
-curl -k -s https://edge.2gc.ru:9090/health || echo "❌ Health check failed"
+curl -k -s https://edge.2gc.ru:9090/health || echo " Health check failed"
 
 # API check на порту 9090
 echo ""
-echo "🔌 API Check (Port 9090):"
-curl -k -s https://edge.2gc.ru:9090/api/ | head -c 100 || echo "❌ API check failed"
+echo " API Check (Port 9090):"
+curl -k -s https://edge.2gc.ru:9090/api/ | head -c 100 || echo " API check failed"
 
 # Проверка порта 9090
 echo ""
-echo "🔌 Port 9090 Check:"
-netstat -tlnp | grep :9090 || echo "❌ Port 9090 not listening"
+echo " Port 9090 Check:"
+netstat -tlnp | grep :9090 || echo " Port 9090 not listening"
 
 echo ""
 echo "📊 Monitoring complete (Port 9090)"

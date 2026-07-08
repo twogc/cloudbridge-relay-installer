@@ -7,7 +7,7 @@
 
 ---
 
-## 🎯 Что Мы Делаем (The Pitch)
+## Что Мы Делаем (The Pitch)
 
 **CloudBridge** - это open source P2P relay сервер нового поколения на базе QUIC/MASQUE с AI-оптимизацией, который позволяет enterprise компаниям экономить 60-80% на VPN и получить полный контроль над данными.
 
@@ -20,21 +20,21 @@
 ### Проблема
 - 🚫 Зарубежные VPN (Tailscale, Cloudflare) - заблокированы или недоступны
 - 💸 Российские решения (UserGate, Континент) - дорогие (₽500k-2M/год) и устаревшие
-- 🔒 Нет контроля данных - не соответствует 152-ФЗ
-- 📈 Рост удалённой работы требует новых решений
+- Нет контроля данных - не соответствует 152-ФЗ
+- Рост удалённой работы требует новых решений
 
 ### Решение
 CloudBridge Relay:
-- ✅ **Self-hosted** - данные на вашей инфраструктуре
-- ✅ **Open source** - прозрачность и импортонезависимость
-- ✅ **QUIC/MASQUE** - next-gen протоколы (HTTP/3 based)
-- ✅ **AI-оптимизация** - автоматическая оптимизация маршрутов
-- ✅ **60-80% дешевле** - vs Tailscale и UserGate
-- ✅ **152-ФЗ ready** - compliance из коробки
+- **Self-hosted** - данные на вашей инфраструктуре
+- *Open source** - прозрачность и импортонезависимость
+- *QUIC/MASQUE** - next-gen протоколы (HTTP/3 based)
+- *AI-оптимизация** - автоматическая оптимизация маршрутов
+- *60-80% дешевле** - vs Tailscale и UserGate
+- *152-ФЗ ready** - compliance из коробки
 
 ---
 
-## 📊 Рынок
+## Рынок
 
 **TAM (Total Addressable Market)**:
 - Россия 2025: ₽51-66 млрд (Enterprise VPN + IoT + Remote Access)
@@ -50,29 +50,29 @@ CloudBridge Relay:
 **Драйверы роста**:
 1. 📜 Импортозамещение (₽1 trillion госпрограмма)
 2. 🏠 Удалённая работа (+400% с 2020)
-3. 🔒 Усиление требований кибербезопасности
+3. Усиление требований кибербезопасности
 4. 📡 Рост IoT и Edge computing (+25% CAGR)
 5. 🎮 Gaming индустрия (+20% CAGR)
 
 ---
 
-## 🏆 Конкуренты & Преимущества
+## Конкуренты & Преимущества
 
 | Metric | CloudBridge | Tailscale | UserGate |
 |--------|-------------|-----------|----------|
 | **Цена/год** | ₽150k-500k | ₽1.5M-2M | ₽500k-2M |
-| **Доступность РФ** | ✅ | ⚠️ | ✅ |
-| **Open Source** | ✅ | ⚠️ Partial | ❌ |
-| **QUIC** | ✅ | ❌ | ❌ |
-| **AI** | ✅ | ❌ | ❌ |
-| **152-ФЗ** | ✅ | ❌ | ✅ |
+| **Доступность РФ** |  ⚠️ | |
+| **Open Source** |  ⚠️ Partial |  |
+| **QUIC** |   |  |
+| **AI** |   |  |
+| **152-ФЗ** |   | |
 
 **Наши преимущества**:
-- 🏆 **Technology**: Единственный QUIC/MASQUE relay в РФ
-- 🏆 **Price**: 60-80% экономия vs конкурентов
-- 🏆 **Control**: Self-hosted = полный контроль данных
-- 🏆 **Timing**: Идеальное время (импортозамещение + tech shift)
-- 🏆 **Open source**: Прозрачность + community
+- **Technology**: Единственный QUIC/MASQUE relay в РФ
+- **Price**: 60-80% экономия vs конкурентов
+- **Control**: Self-hosted = полный контроль данных
+- **Timing**: Идеальное время (импортозамещение + tech shift)
+- **Open source**: Прозрачность + community
 
 ---
 
@@ -86,32 +86,32 @@ CloudBridge Relay:
 ### Unit Economics
 - **CAC**: ₽200k-500k
 - **LTV**: ₽3M-10M (3-5 years retention)
-- **LTV/CAC**: 6-10x ✅
-- **Gross Margin**: 70-80% ✅
+- **LTV/CAC**: 6-10x
+- **Gross Margin**: 70-80%
 - **Payback**: 6-12 months
 
 ---
 
-## 📈 Traction & Milestones
+## Traction & Milestones
 
 ### Current (2025 Q4)
-- ✅ MVP 98% готов
-- ✅ 14 микросервисов built
-- ✅ 3000+ строк документации
-- 🎯 2-3 early adopters в pipeline
-- 🎯 Launch Q4 2025
+- VP 98% готов
+- 4 микросервисов built
+- 000+ строк документации
+- 2-3 early adopters в pipeline
+- Launch Q4 2025
 
 ### 2026 (Traction)
-- 🎯 20-30 customers
-- 🎯 ₽20M-40M ARR
-- 🎯 ФСТЭК process started
-- 🎯 Series A ready
+- 20-30 customers
+- ₽20M-40M ARR
+- ФСТЭК process started
+- Series A ready
 
 ### 2027 (Scale)
-- 🎯 80-150 customers
-- 🎯 ₽100M-200M ARR
-- 🎯 ФСТЭК certified
-- 🎯 Market leader (10-15% share)
+- 80-150 customers
+- ₽100M-200M ARR
+- ФСТЭК certified
+- Market leader (10-15% share)
 
 ---
 
@@ -175,7 +175,7 @@ CloudBridge Relay:
 
 ---
 
-## 🎯 The Ask
+## The Ask
 
 ### Investment
 - **Amount**: ₽50M-100M
@@ -199,7 +199,7 @@ CloudBridge Relay:
 
 ---
 
-## 📊 Return Potential
+## Return Potential
 
 **Investment**: ₽50M at ₽300M-500M post
 **Ownership**: 10-17%
@@ -215,7 +215,7 @@ CloudBridge Relay:
 **2030 Exit** (IPO/Strategic):
 - ARR: ₽500M-1B
 - Valuation: ₽5B-10B
-- Return: **10-20x** 🚀
+- Return: **10-20x**
 
 **IRR**: 40-60% (assuming 2027 exit at 5x ARR)
 
@@ -224,10 +224,10 @@ CloudBridge Relay:
 ## 🏁 Why Now?
 
 **Perfect Storm**:
-1. ✅ **Market timing**: Импортозамещение в разгаре
-2. ✅ **Tech timing**: QUIC становится стандартом (HTTP/3)
-3. ✅ **Competitive vacuum**: Tailscale limited, UserGate outdated
-4. ✅ **Window**: 18-36 months before others catch up
+1. *Market timing**: Импортозамещение в разгаре
+2. *Tech timing**: QUIC становится стандартом (HTTP/3)
+3. *Competitive vacuum**: Tailscale limited, UserGate outdated
+4. *Window**: 18-36 months before others catch up
 
 **This is THE opportunity to build the leading P2P relay in Russia** 🇷🇺
 
@@ -242,14 +242,14 @@ CloudBridge Relay:
 
 **Documents Available**:
 - 📄 Full pitch deck (20-30 slides)
-- 📊 Financial model (3-statement forecast)
+- Financial model (3-statement forecast)
 - 📑 Market analysis (50+ pages)
 - 🎥 Product demo
 - 💻 Technical documentation (3000+ lines)
 
 ---
 
-## 📋 Quick Facts
+## Quick Facts
 
 | Metric | Value |
 |--------|-------|
@@ -276,7 +276,7 @@ CloudBridge is building the **Tailscale of Russia** on modern protocols (QUIC/MA
 **Ask**: ₽50M-100M Seed at ₽300M-500M post
 **Return**: 10-20x by 2030
 
-**This is a generational opportunity to build the category leader in Russian P2P networking.** 🚀
+**This is a generational opportunity to build the category leader in Russian P2P networking.**
 
 ---
 

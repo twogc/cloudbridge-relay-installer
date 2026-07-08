@@ -1,18 +1,18 @@
 # CloudBridge Client Connection Guide
 
 **Date:** September 28, 2025  
-**Status:** ✅ READY FOR PILOT PROJECT  
+**Status:** READY FOR PILOT PROJECT  
 **Client Location:** `test/relay-client/`  
 
 ## Executive Summary
 
-✅ **CloudBridge клиент готов для пилотного проекта!**  
-✅ **Прямое подключение к Kubernetes работает**  
-❌ **Внешние DNS домены (2gc.ru) недоступны из-за проблем LoadBalancer**  
+ **CloudBridge клиент готов для пилотного проекта!**  
+ **Прямое подключение к Kubernetes работает**  
+ **Внешние DNS домены (2gc.ru) недоступны из-за проблем LoadBalancer**  
 
 ## Client Configuration Options
 
-### Option 1: Pilot Project (RECOMMENDED) ✅
+### Option 1: Pilot Project (RECOMMENDED)
 
 **Файл конфигурации:** `config-pilot-ready.yaml`
 
@@ -28,10 +28,10 @@ api:
   metrics_url: "http://192.168.49.2:32500/metrics"
 ```
 
-**Статус:** ✅ Полностью работает  
+**Статус:** олностью работает  
 **Использование:** Для пилотного проекта и демонстрации  
 
-### Option 2: External DNS (NOT WORKING) ❌
+### Option 2: External DNS (NOT WORKING) 
 
 **Файл конфигурации:** `config-external-dns.yaml`
 
@@ -47,13 +47,13 @@ api:
   metrics_url: "https://monitor.2gc.ru/metrics"
 ```
 
-**Статус:** ❌ HTTP 503 Service Unavailable  
+**Статус:**  HTTP 503 Service Unavailable  
 **Проблема:** LoadBalancer backend member в ERROR состоянии  
 **Причина:** Сетевая изоляция между LoadBalancer (10.0.0.242) и Kubernetes (192.168.49.2)  
 
 ## Working Endpoints (Pilot Configuration)
 
-### ✅ Core Services
+### ore Services
 - **Health Check:** `http://192.168.49.2:32500/health`
   - Status: `healthy`
   - Version: `v1.0.0`
@@ -64,12 +64,12 @@ api:
   - Runtime metrics
   - System information
 
-### ✅ P2P API
+### 2P API
 - **Peer Discovery:** `http://192.168.49.2:32500/api/v1/peers/discover?tenant_id=pilot-tenant`
 - **Peer List:** `http://192.168.49.2:32500/api/v1/peers/list`
 - **Peer Registration:** `http://192.168.49.2:32500/api/v1/peers/register` (requires JWT)
 
-### ✅ Transport Layer
+### ransport Layer
 - **WebSocket:** `ws://192.168.49.2:32500/ws/peers`
 - **QUIC:** Available on configured ports
 - **WireGuard:** Available for P2P connections
@@ -168,9 +168,9 @@ curl -k https://relay.2gc.ru/health
 ## External DNS Issues (2gc.ru domains)
 
 ### Current Status
-- ❌ **All 2gc.ru domains return HTTP 503**
-- ❌ **LoadBalancer backend member in ERROR state**
-- ❌ **Network isolation between LoadBalancer and Kubernetes**
+-  **All 2gc.ru domains return HTTP 503**
+-  **LoadBalancer backend member in ERROR state**
+-  **Network isolation between LoadBalancer and Kubernetes**
 
 ### Root Cause
 ```
@@ -209,7 +209,7 @@ curl "http://192.168.49.2:32500/api/v1/peers/discover?tenant_id=pilot-tenant"
 
 ## Pilot Project Readiness
 
-### ✅ Ready Components
+### eady Components
 - [x] **Server Health:** Healthy and running
 - [x] **API Endpoints:** Core functionality available
 - [x] **Client Configuration:** Pilot-ready config created
@@ -218,7 +218,7 @@ curl "http://192.168.49.2:32500/api/v1/peers/discover?tenant_id=pilot-tenant"
 - [x] **Metrics:** System monitoring available
 - [x] **WebSocket:** Real-time communication ready
 
-### 🔧 Production Requirements
+###  Production Requirements
 - [ ] **External DNS:** Fix LoadBalancer backend connectivity
 - [ ] **JWT Authentication:** Enable token validation
 - [ ] **SSL/TLS:** Implement proper certificate management
@@ -247,9 +247,9 @@ go build -o pilot-client pilot-client.go
 
 **CloudBridge клиент полностью готов для пилотного проекта!**
 
-- ✅ **Прямое подключение работает** (192.168.49.2:32500)
-- ✅ **Все основные функции доступны**
-- ✅ **P2P соединения настроены**
-- ✅ **Транспортные протоколы работают**
+- *Прямое подключение работает** (192.168.49.2:32500)
+- *Все основные функции доступны**
+- *P2P соединения настроены**
+- *Транспортные протоколы работают**
 
 **Для завтрашней демонстрации используйте конфигурацию `config-pilot-ready.yaml`**

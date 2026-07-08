@@ -1,6 +1,6 @@
 # ⚡ Быстрая шпаргалка по развертыванию CloudBridge Relay в VK Cloud
 
-## 🚀 Быстрый старт (5 минут)
+## Быстрый старт (5 минут)
 
 ### 1. Подготовка окружения
 ```bash
@@ -81,29 +81,29 @@ kubectl create secret docker-registry k8s-registry-creds --docker-server=http://
 kubectl apply -f k8s/
 ```
 
-## 📋 Чек-лист проверки
+## Чек-лист проверки
 
-### ✅ Кластер готов
+### Кластер готов
 - [ ] `kubectl get nodes` - 3 узла в состоянии Ready
 - [ ] `kubectl get pods -n monitoring` - Prometheus Stack запущен
 - [ ] `kubectl get pods -n ingress-nginx` - NGINX Ingress запущен
 
-### ✅ Registry работает
+### egistry работает
 - [ ] `kubectl get pods -n cloudbridge | grep registry` - Running
 - [ ] `kubectl port-forward service/docker-registry 5000:5000 -n cloudbridge &`
 - [ ] `curl http://localhost:5000/v2/` - возвращает `{}`
 
-### ✅ Образы загружены
+### бразы загружены
 - [ ] `docker push localhost:5000/cloudbridge-relay:latest` - успешно
 - [ ] `docker push localhost:5000/ai-service:latest` - успешно
 - [ ] `docker push localhost:5000/cadence:latest` - успешно
 
-### ✅ Сервисы запущены
+### ервисы запущены
 - [ ] `kubectl get pods -n cloudbridge` - все поды в состоянии Running
 - [ ] `kubectl get services -n cloudbridge` - сервисы созданы
 - [ ] `kubectl logs -l app.kubernetes.io/name=cloudbridge-relay -n cloudbridge` - логи без ошибок
 
-## 🔧 Быстрые команды
+##  Быстрые команды
 
 ### Проверка статуса
 ```bash
@@ -180,14 +180,14 @@ kubectl rollout restart deployment docker-registry -n cloudbridge
 kubectl run test-pod --image=busybox --rm -it --restart=Never -n cloudbridge -- wget -qO- http://docker-registry:5000/v2/
 ```
 
-## 📊 Полезные ссылки
+## Полезные ссылки
 
 - **Prometheus**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin / полученный пароль)
 - **Jaeger**: http://localhost:16686
 - **ArgoCD**: http://localhost:8080
 
-## 🎯 Следующие шаги
+## Следующие шаги
 
 1. **Настройка CI/CD** - автоматическое развертывание
 2. **Мониторинг** - настройка алертов
@@ -197,4 +197,4 @@ kubectl run test-pod --image=busybox --rm -it --restart=Never -n cloudbridge -- 
 
 ---
 
-**Удачного развертывания! 🚀**
+**Удачного развертывания!**

@@ -1,10 +1,10 @@
-# 🔒 **Безопасность CloudBridge Relay**
+# **Безопасность CloudBridge Relay**
 
 ## **Обзор**
 
 Этот раздел содержит документы по безопасности CloudBridge Relay, включая аутентификацию, авторизацию и интеграцию с Keycloak.
 
-## 📚 **Документы**
+## **Документы**
 
 ### **Анализ и тестирование:**
 - [**Keycloak Analysis Results**](KEYCLOAK_ANALYSIS_RESULTS.md) - Результаты анализа интеграции с Keycloak
@@ -12,7 +12,7 @@
 - [**Keycloak Connection Issue Report**](KEYCLOAK_CONNECTION_ISSUE_REPORT.md) - Отчет о проблемах подключения
 - [**Quick Keycloak Fix**](QUICK_KEYCLOAK_FIX.md) - Быстрое исправление проблем Keycloak
 
-## 🎯 **Модель безопасности**
+## **Модель безопасности**
 
 ### **Zero-Trust архитектура:**
 - Проверка каждого соединения
@@ -48,7 +48,7 @@
 - **Perfect Forward Secrecy** - PFS поддержка
 - **Certificate validation** - Проверка сертификатов
 
-## 🛡️ **Защита от угроз**
+## **Защита от угроз**
 
 ### **DDoS защита:**
 - **Rate limiting** - Ограничение скорости запросов
@@ -65,7 +65,7 @@
 - **Security metrics** - Метрики безопасности
 - **Anomaly detection** - Обнаружение аномалий
 
-## 📊 **Конфигурация безопасности**
+## **Конфигурация безопасности**
 
 ### **Переменные окружения:**
 ```bash
@@ -80,7 +80,7 @@ KEYCLOAK_CLIENT_SECRET=your-secret
 - **Rate limits** - Ограничения скорости
 - **Session timeout** - Таймаут сессий
 
-## 🔍 **Диагностика безопасности**
+## **Диагностика безопасности**
 
 ### **Проверка подключения:**
 ```bash
@@ -100,7 +100,7 @@ kubectl logs -f deployment/cloudbridge-relay -n cloudbridge | grep -i auth
 kubectl logs -f deployment/keycloak -n cloudbridge
 ```
 
-## 📝 **Чек-лист безопасности**
+## **Чек-лист безопасности**
 
 ### **Аутентификация:**
 - [ ] Keycloak доступен

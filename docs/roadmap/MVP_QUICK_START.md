@@ -1,40 +1,40 @@
-# 🚀 CloudBridge Relay MVP - Quick Start Guide
+# CloudBridge Relay MVP - Quick Start Guide
 
 **Последнее обновление**: 2025-10-13
 **Статус**: Ready for MVP deployment (82% готовности)
 
 ---
 
-## ✅ Что уже работает (готово к production)
+## Что уже работает (готово к production)
 
 ### Core Services (95%)
-- ✅ **MASQUE Proxy** - RFC 9297 compliant
-- ✅ **QUIC** - Enhanced QUIC с safe defaults
-- ✅ **NAT Traversal** - Client-side готов (24 Prometheus метрики)
-- ✅ **AI Analytics** - Full stack (Cloudflare AI)
-- ✅ **IPAM Service** - O(1) allocation
-- ✅ **Multi-tenancy** - Полная изоляция
-- ✅ **Circuit Breaker** - Production ready
+- *MASQUE Proxy** - RFC 9297 compliant
+- *QUIC** - Enhanced QUIC с safe defaults
+- *NAT Traversal** - Client-side готов (24 Prometheus метрики)
+- *AI Analytics** - Full stack (Cloudflare AI)
+- *IPAM Service** - O(1) allocation
+- *Multi-tenancy** - Полная изоляция
+- *Circuit Breaker** - Production ready
 
 ### Security (85%)
-- ✅ **Zitadel OIDC** - JWT validation через JWKS
-- ✅ **TLS 1.3** - Cert-manager integration
-- ✅ **RBAC** - Role-based access control
+- *Zitadel OIDC** - JWT validation через JWKS
+- *TLS 1.3** - Cert-manager integration
+- *RBAC** - Role-based access control
 
 ### Infrastructure (95%)
-- ✅ **Kubernetes Deployments** - Production manifests
-- ✅ **TURN Server** - Готов к deploy
-- ✅ **Prometheus Monitoring** - Full observability
-- ✅ **External Secrets** - 90% готов
+- *Kubernetes Deployments** - Production manifests
+- *TURN Server** - Готов к deploy
+- *Prometheus Monitoring** - Full observability
+- *External Secrets** - 90% готов
 
 ---
 
-## 🎯 Минимальные требования для MVP
+## Минимальные требования для MVP
 
 ### Что ОБЯЗАТЕЛЬНО нужно:
-1. ✅ Kubernetes cluster (VK Cloud или bare-metal)
-2. ✅ LoadBalancer (для TURN server)
-3. ✅ Zitadel instance (для аутентификации)
+1. ubernetes cluster (VK Cloud или bare-metal)
+2. oadBalancer (для TURN server)
+3. itadel instance (для аутентификации)
 4. ⚠️ TLS сертификаты (можно self-signed для dev)
 5. ⚠️ PostgreSQL (для IPAM и AI)
 
@@ -45,7 +45,7 @@
 
 ---
 
-## 📋 Deployment Checklist (Fast Track - 3 часа)
+## Deployment Checklist (Fast Track - 3 часа)
 
 ### Шаг 1: Подготовка окружения (30 минут)
 
@@ -199,7 +199,7 @@ curl http://localhost:8082/api/v1/turn/allocate \
 
 ---
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Problem: TURN server не получает external IP
 
@@ -255,7 +255,7 @@ kubectl top pods -n cloudbridge
 
 ---
 
-## 📊 Monitoring Dashboard
+## Monitoring Dashboard
 
 ### Prometheus Queries
 
@@ -284,10 +284,10 @@ histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m]))
 
 ---
 
-## 🎯 Success Criteria (MVP)
+## Success Criteria (MVP)
 
 ### Technical
-- [x] ✅ JWT validation через JWKS
+- [x] WT validation через JWKS
 - [ ] ⏳ TURN server deployed и работает
 - [ ] ⏳ NAT traversal success > 90%
 - [ ] ⏳ All services healthy
@@ -299,8 +299,8 @@ histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m]))
 - [ ] ⏳ Multi-tenancy изоляция
 
 ### Operational
-- [x] ✅ Prometheus metrics экспортируются
-- [x] ✅ Logs структурированные
+- [x] rometheus metrics экспортируются
+- [x] ogs структурированные
 - [ ] ⏳ Health checks работают
 
 ---
@@ -324,7 +324,7 @@ histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m]))
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - **Architecture**: [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md)
 - **Developer Guide**: [DEVELOPER_BRIEFING.md](DEVELOPER_BRIEFING.md)

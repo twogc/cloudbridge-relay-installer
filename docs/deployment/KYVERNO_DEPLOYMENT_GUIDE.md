@@ -9,12 +9,12 @@
 ## Executive Summary
 
 Deploy **Kyverno policy engine** to enforce supply chain security policies:
-- ✅ Image signature verification (cosign)
-- ✅ SBOM attestation requirements
-- ✅ Vulnerability scan enforcement
-- ✅ Allowed registries whitelist
-- ✅ Non-root containers
-- ✅ Immutable tags
+- Image signature verification (cosign)
+- BOM attestation requirements
+- ulnerability scan enforcement
+- llowed registries whitelist
+- on-root containers
+- mmutable tags
 
 **Deployment Strategy**: **Gradual rollout** (Audit → Enforce)
 

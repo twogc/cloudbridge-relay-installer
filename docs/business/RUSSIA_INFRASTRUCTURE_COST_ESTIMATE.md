@@ -7,7 +7,7 @@
 
 ---
 
-## 📋 Executive Summary
+## Executive Summary
 
 Полный расчёт инфраструктуры для развёртывания CloudBridge Platform в России с учётом:
 - Kubernetes кластеры
@@ -28,34 +28,34 @@
 
 ---
 
-## 🏢 Варианты провайдеров в России
+## Варианты провайдеров в России
 
 ### 1. Yandex Cloud (Рекомендуется)
-- ✅ Российская юрисдикция
-- ✅ Полный stack managed сервисов
-- ✅ Kubernetes (Managed K8s)
-- ✅ PostgreSQL, Redis managed
-- ✅ Object Storage
-- ✅ DDoS protection встроен
-- ✅ Хорошая документация на русском
+- Российская юрисдикция
+- олный stack managed сервисов
+- ubernetes (Managed K8s)
+- ostgreSQL, Redis managed
+- bject Storage
+- DoS protection встроен
+- орошая документация на русском
 
 ### 2. VK Cloud (ex. Mail.ru Cloud)
-- ✅ Российская юрисдикция
-- ✅ Kubernetes managed
-- ✅ PostgreSQL, Redis managed
-- ✅ Более низкие цены
+- оссийская юрисдикция
+- ubernetes managed
+- ostgreSQL, Redis managed
+- олее низкие цены
 - ⚠️ Меньше availability zones
 
 ### 3. Selectel
-- ✅ Российская юрисдикция
-- ✅ Bare metal + Cloud
-- ✅ Managed Kubernetes
-- ✅ BGP Anycast support
+- оссийская юрисдикция
+- are metal + Cloud
+- anaged Kubernetes
+- GP Anycast support
 - ⚠️ Требует больше ручной настройки
 
 ### 4. Cloud.ru (Ростелеком)
-- ✅ Российская юрисдикция
-- ✅ Государственный backing
+- оссийская юрисдикция
+- осударственный backing
 - ⚠️ Меньший выбор сервисов
 - ⚠️ Более высокие цены
 
@@ -196,7 +196,7 @@ Managed K8s платформа:       5,000 ₽/мес
 
 ---
 
-## 🗄️ Managed Database Services
+## Managed Database Services
 
 ### PostgreSQL (Yandex Managed PostgreSQL)
 
@@ -244,7 +244,7 @@ Persistence overhead: ~2,000 ₽/мес
 
 ---
 
-## 📊 Monitoring & Storage
+## Monitoring & Storage
 
 ### VictoriaMetrics (долгосрочное хранение метрик)
 
@@ -285,7 +285,7 @@ Object Storage (Yandex S3):
 
 ---
 
-## 🌐 Сетевая инфраструктура
+## Сетевая инфраструктура
 
 ### IP-адреса
 
@@ -348,7 +348,7 @@ Qrator/StormWall (опционально):
 
 ---
 
-## 🔐 Домены и сертификаты
+## Домены и сертификаты
 
 ### Доменные имена
 
@@ -439,7 +439,7 @@ DNS хостинг (Yandex DNS):
 
 ---
 
-## 📦 Дополнительные расходы
+## Дополнительные расходы
 
 ### Лицензии и подписки
 
@@ -609,7 +609,7 @@ Setup второго PoP:          150,000 ₽
 
 ---
 
-## 📊 Сравнительная таблица вариантов
+## Сравнительная таблица вариантов
 
 | Параметр | Pilot Phase | Full Production |
 |----------|-------------|-----------------|
@@ -617,7 +617,7 @@ Setup второго PoP:          150,000 ₽
 | **PoP Locations** | Moscow | Moscow + SPb |
 | **PostgreSQL** | HA (3 nodes) | HA (3 nodes) |
 | **Redis** | Sentinel (3) | Sentinel (3) |
-| **GPU для AI** | ❌ Нет | ✅ Да (Tesla T4) |
+| **GPU для AI** |  Нет | а (Tesla T4) |
 | **Трафик/мес** | 5 TB | 50 TB |
 | **Команда** | 2 чел | 6 чел |
 | **Ежемесячно** | 704,165 ₽ | 2,185,618 ₽ |
@@ -625,7 +625,7 @@ Setup второго PoP:          150,000 ₽
 
 ---
 
-## 🎯 Рекомендации
+## Рекомендации
 
 ### Стратегия развёртывания:
 
@@ -690,15 +690,15 @@ Sales:
 
 ---
 
-## 🎯 Финальная рекомендация
+## Финальная рекомендация
 
 ### Старт с Pilot Phase: ~700,000 ₽/мес
 
 **Почему**:
-1. ✅ Достаточно для проверки концепции
-2. ✅ Возможность масштабирования
-3. ✅ Разумные первоначальные инвестиции
-4. ✅ Быстрый time-to-market (2-3 месяца)
+1. остаточно для проверки концепции
+2. озможность масштабирования
+3. азумные первоначальные инвестиции
+4. ыстрый time-to-market (2-3 месяца)
 
 **План действий**:
 ```

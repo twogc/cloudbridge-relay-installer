@@ -10,7 +10,7 @@ TAG="mvp-$(date +%Y%m%d-%H%M%S)"
 echo "Используем тег: $TAG"
 ```
 
-## 🎯 **Цель**
+## **Цель**
 
 Быстро развернуть CloudBridge Relay в Minikube для разработки и тестирования QUIC-first + MASQUE архитектуры.
 
@@ -36,7 +36,7 @@ minikube start --driver=docker --memory=4096 --cpus=2
 minikube status
 ```
 
-## 🏗️ **Сборка и развертывание**
+## **Сборка и развертывание**
 
 ### **⚠️ ВАЖНО: Уникальный тег образа**
 
@@ -88,7 +88,7 @@ kubectl get pods -n cloudbridge
 kubectl get services -n cloudbridge
 ```
 
-## 🚀 **Тестирование**
+## **Тестирование**
 
 ### **1. Port forwarding для тестирования:**
 
@@ -123,7 +123,7 @@ curl -k https://localhost:8443/.well-known/masque/udp/127.0.0.1:8080
 kubectl logs -f deployment/cloudbridge-relay -n cloudbridge
 ```
 
-## 🔄 **Обновление образа**
+## **Обновление образа**
 
 ```bash
 # Создать новый уникальный тег
@@ -170,9 +170,9 @@ docker rmi cloudbridge-relay:$TAG
 minikube image rm cloudbridge-relay:$TAG
 ```
 
-## 📋 **Быстрый чек-лист**
+## **Быстрый чек-лист**
 
-### **✅ Основные проверки:**
+### ** Основные проверки:**
 - [ ] Minikube запущен
 - [ ] Уникальный тег образа создан
 - [ ] Docker образ собран

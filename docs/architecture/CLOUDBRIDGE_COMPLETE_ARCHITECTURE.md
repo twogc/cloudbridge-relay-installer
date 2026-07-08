@@ -242,8 +242,8 @@ flowchart TB
     subgraph "🌐 Edge / Transport Layer"
         direction TB
         subgraph "NAT Traversal"
-            STUN["🔄 STUN Server<br/>📡 :19302/UDP<br/>🔍 NAT Discovery"]
-            TURN["🔄 TURN Server<br/>📡 :3478/UDP<br/>🌉 Relay Fallback"]
+            STUN[" STUN Server<br/>📡 :19302/UDP<br/>🔍 NAT Discovery"]
+            TURN[" TURN Server<br/>📡 :3478/UDP<br/>🌉 Relay Fallback"]
         end
         
         subgraph "Edge PoP Moscow"
@@ -251,7 +251,7 @@ flowchart TB
         end
         
         subgraph "MASQUE Protocol"
-            MASQUE["🔗 MASQUE/QUIC Context<br/>📦 CONNECT-UDP<br/>📦 CONNECT-IP<br/>🔄 Context ID Management"]
+            MASQUE["🔗 MASQUE/QUIC Context<br/>📦 CONNECT-UDP<br/>📦 CONNECT-IP<br/> Context ID Management"]
         end
     end
 
@@ -263,7 +263,7 @@ flowchart TB
         end
         
         subgraph "CloudBridge Core"
-            RELAY["🎯 CloudBridge Relay Control<br/>📡 gRPC :8444<br/>🌐 REST API :8443<br/>📋 Policy Engine<br/>🔄 Connection Manager"]
+            RELAY["🎯 CloudBridge Relay Control<br/>📡 gRPC :8444<br/>🌐 REST API :8443<br/>📋 Policy Engine<br/> Connection Manager"]
         end
         
         subgraph "Monitoring & Discovery"
@@ -277,11 +277,11 @@ flowchart TB
     A -.->|"🎯 Direct P2P<br/>(ICE Success)"| B
     
     %% Fallback #1: Через Edge PoP
-    A -->|"🔄 Fallback #1<br/>QUIC/MASQUE"| MOW
+    A -->|" Fallback #1<br/>QUIC/MASQUE"| MOW
     MOW -->|"🔗 MASQUE Context<br/>Context ID"| B
     
     %% Fallback #2: Через TURN (симметричный NAT)
-    A -.->|"🔄 Fallback #2<br/>(Symmetric NAT)"| TURN
+    A -.->|" Fallback #2<br/>(Symmetric NAT)"| TURN
     TURN -.->|"🌉 TURN Relay"| B
     
     %% NAT Discovery
@@ -483,25 +483,25 @@ sequenceDiagram
 
 ## Ключевые особенности архитектуры
 
-### 🔄 **CloudBridge Relay - Центральный компонент**
+### **CloudBridge Relay - Центральный компонент**
 - **Расположение**: В каждом Edge PoP узле
 - **Функции**: P2P mesh networking, MASQUE/QUIC tunneling, tenant isolation
 - **Порты**: 9090/UDP (QUIC), 8444/TCP (gRPC), 51820/UDP (WireGuard)
 - **Интеграция**: С Control Plane, AI Service, Monitoring
 
-### 🌐 **Inter-PoP Mesh Network**
+### **Inter-PoP Mesh Network**
 - **Протокол**: MASQUE/QUIC с mTLS
 - **Маршрутизация**: AI-оптимизированная на основе телеметрии
 - **Изоляция**: Per-tenant VRF и Calico Network Policies
 - **Масштабирование**: Горизонтальное и вертикальное
 
-### 🧠 **AI/ML Intelligence**
+### **AI/ML Intelligence**
 - **Route Optimization**: Динамическая оптимизация маршрутов
 - **Anomaly Detection**: Обнаружение аномалий в реальном времени
 - **Load Forecasting**: Предсказание нагрузки и планирование ресурсов
 - **SLO Feedback**: Замкнутый контур оптимизации
 
-### 🔒 **Security & Compliance**
+### **Security & Compliance**
 - **mTLS**: Все меж-PoP соединения
 - **Tenant Isolation**: Полная изоляция на сетевом уровне
 - **DNSSEC**: Безопасность DNS

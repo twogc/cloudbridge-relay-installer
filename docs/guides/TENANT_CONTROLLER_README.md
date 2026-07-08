@@ -1,33 +1,33 @@
 # Tenant Policy Controller & IPAM System
 
-## 🎯 Обзор
+## Обзор
 
 Этот проект содержит улучшенную систему изоляции тенантов и управления IP-адресами для CloudBridge.
 
-## 🏗️ Компоненты
+## Компоненты
 
 ### 1. Tenant Policy Controller (`cmd/tenant-policy-controller/`)
 Kubernetes контроллер для автоматического создания сетевых политик Calico для изоляции тенантов.
 
 **Ключевые улучшения:**
-- ✅ Исправлен селектор подов (использует "label exists")
-- ✅ Безопасный cleanup по индексу
-- ✅ Идемпотентный CreateOrUpdate
-- ✅ DNS правила с правильными портами/протоколами
-- ✅ Leader election для HA
-- ✅ Health/ready checks
+- Исправлен селектор подов (использует "label exists")
+- езопасный cleanup по индексу
+- демпотентный CreateOrUpdate
+- NS правила с правильными портами/протоколами
+- eader election для HA
+- ealth/ready checks
 
 ### 2. IPAM Repository (`internal/ipam/`)
 PostgreSQL-based система управления IP-адресами с детерминированной аллокацией.
 
 **Ключевые улучшения:**
-- ✅ Типы данных CIDR/INET вместо TEXT
-- ✅ Привязка IP к подсетям
-- ✅ PostgreSQL функции с FOR UPDATE SKIP LOCKED
-- ✅ Исключенные CIDR для избежания конфликтов
-- ✅ Правильная обработка транзакций
+- ипы данных CIDR/INET вместо TEXT
+- ривязка IP к подсетям
+- ostgreSQL функции с FOR UPDATE SKIP LOCKED
+- сключенные CIDR для избежания конфликтов
+- равильная обработка транзакций
 
-## 🚀 Быстрый старт
+## Быстрый старт
 
 ### Развертывание в Minikube
 
@@ -53,7 +53,7 @@ kubectl apply -f k8s/tenant-policy-controller.yaml
 kubectl apply -f k8s/test-pods.yaml
 ```
 
-## 📊 Тестирование
+## Тестирование
 
 ### IPAM функции
 ```bash
@@ -89,7 +89,7 @@ k8s/                              # Kubernetes манифесты
 migrations/                       # SQL миграции
 ```
 
-## 🔧 Конфигурация
+##  Конфигурация
 
 ### Переменные окружения
 - `WATCH_NAMESPACE` - namespace для наблюдения (пустой = весь кластер)
@@ -107,7 +107,7 @@ migrations/                       # SQL миграции
 1. **API версия Calico**: Контроллер использует `projectcalico.org/v3`, но кластер может использовать `crd.projectcalico.org/v1`
 2. **Изоляция между тенантами**: Требует доработки политик для полной изоляции
 
-## 📈 Мониторинг
+## Мониторинг
 
 ### Метрики
 - `/metrics` - Prometheus метрики
@@ -119,14 +119,14 @@ migrations/                       # SQL миграции
 kubectl logs -n cloudbridge-system deployment/tenant-policy-controller
 ```
 
-## 🔄 Миграции
+## Миграции
 
 SQL миграции находятся в `migrations/`:
 - `001_tenant_ipam_schema.sql` - Базовая схема
 - `002_tenant_ipam_improved_schema.sql` - Улучшенная схема
 - `003_test_sql_functions.sql` - Тестовые функции
 
-## 📚 Документация
+## Документация
 
 - `CONTROLLER_IMPROVEMENTS_REPORT.md` - Отчет об улучшениях контроллера
 - `PRODUCTION_READY_SUMMARY.md` - Готовность к продакшену

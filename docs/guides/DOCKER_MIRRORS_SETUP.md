@@ -1,6 +1,6 @@
 # 🐳 Настройка зеркал Docker Hub для России
 
-## 📋 Проблема
+## Проблема
 
 В ночь на 30 мая 2024 г. сервис Docker Hub закрыл доступ для пользователей из России.
 
@@ -8,24 +8,24 @@
 
 Docker, как американская компания, обязана соблюдать экспортные контрольные регуляции США, которые включают блокировку IP-адресов из указанных стран.
 
-## 🔧 Решение
+##  Решение
 
 ### Список актуальных зеркал Docker Hub
 
 | Зеркало | Описание | Статус |
 |---------|----------|--------|
-| `https://dockerhub.timeweb.cloud` | Зеркало Timeweb | ✅ Активно |
-| `https://huecker.io` | Зеркало Huecker | ✅ Активно |
-| `https://mirror.gcr.io` | Зеркало Google | ✅ Активно |
-| `https://c.163.com` | Зеркало Китай | ✅ Активно |
-| `https://registry.docker-cn.com` | Зеркало Китай | ✅ Активно |
-| `https://daocloud.io` | Зеркало Китай | ✅ Активно |
-| `https://cr.yandex/mirror` | Зеркало Яндекс | ✅ Активно |
-| `https://noohub.ru` | Зеркало noosoft | ✅ Активно |
-| `https://quay.io` | Зеркало Redhat | ✅ Активно |
-| `https://registry.access.redhat.com` | Зеркало Redhat | ✅ Активно |
-| `https://registry.redhat.io` | Зеркало Redhat | ✅ Активно |
-| `https://public.ecr.aws` | Зеркало Amazon | ✅ Активно |
+| `https://dockerhub.timeweb.cloud` | Зеркало Timeweb | Активно |
+| `https://huecker.io` | Зеркало Huecker | ктивно |
+| `https://mirror.gcr.io` | Зеркало Google | ктивно |
+| `https://c.163.com` | Зеркало Китай | ктивно |
+| `https://registry.docker-cn.com` | Зеркало Китай | ктивно |
+| `https://daocloud.io` | Зеркало Китай | ктивно |
+| `https://cr.yandex/mirror` | Зеркало Яндекс | ктивно |
+| `https://noohub.ru` | Зеркало noosoft | ктивно |
+| `https://quay.io` | Зеркало Redhat | ктивно |
+| `https://registry.access.redhat.com` | Зеркало Redhat | ктивно |
+| `https://registry.redhat.io` | Зеркало Redhat | ктивно |
+| `https://public.ecr.aws` | Зеркало Amazon | ктивно |
 
 ## 🐧 Настройка для Linux
 
@@ -152,7 +152,7 @@ cat > C:\ProgramData\docker\config\daemon.json <<EOF
 EOF
 ```
 
-## 🚀 Автоматическая настройка
+## Автоматическая настройка
 
 ### Скрипт для Linux
 
@@ -160,12 +160,12 @@ EOF
 #!/bin/bash
 # Автоматическая настройка зеркал Docker Hub
 
-echo "🔧 Настройка зеркал Docker Hub..."
+echo " Настройка зеркал Docker Hub..."
 
 # Создание резервной копии
 if [ -f /etc/docker/daemon.json ]; then
     sudo cp /etc/docker/daemon.json /etc/docker/daemon.json.backup
-    echo "✅ Создана резервная копия /etc/docker/daemon.json.backup"
+    echo " Создана резервная копия /etc/docker/daemon.json.backup"
 fi
 
 # Настройка зеркал
@@ -185,11 +185,11 @@ cat << EOF | sudo tee /etc/docker/daemon.json
 EOF
 
 # Перезапуск Docker
-echo "🔄 Перезапуск Docker..."
+echo " Перезапуск Docker..."
 sudo systemctl restart docker
 
 # Проверка настройки
-echo "✅ Проверка настройки..."
+echo " Проверка настройки..."
 docker info | grep -A 10 "Registry Mirrors"
 
 echo "🎉 Настройка завершена!"
@@ -227,7 +227,7 @@ time docker pull nginx:latest
 time docker pull redis:latest
 ```
 
-## 🔄 Альтернативные методы
+## Альтернативные методы
 
 ### Прямое указание зеркала
 
@@ -288,7 +288,7 @@ sudo systemctl restart docker
 journalctl -u docker.service -f
 ```
 
-## 📊 Мониторинг зеркал
+## Мониторинг зеркал
 
 ### Скрипт проверки статуса
 
@@ -313,14 +313,14 @@ echo "=========================================="
 for mirror in "${MIRRORS[@]}"; do
     echo -n "Проверка $mirror... "
     if curl -s --connect-timeout 5 https://$mirror/v2/ > /dev/null 2>&1; then
-        echo "✅ Доступно"
+        echo " Доступно"
     else
-        echo "❌ Недоступно"
+        echo " Недоступно"
     fi
 done
 ```
 
-## 🎯 Рекомендации
+## Рекомендации
 
 ### Лучшие зеркала для России
 
@@ -342,7 +342,7 @@ done
 }
 ```
 
-## 📚 Полезные ссылки
+## Полезные ссылки
 
 - [Официальная документация Docker](https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file)
 - [Docker Unlock Script](https://github.com/StasPlov/docker-unlock)

@@ -1,6 +1,6 @@
 # CloudBridge Relay - Использование поддоменов
 
-## 🎯 Назначение поддоменов
+## Назначение поддоменов
 
 ### 1. **relay.2gc.ru** - Основной P2P релей
 - **Порт**: 5552 (P2P API)
@@ -67,7 +67,7 @@
   - `GET /api/health`
   - `POST /api/v1/...`
 
-## 🔧 Конфигурация клиентов
+##  Конфигурация клиентов
 
 ### Server A (config-test-server-a-subdomains.yaml):
 ```yaml
@@ -105,7 +105,7 @@ relay:
   p2p_url: "https://p2p.2gc.ru"
 ```
 
-## 🚀 Тестирование
+## Тестирование
 
 ### 1. Проверка доступности API:
 ```bash
@@ -129,7 +129,7 @@ cd /home/ubuntu/cloudbridge-relay-installer/test/relay-client
 ./cloudbridge-client p2p --config config-test-server-b-subdomains.yaml --log-level debug
 ```
 
-## 📊 Преимущества поддоменов
+## Преимущества поддоменов
 
 ### 1. **Разделение функций**
 - Каждый поддомен для своей задачи
@@ -156,7 +156,7 @@ cd /home/ubuntu/cloudbridge-relay-installer/test/relay-client
 - Простое управление конфигурацией
 - Гибкость в развертывании
 
-## 🔍 Отладка
+## Отладка
 
 ### Проверка Ingress:
 ```bash
@@ -188,7 +188,7 @@ curl -I http://192.168.58.2:30081/health
 curl -I http://192.168.58.2:30090/metrics
 ```
 
-## 📝 Следующие шаги
+## Следующие шаги
 
 1. **Протестировать клиенты** с новыми конфигурациями
 2. **Проверить P2P соединение** между Server A и Server B

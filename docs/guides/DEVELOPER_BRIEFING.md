@@ -498,7 +498,7 @@ type HTTPError struct {
 
 ## **НОВЫЕ ИНТЕГРАЦИИ (Январь 2025) - 95% ГОТОВНОСТЬ**
 
-### **✅ ПОЛНОСТЬЮ ЗАВЕРШЕНО:**
+### ** ПОЛНОСТЬЮ ЗАВЕРШЕНО:**
 
 #### **1. cert-manager интеграция - АВТОМАТИЧЕСКОЕ УПРАВЛЕНИЕ TLS**
 - **ClusterIssuer для Let's Encrypt** - Production и Staging
@@ -1170,15 +1170,15 @@ docker/dockerfiles/   # Все Dockerfile варианты
 ### **Мини-чек-лист "перед продом":**
 
 #### **Надёжность (1-2 недели):**
-- [x] ✅ **LoadBalancer исправлен** - VK Cloud проблемы решены
+- [x] *LoadBalancer исправлен** - VK Cloud проблемы решены
 - [ ] **Нагрузочное тестирование** (72h soak) с профилированием
 - [ ] **Chaos-тесты:** kill-pods, сетевые сбои, задержки
 - [ ] **Health-мониторы** out-of-band
 
 #### **Безопасность (ЗАВЕРШЕНО):**
-- [x] ✅ **JWT по JWKS** - Zitadel OIDC интеграция
-- [x] ✅ **mTLS между сервисами** - gRPC TLS настроен
-- [x] ✅ **Secrets в External Secrets** - Vault/AWS/GCP интеграция
+- [x] *JWT по JWKS** - Zitadel OIDC интеграция
+- [x] *mTLS между сервисами** - gRPC TLS настроен
+- [x] *Secrets в External Secrets** - Vault/AWS/GCP интеграция
 - [ ] **SBOM + подпись артефактов** (cosign, SLSA-level)
 
 #### **Операции (1-2 недели):**

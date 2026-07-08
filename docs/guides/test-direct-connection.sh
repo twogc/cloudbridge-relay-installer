@@ -18,7 +18,7 @@ log() {
 }
 
 success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN} $1${NC}"
 }
 
 warning() {
@@ -26,7 +26,7 @@ warning() {
 }
 
 error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED} $1${NC}"
 }
 
 log "🧪 Тест прямого подключения к CloudBridge Relay"
@@ -194,10 +194,10 @@ echo ""
 echo "📋 CloudBridge Relay готов принимать cloudflared клиентов:"
 echo "========================================================"
 echo ""
-echo "✅ CloudBridge Relay доступен на порту 9090"
-echo "✅ SSL сертификат валиден"
-echo "✅ Все endpoints отвечают"
-echo "✅ Magic WAN туннель активен"
+echo " CloudBridge Relay доступен на порту 9090"
+echo " SSL сертификат валиден"
+echo " Все endpoints отвечают"
+echo " Magic WAN туннель активен"
 echo ""
 echo "🚀 Теперь можно настраивать cloudflared клиентов для подключения к:"
 echo "   - https://edge.2gc.ru:9090/api/"

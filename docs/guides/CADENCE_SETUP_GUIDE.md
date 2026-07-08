@@ -1,10 +1,10 @@
-# 🚀 Cadence Setup Guide
+# Cadence Setup Guide
 
-## 📋 Обзор
+## Обзор
 
 Cadence - это workflow engine для Kubernetes. Данный гайд описывает правильную настройку Cadence с PostgreSQL в Kubernetes.
 
-## 🔧 Правильная конфигурация
+##  Правильная конфигурация
 
 ### 1. Переменные окружения (рекомендуемый подход)
 
@@ -56,7 +56,7 @@ args:
     exec /usr/local/bin/cadence-server start --services=frontend,history,matching,worker
 ```
 
-## 🗄️ Подготовка базы данных
+## Подготовка базы данных
 
 ### 1. Создание баз данных
 
@@ -101,7 +101,7 @@ publicClient:
   hostPort: "cadence:7933"
 ```
 
-## 📊 Мониторинг
+## Мониторинг
 
 ### Проверка статуса
 
@@ -126,7 +126,7 @@ kubectl exec -n cloudbridge-system postgres-587dfcc9cd-cvwsk -- psql -U ipam_use
 kubectl exec -n cloudbridge-system postgres-587dfcc9cd-cvwsk -- psql -U ipam_user -d cadence_visibility -c "\dt"
 ```
 
-## 🔧 Настройка для production
+##  Настройка для production
 
 ### 1. Использование секретов
 
@@ -179,7 +179,7 @@ readinessProbe:
   failureThreshold: 5
 ```
 
-## 📝 Чек-лист
+## Чек-лист
 
 - [ ] PostgreSQL запущен и доступен
 - [ ] Базы данных `cadence` и `cadence_visibility` созданы
@@ -189,7 +189,7 @@ readinessProbe:
 - [ ] Health checks проходят успешно
 - [ ] Подключение к базе данных работает
 
-## 🚀 Быстрый старт
+## Быстрый старт
 
 ```bash
 # 1. Создать базы данных
@@ -205,7 +205,7 @@ kubectl get pods -n cloudbridge | grep cadence
 kubectl logs -n cloudbridge deployment/cadence
 ```
 
-## 🔍 Диагностика
+## Диагностика
 
 ### Полезные команды
 
@@ -220,7 +220,7 @@ kubectl exec -n cloudbridge deployment/cadence -- nc -zv postgres.cloudbridge-sy
 kubectl exec -n cloudbridge deployment/cadence -- cat /etc/cadence/config/docker.yaml
 ```
 
-## 📚 Дополнительные ресурсы
+## Дополнительные ресурсы
 
 - [Cadence Documentation](https://cadenceworkflow.io/docs/)
 - [Cadence Configuration](https://cadenceworkflow.io/docs/operation-guide/setup/)

@@ -27,7 +27,7 @@ The system is designed to run in Russia/CIS regions on **VK Cloud Kubernetes** a
 
 ```
 cloudbridge-relay-installer/
-├── cmd/                          # Service entrypoints (10 binaries)
+├── cmd/                          # Service entrypoints (13 directories)
 │   ├── relay/                    # Core relay server (main service)
 │   ├── api/                      # REST API server
 │   ├── ai-service/               # AI inference service
@@ -37,7 +37,10 @@ cloudbridge-relay-installer/
 │   ├── cadence-service/          # Workflow orchestration API
 │   ├── ipam-service/             # IP address management
 │   ├── tenant-policy-controller/ # K8s CRD controller
-│   └── cni-plugin/               # CNI plugin for K8s pod networking
+│   ├── cni-plugin/               # CNI plugin for K8s pod networking
+│   ├── kubectl-zitadel/          # kubectl plugin for Zitadel IAM
+│   ├── quantum-service/          # Post-quantum crypto (disabled)
+│   └── zerotrust-demo/           # Zero-trust demo client
 │
 ├── internal/                     # Core library packages
 │   ├── p2p/                      # P2P networking (peer discovery, mesh, connections)
@@ -67,18 +70,41 @@ cloudbridge-relay-installer/
 ├── pkg/                          # Public library packages
 │
 ├── k8s/                          # Kubernetes manifests (organized by domain)
-├── k8s-manifests/                # Simplified K8s deployment manifests
+│   ├── cadence/manifests/        # Cadence workflow engine manifests
+│   ├── zitadel/                  # Zitadel IAM Helm values and configs
+│   ├── deployments/              # Application deployments
+│   ├── services/                 # Service definitions
+│   ├── monitoring-stack/         # Prometheus, VictoriaMetrics, Grafana, AlertManager
+│   ├── bgp-monitoring/           # BGP routing monitoring
+│   └── policies/                 # Kyverno pod security policies
+├── k8s-manifests/                # Simplified K8s deployment manifests (00–15)
 ├── docker/                       # Dockerfiles
 ├── mws/                          # OVA marketplace build (Packer, cloud-init)
 ├── terraform-k8s/                # VK Cloud K8s cluster provisioning
 ├── terraform/                    # Additional Terraform configs
 ├── ansible/                      # Ansible playbooks for bare-metal setup
+├── monitoring/                   # Grafana dashboards, Prometheus rules, alerting configs
 ├── scripts/                      # Operational scripts (100+ files)
 │
 ├── test/                         # E2E and integration tests
 ├── tests/                        # Additional test suites
 ├── examples/                     # Usage examples
-├── docs/                         # Additional documentation
+├── docs/                         # Human-readable project documentation
+│   ├── README.md                 # Documentation index (start here for docs/)
+│   ├── analysis/                 # Technical analyses (QUIC, migration, ecosystem)
+│   ├── architecture/             # Canonical architecture specs (5 key files)
+│   ├── business/                 # Executive summaries, investor materials
+│   ├── compliance/               # Russian regulatory compliance docs
+│   ├── deployment/               # Deployment setup guides
+│   ├── guides/                   # Deployment, setup, and developer guides (~15 key docs)
+│   ├── integration/              # Integration schemas and configs
+│   ├── legacy/                   # Archived reports, status docs, outdated plans (~100 files)
+│   ├── monitoring/               # Monitoring index and dashboards
+│   ├── network/                  # Network reference (ports, tokens, subdomains)
+│   ├── operations/               # Service catalog and operational reference
+│   ├── roadmap/                  # Strategic plans (MVP, 4-month, strategic)
+│   ├── security/                 # Security policies and guides
+│   └── troubleshooting/          # Incident runbooks
 │
 ├── scripts/deploy/deploy.sh      # Automated K8s deployment script
 ├── Makefile                      # Build/test/deploy targets
@@ -225,3 +251,5 @@ The Makefile injects version and commit via ldflags. CGO is required (`CGO_ENABL
 | [Networking Domain](domain-networking.md) | P2P, NAT traversal, WireGuard, IPAM, protocol engine, MASQUE |
 | [Services Domain](domain-services.md) | AI/ML, Cadence workflows, K8s controllers, CNI plugin |
 | [Operations](operations.md) | Deployment, CI/CD, monitoring, infrastructure, compliance |
+| [Audit](audit.md) | Documentation restructuring audit — what was moved, canonical sources |
+| [Human Docs Index](../docs/README.md) | Human-readable documentation index with links to guides, architecture specs, and business docs |

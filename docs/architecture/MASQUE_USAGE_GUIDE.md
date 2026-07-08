@@ -1,10 +1,10 @@
 # MASQUE HTTP/3 Server - Руководство по использованию
 
-## 🎯 Обзор
+## Обзор
 
 MASQUE (Multiplexed Application Substrate over QUIC Encryption) - это протокол для туннелирования трафика через HTTP/3/QUIC соединения. Наш CloudBridge Relay поддерживает полную реализацию MASQUE протокола.
 
-## 🚀 Статус
+## Статус
 
 **MASQUE сервер полностью функционален и готов к использованию!**
 
@@ -102,7 +102,7 @@ sudo openssl x509 -in /etc/letsencrypt/live/auth.2gc.ru/fullchain.pem -text -noo
 kubectl logs -n cloudbridge deployment/cloudbridge-relay | grep -i masque
 ```
 
-## 🔍 Мониторинг
+## Мониторинг
 
 ### Текущий статус
 - MASQUE сервер запущен
@@ -129,13 +129,13 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay | grep -i masque
 **Причина**: Неправильная конфигурация service
 **Решение**: Убедитесь, что протокол установлен как UDP
 
-## 📚 Дополнительные ресурсы
+## Дополнительные ресурсы
 
 - [RFC 9298: MASQUE](https://tools.ietf.org/html/rfc9298)
 - [HTTP/3 Specification](https://tools.ietf.org/html/rfc9114)
 - [QUIC Protocol](https://tools.ietf.org/html/rfc9000)
 
-## 🎉 Заключение
+## Заключение
 
 MASQUE HTTP/3 сервер полностью настроен и готов к использованию. Все основные компоненты работают корректно:
 
