@@ -98,7 +98,11 @@ config/production.json
 *.pfx
 certs/
 
+# Cursor project skills are local symlinks into rep/ (see scripts/install-cursor-skills.sh)
+.cursor/skills/
+
 # Temporary files
+rep/
 tmp/
 temp/
 *.tmp

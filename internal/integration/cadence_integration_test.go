@@ -115,44 +115,6 @@ func (suite *CadenceIntegrationTestSuite) TestHealthCheckWorkflow() {
 	)
 }
 
-// TestQuantumKeyRotationWorkflow тестирует workflow ротации квантовых ключей
-func (suite *CadenceIntegrationTestSuite) TestQuantumKeyRotationWorkflow() {
-	suite.logger.Info("Тестирование QuantumKeyRotationWorkflow")
-
-	// Подготовка входных данных
-	input := workflows.QuantumKeyRotationWorkflowInput{
-		KeyID:          "old-key-123",
-		Algorithm:      "kyber",
-		RotationPolicy: "time_based",
-		Configuration: map[string]interface{}{
-			"strength": 256,
-		},
-		ForceRotation: true,
-	}
-
-	// Запуск workflow
-	execution, err := suite.client.StartWorkflow(suite.ctx, "QuantumKeyRotationWorkflow", input)
-	require.NoError(suite.T(), err, "Не удалось запустить QuantumKeyRotationWorkflow")
-
-	// Ожидание завершения workflow
-	var result workflows.QuantumKeyRotationWorkflowResult
-	err = suite.client.GetWorkflowResult(suite.ctx, execution.ID, execution.RunID, &result)
-	require.NoError(suite.T(), err, "Не удалось получить результат workflow")
-
-	// Проверка результата
-	assert.Equal(suite.T(), "old-key-123", result.OldKeyID)
-	assert.NotEmpty(suite.T(), result.NewKeyID)
-	assert.Equal(suite.T(), "kyber", result.Algorithm)
-	assert.Equal(suite.T(), "completed", result.Status)
-
-	suite.logger.Info("QuantumKeyRotationWorkflow протестирован успешно",
-		zap.String("old_key_id", result.OldKeyID),
-		zap.String("new_key_id", result.NewKeyID),
-		zap.String("algorithm", result.Algorithm),
-		zap.String("status", result.Status),
-	)
-}
-
 // TestThreatAnalysisWorkflow тестирует workflow анализа угроз
 func (suite *CadenceIntegrationTestSuite) TestThreatAnalysisWorkflow() {
 	suite.logger.Info("Тестирование ThreatAnalysisWorkflow")

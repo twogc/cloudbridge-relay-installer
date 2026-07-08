@@ -20,18 +20,6 @@ data:
         "ping_interval": "30s",
         "cleanup_interval": "1m"
       },
-      "django": {
-        "api_endpoint": "http://localhost:8000/api",
-        "jwt_secret": "your-secret-key",
-        "jwt_expiry": "24h",
-        "rest_timeout": "5s",
-        "rest_cache_ttl": "5m",
-        "rest_max_retries": 3,
-        "rest_retry_delay": "100ms"
-      },
-      "keycloak": {
-        "enabled": false
-      },
       "zitadel": {
         "enabled": false
       },

@@ -103,7 +103,6 @@ type WorkflowsConfig struct {
 	Main      WorkflowTypeConfig `yaml:"main"`
 	Health    WorkflowTypeConfig `yaml:"health"`
 	WireGuard WorkflowTypeConfig `yaml:"wireguard"`
-	Quantum   WorkflowTypeConfig `yaml:"quantum"`
 	AI        WorkflowTypeConfig `yaml:"ai"`
 	Scaling   WorkflowTypeConfig `yaml:"scaling"`
 	Security  WorkflowTypeConfig `yaml:"security"`
@@ -429,8 +428,6 @@ func (c *CadenceConfig) GetExecutionTimeout(workflowType string) time.Duration {
 		timeout = c.Workflows.Health.ExecutionTimeout
 	case "wireguard":
 		timeout = c.Workflows.WireGuard.ExecutionTimeout
-	case "quantum":
-		timeout = c.Workflows.Quantum.ExecutionTimeout
 	case "ai":
 		timeout = c.Workflows.AI.ExecutionTimeout
 	case "scaling":
@@ -465,8 +462,6 @@ func (c *CadenceConfig) GetActivityTimeout(workflowType string) time.Duration {
 		timeout = c.Workflows.Health.ActivityStartToCloseTimeout
 	case "wireguard":
 		timeout = c.Workflows.WireGuard.ActivityStartToCloseTimeout
-	case "quantum":
-		timeout = c.Workflows.Quantum.ActivityStartToCloseTimeout
 	case "ai":
 		timeout = c.Workflows.AI.ActivityStartToCloseTimeout
 	case "scaling":

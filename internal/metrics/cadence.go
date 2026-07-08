@@ -37,7 +37,6 @@ type CadenceMetrics struct {
 
 	// Специфичные метрики для CloudBridge
 	QUICWorkflows     *prometheus.CounterVec
-	QuantumWorkflows  *prometheus.CounterVec
 	AIWorkflows       *prometheus.CounterVec
 	ScalingWorkflows  *prometheus.CounterVec
 	SecurityWorkflows *prometheus.CounterVec
@@ -234,16 +233,6 @@ func NewCadenceMetrics(logger *zap.Logger) *CadenceMetrics {
 				Help:      "Общее количество QUIC workflow",
 			},
 			[]string{"workflow_subtype", "status", "peer_id"},
-		),
-
-		QuantumWorkflows: promauto.NewCounterVec(
-			prometheus.CounterOpts{
-				Namespace: "cloudbridge",
-				Subsystem: "cadence",
-				Name:      "quantum_workflows_total",
-				Help:      "Общее количество Quantum workflow",
-			},
-			[]string{"workflow_subtype", "status", "algorithm"},
 		),
 
 		AIWorkflows: promauto.NewCounterVec(
@@ -447,11 +436,6 @@ func (cm *CadenceMetrics) RecordClientError(operation, errorType, domain string)
 // RecordQUICWorkflow записывает QUIC workflow
 func (cm *CadenceMetrics) RecordQUICWorkflow(subtype, status, peerID string) {
 	cm.QUICWorkflows.WithLabelValues(subtype, status, peerID).Inc()
-}
-
-// RecordQuantumWorkflow записывает Quantum workflow
-func (cm *CadenceMetrics) RecordQuantumWorkflow(subtype, status, algorithm string) {
-	cm.QuantumWorkflows.WithLabelValues(subtype, status, algorithm).Inc()
 }
 
 // RecordAIWorkflow записывает AI workflow

@@ -213,8 +213,6 @@ type Algorithm string
 const (
 	AlgorithmAES256      Algorithm = "aes256"
 	AlgorithmChaCha20    Algorithm = "chacha20"
-	AlgorithmQuantum     Algorithm = "quantum"
-	AlgorithmPostQuantum Algorithm = "post_quantum"
 )
 
 // ModelType представляет тип модели машинного обучения

@@ -41,16 +41,6 @@ type QualityConfig struct {
 	MinThroughput  ThroughputBps `json:"min_throughput_bps,omitempty"`
 }
 
-// QuantumKeyConfig представляет конфигурацию квантового ключа
-type QuantumKeyConfig struct {
-	Algorithm     Algorithm       `json:"algorithm"`
-	Length        int             `json:"length"`
-	RotationMs    DurationMillis  `json:"rotation_ms,omitempty"`
-	BackupCount   int             `json:"backup_count,omitempty"`
-	Validation    ValidationConfig `json:"validation,omitempty"`
-	Metadata      Metadata        `json:"metadata,omitempty"`
-}
-
 // ValidationConfig представляет конфигурацию валидации
 type ValidationConfig struct {
 	Enabled       bool            `json:"enabled"`

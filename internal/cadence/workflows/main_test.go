@@ -162,53 +162,6 @@ func (s *WorkflowTestSuite) TestPeerLifecycleWorkflow() {
 	assert.Equal(s.T(), "completed", result.Status)
 }
 
-// TestQuantumKeyRotationWorkflow тестирует workflow ротации квантовых ключей
-func (s *WorkflowTestSuite) TestQuantumKeyRotationWorkflow() {
-	env := s.NewTestWorkflowEnvironment()
-
-	// Мокаем activities
-	env.OnActivity("CheckKeyRotationNeedActivity", mock.Anything, mock.Anything).Return(
-		map[string]interface{}{"rotation_needed": true}, nil)
-	env.OnActivity("GenerateQuantumKeyActivity", mock.Anything, mock.Anything).Return(
-		map[string]interface{}{
-			"new_key_id": "new-key-123",
-			"algorithm":  "kyber",
-			"generated":  true,
-		}, nil)
-	env.OnActivity("ValidateQuantumKeyActivity", mock.Anything).Return(
-		map[string]interface{}{"valid": true}, nil)
-	env.OnActivity("ReplaceQuantumKeyActivity", mock.Anything, mock.Anything).Return(
-		map[string]interface{}{"replaced": true}, nil)
-	env.OnActivity("SecureDeleteQuantumKeyActivity", mock.Anything).Return(
-		map[string]interface{}{"deleted": true}, nil)
-	env.OnActivity("UpdateKeyReferencesActivity", mock.Anything, mock.Anything).Return(
-		map[string]interface{}{"updated": true}, nil)
-
-	// Входные данные
-	input := QuantumKeyRotationWorkflowInput{
-		KeyID:          "old-key-123",
-		Algorithm:      "kyber",
-		RotationPolicy: "time_based",
-		Configuration:  map[string]interface{}{},
-		ForceRotation:  true,
-	}
-
-	// Выполнение workflow
-	env.ExecuteWorkflow(QuantumKeyRotationWorkflow, input)
-
-	// Проверка результата
-	assert.True(s.T(), env.IsWorkflowCompleted())
-	assert.NoError(s.T(), env.GetWorkflowError())
-
-	var result QuantumKeyRotationWorkflowResult
-	err := env.GetWorkflowResult(&result)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), "old-key-123", result.OldKeyID)
-	assert.Equal(s.T(), "new-key-123", result.NewKeyID)
-	assert.Equal(s.T(), "kyber", result.Algorithm)
-	assert.Equal(s.T(), "completed", result.Status)
-}
-
 // TestThreatAnalysisWorkflow тестирует AI workflow анализа угроз
 func (s *WorkflowTestSuite) TestThreatAnalysisWorkflow() {
 	env := s.NewTestWorkflowEnvironment()

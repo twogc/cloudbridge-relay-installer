@@ -91,15 +91,9 @@ check_env_file() {
         ./scripts/setup/generate_secrets.sh --env "$env_file"
     fi
     
-    # Проверяем критичные переменные
-    if ! grep -q "KEYCLOAK_ADMIN_PASSWORD" "$env_file"; then
-        error "В файле $env_file отсутствует KEYCLOAK_ADMIN_PASSWORD"
-        exit 1
-    fi
-    
-    if ! grep -q "KEYCLOAK_DB_PASSWORD" "$env_file"; then
-        error "В файле $env_file отсутствует KEYCLOAK_DB_PASSWORD"
-        exit 1
+    # Проверяем критичные переменные (IAM: Zitadel)
+    if ! grep -qE 'ZITADEL_(DOMAIN|ISSUER|CLIENT_ID)' "$env_file"; then
+        warn "В $env_file нет ZITADEL_DOMAIN / ZITADEL_ISSUER / ZITADEL_CLIENT_ID — проверьте IAM-конфиг"
     fi
     
     log "Файл $env_file проверен"
@@ -109,31 +103,16 @@ check_env_file() {
 create_directories() {
     log "Создание необходимых директорий..."
     
-    mkdir -p keycloak/data
-    mkdir -p keycloak/imports
     mkdir -p logs
     mkdir -p certs
     mkdir -p backups
     
-    # Устанавливаем правильные права
-    chmod 755 keycloak/data
-    chmod 755 keycloak/imports
     chmod 755 logs
     chmod 700 certs
     chmod 755 backups
     
     log "Директории созданы"
 
-    # --- Новый блок: автоматическое обновление публичного ключа ---
-    if [[ -f "config/public_key.pem" ]]; then
-        log "Обновляю публичный ключ Keycloak из config/public_key.pem..."
-        bash scripts/maintenance/update_keycloak_public_key_from_file.sh config/public_key.pem
-    else
-        warn "Файл config/public_key.pem не найден. Публичный ключ Keycloak не будет обновлён автоматически."
-        warn "Скопируйте публичный ключ из Keycloak UI (Realm Settings → Keys → RS256 → Public Key) в config/public_key.pem для автоматизации!"
-    fi
-
-    # --- Новый блок: автоматическая генерация .env ---
     if [[ ! -f ".env" ]]; then
         log "Файл .env не найден. Генерирую новый .env..."
         ./scripts/setup/generate_secrets.sh --env .env
@@ -186,13 +165,6 @@ check_health() {
     while [[ $attempt -le $max_attempts ]]; do
         log "Попытка $attempt/$max_attempts..."
         
-        # Проверяем Keycloak
-        if curl -f http://localhost:8080/ &> /dev/null; then
-            log "Keycloak запущен и отвечает"
-        else
-            warn "Keycloak еще не готов..."
-        fi
-        
         # Проверяем Relay
         if curl -f http://localhost:8081/metrics &> /dev/null; then
             log "Relay запущен и отвечает"
@@ -207,9 +179,8 @@ check_health() {
             warn "Grafana еще не готов..."
         fi
         
-        # Если все сервисы готовы, выходим
-        if curl -f http://localhost:8080/ &> /dev/null && \
-           curl -f http://localhost:8081/metrics &> /dev/null && \
+        # Если основные сервисы готовы, выходим
+        if curl -f http://localhost:8081/metrics &> /dev/null && \
            curl -f http://localhost:3000/api/health &> /dev/null; then
             log "Все сервисы запущены и готовы к работе!"
             return 0
@@ -240,15 +211,14 @@ show_status() {
     echo -e "\033[0m"
     
     log "URLs сервисов:"
-    echo -e "  \033[1;36mKeycloak:\033[0m     http://localhost:8080"
+    echo -e "  \033[1;36mZitadel:\033[0m     \${ZITADEL_DOMAIN:-https://zitadel.local}"
     echo -e "  \033[1;36mRelay:\033[0m        http://localhost:8081"
     echo -e "  \033[1;36mGrafana:\033[0m      http://localhost:3000"
-    echo -e "  \033[1;36m Prometheus:\033[0m   http://localhost:9090"
+    echo -e "  \033[1;36mPrometheus:\033[0m   http://localhost:9090"
     echo -e "  \033[1;36mAlertManager:\033[0m http://localhost:9093"
     echo
     
     log "Логи сервисов:"
-    echo -e "  \033[1;33mdocker-compose logs -f keycloak\033[0m"
     echo -e "  \033[1;33mdocker-compose logs -f relay\033[0m"
     echo -e "  \033[1;33mdocker-compose logs -f grafana\033[0m"
     

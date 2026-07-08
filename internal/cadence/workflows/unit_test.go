@@ -106,51 +106,6 @@ func TestScalingWorkflowInput(t *testing.T) {
 	assert.Equal(t, 0.3, input.Configuration["scale_down_threshold"])
 }
 
-// TestQuantumKeyRotationWorkflowInput проверяет структуру входных данных для ротации ключей
-func TestQuantumKeyRotationWorkflowInput(t *testing.T) {
-	input := QuantumKeyRotationWorkflowInput{
-		KeyID:          "old-key-123",
-		Algorithm:      "kyber",
-		RotationPolicy: "time_based",
-		Configuration:  map[string]interface{}{"strength": 256},
-		ForceRotation:  true,
-	}
-
-	assert.Equal(t, "old-key-123", input.KeyID)
-	assert.Equal(t, "kyber", input.Algorithm)
-	assert.Equal(t, "time_based", input.RotationPolicy)
-	assert.Equal(t, 256, input.Configuration["strength"])
-	assert.True(t, input.ForceRotation)
-}
-
-// TestQuantumKeyRotationWorkflowResult проверяет структуру результата ротации ключей
-func TestQuantumKeyRotationWorkflowResult(t *testing.T) {
-	now := time.Now()
-	result := QuantumKeyRotationWorkflowResult{
-		OldKeyID:    "old-key-123",
-		NewKeyID:    "new-key-456",
-		Algorithm:   "kyber",
-		Status:      "completed",
-		Message:     "Key rotation completed",
-		StartedAt:   now,
-		CompletedAt: now.Add(5 * time.Minute),
-		RotationInfo: map[string]interface{}{
-			"rotation_time": "5m",
-			"key_strength":  256,
-		},
-	}
-
-	assert.Equal(t, "old-key-123", result.OldKeyID)
-	assert.Equal(t, "new-key-456", result.NewKeyID)
-	assert.Equal(t, "kyber", result.Algorithm)
-	assert.Equal(t, "completed", result.Status)
-	assert.Equal(t, "Key rotation completed", result.Message)
-	assert.Equal(t, now, result.StartedAt)
-	assert.Equal(t, now.Add(5*time.Minute), result.CompletedAt)
-	assert.Equal(t, "5m", result.RotationInfo["rotation_time"])
-	assert.Equal(t, 256, result.RotationInfo["key_strength"])
-}
-
 // TestThreatAnalysisWorkflowInput проверяет структуру входных данных для анализа угроз
 func TestThreatAnalysisWorkflowInput(t *testing.T) {
 	input := ThreatAnalysisWorkflowInput{

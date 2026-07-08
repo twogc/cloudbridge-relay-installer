@@ -16,9 +16,9 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 
 | Проверка | Статус | Примечание |
 |---|---|---|
-| `go build ./...` | Невозможно | Go не установлен в среде аудита |
-| `go test ./...` | Невозможно | Go не установлен в среде аудита |
-| `make test-critical` | Сломан | Ссылается на `./internal/keycloak/...` — директория не существует |
+| `go build ./...` | Частично | Сборка основного кода OK; `go build ./...` падает из‑за `rep/` (в .gitignore, сторонние примеры go-rod) |
+| `go test ./...` | Частично | `internal/auth` — OK; `internal/zitadel` — FAIL (интеграционные тесты без mock, 404 от test.zitadel.cloud) |
+| `make test-critical` | Исправлено | `./internal/keycloak/...` заменён на `./internal/zitadel/...` (шаг 1) |
 | go.mod Go version | ✅ Обновлено | Было `1.25.1`, каноническая версия: **`1.25.12`** (Jul 2026) |
 | Статический анализ | Выполнен | 174 902 строки Go-кода, 16 тест-файлов, 42+ пакета |
 
@@ -176,15 +176,15 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 
 ### 1. Quick wins (1-2 дня)
 
-- [ ] **Удалить Keycloak-код:** `internal/auth/keycloak_enhanced.go`, `keycloak_enhanced_test.go`, `interfaces.go` (KeycloakAuthInterface)
-- [ ] **Удалить Keycloak-скрипты:** 8 скриптов в `scripts/setup/` и `scripts/maintenance/`
-- [ ] **Удалить Django-конфиг:** секции `django` в `configs/config.json` и `config/config.go`
-- [ ] **Удалить quantum-код:** `internal/quantum/`, `internal/metrics/quantum.go`, `internal/cadence/workflows/quantum.go`
-- [ ] **Удалить `src/`** — осиротевший TypeScript SDK
-- [ ] **Удалить `systemd/enhanced-quic-proxy.service`** — идентичен `quic-proxy.service`
-- [ ] **Исправить Makefile:** заменить `./internal/keycloak/...` на `./internal/zitadel/...` в `test-critical`
-- [ ] **Исправить go.version** в go.mod на `1.25.12` (выполнено 2026-07-08)
-- [ ] **Удалить три `.disabled` workflow** в `.github/workflows/`
+- [x] **Удалить Keycloak-код:** `internal/auth/keycloak_enhanced.go`, `keycloak_enhanced_test.go`, `interfaces.go` (KeycloakAuthInterface) — *шаг 1, 2026-07-09*
+- [x] **Удалить Keycloak-скрипты:** 8 скриптов в `scripts/setup/` и `scripts/maintenance/` (+ `setup_ldap_integration.sh`) — *шаг 3*
+- [x] **Удалить Django-конфиг:** секции `django` в `configs/config.json` и `config/config.go` — *шаг 2* (dev-файл `config/config.json` не трогали)
+- [x] **Удалить quantum-код:** `internal/quantum/`, `internal/metrics/quantum.go`, `internal/cadence/workflows/quantum.go` — *шаг 2*
+- [x] **Удалить `src/`** — осиротевший TypeScript SDK — *шаг 2*
+- [ ] **Удалить `systemd/enhanced-quic-proxy.service`** — идентичен `quic-proxy.service` — *не выполнено: diff не пустой (порты 9090 vs 9092), шаг 4*
+- [x] **Исправить Makefile:** заменить `./internal/keycloak/...` на `./internal/zitadel/...` в `test-critical` — *шаг 1*
+- [x] **Исправить go.version** в go.mod на `1.25.12` (выполнено 2026-07-08)
+- [x] **Удалить три `.disabled` workflow** в `.github/workflows/` — *шаг 3*
 
 ### 2. Средний срок (1-2 недели)
 

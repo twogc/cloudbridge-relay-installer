@@ -36,34 +36,6 @@ type configRaw struct {
 		CleanupInterval string `json:"cleanup_interval"`
 	} `json:"server"`
 
-	Django struct {
-		APIEndpoint    string `json:"api_endpoint"`
-		JWTSecret      string `json:"jwt_secret"`
-		JWTExpiry      string `json:"jwt_expiry"`
-		RESTTimeout    string `json:"rest_timeout"`
-		RESTCacheTTL   string `json:"rest_cache_ttl"`
-		RESTMaxRetries int    `json:"rest_max_retries"`
-		RESTRetryDelay string `json:"rest_retry_delay"`
-	} `json:"django"`
-
-	Keycloak struct {
-		Enabled         bool   `json:"enabled"`
-		ServerURL       string `json:"server_url"`
-		Realm           string `json:"realm"`
-		ClientID        string `json:"client_id"`
-		ClientSecret    string `json:"client_secret"`
-		PublicKey       string `json:"public_key"`
-		FallbackSecret  string `json:"fallback_secret"`
-		JWKSURL         string `json:"jwks_url"`
-		TokenValidation struct {
-			Issuer    string `json:"issuer"`
-			Audience  string `json:"audience"`
-			ClockSkew string `json:"clock_skew"`
-		} `json:"token_validation"`
-		JWKSCacheTTL string `json:"jwks_cache_ttl"`
-		HTTPTimeout  string `json:"http_timeout"`
-	} `json:"keycloak"`
-
 	Zitadel struct {
 		Enabled        bool   `json:"enabled"`
 		Issuer         string `json:"issuer"`
@@ -206,7 +178,6 @@ type configRaw struct {
 		HandshakeTimeout    string `json:"handshake_timeout"`
 		DDoSProtection      bool   `json:"ddos_protection"`
 		GeographicRouting   bool   `json:"geographic_routing"`
-		KeycloakIntegration bool   `json:"keycloak_integration"`
 	} `json:"enhanced_quic"`
 
 	// WireGuard P2P Mesh Configuration
@@ -237,23 +208,6 @@ type configRaw struct {
 			} `json:"corporate_networks"`
 		} `json:"site_to_site"`
 	} `json:"wireguard"`
-
-	// Post-Quantum Cryptography Configuration
-	Quantum struct {
-		Enabled         bool   `json:"enabled"`
-		Algorithm       string `json:"algorithm"`
-		HybridMode      bool   `json:"hybrid_mode"`
-		KeySize         int    `json:"key_size"`
-		SignatureScheme string `json:"signature_scheme"`
-		FallbackEnabled bool   `json:"fallback_enabled"`
-		KeyRotationDays int    `json:"key_rotation_days"`
-		WireGuard       struct {
-			Enabled bool `json:"enabled"`
-		} `json:"wireguard"`
-		EnhancedQUIC struct {
-			Enabled bool `json:"enabled"`
-		} `json:"enhanced_quic"`
-	} `json:"quantum"`
 
 	// AI Analytics Configuration
 	AI struct {
@@ -395,16 +349,6 @@ type Config struct {
 		CleanupInterval time.Duration `json:"cleanup_interval"`
 	} `json:"server"`
 
-	Django struct {
-		APIEndpoint    string        `json:"api_endpoint"`
-		JWTSecret      string        `json:"jwt_secret"`
-		JWTExpiry      time.Duration `json:"jwt_expiry"`
-		RESTTimeout    time.Duration `json:"rest_timeout"`
-		RESTCacheTTL   time.Duration `json:"rest_cache_ttl"`
-		RESTMaxRetries int           `json:"rest_max_retries"`
-		RESTRetryDelay time.Duration `json:"rest_retry_delay"`
-	} `json:"django"`
-
 	// Новый блок конфигурации для Zitadel
 	Zitadel struct {
 		Enabled        bool   `json:"enabled"`
@@ -526,10 +470,9 @@ type Config struct {
 		}
 
 		Authentication struct {
-			Enabled     bool
-			Type        string
-			JWTSecret   string
-			KeycloakURL string
+			Enabled   bool
+			Type      string
+			JWTSecret string
 		}
 	} `json:"zero_trust"`
 
@@ -666,23 +609,6 @@ type Config struct {
 			} `json:"corporate_networks"`
 		} `json:"site_to_site"`
 	} `json:"wireguard"`
-
-	// Post-Quantum Cryptography Configuration
-	Quantum struct {
-		Enabled         bool   `json:"enabled"`
-		Algorithm       string `json:"algorithm"`
-		HybridMode      bool   `json:"hybrid_mode"`
-		KeySize         int    `json:"key_size"`
-		SignatureScheme string `json:"signature_scheme"`
-		FallbackEnabled bool   `json:"fallback_enabled"`
-		KeyRotationDays int    `json:"key_rotation_days"`
-		WireGuard       struct {
-			Enabled bool `json:"enabled"`
-		} `json:"wireguard"`
-		EnhancedQUIC struct {
-			Enabled bool `json:"enabled"`
-		} `json:"enhanced_quic"`
-	} `json:"quantum"`
 
 	// AI Analytics Configuration
 	AI struct {
@@ -941,15 +867,6 @@ func Load(path string) (*Config, error) {
 	config.Server.PingInterval = parseDuration(raw.Server.PingInterval, 30*time.Second)
 	config.Server.CleanupInterval = parseDuration(raw.Server.CleanupInterval, time.Minute)
 
-	// Django
-	config.Django.APIEndpoint = raw.Django.APIEndpoint
-	config.Django.JWTSecret = raw.Django.JWTSecret
-	config.Django.JWTExpiry = parseDuration(raw.Django.JWTExpiry, 24*time.Hour)
-	config.Django.RESTTimeout = parseDuration(raw.Django.RESTTimeout, 5*time.Second)
-	config.Django.RESTCacheTTL = parseDuration(raw.Django.RESTCacheTTL, 5*time.Minute)
-	config.Django.RESTMaxRetries = raw.Django.RESTMaxRetries
-	config.Django.RESTRetryDelay = parseDuration(raw.Django.RESTRetryDelay, 100*time.Millisecond)
-
 	// Zitadel
 	config.Zitadel.Enabled = raw.Zitadel.Enabled
 	config.Zitadel.Issuer = raw.Zitadel.Issuer
@@ -1045,15 +962,6 @@ func Load(path string) (*Config, error) {
 	config.ZeroTrust.Authentication.Type = raw.ZeroTrust.Authentication.Type
 	config.ZeroTrust.Authentication.JWTSecret = raw.ZeroTrust.Authentication.JWTSecret
 
-	// Load JWT secret from environment if not set
-	if config.Django.JWTSecret == "${RELAY_JWT_SECRET}" {
-		if secret := os.Getenv("RELAY_JWT_SECRET"); secret != "" {
-			config.Django.JWTSecret = secret
-		} else {
-			return nil, fmt.Errorf("JWT secret must be set via RELAY_JWT_SECRET environment variable")
-		}
-	}
-
 	// Load TLS configuration from environment
 	if config.Security.CertFile == "${RELAY_TLS_CERT_FILE}" {
 		if certFile := os.Getenv("RELAY_TLS_CERT_FILE"); certFile != "" {
@@ -1101,17 +1009,6 @@ func Load(path string) (*Config, error) {
 	config.WireGuard.Discovery.MaxPeers = raw.WireGuard.Discovery.MaxPeers
 	config.WireGuard.Mesh = raw.WireGuard.Mesh
 	config.WireGuard.SiteToSite = raw.WireGuard.SiteToSite
-
-	// Quantum
-	config.Quantum.Enabled = raw.Quantum.Enabled
-	config.Quantum.Algorithm = raw.Quantum.Algorithm
-	config.Quantum.HybridMode = raw.Quantum.HybridMode
-	config.Quantum.KeySize = raw.Quantum.KeySize
-	config.Quantum.SignatureScheme = raw.Quantum.SignatureScheme
-	config.Quantum.FallbackEnabled = raw.Quantum.FallbackEnabled
-	config.Quantum.KeyRotationDays = raw.Quantum.KeyRotationDays
-	config.Quantum.WireGuard = raw.Quantum.WireGuard
-	config.Quantum.EnhancedQUIC = raw.Quantum.EnhancedQUIC
 
 	// AI
 	config.AI.Enabled = raw.AI.Enabled
@@ -1254,26 +1151,6 @@ func (c *Config) Validate() error {
 	}
 	if c.Server.CleanupInterval < time.Second {
 		return fmt.Errorf("cleanup_interval must be at least 1 second")
-	}
-
-	// Validate Django configuration (for backward compatibility)
-	// Django is optional - only validate if API endpoint is provided
-	if c.Django.APIEndpoint != "" {
-		if c.Django.JWTSecret == "" {
-			return fmt.Errorf("django.jwt_secret is required when django.api_endpoint is provided")
-		}
-	}
-	if c.Django.RESTTimeout < time.Second {
-		return fmt.Errorf("rest_timeout must be at least 1 second")
-	}
-	if c.Django.RESTCacheTTL < time.Second {
-		return fmt.Errorf("rest_cache_ttl must be at least 1 second")
-	}
-	if c.Django.RESTMaxRetries < 0 {
-		return fmt.Errorf("rest_max_retries must be non-negative")
-	}
-	if c.Django.RESTRetryDelay < 0 {
-		return fmt.Errorf("rest_retry_delay must be non-negative")
 	}
 
 	if c.Security.TLSEnabled {

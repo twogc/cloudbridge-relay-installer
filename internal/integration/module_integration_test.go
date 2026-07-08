@@ -9,26 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/ai"
-	"github.com/twogc/cloudbridge-relay-installer/internal/quantum"
-	"go.uber.org/zap"
 )
-
-func TestP2PQUICQuantumIntegration(t *testing.T) {
-	// Создаем mock компоненты
-	quantumConfig := quantum.NewPQCConfig()
-	logger := zap.NewNop()
-
-	// Тестируем создание конфигурации
-	assert.NotNil(t, quantumConfig)
-	assert.NotNil(t, logger)
-
-	// Тестируем базовую функциональность quantum
-	encryptedData := []byte("test data")
-
-	// Проверяем, что конфигурация создана корректно
-	assert.NotNil(t, quantumConfig)
-	assert.NotEmpty(t, encryptedData)
-}
 
 func TestAIP2PIntegration(t *testing.T) {
 	// Создаем AI компоненты
@@ -61,13 +42,11 @@ func TestFullModuleIntegration(t *testing.T) {
 	behaviorAnalyzer := ai.NewBehaviorAnalyzer()
 	predictiveSecurity := ai.NewPredictiveSecurity()
 	automatedResponse := ai.NewAutomatedResponse()
-	quantumConfig := quantum.NewPQCConfig()
 
 	// Проверяем, что все компоненты созданы
 	assert.NotNil(t, behaviorAnalyzer)
 	assert.NotNil(t, predictiveSecurity)
 	assert.NotNil(t, automatedResponse)
-	assert.NotNil(t, quantumConfig)
 
 	// Симулируем полный сценарий
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -101,11 +80,9 @@ func TestModuleIntegrationErrorHandling(t *testing.T) {
 
 	// Создаем компоненты
 	behaviorAnalyzer := ai.NewBehaviorAnalyzer()
-	quantumConfig := quantum.NewPQCConfig()
 
 	// Проверяем, что компоненты созданы
 	assert.NotNil(t, behaviorAnalyzer)
-	assert.NotNil(t, quantumConfig)
 
 	// Тестируем AI компоненты с некорректными данными
 	userID := ""
@@ -123,11 +100,9 @@ func TestModulePerformanceIntegration(t *testing.T) {
 	// Тестируем производительность интеграции
 
 	behaviorAnalyzer := ai.NewBehaviorAnalyzer()
-	quantumConfig := quantum.NewPQCConfig()
 
 	// Проверяем, что компоненты созданы
 	assert.NotNil(t, behaviorAnalyzer)
-	assert.NotNil(t, quantumConfig)
 
 	// Тестируем производительность AI анализа
 	start := time.Now()
@@ -143,21 +118,6 @@ func TestModulePerformanceIntegration(t *testing.T) {
 
 	// Проверяем, что анализ 1000 записей занял разумное время
 	assert.Less(t, duration, 10*time.Second)
-}
-
-func TestQuantumCryptoIntegration(t *testing.T) {
-	// Тестируем квантовую криптографию
-	quantumConfig := quantum.NewPQCConfig()
-
-	// Проверяем, что конфигурация создана
-	assert.NotNil(t, quantumConfig)
-
-	// Тестируем базовые операции
-	testData := []byte("test quantum data")
-
-	// Проверяем, что данные не пустые
-	assert.NotEmpty(t, testData)
-	assert.Equal(t, "test quantum data", string(testData))
 }
 
 func TestAIModelIntegration(t *testing.T) {

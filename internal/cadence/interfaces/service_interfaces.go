@@ -24,19 +24,6 @@ type P2PServiceInterface interface {
 	ValidateConnection(ctx context.Context, peerID1, peerID2 string) (*ConnectionValidation, error)
 }
 
-// QuantumServiceInterface интерфейс для квантовой криптографии
-type QuantumServiceInterface interface {
-	// Управление ключами
-	GenerateQuantumKey(ctx context.Context, algorithm string, length int) (*QuantumKey, error)
-	ValidateQuantumKey(ctx context.Context, keyID string) (*KeyValidation, error)
-	RotateQuantumKey(ctx context.Context, keyID string) (*QuantumKey, error)
-	DeleteQuantumKey(ctx context.Context, keyID string) error
-
-	// Проверка необходимости ротации
-	CheckKeyRotationNeed(ctx context.Context, keyID string) (*RotationNeed, error)
-	UpdateKeyReferences(ctx context.Context, oldKeyID, newKeyID string) error
-}
-
 // AIServiceInterface интерфейс для AI/ML сервиса
 type AIServiceInterface interface {
 	// Анализ угроз
@@ -145,31 +132,6 @@ type ConnectionValidation struct {
 	Quality         float64  `json:"quality_score"`
 	Issues          []string `json:"issues"`
 	Recommendations []string `json:"recommendations"`
-}
-
-type QuantumKey struct {
-	KeyID     string    `json:"key_id"`
-	Algorithm string    `json:"algorithm"`
-	Length    int       `json:"length"`
-	CreatedAt time.Time `json:"created_at"`
-	ExpiresAt time.Time `json:"expires_at"`
-	Status    string    `json:"status"`
-}
-
-type KeyValidation struct {
-	KeyID     string    `json:"key_id"`
-	Valid     bool      `json:"valid"`
-	Strength  float64   `json:"strength_score"`
-	Issues    []string  `json:"issues"`
-	CheckedAt time.Time `json:"checked_at"`
-}
-
-type RotationNeed struct {
-	KeyID         string    `json:"key_id"`
-	NeedsRotation bool      `json:"needs_rotation"`
-	Reason        string    `json:"reason"`
-	Urgency       string    `json:"urgency"`
-	RecommendedAt time.Time `json:"recommended_at"`
 }
 
 type ThreatData struct {

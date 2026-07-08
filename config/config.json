@@ -7,14 +7,18 @@
     "ping_interval": "30s",
     "cleanup_interval": "1m"
   },
-  "django": {
-    "api_endpoint": "http://localhost:8000/api",
-    "jwt_secret": "your-secret-key",
-    "jwt_expiry": "24h",
-    "rest_timeout": "5s",
-    "rest_cache_ttl": "5m",
-    "rest_max_retries": 3,
-    "rest_retry_delay": "100ms"
+  "zitadel": {
+    "enabled": true,
+    "domain": "${ZITADEL_DOMAIN:-https://zitadel.local}",
+    "project_id": "${ZITADEL_PROJECT_ID}",
+    "client_id": "${ZITADEL_CLIENT_ID}",
+    "client_secret": "${ZITADEL_CLIENT_SECRET}",
+    "token_validation": {
+      "audience": "cloudbridge-relay",
+      "clock_skew": "30s"
+    },
+    "cache_ttl": "5m",
+    "http_timeout": "30s"
   },
   "tenants": {
     "relay-test-tenant": {
@@ -31,27 +35,22 @@
       "jwt": {
         "issuer": "2gc.ru",
         "audience": "relay-test-tenant",
-        "allowed_claims": ["tenant_id", "user_id", "permissions"]
+        "allowed_claims": [
+          "tenant_id",
+          "user_id",
+          "permissions"
+        ]
       },
       "allowed_ips": [],
       "allowed_ports": [],
-      "features": ["tls", "jwt", "tunneling", "p2p", "quic"]
+      "features": [
+        "tls",
+        "jwt",
+        "tunneling",
+        "p2p",
+        "quic"
+      ]
     }
-  },
-  "keycloak": {
-    "enabled": true,
-    "server_url": "",
-    "realm": "",
-    "client_id": "",
-    "client_secret": "",
-    "public_key": "",
-    "token_validation": {
-      "issuer": "",
-      "audience": "",
-      "clock_skew": "30s"
-    },
-    "jwks_cache_ttl": "1h",
-    "http_timeout": "30s"
   },
   "security": {
     "tls_enabled": false,
@@ -68,7 +67,10 @@
       "ca_file": "/app/certs/ca.crt",
       "client_cert_required": true
     },
-    "cipher_suites": ["TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+    "cipher_suites": [
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256"
+    ],
     "min_tls_version": "1.2",
     "audit": {
       "enabled": true,
@@ -153,8 +155,7 @@
     "authentication": {
       "enabled": true,
       "type": "jwt",
-      "jwt_secret": "",
-      "keycloak_url": ""
+      "jwt_secret": ""
     }
   },
   "enhanced_quic": {
@@ -165,8 +166,7 @@
     "idle_timeout": "30s",
     "handshake_timeout": "10s",
     "ddos_protection": true,
-    "geographic_routing": false,
-    "keycloak_integration": false
+    "geographic_routing": false
   },
   "wireguard": {
     "enabled": true,
@@ -239,7 +239,7 @@
     "port": 8444,
     "tls_enabled": false,
     "cert_file": "/app/certs/tls.crt",
-    "key_file": "/app/certs/tls.key", 
+    "key_file": "/app/certs/tls.key",
     "mtls_enabled": false,
     "keepalive_ping": "15s",
     "keepalive_timeout": "10s",

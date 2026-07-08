@@ -9,6 +9,10 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping OIDC discovery against live Zitadel in -short mode")
+	}
+
 	logger := zap.NewNop()
 
 	config := &Config{
@@ -22,7 +26,6 @@ func TestNewClient(t *testing.T) {
 		Insecure:     true,
 	}
 
-	// Тест с валидной конфигурацией
 	client, err := NewClient(context.Background(), config, logger)
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
@@ -40,7 +43,6 @@ func TestNewClient(t *testing.T) {
 		t.Error("Logger not set correctly")
 	}
 
-	// Cleanup
 	client.Close()
 }
 
@@ -51,6 +53,7 @@ func TestNewClientValidation(t *testing.T) {
 		name    string
 		config  *Config
 		wantErr bool
+		live    bool // requires network / OIDC discovery
 	}{
 		{
 			name: "missing issuer",
@@ -81,11 +84,15 @@ func TestNewClientValidation(t *testing.T) {
 				Insecure:     true,
 			},
 			wantErr: false,
+			live:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.live && testing.Short() {
+				t.Skip("skipping live Zitadel OIDC discovery in -short mode")
+			}
 			client, err := NewClient(context.Background(), tt.config, logger)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewClient() error = %v, wantErr %v", err, tt.wantErr)

@@ -113,13 +113,6 @@ func TestInitializeModuleActivity(t *testing.T) {
 			expectedPrefix: "module_wireguard_initialized",
 		},
 		{
-			name:           "Quantum module",
-			moduleName:     "quantum",
-			configuration:  map[string]interface{}{"algorithm": "kyber"},
-			expectError:    false,
-			expectedPrefix: "module_quantum_initialized",
-		},
-		{
 			name:           "AI module",
 			moduleName:     "ai",
 			configuration:  map[string]interface{}{"model": "threat-detection"},

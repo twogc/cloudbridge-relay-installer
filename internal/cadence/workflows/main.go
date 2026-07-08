@@ -154,35 +154,7 @@ func CloudBridgeMainWorkflow(ctx workflow.Context, input CloudBridgeMainWorkflow
 		result.Modules = append(result.Modules, wfType)
 	}
 
-	// 4. Запуск Quantum workflows в фоновом режиме
-	logger.Info("Запуск Quantum workflows")
-
-	quantumCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
-		ExecutionStartToCloseTimeout: 24 * time.Hour,
-		TaskStartToCloseTimeout:      30 * time.Second,
-	})
-
-	// Запускаем различные Quantum workflows
-	quantumWorkflows := []string{
-		"QuantumKeyRotationWorkflow",
-		"KeyValidationWorkflow",
-		"AlgorithmMigrationWorkflow",
-		"SecurityAuditWorkflow",
-	}
-
-	for _, wfType := range quantumWorkflows {
-		workflow.ExecuteChildWorkflow(
-			quantumCtx,
-			wfType,
-			map[string]interface{}{
-				"config": input.Configuration,
-				"domain": input.Domain,
-			},
-		)
-		result.Modules = append(result.Modules, wfType)
-	}
-
-	// 5. Запуск AI workflows в фоновом режиме
+	// 4. Запуск AI workflows в фоновом режиме
 	logger.Info("Запуск AI workflows")
 
 	aiCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{

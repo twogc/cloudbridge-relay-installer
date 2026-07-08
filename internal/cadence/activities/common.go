@@ -64,10 +64,6 @@ func (c *CommonActivityContext) InitializeModuleActivity(ctx context.Context, mo
 		c.Logger.Info("Инициализация WireGuard модуля")
 		time.Sleep(3 * time.Second)
 
-	case "quantum":
-		c.Logger.Info("Инициализация Quantum модуля")
-		time.Sleep(2 * time.Second)
-
 	case "ai":
 		c.Logger.Info("Инициализация AI модуля")
 		time.Sleep(4 * time.Second)

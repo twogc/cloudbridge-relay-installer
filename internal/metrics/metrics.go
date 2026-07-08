@@ -1780,10 +1780,6 @@ func (m *Metrics) RecordCadenceQUICWorkflow(subtype, status, peerID string) {
 	m.cadenceMetrics.RecordQUICWorkflow(subtype, status, peerID)
 }
 
-func (m *Metrics) RecordCadenceQuantumWorkflow(subtype, status, algorithm string) {
-	m.cadenceMetrics.RecordQuantumWorkflow(subtype, status, algorithm)
-}
-
 func (m *Metrics) RecordCadenceAIWorkflow(subtype, status, modelType string) {
 	m.cadenceMetrics.RecordAIWorkflow(subtype, status, modelType)
 }

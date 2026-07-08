@@ -324,12 +324,6 @@ func (c *Client) registerWorkflows() error {
 	safeRegister(workflows.P2PQUICTunnelWorkflow, "P2PQUICTunnelWorkflow")
 	safeRegister(workflows.P2PConnectionOrchestrationWorkflow, "P2PConnectionOrchestrationWorkflow")
 
-	// Quantum workflows
-	safeRegister(workflows.QuantumKeyRotationWorkflow, "QuantumKeyRotationWorkflow")
-	safeRegister(workflows.KeyValidationWorkflow, "KeyValidationWorkflow")
-	safeRegister(workflows.AlgorithmMigrationWorkflow, "AlgorithmMigrationWorkflow")
-	safeRegister(workflows.SecurityAuditWorkflow, "SecurityAuditWorkflow")
-
 	// AI workflows
 	safeRegister(workflows.ThreatAnalysisWorkflow, "ThreatAnalysisWorkflow")
 	safeRegister(workflows.BehaviorMonitoringWorkflow, "BehaviorMonitoringWorkflow")

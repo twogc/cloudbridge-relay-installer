@@ -20,30 +20,6 @@ data:
         "ping_interval": "30s",
         "cleanup_interval": "1m"
       },
-      "django": {
-        "api_endpoint": "http://localhost:8000/api",
-        "jwt_secret": "your-secret-key",
-        "jwt_expiry": "24h",
-        "rest_timeout": "5s",
-        "rest_cache_ttl": "5m",
-        "rest_max_retries": 3,
-        "rest_retry_delay": "100ms"
-      },
-      "keycloak": {
-        "enabled": false,
-        "server_url": "",
-        "realm": "",
-        "client_id": "",
-        "client_secret": "",
-        "public_key": "",
-        "token_validation": {
-          "issuer": "",
-          "audience": "",
-          "clock_skew": "30s"
-        },
-        "jwks_cache_ttl": "1h",
-        "http_timeout": "30s"
-      },
       "zitadel": {
         "enabled": false,
         "domain": "",
@@ -157,8 +133,7 @@ data:
         "authentication": {
           "enabled": false,
           "type": "jwt",
-          "jwt_secret": "",
-          "keycloak_url": ""
+          "jwt_secret": ""
         }
       },
       "enhanced_quic": {
@@ -169,8 +144,7 @@ data:
         "idle_timeout": "30s",
         "handshake_timeout": "10s",
         "ddos_protection": true,
-        "geographic_routing": false,
-        "keycloak_integration": false
+        "geographic_routing": false
       },
       "wireguard": {
         "enabled": false,

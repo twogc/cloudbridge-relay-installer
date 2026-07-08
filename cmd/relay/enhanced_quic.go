@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
 	"github.com/twogc/cloudbridge-relay-installer/internal/balancer"
 	"github.com/twogc/cloudbridge-relay-installer/internal/metrics"
 	"github.com/twogc/cloudbridge-relay-installer/internal/quic"
@@ -21,14 +20,12 @@ type EnhancedQUICManager struct {
 	tenantManager  *quic.TenantManager
 	ddosProtection *quic.DDoSProtection
 	geoRouter      *quic.GeographicRouter
-	keycloakAuth   *quic.KeycloakAuth
 	logger         *zap.Logger
 
 	// Интеграции с существующими компонентами
 	relayTenantManager *tenant.Manager
 	relayBalancer      *balancer.Balancer
 	relayRateLimit     *ratelimit.IPLimiter
-	relayKeycloakAuth  *auth.EnhancedKeycloakAuth
 
 	// Метрики
 	metrics *metrics.Metrics
@@ -52,9 +49,8 @@ func NewEnhancedQUICManager(logger *zap.Logger, metrics *metrics.Metrics) *Enhan
 		CongestionControlAlgorithm:     "cubic",
 
 		// Enhanced features
-		EnableDDoSProtection:      true,
-		EnableGeographicRouting:   true,
-		EnableKeycloakIntegration: false, // По умолчанию отключено
+		EnableDDoSProtection:    true,
+		EnableGeographicRouting: true,
 	}
 
 	return &EnhancedQUICManager{
@@ -84,17 +80,10 @@ func (eqm *EnhancedQUICManager) Initialize() error {
 		eqm.tenantManager.AddTenant("basic", 10*1024*1024, 5)       // 10MB, 5 connections
 	}
 
-	// Настраиваем Keycloak, если включен
-	if eqm.config.EnableKeycloakIntegration && eqm.config.KeycloakConfig != nil {
-		eqm.keycloakAuth = quic.NewKeycloakAuth(eqm.config.KeycloakConfig)
-		eqm.logger.Info("Keycloak integration enabled")
-	}
-
 	eqm.enabled = true
 	eqm.logger.Info("Enhanced QUIC Manager initialized successfully",
 		zap.Bool("ddos_protection", eqm.config.EnableDDoSProtection),
 		zap.Bool("geographic_routing", eqm.config.EnableGeographicRouting),
-		zap.Bool("keycloak_integration", eqm.config.EnableKeycloakIntegration),
 	)
 
 	return nil
@@ -105,7 +94,6 @@ func (eqm *EnhancedQUICManager) SetupIntegrations(
 	tenantMgr *tenant.Manager,
 	balancer *balancer.Balancer,
 	rateLimit *ratelimit.IPLimiter,
-	keycloakAuth *auth.EnhancedKeycloakAuth,
 ) error {
 	eqm.logger.Info("Setting up Enhanced QUIC integrations")
 
@@ -128,19 +116,6 @@ func (eqm *EnhancedQUICManager) SetupIntegrations(
 		eqm.relayRateLimit = rateLimit
 		rateLimit.EnableEnhanced()
 		eqm.logger.Info("Rate Limiting integration enabled")
-	}
-
-	// Интеграция с Keycloak Auth
-	if keycloakAuth != nil {
-		eqm.relayKeycloakAuth = keycloakAuth
-		// Включаем Enhanced режим только если не был включен ранее
-		if !keycloakAuth.IsEnhancedEnabled() {
-			if err := keycloakAuth.EnableEnhanced(nil); err != nil {
-				eqm.logger.Warn("Failed to enable Enhanced Keycloak Auth", zap.Error(err))
-			} else {
-				eqm.logger.Info("Keycloak Auth integration enabled")
-			}
-		}
 	}
 
 	return nil
@@ -226,22 +201,6 @@ func (eqm *EnhancedQUICManager) ValidateConnection(clientIP, tenantID, token str
 		}
 	}
 
-	// Проверяем аутентификацию через интегрированный Keycloak
-	if eqm.config.EnableKeycloakIntegration && eqm.relayKeycloakAuth != nil && token != "" {
-		if isValid, err := eqm.relayKeycloakAuth.ValidateTokenEnhanced(token); err != nil || !isValid {
-			eqm.logger.Warn("Keycloak authentication failed",
-				zap.String("tenant_id", tenantID),
-				zap.Error(err),
-				zap.Bool("is_valid", isValid),
-			)
-			// Записываем метрики ошибок аутентификации
-			if eqm.metrics != nil {
-				eqm.metrics.IncQUICAuthenticationFailures("token_validation", "unknown")
-			}
-			return fmt.Errorf("authentication failed: %v", err)
-		}
-	}
-
 	return nil
 }
 
@@ -273,10 +232,9 @@ func (eqm *EnhancedQUICManager) GetServerByGeo(clientIP string) (string, error) 
 // GetStats возвращает статистику Enhanced QUIC
 func (eqm *EnhancedQUICManager) GetStats() map[string]interface{} {
 	stats := map[string]interface{}{
-		"enabled":                      eqm.enabled,
-		"ddos_protection_enabled":      eqm.config.EnableDDoSProtection,
-		"geographic_routing_enabled":   eqm.config.EnableGeographicRouting,
-		"keycloak_integration_enabled": eqm.config.EnableKeycloakIntegration,
+		"enabled":                    eqm.enabled,
+		"ddos_protection_enabled":    eqm.config.EnableDDoSProtection,
+		"geographic_routing_enabled": eqm.config.EnableGeographicRouting,
 	}
 
 	// Добавляем статистику тенантов
@@ -316,9 +274,6 @@ func (eqm *EnhancedQUICManager) Disable() {
 	}
 	if eqm.relayRateLimit != nil {
 		eqm.relayRateLimit.DisableEnhanced()
-	}
-	if eqm.relayKeycloakAuth != nil {
-		eqm.relayKeycloakAuth.DisableEnhanced()
 	}
 
 	eqm.enabled = false

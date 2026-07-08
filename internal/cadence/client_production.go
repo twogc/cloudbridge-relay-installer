@@ -27,7 +27,6 @@ type ProductionClient struct {
 
 	// Сервисы для реальных activities
 	p2pService      interfaces.P2PServiceInterface
-	quantumService  interfaces.QuantumServiceInterface
 	aiService       interfaces.AIServiceInterface
 	securityService interfaces.SecurityServiceInterface
 	scalingService  interfaces.ScalingServiceInterface
@@ -43,7 +42,6 @@ type ProductionConfig struct {
 
 	// Сервисы
 	P2PService      interfaces.P2PServiceInterface
-	QuantumService  interfaces.QuantumServiceInterface
 	AIService       interfaces.AIServiceInterface
 	SecurityService interfaces.SecurityServiceInterface
 	ScalingService  interfaces.ScalingServiceInterface
@@ -72,7 +70,6 @@ func NewProductionClient(config ProductionConfig, logger *zap.Logger) (*Producti
 			domain:          config.Domain,
 			taskList:        config.TaskList,
 			p2pService:      config.P2PService,
-			quantumService:  config.QuantumService,
 			aiService:       config.AIService,
 			securityService: config.SecurityService,
 			scalingService:  config.ScalingService,
@@ -94,7 +91,6 @@ func NewProductionClient(config ProductionConfig, logger *zap.Logger) (*Producti
 		domain:          config.Domain,
 		taskList:        config.TaskList,
 		p2pService:      config.P2PService,
-		quantumService:  config.QuantumService,
 		aiService:       config.AIService,
 		securityService: config.SecurityService,
 		scalingService:  config.ScalingService,
@@ -263,24 +259,6 @@ func (pc *ProductionClient) registerWorkflows() error {
 		workflow.RegisterOptions{Name: "P2PConnectionOrchestrationWorkflow"},
 	)
 
-	// Quantum workflows
-	pc.worker.RegisterWorkflowWithOptions(
-		workflows.QuantumKeyRotationWorkflow,
-		workflow.RegisterOptions{Name: "QuantumKeyRotationWorkflow"},
-	)
-	pc.worker.RegisterWorkflowWithOptions(
-		workflows.KeyValidationWorkflow,
-		workflow.RegisterOptions{Name: "KeyValidationWorkflow"},
-	)
-	pc.worker.RegisterWorkflowWithOptions(
-		workflows.AlgorithmMigrationWorkflow,
-		workflow.RegisterOptions{Name: "AlgorithmMigrationWorkflow"},
-	)
-	pc.worker.RegisterWorkflowWithOptions(
-		workflows.SecurityAuditWorkflow,
-		workflow.RegisterOptions{Name: "SecurityAuditWorkflow"},
-	)
-
 	// AI workflows
 	pc.worker.RegisterWorkflowWithOptions(
 		workflows.ThreatAnalysisWorkflow,
@@ -352,9 +330,6 @@ func (pc *ProductionClient) registerActivities() error {
 	// P2P QUIC activities
 	pc.registerP2PQUICActivities()
 
-	// Quantum activities
-	pc.registerQuantumActivities()
-
 	// AI activities
 	pc.registerAIActivities()
 
@@ -388,16 +363,6 @@ func (pc *ProductionClient) registerP2PQUICActivities() {
 	pc.registerActivity("AnalyzeP2PTopologyActivity", pc.analyzeP2PTopologyActivity)
 	pc.registerActivity("PlanP2PTopologyActivity", pc.planP2PTopologyActivity)
 	pc.registerActivity("ValidateP2PConnectionActivity", pc.validateP2PConnectionActivity)
-}
-
-// registerQuantumActivities регистрирует Quantum activities
-func (pc *ProductionClient) registerQuantumActivities() {
-	pc.registerActivity("GenerateQuantumKeyActivity", pc.generateQuantumKeyActivity)
-	pc.registerActivity("ValidateQuantumKeyActivity", pc.validateQuantumKeyActivity)
-	pc.registerActivity("RotateQuantumKeyActivity", pc.rotateQuantumKeyActivity)
-	pc.registerActivity("DeleteQuantumKeyActivity", pc.deleteQuantumKeyActivity)
-	pc.registerActivity("CheckKeyRotationNeedActivity", pc.checkKeyRotationNeedActivity)
-	pc.registerActivity("UpdateKeyReferencesActivity", pc.updateKeyReferencesActivity)
 }
 
 // registerAIActivities регистрирует AI activities
@@ -604,100 +569,6 @@ func (pc *ProductionClient) validateP2PConnectionActivity(ctx context.Context, p
 	}
 
 	return pc.p2pService.ValidateConnection(ctx, peerID1, peerID2)
-}
-
-// Quantum Activities
-
-func (pc *ProductionClient) generateQuantumKeyActivity(ctx context.Context, algorithm string, length int) (*interfaces.QuantumKey, error) {
-	pc.logger.Info("Executing GenerateQuantumKeyActivity",
-		zap.String("algorithm", algorithm),
-		zap.Int("length", length))
-
-	if pc.quantumService == nil {
-		return &interfaces.QuantumKey{
-			KeyID:     fmt.Sprintf("stub-key-%d", time.Now().UnixNano()),
-			Algorithm: algorithm,
-			Length:    length,
-			CreatedAt: time.Now(),
-			ExpiresAt: time.Now().Add(24 * time.Hour),
-			Status:    "active",
-		}, nil
-	}
-
-	return pc.quantumService.GenerateQuantumKey(ctx, algorithm, length)
-}
-
-func (pc *ProductionClient) validateQuantumKeyActivity(ctx context.Context, keyID string) (*interfaces.KeyValidation, error) {
-	pc.logger.Info("Executing ValidateQuantumKeyActivity", zap.String("keyID", keyID))
-
-	if pc.quantumService == nil {
-		return &interfaces.KeyValidation{
-			KeyID:     keyID,
-			Valid:     true,
-			Strength:  0.95,
-			Issues:    []string{},
-			CheckedAt: time.Now(),
-		}, nil
-	}
-
-	return pc.quantumService.ValidateQuantumKey(ctx, keyID)
-}
-
-func (pc *ProductionClient) rotateQuantumKeyActivity(ctx context.Context, keyID string) (*interfaces.QuantumKey, error) {
-	pc.logger.Info("Executing RotateQuantumKeyActivity", zap.String("keyID", keyID))
-
-	if pc.quantumService == nil {
-		return &interfaces.QuantumKey{
-			KeyID:     fmt.Sprintf("rotated-key-%d", time.Now().UnixNano()),
-			Algorithm: "quantum-safe",
-			Length:    256,
-			CreatedAt: time.Now(),
-			ExpiresAt: time.Now().Add(24 * time.Hour),
-			Status:    "active",
-		}, nil
-	}
-
-	return pc.quantumService.RotateQuantumKey(ctx, keyID)
-}
-
-func (pc *ProductionClient) deleteQuantumKeyActivity(ctx context.Context, keyID string) error {
-	pc.logger.Info("Executing DeleteQuantumKeyActivity", zap.String("keyID", keyID))
-
-	if pc.quantumService == nil {
-		pc.logger.Info("Quantum service not available, skipping key deletion")
-		return nil
-	}
-
-	return pc.quantumService.DeleteQuantumKey(ctx, keyID)
-}
-
-func (pc *ProductionClient) checkKeyRotationNeedActivity(ctx context.Context, keyID string) (*interfaces.RotationNeed, error) {
-	pc.logger.Info("Executing CheckKeyRotationNeedActivity", zap.String("keyID", keyID))
-
-	if pc.quantumService == nil {
-		return &interfaces.RotationNeed{
-			KeyID:         keyID,
-			NeedsRotation: false,
-			Reason:        "stub check",
-			Urgency:       "low",
-			RecommendedAt: time.Now().Add(24 * time.Hour),
-		}, nil
-	}
-
-	return pc.quantumService.CheckKeyRotationNeed(ctx, keyID)
-}
-
-func (pc *ProductionClient) updateKeyReferencesActivity(ctx context.Context, oldKeyID, newKeyID string) error {
-	pc.logger.Info("Executing UpdateKeyReferencesActivity",
-		zap.String("oldKeyID", oldKeyID),
-		zap.String("newKeyID", newKeyID))
-
-	if pc.quantumService == nil {
-		pc.logger.Info("Quantum service not available, skipping key reference update")
-		return nil
-	}
-
-	return pc.quantumService.UpdateKeyReferences(ctx, oldKeyID, newKeyID)
 }
 
 // AI Activities

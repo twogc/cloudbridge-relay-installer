@@ -172,12 +172,6 @@ func (cw *CadenceWorker) registerWorkflows() error {
 	workflow.Register(workflows.P2PQUICTunnelWorkflow)
 	workflow.Register(workflows.P2PConnectionOrchestrationWorkflow)
 
-	// Quantum workflows
-	workflow.Register(workflows.QuantumKeyRotationWorkflow)
-	workflow.Register(workflows.KeyValidationWorkflow)
-	workflow.Register(workflows.AlgorithmMigrationWorkflow)
-	workflow.Register(workflows.SecurityAuditWorkflow)
-
 	// AI workflows
 	workflow.Register(workflows.ThreatAnalysisWorkflow)
 	workflow.Register(workflows.BehaviorMonitoringWorkflow)
@@ -239,19 +233,10 @@ func (cw *CadenceWorker) registerActivities() error {
 	activity.RegisterWithOptions(cw.createP2PQUICActivity("ValidateP2PTopologyActivity"), activity.RegisterOptions{Name: "ValidateP2PTopologyActivity"})
 
 	// Здесь должны быть зарегистрированы activities для:
-	// - Quantum криптографии
 	// - AI/ML операций
 	// - Автомасштабирования
 	// - Безопасности
 	// Пока регистрируем placeholder activities
-
-	// Quantum activities (placeholder)
-	activity.RegisterWithOptions(cw.createQuantumActivity("CheckKeyRotationNeedActivity"), activity.RegisterOptions{Name: "CheckKeyRotationNeedActivity"})
-	activity.RegisterWithOptions(cw.createQuantumActivity("GenerateQuantumKeyActivity"), activity.RegisterOptions{Name: "GenerateQuantumKeyActivity"})
-	activity.RegisterWithOptions(cw.createQuantumActivity("ValidateQuantumKeyActivity"), activity.RegisterOptions{Name: "ValidateQuantumKeyActivity"})
-	activity.RegisterWithOptions(cw.createQuantumActivity("ReplaceQuantumKeyActivity"), activity.RegisterOptions{Name: "ReplaceQuantumKeyActivity"})
-	activity.RegisterWithOptions(cw.createQuantumActivity("SecureDeleteQuantumKeyActivity"), activity.RegisterOptions{Name: "SecureDeleteQuantumKeyActivity"})
-	activity.RegisterWithOptions(cw.createQuantumActivity("UpdateKeyReferencesActivity"), activity.RegisterOptions{Name: "UpdateKeyReferencesActivity"})
 
 	// AI activities (placeholder)
 	activity.RegisterWithOptions(cw.createAIActivity("CollectThreatDataActivity"), activity.RegisterOptions{Name: "CollectThreatDataActivity"})
@@ -287,32 +272,6 @@ func (cw *CadenceWorker) registerActivities() error {
 	)
 
 	return nil
-}
-
-// createQuantumActivity создает placeholder activity для Quantum операций
-func (cw *CadenceWorker) createQuantumActivity(activityName string) interface{} {
-	return func(ctx context.Context, args ...interface{}) (map[string]interface{}, error) {
-		cw.logger.Info("Выполнение Quantum activity",
-			zap.String("activity", activityName),
-			zap.Int("args_count", len(args)),
-		)
-
-		// Записываем метрику
-		cw.cadenceMetrics.RecordActivityStarted(activityName, cw.config.Domain)
-
-		// Симуляция выполнения quantum операции
-		result := map[string]interface{}{
-			"activity_name": activityName,
-			"status":        "completed",
-			"timestamp":     "2024-01-01T00:00:00Z", // Placeholder
-			"quantum_safe":  true,
-		}
-
-		// Записываем завершение
-		cw.cadenceMetrics.RecordActivityCompleted(activityName, cw.config.Domain, 0) // duration будет вычислен в реальной реализации
-
-		return result, nil
-	}
 }
 
 // createAIActivity создает placeholder activity для AI операций
@@ -617,12 +576,6 @@ func (cw *CadenceWorker) handleWorkflowsDebug(w http.ResponseWriter, r *http.Req
 			"P2PQUICTunnelWorkflow",
 			"P2PConnectionOrchestrationWorkflow",
 		},
-		"quantum_workflows": []string{
-			"QuantumKeyRotationWorkflow",
-			"KeyValidationWorkflow",
-			"AlgorithmMigrationWorkflow",
-			"SecurityAuditWorkflow",
-		},
 		"ai_workflows": []string{
 			"ThreatAnalysisWorkflow",
 			"BehaviorMonitoringWorkflow",
@@ -665,12 +618,6 @@ func (cw *CadenceWorker) handleActivitiesDebug(w http.ResponseWriter, r *http.Re
 			"CreateP2PConnectionActivity",
 			"RegisterP2PPeerActivity",
 			"DisconnectP2PPeerActivity",
-		},
-		"quantum_activities": []string{
-			"CheckKeyRotationNeedActivity",
-			"GenerateQuantumKeyActivity",
-			"ValidateQuantumKeyActivity",
-			"ReplaceQuantumKeyActivity",
 		},
 		"ai_activities": []string{
 			"CollectThreatDataActivity",

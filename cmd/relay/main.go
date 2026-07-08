@@ -39,7 +39,6 @@ import (
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2c"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"github.com/twogc/cloudbridge-relay-installer/internal/protocol"
-	"github.com/twogc/cloudbridge-relay-installer/internal/quantum"
 	"github.com/twogc/cloudbridge-relay-installer/internal/ratelimit"
 	"github.com/twogc/cloudbridge-relay-installer/internal/tenant"
 	grpcTransport "github.com/twogc/cloudbridge-relay-installer/internal/transport/grpc"
@@ -145,12 +144,6 @@ type Server struct {
 
 	// P2P API Server
 	p2pAPIServer *P2PAPIServer
-
-	// Post-Quantum Cryptography components
-	quantumEnabled      bool
-	quantumConfig       *quantum.PQCConfig
-	quantumP2PQUIC      *quantum.QuantumEnhancedQUIC
-	quantumEnhancedQUIC *quantum.QuantumEnhancedQUIC
 
 	// AI Analytics components
 	aiComponents *AIComponents
@@ -304,7 +297,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		ipRateLimit = ratelimit.NewIPLimiterWithEnhanced(100.0, 1000) // 100 req/sec, burst 1000
 
 		// Настраиваем интеграции
-		if err := enhancedQUICManager.SetupIntegrations(tenantMgr, loadBal, ipRateLimit, nil); err != nil {
+		if err := enhancedQUICManager.SetupIntegrations(tenantMgr, loadBal, ipRateLimit); err != nil {
 			loggerInstance.Error("Failed to setup Enhanced QUIC integrations", zap.Error(err))
 			enhancedEnabled = false
 		} else {
@@ -414,27 +407,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 	// }
 
-	// Initialize Post-Quantum Cryptography components
-	quantumEnabled := cfg.Quantum.Enabled
-	var quantumConfig *quantum.PQCConfig
-	var quantumP2PQUIC *quantum.QuantumEnhancedQUIC
-	var quantumEnhancedQUIC *quantum.QuantumEnhancedQUIC
-
-	if quantumEnabled {
-		// Create PQC configuration
-		quantumConfig = quantum.NewPQCConfig()
-
-		// Initialize quantum-resistant Enhanced QUIC
-		if enhancedQUICManager != nil {
-			quantumEnhancedQUIC = quantum.NewQuantumEnhancedQUIC(enhancedQUICManager, quantumConfig)
-		}
-
-		loggerInstance.Info("Post-Quantum Cryptography initialized",
-			zap.String("algorithm", string(quantumConfig.Algorithm)),
-			zap.Bool("hybrid_mode", quantumConfig.HybridMode),
-		)
-	}
-
 	// Initialize Cadence Workflow Engine
 	var cadenceClient *cadence.ProductionClient
 	if cfg.Cadence.Enabled {
@@ -452,7 +424,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 			},
 			// TODO: Добавить реальные сервисы когда они будут готовы
 			P2PService:      nil,
-			QuantumService:  nil,
 			AIService:       nil,
 			SecurityService: nil,
 			ScalingService:  nil,
@@ -871,10 +842,6 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		enhancedEnabled:     enhancedEnabled,
 		p2pQUICEnabled:      true, // P2P QUIC enabled
 		p2pAPIServer:        p2pAPIServer,
-		quantumEnabled:      quantumEnabled,
-		quantumConfig:       quantumConfig,
-		quantumP2PQUIC:      quantumP2PQUIC,
-		quantumEnhancedQUIC: quantumEnhancedQUIC,
 		aiComponents:        aiComponents,
 		protocolSelector:    protocolSelector,
 		protocolEngine:      protocolEngine,

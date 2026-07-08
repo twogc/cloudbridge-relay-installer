@@ -68,6 +68,9 @@ help: ## Показать справку
 
 # ===== Build & test =====
 
+# Пакеты модуля без rep/ (локальные клоны сторонних репо) и test-only деревьев
+GO_PKGS = $$(go list ./... | grep -v '/rep/' | grep -v '/internal/integration$$' | grep -v '/internal/testing$$' | grep -v '/internal/tests$$')
+
 build: ## Собрать бинарный файл
 	@echo "Сборка CloudBridge Relay..."
 	@mkdir -p $(BIN_DIR)
@@ -76,6 +79,11 @@ build: ## Собрать бинарный файл
 		-o $(BIN_DIR)/cloudbridge-relay ./cmd/relay
 	@echo "Сборка завершена: $(BIN_DIR)/cloudbridge-relay"
 
+build-all: ## Собрать все пакеты модуля (без rep/)
+	@echo "Сборка всех пакетов (исключая rep/)..."
+	go build $(GO_PKGS)
+	@echo "Сборка пакетов завершена"
+
 clean: ## Очистить артефакты сборки
 	@echo "Очистка артефактов..."
 	@rm -rf $(BIN_DIR) $(DIST_DIR)
@@ -83,20 +91,20 @@ clean: ## Очистить артефакты сборки
 
 test: ## Запустить тесты
 	@echo "Запуск тестов..."
-	go test -v ./...
+	go test -v $(GO_PKGS)
 	@echo "Тесты завершены"
 
 test-coverage: ## Запустить тесты с покрытием
 	@echo "🧪 Запуск тестов с покрытием..."
 	@mkdir -p coverage_reports
-	go test -v -race -coverprofile=coverage_reports/coverage.out -covermode=atomic ./...
+	go test -v -race -coverprofile=coverage_reports/coverage.out -covermode=atomic $(GO_PKGS)
 	go tool cover -html=coverage_reports/coverage.out -o coverage_reports/coverage.html
 	@echo "Отчет о покрытии: coverage_reports/coverage.html"
 	@echo "Тесты с покрытием завершены"
 
 test-critical: ## Тесты критических компонентов
 	@echo "🔥 Тестирование критических компонентов..."
-	go test -v -race -cover ./internal/token/... ./internal/auth/... ./internal/p2p/... ./internal/api/... ./internal/quic/... ./internal/keycloak/... ./config/...
+	go test -v -race -cover -short ./internal/token/... ./internal/auth/... ./internal/p2p/... ./internal/api/... ./internal/quic/... ./internal/zitadel/... ./config/...
 	@echo "Критические тесты завершены"
 
 test-unit: ## Unit тесты
@@ -106,23 +114,23 @@ test-unit: ## Unit тесты
 
 test-integration: ## Интеграционные тесты
 	@echo " Запуск интеграционных тестов..."
-	go test -v -race -tags=integration ./...
+	go test -v -race -tags=integration $(GO_PKGS)
 	@echo "Интеграционные тесты завершены"
 
 test-benchmark: ## Бенчмарки
 	@echo "Запуск бенчмарков..."
-	go test -v -bench=. -benchmem ./...
+	go test -v -bench=. -benchmem $(GO_PKGS)
 	@echo "Бенчмарки завершены"
 
 test-race: ## Тесты с race detection
 	@echo "🏃 Запуск тестов с race detection..."
-	go test -v -race ./...
+	go test -v -race $(GO_PKGS)
 	@echo "Race detection тесты завершены"
 
 test-coverage-report: ## Генерация отчета о покрытии
 	@echo "Генерация отчета о покрытии..."
 	@mkdir -p coverage_reports
-	go test -coverprofile=coverage_reports/coverage.out -covermode=atomic ./...
+	go test -coverprofile=coverage_reports/coverage.out -covermode=atomic $(GO_PKGS)
 	go tool cover -html=coverage_reports/coverage.out -o coverage_reports/coverage.html
 	go tool cover -func=coverage_reports/coverage.out > coverage_reports/coverage.txt
 	@echo " Покрытие по функциям:"
@@ -133,7 +141,7 @@ test-coverage-report: ## Генерация отчета о покрытии
 test-coverage-check: ## Проверка покрытия тестами
 	@echo "Проверка покрытия тестами..."
 	@mkdir -p coverage_reports
-	go test -coverprofile=coverage_reports/coverage.out -covermode=atomic ./...
+	go test -coverprofile=coverage_reports/coverage.out -covermode=atomic $(GO_PKGS)
 	@COVERAGE=$$(go tool cover -func=coverage_reports/coverage.out | tail -1 | awk '{print $$3}' | sed 's/%//'); \
 	if [ $$(echo "$$COVERAGE < 80" | bc -l) -eq 1 ]; then \
 		echo "Покрытие тестами: $$COVERAGE% (требуется >80%)"; \

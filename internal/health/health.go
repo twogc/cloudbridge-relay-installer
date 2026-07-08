@@ -23,7 +23,6 @@ type Status struct {
 type ModuleStatus struct {
 	EnhancedQUIC EnhancedQUICStatus `json:"enhanced_quic"`
 	P2PQUIC      P2PQUICStatus      `json:"p2p_quic"`
-	Quantum      QuantumStatus      `json:"quantum"`
 	AI           AIStatus           `json:"ai"`
 }
 
@@ -36,13 +35,6 @@ type EnhancedQUICStatus struct {
 
 // P2PQUICStatus represents P2P QUIC module status
 type P2PQUICStatus struct {
-	Enabled bool   `json:"enabled"`
-	Status  string `json:"status"`
-	Details string `json:"details,omitempty"`
-}
-
-// QuantumStatus represents Post-Quantum Cryptography module status
-type QuantumStatus struct {
 	Enabled bool   `json:"enabled"`
 	Status  string `json:"status"`
 	Details string `json:"details,omitempty"`
@@ -65,7 +57,6 @@ type Checker struct {
 	// Module health check functions
 	enhancedQUICHealth func() EnhancedQUICStatus
 	p2pQUICHealth      func() P2PQUICStatus
-	quantumHealth      func() QuantumStatus
 	aiHealth           func() AIStatus
 }
 
@@ -83,7 +74,6 @@ func NewChecker(version string) *Checker {
 			Modules: ModuleStatus{
 				EnhancedQUIC: EnhancedQUICStatus{Enabled: false, Status: "unknown"},
 				P2PQUIC:      P2PQUICStatus{Enabled: false, Status: "unknown"},
-				Quantum:      QuantumStatus{Enabled: false, Status: "unknown"},
 				AI:           AIStatus{Enabled: false, Status: "unknown"},
 			},
 		},
@@ -99,7 +89,6 @@ type Handler struct {
 	// Module health check functions
 	enhancedQUICHealth func() EnhancedQUICStatus
 	p2pQUICHealth      func() P2PQUICStatus
-	quantumHealth      func() QuantumStatus
 	aiHealth           func() AIStatus
 }
 
@@ -122,11 +111,6 @@ func (h *Handler) SetP2PQUICHealthCheck(healthFunc func() P2PQUICStatus) {
 	h.p2pQUICHealth = healthFunc
 }
 
-// SetQuantumHealthCheck sets the Post-Quantum Cryptography health check function
-func (h *Handler) SetQuantumHealthCheck(healthFunc func() QuantumStatus) {
-	h.quantumHealth = healthFunc
-}
-
 // SetAIHealthCheck sets the AI Analytics health check function
 func (h *Handler) SetAIHealthCheck(healthFunc func() AIStatus) {
 	h.aiHealth = healthFunc
@@ -142,7 +126,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Modules: ModuleStatus{
 			EnhancedQUIC: EnhancedQUICStatus{Enabled: false, Status: "unknown"},
 			P2PQUIC:      P2PQUICStatus{Enabled: false, Status: "unknown"},
-			Quantum:      QuantumStatus{Enabled: false, Status: "unknown"},
 			AI:           AIStatus{Enabled: false, Status: "unknown"},
 		},
 		Timestamp: time.Now(),
@@ -159,9 +142,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.p2pQUICHealth != nil {
 		status.Modules.P2PQUIC = h.p2pQUICHealth()
 	}
-	if h.quantumHealth != nil {
-		status.Modules.Quantum = h.quantumHealth()
-	}
 	if h.aiHealth != nil {
 		status.Modules.AI = h.aiHealth()
 	}
@@ -172,9 +152,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		overallStatus = "degraded"
 	}
 	if status.Modules.P2PQUIC.Enabled && status.Modules.P2PQUIC.Status != "ok" {
-		overallStatus = "degraded"
-	}
-	if status.Modules.Quantum.Enabled && status.Modules.Quantum.Status != "ok" {
 		overallStatus = "degraded"
 	}
 	if status.Modules.AI.Enabled && status.Modules.AI.Status != "ok" {
@@ -227,13 +204,6 @@ func (c *Checker) SetP2PQUICHealthCheck(healthFunc func() P2PQUICStatus) {
 	c.p2pQUICHealth = healthFunc
 }
 
-// SetQuantumHealthCheck sets the Post-Quantum Cryptography health check function
-func (c *Checker) SetQuantumHealthCheck(healthFunc func() QuantumStatus) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.quantumHealth = healthFunc
-}
-
 // SetAIHealthCheck sets the AI Analytics health check function
 func (c *Checker) SetAIHealthCheck(healthFunc func() AIStatus) {
 	c.mu.Lock()
@@ -263,11 +233,6 @@ func (c *Checker) UpdateModuleStatus() {
 		c.status.Modules.P2PQUIC = c.p2pQUICHealth()
 	}
 
-	// Update Quantum status
-	if c.quantumHealth != nil {
-		c.status.Modules.Quantum = c.quantumHealth()
-	}
-
 	// Update AI status
 	if c.aiHealth != nil {
 		c.status.Modules.AI = c.aiHealth()
@@ -286,9 +251,6 @@ func (c *Checker) updateOverallStatus() {
 		overallStatus = "degraded"
 	}
 	if c.status.Modules.P2PQUIC.Enabled && c.status.Modules.P2PQUIC.Status != "ok" {
-		overallStatus = "degraded"
-	}
-	if c.status.Modules.Quantum.Enabled && c.status.Modules.Quantum.Status != "ok" {
 		overallStatus = "degraded"
 	}
 	if c.status.Modules.AI.Enabled && c.status.Modules.AI.Status != "ok" {
