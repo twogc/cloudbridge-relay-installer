@@ -1,0 +1,39 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  go-vet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.12'
+          cache: true
+      - name: go vet
+        run: |
+          PKGS=$(go list ./... | grep -v '/rep/' | grep -v '/internal/integration$' | grep -v '/internal/testing$' | grep -v '/internal/tests$')
+          go vet $PKGS
+
+  golangci-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.12'
+          cache: true
+      - name: Resolve packages
+        id: go_pkgs
+        run: |
+          PKGS=$(go list ./... | grep -v '/rep/' | grep -v '/internal/integration$' | grep -v '/internal/testing$' | grep -v '/internal/tests$' | tr '\n' ' ')
+          echo "pkgs=$PKGS" >> "$GITHUB_OUTPUT"
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m ${{ steps.go_pkgs.outputs.pkgs }}

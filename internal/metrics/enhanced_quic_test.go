@@ -203,33 +203,6 @@ func TestRecordEnhancedQuicAuthentication(t *testing.T) {
 	assert.NotNil(t, enhancedQuicAuthenticationAttempts)
 }
 
-func TestRecordEnhancedQuicKeycloakRequest(t *testing.T) {
-	// Test recording Keycloak requests
-	operation := "validate_token"
-	status := "success"
-	region := "us-east-1"
-
-	RecordEnhancedQuicKeycloakRequest(operation, status, region)
-	RecordEnhancedQuicKeycloakRequest("get_user_info", "failed", region)
-	RecordEnhancedQuicKeycloakRequest(operation, status, region)
-
-	// Verify metrics were recorded
-	assert.NotNil(t, enhancedQuicKeycloakRequests)
-}
-
-func TestRecordEnhancedQuicKeycloakLatency(t *testing.T) {
-	// Test recording Keycloak latency
-	operation := "validate_token"
-	region := "us-east-1"
-
-	RecordEnhancedQuicKeycloakLatency(operation, region, 0.1)
-	RecordEnhancedQuicKeycloakLatency("get_user_info", region, 0.2)
-	RecordEnhancedQuicKeycloakLatency(operation, region, 0.05)
-
-	// Verify metrics were recorded
-	assert.NotNil(t, enhancedQuicKeycloakLatency)
-}
-
 func TestRecordEnhancedQuicLoadBalancerRequest(t *testing.T) {
 	// Test recording load balancer requests
 	server := "server_1"
@@ -354,8 +327,6 @@ func TestEnhancedQuicMetrics_EdgeCases(t *testing.T) {
 	UpdateEnhancedQuicTenantConnections("", "", 0.0)
 	RecordEnhancedQuicTenantLimitExceeded("", "", "")
 	RecordEnhancedQuicAuthentication("", "", "", "")
-	RecordEnhancedQuicKeycloakRequest("", "", "")
-	RecordEnhancedQuicKeycloakLatency("", "", 0.0)
 	RecordEnhancedQuicLoadBalancerRequest("", "", "", "")
 	UpdateEnhancedQuicServerHealth("", "", true)
 	RecordEnhancedQuicLatency("", "", "", 0.0)
@@ -420,8 +391,6 @@ func TestEnhancedQuicMetrics_ConcurrentAccess(t *testing.T) {
 			UpdateEnhancedQuicTenantConnections(tenantID, region, float64(id))
 			RecordEnhancedQuicTenantLimitExceeded(tenantID, "bandwidth", region)
 			RecordEnhancedQuicAuthentication(tenantID, "oauth2", "success", region)
-			RecordEnhancedQuicKeycloakRequest("validate_token", "success", region)
-			RecordEnhancedQuicKeycloakLatency("validate_token", region, float64(id)/100.0)
 			RecordEnhancedQuicLoadBalancerRequest("server1", "round_robin", "success", region)
 			UpdateEnhancedQuicServerHealth("server1", region, true)
 			RecordEnhancedQuicLatency(operation, tenantID, region, float64(id)/100.0)
@@ -453,8 +422,6 @@ func TestEnhancedQuicMetrics_ConcurrentAccess(t *testing.T) {
 	assert.NotNil(t, enhancedQuicTenantConnectionsActive)
 	assert.NotNil(t, enhancedQuicTenantLimitExceeded)
 	assert.NotNil(t, enhancedQuicAuthenticationAttempts)
-	assert.NotNil(t, enhancedQuicKeycloakRequests)
-	assert.NotNil(t, enhancedQuicKeycloakLatency)
 	assert.NotNil(t, enhancedQuicLoadBalancerRequests)
 	assert.NotNil(t, enhancedQuicServerHealth)
 	assert.NotNil(t, enhancedQuicLatency)
@@ -498,8 +465,6 @@ func TestEnhancedQuicMetrics_IntegrationWorkflow(t *testing.T) {
 
 	// 7. Authentication
 	RecordEnhancedQuicAuthentication(tenantID, "oauth2", "success", region)
-	RecordEnhancedQuicKeycloakRequest("validate_token", "success", region)
-	RecordEnhancedQuicKeycloakLatency("validate_token", region, 0.05)
 
 	// 8. Load balancing
 	RecordEnhancedQuicLoadBalancerRequest("server1", "round_robin", "success", region)
@@ -531,8 +496,6 @@ func TestEnhancedQuicMetrics_IntegrationWorkflow(t *testing.T) {
 	assert.NotNil(t, enhancedQuicTenantConnectionsActive)
 	assert.NotNil(t, enhancedQuicTenantLimitExceeded)
 	assert.NotNil(t, enhancedQuicAuthenticationAttempts)
-	assert.NotNil(t, enhancedQuicKeycloakRequests)
-	assert.NotNil(t, enhancedQuicKeycloakLatency)
 	assert.NotNil(t, enhancedQuicLoadBalancerRequests)
 	assert.NotNil(t, enhancedQuicServerHealth)
 	assert.NotNil(t, enhancedQuicLatency)
@@ -566,8 +529,6 @@ func TestEnhancedQuicMetrics_Performance(t *testing.T) {
 		UpdateEnhancedQuicTenantConnections(tenantID, region, float64(i%100))
 		RecordEnhancedQuicTenantLimitExceeded(tenantID, "bandwidth", region)
 		RecordEnhancedQuicAuthentication(tenantID, "oauth2", "success", region)
-		RecordEnhancedQuicKeycloakRequest("validate_token", "success", region)
-		RecordEnhancedQuicKeycloakLatency("validate_token", region, float64(i%100)/10000.0)
 		RecordEnhancedQuicLoadBalancerRequest("server1", "round_robin", "success", region)
 		UpdateEnhancedQuicServerHealth("server1", region, true)
 		RecordEnhancedQuicLatency(operation, tenantID, region, float64(i%100)/1000.0)

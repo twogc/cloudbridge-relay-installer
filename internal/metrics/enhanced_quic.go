@@ -143,23 +143,6 @@ var (
 		[]string{"tenant_id", "auth_method", "status", "region"},
 	)
 
-	enhancedQuicKeycloakRequests = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "enhanced_quic_keycloak_requests_total",
-			Help: "Total requests to Keycloak from Enhanced QUIC",
-		},
-		[]string{"operation", "status", "region"},
-	)
-
-	enhancedQuicKeycloakLatency = promauto.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "enhanced_quic_keycloak_latency_seconds",
-			Help:    "Latency of Keycloak operations",
-			Buckets: []float64{0.01, 0.05, 0.1, 0.5, 1, 2, 5},
-		},
-		[]string{"operation", "region"},
-	)
-
 	// Load Balancing Metrics
 	enhancedQuicLoadBalancerRequests = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -295,16 +278,6 @@ func RecordEnhancedQuicAuthentication(tenantID, authMethod, status, region strin
 	enhancedQuicAuthenticationAttempts.WithLabelValues(tenantID, authMethod, status, region).Inc()
 }
 
-// RecordEnhancedQuicKeycloakRequest записывает запрос к Keycloak
-func RecordEnhancedQuicKeycloakRequest(operation, status, region string) {
-	enhancedQuicKeycloakRequests.WithLabelValues(operation, status, region).Inc()
-}
-
-// RecordEnhancedQuicKeycloakLatency записывает задержку операций Keycloak
-func RecordEnhancedQuicKeycloakLatency(operation, region string, latency float64) {
-	enhancedQuicKeycloakLatency.WithLabelValues(operation, region).Observe(latency)
-}
-
 // RecordEnhancedQuicLoadBalancerRequest записывает запрос к балансировщику нагрузки
 func RecordEnhancedQuicLoadBalancerRequest(server, algorithm, status, region string) {
 	enhancedQuicLoadBalancerRequests.WithLabelValues(server, algorithm, status, region).Inc()
@@ -363,8 +336,6 @@ func GetEnhancedQuicMetrics() []prometheus.Collector {
 		enhancedQuicTenantConnectionsActive,
 		enhancedQuicTenantLimitExceeded,
 		enhancedQuicAuthenticationAttempts,
-		enhancedQuicKeycloakRequests,
-		enhancedQuicKeycloakLatency,
 		enhancedQuicLoadBalancerRequests,
 		enhancedQuicServerHealth,
 		enhancedQuicLatency,

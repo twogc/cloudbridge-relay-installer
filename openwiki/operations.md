@@ -6,6 +6,9 @@ This page covers deployment, CI/CD, monitoring, infrastructure provisioning, and
 
 ## Kubernetes Deployment
 
+> **Canonical production path:** [Deploy Guide](deploy.md) — `terraform-k8s/` → `scripts/deploy/deploy.sh` + `k8s-manifests/` → Zitadel.  
+> Legacy/alternate trees (`k8s/`, `terraform/`, `infra/`) are documented as non-canonical in [CONSOLIDATION_PLAN](../docs/audit/CONSOLIDATION_PLAN.md).
+
 ### Manifest Organization
 
 Kubernetes manifests are organized in two locations:

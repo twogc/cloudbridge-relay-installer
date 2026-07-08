@@ -149,7 +149,8 @@ cd terraform-k8s && terraform init && terraform apply -auto-approve
 kubectl apply -f k8s-manifests/
 ```
 
-See: [Operations Guide](operations.md) for full deployment details.
+See: **[Canonical Deployment Path](deploy.md)** for the full production flow (`terraform-k8s` → `deploy.sh` → Zitadel).  
+See also: [Operations Guide](operations.md) for CI/CD, monitoring, and OVA builds.
 
 ### Path 2: Build and Run Locally
 
@@ -257,6 +258,7 @@ Full canonical table: **[Port Scheme](port-scheme.md)** (from `configs/config.js
 | [Architecture](architecture.md) | System architecture, transport layers, auth, inter-service patterns |
 | [Networking Domain](domain-networking.md) | P2P, NAT traversal, WireGuard, IPAM, protocol engine, MASQUE |
 | [Services Domain](domain-services.md) | AI/ML, Cadence workflows, K8s controllers, CNI plugin |
-| [Operations](operations.md) | Deployment, CI/CD, monitoring, infrastructure, compliance |
+| [Deploy](deploy.md) | **Canonical** VK Cloud K8s path: terraform-k8s → deploy.sh → Zitadel |
+| [Operations](operations.md) | CI/CD, monitoring, infrastructure details, compliance |
 | [Audit](audit.md) | Documentation restructuring audit — what was moved, canonical sources |
 | [Human Docs Index](../docs/README.md) | Human-readable documentation index with links to guides, architecture specs, and business docs |

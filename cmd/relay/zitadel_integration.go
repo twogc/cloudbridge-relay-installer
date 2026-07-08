@@ -215,7 +215,7 @@ func (zi *ZitadelIntegration) CreateDefaultTenant(ctx context.Context) (string, 
 	return tenant.ID, nil
 }
 
-// MigrationHelper помощник для миграции с Keycloak на Zitadel
+// MigrationHelper helper for Zitadel token validation during cutover
 type MigrationHelper struct {
 	zitadelIntegration *ZitadelIntegration
 	logger             *zap.Logger

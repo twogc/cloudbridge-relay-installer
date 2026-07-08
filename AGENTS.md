@@ -39,8 +39,8 @@
 | Основной бинарник | `cmd/relay/` → `make build` |
 | Auth (canonical) | **Zitadel** (`internal/zitadel/`, `internal/auth/`) |
 | Устаревшее (удалять) | Keycloak, Django-конфиг, `internal/quantum/`, `src/` (TS SDK) |
-| Деплой (canonical) | `scripts/deploy/deploy.sh` + `k8s-manifests/` |
-| K8s cluster | `terraform-k8s/` |
+| Деплой (canonical) | [openwiki/deploy.md](openwiki/deploy.md): `terraform-k8s/` → `scripts/deploy/deploy.sh` + `k8s-manifests/` → Zitadel |
+| K8s cluster | `terraform-k8s/` (не `terraform/`, не `infra/`) |
 
 ### Ключевые директории
 
@@ -90,7 +90,7 @@ go test ./... -short
 |-------------|--------|
 | Порты / сервисы | `openwiki/`, `docs/network/`, `docs/operations/SERVICE_CATALOG.md` |
 | Auth / Zitadel | `openwiki/architecture.md`, `docs/architecture/` |
-| Деплой | `docs/guides/`, `scripts/deploy/` |
+| Деплой | **`openwiki/deploy.md`**, `docs/guides/`, `scripts/deploy/` |
 | Аудит / фиксы | `docs/audit/MIMO_AUDIT_REPORT.md` (чеклист Quick wins) |
 
 ### Отчётность (VOLY / Cursor / MiMo)
@@ -165,7 +165,7 @@ voly ui   # http://127.0.0.1:7788
 | Quick wins из аудита | VOLY `cloudbridge-relay-fixes` или Cursor с отчётом в `docs/agent-reports/` |
 | Новый сервис / крупный рефакторинг | План в `docs/`, затем инкрементальные PR-размерные diff'ы |
 | Только анализ | MiMo или read-only; отчёт пишет Cursor в `docs/agent-reports/` |
-| Деплой в VK Cloud | `openwiki/operations.md`, `scripts/deploy/deploy.sh` |
+| Деплой в VK Cloud | **`openwiki/deploy.md`**, `scripts/deploy/deploy.sh` |
 
 ---
 
@@ -174,6 +174,7 @@ voly ui   # http://127.0.0.1:7788
 | Документ | Назначение |
 |----------|------------|
 | [openwiki/quickstart.md](openwiki/quickstart.md) | Старт для агентов |
+| [openwiki/deploy.md](openwiki/deploy.md) | **Canonical** путь деплоя VK Cloud K8s |
 | [docs/README.md](docs/README.md) | Индекс документации |
 | [docs/audit/MIMO_AUDIT_REPORT.md](docs/audit/MIMO_AUDIT_REPORT.md) | Аудит: мёртвый код, дубли, архитектура |
 | [docs/audit/GO_VERSION_INVENTORY.md](docs/audit/GO_VERSION_INVENTORY.md) | Версии Go в репозитории |

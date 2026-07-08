@@ -1,11 +1,13 @@
 # CloudBridge Service Catalog
 
-**Last Updated**: 2025-10-13
+**Last Updated**: 2026-07-09
 **Version**: MVP 1.0
 
 ## Overview
 
 This document catalogs all services in the CloudBridge relay system, their dependencies, APIs, and deployment status.
+
+**Canonical ports:** [`openwiki/port-scheme.md`](../../openwiki/port-scheme.md). Where this catalog, k8s manifests, or `cmd/*` defaults disagree, the port-scheme is authoritative; env-specific drift is called out inline.
 
 ---
 
@@ -15,7 +17,27 @@ This document catalogs all services in the CloudBridge relay system, their depen
 
 **Directory**: `cmd/relay/`
 **Binary**: `cloudbridge-relay`
-**Port**: 8080 (HTTP), 8443 (HTTPS), 9090 (QUIC UDP)
+**Ports** (canonical per `openwiki/port-scheme.md`):
+
+| Listener | Port | Protocol | Source |
+|---|---:|---|---|
+| Main TCP server | 5550 | TCP | `server.port` |
+| Prometheus metrics | 5551 | TCP | `metrics.port` |
+| P2P REST API | 5552 | TCP | `api.port` |
+| HTTP API (health, REST) | 9090 | TCP | `http_api.port` |
+| HTTPS API | 5553 | TCP | `https_api.port` |
+| Health / TLS tunnel | 9091 | TCP | hardcoded (`cmd/relay/https.go`) |
+| QUIC transport | 9090 | UDP | hardcoded (`main.go`) |
+| Enhanced QUIC | 9092 | UDP | hardcoded (`main.go`) |
+| P2P QUIC | 5553 | UDP | hardcoded (`main.go`) |
+| STUN | 19302 | UDP | hardcoded (`main.go`) |
+| Built-in TURN | 3478 | UDP/TCP | hardcoded (`main.go`) |
+| MASQUE HTTP/3 | 8443 | TCP/UDP | `masque.proxy_url` |
+| gRPC control plane | 8444 | TCP | `grpc.port` (k8s env default) |
+| WireGuard | 51820 | UDP | `wireguard.interface.listen_port` |
+
+> **Legacy drift:** older docs listed HTTP **8080** / HTTPS **8443**; installer config (`configs/config.json`) uses the table above. P2P API fallback when `api.port` is 0: **8082** (`main.go`).
+
 **Status**: Production Ready
 **Lines of Code**: 2391 (main.go)
 
@@ -39,15 +61,22 @@ Main relay server handling P2P connections, MASQUE proxy, and NAT traversal.
 
 #### Configuration
 ```yaml
-# config/relay.yaml
+# configs/config.json (installer canonical)
 server:
-  port: 8080
-  quic_port: 9090
+  port: 5550
+metrics:
+  port: 5551
+api:
+  port: 5552
+http_api:
+  port: 9090
+https_api:
+  port: 5553
+wireguard:
+  interface:
+    listen_port: 51820
 enhanced_quic:
   enabled: true
-  experimental_features:
-    bbrv2: true
-    ack_frequency: true
 ```
 
 #### Deployment
@@ -87,8 +116,10 @@ lt-cred-mech: true
 ### 3. IPAM Service
 
 **Directory**: `cmd/ipam-service/`
-**Port**: 8083
-**Status**: roduction Ready
+**Port**: 8083 (catalog canonical)
+**Status**: Production Ready
+
+> **Drift:** `cmd/ipam-service` listens on **8080** (`main.go`); catalog/k8s target **8083**.
 **Lines of Code**: 156
 
 #### Purpose
@@ -137,8 +168,10 @@ Kubernetes controller for tenant network isolation using Calico NetworkPolicies.
 ### 5. AI Service
 
 **Directory**: `cmd/ai-service/`
-**Port**: 8085
-**Status**: roduction Ready (Optional)
+**Port**: 8085 (catalog canonical)
+**Status**: Production Ready (Optional)
+
+> **Drift:** k8s Service `ai-service` exposes **8080** (`k8s-manifests/06-services.yaml`); `cmd/ai-service` default via `AI_PORT` is **8083**; `k8s/deployments/ai-service-deployment.yaml` uses **8083**.
 **Lines of Code**: 83
 
 #### Purpose
@@ -164,8 +197,10 @@ AI-powered analytics and predictions for relay optimization.
 ### 6. AI Worker
 
 **Directory**: `cmd/ai-worker/`
-**Port**: 8086
-**Status**: roduction Ready (Optional)
+**Port**: 8086 (catalog canonical)
+**Status**: Production Ready (Optional)
+
+> **Drift:** `cmd/ai-worker` health server listens on **8085** (`main.go`).
 
 #### Purpose
 Background worker for batch AI processing.
@@ -184,8 +219,8 @@ Background worker for batch AI processing.
 ### 7. WireGuard Service
 
 **Directory**: `cmd/wireguard-service/`
-**Port**: 51820 (UDP)
-**Status**: roduction Ready (Optional)
+**Port**: 51820 (UDP) — same as relay `wireguard.interface.listen_port`
+**Status**: Production Ready (Optional)
 
 #### Purpose
 WireGuard VPN integration for secure mesh networking.
@@ -409,9 +444,9 @@ Web UI for Cadence workflow monitoring.
 ### Metrics Endpoints
 
 All services expose Prometheus metrics at `/metrics`:
-- **Relay**: `:8080/metrics`
-- **IPAM**: `:8083/metrics`
-- **AI Service**: `:8085/metrics`
+- **Relay**: `:5551/metrics` (`metrics.port`; legacy docs used `:8080`)
+- **IPAM**: `:8083/metrics` (catalog; runtime **8080** — see drift above)
+- **AI Service**: `:8085/metrics` (catalog; runtime **8083** default — see drift above)
 - **Tenant Controller**: `:8080/metrics`
 
 ### Health Checks
@@ -438,13 +473,15 @@ All services expose health checks:
                        │
          ┌─────────────┼─────────────┐
          ↓             ↓             ↓
-    Relay (8080)  Relay (8080)  Relay (8080)
-         │             │             │
-         └─────────────┼─────────────┘
-                       │
-         ┌─────────────┼─────────────┐
-         ↓             ↓             ↓
-    TURN (3478)   IPAM (8083)   PostgreSQL (5432)
+    Relay (5550/5552)  Relay (5550/5552)  Relay (5550/5552)
+         │                   │                   │
+         └───────────────────┼───────────────────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         ↓                   ↓                   ↓
+    TURN (3478)         IPAM (8083*)      PostgreSQL (5432)
+
+    * IPAM runtime :8080 — see drift note in §3
 ```
 
 ---
@@ -501,6 +538,7 @@ All services expose health checks:
 
 ## Related Documents
 
+- [openwiki/port-scheme.md](../../openwiki/port-scheme.md) - Canonical port scheme
 - [PROJECT_ARCHITECTURE_ANALYSIS.md](PROJECT_ARCHITECTURE_ANALYSIS.md) - Detailed architecture
 - [MVP_IMPLEMENTATION_PLAN.md](MVP_IMPLEMENTATION_PLAN.md) - Implementation roadmap
 - [MANUAL_TESTING_PLAN.md](MANUAL_TESTING_PLAN.md) - Testing procedures

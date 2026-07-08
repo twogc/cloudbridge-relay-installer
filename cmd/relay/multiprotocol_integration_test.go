@@ -14,7 +14,7 @@ import (
 func TestMultiprotocolIntegration(t *testing.T) {
 	// Создание тестовой конфигурации
 	cfg := createTestConfig()
-	// Keycloak больше не используется в конфигурации
+	// Auth: Zitadel-only (legacy IAM fields removed)
 
 	server, err := NewServer(cfg)
 	require.NoError(t, err)
@@ -148,10 +148,9 @@ func createTestConfig() *config.Config {
 			}
 
 			Authentication struct {
-				Enabled     bool
-				Type        string
-				JWTSecret   string
-				KeycloakURL string
+				Enabled   bool
+				Type      string
+				JWTSecret string
 			}
 		}{
 			Enabled: false,

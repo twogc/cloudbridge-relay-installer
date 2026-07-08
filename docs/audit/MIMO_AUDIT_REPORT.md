@@ -2,7 +2,7 @@
 
 **Дата:** 2026-07-08
 **Модель:** mimo-v2.5-pro
-**Статус тестов:** Верификация шага 5 (2026-07-09): `go build ./cmd/relay/` OK; `go test -short ./internal/auth/... ./internal/zitadel/... ./config/...` OK
+**Статус тестов:** Верификация шага 5 (2026-07-09): `go build ./cmd/relay/` OK; `go test -short ./internal/auth/... ./internal/zitadel/... ./internal/network/... ./config/...` OK (Go 1.25.12)
 
 ---
 
@@ -17,7 +17,8 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 | Проверка | Статус | Примечание |
 |---|---|---|
 | `go build ./...` | Частично | Сборка основного кода OK; `go build ./...` падает из‑за `rep/` (в .gitignore, сторонние примеры go-rod) |
-| `go test ./...` | Частично | `internal/auth` — OK; `internal/zitadel` — FAIL (интеграционные тесты без mock, 404 от test.zitadel.cloud) |
+| `go test -short ./internal/auth/... ./internal/zitadel/... ./internal/network/... ./config/...` | ✅ OK | Шаг 5 (2026-07-09): auth + zitadel pass с `-short`; network/config — нет test files |
+| `go test ./...` (полный) | Частично | Без `-short` zitadel может FAIL (интеграционные тесты без mock, 404 от test.zitadel.cloud) |
 | `make test-critical` | Исправлено | `./internal/keycloak/...` заменён на `./internal/zitadel/...` (шаг 1) |
 | go.mod Go version | ✅ Обновлено | Было `1.25.1`, каноническая версия: **`1.25.12`** (Jul 2026) |
 | Статический анализ | Выполнен | 174 902 строки Go-кода, 16 тест-файлов, 42+ пакета |
@@ -63,8 +64,8 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 
 | Пакет | Файл v1 | Файл v2/v3 | Рекомендация |
 |---|---|---|---|
-| `internal/network/` | `score_tenant_network_allocator.go` (11K) | `score_allocator_production.go` (14K), `score_tenant_network_allocator_improved.go` (15K) | Оставить одну версию, удалить две другие |
-| `internal/network/` | `retry_config.go` (51 строк) | `retry_config_improved.go` (157 строк) | Оставить improved, удалить v1 |
+| `internal/network/` | ~~`score_tenant_network_allocator.go`~~, ~~`score_tenant_network_allocator_improved.go`~~ | `score_allocator_production.go` (14K) | ✅ Удалены v1/v2 improved; canonical — production (шаг 1, 2026-07-09) |
+| `internal/network/` | ~~`retry_config.go`~~ (51 строк) | `retry_config_improved.go` (157 строк) | ✅ Удалён v1; canonical — improved (шаг 1, 2026-07-09) |
 | `internal/cadence/` | `service_client.go` (70 строк) | `service_client_improved.go` (149 строк) | Оставить improved, удалить v1 |
 | `internal/cadence/` | `client.go` (314 строк) | `client_production.go` (983 строки) | Оставить production, удалить v1 |
 | `internal/nat/` | `turn_server.go` (8K) | `turn_server_enhanced.go` (24K) | Оставить enhanced, удалить v1 |
@@ -189,7 +190,8 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 ### 2. Средний срок (1-2 недели)
 
 - [x] **Инвентаризация дубликатов реализаций:** `docs/audit/DUPLICATES_INVENTORY.md`; удалён мёртвый `internal/nat/turn_server.go` (winner — `turn_server_enhanced.go`) — *шаг 1, 2026-07-09*
-- [ ] **Консолидировать дубликаты реализаций (merge API):** выбрать одну версию для `score_allocator`, `retry_config`, `cadence/client`, `cadence/service_client`, `ai/anomaly/detector`, `ai/predictive/load_predictor`, `ai/ml/models`, `ai/data/collectors`, `ai/routing/optimizer` — *инвентарь готов, merge отложен*
+- [x] **Консолидировать `internal/network/` дубликаты:** `score_allocator_production.go` + `retry_config_improved.go`; удалены `score_tenant_network_allocator.go`, `score_tenant_network_allocator_improved.go`, `retry_config.go` — *шаг 1, 2026-07-09*
+- [ ] **Консолидировать остальные дубликаты (merge API):** `cadence/client`, `cadence/service_client`, `ai/anomaly/detector`, `ai/predictive/load_predictor`, `ai/ml/models`, `ai/data/collectors`, `ai/routing/optimizer` — *инвентарь готов, merge отложен*
 - [ ] **Объединить K8s-манифесты:** `k8s/` + `k8s-manifests/` → единая структура — *только план, шаг 4*
 - [ ] **Объединить Terraform:** `terraform/` + `infra/` → `terraform-k8s/` — *только план, шаг 4*
 - [ ] **Объединить Prometheus/Grafana/Zabbix** в `monitoring/` — *только план, шаг 4*
@@ -206,9 +208,9 @@ CloudBridge Relay Installer — это масштабный Go-монорепо�
 - [ ] **Разбить `cmd/relay/main.go`** (2391 строка) на модули
 - [ ] **Разбить `internal/metrics/metrics.go`** (1833 строки) на per-subsystem файлы
 - [ ] **Разбить `internal/ai/ai.go`** (1664 строки) на модули
-- [ ] **Ввести CI-проверку** `go vet`, `golangci-lint` в GitHub Actions
+- [x] **Ввести CI-проверку** `go vet`, `golangci-lint` в GitHub Actions — *`.github/workflows/lint.yml`, шаг 3, 2026-07-09; `go vet` на `cmd/relay` падает на legacy test (см. step03)*
 - [ ] **Добавить интеграционные тесты** для auth-провайдера (Zitadel)
-- [ ] **Документировать canonical deployment path** — единый рекомендуемый путь деплоя
+- [x] **Документировать canonical deployment path** — `openwiki/deploy.md` (terraform-k8s → deploy.sh + k8s-manifests → Zitadel); ссылки в quickstart/operations/AGENTS.md — *шаг 4, 2026-07-09*
 - [ ] **Пересмотреть архитектуру internal/p2p/** — 30 файлов, много переплетений
 
 ---

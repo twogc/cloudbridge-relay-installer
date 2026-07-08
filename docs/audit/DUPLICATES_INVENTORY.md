@@ -14,11 +14,11 @@
 
 | path | keep | delete/merge | reason | risk |
 |------|------|--------------|--------|------|
-| `internal/network/score_tenant_network_allocator.go` | — | merge → production | `NewSCORETenantNetworkAllocatorV2` — 1 файл (только self); 0 вызовов из `cmd/`/`internal/p2p` | Низкий — не подключён к рантайму |
-| `internal/network/score_tenant_network_allocator_improved.go` | — | merge → production | `NewSCORETenantNetworkAllocatorImproved` — 1 файл (self); дублирует production | Низкий |
-| `internal/network/score_allocator_production.go` | **keep** | — | Каноническая версия (production-ready, circuit breaker, `RetryConfigImproved`); пока тоже 0 внешних вызовов — кандидат на wiring в step 2 | Средний — выбрать до удаления v1/v2 |
-| `internal/network/retry_config.go` | — | delete после merge allocators | `network.RetryConfig` используется только `score_tenant_network_allocator.go` (v2); `connection/retry.go` — отдельный тип | Низкий |
-| `internal/network/retry_config_improved.go` | **keep** | — | Используется improved + production allocators; jitter, Retry-After | Низкий |
+| `internal/network/score_tenant_network_allocator.go` | — | **deleted step 1 (next)** | `NewSCORETenantNetworkAllocatorV2` — 0 внешних вызовов | — |
+| `internal/network/score_tenant_network_allocator_improved.go` | — | **deleted step 1 (next)** | `NewSCORETenantNetworkAllocatorImproved` — 0 внешних вызовов | — |
+| `internal/network/score_allocator_production.go` | **keep** | — | Каноническая версия (production-ready, circuit breaker, `RetryConfigImproved`); 0 внешних вызовов — кандидат на wiring в step 2 | Средний |
+| `internal/network/retry_config.go` | — | **deleted step 1 (next)** | `network.RetryConfig` использовался только v2 allocator; `connection/retry.go` — отдельный тип | — |
+| `internal/network/retry_config_improved.go` | **keep** | — | Используется production allocator; jitter, Retry-After | Низкий |
 | `internal/cadence/service_client.go` | **keep** (ai-worker path) | merge позже | `CreateWorkflowServiceClient*` — 4 файла; вызывается из `client.go` → `cmd/ai-worker` | Средний — два параллельных пути |
 | `internal/cadence/service_client_improved.go` | **keep** (relay path) | merge позже | `CreateWorkflowServiceClientImproved` — 2 файла; вызывается из `client_production.go` → `cmd/relay` | Средний |
 | `internal/cadence/client.go` | **keep** (ai-worker) | rename/merge step 2 | `cadence.NewClient` — `cmd/ai-worker`, worker, tests | Средний |
@@ -71,16 +71,27 @@ internal/cadence/worker/   → *cadence.Client
 
 ---
 
-## SCORE allocators: все три мёртвы в рантайме
+## SCORE allocators: canonical production, не wired
 
-`internal/p2p/relay_manager_hybrid.go` принимает `network.TenantNetworkAllocator`, но ни один конструктор SCORE (`V2` / `Improved` / `Production`) не вызывается в репозитории. Рекомендация аудита: оставить `score_allocator_production.go`.
+`internal/p2p/relay_manager_hybrid.go` принимает `network.TenantNetworkAllocator`, но `NewSCORETenantNetworkAllocatorProduction` не вызывается в репозитории. Удалены v2/improved (`score_tenant_network_allocator*.go`) и `retry_config.go`; остаётся `score_allocator_production.go` + `retry_config_improved.go`.
 
 ---
 
-## Выполнено на шаге 1
+## Выполнено
+
+### cloudbridge-relay-medium / step 1
 
 - [x] Инвентаризация grep
 - [x] `docs/audit/DUPLICATES_INVENTORY.md`
 - [x] Удалён `internal/nat/turn_server.go` (0 внешних вызовов)
 - [x] Обновлены ссылки в `openwiki/domain-networking.md`
-- [ ] Массовое удаление остальных дубликатов — **шаг 2+** (нет единого winner без merge API)
+
+### cloudbridge-relay-next / step 1
+
+- [x] Удалён `internal/network/score_tenant_network_allocator.go` (V2, 0 внешних вызовов)
+- [x] Удалён `internal/network/score_tenant_network_allocator_improved.go` (0 внешних вызовов)
+- [x] Удалён `internal/network/retry_config.go` (только v2 allocator)
+- [x] Canonical: `score_allocator_production.go` + `retry_config_improved.go`
+- [ ] Wiring production allocator в `cmd/relay` — **step 2+**
+- [ ] Cadence dual-path merge — **step 2+** (не трогать в step 1)
+- [ ] Остальные дубликаты (AI тройки и т.д.) — **step 2+**

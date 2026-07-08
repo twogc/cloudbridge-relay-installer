@@ -866,11 +866,8 @@ func (pm *PeerManager) validateP2PToken(tokenString string) (*P2PClaims, error) 
 		tokenString = tokenString[7:]
 	}
 
-	// Определяем секрет: сначала KEYCLOAK_FALLBACK_SECRET, затем JWT_SECRET
-	secret := os.Getenv("KEYCLOAK_FALLBACK_SECRET")
-	if secret == "" {
-		secret = os.Getenv("JWT_SECRET")
-	}
+	// JWT HMAC secret for P2P tokens
+	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		secret = "test-secret"
 	}
