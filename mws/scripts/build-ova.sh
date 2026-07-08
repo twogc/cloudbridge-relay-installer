@@ -3,6 +3,7 @@
 #
 # Usage:
 #   ./mws/scripts/build-ova.sh packer     # HashiCorp Packer + vSphere
+#   ./mws/scripts/build-ova.sh qemu       # QEMU/KVM on Linux (no vCenter)
 #   ./mws/scripts/build-ova.sh manual     # Prepare files for manual VMware export
 #   ./mws/scripts/build-ova.sh upload     # Upload OVA to Artifactory (needs CLI + .env)
 #
@@ -97,6 +98,10 @@ EOF
   log "Follow ${DIST}/ova-staging/MANUAL_STEPS.md"
 }
 
+build_qemu() {
+  exec "${MWS}/scripts/build-ova-qemu.sh"
+}
+
 upload_artifactory() {
   local ova="${1:-${DIST}/${OVA_NAME}}"
   [[ -f "${ova}" ]] || die "OVA not found: ${ova}"
@@ -125,9 +130,10 @@ upload_artifactory() {
 
 usage() {
   cat <<EOF
-Usage: $0 <packer|manual|upload> [ova-path]
+Usage: $0 <packer|qemu|manual|upload> [ova-path]
 
   packer   Build VM via Packer (vSphere), then export OVA from vCenter
+  qemu     Build OVA via QEMU/KVM + Ubuntu cloud image (Linux, no vCenter)
   manual   Generate staging files for manual VMware export
   upload   Upload OVA to MWS Artifactory (stage)
 
@@ -142,6 +148,7 @@ main() {
   local cmd="${1:-}"
   case "${cmd}" in
     packer) build_packer ;;
+    qemu) build_qemu ;;
     manual) build_manual ;;
     upload) upload_artifactory "${2:-}" ;;
     *) usage; exit 1 ;;

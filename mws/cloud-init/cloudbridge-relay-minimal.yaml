@@ -134,7 +134,7 @@ runcmd:
   - docker pull twogc/cloudbridge-relay:latest || true
 
   - systemctl daemon-reload
-  - systemctl enable cloudbridge-stack.service
+  - test -f /etc/systemd/system/cloudbridge-stack.service && systemctl enable cloudbridge-stack.service || echo "cloudbridge-stack.service missing — skip enable"
 
 final_message: |
   CloudBridge Relay Private PoP (minimal) is ready.
