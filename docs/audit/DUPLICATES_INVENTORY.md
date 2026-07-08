@@ -79,7 +79,7 @@ internal/cadence/worker/   → *cadence.Client
 
 `internal/p2p/relay_manager_hybrid.go` принимает `network.TenantNetworkAllocator`, но `NewSCORETenantNetworkAllocatorProduction` не вызывается в репозитории (grep step 4: только `score_allocator_production.go`). Удалены v2/improved (`score_tenant_network_allocator*.go`) и `retry_config.go`; остаётся `score_allocator_production.go` + `retry_config_improved.go`.
 
-**Wiring status (score-ports step 4):** не выполнен — вне scope миссии (только верификация портов + документация). Отдельная пачка: подключить allocator в `cmd/relay` → `relay_manager_hybrid`.
+**Wiring status (2026-07-09):** ✅ optional path — `p2p.NewRelayManagerHybridFromSCORE` + `SCORE_BASE_URL`/`SCORE_API_KEY` env; wired from `cmd/relay` `P2PIntegration` → P2P API WireGuard endpoints. Disabled when URL empty (default).
 
 ---
 

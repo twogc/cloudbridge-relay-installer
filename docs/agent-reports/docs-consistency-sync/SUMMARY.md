@@ -92,4 +92,17 @@ Commit/push: не выполнялись.
 
 Отчёт: [step04-ops-mws-vet.md](step04-ops-mws-vet.md)
 
-**Ещё open:** SCORE wiring, p2p-deployment lab ports, Cadence dual-path merge, full k8s tree merge.
+**Ещё open:** Cadence dual-path merge, full k8s tree merge, SQLite repo for hybrid peer IPAM.
+
+---
+
+## Pass 5 (step05) — SCORE wiring + p2p ports
+
+| Item | Result |
+|------|--------|
+| SCORE production allocator wired | ✅ env `SCORE_BASE_URL` → hybrid → WireGuard API |
+| Default without SCORE | ✅ unchanged (classic RelayManager) |
+| p2p-deployment ports | ✅ 9090/5552/5551 |
+| Tests | ✅ `go test ./internal/p2p -run SCORE` |
+
+Отчёт: [step05-score-wiring-p2p-ports.md](step05-score-wiring-p2p-ports.md)

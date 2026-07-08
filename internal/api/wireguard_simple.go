@@ -56,6 +56,11 @@ func NewWireGuardSimpleEndpoints(
 	}
 }
 
+// SetRelayManagerHybrid sets SCORE hybrid manager after construction.
+func (wge *WireGuardSimpleEndpoints) SetRelayManagerHybrid(hybrid *p2p.RelayManagerHybrid) {
+	wge.relayManagerHybrid = hybrid
+}
+
 // GetWireGuardConfig возвращает WireGuard конфигурацию для пира
 func (wge *WireGuardSimpleEndpoints) GetWireGuardConfig(c *gin.Context) {
 	peerID := c.Param("peer_id")

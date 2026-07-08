@@ -40,13 +40,20 @@ func NewRelayManagerHybrid(
 ) *RelayManagerHybrid {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	var peerIPAMRepo *database.PeerIPAMRepository
+	if repository != nil && repository.GetDB() != nil {
+		peerIPAMRepo = database.NewPeerIPAMRepository(repository.GetDB(), logger)
+	} else if logger != nil {
+		logger.Warn("Repository not initialized; hybrid manager peer IPAM will be in-memory unavailable")
+	}
+
 	rm := &RelayManagerHybrid{
 		tenants:          make(map[string]*Tenant),
 		connections:      make(map[string]*RelayP2PConnection),
 		quicConnections:  make(map[string]*QUICConnection),
 		networkStore:     networkStore,
 		networkAllocator: networkAllocator,
-		peerIPAMRepo:     database.NewPeerIPAMRepository(repository.GetDB(), logger),
+		peerIPAMRepo:     peerIPAMRepo,
 		logger:           logger,
 		ctx:              ctx,
 		cancel:           cancel,
@@ -54,7 +61,7 @@ func NewRelayManagerHybrid(
 		syncStatus:       "fresh",
 	}
 
-	// Инициализируем WireGuard менеджер
+	// Инициализируем WireGuard менеджер (repository may be nil)
 	rm.wireguardManager = wireguard.NewWireGuardTenantManager(repository, logger)
 
 	// Загружаем конфигурации из хранилища

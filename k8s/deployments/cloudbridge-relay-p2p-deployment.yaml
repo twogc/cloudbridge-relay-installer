@@ -30,10 +30,13 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - name: http-api
-          containerPort: 8080
+          containerPort: 9090
           protocol: TCP
         - name: p2p-api
-          containerPort: 8082
+          containerPort: 5552
+          protocol: TCP
+        - name: metrics
+          containerPort: 5551
           protocol: TCP
         - name: quic-p2p
           containerPort: 5553
@@ -55,12 +58,25 @@ spec:
           value: "release"
         - name: TZ
           value: "UTC"
+        # Optional SCORE control-plane (tenant network allocator)
+        - name: SCORE_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: cloudbridge-config
+              key: score_base_url
+              optional: true
+        - name: SCORE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudbridge-relay-secrets
+              key: score-api-key
+              optional: true
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
               name: cloudbridge-relay-secrets
               key: jwt-secret
-        - name: KEYCLOAK_FALLBACK_SECRET
+        - name: ZITADEL_FALLBACK_SECRET
           valueFrom:
             secretKeyRef:
               name: cloudbridge-relay-secrets
@@ -94,7 +110,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 9090
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -102,7 +118,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 9090
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3

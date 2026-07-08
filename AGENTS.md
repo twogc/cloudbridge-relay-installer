@@ -159,7 +159,8 @@ voly ui   # http://127.0.0.1:7788
 - [ ] Full merge `k8s/`+`k8s-manifests/`, terraform, monitoring
 - [x] Residual drift (prod manifests): AI metrics 8084 removed; relay prometheus **5551**
 - [x] Ops relay + mws metrics **5551**; `go vet` Cadence cancel leak fixed
-- [ ] SCORE allocator wiring; p2p-deployment lab ports; Cadence dual-path merge
+- [x] SCORE allocator wiring (optional `SCORE_BASE_URL`); p2p-deployment ports aligned
+- [ ] Cadence dual-path merge; full k8s tree merge; hybrid SQLite repo
 
 План: [docs/audit/CONSOLIDATION_PLAN.md](docs/audit/CONSOLIDATION_PLAN.md).  
 Полный чеклист: [docs/audit/MIMO_AUDIT_REPORT.md](docs/audit/MIMO_AUDIT_REPORT.md).

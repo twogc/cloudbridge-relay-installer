@@ -326,6 +326,16 @@ func (s *P2PAPIServer) SetManagers(relayManager *p2p.RelayManager, heartbeatMana
 	s.logger.Info("P2P managers set for API server")
 }
 
+// SetRelayManagerHybrid attaches SCORE hybrid manager to API WireGuard endpoints.
+func (s *P2PAPIServer) SetRelayManagerHybrid(hybrid *p2p.RelayManagerHybrid) {
+	if s.apiRouter != nil {
+		s.apiRouter.SetRelayManagerHybrid(hybrid)
+	}
+	if hybrid != nil {
+		s.logger.Info("SCORE hybrid relay manager attached to P2P API")
+	}
+}
+
 // GetTokenValidator возвращает token validator
 func (s *P2PAPIServer) GetTokenValidator() *token.Validator {
 	return s.tokenValidator
