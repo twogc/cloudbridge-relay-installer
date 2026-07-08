@@ -41,8 +41,9 @@ write_files:
           "domain": "http://zitadel:8080",
           "token_validation": { "audience": "cloudbridge-relay", "clock_skew": "30s" }
         },
-        "metrics": { "enabled": true, "port": 8084, "path": "/metrics" },
-        "health": { "enabled": true, "port": 8084, "path": "/health" }
+        "metrics": { "enabled": true, "port": 5551, "path": "/metrics" },
+        "http_api": { "enabled": true, "port": 9090 },
+        "health": { "enabled": true, "port": 9090, "path": "/health" }
       }
 
   - path: /etc/systemd/system/cloudbridge-stack.service
@@ -99,7 +100,8 @@ write_files:
       docker compose -f /opt/cloudbridge/docker-compose.yml ps
       echo ""
       echo "Health:"
-      curl -sf http://127.0.0.1:8084/health && echo " relay: ok" || echo " relay: down"
+      curl -sf http://127.0.0.1:9090/health && echo " relay: ok" || echo " relay: down"
+      curl -sf http://127.0.0.1:5551/metrics >/dev/null && echo " metrics: ok" || echo " metrics: down"
       curl -sf http://127.0.0.1:8080/debug/healthz && echo " zitadel: ok" || echo " zitadel: down"
 
 runcmd:
@@ -123,7 +125,7 @@ runcmd:
   - ufw default allow outgoing
   - ufw allow OpenSSH
   - ufw allow 8080/tcp
-  - ufw allow 8084/tcp
+  - ufw allow 5551/tcp
   - ufw allow 9090/tcp
   - ufw allow 9090/udp
   - ufw allow 51820/udp
@@ -140,4 +142,4 @@ final_message: |
   CloudBridge Relay Private PoP (minimal) is ready.
   Configure /opt/cloudbridge/.env, then: sudo systemctl start cloudbridge-stack
   Status: cloudbridge-status
-  Ports: 8080 (Zitadel), 9090 (relay), 8084 (metrics), 51820/udp (WireGuard)
+  Ports: 8080 (Zitadel), 9090 (relay HTTP/QUIC), 5551 (metrics), 51820/udp (WireGuard)

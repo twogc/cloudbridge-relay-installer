@@ -157,8 +157,9 @@ voly ui   # http://127.0.0.1:7788
 - [x] `openwiki/deploy.md` + k8s roles (prod vs ops)
 - [ ] Cadence dual-path merge API; wire SCORE allocator
 - [ ] Full merge `k8s/`+`k8s-manifests/`, terraform, monitoring
-- [x] Residual drift (prod manifests): AI metrics 8084 removed; relay prometheus **5551** (2026-07-09)
-- [ ] Ops `k8s/deployments` legacy 8080/8084; mws OVA 8084; SCORE wiring
+- [x] Residual drift (prod manifests): AI metrics 8084 removed; relay prometheus **5551**
+- [x] Ops relay + mws metrics **5551**; `go vet` Cadence cancel leak fixed
+- [ ] SCORE allocator wiring; p2p-deployment lab ports; Cadence dual-path merge
 
 План: [docs/audit/CONSOLIDATION_PLAN.md](docs/audit/CONSOLIDATION_PLAN.md).  
 Полный чеклист: [docs/audit/MIMO_AUDIT_REPORT.md](docs/audit/MIMO_AUDIT_REPORT.md).

@@ -23,7 +23,7 @@ spec:
         # cert-manager annotations for automatic certificate management
         cert-manager.io/inject-ca-from-secret: "cloudbridge-main-tls"
         prometheus.io/scrape: "true"
-        prometheus.io/port: "9090"
+        prometheus.io/port: "5551"
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: cloudbridge-relay
@@ -38,16 +38,16 @@ spec:
         imagePullPolicy: Always
         ports:
         - name: http
-          containerPort: 8080
+          containerPort: 9090
           protocol: TCP
         - name: https
-          containerPort: 8443
+          containerPort: 5553
           protocol: TCP
         - name: grpc
-          containerPort: 9090
+          containerPort: 8444
           protocol: TCP
         - name: metrics
-          containerPort: 9090
+          containerPort: 5551
           protocol: TCP
         - name: p2p-udp
           containerPort: 3478
@@ -61,13 +61,13 @@ spec:
         - name: CLOUDBRIDGE_LOG_LEVEL
           value: "info"
         - name: CLOUDBRIDGE_HTTP_PORT
-          value: "8080"
+          value: "9090"
         - name: CLOUDBRIDGE_HTTPS_PORT
-          value: "8443"
+          value: "5553"
         - name: CLOUDBRIDGE_GRPC_PORT
-          value: "9090"
+          value: "8444"
         - name: CLOUDBRIDGE_METRICS_PORT
-          value: "9090"
+          value: "5551"
         - name: CLOUDBRIDGE_P2P_UDP_PORT
           value: "3478"
         - name: CLOUDBRIDGE_P2P_TCP_PORT
@@ -121,7 +121,7 @@ spec:
         - name: PROMETHEUS_ENABLED
           value: "true"
         - name: PROMETHEUS_PORT
-          value: "9090"
+          value: "5551"
         - name: PROMETHEUS_PATH
           value: "/metrics"
         resources:
@@ -134,7 +134,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 9090
             scheme: HTTP
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -143,7 +143,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /ready
-            port: 8080
+            port: 9090
             scheme: HTTP
           initialDelaySeconds: 5
           periodSeconds: 5

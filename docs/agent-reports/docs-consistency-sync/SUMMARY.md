@@ -77,3 +77,19 @@ Commit/push: не выполнялись.
 | go vet cmd/relay | pre-existing cancel leak (not KeycloakURL) |
 
 Отчёт: [step03-residual-port-fix.md](step03-residual-port-fix.md)
+
+---
+
+## Pass 4 (step04) — ops/mws + vet
+
+| Item | Result |
+|------|--------|
+| Ops relay deployment/services/configmaps | ✅ metrics **5551**, http **9090** |
+| mws OVA minimal + docker-compose | ✅ 5551 / health 9090 |
+| Grafana datasource | ✅ :5551 |
+| `go vet ./cmd/relay/` Cadence cancel leak | ✅ fixed (`cancel()` on fail paths) |
+| `go build ./cmd/relay/` | ✅ |
+
+Отчёт: [step04-ops-mws-vet.md](step04-ops-mws-vet.md)
+
+**Ещё open:** SCORE wiring, p2p-deployment lab ports, Cadence dual-path merge, full k8s tree merge.

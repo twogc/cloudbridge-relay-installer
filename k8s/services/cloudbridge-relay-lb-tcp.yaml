@@ -20,12 +20,12 @@ spec:
     targetPort: 9090
     protocol: TCP
   - name: metrics
-    port: 8084
-    targetPort: 8084
+    port: 5551
+    targetPort: 5551
     protocol: TCP
   - name: p2p-api
-    port: 8082
-    targetPort: 8082
+    port: 5552
+    targetPort: 5552
     protocol: TCP
   - name: grpc
     port: 8444

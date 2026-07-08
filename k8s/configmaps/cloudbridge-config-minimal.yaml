@@ -37,7 +37,7 @@ data:
       },
       "metrics": {
         "enabled": false,
-        "port": 8084,
+        "port": 5551,
         "path": "/metrics"
       },
       "api": {

@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/part-of: cloudbridge-relay
   annotations:
     prometheus.io/path: /metrics
-    prometheus.io/port: "8084"
+    prometheus.io/port: "5551"
     prometheus.io/scrape: "true"
 spec:
   type: ClusterIP

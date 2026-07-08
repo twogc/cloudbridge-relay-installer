@@ -433,12 +433,14 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		cadenceClient, err = cadence.NewProductionClient(cadenceConfig, loggerInstance.GetZapLogger())
 		if err != nil {
 			loggerInstance.Error("Failed to initialize Cadence client", zap.Error(err))
+			cancel()
 			return nil, fmt.Errorf("failed to initialize Cadence client: %v", err)
 		}
 
 		// Запускаем Cadence worker
 		if err := cadenceClient.Start(); err != nil {
 			loggerInstance.Error("Failed to start Cadence worker", zap.Error(err))
+			cancel()
 			return nil, fmt.Errorf("failed to start Cadence worker: %v", err)
 		}
 
