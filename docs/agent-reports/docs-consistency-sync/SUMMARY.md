@@ -120,4 +120,17 @@ Commit/push: не выполнялись.
 
 Отчёт: [step06-cadence-shared-factory-k8s-archive.md](step06-cadence-shared-factory-k8s-archive.md)
 
-**Ещё open:** full Client↔ProductionClient type merge; k8s overlays; hybrid SQLite repo.
+**Ещё open:** wire overlays into deploy.sh e2e; full k8s tree merge; Postgres IPAM for hybrid in prod.
+
+---
+
+## Pass 7 (step07) — Cadence facade + SQLite + overlays
+
+| Item | Result |
+|------|--------|
+| Client wraps ProductionClient | ✅ |
+| SQLite peer IPAM for SCORE hybrid | ✅ `SCORE_SQLITE_PATH` |
+| `k8s/overlays/production` skeleton | ✅ not in deploy.sh yet |
+| Tests cadence/database/p2p + build | ✅ |
+
+Отчёт: [step07-cadence-facade-sqlite-overlays.md](step07-cadence-facade-sqlite-overlays.md)

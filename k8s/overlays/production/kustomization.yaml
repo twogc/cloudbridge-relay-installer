@@ -1,0 +1,26 @@
+# Production overlay (skeleton) — optional path for future deploy.sh integration.
+# Canonical apply today remains: scripts/deploy/deploy.sh → k8s-manifests/00–15.
+#
+# Usage (when ready):
+#   kubectl apply -k k8s/overlays/production
+#
+# Do not replace deploy.sh until this overlay is validated end-to-end.
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cloudbridge
+
+resources:
+  - ../../../k8s-manifests/00-namespace.yaml
+  - ../../../k8s-manifests/01-pvc.yaml
+  - ../../../k8s-manifests/02-secrets.yaml
+  - ../../../k8s-manifests/03-configmap.yaml
+  - ../../../k8s-manifests/04-registry.yaml
+  - ../../../k8s-manifests/05-deployments.yaml
+  - ../../../k8s-manifests/06-services.yaml
+  - ../../../k8s-manifests/07-ingress.yaml
+  - ../../../k8s-manifests/08-network-policies.yaml
+
+# Ops-only components stay under k8s/ (Zitadel Helm, Cadence schema jobs, BGP).
+# See docs/audit/CONSOLIDATION_PLAN.md §1 step 4.

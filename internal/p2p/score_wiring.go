@@ -32,7 +32,7 @@ func (c SCOREWiringConfig) Enabled() bool {
 
 // NewRelayManagerHybridFromSCORE constructs RelayManagerHybrid with production
 // SCORE network store + SCORETenantNetworkAllocatorProduction.
-// repository may be nil (peer IPAM / WG persistence limited).
+// If repository is nil, opens optional SQLite peer IPAM (SCORE_SQLITE_PATH or shared memory).
 func NewRelayManagerHybridFromSCORE(
 	logger *zap.Logger,
 	cfg SCOREWiringConfig,
@@ -45,14 +45,30 @@ func NewRelayManagerHybridFromSCORE(
 		return nil, fmt.Errorf("SCORE wiring disabled: SCORE_BASE_URL is empty")
 	}
 
+	repo := repository
+	if repo == nil {
+		sqlitePath := strings.TrimSpace(os.Getenv("SCORE_SQLITE_PATH"))
+		r, err := database.OpenSQLitePeerIPAM(sqlitePath, logger)
+		if err != nil {
+			logger.Warn("SQLite peer IPAM unavailable; hybrid continues without peer IP persistence",
+				zap.Error(err),
+			)
+		} else {
+			repo = r
+			logger.Info("SCORE hybrid using SQLite peer IPAM",
+				zap.String("path", database.NormalizeSQLiteDSN(sqlitePath)),
+			)
+		}
+	}
+
 	store := network.NewSCORETenantNetworkStoreFixed(cfg.BaseURL, cfg.APIKey, logger)
 	allocator := network.NewSCORETenantNetworkAllocatorProduction(cfg.BaseURL, cfg.APIKey, logger)
 
-	rm := NewRelayManagerHybrid(logger, repository, store, allocator)
+	rm := NewRelayManagerHybrid(logger, repo, store, allocator)
 	logger.Info("SCORE hybrid relay manager wired",
 		zap.String("base_url", cfg.BaseURL),
 		zap.Bool("api_key_set", cfg.APIKey != ""),
-		zap.Bool("repository_set", repository != nil),
+		zap.Bool("repository_set", repo != nil),
 	)
 	return rm, nil
 }

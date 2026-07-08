@@ -22,7 +22,8 @@ func TestNewClient(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
-	assert.NotNil(t, client.logger)
+	assert.NotNil(t, client.Production())
+	assert.True(t, client.IsStubMode() || client.Production() != nil)
 }
 
 func TestClient_Start(t *testing.T) {
@@ -209,9 +210,9 @@ func TestClient_GetDomain(t *testing.T) {
 	client, err := NewClient(config, logger)
 	assert.NoError(t, err)
 
-	// Test getting domain
+	// Test getting domain (from Config via ProductionClient)
 	domain := client.GetDomain()
-	assert.Equal(t, "cloudbridge", domain)
+	assert.Equal(t, "test-domain", domain)
 }
 
 func TestClient_IsRunning(t *testing.T) {
@@ -268,7 +269,7 @@ func TestClient_ConcurrentAccess(t *testing.T) {
 
 	// Verify client is still functional
 	assert.True(t, client.IsRunning())
-	assert.Equal(t, "cloudbridge", client.GetDomain())
+	assert.Equal(t, "test-domain", client.GetDomain())
 }
 
 func TestClient_EdgeCases(t *testing.T) {
@@ -407,7 +408,7 @@ func TestClient_Configuration(t *testing.T) {
 		assert.NotNil(t, client)
 
 		domain := client.GetDomain()
-		assert.Equal(t, "cloudbridge", domain) // Always returns "cloudbridge"
+		assert.Equal(t, "test-domain", domain) // from Config.Domain via ProductionClient
 	})
 
 	t.Run("custom config", func(t *testing.T) {
@@ -422,7 +423,7 @@ func TestClient_Configuration(t *testing.T) {
 		assert.NotNil(t, client)
 
 		domain := client.GetDomain()
-		assert.Equal(t, "cloudbridge", domain) // Always returns "cloudbridge"
+		assert.Equal(t, "production-domain", domain)
 	})
 }
 

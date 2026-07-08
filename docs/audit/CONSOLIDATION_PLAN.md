@@ -44,7 +44,7 @@
 3. [x] **P0 stub fix (2026-07-09, k8s-prod-fix):** `k8s-manifests/05–06` — убраны `nginx:latest`/port 80/AI 8080 stubs; `deploy.sh` → `load_images()` собирает relay/ai; см. [step02](../agent-reports/cloudbridge-relay-k8s-prod-fix/step02-write-mimo-fix-05-06-manifests.md), [step03](../agent-reports/cloudbridge-relay-k8s-prod-fix/step03-fix-deploy-sh-load-images.md), [SUMMARY](../agent-reports/cloudbridge-relay-k8s-prod-fix/SUMMARY.md).
 3b. [x] **Ops ports sync (2026-07-09):** relay/AI metrics → 5551/8083 in `k8s/deployments|services|configmaps`; mws OVA aligned.
 3c. [x] **Cadence manifests cleanup (2026-07-09):** `fixed/simple/clean` deployment variants → `archive/k8s/cadence/manifests-variants/`; keep `k8s/cadence/cadence.yaml` + schema jobs.
-4. Обновить `scripts/deploy/deploy.sh` на опциональный режим `k8s/overlays/production/` (будущее), сохранив текущий `k8s-manifests/` до полной проверки.
+4. [~] Skeleton `k8s/overlays/production/` (kustomize → k8s-manifests/00–08) + README (2026-07-09). **Не** подключён к `deploy.sh` до e2e на тестовом кластере.
 5. Перенести уникальные файлы из `k8s-manifests/` в `k8s/` только после обновления deploy.sh.
 6. Пометить `k8s-manifests/` deprecated в README, удалить через 1 релиз.
 
