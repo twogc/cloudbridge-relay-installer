@@ -137,6 +137,19 @@ Commit/push: не выполнялись.
 
 ---
 
+## Pass 9 (step09) — e2e tooling + Zitadel overlay
+
+| Item | Result |
+|------|--------|
+| `validate-overlay.sh --all` | ✅ offline paths OK |
+| `k8s/overlays/zitadel` (09/11/15) | ✅ |
+| E2E checklist guide | ✅ |
+| Live cluster | ⏭ no kubeconfig in CI agent |
+
+Отчёт: [step09-overlay-e2e-zitadel.md](step09-overlay-e2e-zitadel.md)
+
+---
+
 ## Pass 7 (step07) — Cadence facade + SQLite + overlays
 
 | Item | Result |

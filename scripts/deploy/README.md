@@ -26,5 +26,10 @@ Cadence: ops deploy `k8s/cadence/cadence.yaml`; schema jobs in `k8s/cadence/mani
 ./scripts/deploy/deploy.sh                 # default: k8s-manifests/ file-by-file
 ./scripts/deploy/deploy.sh --use-overlay   # kustomize k8s/overlays/production
 ./scripts/deploy/deploy.sh --render-overlay
+./scripts/deploy/deploy.sh --validate-overlay
+./scripts/deploy/validate-overlay.sh --all
 ./scripts/deploy/deploy.sh --help
+kubectl apply -k k8s/overlays/zitadel      # IAM after core
 ```
+
+E2E: [docs/guides/OVERLAY_E2E_CHECKLIST.md](../../docs/guides/OVERLAY_E2E_CHECKLIST.md).

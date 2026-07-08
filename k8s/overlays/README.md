@@ -2,27 +2,35 @@
 
 | Overlay | Purpose | Status |
 |---------|---------|--------|
-| [`production/`](production/) | Thin wrapper over `k8s-manifests/00–08` | **Optional** via `deploy.sh --use-overlay` |
+| [`production/`](production/) | Core stack `k8s-manifests/00–08` | Optional: `deploy.sh --use-overlay` |
+| [`zitadel/`](zitadel/) | IAM: 09 + 11 + 15 | Optional: `kubectl apply -k` after core |
 
-## Canonical deploy (default)
+## Default deploy
 
 ```bash
-./scripts/deploy/deploy.sh   # file-by-file k8s-manifests/
+./scripts/deploy/deploy.sh
 ```
 
-## Overlay deploy (optional)
+## Overlay deploy
 
 ```bash
+# Offline checks (no cluster required)
+./scripts/deploy/validate-overlay.sh --all
+
+# Core
 ./scripts/deploy/deploy.sh --use-overlay
-./scripts/deploy/deploy.sh --use-overlay --dry-run
 ./scripts/deploy/deploy.sh --render-overlay
-kubectl apply -k k8s/overlays/production
+
+# IAM (after core)
+kubectl apply -k k8s/overlays/zitadel
 ```
 
-Zitadel (`09–15`) is **not** in the overlay — deploy after core.
+## E2E checklist
+
+See [docs/guides/OVERLAY_E2E_CHECKLIST.md](../../docs/guides/OVERLAY_E2E_CHECKLIST.md).
 
 ## Future
 
-1. Live-cluster e2e validation.
-2. Separate Zitadel overlay.
-3. Promote overlay to default only after bake time.
+1. Live-cluster sign-off → consider overlay as default.
+2. Compose `production` + `zitadel` multi-base overlay if needed.
+3. Drop duplicate numbered manifests after bake time.

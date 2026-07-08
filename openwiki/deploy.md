@@ -73,6 +73,10 @@ terraform apply -auto-approve
 |------|------|------|
 | **manifests** (default) | _(none)_ | `kubectl apply -f k8s-manifests/0N-…` step by step |
 | **overlay** | `--use-overlay` | `kubectl apply -k k8s/overlays/production` |
+| **validate** | `--validate-overlay` | Offline path/render checks (`validate-overlay.sh`) |
+| **zitadel overlay** | `kubectl apply -k k8s/overlays/zitadel` | IAM 09+11+15 after core |
+
+E2E checklist: [docs/guides/OVERLAY_E2E_CHECKLIST.md](../docs/guides/OVERLAY_E2E_CHECKLIST.md).
 
 The default script applies manifests in order:
 

@@ -1,0 +1,31 @@
+# Zitadel IAM overlay — optional, after core production stack.
+#
+# Usage:
+#   ./scripts/deploy/deploy.sh --use-overlay          # core first
+#   kubectl apply -k k8s/overlays/zitadel             # then IAM
+#   ./scripts/deploy/validate-overlay.sh --overlay k8s/overlays/zitadel
+#
+# Not all 09–15 files are included: 10-zitadel-complete and default-backend
+# variants are alternate paths (see k8s-manifests/README / openwiki/deploy.md).
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Primary Zitadel install + PVC/config (namespace: zitadel)
+  - ../../../k8s-manifests/09-zitadel.yaml
+  # Postgres for Zitadel (namespace: cloudbridge typical)
+  - ../../../k8s-manifests/11-postgres-zitadel.yaml
+  # Root/ingress for Zitadel UI/API
+  - ../../../k8s-manifests/15-zitadel-root-ingress.yaml
+
+# Alternates (apply manually if needed):
+#   k8s-manifests/10-zitadel-complete.yaml
+#   k8s-manifests/12-default-backend*.yaml
+#   k8s-manifests/13-beautiful-homepage.yaml
+#   k8s-manifests/14-default-backend-with-config.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: cloudbridge-relay
+  app.kubernetes.io/component: zitadel
+  app.kubernetes.io/managed-by: kustomize-overlay

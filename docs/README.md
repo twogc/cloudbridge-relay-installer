@@ -22,6 +22,7 @@ Human-oriented documentation index for CloudBridge Relay. For agent-oriented ove
 |----------|-------------|
 | [VK_CLOUD_DEPLOYMENT_GUIDE.md](guides/VK_CLOUD_DEPLOYMENT_GUIDE.md) | Full VK Cloud Kubernetes deployment |
 | [QUICK_DEPLOYMENT_CHECKLIST.md](guides/QUICK_DEPLOYMENT_CHECKLIST.md) | Quick deployment checklist |
+| [OVERLAY_E2E_CHECKLIST.md](guides/OVERLAY_E2E_CHECKLIST.md) | Kustomize overlay offline + live e2e checklist |
 | [DOCKER_MIRRORS_SETUP.md](guides/DOCKER_MIRRORS_SETUP.md) | Docker Hub mirrors for Russia |
 | [DEVELOPER_BRIEFING.md](guides/DEVELOPER_BRIEFING.md) | Developer onboarding |
 | [CADENCE_SETUP_GUIDE.md](guides/CADENCE_SETUP_GUIDE.md) | Cadence workflow engine setup |

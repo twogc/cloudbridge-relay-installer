@@ -54,6 +54,7 @@ Options:
   --dry-run              kubectl --dry-run=client where supported; no cluster wait
   --skip-mirrors         Skip Docker Hub mirror setup
   --render-overlay       Only print kustomize output (no apply); requires kubectl
+  --validate-overlay     Run scripts/deploy/validate-overlay.sh --all and exit
   -h, --help             Show this help
 
 Environment:
@@ -104,6 +105,10 @@ parse_args() {
             --render-overlay)
                 DEPLOY_MODE=overlay
                 RENDER_ONLY=1
+                shift
+                ;;
+            --validate-overlay)
+                VALIDATE_ONLY=1
                 shift
                 ;;
             -h|--help)
@@ -446,6 +451,7 @@ check_deployment() {
 main() {
     parse_args "$@"
     RENDER_ONLY="${RENDER_ONLY:-0}"
+    VALIDATE_ONLY="${VALIDATE_ONLY:-0}"
 
     echo "Развертывание CloudBridge Relay в VK Cloud Kubernetes"
     echo "=================================================="
@@ -457,6 +463,10 @@ main() {
         echo "Dry-run: client-side only"
     fi
     echo ""
+
+    if [[ "$VALIDATE_ONLY" == "1" ]]; then
+        exec "$REPO_ROOT/scripts/deploy/validate-overlay.sh" --all
+    fi
 
     if [[ "$RENDER_ONLY" == "1" ]]; then
         check_dependencies
