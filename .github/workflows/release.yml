@@ -127,7 +127,7 @@ jobs:
         echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "HEAD~10")...${GITHUB_REF_NAME}" >> CHANGELOG.md
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref_name }}
         name: CloudBridge Relay ${{ github.ref_name }}
