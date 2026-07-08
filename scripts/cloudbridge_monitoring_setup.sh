@@ -135,7 +135,7 @@ TEXT="*Zabbix Alert*
 *Subject:* $SUBJECT
 📝 *Message:* $MESSAGE
 🕐 *Time:* $(date)
-🖥️ *Server:* 10.0.0.241"
+ *Server:* 10.0.0.241"
 
 # Отправка в Telegram
 curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \

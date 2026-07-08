@@ -30,7 +30,7 @@
 - [Admin API](ADMIN_API.md) - административный API
 - [API Documentation](api/) - полная API документация
 
-### 🧪 Testing & Quality
+### Testing & Quality
 - [Testing Guide](TESTING.md) - тестирование системы
 - [AI Testing Report](analysis/AI_TESTING_REPORT.md) - отчет о тестировании AI
 - [AI Improvements](analysis/AI_IMPROVEMENTS_SUMMARY.md) - улучшения AI компонентов
@@ -145,7 +145,7 @@ docs/
 - 🏃 [Quick Start](guides/QUICK_START_GUIDE.md) - запустить за 5 минут
 - [Security](security/SECURITY.md) - безопасность и аутентификация
 - [Monitoring](monitoring/) - мониторинг и метрики
-- 🐛 [Troubleshooting](troubleshooting/) - решение проблем
+- [Troubleshooting](troubleshooting/) - решение проблем
 
 ### Recent Updates
 - [AI Improvements Summary](analysis/AI_IMPROVEMENTS_SUMMARY.md) - улучшения AI (2025-10-12)
@@ -156,7 +156,7 @@ docs/
 - [GitHub Repository](https://github.com/twogc/cloudbridge-relay-installer)
 - 📖 [Official Documentation](https://docs.cloudbridge.io)
 - 💬 [Community Forum](https://community.cloudbridge.io)
-- 🐛 [Issue Tracker](https://github.com/twogc/cloudbridge-relay-installer/issues)
+- [Issue Tracker](https://github.com/twogc/cloudbridge-relay-installer/issues)
 
 ---
 
@@ -200,7 +200,7 @@ kubectl apply -f k8s/deployment.yaml
 - Cross-Platform Client (100%)
 - AI/ML Pipeline (95%)
 
-### 🟡 In Progress
+### In Progress
 - Personal Cabinet UI (75%)
 - Advanced Analytics (80%)
 - Compliance Certifications (SOC2: 60%, ISO27001: 40%)
@@ -228,7 +228,7 @@ We welcome contributions! Please see:
 ### Getting Help
 - 📖 [Documentation](https://docs.cloudbridge.io)
 - 💬 [Community Forum](https://community.cloudbridge.io)
-- 🐛 [Report Issues](https://github.com/twogc/cloudbridge-relay-installer/issues)
+- [Report Issues](https://github.com/twogc/cloudbridge-relay-installer/issues)
 - 📧 [Email Support](mailto:support@cloudbridge.io)
 
 ### Commercial Support
@@ -238,7 +238,7 @@ For enterprise support, please contact:
 
 ---
 
-## 📄 License
+## License
 
 CloudBridge Relay is licensed under the [Apache License 2.0](../LICENSE).
 

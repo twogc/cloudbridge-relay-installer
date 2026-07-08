@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🔍 Verifying Prometheus optimization..."
+echo "Verifying Prometheus optimization..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -208,11 +208,11 @@ fi
 # Summary
 print_status "Optimization verification completed!"
 print_status "Summary:"
-echo "  📊 API Response Time: ${response_time_ms}ms"
-echo "  🎯 Active Targets: $active_targets/$total_targets"
+echo "  API Response Time: ${response_time_ms}ms"
+echo "  Active Targets: $active_targets/$total_targets"
 echo "   Metrics Count: $metrics_count"
 echo "  ⚙️  Configuration: Optimized"
 echo "  💾 Resources: Increased"
-echo "  🚀 Performance: Improved"
+echo "  Performance: Improved"
 
 print_success "Prometheus optimization verification completed!"

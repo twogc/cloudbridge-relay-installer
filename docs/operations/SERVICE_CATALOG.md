@@ -206,7 +206,7 @@ WireGuard VPN integration for secure mesh networking.
 
 **Directory**: `cmd/quantum-service/`
 **Port**: 8084
-**Status**: ⚠️ DISABLED (Stub Implementation)
+**Status**: DISABLED (Stub Implementation)
 **Lines of Code**: 44
 
 #### Purpose
@@ -223,7 +223,7 @@ All endpoints are stubs returning mock data. NOT deployed in MVP.
 
 **Directory**: `cmd/quic-service/`
 **Port**: 8081
-**Status**: ⚠️ OPTIONAL (Metrics Sidecar)
+**Status**: OPTIONAL (Metrics Sidecar)
 **Lines of Code**: 77
 
 #### Purpose

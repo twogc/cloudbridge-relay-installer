@@ -4,7 +4,7 @@
 
 source "$(dirname "$0")/../configs/developer-env.sh"
 
-echo "🌐 Zitadel Tenant Network Management API Examples"
+echo "Zitadel Tenant Network Management API Examples"
 echo ""
 
 # Базовые переменные
@@ -112,9 +112,9 @@ echo "     -H \"Content-Type: application/json\" \\"
 echo "     -d '{\"allocated_subnet\": \"10.100.1.0/24\", \"ipam_pool\": \"cloudbridge-pool-1\", \"network_policies\": [\"allow-intra-tenant\"], \"allocated_ips\": {}}'"
 echo ""
 
-echo "📋 Для выполнения примеров:"
+echo "Для выполнения примеров:"
 echo "  source configs/developer-env.sh"
 echo "  bash scripts/zitadel-tenant-network-api.sh"
 echo ""
 
-echo "🎯 Цель: Интеграция CloudBridge Relay с Zitadel для управления подсетями тенантов"
+echo "Цель: Интеграция CloudBridge Relay с Zitadel для управления подсетями тенантов"

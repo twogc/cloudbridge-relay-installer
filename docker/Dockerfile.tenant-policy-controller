@@ -1,5 +1,5 @@
 # Multi-stage build для tenant-policy-controller
-FROM golang:1.25.1-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 # Установка зависимостей
 RUN apk add --no-cache git ca-certificates tzdata

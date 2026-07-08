@@ -1,11 +1,11 @@
 #!/bin/bash
-# 🎯 ДИАГНОСТИКА ОБНОВЛЕНИЯ ДАННЫХ ZABBIX В РЕАЛЬНОМ ВРЕМЕНИ
+# ДИАГНОСТИКА ОБНОВЛЕНИЯ ДАННЫХ ZABBIX В РЕАЛЬНОМ ВРЕМЕНИ
 # Скрипт для диагностики проблемы с необновляющимися данными в Zabbix
 # Автор: AI Assistant | Дата: 26.09.2025
 
 set -e
 
-echo "🔍 ДИАГНОСТИКА ПРОБЛЕМЫ РЕАЛЬНОГО ВРЕМЕНИ ZABBIX"
+echo "ДИАГНОСТИКА ПРОБЛЕМЫ РЕАЛЬНОГО ВРЕМЕНИ ZABBIX"
 echo "================================================="
 echo "Дата: $(date)"
 echo "Хост: cloudbridge-relay-01"
@@ -24,11 +24,11 @@ print_result() {
     local status=$1
     local message=$2
     if [ "$status" == "OK" ]; then
-        echo -e "${GREEN}✅ $message${NC}"
+        echo -e "${GREEN}$message${NC}"
     elif [ "$status" == "WARNING" ]; then
-        echo -e "${YELLOW}⚠️ $message${NC}"
+        echo -e "${YELLOW}$message${NC}"
     elif [ "$status" == "ERROR" ]; then
-        echo -e "${RED}❌ $message${NC}"
+        echo -e "${RED}$message${NC}"
     else
         echo -e "${BLUE}ℹ️ $message${NC}"
     fi
@@ -40,22 +40,22 @@ test_metric() {
     local description=$2
     local timeout=10
     
-    echo -n "🔍 Тестирование: $description "
+    echo -n "Тестирование: $description "
     
     result=$(timeout $timeout zabbix_get -s localhost -k "$key" 2>/dev/null || echo "ERROR")
     
     if [ "$result" == "ERROR" ] || [ -z "$result" ]; then
-        echo -e "${RED}❌ ОШИБКА${NC}"
+        echo -e "${RED}ОШИБКА${NC}"
         echo "   Ключ: $key"
         echo "   Результат: $result"
         return 1
     elif [ "$result" == "0" ]; then
-        echo -e "${YELLOW}⚠️ НОЛЬ${NC}"
+        echo -e "${YELLOW}НОЛЬ${NC}"
         echo "   Ключ: $key"
         echo "   Результат: $result"
         return 1
     else
-        echo -e "${GREEN}✅ $result${NC}"
+        echo -e "${GREEN}$result${NC}"
         return 0
     fi
 }
@@ -134,7 +134,7 @@ test_metric "cloudbridge.test.cpu_live" "Живое использование C
 test_metric "cloudbridge.test.uptime_live" "Uptime системы"
 
 echo ""
-echo "🌐 ТЕСТ PROMETHEUS И RELAY МЕТРИК:"
+echo "ТЕСТ PROMETHEUS И RELAY МЕТРИК:"
 test_metric "cloudbridge.test.prometheus_alive" "Prometheus доступность"
 test_metric "cloudbridge.relay.json.memory_live" "Память Relay (живая)"
 test_metric "cloudbridge.relay.json.goroutines_live" "Горутины Relay (живые)"
@@ -142,7 +142,7 @@ test_metric "cloudbridge.relay.json.uptime_live" "Uptime Relay (живой)"
 test_metric "cloudbridge.relay.json.grpc_total" "gRPC соединения (общие)"
 
 echo ""
-echo "🔍 4. ПРОВЕРКА РЕАЛЬНОГО ВРЕМЕНИ (15 СЕКУНД)"
+echo "4. ПРОВЕРКА РЕАЛЬНОГО ВРЕМЕНИ (15 СЕКУНД)"
 echo "============================================"
 
 print_result "INFO" "Тестирование обновлений в реальном времени..."
@@ -172,7 +172,7 @@ for i in {1..3}; do
 done
 
 echo ""
-echo "🔍 5. ДИАГНОСТИКА ZABBIX СЕРВЕРА"  
+echo "5. ДИАГНОСТИКА ZABBIX СЕРВЕРА"  
 echo "================================="
 
 print_result "INFO" "Проверка подключения к Zabbix серверу..."
@@ -217,7 +217,7 @@ user_params=$(grep "^UserParameter=" /etc/zabbix/zabbix_agentd.conf /etc/zabbix/
 print_result "INFO" "Всего UserParameter: $user_params"
 
 echo ""
-echo "🎯 7. РЕКОМЕНДАЦИИ ДЛЯ ZABBIX СЕРВЕРА"
+echo "7. РЕКОМЕНДАЦИИ ДЛЯ ZABBIX СЕРВЕРА"
 echo "====================================="
 
 print_result "INFO" "Команды для диагностики на Zabbix сервере zbx.2gc.ru:"
@@ -256,7 +256,7 @@ print_result "INFO" "Логи Zabbix сервера:"
 echo "   sudo tail -f /var/log/zabbix/zabbix_server.log | grep 'cloudbridge-relay-01'"
 
 echo ""
-echo "📊 8. ИТОГОВЫЙ ОТЧЕТ"
+echo "8. ИТОГОВЫЙ ОТЧЕТ"
 echo "==================="
 
 # Подсчет успешных тестов
@@ -291,11 +291,11 @@ else
 fi
 
 echo ""
-print_result "INFO" "🎯 ОСНОВНАЯ ПРОБЛЕМА: Данные собираются локально, но не обновляются на Zabbix сервере."
+print_result "INFO" "ОСНОВНАЯ ПРОБЛЕМА: Данные собираются локально, но не обновляются на Zabbix сервере."
 print_result "INFO" "🔧 РЕШЕНИЕ: Добавить хост 'cloudbridge-relay-01' в конфигуацию Zabbix сервера zbx.2gc.ru"
 
 echo ""
-echo "🎉 ДИАГНОСТИКА ЗАВЕРШЕНА"
+echo "ДИАГНОСТИКА ЗАВЕРШЕНА"
 echo "========================="
 echo "Дата завершения: $(date)"
 

@@ -102,7 +102,7 @@ migrations/                       # SQL миграции
 - `globalnetworkpolicies`: get, list, watch, create, update, patch, delete
 - `leases`: get, list, watch, create, update, patch, delete
 
-## 🐛 Известные проблемы
+## Известные проблемы
 
 1. **API версия Calico**: Контроллер использует `projectcalico.org/v3`, но кластер может использовать `crd.projectcalico.org/v1`
 2. **Изоляция между тенантами**: Требует доработки политик для полной изоляции

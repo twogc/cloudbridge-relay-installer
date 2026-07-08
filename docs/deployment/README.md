@@ -86,4 +86,4 @@
 
 ---
 
-**🎯 Успешное развертывание CloudBridge Relay!**
+**Успешное развертывание CloudBridge Relay!**

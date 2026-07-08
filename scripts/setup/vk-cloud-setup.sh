@@ -26,7 +26,7 @@ log_warning() {
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
 }
 
 # VK Cloud OpenStack credentials

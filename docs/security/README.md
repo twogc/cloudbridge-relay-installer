@@ -122,4 +122,4 @@ kubectl logs -f deployment/keycloak -n cloudbridge
 
 ---
 
-**🔒 Безопасность CloudBridge Relay под контролем!**
+**Безопасность CloudBridge Relay под контролем!**

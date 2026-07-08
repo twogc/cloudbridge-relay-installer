@@ -217,9 +217,9 @@ mgr.AddHealthzCheck("healthz", mgr.GetWebhookServer().StartedChecker())
 11. ireguard-service
 
 ### Optional/Future Services (3)
-1. ⚠️ quantum-service (stub, disabled)
-2. ⚠️ quic-service (metrics sidecar, optional)
-3. ⚠️ api (may duplicate relay P2P API, needs investigation)
+1. quantum-service (stub, disabled)
+2. quic-service (metrics sidecar, optional)
+3. api (may duplicate relay P2P API, needs investigation)
 
 ### Overall Readiness: **92%** → **95%** (improved after cleanup)
 

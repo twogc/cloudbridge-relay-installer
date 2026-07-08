@@ -475,9 +475,9 @@ run_security_check() {
 # Функция непрерывного мониторинга
 continuous_monitoring() {
     log_info "Запуск непрерывного мониторинга безопасности"
-    send_telegram_message "🛡️ <b>Мониторинг безопасности запущен</b>
+    send_telegram_message "<b>Мониторинг безопасности запущен</b>
 🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)"
+ Сервер: $(hostname)"
     
     while true; do
         run_security_check
@@ -519,7 +519,7 @@ case "${1:-}" in
         send_telegram_message "🧪 <b>Тест мониторинга безопасности</b>
 Система мониторинга работает
 🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)"
+ Сервер: $(hostname)"
         ;;
     *)
         single_check

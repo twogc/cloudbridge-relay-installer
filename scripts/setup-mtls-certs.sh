@@ -95,7 +95,7 @@ EOF
     openssl req -new -x509 -days 3650 -key "$ca_key" -out "$ca_cert" \
         -config "$CERT_DIR/ca.conf" -extensions v3_ca
     
-    log "✅ CA сертификат создан:"
+    log "CA сертификат создан:"
     log "   Ключ: $ca_key"
     log "   Сертификат: $ca_cert"
     
@@ -177,7 +177,7 @@ EOF
     # Удаление CSR
     rm -f "$server_csr"
     
-    log "✅ Серверный сертификат создан:"
+    log "Серверный сертификат создан:"
     log "   Ключ: $server_key"
     log "   Сертификат: $server_cert"
     
@@ -239,7 +239,7 @@ EOF
     # Удаление CSR
     rm -f "$client_csr"
     
-    log "✅ Клиентский сертификат создан:"
+    log "Клиентский сертификат создан:"
     log "   Ключ: $client_key" 
     log "   Сертификат: $client_cert"
 }
@@ -264,7 +264,7 @@ generate_pkcs12_files() {
         -inkey "$client_key" -in "$client_cert" -certfile "$ca_cert" \
         -name "$CLIENT_NAME" -passout pass:cloudbridge
     
-    log "✅ PKCS#12 файлы созданы:"
+    log "PKCS#12 файлы созданы:"
     log "   Сервер: $CERT_DIR/${SERVER_NAME}.p12"
     log "   Клиент: $CERT_DIR/${CLIENT_NAME}.p12"
     log "   Пароль: cloudbridge"
@@ -300,7 +300,7 @@ create_kubernetes_secrets() {
         -n cloudbridge \
         --dry-run=client -o yaml > "$CERT_DIR/client-secret.yaml"
     
-    log "✅ Kubernetes манифесты созданы:"
+    log "Kubernetes манифесты созданы:"
     log "   CA Secret: $CERT_DIR/ca-secret.yaml"
     log "   Server Secret: $CERT_DIR/server-secret.yaml"
     log "   Client Secret: $CERT_DIR/client-secret.yaml"
@@ -426,7 +426,7 @@ zitadel_integration:
     audience: "cloudbridge-relay"
 EOF
 
-    log "✅ Конфигурационные файлы созданы:"
+    log "Конфигурационные файлы созданы:"
     log "   Go config: $CERT_DIR/mtls-config.go"
     log "   YAML config: $CERT_DIR/relay-mtls.yaml"
 }
@@ -441,23 +441,23 @@ verify_certificates() {
     
     # Проверка CA сертификата
     if openssl x509 -in "$ca_cert" -text -noout | grep -q "CA:TRUE"; then
-        log "✅ CA сертификат валиден"
+        log "CA сертификат валиден"
     else
-        error "❌ CA сертификат невалиден"
+        error "CA сертификат невалиден"
     fi
     
     # Проверка серверного сертификата
     if openssl verify -CAfile "$ca_cert" "$server_cert" &>/dev/null; then
-        log "✅ Серверный сертификат валиден"
+        log "Серверный сертификат валиден"
     else
-        error "❌ Серверный сертификат невалиден"
+        error "Серверный сертификат невалиден"
     fi
     
     # Проверка клиентского сертификата
     if openssl verify -CAfile "$ca_cert" "$client_cert" &>/dev/null; then
-        log "✅ Клиентский сертификат валиден"
+        log "Клиентский сертификат валиден"
     else
-        error "❌ Клиентский сертификат невалиден"
+        error "Клиентский сертификат невалиден"
     fi
     
     # Показать сроки действия
@@ -469,7 +469,7 @@ verify_certificates() {
 
 # Основная функция
 main() {
-    log "🔐 Настройка mTLS сертификатов для CloudBridge Relay"
+    log "Настройка mTLS сертификатов для CloudBridge Relay"
     log "📁 Директория сертификатов: $CERT_DIR"
     log ""
     
@@ -482,13 +482,13 @@ main() {
     generate_config_files
     verify_certificates
     
-    log "🎉 Настройка mTLS сертификатов завершена!"
+    log "Настройка mTLS сертификатов завершена!"
     log ""
     log "📁 Созданные файлы:"
-    log "   📋 CA: $CERT_DIR/${CA_NAME}-{cert,key}.pem"
-    log "   🖥️  Server: $CERT_DIR/${SERVER_NAME}-{cert,key}.pem"
+    log "   CA: $CERT_DIR/${CA_NAME}-{cert,key}.pem"
+    log "    Server: $CERT_DIR/${SERVER_NAME}-{cert,key}.pem"
     log "   👤 Client: $CERT_DIR/${CLIENT_NAME}-{cert,key}.pem"
-    log "   📦 PKCS#12: $CERT_DIR/{${SERVER_NAME},${CLIENT_NAME}}.p12"
+    log "   PKCS#12: $CERT_DIR/{${SERVER_NAME},${CLIENT_NAME}}.p12"
     log "   ⚙️  Configs: $CERT_DIR/{mtls-config.go,relay-mtls.yaml}"
     log "   ☸️  K8s: $CERT_DIR/{ca,server,client}-secret.yaml"
     log ""

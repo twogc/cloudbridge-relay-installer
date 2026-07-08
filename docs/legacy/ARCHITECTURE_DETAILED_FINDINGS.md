@@ -428,7 +428,7 @@ RBAC frameworks                  - ✓ Present
 ```
 DNSSEC                           - ✗ Missing
 DNS validation                   - ✗ Missing
-Certificate rotation automation  - ⚠️ Partial
+Certificate rotation automation  - Partial
 ```
 
 ### Assessment

@@ -1,4 +1,4 @@
-# ⚡ Быстрая шпаргалка по развертыванию CloudBridge Relay в VK Cloud
+# Быстрая шпаргалка по развертыванию CloudBridge Relay в VK Cloud
 
 ## Быстрый старт (5 минут)
 
@@ -147,7 +147,7 @@ kubectl port-forward service/prometheus-grafana 3000:80 -n monitoring &
 kubectl port-forward service/jaeger-query 16686:16686 -n jaeger &
 ```
 
-## 🚨 Устранение неполадок
+## Устранение неполадок
 
 ### Проблема: Pod в состоянии ImagePullBackOff
 ```bash

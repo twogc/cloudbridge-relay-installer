@@ -93,7 +93,7 @@ show_config() {
         echo "================================================"
         cat "$CONFIG_FILE"
     else
-        echo "❌ Конфигурационный файл не найден"
+        echo "Конфигурационный файл не найден"
     fi
 }
 
@@ -119,26 +119,26 @@ reset_config() {
         create_default_config
         echo "Конфигурация сброшена к значениям по умолчанию"
     else
-        echo "❌ Сброс отменен"
+        echo "Сброс отменен"
     fi
 }
 
 # Функция проверки конфигурации
 validate_config() {
     if [[ ! -f "$CONFIG_FILE" ]]; then
-        echo "❌ Конфигурационный файл не найден"
+        echo "Конфигурационный файл не найден"
         return 1
     fi
     
     # Проверяем синтаксис конфигурации
     if ! source "$CONFIG_FILE" 2>/dev/null; then
-        echo "❌ Ошибка синтаксиса в конфигурационном файле"
+        echo "Ошибка синтаксиса в конфигурационном файле"
         return 1
     fi
     
     # Проверяем обязательные параметры
     if [[ -z "$TELEGRAM_BOT_TOKEN" || -z "$TELEGRAM_CHAT_ID" ]]; then
-        echo "❌ Не настроены параметры Telegram"
+        echo "Не настроены параметры Telegram"
         return 1
     fi
     
@@ -149,11 +149,11 @@ validate_config() {
 # Функция получения списка фильтров
 get_filters() {
     if [[ ! -f "$CONFIG_FILE" ]]; then
-        echo "❌ Конфигурационный файл не найден"
+        echo "Конфигурационный файл не найден"
         return 1
     fi
     
-    echo "🔍 Доступные фильтры:"
+    echo "Доступные фильтры:"
     echo "===================="
     grep -E "^[A-Z_]+_FILTER=" "$CONFIG_FILE" | while IFS='=' read -r name value; do
         echo "• ${name%_FILTER}: $value"

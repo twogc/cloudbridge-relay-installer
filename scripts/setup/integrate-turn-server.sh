@@ -549,7 +549,7 @@ TURN server exports Prometheus metrics on port 9641:
 
 ## Next Steps
 
-1. ✅ TURN server deployed and configured
+1. TURN server deployed and configured
 2. ⏭️  Validate JWT claims format (Day 7)
 3. ⏭️  Integrate with client authentication
 4. ⏭️  Setup monitoring dashboards

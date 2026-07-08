@@ -17,7 +17,7 @@ PORT="8080"
 DOCS_DIR="docs"
 API_DOCS_FILE="ai-api-docs.html"
 
-echo -e "${BLUE}🚀 AI Service API Documentation Server${NC}"
+echo -e "${BLUE}AI Service API Documentation Server${NC}"
 echo "================================================"
 
 # Function to create API documentation HTML
@@ -50,9 +50,9 @@ create_api_docs() {
 </head>
 <body>
     <div class="container">
-        <h1>🚀 CloudBridge AI Service API Documentation</h1>
+        <h1>CloudBridge AI Service API Documentation</h1>
         
-        <h2>🔍 Basic Endpoints</h2>
+        <h2>Basic Endpoints</h2>
         <div class="endpoint">
             <span class="method get">GET</span>
             <span class="path">/health</span>
@@ -71,7 +71,7 @@ create_api_docs() {
             <div>Get AI service metrics</div>
         </div>
         
-        <h2>🔍 Anomaly Detection</h2>
+        <h2>Anomaly Detection</h2>
         <div class="endpoint">
             <span class="method post">POST</span>
             <span class="path">/api/v1/ai/anomaly/detect</span>
@@ -84,7 +84,7 @@ create_api_docs() {
             <div>Get anomaly detection history</div>
         </div>
         
-        <h2>🔍 Predictive Analytics</h2>
+        <h2>Predictive Analytics</h2>
         <div class="endpoint">
             <span class="method post">POST</span>
             <span class="path">/api/v1/ai/predict/load</span>
@@ -97,7 +97,7 @@ create_api_docs() {
             <div>Get prediction history</div>
         </div>
         
-        <h2>🔍 Real-time Data</h2>
+        <h2>Real-time Data</h2>
         <div class="endpoint">
             <span class="method get">GET</span>
             <span class="path">/api/v1/ai/realtime/connections</span>
@@ -110,7 +110,7 @@ create_api_docs() {
             <div>Get real-time performance metrics</div>
         </div>
         
-        <h2>🔍 Alerts & Notifications</h2>
+        <h2>Alerts & Notifications</h2>
         <div class="endpoint">
             <span class="method get">GET</span>
             <span class="path">/api/v1/ai/alerts</span>
@@ -118,7 +118,7 @@ create_api_docs() {
         </div>
         
         <div style="text-align: center; margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 5px;">
-            <p><strong>🚀 CloudBridge AI Service API Documentation</strong></p>
+            <p><strong>CloudBridge AI Service API Documentation</strong></p>
             <p>Generated on: <script>document.write(new Date().toISOString())</script></p>
         </div>
     </div>
@@ -131,7 +131,7 @@ EOF
 
 # Function to start documentation server
 start_docs_server() {
-    echo -e "${YELLOW}🚀 Starting API documentation server...${NC}"
+    echo -e "${YELLOW}Starting API documentation server...${NC}"
     
     # Check if Python is available
     if command -v python3 >/dev/null 2>&1; then
@@ -139,7 +139,7 @@ start_docs_server() {
     elif command -v python >/dev/null 2>&1; then
         PYTHON_CMD="python"
     else
-        echo -e "${RED}❌ Python not found. Please install Python to run the documentation server.${NC}"
+        echo -e "${RED}Python not found. Please install Python to run the documentation server.${NC}"
         exit 1
     fi
     
@@ -164,7 +164,7 @@ main() {
     
     # Check if port is available
     if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
-        echo -e "${RED}❌ Port $PORT is already in use${NC}"
+        echo -e "${RED}Port $PORT is already in use${NC}"
         echo -e "${YELLOW}   Please stop the service using port $PORT or use a different port${NC}"
         exit 1
     fi

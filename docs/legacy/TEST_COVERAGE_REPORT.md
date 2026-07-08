@@ -11,9 +11,9 @@
 | Модуль | Покрытие | Статус | Количество тестов |
 |--------|----------|--------|-------------------|
 | **Cadence Integration** | 53.9% | орошо | 6 тестов |
-| **Routing** | 29.5% | ⚠️ Требует улучшения | 12 тестов |
+| **Routing** | 29.5% | Требует улучшения | 12 тестов |
 | **Predictive** | 0.0% |  Не покрыто | 0 тестов |
-| **Общее покрытие** | **18.5%** | ⚠️ Требует улучшения | 18 тестов |
+| **Общее покрытие** | **18.5%** | Требует улучшения | 18 тестов |
 
 ## Детальный анализ покрытия
 
@@ -26,7 +26,7 @@
 - `GetWorkflowExecution` - 100.0%
 - `GetDomainInfo` - 100.0%
 
-**⚠️ Частично покрытые функции:**
+**Частично покрытые функции:**
 - `getWorkflowExecutions` - 73.7%
 - `GetWorkflowHistory` - 75.0%
 - `GetMetrics` - 77.8%
@@ -52,7 +52,7 @@
 - `GetLastUpdate` - 100.0%
 - `GetUpdateInterval` - 100.0%
 
-**⚠️ Частично покрытые функции:**
+**Частично покрытые функции:**
 - `Initialize` (LatencyPredictor) - 87.5%
 - `Predict` (LatencyPredictor) - 88.9%
 - `CollectMetrics` - 81.8%
@@ -77,7 +77,7 @@
 - `RetrainModels` - 0.0%
 - И все остальные функции...
 
-## 🧪 Созданные тесты
+## Созданные тесты
 
 ### Unit тесты (18 тестов)
 
@@ -116,10 +116,10 @@
 ### Интеграционные тесты (созданы, но требуют оптимизации)
 
 #### RealService Integration
-- ⚠️ `TestRealServiceInitializeWithMockServers` - работает, но медленно
-- ⚠️ `TestRealServiceDetectAnomaly` - работает, но медленно
-- ⚠️ `TestRealServicePredictLoad` - работает, но медленно
-- ⚠️ `TestRealServiceOptimizeRoute` - работает, но медленно
+- `TestRealServiceInitializeWithMockServers` - работает, но медленно
+- `TestRealServiceDetectAnomaly` - работает, но медленно
+- `TestRealServicePredictLoad` - работает, но медленно
+- `TestRealServiceOptimizeRoute` - работает, но медленно
 
 #### Error Handling
 - TestErrorHandlingWithUnavailableServices`
@@ -130,8 +130,8 @@
 - TestErrorHandlingWithInvalidConfiguration`
 
 #### Performance Tests
-- ⚠️ `TestRealServiceConcurrentPerformance` - обнаружены race conditions
-- ⚠️ `TestRealServiceMemoryUsage` - таймауты
+- `TestRealServiceConcurrentPerformance` - обнаружены race conditions
+- `TestRealServiceMemoryUsage` - таймауты
 
 ##  Инфраструктура тестирования
 
@@ -148,7 +148,7 @@
 - adence mock сервер
 - истемные метрики mock
 
-## 🚨 Выявленные проблемы
+## Выявленные проблемы
 
 ### 1. Производительность
 - **Проблема:** Интеграционные тесты занимают слишком много времени

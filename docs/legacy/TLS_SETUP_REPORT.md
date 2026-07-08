@@ -84,7 +84,7 @@ security:
 
 ## Текущий статус
 
-### ⚠️ Проблемы для решения
+### Проблемы для решения
 1. **Pod CrashLoopBackOff** - требует отладки конфигурации
 2. **Самоподписанный сертификат** - нужен реальный для продакшена
 3. **Environment variables** - требует тонкой настройки
@@ -183,8 +183,8 @@ echo "0 12 * * * /usr/bin/certbot renew --quiet && kubectl delete secret edge-2g
 - ертификаты созданы
 - ubernetes integration
 - ecurity конфигурация
-- ⚠️ Требует реальный сертификат
-- ⚠️ Требует отладку deployment
+- Требует реальный сертификат
+- Требует отладку deployment
 
 **Безопасность:** 9/10
 - се security headers
@@ -225,4 +225,4 @@ echo "0 12 * * * /usr/bin/certbot renew --quiet && kubectl delete secret edge-2g
 - ecurity middleware с HTTPS принуждением
 - нструменты для продакшен настройки
 
-**Статус:** 🟡 Ready for Production Setup (требует реальный сертификат)
+**Статус:** Ready for Production Setup (требует реальный сертификат)

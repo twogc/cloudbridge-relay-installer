@@ -23,7 +23,7 @@ SPA_CLIENT_ID="${3:-}"
 ZITADEL_DOMAIN="edge.2gc.ru"
 
 main() {
-    log "🎯 Финализация CloudBridge Relay + ZITADEL интеграции"
+    log "Финализация CloudBridge Relay + ZITADEL интеграции"
     log ""
     
     if [[ -z "$API_CLIENT_ID" || -z "$API_CLIENT_SECRET" || -z "$SPA_CLIENT_ID" ]]; then
@@ -34,7 +34,7 @@ main() {
         exit 1
     fi
     
-    log "📋 Конфигурация OIDC приложений:"
+    log "Конфигурация OIDC приложений:"
     log "  API Client ID: $API_CLIENT_ID"
     log "  API Secret: ${API_CLIENT_SECRET:0:10}..."
     log "  SPA Client ID: $SPA_CLIENT_ID"
@@ -53,7 +53,7 @@ main() {
     # 4. Тестируем интеграцию
     test_integration
     
-    log "🎉 Интеграция CloudBridge Relay + ZITADEL завершена!"
+    log "Интеграция CloudBridge Relay + ZITADEL завершена!"
 }
 
 create_config_files() {
@@ -101,7 +101,7 @@ zitadel:
     client_key_path: "$PROJECT_ROOT/certs/relay-mtls/relay-client-key.pem"
 EOF
 
-    log "✅ Конфигурация сохранена: configs/zitadel-final-config.yaml"
+    log "Конфигурация сохранена: configs/zitadel-final-config.yaml"
 }
 
 update_k8s_secrets() {
@@ -116,7 +116,7 @@ update_k8s_secrets() {
         --namespace=cloudbridge \
         --dry-run=client -o yaml | kubectl apply -f -
     
-    log "✅ Секрет cloudbridge-zitadel обновлен"
+    log "Секрет cloudbridge-zitadel обновлен"
 }
 
 create_kubectl_plugin() {
@@ -161,7 +161,7 @@ func main() {
 }
 EOF
 
-    log "✅ kubectl exec-plugin создан: cmd/kubectl-zitadel/main.go"
+    log "kubectl exec-plugin создан: cmd/kubectl-zitadel/main.go"
 }
 
 test_integration() {
@@ -169,23 +169,23 @@ test_integration() {
     
     # Проверяем доступность ZITADEL
     if curl -s -f "https://$ZITADEL_DOMAIN/.well-known/openid_configuration" >/dev/null; then
-        log "✅ ZITADEL OIDC endpoint доступен"
+        log "ZITADEL OIDC endpoint доступен"
     else
-        log "⚠️ Проблема с доступностью ZITADEL"
+        log "Проблема с доступностью ZITADEL"
     fi
     
     # Проверяем Kubernetes секреты
     if kubectl get secret cloudbridge-zitadel -n cloudbridge >/dev/null 2>&1; then
-        log "✅ Kubernetes секрет создан"
+        log "Kubernetes секрет создан"
     else
-        log "⚠️ Проблема с Kubernetes секретом"
+        log "Проблема с Kubernetes секретом"
     fi
     
     # Проверяем сертификаты
     if [[ -f "$PROJECT_ROOT/certs/relay-mtls/cloudbridge-relay-ca-cert.pem" ]]; then
-        log "✅ mTLS сертификаты найдены"
+        log "mTLS сертификаты найдены"
     else
-        log "⚠️ mTLS сертификаты не найдены"
+        log "mTLS сертификаты не найдены"
     fi
 }
 

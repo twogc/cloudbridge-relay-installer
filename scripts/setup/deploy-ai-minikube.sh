@@ -242,7 +242,7 @@ show_commands() {
 # Main deployment function
 main() {
     echo ""
-    log_info "🚀 Starting CloudBridge Relay AI deployment to Minikube..."
+    log_info "Starting CloudBridge Relay AI deployment to Minikube..."
     echo ""
     
     # Check prerequisites
@@ -263,7 +263,7 @@ main() {
     show_commands
     
     echo ""
-    log_success "🎉 AI deployment to Minikube completed successfully!"
+    log_success "AI deployment to Minikube completed successfully!"
     echo ""
     log_info "AI Service is now running at: http://localhost:8083"
     log_info "AI Metrics are available at: http://localhost:8084"

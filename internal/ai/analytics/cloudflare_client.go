@@ -169,7 +169,7 @@ func (c *CloudflareAIClient) buildPrompt(data *MetricsData) string {
 	// Relay метрики
 	if relayMetrics, exists := data.Metrics["relay"]; exists {
 		if relayMap, ok := relayMetrics.(map[string]interface{}); ok {
-			prompt.WriteString("\n🌐 Relay Service Metrics:\n")
+			prompt.WriteString("\nRelay Service Metrics:\n")
 			// Cadence метрики
 			if cadenceMetrics, exists := data.Metrics["cadence"]; exists {
 				if cadenceMap, ok := cadenceMetrics.(map[string]interface{}); ok {

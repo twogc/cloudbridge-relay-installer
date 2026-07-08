@@ -1,6 +1,6 @@
 #  Исправление конфликта портов MASQUE Integration
 
-## 🚨 **Проблема:**
+## **Проблема:**
 
 ```
 "Failed to start MASQUE Integration","error":"failed to start MASQUE proxy: failed to listen UDP: listen udp :8443: bind: address already in use"

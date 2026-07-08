@@ -1,15 +1,15 @@
-# 🎯 Magic WAN Integration Test Report
+# Magic WAN Integration Test Report
 
 **Date**: 2025-10-01  
-**Status**: ✅ **SUCCESSFUL**  
+**Status**: **SUCCESSFUL**  
 **Environment**: Kubernetes (Minikube)  
 **Cloudflare Account**: 073ae0130b7cee5e55a1ac1a335431a8
 
-## 📊 Executive Summary
+## Executive Summary
 
 Magic WAN L3-туннель успешно создан и интегрирован с CloudBridge Relay через Cloudflare API. Основные компоненты работают, IKE SA установлен, аутентификация прошла успешно.
 
-## ✅ Achievements
+## Achievements
 
 ### 1. Magic WAN Tunnel Created via API
 - **Tunnel ID**: `5133418c8bb94242aa44026f37ab847c`
@@ -18,19 +18,19 @@ Magic WAN L3-туннель успешно создан и интегриров�
 - **Customer Endpoint**: `95.163.250.190`
 - **Interface**: `10.200.0.0/31`
 - **PSK**: `gGpZ2DU1RjWmckNVUjAxuYEtpfuShRATdvJLrdA0oM8`
-- **Status**: ✅ **ACTIVE**
+- **Status**: **ACTIVE**
 
 ### 2. IKE SA Successfully Established
-- ✅ **Authentication successful**
-- ✅ **Connection to Cloudflare Magic WAN working**
-- ✅ **Logs show**: `IKE_SA magic-wan-primary[2] established`
-- ✅ **Remote identities configured**
+- **Authentication successful**
+- **Connection to Cloudflare Magic WAN working**
+- **Logs show**: `IKE_SA magic-wan-primary[2] established`
+- **Remote identities configured**
 
 ### 3. Infrastructure Components
-- ✅ **Kubernetes manifests** for IPsec tunnel
-- ✅ **API scripts** for automatic Magic WAN creation
-- ✅ **strongSwan configuration** for L3-tunnel
-- ✅ **Monitoring and testing scripts**
+- **Kubernetes manifests** for IPsec tunnel
+- **API scripts** for automatic Magic WAN creation
+- **strongSwan configuration** for L3-tunnel
+- **Monitoring and testing scripts**
 
 ## 🔧 Technical Details
 
@@ -52,26 +52,26 @@ Magic WAN L3-туннель успешно создан и интегриров�
 - **Account ID**: `073ae0130b7cee5e55a1ac1a335431a8`
 - **API Base**: `https://api.cloudflare.com/client/v4/accounts/073ae0130b7cee5e55a1ac1a335431a8`
 
-## 📋 Test Results
+## Test Results
 
-### ✅ Successful Tests
-1. **Magic WAN Creation via API** - ✅ PASSED
-2. **PSK Generation** - ✅ PASSED  
-3. **IKE SA Establishment** - ✅ PASSED
-4. **Authentication** - ✅ PASSED
-5. **Remote Identity Configuration** - ✅ PASSED
-6. **Health Check Setup** - ✅ PASSED
+### Successful Tests
+1. **Magic WAN Creation via API** - PASSED
+2. **PSK Generation** - PASSED  
+3. **IKE SA Establishment** - PASSED
+4. **Authentication** - PASSED
+5. **Remote Identity Configuration** - PASSED
+6. **Health Check Setup** - PASSED
 
-### ⚠️ Partial Success
-1. **Child SA Establishment** - ⚠️ PARTIAL (Policy conflict detected)
-2. **Full IPsec Tunnel** - ⚠️ PARTIAL (IKE SA working, Child SA needs fix)
+### Partial Success
+1. **Child SA Establishment** - PARTIAL (Policy conflict detected)
+2. **Full IPsec Tunnel** - PARTIAL (IKE SA working, Child SA needs fix)
 
-### ❌ Issues Identified
+### Issues Identified
 1. **Container Environment Limitations** - DNS resolution issues in test container
 2. **strongSwan Installation** - Package installation failed due to network issues
 3. **Policy Conflicts** - Child SA policies conflicting with existing routes
 
-## 🚀 Next Steps for Production
+## Next Steps for Production
 
 ### 1. Production Server Setup
 ```bash
@@ -119,7 +119,7 @@ ipsec restart
 ipsec statusall
 ```
 
-## 📈 Performance Metrics
+## Performance Metrics
 
 ### Network Connectivity
 - **Local IP**: `95.163.250.190`
@@ -132,7 +132,7 @@ ipsec statusall
 - **PSK Generation**: ~1 second
 - **Status Check**: ~0.5 seconds
 
-## 🔍 Monitoring & Troubleshooting
+## Monitoring & Troubleshooting
 
 ### Health Checks
 ```bash
@@ -151,15 +151,15 @@ journalctl -u strongswan -f
 - **Tunnel Status**: Active
 - **Health Check**: Enabled
 
-## 🎉 Conclusion
+## Conclusion
 
 **Magic WAN L3-туннель успешно интегрирован!** 
 
 Основные достижения:
-- ✅ Magic WAN туннель создан через API
-- ✅ IKE SA установлен и работает
-- ✅ Аутентификация успешна
-- ✅ Инфраструктура готова к продакшену
+- Magic WAN туннель создан через API
+- IKE SA установлен и работает
+- Аутентификация успешна
+- Инфраструктура готова к продакшену
 
 **Готово к развертыванию на продакшн сервере!**
 

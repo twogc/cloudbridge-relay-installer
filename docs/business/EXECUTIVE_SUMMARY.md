@@ -15,7 +15,7 @@
 
 ---
 
-## 💡 Проблема & Решение
+## Проблема & Решение
 
 ### Проблема
 - 🚫 Зарубежные VPN (Tailscale, Cloudflare) - заблокированы или недоступны
@@ -48,10 +48,10 @@ CloudBridge Relay:
 - 2030: ₽5-10 млрд (10-15% SAM)
 
 **Драйверы роста**:
-1. 📜 Импортозамещение (₽1 trillion госпрограмма)
+1. Импортозамещение (₽1 trillion госпрограмма)
 2. 🏠 Удалённая работа (+400% с 2020)
 3. Усиление требований кибербезопасности
-4. 📡 Рост IoT и Edge computing (+25% CAGR)
+4. Рост IoT и Edge computing (+25% CAGR)
 5. 🎮 Gaming индустрия (+20% CAGR)
 
 ---
@@ -61,8 +61,8 @@ CloudBridge Relay:
 | Metric | CloudBridge | Tailscale | UserGate |
 |--------|-------------|-----------|----------|
 | **Цена/год** | ₽150k-500k | ₽1.5M-2M | ₽500k-2M |
-| **Доступность РФ** |  ⚠️ | |
-| **Open Source** |  ⚠️ Partial |  |
+| **Доступность РФ** |  | |
+| **Open Source** |  Partial |  |
 | **QUIC** |   |  |
 | **AI** |   |  |
 | **152-ФЗ** |   | |
@@ -76,7 +76,7 @@ CloudBridge Relay:
 
 ---
 
-## 💰 Бизнес-Модель
+## Бизнес-Модель
 
 ### Revenue Streams
 1. **Enterprise Licenses** - ₽150k-5M/год (primary)
@@ -143,7 +143,7 @@ CloudBridge Relay:
 
 ---
 
-## 👥 Team
+## Team
 
 **Core Team** (Current): 5-8 people
 - 3-5 Engineers (Go, QUIC, Kubernetes)
@@ -162,14 +162,14 @@ CloudBridge Relay:
 
 ---
 
-## ⚡ Risks & Mitigation
+## Risks & Mitigation
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| No ФСТЭК cert | 20-30% | 🔴 High | Start early, focus SMB |
+| No ФСТЭК cert | 20-30% | High | Start early, focus SMB |
 | Competition | 40-50% | 🟠 Medium | Speed, community, open source |
-| Economic crisis | 30-40% | 🟡 Medium | Cost-saving positioning |
-| Tech shift | 10-20% | 🟡 Low | Modular architecture |
+| Economic crisis | 30-40% | Medium | Cost-saving positioning |
+| Tech shift | 10-20% | Low | Modular architecture |
 
 **Overall Risk**: Medium-Low (manageable with proper execution)
 
@@ -221,7 +221,7 @@ CloudBridge Relay:
 
 ---
 
-## 🏁 Why Now?
+## Why Now?
 
 **Perfect Storm**:
 1. *Market timing**: Импортозамещение в разгаре
@@ -241,7 +241,7 @@ CloudBridge Relay:
 **Website**: [TBD]
 
 **Documents Available**:
-- 📄 Full pitch deck (20-30 slides)
+- Full pitch deck (20-30 slides)
 - Financial model (3-statement forecast)
 - 📑 Market analysis (50+ pages)
 - 🎥 Product demo
@@ -281,7 +281,7 @@ CloudBridge is building the **Tailscale of Russia** on modern protocols (QUIC/MA
 ---
 
 **Read More**:
-- 📄 [Full Market Analysis](MARKET_ANALYSIS_RU.md) (50+ pages)
-- 📄 [Investor Pitch](INVESTOR_PITCH_RU.md) (Full deck in text)
-- 📄 [Technical Architecture](PROJECT_ARCHITECTURE_ANALYSIS.md)
-- 📄 [MVP Status](MVP_IMPLEMENTATION_PLAN.md)
+- [Full Market Analysis](MARKET_ANALYSIS_RU.md) (50+ pages)
+- [Investor Pitch](INVESTOR_PITCH_RU.md) (Full deck in text)
+- [Technical Architecture](PROJECT_ARCHITECTURE_ANALYSIS.md)
+- [MVP Status](MVP_IMPLEMENTATION_PLAN.md)

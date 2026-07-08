@@ -1,17 +1,17 @@
 # Техническое задание: Исправление метрик Zabbix для CloudBridge Relay
 
-## 📋 Общая информация
+## Общая информация
 
 **Дата:** 25 сентября 2025  
 **Приоритет:** Высокий  
 **Статус:** В работе  
 **Исполнитель:** Разработчик DevOps/Мониторинг  
 
-## 🎯 Цель
+## Цель
 
 Исправить проблемы с метриками Zabbix агента для CloudBridge Relay, чтобы все метрики из шаблона `cloudbridge-relay-template-fixed.xml` корректно собирались и передавались на Zabbix сервер.
 
-## 🔍 Выявленные проблемы
+## Выявленные проблемы
 
 ### 1. Zabbix агент не запускается
 **Симптомы:**
@@ -23,20 +23,20 @@
 
 ### 2. Не все метрики работают
 **Работающие метрики:**
-- ✅ Системные: `cloudbridge.system.cpu.usage`, `cloudbridge.system.memory.usage`, `cloudbridge.system.disk.usage`
-- ✅ Docker: `cloudbridge.docker.containers.running`, `cloudbridge.docker.containers.total`, `cloudbridge.docker.images.total`
-- ✅ Kubernetes: `cloudbridge.k8s.pods.running`, `cloudbridge.k8s.pods.total`, `cloudbridge.k8s.nodes.ready`
+- Системные: `cloudbridge.system.cpu.usage`, `cloudbridge.system.memory.usage`, `cloudbridge.system.disk.usage`
+- Docker: `cloudbridge.docker.containers.running`, `cloudbridge.docker.containers.total`, `cloudbridge.docker.images.total`
+- Kubernetes: `cloudbridge.k8s.pods.running`, `cloudbridge.k8s.pods.total`, `cloudbridge.k8s.nodes.ready`
 
 **Неработающие метрики:**
-- ❌ AI метрики: `ai.status`, `ai.health`, `ai.anomaly_detections`, и др.
-- ❌ P2P метрики: `p2p.quic.connections.active`, `p2p.quic.peers.active`, и др.
-- ❌ Relay JSON метрики: `cloudbridge.relay.json.active_connections`, и др.
+- AI метрики: `ai.status`, `ai.health`, `ai.anomaly_detections`, и др.
+- P2P метрики: `p2p.quic.connections.active`, `p2p.quic.peers.active`, и др.
+- Relay JSON метрики: `cloudbridge.relay.json.active_connections`, и др.
 
 ### 3. Проблемы с правами доступа
 - Скрипты P2P метрик недоступны для пользователя zabbix
 - Некоторые скрипты возвращают `Permission denied`
 
-## 📊 Анализ шаблона
+## Анализ шаблона
 
 **Файл:** `cloudbridge-relay-template-fixed.xml`  
 **Всего метрик:** 45+ метрик  
@@ -198,16 +198,16 @@
    sudo tail -f /var/log/zabbix/zabbix_agentd.log
    ```
 
-## 📋 Критерии приемки
+## Критерии приемки
 
-### ✅ Обязательные требования:
+### Обязательные требования:
 1. **Zabbix агент запускается без ошибок**
 2. **Все метрики из шаблона работают корректно**
 3. **Нет дублирующихся UserParameters в конфигурации**
 4. **Все скрипты доступны для пользователя zabbix**
 5. **Подключение к Zabbix серверу 10.0.0.241 работает**
 
-### ✅ Дополнительные требования:
+### Дополнительные требования:
 1. **Логи Zabbix агента не содержат ошибок**
 2. **Все метрики возвращают корректные значения**
 3. **Конфигурация оптимизирована и очищена**
@@ -237,7 +237,7 @@ zabbix_get -s localhost -k <metric_key>
 sudo /usr/sbin/zabbix_agentd -t -c /etc/zabbix/zabbix_agentd.conf
 ```
 
-## 📊 Ожидаемый результат
+## Ожидаемый результат
 
 После выполнения всех задач:
 
@@ -246,7 +246,7 @@ sudo /usr/sbin/zabbix_agentd -t -c /etc/zabbix/zabbix_agentd.conf
 3. **Данные передаются на Zabbix сервер 10.0.0.241**
 4. **Мониторинг CloudBridge Relay полностью функционален**
 
-## 🚨 Критические моменты
+## Критические моменты
 
 1. **Не удалять работающие метрики** (системные, Docker, Kubernetes)
 2. **Создать резервную копию конфигурации** перед изменениями

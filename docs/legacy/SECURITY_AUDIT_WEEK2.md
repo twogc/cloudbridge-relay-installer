@@ -41,7 +41,7 @@ Control Plane компонент CloudBridge содержит **критичес
 
 ## PART 1: CRITICAL ISSUES (НЕМЕДЛЕННОЕ ИСПРАВЛЕНИЕ)
 
-### 🔴 CRITICAL-1: API Endpoints Without Authentication
+### CRITICAL-1: API Endpoints Without Authentication
 
 **Уязвимость**: POST /api/v1/invites, DELETE /api/v1/invites/*, GET /api/v1/invites доступны без JWT verification
 
@@ -192,7 +192,7 @@ curl -X POST http://control-plane.2gc.ru/api/v1/invites \
 
 ---
 
-### 🔴 CRITICAL-2: Tenant Isolation Bypass on ListInvites
+### CRITICAL-2: Tenant Isolation Bypass on ListInvites
 
 **Уязвимость**: GET /api/v1/invites возвращает invites любого tenant по параметру
 
@@ -235,7 +235,7 @@ func handleListInvites(c *gin.Context) {
 
 ---
 
-### 🔴 CRITICAL-3: JWT Secret in Environment Variable (No Encryption)
+### CRITICAL-3: JWT Secret in Environment Variable (No Encryption)
 
 **Уязвимость**: Secret ключ для подписи JWT токенов хранится в plaintext в env переменной
 
@@ -345,7 +345,7 @@ spec:
 
 ---
 
-### 🔴 CRITICAL-4: OPA Policies Loaded from Filesystem (Integrity Not Verified)
+### CRITICAL-4: OPA Policies Loaded from Filesystem (Integrity Not Verified)
 
 **Уязвимость**: ACL OPA policies загружаются из файловой системы контейнера без проверки подписи или целостности
 
@@ -471,7 +471,7 @@ COPY --from=builder /keys/public.pem /etc/acl-policies/
 
 ---
 
-### 🔴 CRITICAL-5: Plaintext Credentials in K8s Init Scripts
+### CRITICAL-5: Plaintext Credentials in K8s Init Scripts
 
 **Уязвимость**: PostgreSQL пароли жестко закодированы в K8s initialization scripts
 
@@ -761,7 +761,7 @@ func (v *Validator) buildIngressRules(config *ACLConfig) []networkingv1.NetworkP
 
 ## PART 3: MEDIUM PRIORITY ISSUES (2-4 WEEKS)
 
-### 🟡 MEDIUM-1: Sensitive Data in JWT Claims (Plaintext)
+### MEDIUM-1: Sensitive Data in JWT Claims (Plaintext)
 
 **Issue**: Email и другие PII в открытом виде в JWT payload
 
@@ -800,7 +800,7 @@ func CreateEncryptedToken(claims map[string]interface{}, encryptionKey interface
 
 ---
 
-### 🟡 MEDIUM-2: No Input Validation on Key Parameters
+### MEDIUM-2: No Input Validation on Key Parameters
 
 **Issue**: Отсутствует валидация UUID, CIDR ranges, email format
 
@@ -852,7 +852,7 @@ func handleCreateInvite(c *gin.Context) {
 
 ---
 
-### 🟡 MEDIUM-3: Metadata Field Unbounded (DoS)
+### MEDIUM-3: Metadata Field Unbounded (DoS)
 
 **Issue**: Metadata map без размера ограничения - возможна memory exhaustion
 
@@ -885,7 +885,7 @@ func ValidateMetadata(metadata map[string]string) error {
 
 ## PART 4: LOW PRIORITY ISSUES (BACKLOG)
 
-### 🟢 LOW-1: NATS URL May Contain Credentials
+### LOW-1: NATS URL May Contain Credentials
 
 **Issue**: Logging NATS URL в plaintext
 

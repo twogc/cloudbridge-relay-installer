@@ -31,7 +31,7 @@ log_warning() {
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
 }
 
 # Check prerequisites
@@ -254,25 +254,25 @@ show_performance_summary() {
     log_info "Performance Analysis Summary:"
     echo ""
     
-    echo "📊 System Resources:"
+    echo "System Resources:"
     if [ -f "$RESULTS_DIR/nodes-resource-usage.txt" ]; then
         cat $RESULTS_DIR/nodes-resource-usage.txt
     fi
     
     echo ""
-    echo "📊 Pod Resources:"
+    echo "Pod Resources:"
     if [ -f "$RESULTS_DIR/pods-resource-usage.txt" ]; then
         cat $RESULTS_DIR/pods-resource-usage.txt
     fi
     
     echo ""
-    echo "📊 Resource Summary:"
+    echo "Resource Summary:"
     if [ -f "$RESULTS_DIR/resource-summary.txt" ]; then
         cat $RESULTS_DIR/resource-summary.txt
     fi
     
     echo ""
-    echo "📊 Service Status:"
+    echo "Service Status:"
     echo "• CloudBridge Relay: $(kubectl get pods -n $NAMESPACE -l app.kubernetes.io/name=cloudbridge-relay --no-headers | wc -l) pods"
     echo "• Cassandra: $(kubectl get pods -n $NAMESPACE -l app.kubernetes.io/name=cassandra --no-headers | wc -l) pods"
     echo "• Cadence: $(kubectl get pods -n $NAMESPACE -l app.kubernetes.io/name=cadence --no-headers | wc -l) pods"
@@ -294,7 +294,7 @@ cleanup() {
 
 # Main function
 main() {
-    echo "=== 📊 CloudBridge Relay - Performance Analysis ==="
+    echo "=== CloudBridge Relay - Performance Analysis ==="
     echo ""
     
     case "${1:-analyze}" in

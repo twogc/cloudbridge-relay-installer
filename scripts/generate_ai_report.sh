@@ -26,7 +26,7 @@ get_ai_metrics() {
     kubectl exec deployment/ai-service -n cloudbridge -c ai-service -- wget -qO- --timeout=5 http://localhost:8083/metrics 2>/dev/null | grep -E "ai_" | head -10
 }
 
-echo -e "${BLUE}📊 СТАТИСТИКА AI СЕРВИСА:${NC}"
+echo -e "${BLUE}СТАТИСТИКА AI СЕРВИСА:${NC}"
 echo "================================"
 get_ai_metrics
 echo ""

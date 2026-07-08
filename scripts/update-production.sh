@@ -19,7 +19,7 @@ IMAGE_REPO=${IMAGE_REPO:-"ghcr.io/twogc/cloudbridge-relay"}
 BACKUP_DIR=${BACKUP_DIR:-"./backups"}
 TIMEOUT=${TIMEOUT:-"300s"}
 
-echo -e "${BLUE}🚀 CloudBridge Relay Production Update${NC}"
+echo -e "${BLUE}CloudBridge Relay Production Update${NC}"
 echo "======================================="
 echo "  Namespace: $NAMESPACE"
 echo "  Deployment: $DEPLOYMENT_NAME" 
@@ -31,26 +31,26 @@ echo ""
 echo -e "${YELLOW}Проверка требований...${NC}"
 
 if ! command -v kubectl &> /dev/null; then
-    echo -e "${RED}❌ kubectl не найден${NC}"
+    echo -e "${RED}kubectl не найден${NC}"
     exit 1
 fi
 
 if ! kubectl cluster-info &> /dev/null; then
-    echo -e "${RED}❌ Не подключен к Kubernetes кластеру${NC}"
+    echo -e "${RED}Не подключен к Kubernetes кластеру${NC}"
     exit 1
 fi
 
 if ! kubectl get namespace $NAMESPACE &> /dev/null; then
-    echo -e "${RED}❌ Namespace '$NAMESPACE' не найден${NC}"
+    echo -e "${RED}Namespace '$NAMESPACE' не найден${NC}"
     exit 1
 fi
 
 if ! kubectl get deployment $DEPLOYMENT_NAME -n $NAMESPACE &> /dev/null; then
-    echo -e "${RED}❌ Deployment '$DEPLOYMENT_NAME' не найден в namespace '$NAMESPACE'${NC}"
+    echo -e "${RED}Deployment '$DEPLOYMENT_NAME' не найден в namespace '$NAMESPACE'${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Все требования выполнены${NC}"
+echo -e "${GREEN}Все требования выполнены${NC}"
 
 # Create backup directory
 mkdir -p $BACKUP_DIR
@@ -61,20 +61,20 @@ echo -e "${YELLOW}Создание резервных копий...${NC}"
 # Backup current deployment
 kubectl get deployment $DEPLOYMENT_NAME -n $NAMESPACE -o yaml > \
     "$BACKUP_DIR/deployment-$DEPLOYMENT_NAME-$TIMESTAMP.yaml"
-echo -e "${GREEN}✅ Deployment сохранен: $BACKUP_DIR/deployment-$DEPLOYMENT_NAME-$TIMESTAMP.yaml${NC}"
+echo -e "${GREEN}Deployment сохранен: $BACKUP_DIR/deployment-$DEPLOYMENT_NAME-$TIMESTAMP.yaml${NC}"
 
 # Backup current config
 if kubectl get configmap ${DEPLOYMENT_NAME}-config -n $NAMESPACE &> /dev/null; then
     kubectl get configmap ${DEPLOYMENT_NAME}-config -n $NAMESPACE -o yaml > \
         "$BACKUP_DIR/configmap-$DEPLOYMENT_NAME-$TIMESTAMP.yaml"
-    echo -e "${GREEN}✅ ConfigMap сохранен: $BACKUP_DIR/configmap-$DEPLOYMENT_NAME-$TIMESTAMP.yaml${NC}"
+    echo -e "${GREEN}ConfigMap сохранен: $BACKUP_DIR/configmap-$DEPLOYMENT_NAME-$TIMESTAMP.yaml${NC}"
 fi
 
 # Backup current service
 if kubectl get service $DEPLOYMENT_NAME -n $NAMESPACE &> /dev/null; then
     kubectl get service $DEPLOYMENT_NAME -n $NAMESPACE -o yaml > \
         "$BACKUP_DIR/service-$DEPLOYMENT_NAME-$TIMESTAMP.yaml"
-    echo -e "${GREEN}✅ Service сохранен: $BACKUP_DIR/service-$DEPLOYMENT_NAME-$TIMESTAMP.yaml${NC}"
+    echo -e "${GREEN}Service сохранен: $BACKUP_DIR/service-$DEPLOYMENT_NAME-$TIMESTAMP.yaml${NC}"
 fi
 
 # Show current status
@@ -101,7 +101,7 @@ READY_PODS=$(kubectl get pods -n $NAMESPACE -l app=$DEPLOYMENT_NAME --no-headers
 TOTAL_PODS=$(kubectl get pods -n $NAMESPACE -l app=$DEPLOYMENT_NAME --no-headers | wc -l)
 
 if [ $READY_PODS -ne $TOTAL_PODS ]; then
-    echo -e "${RED}❌ Не все поды в рабочем состоянии ($READY_PODS/$TOTAL_PODS)${NC}"
+    echo -e "${RED}Не все поды в рабочем состоянии ($READY_PODS/$TOTAL_PODS)${NC}"
     kubectl get pods -n $NAMESPACE -l app=$DEPLOYMENT_NAME
     exit 1
 fi
@@ -110,10 +110,10 @@ fi
 SERVICE_IP=$(kubectl get service $DEPLOYMENT_NAME -n $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
 if [ -n "$SERVICE_IP" ]; then
     if ! curl -sf http://$SERVICE_IP/health > /dev/null; then
-        echo -e "${RED}❌ Health endpoint недоступен${NC}"
+        echo -e "${RED}Health endpoint недоступен${NC}"
         exit 1
     fi
-    echo -e "${GREEN}✅ Health endpoint доступен${NC}"
+    echo -e "${GREEN}Health endpoint доступен${NC}"
 fi
 
 # Perform rolling update
@@ -124,19 +124,19 @@ kubectl set image deployment/$DEPLOYMENT_NAME \
     $DEPLOYMENT_NAME=$IMAGE_REPO:$IMAGE_TAG \
     -n $NAMESPACE
 
-echo -e "${GREEN}✅ Команда обновления отправлена${NC}"
+echo -e "${GREEN}Команда обновления отправлена${NC}"
 
 # Monitor rollout
 echo -e "${YELLOW}Мониторинг процесса обновления...${NC}"
 
 if kubectl rollout status deployment/$DEPLOYMENT_NAME -n $NAMESPACE --timeout=$TIMEOUT; then
-    echo -e "${GREEN}✅ Rolling update завершен успешно${NC}"
+    echo -e "${GREEN}Rolling update завершен успешно${NC}"
 else
-    echo -e "${RED}❌ Rolling update не завершился в течение $TIMEOUT${NC}"
+    echo -e "${RED}Rolling update не завершился в течение $TIMEOUT${NC}"
     echo -e "${YELLOW}Откат к предыдущей версии...${NC}"
     kubectl rollout undo deployment/$DEPLOYMENT_NAME -n $NAMESPACE
     kubectl rollout status deployment/$DEPLOYMENT_NAME -n $NAMESPACE --timeout=$TIMEOUT
-    echo -e "${RED}❌ Обновление провалено, выполнен откат${NC}"
+    echo -e "${RED}Обновление провалено, выполнен откат${NC}"
     exit 1
 fi
 
@@ -156,7 +156,7 @@ READY_PODS_AFTER=$(kubectl get pods -n $NAMESPACE -l app=$DEPLOYMENT_NAME --no-h
 TOTAL_PODS_AFTER=$(kubectl get pods -n $NAMESPACE -l app=$DEPLOYMENT_NAME --no-headers | wc -l)
 
 if [ $READY_PODS_AFTER -ne $TOTAL_PODS_AFTER ]; then
-    echo -e "${RED}❌ Не все поды в рабочем состоянии после обновления ($READY_PODS_AFTER/$TOTAL_PODS_AFTER)${NC}"
+    echo -e "${RED}Не все поды в рабочем состоянии после обновления ($READY_PODS_AFTER/$TOTAL_PODS_AFTER)${NC}"
     echo -e "${YELLOW}Логи подов для отладки:${NC}"
     kubectl logs deployment/$DEPLOYMENT_NAME -n $NAMESPACE --tail=20
     exit 1
@@ -168,9 +168,9 @@ if [ -n "$SERVICE_IP" ]; then
     sleep 5  # Give service time to update
     
     if curl -sf http://$SERVICE_IP/health > /dev/null; then
-        echo -e "${GREEN}✅ Health endpoint работает${NC}"
+        echo -e "${GREEN}Health endpoint работает${NC}"
     else
-        echo -e "${RED}❌ Health endpoint недоступен после обновления${NC}"
+        echo -e "${RED}Health endpoint недоступен после обновления${NC}"
         exit 1
     fi
 fi
@@ -183,9 +183,9 @@ if [ -f ~/.kube/config-relay-production ]; then
     export KUBECTL_PORT_FORWARD_WEBSOCKETS=1
     
     if kubectl --kubeconfig ~/.kube/config-relay-production get namespaces > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ kubectl proxy работает${NC}"
+        echo -e "${GREEN}kubectl proxy работает${NC}"
     else
-        echo -e "${RED}❌ kubectl proxy не работает${NC}"
+        echo -e "${RED}kubectl proxy не работает${NC}"
         echo "Проверьте логи и конфигурацию"
         kubectl logs deployment/$DEPLOYMENT_NAME -n $NAMESPACE --tail=20
         exit 1
@@ -196,7 +196,7 @@ fi
 if [ -n "$SERVICE_IP" ]; then
     echo -e "${YELLOW}Проверка метрик...${NC}"
     if curl -sf http://$SERVICE_IP:5551/metrics | grep -q "kube_proxy_requests_total"; then
-        echo -e "${GREEN}✅ Метрики доступны${NC}"
+        echo -e "${GREEN}Метрики доступны${NC}"
     else
         echo -e "${YELLOW}⚠ Метрики недоступны (может быть нормально для новых подов)${NC}"
     fi
@@ -215,17 +215,17 @@ echo ""
 
 # Success message
 echo ""
-echo -e "${GREEN}🎉 Обновление завершено успешно!${NC}"
+echo -e "${GREEN}Обновление завершено успешно!${NC}"
 echo ""
 echo -e "${BLUE}Информация об обновлении:${NC}"
-echo "  ✅ Старая версия сохранена в $BACKUP_DIR/"
-echo "  ✅ Новая версия: $IMAGE_REPO:$IMAGE_TAG"
-echo "  ✅ Все поды в рабочем состоянии: $READY_PODS_AFTER/$TOTAL_PODS_AFTER"
+echo "  Старая версия сохранена в $BACKUP_DIR/"
+echo "  Новая версия: $IMAGE_REPO:$IMAGE_TAG"
+echo "  Все поды в рабочем состоянии: $READY_PODS_AFTER/$TOTAL_PODS_AFTER"
 
 if [ -n "$SERVICE_IP" ]; then
-    echo "  ✅ Service доступен: http://$SERVICE_IP"
-    echo "  ✅ Health endpoint: http://$SERVICE_IP/health" 
-    echo "  ✅ Metrics endpoint: http://$SERVICE_IP:5551/metrics"
+    echo "  Service доступен: http://$SERVICE_IP"
+    echo "  Health endpoint: http://$SERVICE_IP/health" 
+    echo "  Metrics endpoint: http://$SERVICE_IP:5551/metrics"
 fi
 
 echo ""

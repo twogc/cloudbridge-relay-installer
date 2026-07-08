@@ -61,10 +61,10 @@ print(hashed.decode('utf-8'))
     " 2>&1)
     
     if echo "$update_result" | grep -q "UPDATE 1"; then
-        log "✅ Пароль обновлен в базе данных"
+        log "Пароль обновлен в базе данных"
         return 0
     else
-        warn "⚠️ Обновление в базе данных не удалось: $update_result"
+        warn "Обновление в базе данных не удалось: $update_result"
         return 1
     fi
 }
@@ -107,13 +107,13 @@ EOF
     user_id=$(echo "$response" | jq -r '.userId // empty' 2>/dev/null)
     
     if [[ -n "$user_id" ]]; then
-        log "✅ Новый admin пользователь создан: $user_id"
+        log "Новый admin пользователь создан: $user_id"
         log "   Username: cloudbridge-admin"
         log "   Email: admin@cloudbridge.local"  
         log "   Password: $NEW_PASSWORD"
         return 0
     else
-        warn "⚠️ Не удалось создать нового пользователя"
+        warn "Не удалось создать нового пользователя"
         warn "Response: $response"
         return 1
     fi
@@ -165,10 +165,10 @@ test_login() {
     access_token=$(echo "$test_response" | jq -r '.access_token // empty' 2>/dev/null)
     
     if [[ -n "$access_token" ]]; then
-        log "✅ Вход успешен! Токен получен"
+        log "Вход успешен! Токен получен"
         return 0
     else
-        warn "⚠️ Автоматический тест входа не удался"
+        warn "Автоматический тест входа не удался"
         warn "Попробуйте войти вручную: https://$ZITADEL_DOMAIN/ui/console/"
         return 1
     fi
@@ -176,7 +176,7 @@ test_login() {
 
 # Основная функция
 main() {
-    log "🔐 Сброс пароля ZITADEL Admin"
+    log "Сброс пароля ZITADEL Admin"
     log "Пользователь: zitadel-admin@zitadel.edge.2gc.ru"
     log "Новый пароль: $NEW_PASSWORD"
     log ""
@@ -198,7 +198,7 @@ main() {
     
     # Пробуем методы по очереди
     if reset_password_via_database "$NEW_PASSWORD"; then
-        log "🎉 Пароль сброшен через базу данных!"
+        log "Пароль сброшен через базу данных!"
         log ""
         log "Попробуйте войти:"
         log "  URL: https://$ZITADEL_DOMAIN/ui/console/"
@@ -206,7 +206,7 @@ main() {
         log "  Password: $NEW_PASSWORD"
         
     elif create_new_admin_user; then
-        log "🎉 Создан новый admin пользователь!"
+        log "Создан новый admin пользователь!"
         log ""
         log "Попробуйте войти:"
         log "  URL: https://$ZITADEL_DOMAIN/ui/console/"

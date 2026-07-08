@@ -1,8 +1,8 @@
-# 🚀 План реализации CloudBridge Relay
+# План реализации CloudBridge Relay
 
-## 📊 **Текущий статус проекта**
+## **Текущий статус проекта**
 
-### ✅ **Уже реализовано (100%)**
+### **Уже реализовано (100%)**
 - **MASQUE протокол** - CONNECT-UDP/CONNECT-IP, HTTP Datagrams, Capsule fallback
 - **ICE/STUN/TURN** - полная интеграция с метриками и connectivity checks
 - **Zitadel аутентификация** - полная интеграция с JWT
@@ -109,7 +109,7 @@ cd reference-repos/stun-turn/turn-1/
 
 ---
 
-## 🟡 **ВАЖНО (сделать в течение месяца) - 4-6 недель**
+## **ВАЖНО (сделать в течение месяца) - 4-6 недель**
 
 ### **4. BGP Anycast (2 недели)**
 
@@ -225,7 +225,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ---
 
-## 📋 **Детальный план по неделям**
+## **Детальный план по неделям**
 
 ### **Неделя 1: MASQUE улучшения**
 - [ ] Изучить masque-go reference
@@ -278,7 +278,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ---
 
-## 🎯 **Критерии успеха**
+## **Критерии успеха**
 
 ### **MASQUE улучшения**
 - [ ] CONNECT-UDP работает стабильно
@@ -312,7 +312,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ---
 
-## 🚀 **Следующие шаги**
+## **Следующие шаги**
 
 1. **Начать с MASQUE улучшений** - изучить masque-go reference
 2. **Создать TURN-пул** - изучить coturn reference

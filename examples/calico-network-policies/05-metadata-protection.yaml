@@ -1,5 +1,5 @@
 # Metadata Services Protection
-# ⚠️ КРИТИЧНО: Блокировка IMDS + kube-apiserver согласно NSA/CISA рекомендациям
+# КРИТИЧНО: Блокировка IMDS + kube-apiserver согласно NSA/CISA рекомендациям
 ---
 apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
@@ -20,7 +20,7 @@ spec:
       nets: ["169.254.169.254/32"]
     protocol: UDP
   # Блокируем прямой доступ к kube-apiserver
-  # ⚡ ИСПРАВЛЕНО: используем service rules вместо pod селекторов
+  # ИСПРАВЛЕНО: используем service rules вместо pod селекторов
   - action: Deny
     destination:
       services:
@@ -41,7 +41,7 @@ spec:
   egress:
   - action: Allow
     destination:
-      # ⚡ ИСПРАВЛЕНО: service rules для kube-apiserver
+      # ИСПРАВЛЕНО: service rules для kube-apiserver
       services:
         name: kubernetes
         namespace: default

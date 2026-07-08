@@ -17,7 +17,7 @@
 6. **AI Service** - Analytics (83 строк)
 7. **Cadence** - Workflow orchestration
 
-### ⚠️ Что Требует Внимания
+### Что Требует Внимания
 1. **Quantum Service** - Заглушка (44 строки, не реализовано)
 2. **QUIC Service** - Standalone service (76 строк, дублирует relay?)
 3. **Tenant Policy Controller** - 2 версии (нужна ли обе?)
@@ -256,7 +256,7 @@ type AIComponents struct {
 
 ### Supporting Services
 
-#### 7. **CNI Plugin** (cmd/cni-plugin/main.go) - 220 lines ⚠️
+#### 7. **CNI Plugin** (cmd/cni-plugin/main.go) - 220 lines 
 
 **Роль**: Kubernetes CNI integration
 
@@ -265,13 +265,13 @@ type AIComponents struct {
 - IPAM integration
 - Network policy enforcement
 
-**Status**: ⚠️ **OPTIONAL** (для Kubernetes networking)
+**Status**: **OPTIONAL** (для Kubernetes networking)
 
 **Recommendation**: Можно использовать существующие CNI (Calico, Cilium)
 
 ---
 
-#### 8. **API Service** (cmd/api/main.go) - 106 lines ⚠️
+#### 8. **API Service** (cmd/api/main.go) - 106 lines 
 
 **Роль**: Standalone API service (альтернатива P2P API в relay?)
 
@@ -322,7 +322,7 @@ mv cmd/quantum-service cmd/disabled/quantum-service
 
 ---
 
-#### 11. **QUIC Service** (cmd/quic-service/main.go) - 76 lines ⚠️
+#### 11. **QUIC Service** (cmd/quic-service/main.go) - 76 lines 
 
 **Роль**: Standalone QUIC service
 
@@ -344,7 +344,7 @@ grep -r "quic-service" configs/
 
 ---
 
-#### 12. **Tenant Policy Controller** - 2 версии ⚠️
+#### 12. **Tenant Policy Controller** - 2 версии 
 
 **Вариант 1**: `cmd/tenant-policy-controller/main.go` - 119 lines
 **Вариант 2**: `cmd/tenant-policy-controller-simple/main.go` - 78 lines
@@ -525,17 +525,17 @@ deployments:
 
 | Service | Lines | Complexity | Test Coverage | Status |
 |---------|-------|------------|---------------|--------|
-| relay | 2391 | High | ⚠️ Low | Production |
-| IPAM | 156 | Medium | ⚠️ Unknown | Production |
-| AI Service | 83 | Low | ⚠️ Unknown | Functional |
-| AI Worker | 85 | Low | ⚠️ Unknown | Functional |
-| Cadence | 109 | Medium | ⚠️ Unknown | Functional |
-| CNI Plugin | 220 | Medium | ⚠️ Unknown | Optional |
-| API | 106 | Low | ⚠️ Unknown | Check usage |
+| relay | 2391 | High | Low | Production |
+| IPAM | 156 | Medium | Unknown | Production |
+| AI Service | 83 | Low | Unknown | Functional |
+| AI Worker | 85 | Low | Unknown | Functional |
+| Cadence | 109 | Medium | Unknown | Functional |
+| CNI Plugin | 220 | Medium | Unknown | Optional |
+| API | 106 | Low | Unknown | Check usage |
 | kubectl-zitadel | 339 | Medium | N/A | Utility |
 | ZeroTrust Demo | 164 | Low | N/A | Demo |
 | Quantum | 44 | N/A | N/A |  Stub |
-| QUIC Service | 76 | Low | ⚠️ Unknown | Check usage |
+| QUIC Service | 76 | Low | Unknown | Check usage |
 
 ### Code Smells Detected
 
@@ -544,20 +544,20 @@ deployments:
    - No real implementation
    - **Action**: Remove/disable
 
-2. **Duplicate Controllers** ⚠️
+2. **Duplicate Controllers** 
    - tenant-policy-controller (2 versions)
    - **Action**: Consolidate
 
-3. **Possible Service Duplication** ⚠️
+3. **Possible Service Duplication** 
    - QUIC Service vs Relay's QUIC Manager
    - API Service vs Relay's P2P API
    - **Action**: Analyze and merge if duplicate
 
-4. **Missing Tests** ⚠️
+4. **Missing Tests** 
    - Most services have no visible tests
    - **Action**: Add integration tests
 
-5. **Large Relay Main** ⚠️
+5. **Large Relay Main** 
    - relay/main.go: 2391 lines
    - Monolithic structure
    - **Action**: Consider refactoring (low priority)
@@ -574,14 +574,14 @@ deployments:
    # Update docs to mark as "Future Feature"
    ```
 
-2. **⚠️ Clarify QUIC Service Purpose**
+2. **Clarify QUIC Service Purpose**
    ```bash
    # Determine if it duplicates relay QUIC
    # If yes: merge into relay
    # If no: document unique purpose
    ```
 
-3. **⚠️ Resolve Duplicate Controllers**
+3. **Resolve Duplicate Controllers**
    ```bash
    # Choose one tenant-policy-controller
    # Remove the other
@@ -675,9 +675,9 @@ deployments:
 - [x] AI Service (basic implementation)
 - [x] AI Worker (functional)
 - [x] Cadence (functional)
-- [ ] ⚠️ QUIC Service (needs clarification)
-- [ ] ⚠️ API Service (check if needed)
-- [ ] ⚠️ Tenant Policy Controller (consolidate)
+- [ ] QUIC Service (needs clarification)
+- [ ] API Service (check if needed)
+- [ ] Tenant Policy Controller (consolidate)
 
 ### Services to Disable
 
@@ -740,12 +740,12 @@ kubectl apply -f k8s/deployments/cadence-web-deployment.yaml
    # Don't deploy in production
    ```
 
-2. ⚠️ **Investigate Service Duplication**
+2. **Investigate Service Duplication**
    - Check QUIC Service vs Relay QUIC Manager
    - Check API Service vs Relay P2P API
    - Document findings
 
-3. ⚠️ **Consolidate Policy Controllers**
+3. **Consolidate Policy Controllers**
    - Choose one version
    - Remove the other
 
@@ -799,9 +799,9 @@ kubectl apply -f k8s/deployments/cadence-web-deployment.yaml
 
 **Weaknesses**:
 -  Quantum service not implemented (stub)
-- ⚠️ Possible service duplication (needs investigation)
-- ⚠️ Limited test coverage
-- ⚠️ Large monolithic relay main
+- Possible service duplication (needs investigation)
+- Limited test coverage
+- Large monolithic relay main
 
 **Recommendation**:
 **Ready for MVP deployment** after:

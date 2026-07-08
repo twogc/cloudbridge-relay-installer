@@ -61,32 +61,32 @@ data:
 </head>
 <body>
     <div class="container">
-        <h1 class="header">🚀 VK Cloud Kubernetes</h1>
+        <h1 class="header">VK Cloud Kubernetes</h1>
         <p>CloudBridge Relay Platform</p>
         
         <div class="services">
             <h2>Available Services:</h2>
             
             <div class="service">
-                <strong>🔐 Zitadel (Identity Provider)</strong><br>
+                <strong>Zitadel (Identity Provider)</strong><br>
                 <a href="http://zitadel.cloudbridge.local">http://zitadel.cloudbridge.local</a><br>
                 <small>Authentication and Authorization</small>
             </div>
             
             <div class="service">
-                <strong>📦 Docker Registry</strong><br>
+                <strong>Docker Registry</strong><br>
                 <a href="http://edge.2gc.ru:30000">http://edge.2gc.ru:30000</a><br>
                 <small>Container Image Registry</small>
             </div>
             
             <div class="service">
-                <strong>📊 Monitoring</strong><br>
+                <strong>Monitoring</strong><br>
                 <a href="http://prometheus.cloudbridge.local">http://prometheus.cloudbridge.local</a><br>
                 <small>Prometheus Metrics</small>
             </div>
             
             <div class="service">
-                <strong>📈 Grafana</strong><br>
+                <strong>Grafana</strong><br>
                 <a href="http://grafana.cloudbridge.local">http://grafana.cloudbridge.local</a><br>
                 <small>Monitoring Dashboard</small>
             </div>

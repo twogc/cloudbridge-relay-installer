@@ -1,40 +1,40 @@
-# 🔒 Анализ изоляции Calico Network Policies
+# Анализ изоляции Calico Network Policies
 
-## 🚨 **ПРОБЛЕМА ОБНАРУЖЕНА: Calico не блокирует межтенантный трафик**
+## **ПРОБЛЕМА ОБНАРУЖЕНА: Calico не блокирует межтенантный трафик**
 
-### **📊 Результаты тестирования:**
+### **Результаты тестирования:**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    ISOLATION TEST RESULTS                 │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  🏢 Tenant A (tenant-216420165)                            │
+│   Tenant A (tenant-216420165)                            │
 │     ├── Pod: tenant-a-pod (10.244.3.96)                   │
 │     └── Labels: tenant.cloudbridge.io/id=tenant-216420165  │
 │                                                             │
-│  🏢 Tenant B (tenant-123456789)                            │
+│   Tenant B (tenant-123456789)                            │
 │     ├── Pod: tenant-b-pod (10.244.3.97)                   │
 │     └── Labels: tenant.cloudbridge.io/id=tenant-123456789  │
 │                                                             │
-│  🧪 Тест: ping от Tenant A к Tenant B                      │
+│  Тест: ping от Tenant A к Tenant B                      │
 │     ├── Команда: kubectl exec tenant-a-pod -- ping 10.244.3.97 │
-│     ├── Результат: ✅ PING ПРОШЕЛ!                         │
-│     └── Статус: ❌ ИЗОЛЯЦИЯ НЕ РАБОТАЕТ                    │
+│     ├── Результат: PING ПРОШЕЛ!                         │
+│     └── Статус: ИЗОЛЯЦИЯ НЕ РАБОТАЕТ                    │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔍 **Причины проблемы:**
+## **Причины проблемы:**
 
 ### **1. Calico настроен только на Kubernetes Network Policies**
 
 ```yaml
 # В calico-config
 "policy": {
-    "type": "k8s"  # ❌ Только Kubernetes Network Policies
+    "type": "k8s"  # Только Kubernetes Network Policies
 }
 ```
 
@@ -79,7 +79,7 @@ data:
         {
           "type": "calico",
           "policy": {
-            "type": "calico"  # ✅ Включить Calico Global Policies
+            "type": "calico"  # Включить Calico Global Policies
           }
         }
       ]
@@ -123,15 +123,15 @@ kubectl get pods -n kube-system -l k8s-app=calico-node -o yaml | grep -i policy
 
 ---
 
-## 🎯 **Рекомендации:**
+## **Рекомендации:**
 
-### **✅ Немедленные действия:**
+### **Немедленные действия:**
 
 1. **Переключить Calico на Global Network Policies**
 2. **Создать Kubernetes Network Policies для изоляции**
 3. **Протестировать изоляцию снова**
 
-### **✅ Долгосрочные решения:**
+### **Долгосрочные решения:**
 
 1. **Настроить Calico в режиме policy enforcement**
 2. **Добавить мониторинг политик**
@@ -141,14 +141,14 @@ kubectl get pods -n kube-system -l k8s-app=calico-node -o yaml | grep -i policy
 
 ## 🏆 **Заключение:**
 
-### **❌ Текущее состояние:**
+### **Текущее состояние:**
 - Calico Network Policies развернуты, но не работают
 - Ping между разными тенантами проходит
 - Изоляция НЕ обеспечивается
 
-### **✅ Требуется:**
+### **Требуется:**
 - Настройка Calico для применения Global Network Policies
 - Или использование Kubernetes Network Policies
 - Тестирование изоляции после исправления
 
-**🚨 КРИТИЧНО: Изоляция тенантов не работает в текущей конфигурации!**
+**КРИТИЧНО: Изоляция тенантов не работает в текущей конфигурации!**

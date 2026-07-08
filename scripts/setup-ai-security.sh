@@ -17,7 +17,7 @@ NAMESPACE="cloudbridge"
 SERVICE_NAME="ai-service"
 MONITORING_NAMESPACE="cloudbridge-monitoring"
 
-echo -e "${BLUE}🚀 AI Service Security Setup Script${NC}"
+echo -e "${BLUE}AI Service Security Setup Script${NC}"
 echo "================================================"
 
 # Function to check if namespace exists
@@ -26,14 +26,14 @@ check_namespace() {
         echo -e "${GREEN}Namespace $NAMESPACE exists${NC}"
         return 0
     else
-        echo -e "${RED}❌ Namespace $NAMESPACE not found${NC}"
+        echo -e "${RED}Namespace $NAMESPACE not found${NC}"
         return 1
     fi
 }
 
 # Function to create NetworkPolicy
 create_network_policy() {
-    echo -e "${BLUE}🔒 Creating NetworkPolicy...${NC}"
+    echo -e "${BLUE}Creating NetworkPolicy...${NC}"
     
     NETWORK_POLICY_YAML="apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -93,14 +93,14 @@ spec:
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
 
 # Function to create RBAC
 create_rbac() {
-    echo -e "${BLUE}🔒 Creating RBAC...${NC}"
+    echo -e "${BLUE}Creating RBAC...${NC}"
     
     # ServiceAccount
     SERVICE_ACCOUNT_YAML="apiVersion: v1
@@ -118,7 +118,7 @@ metadata:
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Created${NC}"
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
     
@@ -145,7 +145,7 @@ rules:
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}Created${NC}"
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
     
@@ -171,14 +171,14 @@ roleRef:
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
 
 # Function to create PodSecurityPolicy
 create_pod_security_policy() {
-    echo -e "${BLUE}🔒 Creating PodSecurityPolicy...${NC}"
+    echo -e "${BLUE}Creating PodSecurityPolicy...${NC}"
     
     PSP_YAML="apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -211,14 +211,14 @@ spec:
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
 
 # Function to create SecurityContextConstraints (for OpenShift)
 create_scc() {
-    echo -e "${BLUE}🔒 Creating SecurityContextConstraints...${NC}"
+    echo -e "${BLUE}Creating SecurityContextConstraints...${NC}"
     
     SCC_YAML="apiVersion: security.openshift.io/v1
 kind: SecurityContextConstraints
@@ -268,7 +268,7 @@ volumes:
 
 # Function to create Secret for API keys
 create_secrets() {
-    echo -e "${BLUE}🔒 Creating Secrets...${NC}"
+    echo -e "${BLUE}Creating Secrets...${NC}"
     
     # Generate random API key
     API_KEY=$(openssl rand -hex 32)
@@ -292,14 +292,14 @@ data:
         echo -e "${YELLOW}   API Key: $API_KEY${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
 
 # Function to create ConfigMap for security settings
 create_security_config() {
-    echo -e "${BLUE}🔒 Creating Security ConfigMap...${NC}"
+    echo -e "${BLUE}Creating Security ConfigMap...${NC}"
     
     SECURITY_CONFIG_YAML="apiVersion: v1
 kind: ConfigMap
@@ -357,14 +357,14 @@ data:
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
 
 # Function to create PodSecurityPolicy
 create_pod_security_standards() {
-    echo -e "${BLUE}🔒 Creating Pod Security Standards...${NC}"
+    echo -e "${BLUE}Creating Pod Security Standards...${NC}"
     
     # Add security labels to namespace
     kubectl label namespace $NAMESPACE pod-security.kubernetes.io/enforce=restricted --overwrite >/dev/null 2>&1
@@ -378,7 +378,7 @@ echo -e "${YELLOW}Setting up AI Service Security...${NC}"
 echo
 
 # Check prerequisites
-echo -e "${BLUE}🔍 Checking prerequisites...${NC}"
+echo -e "${BLUE}Checking prerequisites...${NC}"
 check_namespace $NAMESPACE
 
 echo
@@ -402,10 +402,10 @@ echo
 
 # Summary
 echo "================================================"
-echo -e "${GREEN}🎉 AI Service Security Setup Complete!${NC}"
+echo -e "${GREEN}AI Service Security Setup Complete!${NC}"
 echo
 
-echo -e "${BLUE}🔒 Security Features Enabled:${NC}"
+echo -e "${BLUE}Security Features Enabled:${NC}"
 echo "  - NetworkPolicy: Restricted network access"
 echo "  - RBAC: Role-based access control"
 echo "  - PodSecurityPolicy: Container security policies"
@@ -414,7 +414,7 @@ echo "  - Security ConfigMap: Rate limiting and CORS"
 echo "  - Pod Security Standards: Restricted security profile"
 echo
 
-echo -e "${BLUE}🔍 Security Commands:${NC}"
+echo -e "${BLUE}Security Commands:${NC}"
 echo "  - NetworkPolicy: kubectl get networkpolicy -n $NAMESPACE"
 echo "  - RBAC: kubectl get role,rolebinding,serviceaccount -n $NAMESPACE"
 echo "  - Secrets: kubectl get secrets -n $NAMESPACE"

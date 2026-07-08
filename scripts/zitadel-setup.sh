@@ -365,18 +365,18 @@ verify_deployment() {
     # Проверка OIDC конфигурации
     log "Проверка OIDC конфигурации..."
     if curl -kLs "https://$ZITADEL_DOMAIN/.well-known/openid-configuration" | jq . > /dev/null; then
-        log "✅ OIDC конфигурация доступна"
+        log "OIDC конфигурация доступна"
         
         # Сохранение OIDC конфигурации
         curl -kLs "https://$ZITADEL_DOMAIN/.well-known/openid-configuration" > "$PROJECT_ROOT/configs/oidc-config.json"
         log "OIDC конфигурация сохранена в configs/oidc-config.json"
     else
-        error "❌ OIDC конфигурация недоступна"
+        error "OIDC конфигурация недоступна"
     fi
     
     # Вывод URL доступа
-    log "🎉 ZITADEL развернут успешно!"
-    log "📋 Информация для доступа:"
+    log "ZITADEL развернут успешно!"
+    log "Информация для доступа:"
     log "   URL: https://$ZITADEL_DOMAIN"
     log "   Console: https://$ZITADEL_DOMAIN/ui/console"
     log "   Admin: zitadel-admin@$ZITADEL_DOMAIN"
@@ -400,8 +400,8 @@ cleanup_on_error() {
 
 # Основная функция
 main() {
-    log "🚀 Начало установки ZITADEL для CloudBridge Relay"
-    log "📋 Конфигурация:"
+    log "Начало установки ZITADEL для CloudBridge Relay"
+    log "Конфигурация:"
     log "   Домен: $ZITADEL_DOMAIN"
     log "   Namespace: $ZITADEL_NAMESPACE"
     log "   Организация: $ORG_NAME"
@@ -421,7 +421,7 @@ main() {
     setup_zitadel_config
     verify_deployment
     
-    log "🎉 Установка ZITADEL завершена успешно!"
+    log "Установка ZITADEL завершена успешно!"
 }
 
 # Запуск скрипта

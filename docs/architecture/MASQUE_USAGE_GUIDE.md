@@ -15,7 +15,7 @@ MASQUE (Multiplexed Application Substrate over QUIC Encryption) - это про�
 - **Протоколы**: HTTP/3, QUIC
 - **ALPN**: h3, h3-29, h3-28, h3-27
 
-## 📡 Доступные Endpoints
+## Доступные Endpoints
 
 ### 1. CONNECT-UDP
 ```
@@ -79,7 +79,7 @@ ports:
 - Регистрация HTTP handlers
 - Запуск HTTP/3 сервера
 
-## 🧪 Тестирование
+## Тестирование
 
 ### 1. Проверка доступности
 ```bash

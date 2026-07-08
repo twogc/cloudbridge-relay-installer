@@ -222,7 +222,7 @@ EOF
 
 # Main installation function
 main() {
-    echo "🚀 Enhanced QUIC Installer"
+    echo "Enhanced QUIC Installer"
     echo "=========================="
     
     # Parse arguments

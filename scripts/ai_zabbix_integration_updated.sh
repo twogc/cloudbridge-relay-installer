@@ -13,7 +13,7 @@ AI_METRICS_SCRIPT="/usr/local/bin/ai_metrics_collector.sh"
 AI_API_URL="http://localhost:8083"
 
 # Создание скрипта для сбора AI метрик
-echo "📊 Создание скрипта сбора AI метрик..."
+echo "Создание скрипта сбора AI метрик..."
 sudo tee $AI_METRICS_SCRIPT > /dev/null <<'EOF'
 #!/bin/bash
 

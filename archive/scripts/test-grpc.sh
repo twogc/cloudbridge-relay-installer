@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Простой тест gRPC подключения
-echo "🔍 Тестируем gRPC подключение..."
+echo "Тестируем gRPC подключение..."
 
 # Обновляем конфигурацию клиента для использования NodePort 30845
 cd /home/ubuntu/cloudbridge-relay-installer/test/relay-client
@@ -31,7 +31,7 @@ api:
   insecure_skip_verify: true
 EOF
 
-echo "✅ Конфигурация создана. Тестируем клиент..."
+echo "Конфигурация создана. Тестируем клиент..."
 
 # Тестируем клиент
 timeout 15s ./cloudbridge-client tunnel --config config-no-tls.yaml --token simple-token.txt --tunnel-id test-tunnel --transport grpc --insecure-skip-tls-verify --log-level debug

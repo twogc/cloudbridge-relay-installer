@@ -270,11 +270,11 @@ create_sbom_readme() {
     cat > "$OUTPUT_DIR/README.md" << 'EOF'
 # Software Bill of Materials (SBOM)
 
-## 📋 О проекте
+## О проекте
 
 Этот SBOM содержит полный список компонентов и зависимостей Docker образа CloudBridge Relay.
 
-## 📦 Файлы
+## Файлы
 
 ### SBOM Форматы
 - **sbom-spdx.json** - SPDX 2.3 формат (industry standard)
@@ -288,7 +288,7 @@ create_sbom_readme() {
 - **vulnerabilities.txt** - Text отчет об уязвимостях
 - **metadata.json** - Метаданные генерации SBOM
 
-## 🔍 Использование
+## Использование
 
 ### Просмотр пакетов
 ```bash
@@ -314,7 +314,7 @@ grype sbom:sbom-spdx.json --fail-on critical
 diff sbom-v1.txt sbom-v2.txt
 ```
 
-## 🔐 Безопасность
+## Безопасность
 
 ### Critical Vulnerabilities
 Если найдены критические уязвимости:
@@ -329,7 +329,7 @@ SBOM соответствует следующим стандартам:
 - CycloneDX 1.4
 - NTIA Minimum Elements
 
-## 📊 Статистика
+## Статистика
 
 Смотрите `sbom-summary.txt` для:
 - Общего количества пакетов
@@ -364,18 +364,18 @@ print_summary() {
     echo -e "${GREEN}╚═══════════════════════════════════════════════════════════╝${NC}"
     echo ""
 
-    info "📦 Образ: $IMAGE"
+    info "Образ: $IMAGE"
     info "📁 Output: $OUTPUT_DIR"
     echo ""
 
-    info "📋 Созданные файлы:"
+    info "Созданные файлы:"
     ls -lh "$OUTPUT_DIR" | tail -n +2 | while read line; do
         echo "  $line"
     done
     echo ""
 
     if [ -f "$OUTPUT_DIR/vulnerabilities.json" ]; then
-        security_info "🔍 Сканирование уязвимостей:"
+        security_info "Сканирование уязвимостей:"
         TOTAL_VULNS=$(jq '.matches | length' "$OUTPUT_DIR/vulnerabilities.json" 2>/dev/null || echo "0")
         if [ "$TOTAL_VULNS" -gt 0 ]; then
             warning "Найдено уязвимостей: $TOTAL_VULNS"
@@ -386,7 +386,7 @@ print_summary() {
         echo ""
     fi
 
-    info "📊 Статистика:"
+    info "Статистика:"
     cat "$OUTPUT_DIR/sbom-summary.txt"
     echo ""
 

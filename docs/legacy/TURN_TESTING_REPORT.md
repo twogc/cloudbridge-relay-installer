@@ -1,8 +1,8 @@
-# 🧪 Отчет о тестировании TURN сервера в Minikube
+# Отчет о тестировании TURN сервера в Minikube
 
 ## **Статус развертывания: УСПЕШНО**
 
-### **🎯 Цель тестирования**
+### **Цель тестирования**
 Развернуть CloudBridge Relay с интегрированным TURN сервером в Minikube и протестировать все компоненты.
 
 ---
@@ -36,7 +36,7 @@
 
 ---
 
-## 🧪 **Результаты тестирования**
+## **Результаты тестирования**
 
 ### ** API Endpoints тестирование:**
 
@@ -102,7 +102,7 @@ curl http://localhost:5552/health
 ```bash
 curl http://localhost:5553/health
 ```
-**Результат:** ⚠️ **НЕ ОТВЕЧАЕТ** (возможно, не настроен)
+**Результат:** **НЕ ОТВЕЧАЕТ** (возможно, не настроен)
 
 ---
 
@@ -123,25 +123,25 @@ curl http://localhost:5553/health
  ICE candidate gathering completed (candidates_count:3)
 ```
 
-### **⚠️ Предупреждения (не критичные):**
+### **Предупреждения (не критичные):**
 
 ```
-⚠️ MASQUE Integration failed: address already in use (порт 8443 занят HTTP/3)
-⚠️ Zitadel Integration failed: JWKS keys not available (внешний сервис недоступен)
-⚠️ Failed to fetch real relay stats (timeout, но использует кэшированные данные)
+MASQUE Integration failed: address already in use (порт 8443 занят HTTP/3)
+Zitadel Integration failed: JWKS keys not available (внешний сервис недоступен)
+Failed to fetch real relay stats (timeout, но использует кэшированные данные)
 ```
 
 ---
 
 ## **Архитектура развертывания**
 
-### **📊 Компоненты в Kubernetes:**
+### **Компоненты в Kubernetes:**
 
 | Компонент | Порт | Протокол | Статус | Описание |
 |-----------|------|----------|--------|----------|
 | **Main Server** | 5550 | TCP |  Основной API сервер |
 | **P2P API** | 5552 | TCP |  P2P API для клиентов |
-| **HTTP API** | 5553 | TCP | ⚠️ | HTTP API (не отвечает) |
+| **HTTP API** | 5553 | TCP | | HTTP API (не отвечает) |
 | **Metrics** | 5551 | TCP |  Prometheus метрики |
 | **TURN Server** | 3478 | UDP/TCP |  TURN сервер для NAT traversal |
 | **STUN Server** | 19302 | UDP |  STUN сервер для NAT discovery |

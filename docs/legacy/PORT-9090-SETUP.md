@@ -260,7 +260,7 @@ curl -k https://edge.2gc.ru:9090/health
 netstat -tlnp | grep :9090
 ```
 
-## 🚨 Устранение неполадок
+## Устранение неполадок
 
 ### Проблема: "Connection refused на порту 9090"
 ```bash
@@ -365,5 +365,5 @@ ingress:
 3. Проверьте статус всех компонентов
 4. Обратитесь к документации Cloudflare
 
-**🎉 CloudBridge Relay готов к работе на порту 9090!**
+**CloudBridge Relay готов к работе на порту 9090!**
 

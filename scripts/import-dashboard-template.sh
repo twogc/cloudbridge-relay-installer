@@ -18,7 +18,7 @@ GRAFANA_USER="admin"
 GRAFANA_PASSWORD="admin123"
 DASHBOARD_FILE="grafana-dashboard-template.json"
 
-echo -e "${BLUE}🚀 AI Service Dashboard Template Import${NC}"
+echo -e "${BLUE}AI Service Dashboard Template Import${NC}"
 echo "================================================"
 
 # Function to check if Grafana is accessible
@@ -29,7 +29,7 @@ check_grafana() {
         echo -e "${GREEN}Accessible${NC}"
         return 0
     else
-        echo -e "${RED}❌ Not accessible${NC}"
+        echo -e "${RED}Not accessible${NC}"
         return 1
     fi
 }
@@ -42,7 +42,7 @@ check_dashboard_file() {
         echo -e "${GREEN}Found${NC}"
         return 0
     else
-        echo -e "${RED}❌ Not found${NC}"
+        echo -e "${RED}Not found${NC}"
         return 1
     fi
 }
@@ -62,7 +62,7 @@ import_dashboard() {
         echo -e "${GREEN}Imported successfully${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed to import${NC}"
+        echo -e "${RED}Failed to import${NC}"
         echo "Response: $response"
         return 1
     fi
@@ -75,18 +75,18 @@ show_manual_instructions() {
     echo "================================================"
     echo
     echo "1. Open Grafana in your browser:"
-    echo "   🌐 http://localhost:3000"
+    echo "   http://localhost:3000"
     echo
     echo "2. Login with credentials:"
     echo "   👤 Username: admin"
-    echo "   🔑 Password: admin123"
+    echo "   Password: admin123"
     echo
     echo "3. Click the '+' button in the left sidebar"
     echo
     echo "4. Select 'Import'"
     echo
     echo "5. Copy the contents of the dashboard file:"
-    echo "   📄 $DASHBOARD_FILE"
+    echo "   $DASHBOARD_FILE"
     echo
     echo "6. Paste the JSON into the 'Import via panel json' text area"
     echo
@@ -94,7 +94,7 @@ show_manual_instructions() {
     echo
     echo "8. Configure the dashboard settings and click 'Import'"
     echo
-    echo -e "${BLUE}📊 Dashboard Features:${NC}"
+    echo -e "${BLUE}Dashboard Features:${NC}"
     echo "   AI Service Status"
     echo "   Request Rate"
     echo "   Response Time"
@@ -110,7 +110,7 @@ show_manual_instructions() {
 
 # Function to show dashboard content
 show_dashboard_content() {
-    echo -e "${YELLOW}📄 Dashboard Template Content:${NC}"
+    echo -e "${YELLOW} Dashboard Template Content:${NC}"
     echo "================================================"
     echo
     cat "$DASHBOARD_FILE"
@@ -124,7 +124,7 @@ main() {
     
     # Check prerequisites
     if ! check_grafana; then
-        echo -e "${RED}❌ Cannot access Grafana. Make sure it's running and port-forward is active.${NC}"
+        echo -e "${RED}Cannot access Grafana. Make sure it's running and port-forward is active.${NC}"
         echo -e "${YELLOW}   Run: kubectl port-forward -n cloudbridge-monitoring svc/grafana 3000:3000${NC}"
         echo
         show_manual_instructions
@@ -132,7 +132,7 @@ main() {
     fi
     
     if ! check_dashboard_file; then
-        echo -e "${RED}❌ Dashboard template file not found.${NC}"
+        echo -e "${RED}Dashboard template file not found.${NC}"
         echo -e "${YELLOW}   Make sure $DASHBOARD_FILE exists in the current directory.${NC}"
         exit 1
     fi
@@ -142,12 +142,12 @@ main() {
     # Try to import dashboard
     if import_dashboard; then
         echo
-        echo -e "${GREEN}🎉 Dashboard imported successfully!${NC}"
+        echo -e "${GREEN}Dashboard imported successfully!${NC}"
         echo
-        echo -e "${BLUE}📊 Access your dashboard:${NC}"
-        echo "   🌐 Grafana: http://localhost:3000"
+        echo -e "${BLUE}Access your dashboard:${NC}"
+        echo "   Grafana: http://localhost:3000"
         echo "   👤 Login: admin"
-        echo "   🔑 Password: admin123"
+        echo "   Password: admin123"
         echo
         echo -e "${YELLOW}📝 The dashboard should now be available in the 'Dashboards' section.${NC}"
     else
@@ -157,7 +157,7 @@ main() {
     fi
     
     echo
-    echo -e "${BLUE}🔍 Additional Information:${NC}"
+    echo -e "${BLUE}Additional Information:${NC}"
     echo "   - Dashboard file: $DASHBOARD_FILE"
     echo "   - Grafana URL: $GRAFANA_URL"
     echo "   - Namespace: cloudbridge-monitoring"

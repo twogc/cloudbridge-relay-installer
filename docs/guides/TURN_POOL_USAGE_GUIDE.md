@@ -300,4 +300,4 @@ logger.Info("TURN Pool Stats", zap.Any("stats", stats))
 
 ---
 
-**🎯 TURN Pool Manager обеспечивает надежную и масштабируемую систему управления TURN серверами для CloudBridge Relay!**
+**TURN Pool Manager обеспечивает надежную и масштабируемую систему управления TURN серверами для CloudBridge Relay!**

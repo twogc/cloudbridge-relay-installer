@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🔒 Исправление уязвимостей в зависимостях CloudBridge Relay"
+echo "Исправление уязвимостей в зависимостях CloudBridge Relay"
 echo "=============================================================="
 
 # Создаем резервные копии
@@ -15,7 +15,7 @@ cp go.mod go.mod.backup.$(date +%Y%m%d_%H%M%S)
 cp go.sum go.sum.backup.$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
 
 # 1. Обновляем Node.js зависимости
-echo -e "\n📦 Обновление Node.js зависимостей..."
+echo -e "\nОбновление Node.js зависимостей..."
 
 # Обновляем уязвимые пакеты до безопасных версий
 npm install axios@^1.7.0
@@ -45,7 +45,7 @@ npm install --save-dev typescript@^5.3.3
 npm install --save-dev typedoc@^0.25.4
 
 # Проверяем уязвимости после обновления
-echo -e "\n🔍 Проверка уязвимостей после обновления..."
+echo -e "\nПроверка уязвимостей после обновления..."
 npm audit
 
 # 2. Обновляем Go зависимости
@@ -78,7 +78,7 @@ echo -e "\n🐳 Обновление Docker образов..."
 # Создаем обновленные Dockerfile'ы с безопасными базовыми образами
 cat > Dockerfile.production.secure << 'EOF'
 # Multi-stage production build for CloudBridge Relay - Security Hardened
-FROM golang:1.21-alpine3.19 AS builder
+FROM golang:1.25.12-alpine3.19 AS builder
 
 # Install build dependencies with security updates
 RUN apk add --no-cache \
@@ -295,10 +295,10 @@ cat > scripts/security/vulnerability-scan.sh << 'EOF'
 #!/bin/bash
 
 # Регулярная проверка уязвимостей
-echo "🔍 Проверка уязвимостей - $(date)"
+echo "Проверка уязвимостей - $(date)"
 
 # Проверка npm уязвимостей
-echo "📦 Проверка Node.js зависимостей..."
+echo "Проверка Node.js зависимостей..."
 npm audit --audit-level=moderate
 
 # Проверка Go уязвимостей
@@ -312,7 +312,7 @@ echo "🐳 Проверка Docker образов..."
 docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.CreatedAt}}" | grep -E "(golang|alpine|node)"
 
 # Проверка системных пакетов
-echo "🖥️ Проверка системных пакетов..."
+echo " Проверка системных пакетов..."
 apt list --upgradable 2>/dev/null | grep -E "(security|update)"
 
 echo "Проверка завершена"
@@ -498,6 +498,6 @@ docker images
 EOF
 
 echo -e "\nИсправление уязвимостей завершено!"
-echo "📊 Создан отчет: VULNERABILITY_FIX_REPORT.md"
-echo "🔍 Для проверки запустите: npm audit"
-echo "🛡️ Для регулярной проверки: ./scripts/security/vulnerability-scan.sh"
+echo "Создан отчет: VULNERABILITY_FIX_REPORT.md"
+echo "Для проверки запустите: npm audit"
+echo "Для регулярной проверки: ./scripts/security/vulnerability-scan.sh"

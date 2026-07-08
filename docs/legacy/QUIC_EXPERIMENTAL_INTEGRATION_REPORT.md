@@ -530,7 +530,7 @@ Packet arrives:
 
 ---
 
-## 👥 Contributors
+## Contributors
 
 - **CloudBridge Relay Team** - Integration and adaptation
 - **2GC Network Protocol Suite** - Original quic-test implementation
@@ -538,7 +538,7 @@ Packet arrives:
 
 ---
 
-## 📄 License
+## License
 
 Integrated code maintains compatibility with:
 - **CloudBridge Relay**: Proprietary license
@@ -556,7 +556,7 @@ For questions or issues:
 
 ---
 
-**Статус интеграции**: 🟢 **ПОЛНОСТЬЮ ЗАВЕРШЕНО** (100% завершено)
+**Статус интеграции**: **ПОЛНОСТЬЮ ЗАВЕРШЕНО** (100% завершено)
 
 **Все экспериментальные функции реализованы и протестированы!**
 

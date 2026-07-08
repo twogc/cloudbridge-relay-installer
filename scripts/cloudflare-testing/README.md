@@ -2,7 +2,7 @@
 
 Этот набор скриптов предназначен для тестирования интеграции CloudBridge Relay с Cloudflare без нарушения работы основной системы.
 
-## 🎯 Цель тестирования
+## Цель тестирования
 
 Проверить работоспособность и производительность соединения между российским Relay-сервером и Cloudflare Magic WAN, используя:
 
@@ -27,7 +27,7 @@ k8s/cloudflare-testing/
 └── cloudbridge-testing-services.yaml
 ```
 
-## 🚀 Быстрый старт
+## Быстрый старт
 
 ### 1. Развертывание тестового окружения
 
@@ -79,7 +79,7 @@ RELAY_JWT_SECRET="85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
 JWT_SECRET="85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
 ```
 
-## 🧪 Тесты
+## Тесты
 
 ### Базовые тесты подключения
 
@@ -118,7 +118,7 @@ kubectl get pods -n cloudbridge-testing
 kubectl top pods -n cloudbridge-testing
 ```
 
-## 🔍 Диагностика
+## Диагностика
 
 ### Проверка статуса
 
@@ -162,7 +162,7 @@ kubectl delete namespace cloudbridge-testing
 kubectl delete -f k8s/cloudflare-testing/
 ```
 
-## 📊 Мониторинг и метрики
+## Мониторинг и метрики
 
 ### Prometheus метрики
 
@@ -199,7 +199,7 @@ kubectl delete -f k8s/cloudflare-testing/
 }
 ```
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Частые проблемы
 
@@ -234,7 +234,7 @@ kubectl exec -n cloudbridge-testing deployment/cloudbridge-relay-testing -- \
   ip addr show
 ```
 
-## 📈 Критерии успеха
+## Критерии успеха
 
 1. **Connectivity**: Relay успешно соединяется с Cloudflare
 2. **Throughput**: Для нагрузки 200 Mbps CPU < 80% и packet loss < 1%

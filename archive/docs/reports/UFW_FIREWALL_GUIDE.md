@@ -4,7 +4,7 @@
 
 Этот документ описывает настройку UFW (Uncomplicated Firewall) для CloudBridge Relay с красивыми портами 5550-5555.
 
-## 🚀 **Быстрый старт**
+## **Быстрый старт**
 
 ### **1. Автоматическая настройка:**
 ```bash
@@ -89,7 +89,7 @@ sudo ufw allow 5551/tcp comment "Metrics"
 sudo ufw allow from 192.168.1.100 to any port 5551
 ```
 
-## 🔍 **Диагностика**
+## **Диагностика**
 
 ### **Проверка открытых портов:**
 ```bash
@@ -142,7 +142,7 @@ nmap -p 5550-5555 localhost
    sudo tail -f /var/log/ufw.log
    ```
 
-## 📊 **Мониторинг**
+## **Мониторинг**
 
 ### **Проверка трафика:**
 ```bash
@@ -176,7 +176,7 @@ sudo ./scripts/ufw-cloudbridge.sh show
 sudo ./scripts/ufw-cloudbridge.sh status
 ```
 
-## 🐛 **Устранение неполадок**
+## **Устранение неполадок**
 
 ### **Частые проблемы:**
 
@@ -229,4 +229,4 @@ sudo ./scripts/ufw-cloudbridge.sh status
 
 ---
 
-**🎯 Результат: UFW правильно настроен для CloudBridge Relay с портами 5550-5555!**
+**Результат: UFW правильно настроен для CloudBridge Relay с портами 5550-5555!**

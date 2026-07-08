@@ -12,7 +12,7 @@ fi
 
 say() { echo -e "[$(date +%H:%M:%S)] $*"; }
 ok() { echo -e "$*"; }
-err() { echo -e "❌ $*"; }
+err() { echo -e "$*"; }
 
 # UDP 51820 (WireGuard)
 say "Checking UDP 51820 (WireGuard) reachability to $HOST..."

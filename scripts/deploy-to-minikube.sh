@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🚀 Скрипт автоматического развертывания CloudBridge Relay в Minikube
+# Скрипт автоматического развертывания CloudBridge Relay в Minikube
 # Версия: 1.0
 # Дата: 13 сентября 2025
 
@@ -27,7 +27,7 @@ warning() {
 }
 
 error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
     exit 1
 }
 
@@ -243,7 +243,7 @@ test_apis() {
 show_access_info() {
     log "Информация о доступе к сервисам:"
     echo ""
-    echo "🌐 P2P API: http://localhost:8082"
+    echo "P2P API: http://localhost:8082"
     echo "   Health: http://localhost:8082/health"
     echo ""
     echo "🧠 AI Service: http://localhost:8083"
@@ -251,11 +251,11 @@ show_access_info() {
     echo "   Models: http://localhost:8083/api/v1/ai/models"
     echo "   Anomaly: http://localhost:8083/api/v1/ai/anomaly/detect"
     echo ""
-    echo "📊 Grafana:"
+    echo "Grafana:"
     echo "   kubectl port-forward -n cloudbridge-monitoring service/grafana 3000:3000"
     echo "   http://localhost:3000"
     echo ""
-    echo "🔍 Полезные команды:"
+    echo "Полезные команды:"
     echo "   kubectl get pods -n cloudbridge"
     echo "   kubectl logs -n cloudbridge deployment/cloudbridge-relay -f"
     echo "   kubectl logs -n cloudbridge deployment/ai-service -f"
@@ -264,7 +264,7 @@ show_access_info() {
 
 # Основная функция
 main() {
-    echo "🚀 Начинаем развертывание CloudBridge Relay в Minikube..."
+    echo "Начинаем развертывание CloudBridge Relay в Minikube..."
     echo ""
     
     check_requirements
@@ -278,7 +278,7 @@ main() {
     show_access_info
     
     echo ""
-    success "🎉 Развертывание завершено успешно!"
+    success "Развертывание завершено успешно!"
     echo ""
     echo "Система готова к работе. AI интеграция активна."
     echo "Для остановки port-forwarding: pkill -f 'kubectl port-forward'"

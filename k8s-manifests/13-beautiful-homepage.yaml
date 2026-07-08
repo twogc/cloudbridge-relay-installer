@@ -121,20 +121,20 @@ data:
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 CloudBridge Relay Platform</h1>
+            <h1>CloudBridge Relay Platform</h1>
             <p>Secure, Scalable, and Intelligent Network Infrastructure</p>
         </div>
         
         <div class="services">
             <div class="service">
-                <div class="service-icon">🔐</div>
+                <div class="service-icon"></div>
                 <h3>Zitadel Identity Provider</h3>
                 <p>Modern authentication and authorization system with OIDC/OAuth2 support.</p>
                 <a href="http://zitadel.cloudbridge.local" target="_blank">Access Zitadel</a>
             </div>
             
             <div class="service">
-                <div class="service-icon">📦</div>
+                <div class="service-icon"></div>
                 <h3>Docker Registry</h3>
                 <p>Private container registry for secure image storage and distribution.</p>
                 <a href="http://edge.2gc.ru:30000" target="_blank">Access Registry</a>
@@ -148,14 +148,14 @@ data:
             </div>
             
             <div class="service">
-                <div class="service-icon">📈</div>
+                <div class="service-icon"></div>
                 <h3>Grafana Dashboards</h3>
                 <p>Beautiful dashboards and visualization for monitoring data.</p>
                 <a href="http://grafana.cloudbridge.local" target="_blank">View Dashboards</a>
             </div>
             
             <div class="service">
-                <div class="service-icon">⚡</div>
+                <div class="service-icon"></div>
                 <h3>CloudBridge Relay</h3>
                 <p>High-performance network relay with AI-powered optimization.</p>
                 <a href="http://relay.cloudbridge.local" target="_blank">Access Relay</a>

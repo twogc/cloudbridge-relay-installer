@@ -9,7 +9,7 @@
 
 ## *ГЛАВНЫЕ ДОСТИЖЕНИЯ:**
 
-### **🛡️ Multi-Tenant Network Isolation**
+### **Multi-Tenant Network Isolation**
 - *Inter-tenant HTTP blocking**: Полная изоляция HTTP трафика между tenant'ами
 - *DNS/System services**: Корректный доступ к kube-system и DNS resolution
 - *Calico Infrastructure**: 18 активных network policies с правильным порядком
@@ -24,23 +24,23 @@
 
 ---
 
-## 🧪 **SMOKE TEST RESULTS:**
+## **SMOKE TEST RESULTS:**
 
 | Test | Status | Result | Critical Level |
 |------|--------|--------|----------------|
 | **Inter-tenant HTTP** | ASS | Blocked | 🔥 Critical |
 | **DNS Resolution** | ASS | Working | 🔥 Critical |
 | **Network Policies** | ASS | 18 active | 🔥 Critical |
-| **Intra-tenant PING** | ASS | Allowed | ⭐ Important |
-| **IMDS Blocking** | ⚠️ PARTIAL | Needs tuning | ⭐ Important |
-| **Cross-tenant ICMP** | ⚠️ PARTIAL | Minikube limit | 💡 Nice-to-have |
-| **Intra-tenant HTTP** | ⚠️ PARTIAL | Over-restricted | 💡 Nice-to-have |
+| **Intra-tenant PING** | ASS | Allowed |  Important |
+| **IMDS Blocking** | PARTIAL | Needs tuning |  Important |
+| **Cross-tenant ICMP** | PARTIAL | Minikube limit | Nice-to-have |
+| **Intra-tenant HTTP** | PARTIAL | Over-restricted | Nice-to-have |
 
-### **🎯 КРИТИЧНОСТЬ АНАЛИЗ:**
+### **КРИТИЧНОСТЬ АНАЛИЗ:**
 - **🔥 Production Critical (3/3)**: 100% READY
-- **⭐ Security Important (1.5/2)**: 75% READY  
-- **💡 Nice-to-have (0.5/2)**: 25% READY
-- **📊 ОБЩИЙ РЕЗУЛЬТАТ**: **75% SUCCESS**
+- ** Security Important (1.5/2)**: 75% READY  
+- ** Nice-to-have (0.5/2)**: 25% READY
+- **ОБЩИЙ РЕЗУЛЬТАТ**: **75% SUCCESS**
 
 ---
 
@@ -73,8 +73,8 @@
 
 ### **Security Policy Hierarchy (Order-based):**
 ```
-Order 10:   🚨 IMDS Block (highest priority)
-Order 40:   🔑 Operator API Access  
+Order 10:   IMDS Block (highest priority)
+Order 40:   Operator API Access  
 Order 49:   enant Service Rules
 Order 50:   enant Allow + DNS Allow
 Order 60:    ICMP Cross-Tenant Deny
@@ -93,9 +93,9 @@ Order 1000:  Global Default Deny (lowest priority)
 - *[Calico Best Practices](https://docs.projectcalico.org/security/policy)**: GlobalNetworkPolicy + correct precedence
 - *Zero Trust Architecture**: network-level micro-segmentation
 
-### **📊 Security Metrics:**
+### **Security Metrics:**
 - **Network Isolation**: 5% effective (main HTTP workloads protected)
-- **Metadata Protection**: ⚠️ 50% (policies active, testing needs refinement)
+- **Metadata Protection**: 50% (policies active, testing needs refinement)
 - **Access Control**: 00% (RBAC + rate limiting implemented)
 - **Observability**: 00% (audit logging + policy monitoring)
 
@@ -109,7 +109,7 @@ Order 1000:  Global Default Deny (lowest priority)
 - **System integration**: DNS and kube-system access  
 - **Monitoring**: Comprehensive policy observability
 
-### **⚠️ ТРЕБУЕТ ДОПОЛНИТЕЛЬНОЙ НАСТРОЙКИ:**
+### **ТРЕБУЕТ ДОПОЛНИТЕЛЬНОЙ НАСТРОЙКИ:**
 - **ICMP isolation**: Может потребовать eBPF dataplane в production
 - **Service mesh integration**: Istio/Linkerd для fine-grained HTTP controls
 - **Policy fine-tuning**: Оптимизация allow правил для specific use cases
@@ -123,7 +123,7 @@ Order 1000:  Global Default Deny (lowest priority)
 - **Этап 2.1**: Calico Network Policies
 - **Этап 2.2**: Enhanced gRPC Security
 
-### **⏳ СЛЕДУЮЩИЕ ЭТАПЫ:**
+### **СЛЕДУЮЩИЕ ЭТАПЫ:**
 - **Этап 2.3**: WireGuard per-tenant (для VIP клиентов)
 - **Этап 3.1**: Расширение IP пространства (10.0.0.0/8)  
 - **Этап 3.2**: Standalone IPAM микросервис

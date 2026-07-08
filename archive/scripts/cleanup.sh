@@ -8,18 +8,18 @@ echo ""
 read -p "Вы уверены, что хотите удалить все ресурсы? (y/N): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Отменено пользователем"
+    echo "Отменено пользователем"
     exit 1
 fi
 
 echo "🗑️ Удаление ресурсов..."
 
 # Удаление deployments
-echo "📦 Удаление deployments..."
+echo "Удаление deployments..."
 kubectl delete deployment --all -n cloudbridge 2>/dev/null || true
 
 # Удаление services
-echo "🌐 Удаление services..."
+echo "Удаление services..."
 kubectl delete service --all -n cloudbridge 2>/dev/null || true
 
 # Удаление configmaps
@@ -27,7 +27,7 @@ echo "⚙️ Удаление configmaps..."
 kubectl delete configmap --all -n cloudbridge 2>/dev/null || true
 
 # Удаление secrets
-echo "🔐 Удаление secrets..."
+echo "Удаление secrets..."
 kubectl delete secret --all -n cloudbridge 2>/dev/null || true
 
 # Удаление PVC
@@ -51,7 +51,7 @@ rm -f /tmp/cloudbridge-relay-turn-pool.yaml
 rm -f /tmp/ai-service-simple.yaml
 
 echo ""
-echo "✅ Очистка завершена!"
+echo "Очистка завершена!"
 echo ""
-echo "🔍 Проверка:"
+echo "Проверка:"
 kubectl get namespaces | grep -E "(cloudbridge|monitoring)" || echo "Все namespaces удалены"

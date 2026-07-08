@@ -18,7 +18,7 @@ GRAFANA_USER="admin"
 GRAFANA_PASSWORD="admin123"
 NAMESPACE="cloudbridge-monitoring"
 
-echo -e "${BLUE}🚀 Grafana Dashboard Import Script${NC}"
+echo -e "${BLUE}Grafana Dashboard Import Script${NC}"
 echo "================================================"
 
 # Function to check if Grafana is accessible
@@ -29,7 +29,7 @@ check_grafana() {
         echo -e "${GREEN}Accessible${NC}"
         return 0
     else
-        echo -e "${RED}❌ Not accessible${NC}"
+        echo -e "${RED}Not accessible${NC}"
         return 1
     fi
 }
@@ -66,7 +66,7 @@ import_dashboard() {
     dashboard_json=$(kubectl get configmap grafana-dashboards -n $NAMESPACE -o jsonpath="{.data.$dashboard_file}" 2>/dev/null)
     
     if [ -z "$dashboard_json" ]; then
-        echo -e "${RED}❌ Dashboard not found in ConfigMap${NC}"
+        echo -e "${RED}Dashboard not found in ConfigMap${NC}"
         return 1
     fi
     
@@ -89,7 +89,7 @@ import_dashboard() {
         echo -e "${GREEN}Imported${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         echo "Response: $response"
         return 1
     fi
@@ -97,7 +97,7 @@ import_dashboard() {
 
 # Function to create simple dashboard manually
 create_simple_dashboard() {
-    echo -e "${YELLOW}📊 Creating simple AI Service dashboard...${NC}"
+    echo -e "${YELLOW}Creating simple AI Service dashboard...${NC}"
     
     # Simple dashboard JSON
     dashboard_json='{
@@ -185,7 +185,7 @@ create_simple_dashboard() {
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
@@ -197,7 +197,7 @@ main() {
     
     # Check Grafana accessibility
     if ! check_grafana; then
-        echo -e "${RED}❌ Cannot access Grafana. Make sure it's running and port-forward is active.${NC}"
+        echo -e "${RED}Cannot access Grafana. Make sure it's running and port-forward is active.${NC}"
         echo -e "${YELLOW}   Run: kubectl port-forward -n cloudbridge-monitoring svc/grafana 3000:3000${NC}"
         exit 1
     fi
@@ -210,7 +210,7 @@ main() {
     echo
     
     # Try to import existing dashboards
-    echo -e "${BLUE}📊 Importing existing dashboards...${NC}"
+    echo -e "${BLUE}Importing existing dashboards...${NC}"
     
     import_dashboard "AI Service Dashboard" "ai-dashboard.json"
     import_dashboard "Minikube Dashboard" "minikube-dashboard.json"
@@ -219,20 +219,20 @@ main() {
     echo
     
     # Create simple dashboard if imports failed
-    echo -e "${BLUE}📊 Creating fallback dashboard...${NC}"
+    echo -e "${BLUE}Creating fallback dashboard...${NC}"
     create_simple_dashboard
     
     echo
     
     # Summary
     echo "================================================"
-    echo -e "${GREEN}🎉 Dashboard import complete!${NC}"
+    echo -e "${GREEN}Dashboard import complete!${NC}"
     echo
     
-    echo -e "${BLUE}📊 Access your dashboards:${NC}"
-    echo "   🌐 Grafana: http://localhost:3000"
+    echo -e "${BLUE}Access your dashboards:${NC}"
+    echo "   Grafana: http://localhost:3000"
     echo "   👤 Login: admin"
-    echo "   🔑 Password: admin123"
+    echo "   Password: admin123"
     echo
     
     echo -e "${YELLOW}📝 Manual import instructions:${NC}"
@@ -244,7 +244,7 @@ main() {
     echo "   5. Paste and import"
     echo
     
-    echo -e "${BLUE}🔍 Available dashboards in ConfigMap:${NC}"
+    echo -e "${BLUE}Available dashboards in ConfigMap:${NC}"
     kubectl get configmap grafana-dashboards -n $NAMESPACE -o jsonpath='{.data}' | jq -r 'keys[]' 2>/dev/null || echo "   - ai-dashboard.json"
 }
 

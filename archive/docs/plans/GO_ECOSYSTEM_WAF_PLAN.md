@@ -1,4 +1,4 @@
-# 🚀 **План интеграции Go-экосистемы WAF и Reverse Proxy в CloudBridge Relay**
+# **План интеграции Go-экосистемы WAF и Reverse Proxy в CloudBridge Relay**
 
 ## **Обзор решения**
 
@@ -684,7 +684,7 @@ func (m *WAFMiddleware) Handler(next http.Handler) http.Handler {
 }
 ```
 
-## 📊 **Мониторинг и метрики**
+## **Мониторинг и метрики**
 
 ### **Prometheus метрики**
 ```yaml
@@ -780,7 +780,7 @@ data:
 }
 ```
 
-## 🚀 **Развертывание**
+## **Развертывание**
 
 ### **Helm Charts**
 ```bash
@@ -804,7 +804,7 @@ helm install krakend krakend/krakend -n krakend-system
 
 set -euo pipefail
 
-echo "🚀 Deploying CloudBridge WAF Stack..."
+echo "Deploying CloudBridge WAF Stack..."
 
 # Create namespaces
 kubectl create namespace traefik-system --dry-run=client -o yaml | kubectl apply -f -
@@ -813,15 +813,15 @@ kubectl create namespace krakend-system --dry-run=client -o yaml | kubectl apply
 kubectl create namespace crowdsec-system --dry-run=client -o yaml | kubectl apply -f -
 
 # Deploy Traefik + Coraza WAF
-echo "📦 Deploying Traefik + Coraza WAF..."
+echo "Deploying Traefik + Coraza WAF..."
 kubectl apply -f k8s/traefik/
 
 # Deploy Oathkeeper
-echo "🔐 Deploying ORY Oathkeeper..."
+echo "Deploying ORY Oathkeeper..."
 kubectl apply -f k8s/oathkeeper/
 
 # Deploy KrakenD
-echo "🌐 Deploying KrakenD API Gateway..."
+echo "Deploying KrakenD API Gateway..."
 kubectl apply -f k8s/krakend/
 
 # Deploy CrowdSec
@@ -829,7 +829,7 @@ echo " Deploying CrowdSec Bot Protection..."
 kubectl apply -f k8s/crowdsec/
 
 # Wait for deployments
-echo "⏳ Waiting for deployments to be ready..."
+echo "Waiting for deployments to be ready..."
 kubectl wait --for=condition=available --timeout=300s deployment/traefik -n traefik-system
 kubectl wait --for=condition=available --timeout=300s deployment/oathkeeper -n oathkeeper-system
 kubectl wait --for=condition=available --timeout=300s deployment/krakend -n krakend-system
@@ -845,32 +845,32 @@ echo "WAF Stack deployed successfully!"
 ##  **Ожидаемые результаты**
 
 ### **Безопасность:**
-- 🛡️ 99.9% защита от OWASP Top 10
+- 99.9% защита от OWASP Top 10
 - 🚫 95% снижение ботов и атак
-- 🌍 100% географическая фильтрация
-- ⚡ 0 успешных DDoS атак
+- 100% географическая фильтрация
+- 0 успешных DDoS атак
 
 ### **Производительность:**
-- ⚡ < 5ms латентность WAF
-- 📊 5x увеличение пропускной способности
+- < 5ms латентность WAF
+- 5x увеличение пропускной способности
 - 💾 50% снижение потребления памяти
 - 🔄 99.99% uptime
 
 ### **Управляемость:**
 -  < 2 минуты время развертывания
-- 📊 100% покрытие метриками
+- 100% покрытие метриками
 - < 30 секунд время обнаружения инцидентов
 - 📝 100% логирование запросов
 
-## 🎯 **Заключение**
+## **Заключение**
 
 Этот план обеспечивает:
 
-1. **🛡️ Enterprise-класс безопасность** с OWASP CRS
-2. **⚡ Высокую производительность** благодаря Go-экосистеме
+1. **Enterprise-класс безопасность** с OWASP CRS
+2. **Высокую производительность** благодаря Go-экосистеме
 3. ** Гибкость конфигурации** через Kubernetes
-4. **📊 Полный мониторинг** и аналитику
-5. **🚀 Современные возможности** Zero-Trust
+4. **Полный мониторинг** и аналитику
+5. **Современные возможности** Zero-Trust
 
 **Общая длительность: 6 недель**
 **Команда: 2-3 разработчика**

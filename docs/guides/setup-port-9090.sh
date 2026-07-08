@@ -22,7 +22,7 @@ success() {
 }
 
 warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW} $1${NC}"
 }
 
 error() {
@@ -35,10 +35,10 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-log "🚀 Настройка CloudBridge Relay на порту 9090 для Cloudflare Origin"
+log "Настройка CloudBridge Relay на порту 9090 для Cloudflare Origin"
 
 # 1. Проверка Magic WAN туннеля
-log "🔍 Проверка Magic WAN туннеля..."
+log "Проверка Magic WAN туннеля..."
 if sudo swanctl --list-sas | grep -q "ESTABLISHED"; then
     success "Magic WAN туннель активен"
 else
@@ -47,7 +47,7 @@ else
 fi
 
 # 2. Проверка CloudBridge Relay
-log "🔍 Проверка CloudBridge Relay..."
+log "Проверка CloudBridge Relay..."
 if kubectl get pods -n cloudbridge -l app=cloudbridge-relay | grep -q "Running"; then
     success "CloudBridge Relay поды работают"
 else
@@ -56,7 +56,7 @@ else
 fi
 
 # 3. Проверка nginx
-log "🔍 Проверка nginx..."
+log "Проверка nginx..."
 if systemctl is-active --quiet nginx; then
     success "nginx работает"
 else
@@ -80,7 +80,7 @@ else
 fi
 
 # 6. Проверка nginx конфигурации
-log "🔍 Проверка nginx конфигурации..."
+log "Проверка nginx конфигурации..."
 if nginx -t; then
     success "nginx конфигурация корректна"
 else
@@ -101,7 +101,7 @@ systemctl reload nginx
 success "nginx перезагружен"
 
 # 9. Проверка доступности endpoints на порту 9090
-log "🔍 Проверка доступности endpoints на порту 9090..."
+log "Проверка доступности endpoints на порту 9090..."
 
 # Health check
 if curl -k -s https://edge.2gc.ru:9090/health | grep -q "healthy\|ok"; then
@@ -118,28 +118,28 @@ else
 fi
 
 # 10. Создание скрипта мониторинга для порта 9090
-log "📊 Создание скрипта мониторинга для порта 9090..."
+log "Создание скрипта мониторинга для порта 9090..."
 cat > /usr/local/bin/cloudbridge-monitor-9090.sh << 'EOF'
 #!/bin/bash
 
 # CloudBridge Relay Monitor Script для порта 9090
 # Мониторинг CloudBridge Relay и Magic WAN туннеля
 
-echo "🔍 CloudBridge Relay Status (Port 9090):"
+echo "CloudBridge Relay Status (Port 9090):"
 echo "========================================"
 
 # Magic WAN туннель
-echo "📡 Magic WAN Tunnel:"
+echo "Magic WAN Tunnel:"
 sudo swanctl --list-sas | grep -E "(ESTABLISHED|INSTALLED)" || echo " Tunnel not active"
 
 # CloudBridge Relay поды
 echo ""
-echo "🚀 CloudBridge Relay Pods:"
+echo "CloudBridge Relay Pods:"
 kubectl get pods -n cloudbridge -l app=cloudbridge-relay
 
 # nginx статус
 echo ""
-echo "🌐 nginx Status:"
+echo "nginx Status:"
 systemctl is-active nginx
 
 # Health check на порту 9090
@@ -158,14 +158,14 @@ echo " Port 9090 Check:"
 netstat -tlnp | grep :9090 || echo " Port 9090 not listening"
 
 echo ""
-echo "📊 Monitoring complete (Port 9090)"
+echo "Monitoring complete (Port 9090)"
 EOF
 
 chmod +x /usr/local/bin/cloudbridge-monitor-9090.sh
 success "Скрипт мониторинга создан: /usr/local/bin/cloudbridge-monitor-9090.sh"
 
 # 11. Создание systemd сервиса для мониторинга
-log "📊 Создание systemd сервиса для мониторинга..."
+log "Создание systemd сервиса для мониторинга..."
 cat > /etc/systemd/system/cloudbridge-monitor-9090.service << 'EOF'
 [Unit]
 Description=CloudBridge Relay Monitor (Port 9090)
@@ -190,11 +190,11 @@ touch /var/log/cloudbridge-monitor-9090.log
 chmod 644 /var/log/cloudbridge-monitor-9090.log
 
 # 14. Финальная проверка
-log "🔍 Финальная проверка системы..."
+log "Финальная проверка системы..."
 
 # Проверка всех компонентов
 echo ""
-echo "📋 Статус системы (Port 9090):"
+echo "Статус системы (Port 9090):"
 echo "=============================="
 
 # Magic WAN
@@ -240,9 +240,9 @@ else
 fi
 
 echo ""
-log "🎉 Настройка CloudBridge Relay на порту 9090 завершена!"
+log "Настройка CloudBridge Relay на порту 9090 завершена!"
 echo ""
-echo "📋 Следующие шаги:"
+echo "Следующие шаги:"
 echo "=================="
 echo "1. Настройте Cloudflare Tunnel в Dashboard:"
 echo "   - Hostname: app.client.company.ru"
@@ -259,5 +259,5 @@ echo "4. Мониторинг:"
 echo "   - /usr/local/bin/cloudbridge-monitor-9090.sh"
 echo "   - /var/log/cloudbridge-monitor-9090.log"
 echo ""
-echo "🚀 CloudBridge Relay готов к работе на порту 9090!"
+echo "CloudBridge Relay готов к работе на порту 9090!"
 

@@ -549,7 +549,7 @@ sequenceDiagram
 | **ai-analytics** | 8085 | AI Analytics Engine | Production |
 | **ai-worker** | 8085 | AI Worker (Cadence) | Production |
 | **cni-plugin** | - | Kubernetes CNI plugin | Production |
-| **zerotrust-demo** | 9090 | Zero Trust demo | 🧪 Demo |
+| **zerotrust-demo** | 9090 | Zero Trust demo | Demo |
 
 ### Взаимодействие микросервисов
 
@@ -1484,7 +1484,7 @@ graph TB
 
 | Категория | Технология | Версия | Назначение |
 |-----------|-------------|--------|------------|
-| **Language** | Go | 1.25.1 | Основной язык разработки |
+| **Language** | Go | 1.25.12 | Основной язык разработки |
 | **Framework** | Gin | 1.11.0 | HTTP web framework |
 | **gRPC** | gRPC-Go | 1.75.1 | RPC framework |
 | **QUIC** | quic-go | 0.54.0 | QUIC protocol |

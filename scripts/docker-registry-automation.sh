@@ -291,7 +291,7 @@ cleanup_local_images() {
 
 # Главная функция
 main() {
-    log_info "🚀 Запуск автоматизации сборки и отправки Docker образов"
+    log_info "Запуск автоматизации сборки и отправки Docker образов"
     log_info "Registry: ${REGISTRY_URL}"
     log_info "Версия: ${VERSION}"
     log_info "Сервисы: ${SERVICES[*]}"
@@ -315,7 +315,7 @@ main() {
             if push_image "$service"; then
                 log_success "Сервис ${service} успешно обработан"
             else
-                log_error "❌ Ошибка отправки сервиса ${service}"
+                log_error "Ошибка отправки сервиса ${service}"
                 exit 1
             fi
         else
@@ -341,7 +341,7 @@ main() {
     # Очищаем локальные образы
     cleanup_local_images
     
-    log_success "🎉 Автоматизация завершена успешно!"
+    log_success "Автоматизация завершена успешно!"
 }
 
 # Обработка аргументов командной строки

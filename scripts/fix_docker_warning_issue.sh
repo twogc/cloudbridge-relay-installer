@@ -138,7 +138,7 @@ sudo chown root:root /usr/local/bin/ai_metrics_collector.sh
 sudo chmod +x /usr/local/bin/ai_metrics_collector.sh
 
 # Шаг 3: Исправление прав Docker
-echo "🔐 Шаг 3: Исправление прав Docker..."
+echo "Шаг 3: Исправление прав Docker..."
 sudo usermod -aG docker zabbix
 
 # Шаг 4: Очистка конфигурации от дублирующихся записей
@@ -147,7 +147,7 @@ sudo sed -i '/^UserParameter=cloudbridge\.docker\.containers\.running,\/usr\/loc
 sudo sed -i '/^UserParameter=cloudbridge\.docker\.containers\.total,\/usr\/local\/bin\/ai_metrics_collector\.sh docker_containers_total$/d' /etc/zabbix/zabbix_agentd.conf
 
 # Шаг 5: Запуск Zabbix Agent
-echo "🚀 Шаг 5: Запуск Zabbix Agent..."
+echo "Шаг 5: Запуск Zabbix Agent..."
 sudo /usr/sbin/zabbix_agentd -c /etc/zabbix/zabbix_agentd.conf -f &
 sleep 3
 
@@ -156,7 +156,7 @@ echo "Шаг 6: Проверка запуска..."
 if sudo netstat -tlnp | grep -q "zabbix_agen.*:10050"; then
     echo "Zabbix Agent успешно запущен на порту 10050"
 else
-    echo "❌ Ошибка запуска Zabbix Agent"
+    echo "Ошибка запуска Zabbix Agent"
     exit 1
 fi
 
@@ -168,7 +168,7 @@ echo "   AI Health: $(zabbix_agentd -t ai.health | awk '{print $2}' | tr -d '[]'
 echo "   AI Anomalies: $(zabbix_agentd -t ai.anomaly_detections | awk '{print $2}' | tr -d '[]')"
 
 echo ""
-echo "🎉 Проблема Docker предупреждений исправлена!"
+echo "Проблема Docker предупреждений исправлена!"
 echo ""
 echo "Информация:"
 echo "   Zabbix Agent: Запущен на порту 10050"

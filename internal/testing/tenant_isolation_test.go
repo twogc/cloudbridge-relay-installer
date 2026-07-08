@@ -52,9 +52,9 @@ func (t *TenantIsolationTester) TestTenantIsolation(testCtx *testing.T, tenantA,
 	actualIsolated := result.Passed
 
 	if expectedIsolated == actualIsolated {
-		testCtx.Logf("✅ Isolation test passed: %s", result.Details)
+		testCtx.Logf("Isolation test passed: %s", result.Details)
 	} else {
-		testCtx.Errorf("❌ Isolation test failed: expected %v, got %v - %s", expectedIsolated, actualIsolated, result.Details)
+		testCtx.Errorf("Isolation test failed: expected %v, got %v - %s", expectedIsolated, actualIsolated, result.Details)
 	}
 }
 
@@ -66,9 +66,9 @@ func (t *TenantIsolationTester) TestIntraTenantCommunication(testCtx *testing.T,
 	result := t.simulateIntraTenantTest(tenantID)
 
 	if result.Passed {
-		testCtx.Logf("✅ Intra-tenant communication test passed: %s", result.Details)
+		testCtx.Logf("Intra-tenant communication test passed: %s", result.Details)
 	} else {
-		testCtx.Errorf("❌ Intra-tenant communication test failed: %s", result.Details)
+		testCtx.Errorf("Intra-tenant communication test failed: %s", result.Details)
 	}
 }
 
@@ -80,9 +80,9 @@ func (t *TenantIsolationTester) TestDNSResolution(testCtx *testing.T, tenantID s
 	result := t.simulateDNSTest(tenantID)
 
 	if result.Passed {
-		testCtx.Logf("✅ DNS resolution test passed: %s", result.Details)
+		testCtx.Logf("DNS resolution test passed: %s", result.Details)
 	} else {
-		testCtx.Errorf("❌ DNS resolution test failed: %s", result.Details)
+		testCtx.Errorf("DNS resolution test failed: %s", result.Details)
 	}
 }
 

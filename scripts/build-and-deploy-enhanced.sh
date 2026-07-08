@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🚀 CloudBridge Relay - Enhanced Components Build & Deploy Script
+# CloudBridge Relay - Enhanced Components Build & Deploy Script
 # ================================================================
 
 set -e
@@ -18,7 +18,7 @@ log() {
 }
 
 success() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] ✅${NC} $1"
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] ${NC} $1"
 }
 
 warning() {
@@ -26,7 +26,7 @@ warning() {
 }
 
 error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ❌${NC} $1"
+    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ${NC} $1"
 }
 
 # Проверка предварительных требований
@@ -170,7 +170,7 @@ check_services() {
 
 # Основная функция
 main() {
-    log "🚀 Запуск сборки и развертывания CloudBridge Relay Enhanced"
+    log "Запуск сборки и развертывания CloudBridge Relay Enhanced"
     log "=============================================================="
     
     # Проверяем предварительные требования
@@ -197,7 +197,7 @@ main() {
     # Проверяем сервисы
     check_services
     
-    success "🎉 Развертывание завершено успешно!"
+    success "Развертывание завершено успешно!"
     log "Тег образа: $BUILD_TAG"
     log "Для просмотра логов: kubectl logs -n cloudbridge -l app.kubernetes.io/name=cloudbridge-relay-p2p -f"
     log "Для проверки статуса: kubectl get pods -n cloudbridge -l app.kubernetes.io/name=cloudbridge-relay-p2p"

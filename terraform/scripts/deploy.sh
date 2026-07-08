@@ -31,7 +31,7 @@ log_warning() {
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
 }
 
 # Check prerequisites
@@ -197,11 +197,11 @@ show_status() {
     log_info "Deployment Status for $environment environment:"
     echo ""
     
-    echo "📊 Kubernetes Resources:"
+    echo "Kubernetes Resources:"
     kubectl get pods -A | grep cloudbridge || echo "No CloudBridge pods found"
     echo ""
     
-    echo "🌐 Services:"
+    echo "Services:"
     kubectl get services -A | grep cloudbridge || echo "No CloudBridge services found"
     echo ""
     
@@ -221,13 +221,13 @@ show_access_info() {
     log_info "Access Information for $environment environment:"
     echo ""
     
-    echo "🚀 CloudBridge Relay:"
+    echo "CloudBridge Relay:"
     echo "   - Internal: http://cloudbridge-relay.cloudbridge.svc.cluster.local:9090"
     echo "   - Health: http://cloudbridge-relay.cloudbridge.svc.cluster.local:9090/health"
     echo "   - Metrics: http://cloudbridge-relay.cloudbridge.svc.cluster.local:8084/metrics"
     echo ""
     
-    echo "📊 Grafana Dashboard:"
+    echo "Grafana Dashboard:"
     echo "   - Internal: http://grafana.cloudbridge-monitoring.svc.cluster.local:3000"
     echo "   - Username: admin"
     echo "   - Password: (from terraform outputs)"

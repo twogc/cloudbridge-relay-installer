@@ -171,10 +171,10 @@ gh pr merge 29 --squash
 - **Security audit pass rate**: 100%
 
 ### Готовность к сертификации:
-- Все security issues закрыты ✅
+- Все security issues закрыты 
 - Dependencies актуальны  
-- Automated security scanning ✅
-- Documented security processes ✅
+- Automated security scanning 
+- Documented security processes 
 
 **Текущий security score: 60% → Цель: 95%**
 

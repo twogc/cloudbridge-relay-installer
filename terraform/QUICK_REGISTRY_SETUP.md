@@ -1,4 +1,4 @@
-# 🚀 **Быстрая памятка: Container Registry**
+# **Быстрая памятка: Container Registry**
 
 ## **Что нужно сделать:**
 
@@ -37,15 +37,15 @@ source ../load-env.sh
 ./test-registry-connection.sh
 ```
 
-## 🔑 **Ключевые данные:**
+## **Ключевые данные:**
 - **Registry URL:** registry.vkcs.ru
 - **Full Image Path:** registry.vkcs.ru/cloudbridge-relay/cloudbridge-relay:latest
 - **Username:** cloudbridge-user
 - **Password:** [сгенерированный пароль]
 
-## ⚡ **Быстрая команда для тестирования:**
+## **Быстрая команда для тестирования:**
 ```bash
 echo "your-password" | docker login registry.vkcs.ru -u "cloudbridge-user" --password-stdin
 ```
 
-**🚀 Готово! Теперь можно запускать автоматизацию.**
+**Готово! Теперь можно запускать автоматизацию.**

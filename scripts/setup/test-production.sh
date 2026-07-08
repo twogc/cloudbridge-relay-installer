@@ -31,7 +31,7 @@ log_warning() {
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
 }
 
 # Check prerequisites
@@ -314,7 +314,7 @@ show_test_summary() {
     log_info "Production Test Summary:"
     echo ""
     
-    echo "📊 Test Results:"
+    echo "Test Results:"
     echo "• Namespaces: $(cat $TEST_RESULTS_DIR/namespace-cloudbridge.txt | head -1 | cut -d' ' -f1)"
     echo "• CloudBridge Pods: $(cat $TEST_RESULTS_DIR/pods-cloudbridge.txt | wc -l) pods"
     echo "• Monitoring Pods: $(cat $TEST_RESULTS_DIR/pods-monitoring.txt | wc -l) pods"
@@ -322,7 +322,7 @@ show_test_summary() {
     echo "• Monitoring Services: $(cat $TEST_RESULTS_DIR/services-monitoring.txt | wc -l) services"
     echo ""
     
-    echo "🔍 Health Checks:"
+    echo "Health Checks:"
     echo "• Relay Health: $(cat $TEST_RESULTS_DIR/relay-health-test.txt | tail -1)"
     echo "• Grafana Health: $(cat $TEST_RESULTS_DIR/grafana-health-test.txt | tail -1)"
     echo "• Prometheus Health: $(cat $TEST_RESULTS_DIR/prometheus-health-test.txt | tail -1)"
@@ -355,7 +355,7 @@ cleanup() {
 
 # Main function
 main() {
-    echo "=== 🧪 CloudBridge Relay - Production Testing ==="
+    echo "=== CloudBridge Relay - Production Testing ==="
     echo ""
     
     case "${1:-test}" in

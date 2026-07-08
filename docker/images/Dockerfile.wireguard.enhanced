@@ -3,7 +3,7 @@
 # =========================================================
 
 # ---------- Stage 1: Go Builder ----------
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -36,7 +36,7 @@ RUN CGO_ENABLED=${CGO_ENABLED} GOOS=linux GOARCH=amd64 go build \
     ./cmd/wireguard-service
 
 # ---------- Stage 2: WireGuard Go Builder ----------
-FROM golang:1.25-alpine AS wireguard-builder
+FROM golang:1.25.12-alpine AS wireguard-builder
 
 RUN apk add --no-cache git build-base make
 

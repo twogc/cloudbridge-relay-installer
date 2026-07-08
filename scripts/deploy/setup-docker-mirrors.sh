@@ -158,9 +158,9 @@ check_mirror_status() {
     for mirror in "${mirrors[@]}"; do
         echo -n "Проверка $mirror... "
         if curl -s --connect-timeout 5 https://$mirror/v2/ > /dev/null 2>&1; then
-            echo "✅ Доступно"
+            echo "Доступно"
         else
-            echo "❌ Недоступно"
+            echo "Недоступно"
         fi
     done
 }
@@ -246,7 +246,7 @@ main() {
     check_mirror_status
     
     echo ""
-    log_success "🎉 Настройка зеркал Docker Hub завершена!"
+    log_success "Настройка зеркал Docker Hub завершена!"
     echo ""
     log_info "Полезные команды:"
     echo "  docker info | grep -A 10 'Registry Mirrors'  # Проверка зеркал"

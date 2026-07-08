@@ -179,10 +179,10 @@ show_deployment_info() {
     
     echo ""
     echo "=========================================="
-    echo "🎉 Cadence успешно обновлен!"
+    echo "Cadence успешно обновлен!"
     echo "=========================================="
     echo ""
-    echo "📋 Информация о развертывании:"
+    echo "Информация о развертывании:"
     echo "   Образ: $FULL_IMAGE_NAME"
     echo "   Тег: $TAG"
     echo "   Minikube IP: $MINIKUBE_IP"
@@ -194,14 +194,14 @@ show_deployment_info() {
     echo "   kubectl logs -f deployment/cadence -n cloudbridge"
     echo "   kubectl describe deployment cadence -n cloudbridge"
     echo ""
-    echo "🌐 Открыть Cadence Web UI:"
+    echo "Открыть Cadence Web UI:"
     echo "   minikube service cadence-nodeport -n cloudbridge --url"
     echo ""
 }
 
 # Основная функция
 main() {
-    echo "🚀 Сборка и развертывание Cadence с тегом $TAG..."
+    echo "Сборка и развертывание Cadence с тегом $TAG..."
     echo ""
     
     check_minikube

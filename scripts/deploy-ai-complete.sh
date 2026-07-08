@@ -18,7 +18,7 @@ NAMESPACE="cloudbridge"
 MONITORING_NAMESPACE="cloudbridge-monitoring"
 SERVICE_NAME="ai-service"
 
-echo -e "${PURPLE}🚀 Complete AI Service Deployment Script${NC}"
+echo -e "${PURPLE}Complete AI Service Deployment Script${NC}"
 echo "================================================"
 echo -e "${BLUE}This script will deploy AI service with:${NC}"
 echo "  - AI Service with all endpoints"
@@ -42,7 +42,7 @@ check_namespace() {
         echo -e "${GREEN}Namespace $namespace exists${NC}"
         return 0
     else
-        echo -e "${RED}❌ Namespace $namespace not found${NC}"
+        echo -e "${RED}Namespace $namespace not found${NC}"
         return 1
     fi
 }
@@ -59,7 +59,7 @@ wait_for_deployment() {
         echo -e "${GREEN}Ready${NC}"
         return 0
     else
-        echo -e "${RED}❌ Timeout${NC}"
+        echo -e "${RED}Timeout${NC}"
         return 1
     fi
 }
@@ -76,11 +76,11 @@ run_script() {
             echo -e "${GREEN}$description completed successfully${NC}"
             return 0
         else
-            echo -e "${RED}❌ $description failed${NC}"
+            echo -e "${RED}$description failed${NC}"
             return 1
         fi
     else
-        echo -e "${RED}❌ Script $script not found${NC}"
+        echo -e "${RED}Script $script not found${NC}"
         return 1
     fi
 }
@@ -93,7 +93,7 @@ test_ai_service() {
     POD_NAME=$(kubectl get pods -n $NAMESPACE -l app.kubernetes.io/name=$SERVICE_NAME -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
     
     if [ -z "$POD_NAME" ]; then
-        echo -e "${RED}❌ No AI service pod found${NC}"
+        echo -e "${RED}No AI service pod found${NC}"
         return 1
     fi
     
@@ -116,7 +116,7 @@ test_ai_service() {
         if kubectl exec -n $NAMESPACE $POD_NAME -- wget -qO- --timeout=10 "http://localhost:8083$endpoint" >/dev/null 2>&1; then
             echo -e "${GREEN}OK${NC}"
         else
-            echo -e "${RED}❌ FAILED${NC}"
+            echo -e "${RED}FAILED${NC}"
             failed=$((failed + 1))
         fi
     done
@@ -125,7 +125,7 @@ test_ai_service() {
         echo -e "${GREEN}All endpoint tests passed${NC}"
         return 0
     else
-        echo -e "${RED}❌ $failed endpoint tests failed${NC}"
+        echo -e "${RED}$failed endpoint tests failed${NC}"
         return 1
     fi
 }
@@ -133,7 +133,7 @@ test_ai_service() {
 # Function to show access information
 show_access_info() {
     echo
-    echo -e "${PURPLE}🌐 ACCESS INFORMATION${NC}"
+    echo -e "${PURPLE}ACCESS INFORMATION${NC}"
     echo "================================================"
     
     echo -e "${BLUE}AI Service:${NC}"
@@ -160,7 +160,7 @@ show_access_info() {
 # Function to show monitoring commands
 show_monitoring_commands() {
     echo
-    echo -e "${PURPLE}📊 MONITORING COMMANDS${NC}"
+    echo -e "${PURPLE}MONITORING COMMANDS${NC}"
     echo "================================================"
     
     echo -e "${BLUE}Check AI Service Status:${NC}"
@@ -201,7 +201,7 @@ main() {
     if kubectl cluster-info >/dev/null 2>&1; then
         echo -e "${GREEN}Kubernetes cluster is accessible${NC}"
     else
-        echo -e "${RED}❌ Cannot access Kubernetes cluster${NC}"
+        echo -e "${RED}Cannot access Kubernetes cluster${NC}"
         exit 1
     fi
     
@@ -215,7 +215,7 @@ main() {
     if docker build -f Dockerfile.ai-service -t cloudbridge/ai-service:latest . --no-cache >/dev/null 2>&1; then
         echo -e "${GREEN}Built${NC}"
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         exit 1
     fi
     
@@ -224,7 +224,7 @@ main() {
     if minikube image load cloudbridge/ai-service:latest >/dev/null 2>&1; then
         echo -e "${GREEN}Loaded${NC}"
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         exit 1
     fi
     
@@ -233,7 +233,7 @@ main() {
     if kubectl apply -f k8s/ai-service/ -n $NAMESPACE >/dev/null 2>&1; then
         echo -e "${GREEN}Deployed${NC}"
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         exit 1
     fi
     
@@ -268,7 +268,7 @@ main() {
     
     # Show results
     echo
-    echo -e "${PURPLE}🎉 DEPLOYMENT COMPLETE!${NC}"
+    echo -e "${PURPLE}DEPLOYMENT COMPLETE!${NC}"
     echo "================================================"
     
     show_access_info
@@ -283,7 +283,7 @@ main() {
     echo "  4. Review security policies and RBAC"
     echo "  5. Set up production monitoring and alerting"
     echo
-    echo -e "${BLUE}🚀 Your AI-powered CloudBridge system is ready!${NC}"
+    echo -e "${BLUE}Your AI-powered CloudBridge system is ready!${NC}"
 }
 
 # Run main function

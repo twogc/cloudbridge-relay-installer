@@ -1,4 +1,4 @@
-# 🧪 Manual Testing Plan - CloudBridge Relay MVP
+# Manual Testing Plan - CloudBridge Relay MVP
 
 **Дата**: 2025-10-13
 **Цель**: Проверить все критические пути перед production deployment
@@ -726,7 +726,7 @@ grep -o '"level":\|"msg":\|"timestamp":' logs/relay-startup.log | sort -u
 
 ---
 
-## 🐛 Bugs Found
+## Bugs Found
 
 ### Critical Bugs
 1. **Bug ID**: CRIT-001
@@ -776,7 +776,7 @@ grep -o '"level":\|"msg":\|"timestamp":' logs/relay-startup.log | sort -u
 - Monitor closely
 
 ### If Pass Rate 70-90%
-⚠️ **Bug Fix Phase Required**
+**Bug Fix Phase Required**
 - Fix critical bugs immediately
 - Fix high priority bugs
 - Re-test affected areas

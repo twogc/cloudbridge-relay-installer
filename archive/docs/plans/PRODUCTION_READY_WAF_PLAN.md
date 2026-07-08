@@ -1,4 +1,4 @@
-# 🚀 **Production-Ready WAF Plan для CloudBridge Relay**
+# **Production-Ready WAF Plan для CloudBridge Relay**
 
 ## **Обзор с учетом Production Redlines**
 
@@ -105,7 +105,7 @@ data:
           description: "5xx error rate is {{ $value | humanizePercentage }}"
 ```
 
-## 🛡️ **2. L3/L4 защита и eBPF**
+## **2. L3/L4 защита и eBPF**
 
 ### **Node-level eBPF protection:**
 ```yaml
@@ -299,7 +299,7 @@ jobs:
         ./scripts/full-deploy.sh
 ```
 
-## 🔐 **4. Управление секретами**
+## **4. Управление секретами**
 
 ### **External Secrets Operator:**
 ```yaml
@@ -402,7 +402,7 @@ data:
                 max_age: 1h
 ```
 
-## 📊 **5. Observability для аудита ISO/270xx**
+## **5. Observability для аудита ISO/270xx**
 
 ### **Обязательные логи:**
 ```yaml
@@ -742,7 +742,7 @@ spec:
               number: 8080
 ```
 
-## 🔐 **8. Совместимость с Zitadel**
+## **8. Совместимость с Zitadel**
 
 ### **ACR/AMR поддержка:**
 ```yaml
@@ -946,18 +946,18 @@ data:
         - last_release_documentation: complete
 ```
 
-## 🎯 **Заключение**
+## **Заключение**
 
 Этот production-ready план обеспечивает:
 
-1. **🛡️ Реалистичные SLO** с учетом интернет-латентности
-2. **⚡ L3/L4 защиту** с eBPF и rate limiting
+1. **Реалистичные SLO** с учетом интернет-латентности
+2. **L3/L4 защиту** с eBPF и rate limiting
 3. **📝 Policy-as-Code** с канареечными выкатами
-4. **🔐 Безопасное управление секретами** через Vault
-5. **📊 Полную observability** для аудита ISO
+4. **Безопасное управление секретами** через Vault
+5. **Полную observability** для аудита ISO
 6. ** Fail-open/fail-closed** стратегии
 7. **🔄 Blue/Green релизы** с быстрым откатом
-8. **🔐 Совместимость с Zitadel** ACR/AMR
+8. **Совместимость с Zitadel** ACR/AMR
 9. **ISO compliance** документацию
 10. **Production readiness** чек-лист
 

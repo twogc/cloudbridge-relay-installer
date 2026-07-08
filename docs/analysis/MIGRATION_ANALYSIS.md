@@ -24,7 +24,7 @@
 6. **SLO-замкнутый контур** адаптации на основе телеметрии
 7. **AI-powered оптимизация** для предсказания и cost optimization
 
-### 🖥️ Системные характеристики
+### Системные характеристики
 
 #### **Текущая инфраструктура:**
 - **CPU**: Intel Xeon Processor (Cascadelake) - 8 cores
@@ -389,7 +389,7 @@ spec:
 - **RBAC**: Kubernetes RBAC для доступа
 - **Secrets Management**: Kubernetes Secrets, External Secrets Operator
 
-### 💰 Оценка стоимости
+### Оценка стоимости
 
 #### **VK Cloud ресурсы (месячная стоимость)**
 

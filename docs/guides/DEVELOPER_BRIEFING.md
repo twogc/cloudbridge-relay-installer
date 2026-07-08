@@ -369,7 +369,7 @@ data:
 
 ### **Security & Access:**
 
-#### **🛡️ LoadBalancer Security:**
+#### **LoadBalancer Security:**
 - **SSL Termination:** На LoadBalancer уровне
 - **Security Groups:** Настроены для портов 443, 80, 8080, 32500
 - **TLS Certificates:** `*.2gc.ru` wildcard certificate
@@ -529,7 +529,7 @@ type HTTPError struct {
 - **Kubernetes интеграция** работает (NodePort 32500)
 - **Альтернативное решение** - прямое подключение к Kubernetes работает
 
-### **📊 ОБЩАЯ ГОТОВНОСТЬ: 95% ЗАВЕРШЕНО**
+### **ОБЩАЯ ГОТОВНОСТЬ: 95% ЗАВЕРШЕНО**
 
 **Готово к продакшену**: QUIC экспериментальные функции (BBRv2, ACK Frequency, FEC, Greasing), MASQUE/CONNECT-UDP, ICE/NAT Traversal (24 метрики, 10x производительность), Zitadel OIDC, cert-manager (автоматическое управление TLS), External Secrets (безопасное управление секретами), Circuit Breaker, Retry логика, Load Balancing (VK Cloud проблемы решены), Kubernetes deployment, Prometheus/Grafana мониторинг, AI Analytics Engine, Quantum Service
 
@@ -566,19 +566,19 @@ type HTTPError struct {
 
 ### **Текущие ограничения (честная оценка):**
 
-#### **🔴 Блокеры для production:**
+#### ** Блокеры для production:**
 - **Внешний LoadBalancer:** VK Cloud amphora instance неисправен (ARP incomplete)
 - **Personal Cabinet UI:** ключевой для enterprise-операций, в разработке
 - **mTLS между сервисами:** требуется для production-grade безопасности
 - **SBOM + подпись артефактов:** supply-chain безопасность не настроена
 
-#### **🟡 Требует доработки:**
+#### ** Требует доработки:**
 - **JWT fallback secret:** антипаттерн для production, нужен JWKS
 - **Compliance:** архитектура готова, но нужны политики ИБ и аудит
 - **Chaos-тесты:** отказоустойчивость не проверена в production-условиях
 - **Runbooks:** операционные процедуры не документированы
 
-#### **🟢 Готово к пилотам:**
+#### **Готово к пилотам:**
 - **Core networking:** P2P mesh, tenant isolation, IPAM
 - **Authentication:** JWT validation, RBAC, Zitadel integration
 - **Monitoring:** метрики, health checks, observability
@@ -591,8 +591,8 @@ type HTTPError struct {
 | MASQUE / CONNECT-UDP & CONNECT-IP | **ЗАВЕРШЕН** | **100%** | RFC 9297 compliant, Context ID управление |
 | QUIC Datagrams (HTTP Datagrams) | **ЗАВЕРШЕН** | **100%** | EnableDatagrams=true, полная интеграция |
 | NAT Telemetry (ICE/STUN/TURN) | **ЗАВЕРШЕН** | **100%** | 24 Prometheus метрики, 10x производительность |
-| ⚡ | WireGuard profile (legacy site-to-site) | **ЗАВЕРШЕН** | **100%** | Site-to-site VPN, routing rules management |
-| ⚡ | TCP/WebSocket fallback | **ЗАВЕРШЕН** | **100%** | WebSocket tunneling, CORS поддержка |
+| | WireGuard profile (legacy site-to-site) | **ЗАВЕРШЕН** | **100%** | Site-to-site VPN, routing rules management |
+| | TCP/WebSocket fallback | **ЗАВЕРШЕН** | **100%** | WebSocket tunneling, CORS поддержка |
 | 🆕 | Zitadel Authentication | **ЗАВЕРШЕН** | **100%** | OAuth 2.0/OIDC, mTLS, kubectl plugin |
 | 🆕 | kubectl proxy Integration | **ЗАВЕРШЕН** | **100%** | Централизованное управление кластерами |
 | | Enterprise Networking | **ЗАВЕРШЕН** | **100%** | IPAM, Calico policies, VXLAN overlay |
@@ -739,24 +739,24 @@ func (s *Server) handleProtocolDowngrade(conn *quic.Conn) error {
 
 ### **Phase 1: Personal Cabinet (Q4 2025)**
 #### **Web Management Interface:**
-- **🟡 Server Creation UI**: Форма создания серверов с метаданными
-- **🟡 Zitadel Integration**: API для управления пользователями и токенами
-- **🟡 Token Management**: Генерация, обновление, отзыв токенов
-- **🟡 Dashboard & Analytics**: Мониторинг серверов, usage metrics
+- ** Server Creation UI**: Форма создания серверов с метаданными
+- ** Zitadel Integration**: API для управления пользователями и токенами
+- ** Token Management**: Генерация, обновление, отзыв токенов
+- ** Dashboard & Analytics**: Мониторинг серверов, usage metrics
 
 ### **Phase 2: Advanced Enterprise Features (Q1 2026)**
 #### **Operational Excellence:**
-- **🟡 Connection Limits**: Per-server connection limiting в RBAC
-- **🟡 Bandwidth Throttling**: Ограничения по business metadata
-- **🟡 Cost Tracking**: Интеграция с billing systems
-- **🟡 SLA Monitoring**: Availability и performance tracking
+- ** Connection Limits**: Per-server connection limiting в RBAC
+- ** Bandwidth Throttling**: Ограничения по business metadata
+- ** Cost Tracking**: Интеграция с billing systems
+- ** SLA Monitoring**: Availability и performance tracking
 
-### **⚡ Phase 3: Scale & Security (Q2 2026)**  
+### **Phase 3: Scale & Security (Q2 2026)**  
 #### **Enterprise Security:**
-- **🟡 mTLS Per-Server**: Уникальные сертификаты per server_id
-- **🟡 Compliance Reporting**: SOC2, GDPR, audit trails
-- **🟡 Advanced RBAC**: Fine-grained permissions, approval workflows
-- **🟡 Zero-Trust Networking**: Enhanced network policies
+- ** mTLS Per-Server**: Уникальные сертификаты per server_id
+- ** Compliance Reporting**: SOC2, GDPR, audit trails
+- ** Advanced RBAC**: Fine-grained permissions, approval workflows
+- ** Zero-Trust Networking**: Enhanced network policies
 
 ## **Enterprise JWT Workflow**
 

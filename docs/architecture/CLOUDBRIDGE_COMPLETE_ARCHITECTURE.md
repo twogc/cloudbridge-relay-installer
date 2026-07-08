@@ -232,26 +232,26 @@
 ```mermaid
 flowchart TB
     %% Клиентские серверы (производственные площадки)
-    subgraph "🏢 Производственные площадки"
+    subgraph " Производственные площадки"
         direction TB
-        A["🖥️ Сервер A<br/>📍 Москва (RU-MOW)<br/>🌐 10.100.77.x<br/>🏢 Офис компании"]
-        B["🖥️ Сервер B<br/>📍 Хабаровск (RU-KHV)<br/>🌐 10.100.79.x<br/>🏭 Завод"]
+        A[" Сервер A<br/>Москва (RU-MOW)<br/>10.100.77.x<br/> Офис компании"]
+        B[" Сервер B<br/>Хабаровск (RU-KHV)<br/>10.100.79.x<br/>Завод"]
     end
 
     %% Edge слой - транспорт и туннелирование
-    subgraph "🌐 Edge / Transport Layer"
+    subgraph "Edge / Transport Layer"
         direction TB
         subgraph "NAT Traversal"
-            STUN[" STUN Server<br/>📡 :19302/UDP<br/>🔍 NAT Discovery"]
-            TURN[" TURN Server<br/>📡 :3478/UDP<br/>🌉 Relay Fallback"]
+            STUN[" STUN Server<br/>:19302/UDP<br/>NAT Discovery"]
+            TURN[" TURN Server<br/>:3478/UDP<br/>Relay Fallback"]
         end
         
         subgraph "Edge PoP Moscow"
-            MOW["🚀 Edge PoP MOW<br/>🌍 mow.pop.cb:443<br/>⚡ QUIC/MASQUE :443/UDP<br/>🔒 WireGuard :51820/UDP<br/>📊 Metrics & Health"]
+            MOW["Edge PoP MOW<br/> mow.pop.cb:443<br/>QUIC/MASQUE :443/UDP<br/>WireGuard :51820/UDP<br/>Metrics & Health"]
         end
         
         subgraph "MASQUE Protocol"
-            MASQUE["🔗 MASQUE/QUIC Context<br/>📦 CONNECT-UDP<br/>📦 CONNECT-IP<br/> Context ID Management"]
+            MASQUE["MASQUE/QUIC Context<br/>CONNECT-UDP<br/>CONNECT-IP<br/> Context ID Management"]
         end
     end
 
@@ -259,56 +259,56 @@ flowchart TB
     subgraph "🎛️ Control Plane"
         direction TB
         subgraph "Identity & Auth"
-            ZIT["🔐 Zitadel IdP<br/>🔑 OIDC/JWT (JWKS)<br/>👥 User Management<br/>🛡️ RBAC Policies"]
+            ZIT["Zitadel IdP<br/>OIDC/JWT (JWKS)<br/>User Management<br/>RBAC Policies"]
         end
         
         subgraph "CloudBridge Core"
-            RELAY["🎯 CloudBridge Relay Control<br/>📡 gRPC :8444<br/>🌐 REST API :8443<br/>📋 Policy Engine<br/> Connection Manager"]
+            RELAY["CloudBridge Relay Control<br/>gRPC :8444<br/>REST API :8443<br/>Policy Engine<br/> Connection Manager"]
         end
         
         subgraph "Monitoring & Discovery"
-            MON["📊 Monitoring Stack<br/>📈 Prometheus<br/>📊 Grafana<br/>🚨 AlertManager"]
-            DNS["🌍 Anycast/DNS<br/>🔍 PoP Discovery<br/>🌐 GeoDNS Steering<br/>⚡ Load Balancing"]
+            MON["Monitoring Stack<br/>Prometheus<br/>Grafana<br/>AlertManager"]
+            DNS[" Anycast/DNS<br/>PoP Discovery<br/>GeoDNS Steering<br/>Load Balancing"]
         end
     end
 
     %% Соединения - основные потоки данных
     %% Прямое P2P соединение (приоритет)
-    A -.->|"🎯 Direct P2P<br/>(ICE Success)"| B
+    A -.->|"Direct P2P<br/>(ICE Success)"| B
     
     %% Fallback #1: Через Edge PoP
     A -->|" Fallback #1<br/>QUIC/MASQUE"| MOW
-    MOW -->|"🔗 MASQUE Context<br/>Context ID"| B
+    MOW -->|"MASQUE Context<br/>Context ID"| B
     
     %% Fallback #2: Через TURN (симметричный NAT)
     A -.->|" Fallback #2<br/>(Symmetric NAT)"| TURN
-    TURN -.->|"🌉 TURN Relay"| B
+    TURN -.->|"TURN Relay"| B
     
     %% NAT Discovery
-    A -->|"🔍 NAT Discovery"| STUN
-    B -->|"🔍 NAT Discovery"| STUN
+    A -->|"NAT Discovery"| STUN
+    B -->|"NAT Discovery"| STUN
     
     %% MASQUE Protocol
-    MOW <-->|"🔗 MASQUE Protocol"| MASQUE
+    MOW <-->|"MASQUE Protocol"| MASQUE
     
     %% Аутентификация
-    A -->|"🔐 OIDC/JWT"| ZIT
-    B -->|"🔐 OIDC/JWT"| ZIT
+    A -->|"OIDC/JWT"| ZIT
+    B -->|"OIDC/JWT"| ZIT
     
     %% Регистрация и политики
-    A -->|"📋 Registration<br/>📜 Policies"| RELAY
-    B -->|"📋 Registration<br/>📜 Policies"| RELAY
+    A -->|"Registration<br/>Policies"| RELAY
+    B -->|"Registration<br/>Policies"| RELAY
     
     %% Мониторинг
-    RELAY -->|"📊 Metrics"| MON
-    MOW -->|"📊 Metrics"| MON
+    RELAY -->|"Metrics"| MON
+    MOW -->|"Metrics"| MON
     
     %% Discovery
-    DNS -->|"🔍 PoP Discovery"| MOW
-    DNS -->|"🔍 Service Discovery"| RELAY
+    DNS -->|"PoP Discovery"| MOW
+    DNS -->|"Service Discovery"| RELAY
     
     %% Zitadel интеграция
-    ZIT -->|"🔑 JWT Validation"| RELAY
+    ZIT -->|"JWT Validation"| RELAY
 
     %% Стили для визуального разделения
     classDef site fill:#fff7ed,stroke:#ea580c,stroke-width:3px,color:#000

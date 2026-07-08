@@ -1,13 +1,13 @@
-# 🚀 Быстрый старт реализации
+# Быстрый старт реализации
 
-## 📊 **Краткий обзор**
+## **Краткий обзор**
 
 ### **🔥 КРИТИЧНО (сделать сейчас)**
 1. **MASQUE улучшения** - masque-go + connect-ip-go reference
 2. **TURN сервер** - coturn reference
 3. **TURN клиент** - pion/turn reference
 
-### **🟡 ВАЖНО (сделать в течение месяца)**
+### ** ВАЖНО (сделать в течение месяца)**
 4. **BGP Anycast** - GoBGP reference
 5. **OpenTelemetry** - OpenTelemetry Go reference
 6. **AI/ML** - go-iforest + go-bandit reference
@@ -79,7 +79,7 @@ cd reference-repos/stun-turn/turn-1/
 
 ---
 
-## 🟡 **ВАЖНО (4-6 недель)**
+## **ВАЖНО (4-6 недель)**
 
 ### **Неделя 4-5: BGP Anycast**
 
@@ -155,7 +155,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ---
 
-## 📋 **Быстрый чек-лист**
+## **Быстрый чек-лист**
 
 ### **🔥 КРИТИЧНО (Неделя 1-3)**
 - [ ] **MASQUE**: masque-go + connect-ip-go reference
@@ -163,7 +163,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 - [ ] **TURN клиент**: pion/turn reference
 - [ ] **Тестирование**: все компоненты
 
-### **🟡 ВАЖНО (Неделя 4-10)**
+### ** ВАЖНО (Неделя 4-10)**
 - [ ] **BGP Anycast**: GoBGP reference
 - [ ] **OpenTelemetry**: OpenTelemetry Go reference
 - [ ] **AI/ML**: go-iforest + go-bandit reference
@@ -172,7 +172,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ---
 
-## 🎯 **Критерии успеха**
+## **Критерии успеха**
 
 ### **Критичные задачи**
 - [ ] MASQUE работает стабильно
@@ -188,7 +188,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ---
 
-## 🚀 **Следующие шаги**
+## **Следующие шаги**
 
 1. **Начать с MASQUE** - изучить masque-go reference
 2. **Улучшить CONNECT-UDP** - на основе masque-go

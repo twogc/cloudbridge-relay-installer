@@ -1,12 +1,12 @@
 # CloudBridge Relay + ZITADEL: Next Steps
 
-## 🎯 **Текущий статус: 100% готово**
+## **Текущий статус: 100% готово**
 
 Интеграция CloudBridge Relay + ZITADEL полностью завершена. Все компоненты настроены и готовы к использованию.
 
 ---
 
-## 🧪 **Этап 1: Тестирование (1-2 дня)**
+## **Этап 1: Тестирование (1-2 дня)**
 
 ### 1.1 Тестирование OIDC Flows
 
@@ -136,7 +136,7 @@ kubectl apply -f k8s/rbac/cloudbridge-relay-rbac.yaml
 
 ---
 
-## 📊 **Этап 3: Настройка мониторинга (2-3 дня)**
+## **Этап 3: Настройка мониторинга (2-3 дня)**
 
 ### 3.1 Prometheus метрики
 
@@ -181,7 +181,7 @@ kubectl apply -f monitoring/grafana-dashboard-relay-auth.yaml
 
 ---
 
-## 🚀 **Этап 4: Production Deployment (3-5 дней)**
+## **Этап 4: Production Deployment (3-5 дней)**
 
 ### 4.1 Подготовка production среды
 
@@ -300,7 +300,7 @@ aws s3 sync /backups/ s3://cloudbridge-backups/zitadel/
 
 ---
 
-## ✅ **Acceptance Criteria - проверьте перед production:**
+## **Acceptance Criteria - проверьте перед production:**
 
 ### Функциональные тесты:
 - [ ] `grpcurl -authority relay.2gc.space:8444 --insecure list` возвращает сервисы с валидным JWT
@@ -320,16 +320,16 @@ aws s3 sync /backups/ s3://cloudbridge-backups/zitadel/
 
 ---
 
-## 🎯 **Итоговая готовность**
+## **Итоговая готовность**
 
 | Компонент | Dev | Staging | Production |
 |-----------|-----|---------|------------|
-| ZITADEL Core | ✅ | ⏳ | ⏳ |
-| OIDC Apps | ✅ | ⏳ | ⏳ |
-| mTLS Certs | ✅ | ⏳ | ⏳ |
-| K8s RBAC | ✅ | ⏳ | ⏳ |
-| Monitoring | ✅ | ⏳ | ⏳ |
-| Documentation | ✅ | ✅ | ✅ |
+| ZITADEL Core | | | |
+| OIDC Apps | | | |
+| mTLS Certs | | | |
+| K8s RBAC | | | |
+| Monitoring | | | |
+| Documentation | | | |
 
 ---
 

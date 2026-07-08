@@ -1,6 +1,6 @@
-# 🌐 CloudBridge BGP Monitoring
+# CloudBridge BGP Monitoring
 
-## 📊 Overview
+## Overview
 
 This directory contains Kubernetes manifests for BGP monitoring in the CloudBridge anycast network. The monitoring system provides comprehensive visibility into BGP sessions, route tables, and anycast health across all PoP locations.
 
@@ -44,7 +44,7 @@ This directory contains Kubernetes manifests for BGP monitoring in the CloudBrid
 - `bgp-overview-dashboard.json` - BGP overview dashboard
 - `anycast-health-dashboard.json` - Anycast health dashboard
 
-## 🚀 Quick Start
+## Quick Start
 
 ### **1. Deploy BGP Monitoring**
 ```bash
@@ -76,7 +76,7 @@ kubectl port-forward svc/frr-exporter 9342:9342 -n monitoring
 kubectl port-forward svc/gobgp-exporter 9474:9474 -n monitoring
 ```
 
-## 📊 Metrics
+## Metrics
 
 ### **BGP Session Metrics**
 ```yaml
@@ -132,7 +132,7 @@ anycast_availability{pop="frankfurt"} 99.8
 anycast_availability{pop="newyork"} 99.7
 ```
 
-## 🚨 Alerts
+## Alerts
 
 ### **Critical Alerts**
 - **BGPSessionDown**: BGP session is down for >1 minute
@@ -145,7 +145,7 @@ anycast_availability{pop="newyork"} 99.7
 - **AnycastLatencyHigh**: Anycast latency is high
 - **AnycastAvailabilityLow**: Anycast availability is low
 
-## 📈 Dashboards
+## Dashboards
 
 ### **BGP Overview Dashboard**
 - BGP session status across all PoPs
@@ -232,7 +232,7 @@ kubectl port-forward svc/prometheus 9090:9090 -n monitoring
 - [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator)
 - [Grafana Dashboards](https://grafana.com/grafana/dashboards)
 
-## 🎯 Next Steps
+## Next Steps
 
 1. **Configure BGP daemons** on PoP nodes
 2. **Set up anycast health checks** for services

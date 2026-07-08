@@ -1,6 +1,6 @@
 # Получение Admin токена для ZITADEL API
 
-## 🔑 Credentials для входа
+## Credentials для входа
 - **Email**: admin@local.test  
 - **Password**: jrcCaigzmqzHpRcxo61RDiS+xejxX4/K
 
@@ -88,7 +88,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 Ожидаемый ответ - информация о пользователе.
 
-## 🧪 Тестирование токена
+## Тестирование токена
 
 После получения токена протестируйте его:
 

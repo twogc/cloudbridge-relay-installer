@@ -108,7 +108,7 @@ cloudbridge-relay-installer/
 │
 ├── scripts/deploy/deploy.sh      # Automated K8s deployment script
 ├── Makefile                      # Build/test/deploy targets
-├── go.mod                        # Go 1.25.1 module definition
+├── go.mod                        # Go 1.25.12 module definition
 └── README.md                     # Project overview (Russian)
 ```
 
@@ -117,7 +117,7 @@ cloudbridge-relay-installer/
 ## Prerequisites
 
 ### System Requirements
-- **Go 1.25.1+** for building from source
+- **Go 1.25.12+** for building from source
 - **Docker 20.10+** for container builds
 - **kubectl 1.28+** for K8s operations
 - **Helm 3.12+** for chart management

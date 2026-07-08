@@ -30,7 +30,7 @@ log_warning() {
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
 }
 
 check_prerequisites() {
@@ -373,11 +373,11 @@ show_status() {
     log_info "Monitoring Status:"
     echo ""
     
-    echo "📊 Pods Status:"
+    echo "Pods Status:"
     kubectl get pods -n $NAMESPACE
     echo ""
     
-    echo "🌐 Services Status:"
+    echo "Services Status:"
     kubectl get services -n $NAMESPACE
     echo ""
     
@@ -385,7 +385,7 @@ show_status() {
     kubectl get configmaps -n $NAMESPACE
     echo ""
     
-    echo "🔐 Secrets Status:"
+    echo "Secrets Status:"
     kubectl get secrets -n $NAMESPACE
     echo ""
 }
@@ -394,7 +394,7 @@ show_access_info() {
     log_info "Access Information:"
     echo ""
     
-    echo "📊 Grafana Dashboard:"
+    echo "Grafana Dashboard:"
     echo "   - Internal: http://grafana.$NAMESPACE.svc.cluster.local:3000"
     echo "   - Username: admin"
     echo "   - Password: admin123"
@@ -445,7 +445,7 @@ cleanup() {
 
 # Main function
 main() {
-    echo "=== 📊 CloudBridge Relay - Advanced Monitoring Deployment ==="
+    echo "=== CloudBridge Relay - Advanced Monitoring Deployment ==="
     echo ""
     
     case "${1:-deploy}" in

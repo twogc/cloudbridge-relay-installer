@@ -192,7 +192,7 @@ sudo systemctl restart docker
 echo " Проверка настройки..."
 docker info | grep -A 10 "Registry Mirrors"
 
-echo "🎉 Настройка завершена!"
+echo "Настройка завершена!"
 ```
 
 ### Использование готового скрипта
@@ -204,7 +204,7 @@ chmod +x unlock.sh
 ./unlock.sh
 ```
 
-## 🧪 Тестирование
+## Тестирование
 
 ### Проверка настройки
 
@@ -307,7 +307,7 @@ MIRRORS=(
     "noohub.ru"
 )
 
-echo "🔍 Проверка статуса зеркал Docker Hub..."
+echo "Проверка статуса зеркал Docker Hub..."
 echo "=========================================="
 
 for mirror in "${MIRRORS[@]}"; do

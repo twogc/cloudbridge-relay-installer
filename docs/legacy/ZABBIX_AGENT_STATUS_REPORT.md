@@ -30,15 +30,15 @@
 |---------|----------|--------|
 | `cloudbridge.system.cpu.usage` | 15.2% | аботает |
 | `cloudbridge.system.memory.usage` | 25.79% | аботает |
-| `cloudbridge.system.disk.usage` | - | ⚠️ Не тестировалась |
-| `cloudbridge.system.network.connections` | - | ⚠️ Не тестировалась |
+| `cloudbridge.system.disk.usage` | - | Не тестировалась |
+| `cloudbridge.system.network.connections` | - | Не тестировалась |
 
 ### 4. CloudBridge Relay метрики
 | Метрика | Значение | Статус |
 |---------|----------|--------|
 | `cloudbridge.relay.connections` | 0 | аботает |
-| `cloudbridge.relay.uptime` | - | ⚠️ Не тестировалась |
-| `cloudbridge.relay.memory` | - | ⚠️ Не тестировалась |
+| `cloudbridge.relay.uptime` | - | Не тестировалась |
+| `cloudbridge.relay.memory` | - | Не тестировалась |
 
 ### 5. Docker метрики
 | Метрика | Значение | Статус |
@@ -54,7 +54,7 @@
 | `cloudbridge.k8s.pods.total` | 35 | аботает |
 | `cloudbridge.k8s.nodes.ready` | 1 | аботает |
 
-## 🚨 Выявленные проблемы и их решения
+## Выявленные проблемы и их решения
 
 ### Проблема 1: Kubernetes метрики не работали
 **Симптомы:**
@@ -85,7 +85,7 @@
 - Ошибка в логах: `Unable to connect to [zbx.2gc.ru]:10051`
 - `Active check configuration update started to fail`
 
-**Статус:** ⚠️ Не критично для локального мониторинга
+**Статус:** Не критично для локального мониторинга
 
 ## Настроенные UserParameters
 
@@ -127,7 +127,7 @@ UserParameter=cloudbridge.k8s.pods.total,/usr/local/bin/ai_metrics_collector.sh 
 UserParameter=cloudbridge.k8s.nodes.ready,/usr/local/bin/ai_metrics_collector.sh k8s_nodes_ready
 ```
 
-## 🧪 Скрипт сбора метрик
+## Скрипт сбора метрик
 
 **Файл:** `/usr/local/bin/ai_metrics_collector.sh`  
 **Размер:** 3679 байт  
@@ -175,7 +175,7 @@ UserParameter=cloudbridge.k8s.nodes.ready,/usr/local/bin/ai_metrics_collector.sh
 - **Docker метрики:** аботают  
 - **Kubernetes метрики:** аботают
 - **CloudBridge Relay метрики:** аботают
-- **AI метрики:** ⚠️ Закомментированы (требуют настройки AI API)
+- **AI метрики:** Закомментированы (требуют настройки AI API)
 
 ###  Рекомендации:
 1. **Настроить AI метрики** - раскомментировать и настроить подключение к AI API
@@ -183,4 +183,4 @@ UserParameter=cloudbridge.k8s.nodes.ready,/usr/local/bin/ai_metrics_collector.sh
 3. **Добавить мониторинг дисков** - протестировать disk usage метрики
 4. **Настроить алерты** - создать правила для критических метрик
 
-**🎉 Zabbix агент готов к полноценному мониторингу CloudBridge Relay и AI сервиса!**
+**Zabbix агент готов к полноценному мониторингу CloudBridge Relay и AI сервиса!**

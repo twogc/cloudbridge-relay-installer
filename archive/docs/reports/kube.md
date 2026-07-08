@@ -189,4 +189,4 @@ clusters:
     insecure-skip-tls-verify: true                  # либо ваш CA
 ```
 
-> ⚠️ При использовании UDP-QUIC/MASQUE убедитесь, что LB пропускает **UDP 443**.
+> При использовании UDP-QUIC/MASQUE убедитесь, что LB пропускает **UDP 443**.

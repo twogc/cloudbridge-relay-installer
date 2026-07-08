@@ -116,11 +116,11 @@ EOF
     local body="${response%???}"
     
     if [[ "$http_code" == "200" ]] || [[ "$http_code" == "201" ]]; then
-        log "✅ Роль '$role_key' создана успешно"
+        log "Роль '$role_key' создана успешно"
     elif [[ "$http_code" == "409" ]]; then
         warn "Роль '$role_key' уже существует"
     else
-        error "❌ Ошибка создания роли '$role_key': HTTP $http_code"
+        error "Ошибка создания роли '$role_key': HTTP $http_code"
         error "Response: $body"
     fi
 }
@@ -190,9 +190,9 @@ EOF
     local body="${response%???}"
     
     if [[ "$http_code" == "200" ]]; then
-        log "✅ JWT шаблон для '$app_name' обновлен"
+        log "JWT шаблон для '$app_name' обновлен"
     else
-        warn "⚠️ Ошибка обновления JWT шаблона для '$app_name': HTTP $http_code"
+        warn "Ошибка обновления JWT шаблона для '$app_name': HTTP $http_code"
         warn "Response: $body"
     fi
 }
@@ -225,9 +225,9 @@ EOF
     local body="${response%???}"
     
     if [[ "$http_code" == "200" ]]; then
-        log "✅ Token lifetimes для '$app_name' настроены"
+        log "Token lifetimes для '$app_name' настроены"
     else
-        warn "⚠️ Ошибка настройки token lifetimes для '$app_name': HTTP $http_code"
+        warn "Ошибка настройки token lifetimes для '$app_name': HTTP $http_code"
         warn "Response: $body"
     fi
 }
@@ -305,14 +305,14 @@ EOF
     if [[ "$http_code" == "200" ]] || [[ "$http_code" == "201" ]]; then
         local user_id
         user_id=$(echo "$body" | jq -r '.user_id')
-        log "✅ Тестовый пользователь создан: $user_id"
+        log "Тестовый пользователь создан: $user_id"
         
         # Назначение ролей пользователю
         assign_user_roles "$user_id"
     elif [[ "$http_code" == "409" ]]; then
         warn "Тестовый пользователь уже существует"
     else
-        error "❌ Ошибка создания тестового пользователя: HTTP $http_code"
+        error "Ошибка создания тестового пользователя: HTTP $http_code"
         error "Response: $body"
     fi
 }
@@ -342,9 +342,9 @@ EOF
     local body="${response%???}"
     
     if [[ "$http_code" == "200" ]] || [[ "$http_code" == "201" ]]; then
-        log "✅ Роли назначены пользователю"
+        log "Роли назначены пользователю"
     else
-        warn "⚠️ Ошибка назначения ролей: HTTP $http_code"
+        warn "Ошибка назначения ролей: HTTP $http_code"
         warn "Response: $body"
     fi
 }
@@ -362,24 +362,24 @@ verify_configuration() {
     if echo "$roles_response" | jq -e '.result' > /dev/null; then
         local roles_count
         roles_count=$(echo "$roles_response" | jq '.result | length')
-        log "✅ Найдено ролей в проекте: $roles_count"
+        log "Найдено ролей в проекте: $roles_count"
         
         # Вывод всех ролей
         echo "$roles_response" | jq -r '.result[] | "  - \(.key): \(.display_name)"'
     else
-        error "❌ Ошибка проверки ролей проекта"
+        error "Ошибка проверки ролей проекта"
     fi
     
     # Проверка OIDC конфигурации
     log "Проверка OIDC конфигурации..."
     if curl -kLs "$ZITADEL_API_URL/.well-known/openid-configuration" | jq -e '.scopes_supported' > /dev/null; then
-        log "✅ OIDC конфигурация доступна"
+        log "OIDC конфигурация доступна"
         
         # Сохранение конфигурации
         curl -kLs "$ZITADEL_API_URL/.well-known/openid-configuration" > "$PROJECT_ROOT/configs/oidc-discovery.json"
         log "OIDC discovery сохранен в configs/oidc-discovery.json"
     else
-        error "❌ OIDC конфигурация недоступна"
+        error "OIDC конфигурация недоступна"
     fi
 }
 
@@ -418,8 +418,8 @@ EOF
 
 # Основная функция
 main() {
-    log "🚀 Настройка ZITADEL Scopes и Claims"
-    log "📋 Конфигурация:"
+    log "Настройка ZITADEL Scopes и Claims"
+    log "Конфигурация:"
     log "   ZITADEL Domain: $ZITADEL_DOMAIN"
     log "   API URL: $ZITADEL_API_URL"
     log ""
@@ -447,15 +447,15 @@ main() {
     verify_configuration
     create_jwt_example
     
-    log "🎉 Настройка scopes и claims завершена!"
+    log "Настройка scopes и claims завершена!"
     log ""
-    log "📋 Следующие шаги:"
+    log "Следующие шаги:"
     log "   1. Проверьте созданные роли в ZITADEL Console"
     log "   2. Настройте приложения для использования custom claims"
     log "   3. Протестируйте получение токенов с новыми claims"
     log "   4. Обновите конфигурацию CloudBridge Relay для использования новых scopes"
     log ""
-    log "📄 Созданные файлы:"
+    log " Созданные файлы:"
     log "   - configs/oidc-discovery.json - OIDC Discovery конфигурация"
     log "   - configs/jwt-token-example.json - Пример JWT токена"
 }

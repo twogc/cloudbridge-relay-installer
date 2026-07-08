@@ -221,10 +221,10 @@ spec:
 | Setup скрипты | отово | 100% |
 | GitHub Actions | отово | 100% |
 | Документация | отово | 100% |
-| CI/CD тестирование | ⏳ Требуется | 0% |
-| Kyverno policies | ⏳ Требуется | 0% |
-| Production deployment | ⏳ Требуется | 0% |
-| SBOM storage | ⏳ Требуется | 0% |
+| CI/CD тестирование | Требуется | 0% |
+| Kyverno policies | Требуется | 0% |
+| Production deployment | Требуется | 0% |
+| SBOM storage | Требуется | 0% |
 
 ### Общий прогресс
 
@@ -259,17 +259,17 @@ spec:
 
 ### Требуется реализовать
 
-1. **Policy Enforcement** ⏳
+1. **Policy Enforcement** 
    - Kyverno ClusterPolicy
    - Admission Controller
    - Exemptions management
 
-2. **Monitoring** ⏳
+2. **Monitoring** 
    - Prometheus метрики для подписей
    - Алерты для unsigned images
    - Dashboard для vulnerabilities
 
-3. **Compliance** ⏳
+3. **Compliance** 
    - SBOM публикация
    - Audit trail
    - Transparency reporting

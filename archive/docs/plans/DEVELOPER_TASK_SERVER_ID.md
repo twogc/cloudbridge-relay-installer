@@ -5,9 +5,9 @@
 Несмотря на то, что авторизация работает и клиенты успешно регистрируются, **server_id не передается корректно** от клиента к серверу.
 
 ### Текущее состояние:
-- ✅ Клиенты получают статус 200 OK
-- ✅ Сервер выделяет IP-адреса (10.100.77.10)
-- ❌ **Проблема**: `peer_id` генерируется как `peer_anonymous` вместо `peer_server-a`
+- Клиенты получают статус 200 OK
+- Сервер выделяет IP-адреса (10.100.77.10)
+- **Проблема**: `peer_id` генерируется как `peer_anonymous` вместо `peer_server-a`
 
 ### Логи сервера показывают:
 ```json
@@ -52,7 +52,7 @@ func (pm *PeerManager) validateToken(c *gin.Context) (*P2PClaims, error) {
         return &P2PClaims{
             Subject:        "anonymous",
             TenantID:       tenantID,
-            ServerID:       "anonymous", // ❌ ПРОБЛЕМА: всегда "anonymous"
+            ServerID:       "anonymous", // ПРОБЛЕМА: всегда "anonymous"
             ConnectionType: "quic",
             ProtocolType:   "p2p-mesh",
             Permissions:    []string{"relay_connect", "relay_tunnel"},
@@ -87,7 +87,7 @@ func (pm *PeerManager) validateToken(c *gin.Context) (*P2PClaims, error) {
         return &P2PClaims{
             Subject:        "anonymous",
             TenantID:       tenantID,
-            ServerID:       serverID, // ✅ ИСПРАВЛЕНО: используем извлеченный server_id
+            ServerID:       serverID, // ИСПРАВЛЕНО: используем извлеченный server_id
             ConnectionType: "quic",
             ProtocolType:   "p2p-mesh",
             Permissions:    []string{"relay_connect", "relay_tunnel"},
@@ -124,7 +124,7 @@ func (pm *P2PManager) validateToken(c *gin.Context) (*P2PClaims, error) {
         return &P2PClaims{
             Subject:        "anonymous",
             TenantID:       tenantID,
-            ServerID:       serverID, // ✅ ИСПРАВЛЕНО: используем извлеченный server_id
+            ServerID:       serverID, // ИСПРАВЛЕНО: используем извлеченный server_id
             ConnectionType: "quic",
             ProtocolType:   "p2p-mesh",
             Permissions:    []string{"relay_connect", "relay_tunnel"},
@@ -215,11 +215,11 @@ if strings.HasPrefix(token, "server-id:") {
 
 ## Критерии успеха
 
-1. **✅ Server A**: `peer_id` должен быть `peer_server-a`
-2. **✅ Server B**: `peer_id` должен быть `peer_server-b`
-3. **✅ Логи**: Должны показывать правильные `server_id` и `peer_id`
-4. **✅ P2P mesh**: Клиенты должны видеть друг друга по правильным `peer_id`
-5. **✅ IP-адреса**: Каждый клиент должен получить уникальный IP
+1. **Server A**: `peer_id` должен быть `peer_server-a`
+2. **Server B**: `peer_id` должен быть `peer_server-b`
+3. **Логи**: Должны показывать правильные `server_id` и `peer_id`
+4. **P2P mesh**: Клиенты должны видеть друг друга по правильным `peer_id`
+5. **IP-адреса**: Каждый клиент должен получить уникальный IP
 
 ## Файлы для изменения
 

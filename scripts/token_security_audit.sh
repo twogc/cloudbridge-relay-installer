@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🔒 Token Security Audit Script
+# Token Security Audit Script
 # Проверка безопасности токена аутентификации с внешней стороны
 # Автор: CloudBridge Security Team
 # Версия: 1.0
@@ -35,7 +35,7 @@ mkdir -p "$OUTPUT_DIR"
 # Функция помощи
 show_help() {
     cat << EOF
-🔒 Token Security Audit Script
+Token Security Audit Script
 
 Использование:
     $0 -t <token> -d <domain> [опции]
@@ -210,7 +210,7 @@ check_ssl_security() {
                     log_warning "Устаревший протокол $protocol поддерживается"
                 fi
             else
-                echo "❌ $protocol: не поддерживается" >> "$ssl_file"
+                echo "$protocol: не поддерживается" >> "$ssl_file"
             fi
         done
         
@@ -257,7 +257,7 @@ check_security_headers() {
                 echo "$value" >> "$headers_file"
                 log_success "Найден заголовок: $header"
             else
-                echo "❌ $header: отсутствует" >> "$headers_file"
+                echo "$header: отсутствует" >> "$headers_file"
                 log_warning "Отсутствует заголовок безопасности: $header"
             fi
         done
@@ -350,7 +350,7 @@ check_open_ports() {
                 log_warning "Открыт порт $port"
             else
                 if [[ $VERBOSE == true ]]; then
-                    echo "❌ Порт $port: закрыт" >> "$ports_file"
+                    echo "Порт $port: закрыт" >> "$ports_file"
                 fi
             fi
         done
@@ -476,7 +476,7 @@ generate_report() {
     log_info "Генерация отчета безопасности..."
     
     cat > "$REPORT_FILE" << EOF
-# 🔒 Отчет по безопасности токена
+# Отчет по безопасности токена
 
 ## Общая информация
 - **Домен**: $DOMAIN
@@ -548,7 +548,7 @@ cleanup() {
 
 # Основная функция
 main() {
-    log_security "🔒 Запуск аудита безопасности токена"
+    log_security "Запуск аудита безопасности токена"
     log_info "Домен: $DOMAIN"
     log_info "Директория результатов: $OUTPUT_DIR"
     

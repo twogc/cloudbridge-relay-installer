@@ -49,7 +49,7 @@
 | TEST_COVERAGE_REPORT.md | ANALYSIS | Отчет о тестовом покрытии AI сервиса |
 | TEST_ERRORS_FIXED_REPORT.md | STATUS_REPORT | Отчет об исправлении ошибок в тестах |
 | TLS_SETUP_REPORT.md | STATUS_REPORT | CloudBridge TLS Certificate Setup Report |
-| TURN_TESTING_REPORT.md | STATUS_REPORT | 🧪 Отчет о тестировании TURN сервера в Minikube |
+| TURN_TESTING_REPORT.md | STATUS_REPORT | Отчет о тестировании TURN сервера в Minikube |
 | UPDATED_SUPPORT_REQUEST.txt | LONG_LIVED | Тема: LoadBalancer operating_status ERROR после исправления Security Group - требуется помощь инженеров |
 | VK_CLOUD_ARCHITECTURE.md | LONG_LIVED | VK Cloud Architecture Analysis |
 | VK_CLOUD_FINAL_REPORT.md | COMPLETION_REPORT | VK Cloud LoadBalancer Configuration - Final Report |

@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🚀 Запуск Zabbix Agent с AI метриками..."
+echo "Запуск Zabbix Agent с AI метриками..."
 
 # Останавливаем Zabbix Agent 2 (если запущен)
 echo "🛑 Остановка Zabbix Agent 2..."
@@ -19,22 +19,22 @@ sleep 2
 # Проверяем, что порт 10050 свободен
 echo "🔌 Проверка порта 10050..."
 if sudo netstat -tlnp | grep -q ":10050"; then
-    echo "❌ Порт 10050 занят. Останавливаем процесс..."
+    echo "Порт 10050 занят. Останавливаем процесс..."
     sudo fuser -k 10050/tcp 2>/dev/null || true
     sleep 2
 fi
 
 # Запускаем Zabbix Agent
-echo "🚀 Запуск Zabbix Agent..."
+echo "Запуск Zabbix Agent..."
 sudo /usr/sbin/zabbix_agentd -c /etc/zabbix/zabbix_agentd.conf -f &
 sleep 3
 
 # Проверяем, что Agent запустился
-echo "📊 Проверка статуса Zabbix Agent..."
+echo "Проверка статуса Zabbix Agent..."
 if sudo netstat -tlnp | grep -q "zabbix_agen.*:10050"; then
     echo "Zabbix Agent успешно запущен на порту 10050"
 else
-    echo "❌ Ошибка запуска Zabbix Agent"
+    echo "Ошибка запуска Zabbix Agent"
     exit 1
 fi
 

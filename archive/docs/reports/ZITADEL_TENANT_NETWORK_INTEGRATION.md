@@ -1,12 +1,12 @@
-# 🌐 Zitadel Tenant Network Integration
+# Zitadel Tenant Network Integration
 
-## 🎯 **Цель интеграции**
+## **Цель интеграции**
 
 Перенести управление подсетями тенантов из CloudBridge Relay в Zitadel для обеспечения:
-- ✅ **Единого источника истины** для всех данных о тенантах
-- ✅ **Централизованного управления** сетевыми конфигурациями
-- ✅ **Интеграции с RBAC** для безопасности
-- ✅ **Масштабируемости** и консистентности
+- **Единого источника истины** для всех данных о тенантах
+- **Централизованного управления** сетевыми конфигурациями
+- **Интеграции с RBAC** для безопасности
+- **Масштабируемости** и консистентности
 
 ## 🏗️ **Архитектура**
 
@@ -15,10 +15,10 @@
 ┌─────────────────────────────────────┐
 │              Zitadel                │
 ├─────────────────────────────────────┤
-│  ✅ Tenant Management               │
-│  ✅ User Authentication             │
-│  ✅ JWT Tokens                      │
-│  ✅ RBAC Permissions                │
+│  Tenant Management               │
+│  User Authentication             │
+│  JWT Tokens                      │
+│  RBAC Permissions                │
 │  🆕 Tenant Network Configs          │ ← НОВОЕ
 │  🆕 IPAM Pool Management            │ ← НОВОЕ
 │  🆕 Subnet Allocation               │ ← НОВОЕ
@@ -30,12 +30,12 @@
 ┌─────────────────────────────────────┐
 │         CloudBridge Relay           │
 ├─────────────────────────────────────┤
-│  ✅ P2P Networking                  │
-│  ✅ MASQUE Protocol                 │
-│  ✅ TURN/STUN Servers               │
+│  P2P Networking                  │
+│  MASQUE Protocol                 │
+│  TURN/STUN Servers               │
 │  🆕 IP Allocation (from Zitadel)    │ ← ИЗМЕНЕНО
 │  🆕 Network Config Cache            │ ← НОВОЕ
-│  ❌ Local Subnet Storage            │ ← УДАЛЕНО
+│  Local Subnet Storage            │ ← УДАЛЕНО
 └─────────────────────────────────────┘
 ```
 
@@ -83,7 +83,7 @@ GET /management/v1/ipam/validate-isolation
 POST /management/v1/sync/cloudbridge-relay
 ```
 
-## 📊 **Data Models**
+## **Data Models**
 
 ### **TenantNetworkConfig:**
 ```json
@@ -152,7 +152,7 @@ POST /management/v1/sync/cloudbridge-relay
 4. Применяет изменения в Network Policies
 ```
 
-## 🚀 **Implementation**
+## **Implementation**
 
 ### **1. Zitadel Extensions:**
 
@@ -205,7 +205,7 @@ func (pm *PeerManagerZitadel) AllocateIPForTenant(tenantID, peerID string) (stri
 }
 ```
 
-## 🔒 **Security**
+## **Security**
 
 ### **1. RBAC Integration:**
 - Сетевая конфигурация защищена теми же правами доступа
@@ -217,24 +217,24 @@ func (pm *PeerManagerZitadel) AllocateIPForTenant(tenantID, peerID string) (stri
 - Изоляция на уровне Kubernetes
 - Мониторинг межтенантного трафика
 
-## 📈 **Benefits**
+## **Benefits**
 
 ### **1. Архитектурные:**
-- ✅ **Единый источник истины** - все в Zitadel
-- ✅ **Stateless CloudBridge Relay** - легко масштабируется
-- ✅ **Централизованное управление** - простое администрирование
+- **Единый источник истины** - все в Zitadel
+- **Stateless CloudBridge Relay** - легко масштабируется
+- **Централизованное управление** - простое администрирование
 
 ### **2. Операционные:**
-- ✅ **Консистентность данных** - нет рассинхронизации
-- ✅ **Упрощенное резервное копирование** - все в Zitadel
-- ✅ **Единый аудит** - все действия в одном месте
+- **Консистентность данных** - нет рассинхронизации
+- **Упрощенное резервное копирование** - все в Zitadel
+- **Единый аудит** - все действия в одном месте
 
 ### **3. Безопасность:**
-- ✅ **Интегрированная авторизация** - RBAC из коробки
-- ✅ **Централизованное управление ключами** - JWT токены
-- ✅ **Аудит и мониторинг** - единая система
+- **Интегрированная авторизация** - RBAC из коробки
+- **Централизованное управление ключами** - JWT токены
+- **Аудит и мониторинг** - единая система
 
-## 🎯 **Migration Plan**
+## **Migration Plan**
 
 ### **Phase 1: Zitadel Extensions (1-2 дня)**
 1. Добавить Tenant Network API в Zitadel
@@ -255,10 +255,10 @@ func (pm *PeerManagerZitadel) AllocateIPForTenant(tenantID, peerID string) (stri
 
 **Интеграция с Zitadel для управления подсетями тенантов обеспечивает:**
 
-- ✅ **Архитектурную чистоту** - каждый компонент отвечает за свою область
-- ✅ **Централизованное управление** - все в Zitadel
-- ✅ **Лучшую безопасность** - единая система авторизации
-- ✅ **Упрощение CloudBridge Relay** - становится stateless
-- ✅ **Масштабируемость** - легко добавлять новые relay серверы
+- **Архитектурную чистоту** - каждый компонент отвечает за свою область
+- **Централизованное управление** - все в Zitadel
+- **Лучшую безопасность** - единая система авторизации
+- **Упрощение CloudBridge Relay** - становится stateless
+- **Масштабируемость** - легко добавлять новые relay серверы
 
 **Это правильный архитектурный подход для enterprise-grade решения!** 🚀

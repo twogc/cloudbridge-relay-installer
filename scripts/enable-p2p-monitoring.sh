@@ -2,7 +2,7 @@
 
 set -e
 
-echo "🚀 Enabling P2P Mesh Monitoring for CloudBridge Relay"
+echo "Enabling P2P Mesh Monitoring for CloudBridge Relay"
 
 # Colors for output
 RED='\033[0;31m'
@@ -122,7 +122,7 @@ fi
 
 # 7. Display monitoring URLs
 echo ""
-log_info "📊 Monitoring Setup Complete!"
+log_info "Monitoring Setup Complete!"
 echo ""
 echo "Access URLs:"
 echo "  Grafana:     kubectl port-forward -n cloudbridge-monitoring svc/grafana 3000:3000"

@@ -290,7 +290,7 @@ show_status() {
     log_info "=== Статус CloudBridge Relay ==="
     
     echo ""
-    echo "🌐 Anycast IP:"
+    echo "Anycast IP:"
     if [ -n "$ANYCAST_ID" ]; then
         curl -s -H "X-Auth-Token: $OS_TOKEN" \
             "$NEUTRON_URL/v2.0/anycastips/$ANYCAST_ID" | \
@@ -328,7 +328,7 @@ show_status() {
 
 # Главная функция настройки
 setup_cloudbridge_relay() {
-    log_info "🚀 Настройка CloudBridge Relay с балансировщиком и Anycast IP"
+    log_info "Настройка CloudBridge Relay с балансировщиком и Anycast IP"
     
     # 1. Получаем информацию о сетях
     get_network_info

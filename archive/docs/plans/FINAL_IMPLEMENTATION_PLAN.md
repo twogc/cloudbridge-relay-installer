@@ -1,13 +1,13 @@
-# 🚀 Итоговый план реализации CloudBridge Relay
+# Итоговый план реализации CloudBridge Relay
 
-## 📊 **Обзор плана**
+## **Обзор плана**
 
 ### **🔥 КРИТИЧНО (сделать сейчас) - 3 недели**
 1. **MASQUE улучшения** - изучить masque-go и connect-ip-go reference
 2. **TURN сервер** - создать TURN-пул на основе coturn
 3. **TURN клиент** - улучшить на основе pion/turn
 
-### **🟡 ВАЖНО (сделать в течение месяца) - 4-6 недель**
+### ** ВАЖНО (сделать в течение месяца) - 4-6 недель**
 4. **BGP Anycast** - добавить автоматизацию на основе GoBGP
 5. **OpenTelemetry** - добавить distributed tracing
 6. **AI/ML улучшения** - улучшить на основе go-iforest и go-bandit
@@ -118,7 +118,7 @@ cd reference-repos/stun-turn/turn-1/
 
 ---
 
-## 🟡 **ВАЖНО (4-6 недель)**
+## **ВАЖНО (4-6 недель)**
 
 ### **Неделя 4-5: BGP Anycast**
 
@@ -240,7 +240,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ---
 
-## 📋 **Чек-лист по приоритетам**
+## **Чек-лист по приоритетам**
 
 ### **🔥 КРИТИЧНО (Неделя 1-3)**
 
@@ -263,7 +263,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 - [ ] Добавить TCP allocation поддержку
 - [ ] Интегрировать с ICE
 
-### **🟡 ВАЖНО (Неделя 4-10)**
+### ** ВАЖНО (Неделя 4-10)**
 
 #### **BGP Anycast**
 - [ ] Изучить GoBGP reference
@@ -291,7 +291,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ---
 
-## 🎯 **Критерии успеха**
+## **Критерии успеха**
 
 ### **Критичные задачи (Неделя 1-3)**
 - [ ] MASQUE работает стабильно с улучшениями
@@ -309,7 +309,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ---
 
-## 🚀 **Следующие шаги**
+## **Следующие шаги**
 
 1. **Начать с MASQUE изучения** - masque-go reference
 2. **Улучшить CONNECT-UDP** - на основе masque-go

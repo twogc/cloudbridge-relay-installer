@@ -713,7 +713,7 @@ graph LR
 - **Гео-роутинг + health/load фильтры** — ок как первая версия
 - **Базовые метрики/мониторинг/скейлинг** — ок
 
-### 🚨 **Что нужно добить (минимум до GA)**
+### **Что нужно добить (минимум до GA)**
 
 #### **1. Надёжность Control Plane**
 
@@ -1300,7 +1300,7 @@ HOVER_WARMUP_PARALLEL=true      # прогрев альтернативы
 - mTLS ротация, SBOM+cosign gate
 - Canary+rollback, SLO-алерты
 
-## 🧪 Набор тестов (acceptance)
+## Набор тестов (acceptance)
 
 ### **Interop тесты**
 - CONNECT-UDP/IP + HTTP Datagrams (qlog/pcap)
@@ -1421,7 +1421,7 @@ graph TD
     class I,J,K,L step
 ```
 
-> ⚡ При деградации любого линка handover выполняется мгновенно (make-before-break QUIC контексты)
+> При деградации любого линка handover выполняется мгновенно (make-before-break QUIC контексты)
 
 ### **🔹 Где CloudBridge превосходит Argo**
 

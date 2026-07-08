@@ -140,7 +140,7 @@ User/Client                          CloudBridge Platform
 - Hot-reload configuration changes
 
 **Technology Stack:**
-- **Language:** Go 1.21+
+- **Language:** Go 1.25.12+
 - **QUIC:** quic-go v0.40+
 - **Multiplexing:** yamux or smux
 - **Configuration:** Viper + file watcher
@@ -2363,7 +2363,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.21'
+          go-version: '1.25.12'
 
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
@@ -2607,11 +2607,11 @@ This technical specification defines a comprehensive TCP tunneling solution that
 
 **Next Steps:**
 1. pprove technical specification
-2. ⏳ Secure funding ($2-3M)
-3. ⏳ Begin hiring (6-7 engineers for Phase 1)
-4. ⏳ Start Phase 1 development (Weeks 1-4)
-5. ⏳ Beta program (Week 15)
-6. ⏳ Production launch (Week 16)
+2. Secure funding ($2-3M)
+3. Begin hiring (6-7 engineers for Phase 1)
+4. Start Phase 1 development (Weeks 1-4)
+5. Beta program (Week 15)
+6. Production launch (Week 16)
 
 ---
 

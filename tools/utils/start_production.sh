@@ -27,7 +27,7 @@ show_banner() {
     echo "║                                                                              ║"
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo -e "\033[0m"
-    echo -e "\033[1;33m🚀 Starting CloudBridge Relay Production Environment...\033[0m"
+    echo -e "\033[1;33mStarting CloudBridge Relay Production Environment...\033[0m"
     echo -e "\033[1;33m⏰ $(date '+%Y-%m-%d %H:%M:%S')\033[0m"
     echo ""
     echo -e "\033[1;33m═══════════════════════════════════════════════════════════════════════════════\033[0m"
@@ -225,28 +225,28 @@ check_health() {
         if curl -f http://localhost:8080/ &> /dev/null; then
             log "Keycloak запущен и отвечает"
         else
-            warn "⏳ Keycloak еще не готов..."
+            warn "Keycloak еще не готов..."
         fi
         
         # Проверяем Relay
         if curl -f http://localhost:8081/metrics &> /dev/null; then
             log "Relay запущен и отвечает"
         else
-            warn "⏳ Relay еще не готов..."
+            warn "Relay еще не готов..."
         fi
         
         # Проверяем Grafana
         if curl -f http://localhost:3000/api/health &> /dev/null; then
             log "Grafana запущен и отвечает"
         else
-            warn "⏳ Grafana еще не готов..."
+            warn "Grafana еще не готов..."
         fi
         
         # Проверяем ML сервис
         if curl -f http://localhost:8000/health &> /dev/null; then
             log "ML сервис запущен и отвечает"
         else
-            warn "⏳ ML сервис еще не готов..."
+            warn "ML сервис еще не готов..."
         fi
         
         # Если все сервисы готовы, выходим
@@ -254,7 +254,7 @@ check_health() {
            curl -f http://localhost:8081/metrics &> /dev/null && \
            curl -f http://localhost:3000/api/health &> /dev/null && \
            curl -f http://localhost:8000/health &> /dev/null; then
-            log "🎉 Все сервисы запущены и готовы к работе!"
+            log "Все сервисы запущены и готовы к работе!"
             
             # Проверяем наличие темы
             if [ -d "keycloak/themes/playa" ]; then
@@ -285,21 +285,21 @@ show_status() {
     echo -e "\033[1;32m"
     echo "╔══════════════════════════════════════════════════════════════════════════════╗"
     echo "║                                                                              ║"
-    echo "║                    🎉 CloudBridge Relay Successfully Started! 🎉            ║"
+    echo "║                    CloudBridge Relay Successfully Started!            ║"
     echo "║                                                                              ║"
     echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo -e "\033[0m"
     
     log "URLs сервисов:"
-    echo -e "  \033[1;36m🔐 Keycloak:\033[0m     http://localhost:8080"
-    echo -e "  \033[1;36m🚀 Relay:\033[0m        http://localhost:8081"
-    echo -e "  \033[1;36m📊 Grafana:\033[0m      http://localhost:3000"
+    echo -e "  \033[1;36mKeycloak:\033[0m     http://localhost:8080"
+    echo -e "  \033[1;36mRelay:\033[0m        http://localhost:8081"
+    echo -e "  \033[1;36mGrafana:\033[0m      http://localhost:3000"
     echo -e "  \033[1;36m Prometheus:\033[0m   http://localhost:9090"
     echo -e "  \033[1;36mAlertManager:\033[0m http://localhost:9093"
     echo -e "  \033[1;36m ML API:\033[0m       http://localhost:8000"
     echo
     log "Тема Keycloak:"
-    echo -e "  \033[1;36m🎨 Кастомная тема:\033[0m Playa (автоматически настроена)"
+    echo -e "  \033[1;36mКастомная тема:\033[0m Playa (автоматически настроена)"
     echo -e "  \033[1;36m Страница входа:\033[0m http://localhost:8080/realms/cloudbridge/protocol/openid-connect/auth"
     echo
     
@@ -404,7 +404,7 @@ main() {
     if check_health; then
         echo
         show_status
-        log "🎉 CloudBridge Relay успешно запущен в production режиме!"
+        log "CloudBridge Relay успешно запущен в production режиме!"
     else
         error "Не удалось запустить все сервисы"
         exit 1

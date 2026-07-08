@@ -75,7 +75,7 @@ curl -s "http://192.168.49.2:30083/metrics" | grep -i "connections"
 
 ## Список приоритетных метрик для проверки
 
-### ⚠️ Высокий приоритет (скорее всего вымышленные)
+### Высокий приоритет (скорее всего вымышленные)
 ```bash
 # P2P QUIC метрики - все возвращают 0
 zabbix_get -s localhost -k p2p.quic.connections.active
@@ -169,7 +169,7 @@ sudo systemctl restart zabbix-agent
 zabbix_get -s localhost -k p2p.quic.connections.active
 ```
 
-## 🧪 Тестирование динамичности
+## Тестирование динамичности
 
 ### Автоматический тест изменяемости
 ```bash
@@ -193,7 +193,7 @@ done
 
 # Анализ результатов
 echo ""
-echo "📊 Анализ:"
+echo "Анализ:"
 UNIQUE_VALUES=$(printf '%s\n' "${VALUES[@]}" | sort -u | wc -l)
 if [ "$UNIQUE_VALUES" -eq 1 ]; then
     echo " СТАТИЧНАЯ МЕТРИКА - все значения одинаковые: ${VALUES[0]}"
@@ -226,7 +226,7 @@ kubectl set image deployment/ai-service ai-service=ai-service:$TAG -n cloudbridg
 
 # Ожидание обновления
 if [ $? -eq 0 ]; then
-    echo "⏳ Ожидание обновления..."
+    echo "Ожидание обновления..."
     kubectl rollout status deployment/ai-service -n cloudbridge --timeout=180s
     echo " Готово! Тег: $TAG"
 else
@@ -242,20 +242,20 @@ echo "📅 $(date)"
 echo "=========================="
 
 # 1. Kubernetes
-echo "🔍 Kubernetes pods:"
+echo "Kubernetes pods:"
 kubectl get pods -n cloudbridge | grep -v Terminating
 
 # 2. Prometheus
-echo "🔍 Prometheus endpoints:"
+echo "Prometheus endpoints:"
 curl -s --connect-timeout 3 "http://192.168.49.2:30081/metrics" >/dev/null && echo " Relay OK" || echo " Relay FAIL"
 curl -s --connect-timeout 3 "http://192.168.49.2:30083/metrics" >/dev/null && echo " AI Service OK" || echo " AI Service FAIL"
 
 # 3. Zabbix Agent  
-echo "🔍 Zabbix Agent:"
+echo "Zabbix Agent:"
 systemctl is-active zabbix-agent >/dev/null && echo " Active" || echo " Inactive"
 
 # 4. Ключевые метрики
-echo "🔍 Ключевые метрики:"
+echo "Ключевые метрики:"
 echo "Memory: $(zabbix_get -s localhost -k cloudbridge.relay.json.memory_alloc_mb 2>/dev/null || echo 'ERROR') MB"
 echo "Connections: $(zabbix_get -s localhost -k cloudbridge.relay.json.active_connections 2>/dev/null || echo 'ERROR')"
 echo "AI Time: $(zabbix_get -s localhost -k ai.processing_time 2>/dev/null || echo 'ERROR') ms"
@@ -288,7 +288,7 @@ sudo systemctl restart zabbix-agent
 
 ---
 
-**🎯 Цель: Превратить все вымышленные цифры в реальные данные!**  
-**⏱️ Время на одну метрику: 10-30 минут**  
+**Цель: Превратить все вымышленные цифры в реальные данные!**  
+**Время на одну метрику: 10-30 минут**  
 **📞 При проблемах: обращайтесь к техлиду**
 

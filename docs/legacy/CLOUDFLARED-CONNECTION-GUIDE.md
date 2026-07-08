@@ -197,7 +197,7 @@ sudo journalctl -u cloudflared -f
 kubectl logs -n cloudbridge -l app=cloudbridge-relay -f
 ```
 
-## 🚨 Устранение неполадок
+## Устранение неполадок
 
 ### Проблема: "Connection refused"
 - Проверьте, что CloudBridge Relay работает: `kubectl get pods -n cloudbridge`

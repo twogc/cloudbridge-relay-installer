@@ -1,6 +1,6 @@
 # 🐳 **CloudBridge Relay - Быстрая сборка в Minikube**
 
-## ⚠️ **ВАЖНО: Уникальные теги образов**
+## **ВАЖНО: Уникальные теги образов**
 
 **ОБЯЗАТЕЛЬНО** используйте уникальный тег для каждого Docker образа! Kubernetes не будет использовать новый образ, если тег не изменился.
 
@@ -14,7 +14,7 @@ echo "Используем тег: $TAG"
 
 Быстро развернуть CloudBridge Relay в Minikube для разработки и тестирования QUIC-first + MASQUE архитектуры.
 
-## ⚡ **Быстрый старт**
+## **Быстрый старт**
 
 ### **1. Установка Minikube (если не установлен):**
 ```bash
@@ -38,7 +38,7 @@ minikube status
 
 ## **Сборка и развертывание**
 
-### **⚠️ ВАЖНО: Уникальный тег образа**
+### **ВАЖНО: Уникальный тег образа**
 
 **ОБЯЗАТЕЛЬНО** используйте уникальный тег для каждого образа, иначе Kubernetes не будет использовать новый образ!
 
@@ -143,7 +143,7 @@ kubectl set image deployment/cloudbridge-relay cloudbridge-relay=cloudbridge-rel
 kubectl rollout status deployment/cloudbridge-relay -n cloudbridge
 ```
 
-## 🐛 **Отладка**
+## **Отладка**
 
 ```bash
 # Проверить статус pods
@@ -184,4 +184,4 @@ minikube image rm cloudbridge-relay:$TAG
 
 ---
 
-**🎯 Результат: CloudBridge Relay развернут в Minikube с QUIC-first + MASQUE архитектурой!**
+**Результат: CloudBridge Relay развернут в Minikube с QUIC-first + MASQUE архитектурой!**

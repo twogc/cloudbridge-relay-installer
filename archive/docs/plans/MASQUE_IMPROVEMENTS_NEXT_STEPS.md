@@ -1,8 +1,8 @@
-# 🚀 Следующие шаги для MASQUE улучшений
+# Следующие шаги для MASQUE улучшений
 
-## 📊 **Текущий прогресс**
+## **Текущий прогресс**
 
-### ✅ **Завершено**
+### **Завершено**
 - [x] **Изучение masque-go reference** - client.go, proxy.go, conn.go, request.go
 - [x] **Создание улучшенной версии masque_support.go** - на основе masque-go подхода
 - [x] **Анализ ключевых улучшений** - error handling, Proxy-Status, Context ID управление
@@ -11,7 +11,7 @@
 - [ ] **Изучение connect-ip-go reference** - client.go, conn.go, proxy.go
 - [ ] **Улучшение CONNECT-UDP** - интеграция masque-go подхода
 
-### ⏳ **Ожидает**
+### **Ожидает**
 - [ ] **Улучшение CONNECT-IP** - интеграция connect-ip-go подхода
 - [ ] **Создание тестов** - для улучшенного MASQUE
 
@@ -45,11 +45,11 @@ cd reference-repos/masque/connect-ip-go/
 ### **2. Улучшить CONNECT-UDP (2 дня)**
 
 #### **Текущие улучшения в masque_support_improved.go:**
-- ✅ **Error handling** - errToStatus функция из masque-go
-- ✅ **Proxy-Status заголовки** - RFC 9209 совместимые заголовки
-- ✅ **Context ID управление** - правильное управление Context ID
-- ✅ **Thread safety** - atomic операции и mutex
-- ✅ **Goroutine management** - правильное управление горутинами
+- **Error handling** - errToStatus функция из masque-go
+- **Proxy-Status заголовки** - RFC 9209 совместимые заголовки
+- **Context ID управление** - правильное управление Context ID
+- **Thread safety** - atomic операции и mutex
+- **Goroutine management** - правильное управление горутинами
 
 #### **Дополнительные улучшения:**
 - [ ] **Интеграция с uritemplate** - как в masque-go request.go
@@ -209,7 +209,7 @@ func TestMASQUEIntegration(t *testing.T) {
 
 ---
 
-## 🎯 **Критерии успеха**
+## **Критерии успеха**
 
 ### **CONNECT-UDP улучшения:**
 - [ ] Error handling работает как в masque-go
@@ -233,7 +233,7 @@ func TestMASQUEIntegration(t *testing.T) {
 
 ---
 
-## 🚀 **Следующие шаги**
+## **Следующие шаги**
 
 ### **Немедленно (сегодня):**
 1. **Завершить изучение connect-ip-go** - изучить все ключевые файлы
@@ -257,7 +257,7 @@ func TestMASQUEIntegration(t *testing.T) {
 
 ---
 
-## 📋 **Чек-лист**
+## **Чек-лист**
 
 ### **Изучение (сегодня):**
 - [ ] Изучить connect-ip-go client.go

@@ -22,7 +22,7 @@ success() {
 }
 
 warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW} $1${NC}"
 }
 
 error() {
@@ -32,7 +32,7 @@ error() {
 log "🧪 Тест прямого подключения к CloudBridge Relay"
 
 # 1. Проверка CloudBridge Relay Health
-log "🔍 Проверка CloudBridge Relay Health..."
+log "Проверка CloudBridge Relay Health..."
 if curl -k -s https://edge.2gc.ru:9090/health | grep -q "status.*ok"; then
     success "CloudBridge Relay Health: OK"
     echo "Ответ: $(curl -k -s https://edge.2gc.ru:9090/health | jq -r '.status' 2>/dev/null || echo 'OK')"
@@ -42,7 +42,7 @@ else
 fi
 
 # 2. Проверка API endpoint
-log "🔍 Проверка API endpoint..."
+log "Проверка API endpoint..."
 API_RESPONSE=$(curl -k -s -w "%{http_code}" https://edge.2gc.ru:9090/api/ -o /dev/null)
 if [ "$API_RESPONSE" = "404" ]; then
     success "API endpoint доступен (HTTP 404 - нормально)"
@@ -53,7 +53,7 @@ else
 fi
 
 # 3. Проверка P2P endpoint
-log "🔍 Проверка P2P endpoint..."
+log "Проверка P2P endpoint..."
 P2P_RESPONSE=$(curl -k -s -w "%{http_code}" https://edge.2gc.ru:9090/p2p/ -o /dev/null)
 if [ "$P2P_RESPONSE" = "404" ]; then
     success "P2P endpoint доступен (HTTP 404 - нормально)"
@@ -64,7 +64,7 @@ else
 fi
 
 # 4. Проверка QUIC endpoint
-log "🔍 Проверка QUIC endpoint..."
+log "Проверка QUIC endpoint..."
 QUIC_RESPONSE=$(curl -k -s -w "%{http_code}" https://edge.2gc.ru:9090/quic/ -o /dev/null)
 if [ "$QUIC_RESPONSE" = "404" ]; then
     success "QUIC endpoint доступен (HTTP 404 - нормально)"
@@ -75,7 +75,7 @@ else
 fi
 
 # 5. Проверка SSL сертификата
-log "🔍 Проверка SSL сертификата..."
+log "Проверка SSL сертификата..."
 if echo | openssl s_client -connect edge.2gc.ru:9090 -servername edge.2gc.ru 2>/dev/null | openssl x509 -noout -dates 2>/dev/null | grep -q "notAfter"; then
     success "SSL сертификат валиден"
     echo "Сертификат действителен до: $(echo | openssl s_client -connect edge.2gc.ru:9090 -servername edge.2gc.ru 2>/dev/null | openssl x509 -noout -dates 2>/dev/null | grep notAfter | cut -d= -f2)"
@@ -84,7 +84,7 @@ else
 fi
 
 # 6. Проверка с внешнего IP
-log "🔍 Проверка с внешнего IP..."
+log "Проверка с внешнего IP..."
 EXTERNAL_IP=$(curl -s ifconfig.me)
 log "Внешний IP: $EXTERNAL_IP"
 
@@ -95,7 +95,7 @@ else
 fi
 
 # 7. Проверка Magic WAN туннеля
-log "🔍 Проверка Magic WAN туннеля..."
+log "Проверка Magic WAN туннеля..."
 if sudo swanctl --list-sas | grep -q "ESTABLISHED"; then
     success "Magic WAN туннель активен"
 else
@@ -103,7 +103,7 @@ else
 fi
 
 # 8. Проверка CloudBridge Relay подов
-log "🔍 Проверка CloudBridge Relay подов..."
+log "Проверка CloudBridge Relay подов..."
 if kubectl get pods -n cloudbridge -l app=cloudbridge-relay | grep -q "Running"; then
     success "CloudBridge Relay поды работают"
 else
@@ -111,7 +111,7 @@ else
 fi
 
 # 9. Проверка nginx
-log "🔍 Проверка nginx..."
+log "Проверка nginx..."
 if systemctl is-active --quiet nginx; then
     success "nginx работает"
 else
@@ -119,7 +119,7 @@ else
 fi
 
 # 10. Проверка порта 9090
-log "🔍 Проверка порта 9090..."
+log "Проверка порта 9090..."
 if netstat -tlnp | grep -q :9090; then
     success "Порт 9090 слушается"
 else
@@ -127,7 +127,7 @@ else
 fi
 
 # 11. Проверка UFW
-log "🔍 Проверка UFW..."
+log "Проверка UFW..."
 if sudo ufw status | grep -q "9090/tcp"; then
     success "Порт 9090/tcp открыт в UFW"
 else
@@ -135,7 +135,7 @@ else
 fi
 
 # 12. Тест WebSocket подключения
-log "🔍 Тест WebSocket подключения..."
+log "Тест WebSocket подключения..."
 if curl -k -s -H "Upgrade: websocket" -H "Connection: Upgrade" https://edge.2gc.ru:9090/api/ | grep -q "404\|not found"; then
     success "WebSocket endpoint доступен"
 else
@@ -143,7 +143,7 @@ else
 fi
 
 echo ""
-log "📊 Сводка тестирования:"
+log "Сводка тестирования:"
 echo "======================"
 
 # CloudBridge Relay
@@ -189,9 +189,9 @@ else
 fi
 
 echo ""
-log "🎉 Тест прямого подключения завершен!"
+log "Тест прямого подключения завершен!"
 echo ""
-echo "📋 CloudBridge Relay готов принимать cloudflared клиентов:"
+echo "CloudBridge Relay готов принимать cloudflared клиентов:"
 echo "========================================================"
 echo ""
 echo " CloudBridge Relay доступен на порту 9090"
@@ -199,7 +199,7 @@ echo " SSL сертификат валиден"
 echo " Все endpoints отвечают"
 echo " Magic WAN туннель активен"
 echo ""
-echo "🚀 Теперь можно настраивать cloudflared клиентов для подключения к:"
+echo "Теперь можно настраивать cloudflared клиентов для подключения к:"
 echo "   - https://edge.2gc.ru:9090/api/"
 echo "   - https://edge.2gc.ru:9090/health"
 echo "   - https://edge.2gc.ru:9090/p2p/"

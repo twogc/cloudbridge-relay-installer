@@ -30,7 +30,7 @@
 - `test/` - Тесты и тестовые клиенты
 - `appliance/` - Appliance решения
 
-## 🚀 Quick Start
+## Quick Start
 Для начала работы см. `MINIKUBE_BUILD_GUIDE.md`
 
 ## 📖 Developer Info

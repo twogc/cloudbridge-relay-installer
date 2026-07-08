@@ -1,4 +1,4 @@
-# 🚀 CloudBridge Relay - Terraform автоматизация
+# CloudBridge Relay - Terraform автоматизация
 
 ## 📁 **Структура проекта**
 
@@ -29,7 +29,7 @@ terraform/
 └── QUICK_REGISTRY_SETUP.md       # Быстрая памятка
 ```
 
-## 🎯 **Быстрый старт**
+## **Быстрый старт**
 
 ### **1. Настройка Container Registry**
 ```bash
@@ -67,24 +67,24 @@ source ../load-env.sh
 - **`GITHUB_SECRETS_SETUP.md`** - настройка GitHub Secrets
 - **`CONTAINER_REGISTRY_SETUP_GUIDE.md`** - инструкция по Container Registry
 
-## 🚀 **Архитектура автоматизации**
+## **Архитектура автоматизации**
 
 ```
 GitHub Repo → GitHub Actions → VK Cloud Registry → Terraform → VM с готовым образом
 ```
 
-## 💰 **Стоимость**
+## **Стоимость**
 
 - **VK Cloud Container Registry:** ~500₽/месяц
 - **VM STD2-4-8:** ~2000₽/месяц
 - **GitHub Actions:** 2000 минут/месяц бесплатно
 
-## ⏱️ **Время развертывания**
+## **Время развертывания**
 
 - **До автоматизации:** 1-2 часа
 - **После автоматизации:** 10-15 минут
 
-## 🔒 **Безопасность**
+## **Безопасность**
 
 - **DDoS защита:** Nginx + Fail2ban + UFW
 - **Контейнерная безопасность:** no-new-privileges, минимальные capabilities
@@ -98,6 +98,6 @@ GitHub Repo → GitHub Actions → VK Cloud Registry → Terraform → VM с г�
 
 ---
 
-**🚀 Готово к автоматизации!** Следуйте инструкциям в `NEXT_STEPS.md` для запуска.
+**Готово к автоматизации!** Следуйте инструкциям в `NEXT_STEPS.md` для запуска.
 
 

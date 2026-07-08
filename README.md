@@ -1,6 +1,6 @@
-# 🚀 CloudBridge Relay - Развертывание в VK Cloud Kubernetes
+# CloudBridge Relay - Развертывание в VK Cloud Kubernetes
 
-## 📋 Обзор проекта
+## Обзор проекта
 
 CloudBridge Relay - это высокопроизводительная система для ретрансляции и маршрутизации сетевого трафика с поддержкой:
 
@@ -10,7 +10,7 @@ CloudBridge Relay - это высокопроизводительная сист
 - **Workflow Engine** - автоматизация процессов
 - **Мониторинг** - полная наблюдаемость системы
 
-## 🎯 Быстрый старт
+## Быстрый старт
 
 ### Автоматическое развертывание (рекомендуется)
 
@@ -153,7 +153,7 @@ export KUBECONFIG=~/.kube/config-vkcloud
 kubectl get nodes
 ```
 
-## 📊 Мониторинг
+## Мониторинг
 
 ### Доступ к сервисам мониторинга
 
@@ -187,7 +187,7 @@ kubectl scale deployment cloudbridge-relay --replicas=5 -n cloudbridge
 kubectl set image deployment/cloudbridge-relay cloudbridge-relay=localhost:5000/cloudbridge-relay:v2.0 -n cloudbridge
 ```
 
-## 🚨 Устранение неполадок
+## Устранение неполадок
 
 ### Проблема: Pod в состоянии ImagePullBackOff
 
@@ -227,7 +227,7 @@ sudo systemctl restart docker
 docker pull alpine:latest
 ```
 
-## 📈 Масштабирование
+## Масштабирование
 
 ### Горизонтальное масштабирование
 
@@ -348,7 +348,7 @@ terraform destroy -auto-approve
 5. Обратитесь к документации VK Cloud
 6. Создайте issue в репозитории проекта
 
-## 📄 Лицензия
+## Лицензия
 
 Этот проект распространяется под лицензией MIT. См. файл [LICENSE](LICENSE) для подробностей.
 

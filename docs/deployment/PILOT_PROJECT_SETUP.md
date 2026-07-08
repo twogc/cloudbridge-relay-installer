@@ -25,9 +25,9 @@
 
 | Домен | URL | Статус |
 |-------|-----|--------|
-| relay.2gc.ru | `https://relay.2gc.ru/health` | ⚠️ Редирект |
-| masque.2gc.ru | `https://masque.2gc.ru/health` | ⚠️ Редирект |
-| api.2gc.ru | `https://api.2gc.ru/health` | ⚠️ Редирект |
+| relay.2gc.ru | `https://relay.2gc.ru/health` | Редирект |
+| masque.2gc.ru | `https://masque.2gc.ru/health` | Редирект |
+| api.2gc.ru | `https://api.2gc.ru/health` | Редирект |
 
 ## Рекомендации для пилотного проекта
 
@@ -52,8 +52,8 @@ curl "$BASE_URL/metrics"
 - одходит для разработки и тестирования
 
 **Недостатки**:
-- ⚠️ Нет SSL (HTTP только)
-- ⚠️ Прямой IP вместо доменного имени
+- Нет SSL (HTTP только)
+- Прямой IP вместо доменного имени
 
 ### Вариант 2: Port-forward для локального доступа
 

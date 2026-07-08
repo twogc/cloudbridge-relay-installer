@@ -137,22 +137,22 @@ create_keys_readme() {
     cat > "$KEYS_DIR/README.md" << 'EOF'
 # Cosign Keys
 
-## 🔐 Безопасность
+## Безопасность
 
 **ВАЖНО**: Эти ключи предназначены для подписи Docker образов.
 
 ### Private Key (cosign.key)
-- ❌ **НЕ КОММИТИТЬ** в Git
-- ✅ Хранить в Kubernetes Secret
-- ✅ Хранить в Secret Manager (Vault/AWS/GCP)
-- ✅ Использовать для подписи образов в CI/CD
+- **НЕ КОММИТИТЬ** в Git
+- Хранить в Kubernetes Secret
+- Хранить в Secret Manager (Vault/AWS/GCP)
+- Использовать для подписи образов в CI/CD
 
 ### Public Key (cosign.pub)
-- ✅ Можно коммитить в Git
-- ✅ Использовать для верификации образов
-- ✅ Публиковать для transparency
+- Можно коммитить в Git
+- Использовать для верификации образов
+- Публиковать для transparency
 
-## 📦 Использование
+## Использование
 
 ### Подпись образа
 ```bash
@@ -294,7 +294,7 @@ create_usage_instructions() {
     cat > "$KEYS_DIR/USAGE.md" << 'EOF'
 # Cosign Usage Instructions
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Подпись Docker образа
 
@@ -340,7 +340,7 @@ cosign verify-attestation --type spdxjson --key cosign.pub \
   ghcr.io/2gc/cloudbridge-relay:latest
 ```
 
-## 🔐 GitHub Actions Integration
+## GitHub Actions Integration
 
 ### Keyless Signing в CI/CD
 
@@ -378,7 +378,7 @@ jobs:
         run: cosign sign --yes ghcr.io/2gc/cloudbridge-relay:${{ github.sha }}
 ```
 
-## 📊 Kubernetes Policy Enforcement
+## Kubernetes Policy Enforcement
 
 ### Kyverno Policy
 
@@ -463,7 +463,7 @@ print_summary() {
 
     info "Созданные файлы:"
     echo "  📁 $KEYS_DIR/"
-    echo "    🔐 cosign.key (private key - НЕ КОММИТИТЬ!)"
+    echo "    cosign.key (private key - НЕ КОММИТИТЬ!)"
     echo "    🔓 cosign.pub (public key)"
     echo "    📝 README.md"
     echo "    📝 USAGE.md"
@@ -472,15 +472,15 @@ print_summary() {
 
     if [ "$SKIP_K8S" = false ]; then
         info "Kubernetes Secret:"
-        echo "  📦 Namespace: $NAMESPACE"
-        echo "  🔑 Secret: $SECRET_NAME"
+        echo "  Namespace: $NAMESPACE"
+        echo "  Secret: $SECRET_NAME"
         echo ""
         echo "  Проверить Secret:"
         echo "  kubectl get secret $SECRET_NAME -n $NAMESPACE"
         echo ""
     fi
 
-    security_info "⚠️  ВАЖНО: Безопасность ключей"
+    security_info " ВАЖНО: Безопасность ключей"
     echo "  1. НЕ коммитьте cosign.key в Git"
     echo "  2. Храните private key в Secret Manager"
     echo "  3. Используйте keyless signing для production"

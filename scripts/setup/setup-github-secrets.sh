@@ -10,13 +10,13 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🔐 CloudBridge Relay - GitHub Secrets Setup${NC}"
+echo -e "${BLUE}CloudBridge Relay - GitHub Secrets Setup${NC}"
 echo -e "${BLUE}===========================================${NC}"
 echo ""
 
 # Check if gh CLI is installed
 if ! command -v gh &> /dev/null; then
-    echo -e "${RED}❌ GitHub CLI (gh) is not installed${NC}"
+    echo -e "${RED}GitHub CLI (gh) is not installed${NC}"
     echo -e "${YELLOW}Please install it first:${NC}"
     echo "  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg"
     echo "  echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main\" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null"
@@ -26,7 +26,7 @@ fi
 
 # Check if user is authenticated
 if ! gh auth status &> /dev/null; then
-    echo -e "${RED}❌ Not authenticated with GitHub${NC}"
+    echo -e "${RED}Not authenticated with GitHub${NC}"
     echo -e "${YELLOW}Please authenticate first:${NC}"
     echo "  gh auth login"
     exit 1
@@ -34,7 +34,7 @@ fi
 
 # Get repository info
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-echo -e "${GREEN}📦 Repository: ${REPO}${NC}"
+echo -e "${GREEN}Repository: ${REPO}${NC}"
 echo ""
 
 # Function to set secret
@@ -43,7 +43,7 @@ set_secret() {
     local secret_description=$2
     local secret_value=""
     
-    echo -e "${YELLOW}🔑 Setting secret: ${secret_name}${NC}"
+    echo -e "${YELLOW}Setting secret: ${secret_name}${NC}"
     echo -e "${BLUE}Description: ${secret_description}${NC}"
     
     # Read secret value
@@ -64,7 +64,7 @@ set_optional_secret() {
     local secret_name=$1
     local secret_description=$2
     
-    echo -e "${YELLOW}🔑 Optional secret: ${secret_name}${NC}"
+    echo -e "${YELLOW}Optional secret: ${secret_name}${NC}"
     echo -e "${BLUE}Description: ${secret_description}${NC}"
     read -p "Do you want to set this secret? (y/N): " -n 1 -r
     echo ""
@@ -77,7 +77,7 @@ set_optional_secret() {
     fi
 }
 
-echo -e "${BLUE}🚀 Setting up GitHub Secrets for CI/CD Pipeline${NC}"
+echo -e "${BLUE}Setting up GitHub Secrets for CI/CD Pipeline${NC}"
 echo ""
 
 # Required secrets for basic CI/CD
@@ -128,5 +128,5 @@ echo "• GitHub Actions: https://github.com/${REPO}/actions"
 echo "• Secrets management: https://github.com/${REPO}/settings/secrets/actions"
 echo "• Container registry: https://github.com/${REPO}/packages"
 echo ""
-echo -e "${GREEN}🚀 Your CI/CD pipeline is ready!${NC}"
+echo -e "${GREEN}Your CI/CD pipeline is ready!${NC}"
 

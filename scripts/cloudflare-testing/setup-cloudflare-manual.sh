@@ -19,19 +19,19 @@ echo -e "${BLUE}☁️  CloudBridge Cloudflare Manual Setup${NC}"
 
 # Check if cloudflared is installed
 if ! command -v cloudflared &> /dev/null; then
-    echo -e "${RED}❌ cloudflared not found. Please install it first.${NC}"
+    echo -e "${RED}cloudflared not found. Please install it first.${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ cloudflared is available${NC}"
+echo -e "${GREEN}cloudflared is available${NC}"
 
 # Step 1: Create tunnel manually
 echo -e "${BLUE}🚇 Step 1: Create Cloudflare tunnel manually${NC}"
-echo -e "${YELLOW}💡 You need to create a tunnel manually in Cloudflare dashboard${NC}"
-echo -e "${YELLOW}💡 Or use cloudflared tunnel create command${NC}"
+echo -e "${YELLOW} You need to create a tunnel manually in Cloudflare dashboard${NC}"
+echo -e "${YELLOW} Or use cloudflared tunnel create command${NC}"
 
 # Instructions for manual setup
-echo -e "${BLUE}📋 Manual Setup Instructions:${NC}"
+echo -e "${BLUE}Manual Setup Instructions:${NC}"
 echo -e "1. Go to Cloudflare Dashboard: https://dash.cloudflare.com/"
 echo -e "2. Navigate to: Zero Trust > Access > Tunnels"
 echo -e "3. Click 'Create a tunnel'"
@@ -48,7 +48,7 @@ echo -e "  cloudflared tunnel route dns cloudbridge-testing api-test.yourdomain.
 
 # Step 2: Update Kubernetes secrets
 echo -e "${BLUE}🔧 Step 2: Update Kubernetes secrets${NC}"
-echo -e "${YELLOW}💡 After creating the tunnel, update the secret:${NC}"
+echo -e "${YELLOW} After creating the tunnel, update the secret:${NC}"
 
 cat << 'EOF'
 # Update the secret with your tunnel credentials
@@ -64,8 +64,8 @@ kubectl patch secret cloudflared-credentials -n cloudbridge-testing \
 EOF
 
 # Step 3: Update ConfigMap with real tunnel ID
-echo -e "${BLUE}📋 Step 3: Update ConfigMap with real tunnel ID${NC}"
-echo -e "${YELLOW}💡 Update the tunnel ID in the ConfigMap:${NC}"
+echo -e "${BLUE}Step 3: Update ConfigMap with real tunnel ID${NC}"
+echo -e "${YELLOW} Update the tunnel ID in the ConfigMap:${NC}"
 
 cat << 'EOF'
 # Update the ConfigMap with your tunnel ID
@@ -75,7 +75,7 @@ EOF
 
 # Step 4: Restart deployment
 echo -e "${BLUE}🔄 Step 4: Restart deployment${NC}"
-echo -e "${YELLOW}💡 After updating credentials and config:${NC}"
+echo -e "${YELLOW} After updating credentials and config:${NC}"
 
 cat << 'EOF'
 # Restart cloudflared deployment
@@ -88,7 +88,7 @@ EOF
 
 # Step 5: Test connectivity
 echo -e "${BLUE}🧪 Step 5: Test connectivity${NC}"
-echo -e "${YELLOW}💡 After tunnel is running:${NC}"
+echo -e "${YELLOW} After tunnel is running:${NC}"
 
 cat << 'EOF'
 # Test the tunnel endpoints
@@ -101,15 +101,15 @@ kubectl port-forward -n cloudbridge-testing svc/cloudbridge-relay-testing 6003:6
 curl http://localhost:6003/health
 EOF
 
-echo -e "${GREEN}🎉 Manual setup instructions completed!${NC}"
-echo -e "${BLUE}📋 Next steps:${NC}"
+echo -e "${GREEN}Manual setup instructions completed!${NC}"
+echo -e "${BLUE}Next steps:${NC}"
 echo -e "  1. Create tunnel in Cloudflare dashboard"
 echo -e "  2. Update Kubernetes secrets"
 echo -e "  3. Update ConfigMap with tunnel ID"
 echo -e "  4. Restart deployment"
 echo -e "  5. Test connectivity"
 
-echo -e "${YELLOW}💡 For testing without real tunnel, you can:${NC}"
+echo -e "${YELLOW} For testing without real tunnel, you can:${NC}"
 echo -e "  - Use local port forwarding"
 echo -e "  - Test internal connectivity"
 echo -e "  - Simulate Cloudflare behavior"

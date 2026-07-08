@@ -43,11 +43,11 @@ Week 4: Relay Unification + Testing (Nov 18 - Nov 25)
 
 | # | Задача | Время | Статус |
 |---|--------|-------|--------|
-| 1.1 | Установка и запуск всех сервисов | 4h | ⏳ |
-| 1.2 | Проверка и расширение API | 6h | ⏳ |
-| 1.3 | VictoriaMetrics интеграция | 8h | ⏳ |
-| 1.4 | SSE real-time обновления | 10h | ⏳ |
-| 1.5 | Integration тесты | 6h | ⏳ |
+| 1.1 | Установка и запуск всех сервисов | 4h | |
+| 1.2 | Проверка и расширение API | 6h | |
+| 1.3 | VictoriaMetrics интеграция | 8h | |
+| 1.4 | SSE real-time обновления | 10h | |
+| 1.5 | Integration тесты | 6h | |
 | **ИТОГО** | | **34h** | |
 
 ### Критерии успеха
@@ -90,11 +90,11 @@ frontend/
 
 | # | Задача | Время | Статус |
 |---|--------|-------|--------|
-| 2.1 | SAST анализ (gosec, go vet) | 4h | ⏳ |
-| 2.2 | Zitadel security audit | 6h | ⏳ |
-| 2.3 | JWT/OIDC validation | 5h | ⏳ |
-| 2.4 | RBAC & ACL audit | 5h | ⏳ |
-| 2.5 | Документирование findings | 4h | ⏳ |
+| 2.1 | SAST анализ (gosec, go vet) | 4h | |
+| 2.2 | Zitadel security audit | 6h | |
+| 2.3 | JWT/OIDC validation | 5h | |
+| 2.4 | RBAC & ACL audit | 5h | |
+| 2.5 | Документирование findings | 4h | |
 | **ИТОГО** | | **24h** | |
 
 ### Что проверять
@@ -174,19 +174,19 @@ docs/
 
 | # | Задача | Время | Статус |
 |---|--------|-------|--------|
-| 3.1A | SAST Python & Go | 4h | ⏳ |
-| 3.2A | eBPF/XDP security review | 4h | ⏳ |
-| 3.3A | Threat feeds validation | 2h | ⏳ |
-| 3.4A | Findings documentation | 2h | ⏳ |
+| 3.1A | SAST Python & Go | 4h | |
+| 3.2A | eBPF/XDP security review | 4h | |
+| 3.3A | Threat feeds validation | 2h | |
+| 3.4A | Findings documentation | 2h | |
 
 #### Часть B: Relay Analysis (12 часов)
 
 | # | Задача | Время | Статус |
 |---|--------|-------|--------|
-| 3.1B | Relay component mapping | 3h | ⏳ |
-| 3.2B | P2P/MASQUE code review | 4h | ⏳ |
-| 3.3B | WebSocket fallback analysis | 3h | ⏳ |
-| 3.4B | TODO items prioritization | 2h | ⏳ |
+| 3.1B | Relay component mapping | 3h | |
+| 3.2B | P2P/MASQUE code review | 4h | |
+| 3.3B | WebSocket fallback analysis | 3h | |
+| 3.4B | TODO items prioritization | 2h | |
 
 ### Что проверять (DDoS)
 
@@ -294,19 +294,19 @@ docs/
 
 | # | Задача | Время | Статус |
 |---|--------|-------|--------|
-| 4.1A | QUIC + MASQUE интеграция | 4h | ⏳ |
-| 4.2A | P2P + WebSocket fallback | 3h | ⏳ |
-| 4.3A | Cadence workflow integration | 3h | ⏳ |
-| 4.4A | Load testing prep | 2h | ⏳ |
+| 4.1A | QUIC + MASQUE интеграция | 4h | |
+| 4.2A | P2P + WebSocket fallback | 3h | |
+| 4.3A | Cadence workflow integration | 3h | |
+| 4.4A | Load testing prep | 2h | |
 
 #### Часть B: Testing & QA (12 часов)
 
 | # | Задача | Время | Статус |
 |---|--------|-------|--------|
-| 4.1B | Unit tests coverage | 4h | ⏳ |
-| 4.2B | Integration tests | 4h | ⏳ |
-| 4.3B | E2E tests | 3h | ⏳ |
-| 4.4B | Performance baseline | 1h | ⏳ |
+| 4.1B | Unit tests coverage | 4h | |
+| 4.2B | Integration tests | 4h | |
+| 4.3B | E2E tests | 3h | |
+| 4.4B | Performance baseline | 1h | |
 
 ### Relay Unification (12h)
 

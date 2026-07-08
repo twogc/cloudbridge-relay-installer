@@ -1,6 +1,6 @@
-# 🌐 CloudBridge Monitoring Stack
+# CloudBridge Monitoring Stack
 
-## 📊 Overview
+## Overview
 
 This directory contains a production-ready monitoring stack for CloudBridge, implemented based on industry-leading reference repositories:
 
@@ -15,17 +15,17 @@ This directory contains a production-ready monitoring stack for CloudBridge, imp
 ### **Monitoring Stack Components**
 ```mermaid
 graph TB
-    subgraph "📊 Data Collection"
+    subgraph "Data Collection"
         PROM[HA Prometheus<br/>2 Replicas<br/>15d Retention]
         VM[VictoriaMetrics Cluster<br/>1y Retention<br/>3 Storage Nodes]
     end
     
-    subgraph "🚨 Alerting"
+    subgraph "Alerting"
         AM[HA AlertManager<br/>3 Replicas<br/>Advanced Routing]
         SLO[SLO Monitoring<br/>Burn-rate Alerts<br/>Error Budget]
     end
     
-    subgraph "📈 Visualization"
+    subgraph "Visualization"
         GRAF[Grafana<br/>Provisioning<br/>Dashboards]
     end
     
@@ -54,7 +54,7 @@ graph TB
 ### **Deployment**
 - `deploy-monitoring-stack.sh` - Automated deployment script
 
-## 🚀 Quick Start
+## Quick Start
 
 ### **1. Deploy Monitoring Stack**
 ```bash
@@ -92,7 +92,7 @@ kubectl port-forward svc/vmselect 8481:8481 -n monitoring
 kubectl port-forward svc/grafana 3000:3000 -n monitoring
 ```
 
-## 📊 Features
+## Features
 
 ### **HA Prometheus (2 Replicas)**
 - **Retention**: 15 days local + 1 year VictoriaMetrics
@@ -124,7 +124,7 @@ kubectl port-forward svc/grafana 3000:3000 -n monitoring
 - **Dashboards**: CloudBridge Overview, SLO Monitoring
 - **Auto-discovery**: Automatic dashboard loading
 
-## 🚨 Alert Configuration
+## Alert Configuration
 
 ### **Alert Routing**
 ```yaml
@@ -158,7 +158,7 @@ anycast-alerts:
 - BGP exporter down inhibits BGP session alerts
 - Prevents alert spam and noise
 
-## 📈 SLO Monitoring
+## SLO Monitoring
 
 ### **SLO Definitions**
 ```yaml
@@ -213,7 +213,7 @@ victoriametrics: 8480-8482/tcp
 grafana: 3000/tcp
 ```
 
-## 📊 Dashboards
+## Dashboards
 
 ### **CloudBridge Overview**
 - Service status across all components
@@ -282,7 +282,7 @@ kubectl logs -n monitoring deployment/grafana
 - [Grafana](https://github.com/grafana/grafana)
 - [AlertManager](https://github.com/prometheus/alertmanager)
 
-## 🎯 Next Steps
+## Next Steps
 
 1. **Configure SMTP/Slack** in AlertManager config
 2. **Import additional dashboards** for specific services

@@ -32,7 +32,7 @@ kubectl version --client
 docker --version
 ```
 
-## ⚡ Быстрый старт
+## Быстрый старт
 
 ### 1. Запуск Minikube
 ```bash
@@ -319,7 +319,7 @@ kubectl port-forward service/cadence-nodeport 7934:7934 -n cloudbridge &
 curl http://localhost:7934/health
 ```
 
-## 🐛 Частые ошибки и решения
+## Частые ошибки и решения
 
 ### 1. Проблемы с базой данных
 
@@ -598,4 +598,4 @@ kubectl delete pvc postgres-pvc -n cloudbridge
 
 ---
 
-**🎯 Результат: Полнофункциональный Cadence развернут в Minikube с подробной документацией по устранению неполадок!**
+**Результат: Полнофункциональный Cadence развернут в Minikube с подробной документацией по устранению неполадок!**

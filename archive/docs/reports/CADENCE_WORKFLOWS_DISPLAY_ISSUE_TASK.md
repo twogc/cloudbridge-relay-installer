@@ -3,7 +3,7 @@
 ## **Проблема**
 Cadence Web UI не отображает workflows на странице `/domains/cloudbridge/primary/workflows`. Показывается ошибка "Failed to fetch workflows" или пустая страница.
 
-## 🔍 **Что уже проверено и исправлено**
+## **Что уже проверено и исправлено**
 
 ### **Выполненные исправления:**
 1. **Созданы таблицы в Cassandra**:
@@ -92,7 +92,7 @@ curl -s "http://localhost:8088/api/v1/domains" | head -c 200
 curl -s "http://localhost:8088/api/v1/domains/cloudbridge/primary/workflows" | head -c 200
 ```
 
-## 🧪 **Как тестировать**
+## **Как тестировать**
 
 ### **1. Создать тестовый workflow:**
 ```bash
@@ -144,7 +144,7 @@ pkill -f "kubectl port-forward.*cadence-web-service"
 kubectl port-forward -n cloudbridge svc/cadence-web-service 8088:8088 &
 ```
 
-## 🐛 **Возможные проблемы и решения**
+## **Возможные проблемы и решения**
 
 ### **Проблема 1: Таблицы не созданы**
 **Решение:**
@@ -167,7 +167,7 @@ kubectl patch deployment cadence-web -n cloudbridge -p '{"spec":{"template":{"sp
 kubectl patch deployment cadence-web -n cloudbridge -p '{"spec":{"template":{"spec":{"containers":[{"name":"cadence-web","env":[{"name":"CADENCE_CLUSTERS_NAMES","value":"primary"}]}]}}}}'
 ```
 
-## 📊 **Ожидаемый результат**
+## **Ожидаемый результат**
 
 После исправления:
 1. Cadence Web UI загружается без ошибок

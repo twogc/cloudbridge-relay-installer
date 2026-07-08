@@ -196,7 +196,7 @@ docker exec cloudbridge-redis redis-cli ping
 
 ---
 
-## 🐛 TROUBLESHOOTING
+## TROUBLESHOOTING
 
 ### Проблема: Docker daemon не работает
 ```bash
@@ -299,7 +299,7 @@ CloudBridge:
 
 ---
 
-## ⏱️ ВРЕМЕННАЯ ШКАЛА
+## ВРЕМЕННАЯ ШКАЛА
 
 ```
 T+0:00    Docker-compose up -d

@@ -1,35 +1,35 @@
 #!/bin/bash
-# 🚀 CloudBridge Relay - Финальное развертывание по MINIKUBE_BUILD_GUIDE.md
+# CloudBridge Relay - Финальное развертывание по MINIKUBE_BUILD_GUIDE.md
 
 set -e
 
-echo "🚀 Финальное развертывание CloudBridge Relay по MINIKUBE_BUILD_GUIDE.md..."
+echo "Финальное развертывание CloudBridge Relay по MINIKUBE_BUILD_GUIDE.md..."
 echo ""
 
 # Проверка предварительных условий
-echo "🔍 Проверка предварительных условий..."
+echo "Проверка предварительных условий..."
 if ! command -v kubectl &> /dev/null; then
-    echo "❌ kubectl не найден. Установите kubectl."
+    echo "kubectl не найден. Установите kubectl."
     exit 1
 fi
 
 if ! command -v minikube &> /dev/null; then
-    echo "❌ minikube не найден. Установите minikube."
+    echo "minikube не найден. Установите minikube."
     exit 1
 fi
 
 if ! command -v docker &> /dev/null; then
-    echo "❌ docker не найден. Установите docker."
+    echo "docker не найден. Установите docker."
     exit 1
 fi
 
 # Проверка статуса Minikube
 if ! minikube status &> /dev/null; then
-    echo "❌ Minikube не запущен. Запустите: minikube start --driver=docker --memory=4096 --cpus=2"
+    echo "Minikube не запущен. Запустите: minikube start --driver=docker --memory=4096 --cpus=2"
     exit 1
 fi
 
-echo "✅ Предварительные условия выполнены"
+echo "Предварительные условия выполнены"
 
 # Переход в директорию проекта
 cd /home/ubuntu/cloudbridge-relay-installer
@@ -44,7 +44,7 @@ echo "🔨 Сборка Docker образа..."
 docker build -t cloudbridge-relay:$TAG .
 
 # Проверка собранного образа
-echo "📦 Проверка собранного образа..."
+echo "Проверка собранного образа..."
 docker images | grep cloudbridge-relay
 
 # 3. Загрузка в Minikube (согласно MINIKUBE_BUILD_GUIDE.md)
@@ -52,7 +52,7 @@ echo "⬆️ Загрузка образа в Minikube..."
 minikube image load cloudbridge-relay:$TAG
 
 # Проверка загруженных образов
-echo "📋 Проверка загруженных образов..."
+echo "Проверка загруженных образов..."
 minikube image ls | grep cloudbridge-relay
 
 # 4. Создание namespace
@@ -152,7 +152,7 @@ EOF
 kubectl apply -f /tmp/cassandra-simple.yaml
 
 # 7. Развертывание CloudBridge Relay с новым тегом (согласно MINIKUBE_BUILD_GUIDE.md)
-echo "🌉 Развертывание CloudBridge Relay с тегом $TAG..."
+echo "Развертывание CloudBridge Relay с тегом $TAG..."
 cat > /tmp/cloudbridge-relay-deployment.yaml << EOF
 apiVersion: apps/v1
 kind: Deployment
@@ -318,7 +318,7 @@ EOF
 kubectl apply -f /tmp/ai-service-deployment.yaml
 
 # 9. Развертывание Services (согласно MINIKUBE_BUILD_GUIDE.md)
-echo "🌐 Развертывание Services..."
+echo "Развертывание Services..."
 kubectl apply -f k8s/cloudbridge-relay-external-service.yaml -n cloudbridge
 
 # Создание дополнительных сервисов
@@ -377,10 +377,10 @@ kubectl apply -f /tmp/additional-services.yaml
 
 # 10. Инициализация Cassandra
 echo " Инициализация Cassandra для Cadence..."
-echo "⏳ Ожидание готовности Cassandra..."
+echo "Ожидание готовности Cassandra..."
 kubectl wait --for=condition=ready pod -l app=cassandra -n cloudbridge --timeout=300s
 
-echo "📊 Создание keyspaces для Cadence..."
+echo "Создание keyspaces для Cadence..."
 kubectl exec -n cloudbridge deployment/cassandra -- cqlsh -e "CREATE KEYSPACE IF NOT EXISTS cadence WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};"
 kubectl exec -n cloudbridge deployment/cassandra -- cqlsh -e "CREATE KEYSPACE IF NOT EXISTS cadence_visibility WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1};"
 
@@ -389,17 +389,17 @@ kubectl exec -n cloudbridge deployment/cassandra -- cqlsh -e "USE cadence; CREAT
 kubectl exec -n cloudbridge deployment/cassandra -- cqlsh -e "USE cadence; INSERT INTO schema_version (version, dirty) VALUES (0, false) IF NOT EXISTS;"
 
 # 11. Проверка статуса
-echo "✅ Развертывание завершено!"
+echo "Развертывание завершено!"
 echo ""
-echo "📊 Статус подов:"
+echo "Статус подов:"
 kubectl get pods -n cloudbridge
 
 echo ""
-echo "🌐 Доступные сервисы:"
+echo "Доступные сервисы:"
 kubectl get svc -n cloudbridge
 
 echo ""
-echo "🔗 Команды для доступа (согласно MINIKUBE_BUILD_GUIDE.md):"
+echo "Команды для доступа (согласно MINIKUBE_BUILD_GUIDE.md):"
 echo "  CloudBridge Relay: kubectl port-forward svc/cloudbridge-relay 9090:9090 -n cloudbridge"
 echo "  AI Service:        kubectl port-forward svc/ai-service 8083:8083 -n cloudbridge"
 echo "  Cassandra:         kubectl port-forward svc/cassandra-service 9042:9042 -n cloudbridge"
@@ -411,7 +411,7 @@ echo "  AI Service:        curl http://localhost:8083/health"
 
 echo ""
 echo "🏷️ Использованный тег образа: $TAG"
-echo "🎉 CloudBridge Relay с TURN Pool успешно развернут по MINIKUBE_BUILD_GUIDE.md!"
+echo "CloudBridge Relay с TURN Pool успешно развернут по MINIKUBE_BUILD_GUIDE.md!"
 
 # 12. Проверка TURN Pool
 echo ""

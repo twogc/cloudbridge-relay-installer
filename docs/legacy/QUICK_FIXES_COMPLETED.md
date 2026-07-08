@@ -156,9 +156,9 @@ k8s/
 **Purpose**: Prioritized list of what needs fixing
 
 **Sections**:
-- 🔴 Critical fixes (do now)
-- 🟡 Important improvements (soon)
-- 🟢 Low priority (future)
+- Critical fixes (do now)
+- Important improvements (soon)
+- Low priority (future)
 - uick wins (5-10 minutes)
 
 ---
@@ -282,7 +282,7 @@ According to [MVP_IMPLEMENTATION_PLAN.md](MVP_IMPLEMENTATION_PLAN.md):
 - *Blocker #3**: API Compatibility - Completed
 - *Architecture Cleanup**: Completed
 - *Test Fixes**: All tests passing
-- ⏳ **Manual Testing**: Next step
+- **Manual Testing**: Next step
 
 **Current MVP Progress**: **95% → 98%** (improved!)
 
@@ -291,19 +291,19 @@ According to [MVP_IMPLEMENTATION_PLAN.md](MVP_IMPLEMENTATION_PLAN.md):
 ## Remaining Work
 
 ### Before Production
-1. ⏳ **Manual Testing** (3-4 hours)
+1. **Manual Testing** (3-4 hours)
    - Follow [MANUAL_TESTING_PLAN.md](MANUAL_TESTING_PLAN.md)
    - 48 tests across 7 test suites
 
-2. ⏳ **Remove Quantum from Scripts** (10 minutes)
+2. **Remove Quantum from Scripts** (10 minutes)
    - Comment out quantum-service in `scripts/migrate-to-kubernetes.sh`
    - Prevent accidental deployment
 
 ### Optional Improvements
-1. ⏳ **Add README for cmd/ services**
+1. **Add README for cmd/ services**
    - relay/, ipam-service/, ai-service/, wireguard-service/
 
-2. ⏳ **Refactor relay/main.go**
+2. **Refactor relay/main.go**
    - Split 2391 lines into modules
    - Improve maintainability
 
@@ -360,14 +360,14 @@ According to [MVP_IMPLEMENTATION_PLAN.md](MVP_IMPLEMENTATION_PLAN.md):
 ## Next Steps
 
 **Immediate** (Today):
-1. ⏳ Remove quantum-service from migration scripts
-2. ⏳ Run full test suite: `go test ./...`
-3. ⏳ Commit all changes
+1. Remove quantum-service from migration scripts
+2. Run full test suite: `go test ./...`
+3. Commit all changes
 
 **This Week**:
-1. ⏳ Manual testing phase (3-4 hours)
-2. ⏳ Deploy to staging
-3. ⏳ Create README for cmd/ services
+1. Manual testing phase (3-4 hours)
+2. Deploy to staging
+3. Create README for cmd/ services
 
 ---
 

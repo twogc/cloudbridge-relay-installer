@@ -38,20 +38,23 @@ if [ ! -f "go.mod" ]; then
     exit 1
 fi
 
-# Check Go version (prefer 1.25.2 with security fixes)
+# Check Go version (prefer 1.25.12 — latest 1.25 patch, Jul 2026)
 print_status "Checking Go version..."
 GO_VERSION=$(go version | cut -d' ' -f3 | sed 's/go//')
-if [ "$GO_VERSION" != "1.25.1" ] && [ "$GO_VERSION" != "1.25.2" ]; then
-    print_warning "Go version is $GO_VERSION, expected 1.25.1 or 1.25.2"
-    print_status "Please update Go to version 1.25.2 (includes security fixes from Oct 7, 2025)"
-    print_status "Current version: $GO_VERSION"
-    print_status "Recommended: 1.25.2 (security fixes)"
-    exit 1
-elif [ "$GO_VERSION" = "1.25.1" ]; then
-    print_warning "Go version is $GO_VERSION, consider updating to 1.25.2 for security fixes"
-    print_status "1.25.2 includes security fixes from October 7, 2025"
+EXPECTED_GO="1.25.12"
+if [ "$GO_VERSION" != "$EXPECTED_GO" ]; then
+    case "$GO_VERSION" in
+        1.25.*)
+            print_warning "Go version is $GO_VERSION, recommended: $EXPECTED_GO (Jul 7, 2026 security patch)"
+            ;;
+        *)
+            print_warning "Go version is $GO_VERSION, expected $EXPECTED_GO (or compatible 1.25.x)"
+            print_status "Download: https://go.dev/dl/go${EXPECTED_GO}.linux-amd64.tar.gz"
+            exit 1
+            ;;
+    esac
 else
-    print_success "Go version $GO_VERSION is correct (includes latest security fixes)"
+    print_success "Go version $GO_VERSION is correct (latest 1.25 patch)"
 fi
 
 print_status "Starting dependency updates..."
@@ -193,9 +196,9 @@ Generated: $(date)
 - Migrated from archived gorilla/mux to maintained chi router
 
 ## Testing Status
-- Go modules: ✅ All tests passing
-- Node.js modules: ✅ All tests passing
-- Security scan: ✅ No critical issues found
+- Go modules: All tests passing
+- Node.js modules: All tests passing
+- Security scan: No critical issues found
 
 ## Next Steps
 1. Deploy updated dependencies to staging environment
@@ -238,13 +241,13 @@ print_status "Please review the dependency-report.md file for details."
 print_warning "Remember to test thoroughly before deploying to production!"
 
 echo ""
-echo "📋 Summary of Changes:"
-echo "- ✅ Updated quic-go to v0.55.0 (DoS CVE fix)"
-echo "- ✅ Updated golang.org/x/net to v0.46.0 (security fixes)"
-echo "- ✅ Updated go-oidc to v3.16.0 (latest fixes)"
-echo "- ✅ Updated k8s client-go to v0.34.1 (API updates)"
-echo "- ✅ Migrated gorilla/mux to chi router"
-echo "- ✅ Updated axios to v1.12.2 (security fixes)"
-echo "- ✅ Generated dependency report"
+echo "Summary of Changes:"
+echo "- Updated quic-go to v0.55.0 (DoS CVE fix)"
+echo "- Updated golang.org/x/net to v0.46.0 (security fixes)"
+echo "- Updated go-oidc to v3.16.0 (latest fixes)"
+echo "- Updated k8s client-go to v0.34.1 (API updates)"
+echo "- Migrated gorilla/mux to chi router"
+echo "- Updated axios to v1.12.2 (security fixes)"
+echo "- Generated dependency report"
 echo ""
-echo "🚀 Ready for testing and deployment!"
+echo "Ready for testing and deployment!"

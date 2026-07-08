@@ -18,7 +18,7 @@
 
 ---
 
-# 🔴 ФАЗА 1: КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ (1-2 дня)
+# ФАЗА 1: КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ (1-2 дня)
 
 **Цель:** Устранить блокеры развертывания
 **Критерий успеха:** Все pods запускаются без ошибок
@@ -27,7 +27,7 @@
 
 ## Task 1.1: Create Missing PersistentVolumeClaim
 
-**Приоритет:** 🔴 CRITICAL
+**Приоритет:** CRITICAL
 **Время:** 30 минут
 **Ответственный:** _________
 **Статус:** ⬜ TODO
@@ -102,7 +102,7 @@ kubectl logs -n cloudbridge -l app.kubernetes.io/name=cloudbridge-relay --tail=5
 
 ## Task 1.2: Remove Hardcoded Secrets from P2P Deployment
 
-**Приоритет:** 🔴 CRITICAL (Security)
+**Приоритет:** CRITICAL (Security)
 **Время:** 2 часа
 **Ответственный:** _________
 **Статус:** ⬜ TODO
@@ -220,9 +220,9 @@ kubectl exec -n cloudbridge deployment/cloudbridge-relay-p2p -- env | grep JWT_S
 
 ---
 
-## 🐛 Task 1.3: Fix Invalid Image Tag with Shell Expansion
+## Task 1.3: Fix Invalid Image Tag with Shell Expansion
 
-**Приоритет:** 🔴 CRITICAL
+**Приоритет:** CRITICAL
 **Время:** 15 минут
 **Ответственный:** _________
 **Статус:** ⬜ TODO
@@ -316,7 +316,7 @@ kubectl get events -n cloudbridge --sort-by='.lastTimestamp' | grep -i image
 
 ## 💥 Task 1.4: Fix Failing Zitadel Integration Test
 
-**Приоритет:** 🔴 CRITICAL
+**Приоритет:** CRITICAL
 **Время:** 1 час
 **Ответственный:** _________
 **Статус:** ⬜ TODO
@@ -604,7 +604,7 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay-p2p | grep -i "health"
 
 ##  Task 1.7: Fix Port Conflicts
 
-**Приоритет:** 🟡 MEDIUM
+**Приоритет:** MEDIUM
 **Время:** 1 час
 **Ответственный:** _________
 **Статус:** ⬜ TODO
@@ -709,7 +709,7 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay | grep -i "address alre
 
 ## Task 1.8: Add Resource Limits to All Containers
 
-**Приоритет:** 🟡 MEDIUM
+**Приоритет:** MEDIUM
 **Время:** 2 часа
 **Ответственный:** _________
 **Статус:** ⬜ TODO

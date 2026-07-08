@@ -50,7 +50,7 @@ REGION="${REGION:-MS1}"
 FLAVOR="${FLAVOR:-STD2-8-16}"
 DISK_SIZE="${DISK_SIZE:-120}"
 
-print_header "🛡️ CloudBridge Relay - DDoS Protected Deployment"
+print_header "CloudBridge Relay - DDoS Protected Deployment"
 print_status "Уровень защиты: $DDOS_LEVEL"
 print_status "Регион: $REGION"
 print_status "Конфигурация: $FLAVOR"
@@ -165,12 +165,12 @@ get_deployment_info() {
     echo "   3. Запуск relay: sudo relay-start"
     echo "   4. Мониторинг: http://$instance_ip:8081"
     echo ""
-    echo "🛡️ DDoS защита:"
+    echo "DDoS защита:"
     echo "   - L4: nftables + SYNPROXY + XDP/eBPF"
     echo "   - L7: Nginx + CrowdSec + Rate Limiting"
     echo "   - Мониторинг: FastNetMon + Grafana"
     echo ""
-    echo "🌐 Доступные порты:"
+    echo "Доступные порты:"
     echo "   - 80: HTTP (Nginx с DDoS защитой)"
     echo "   - 443: HTTPS (Nginx с DDoS защитой)"
     echo "   - 8080: Relay Server API"
@@ -218,7 +218,7 @@ test_deployment() {
 
 # Основная функция
 main() {
-    print_header "🚀 Начинаем развертывание CloudBridge Relay с DDoS защитой"
+    print_header "Начинаем развертывание CloudBridge Relay с DDoS защитой"
     
     # Выполнение этапов
     check_dependencies

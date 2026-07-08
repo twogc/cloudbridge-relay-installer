@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 NAMESPACE="cloudbridge-monitoring"
 GRAFANA_NAMESPACE="cloudbridge-monitoring"
 
-echo -e "${BLUE}🚀 AI Service Dashboard Setup Script${NC}"
+echo -e "${BLUE}AI Service Dashboard Setup Script${NC}"
 echo "================================================"
 
 # Function to check if namespace exists
@@ -25,7 +25,7 @@ check_namespace() {
         echo -e "${GREEN}Namespace $NAMESPACE exists${NC}"
         return 0
     else
-        echo -e "${RED}❌ Namespace $NAMESPACE not found${NC}"
+        echo -e "${RED}Namespace $NAMESPACE not found${NC}"
         return 1
     fi
 }
@@ -42,7 +42,7 @@ wait_for_deployment() {
         echo -e "${GREEN}Ready${NC}"
         return 0
     else
-        echo -e "${RED}❌ Timeout${NC}"
+        echo -e "${RED}Timeout${NC}"
         return 1
     fi
 }
@@ -61,7 +61,7 @@ create_dashboard() {
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
@@ -70,19 +70,19 @@ echo -e "${YELLOW}Setting up AI Service Dashboard...${NC}"
 echo
 
 # Check namespaces
-echo -e "${BLUE}🔍 Checking namespaces...${NC}"
+echo -e "${BLUE}Checking namespaces...${NC}"
 check_namespace $NAMESPACE
 check_namespace $GRAFANA_NAMESPACE
 
 echo
 
 # Check if Grafana is running
-echo -e "${BLUE}🔍 Checking Grafana deployment...${NC}"
+echo -e "${BLUE}Checking Grafana deployment...${NC}"
 if kubectl get deployment grafana -n $GRAFANA_NAMESPACE >/dev/null 2>&1; then
     echo -e "${GREEN}Grafana deployment found${NC}"
     wait_for_deployment "grafana" $GRAFANA_NAMESPACE
 else
-    echo -e "${RED}❌ Grafana deployment not found${NC}"
+    echo -e "${RED}Grafana deployment not found${NC}"
     echo -e "${YELLOW}   Please deploy Grafana first${NC}"
     exit 1
 fi
@@ -90,7 +90,7 @@ fi
 echo
 
 # Create AI Service Dashboard
-echo -e "${BLUE}📊 Creating AI Service Dashboard...${NC}"
+echo -e "${BLUE}Creating AI Service Dashboard...${NC}"
 
 # AI Service Dashboard JSON
 AI_DASHBOARD_JSON='{
@@ -203,7 +203,7 @@ create_dashboard "ai-service-dashboard" "$AI_DASHBOARD_JSON"
 echo
 
 # Create Prometheus ServiceMonitor for AI Service
-echo -e "${BLUE}📊 Creating Prometheus ServiceMonitor...${NC}"
+echo -e "${BLUE}Creating Prometheus ServiceMonitor...${NC}"
 
 SERVICEMONITOR_YAML='apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -227,13 +227,13 @@ echo "$SERVICEMONITOR_YAML" | kubectl apply -f - >/dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}Created${NC}"
 else
-    echo -e "${RED}❌ Failed${NC}"
+    echo -e "${RED}Failed${NC}"
 fi
 
 echo
 
 # Create PrometheusRule for AI Service alerts
-echo -e "${BLUE}📊 Creating PrometheusRule for alerts...${NC}"
+echo -e "${BLUE}Creating PrometheusRule for alerts...${NC}"
 
 PROMETHEUSRULE_YAML='apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
@@ -288,17 +288,17 @@ echo "$PROMETHEUSRULE_YAML" | kubectl apply -f - >/dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}Created${NC}"
 else
-    echo -e "${RED}❌ Failed${NC}"
+    echo -e "${RED}Failed${NC}"
 fi
 
 echo
 
 # Summary
 echo "================================================"
-echo -e "${GREEN}🎉 AI Service Dashboard Setup Complete!${NC}"
+echo -e "${GREEN}AI Service Dashboard Setup Complete!${NC}"
 echo
 
-echo -e "${BLUE}📊 Access Information:${NC}"
+echo -e "${BLUE}Access Information:${NC}"
 echo "  - Grafana: kubectl port-forward -n $GRAFANA_NAMESPACE svc/grafana 3000:80"
 echo "  - Prometheus: kubectl port-forward -n $GRAFANA_NAMESPACE svc/prometheus 9090:9090"
 echo "  - AI Service: kubectl port-forward -n cloudbridge svc/ai-service 8083:8083"

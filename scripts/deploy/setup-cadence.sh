@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🚀 Cadence Setup Script
+# Cadence Setup Script
 # Этот скрипт настраивает Cadence с PostgreSQL в Kubernetes
 
 set -e
@@ -8,7 +8,7 @@ set -e
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-echo "🚀 Настройка Cadence..."
+echo "Настройка Cadence..."
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -41,7 +41,7 @@ if ! kubectl cluster-info &> /dev/null; then
     exit 1
 fi
 
-log "Проверка подключения к кластеру... ✅"
+log "Проверка подключения к кластеру... "
 
 # Проверка наличия PostgreSQL
 log "Проверка PostgreSQL..."
@@ -50,26 +50,26 @@ if ! kubectl get pods -n cloudbridge-system | grep postgres &> /dev/null; then
     exit 1
 fi
 
-log "PostgreSQL найден ✅"
+log "PostgreSQL найден "
 
 # Создание баз данных
 log "Создание баз данных..."
 kubectl exec -n cloudbridge-system postgres-587dfcc9cd-cvwsk -- psql -U ipam_user -d cloudbridge_ipam -c "CREATE DATABASE IF NOT EXISTS cadence;" 2>/dev/null || true
 kubectl exec -n cloudbridge-system postgres-587dfcc9cd-cvwsk -- psql -U ipam_user -d cloudbridge_ipam -c "CREATE DATABASE IF NOT EXISTS cadence_visibility;" 2>/dev/null || true
 
-log "Базы данных созданы ✅"
+log "Базы данных созданы "
 
 # Применение конфигурации
 log "Применение конфигурации Cadence..."
 kubectl apply -f k8s/cadence/cadence.yaml
 
-log "Конфигурация применена ✅"
+log "Конфигурация применена "
 
 # Ожидание запуска
 log "Ожидание запуска Cadence..."
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cadence -n cloudbridge --timeout=300s
 
-log "Cadence запущен ✅"
+log "Cadence запущен "
 
 # Проверка статуса
 log "Проверка статуса..."
@@ -83,7 +83,7 @@ kubectl logs -n cloudbridge deployment/cadence --tail=10
 log "Проверка подключения к базе данных..."
 kubectl exec -n cloudbridge-system postgres-587dfcc9cd-cvwsk -- psql -U ipam_user -d cadence -c "SELECT 1;" &> /dev/null
 if [ $? -eq 0 ]; then
-    log "Подключение к базе данных работает ✅"
+    log "Подключение к базе данных работает "
 else
     warn "Проблемы с подключением к базе данных"
 fi
@@ -92,15 +92,15 @@ fi
 log "Проверка health check..."
 kubectl get pods -n cloudbridge | grep cadence | grep Running &> /dev/null
 if [ $? -eq 0 ]; then
-    log "Cadence работает корректно ✅"
+    log "Cadence работает корректно "
 else
     warn "Cadence может иметь проблемы"
 fi
 
 echo ""
-log "🎉 Настройка Cadence завершена!"
+log "Настройка Cadence завершена!"
 echo ""
-echo "📊 Полезные команды:"
+echo "Полезные команды:"
 echo "  kubectl get pods -n cloudbridge | grep cadence"
 echo "  kubectl logs -n cloudbridge deployment/cadence"
 echo "  kubectl port-forward -n cloudbridge svc/cadence 7933:7933"

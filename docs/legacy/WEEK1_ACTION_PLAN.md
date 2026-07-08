@@ -336,11 +336,11 @@ curl http://localhost:8080/metrics | grep dashboard
 
 | Задача | Статус | % | Часов |
 |--------|--------|----|----|
-| 1.1 Установка сервисов | ⏳ PENDING | 0% | 4h |
-| 1.2 API структура | ⏳ PENDING | 0% | 6h |
-| 1.3 VictoriaMetrics | ⏳ PENDING | 0% | 8h |
-| 1.4 SSE real-time | ⏳ PENDING | 0% | 10h |
-| 1.5 Integration тесты | ⏳ PENDING | 0% | 6h |
+| 1.1 Установка сервисов | PENDING | 0% | 4h |
+| 1.2 API структура | PENDING | 0% | 6h |
+| 1.3 VictoriaMetrics | PENDING | 0% | 8h |
+| 1.4 SSE real-time | PENDING | 0% | 10h |
+| 1.5 Integration тесты | PENDING | 0% | 6h |
 | **ИТОГО** | | **0%** | **34h** |
 
 ---

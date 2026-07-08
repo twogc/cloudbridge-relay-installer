@@ -173,7 +173,7 @@ setup_access() {
 # Функция для вывода информации
 print_info() {
     echo ""
-    log_success "🎉 Docker Registry успешно установлен!"
+    log_success "Docker Registry успешно установлен!"
     echo ""
     echo "Информация о registry:"
     echo "   IP адрес: $REGISTRY_IP"
@@ -195,14 +195,14 @@ print_info() {
     echo "   # Проверка образов"
     echo "   curl -u cloudbridge:password http://$REGISTRY_IP:5000/v2/_catalog"
     echo ""
-    echo "🚀 Для автоматизации используйте:"
+    echo "Для автоматизации используйте:"
     echo "   ./scripts/docker-registry-automation.sh"
     echo ""
 }
 
 # Главная функция
 main() {
-    log_info "🚀 Установка Docker Registry в VK Cloud"
+    log_info "Установка Docker Registry в VK Cloud"
     
     check_dependencies
     check_k8s_access

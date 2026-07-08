@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🚀 CloudBridge Monitoring Services Startup${NC}"
+echo -e "${BLUE}CloudBridge Monitoring Services Startup${NC}"
 echo "================================================"
 
 # Function to check if port is in use
@@ -61,7 +61,7 @@ start_port_forward() {
         echo -e "${GREEN}Started (PID: $pid)${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed to start${NC}"
+        echo -e "${RED}Failed to start${NC}"
         return 1
     fi
 }
@@ -77,7 +77,7 @@ check_service() {
         echo -e "${GREEN}Available${NC}"
         return 0
     else
-        echo -e "${RED}❌ Not available${NC}"
+        echo -e "${RED}Not available${NC}"
         return 1
     fi
 }
@@ -91,13 +91,13 @@ main() {
     cleanup_port_forwards
     
     # Check if services are running in Kubernetes
-    echo -e "${BLUE}🔍 Checking Kubernetes services...${NC}"
+    echo -e "${BLUE}Checking Kubernetes services...${NC}"
     
     # Check Grafana
     if kubectl get pod -n cloudbridge-monitoring -l app.kubernetes.io/name=grafana --no-headers 2>/dev/null | grep -q Running; then
         echo -e "${GREEN}Grafana pod is running${NC}"
     else
-        echo -e "${RED}❌ Grafana pod not found or not running${NC}"
+        echo -e "${RED}Grafana pod not found or not running${NC}"
         echo -e "${YELLOW}   Run: kubectl get pods -n cloudbridge-monitoring${NC}"
         exit 1
     fi
@@ -106,7 +106,7 @@ main() {
     if kubectl get pod -n cloudbridge-monitoring -l app.kubernetes.io/name=prometheus --no-headers 2>/dev/null | grep -q Running; then
         echo -e "${GREEN}Prometheus pod is running${NC}"
     else
-        echo -e "${RED}❌ Prometheus pod not found or not running${NC}"
+        echo -e "${RED}Prometheus pod not found or not running${NC}"
         echo -e "${YELLOW}   Run: kubectl get pods -n cloudbridge-monitoring${NC}"
         exit 1
     fi
@@ -115,7 +115,7 @@ main() {
     if kubectl get pod -n cloudbridge -l app.kubernetes.io/name=ai-service --no-headers 2>/dev/null | grep -q Running; then
         echo -e "${GREEN}AI Service pod is running${NC}"
     else
-        echo -e "${RED}❌ AI Service pod not found or not running${NC}"
+        echo -e "${RED}AI Service pod not found or not running${NC}"
         echo -e "${YELLOW}   Run: kubectl get pods -n cloudbridge${NC}"
         exit 1
     fi
@@ -123,7 +123,7 @@ main() {
     echo
     
     # Start port-forwards
-    echo -e "${BLUE}🚀 Starting port-forwards...${NC}"
+    echo -e "${BLUE}Starting port-forwards...${NC}"
     
     start_port_forward "grafana" "cloudbridge-monitoring" "3000" "3000" "Grafana Dashboard"
     start_port_forward "prometheus" "cloudbridge-monitoring" "9090" "9090" "Prometheus"
@@ -132,11 +132,11 @@ main() {
     echo
     
     # Wait for services to be ready
-    echo -e "${YELLOW}⏳ Waiting for services to be ready...${NC}"
+    echo -e "${YELLOW}Waiting for services to be ready...${NC}"
     sleep 5
     
     # Check service availability
-    echo -e "${BLUE}🔍 Checking service availability...${NC}"
+    echo -e "${BLUE}Checking service availability...${NC}"
     
     check_service "http://localhost:3000" "Grafana"
     check_service "http://localhost:9090" "Prometheus"
@@ -145,10 +145,10 @@ main() {
     echo
     
     # Show access information
-    echo -e "${PURPLE}🌐 ACCESS INFORMATION${NC}"
+    echo -e "${PURPLE}ACCESS INFORMATION${NC}"
     echo "================================================"
     
-    echo -e "${BLUE}📊 Grafana Dashboard:${NC}"
+    echo -e "${BLUE}Grafana Dashboard:${NC}"
     echo "   URL: http://localhost:3000"
     echo "   Login: admin"
     echo "   Password: admin"
@@ -170,7 +170,7 @@ main() {
     echo "   URL: http://localhost:8080/ai-api-docs.html"
     echo
     
-    echo -e "${GREEN}🎉 All monitoring services are now accessible!${NC}"
+    echo -e "${GREEN}All monitoring services are now accessible!${NC}"
     echo
     
     echo -e "${YELLOW}📝 Useful Commands:${NC}"
@@ -181,7 +181,7 @@ main() {
     echo "   View AI Service logs: kubectl logs -n cloudbridge -l app.kubernetes.io/name=ai-service"
     echo
     
-    echo -e "${BLUE}🚀 Next Steps:${NC}"
+    echo -e "${BLUE}Next Steps:${NC}"
     echo "   1. Open Grafana at http://localhost:3000"
     echo "   2. Import AI Service dashboard"
     echo "   3. Configure alerts and notifications"

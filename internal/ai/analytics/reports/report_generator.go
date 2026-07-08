@@ -27,10 +27,10 @@ func (r *ReportGenerator) GenerateMarkdown(report *analytics.Report) (string, er
 **Generated**: {{.Timestamp.Format "2006-01-02 15:04:05"}}
 **Report ID**: {{.ID}}
 
-## 📊 Executive Summary
+## Executive Summary
 {{.Analysis.Summary}}
 
-## 🔍 Key Insights
+## Key Insights
 {{range .Analysis.Insights}}
 - {{.}}
 {{end}}
@@ -60,7 +60,7 @@ func (r *ReportGenerator) GenerateMarkdown(report *analytics.Report) (string, er
 - Health data not available
 {{end}}
 
-## 📊 Metrics Summary
+## Metrics Summary
 {{if .Metrics.Metrics}}
 {{range $source, $data := .Metrics.Metrics}}
 ### {{$source}} Metrics
@@ -290,13 +290,13 @@ func (r *ReportGenerator) GenerateHTML(report *analytics.Report) (string, error)
         </div>
 
         <div class="section">
-            <h2>📊 Executive Summary</h2>
+            <h2>Executive Summary</h2>
             <p>{{.Analysis.Summary}}</p>
         </div>
 
         {{if .Analysis.Insights}}
         <div class="section insight">
-            <h2>🔍 Key Insights</h2>
+            <h2>Key Insights</h2>
             <ul>
                 {{range .Analysis.Insights}}
                 <li>{{.}}</li>

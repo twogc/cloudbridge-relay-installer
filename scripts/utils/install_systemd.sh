@@ -181,7 +181,7 @@ main() {
             enable_service
             verify_installation
             show_management_help
-            log "🎉 Systemd сервис успешно установлен!"
+            log "Systemd сервис успешно установлен!"
             ;;
         uninstall)
             check_root

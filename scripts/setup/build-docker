@@ -35,7 +35,7 @@ build_image() {
     
     # Check if Dockerfile exists
     if [[ ! -f "$dockerfile" ]]; then
-        echo -e "${RED}❌ Dockerfile $dockerfile not found, skipping${NC}"
+        echo -e "${RED}Dockerfile $dockerfile not found, skipping${NC}"
         return 1
     fi
     
@@ -122,7 +122,7 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            echo -e "${RED}❌ Unknown option: $1${NC}"
+            echo -e "${RED}Unknown option: $1${NC}"
             echo "Use --help for usage information"
             exit 1
             ;;
@@ -167,7 +167,7 @@ for service in "${SERVICES[@]}"; do
             build_image "wireguard" "Dockerfile.wireguard.enhanced" "$REGISTRY/cloudbridge-wireguard"
             ;;
         *)
-            echo -e "${RED}❌ Unknown service: $service${NC}"
+            echo -e "${RED}Unknown service: $service${NC}"
             echo "Available services: relay, ai, cadence, quic, wireguard, all"
             exit 1
             ;;
@@ -242,5 +242,5 @@ for service in "${SERVICES[@]}"; do
     esac
 done
 echo ""
-echo -e "${GREEN}🚀 Ready for deployment!${NC}"
+echo -e "${GREEN}Ready for deployment!${NC}"
 

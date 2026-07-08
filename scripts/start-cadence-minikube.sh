@@ -96,10 +96,10 @@ show_access_info() {
     
     echo ""
     echo "=========================================="
-    echo "🎉 Cadence успешно развернут в Minikube!"
+    echo "Cadence успешно развернут в Minikube!"
     echo "=========================================="
     echo ""
-    echo "📋 Информация о доступе:"
+    echo "Информация о доступе:"
     echo "   Minikube IP: $MINIKUBE_IP"
     echo "   Cadence gRPC: $MINIKUBE_IP:$CADENCE_GRPC_PORT"
     echo "   Cadence Web UI: http://$MINIKUBE_IP:$CADENCE_WEB_PORT"
@@ -109,17 +109,17 @@ show_access_info() {
     echo "   kubectl logs -f deployment/cadence -n cloudbridge"
     echo "   kubectl logs -f statefulset/cassandra -n cloudbridge"
     echo ""
-    echo "🌐 Открыть Cadence Web UI:"
+    echo "Открыть Cadence Web UI:"
     echo "   minikube service cadence-nodeport -n cloudbridge --url"
     echo ""
-    echo "📊 Проверить статус:"
+    echo "Проверить статус:"
     echo "   kubectl get all -n cloudbridge"
     echo ""
 }
 
 # Основная функция
 main() {
-    echo "🚀 Запуск Cadence в Minikube..."
+    echo "Запуск Cadence в Minikube..."
     echo ""
     
     check_minikube

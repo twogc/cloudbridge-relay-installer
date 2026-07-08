@@ -1,4 +1,4 @@
-# 🔍 **Compatibility Check: WAF Stack с CloudBridge Relay**
+# **Compatibility Check: WAF Stack с CloudBridge Relay**
 
 ## **Обзор проверки совместимости**
 
@@ -40,7 +40,7 @@ kubectl describe nodes | grep -A 5 "Allocatable"
 # - Storage: 100GB per node
 ```
 
-## 🔐 **2. Совместимость с Zitadel**
+## **2. Совместимость с Zitadel**
 
 ### **OIDC Endpoints проверка:**
 ```bash
@@ -105,7 +105,7 @@ curl -k -X POST https://zitadel.local/oauth/v2/token \
 }
 ```
 
-## 🌐 **3. Совместимость с CloudBridge Relay**
+## **3. Совместимость с CloudBridge Relay**
 
 ### **API Endpoints проверка:**
 ```bash
@@ -158,7 +158,7 @@ cat /etc/nginx/sites-available/* | grep -A 5 -B 5 "zitadel"
 # - Конфигурация может быть мигрирована
 ```
 
-## 📊 **5. Совместимость с мониторингом**
+## **5. Совместимость с мониторингом**
 
 ### **Prometheus совместимость:**
 ```bash
@@ -185,7 +185,7 @@ kubectl get svc -n monitoring | grep grafana
 # - Алерты совместимы с существующей системой
 ```
 
-## 🔐 **6. Совместимость с секретами**
+## **6. Совместимость с секретами**
 
 ### **Kubernetes Secrets:**
 ```bash
@@ -212,7 +212,7 @@ ls -la /etc/ssl/private/ | grep cloudbridge
 # - Автоматическое обновление сертификатов
 ```
 
-## 🚀 **7. Совместимость с развертыванием**
+## **7. Совместимость с развертыванием**
 
 ### **Helm Charts:**
 ```bash
@@ -250,9 +250,9 @@ cat .github/workflows/*.yml | grep -A 5 -B 5 "deploy"
 **Легенда:**
 - **Полная совместимость** - готово к использованию
 - 🔄 **Частичная совместимость** - требует миграции
-- ❌ **Несовместимость** - требует замены
+- **Несовместимость** - требует замены
 
-## 🔍 **9. Проверочные тесты**
+## **9. Проверочные тесты**
 
 ### **Автоматизированные тесты:**
 ```bash
@@ -261,7 +261,7 @@ cat .github/workflows/*.yml | grep -A 5 -B 5 "deploy"
 
 set -euo pipefail
 
-echo "🔍 Running compatibility tests..."
+echo "Running compatibility tests..."
 
 # Test 1: Kubernetes API compatibility
 echo "Testing Kubernetes API compatibility..."
@@ -289,7 +289,7 @@ echo "Testing resource availability..."
 kubectl top nodes | head -1 || exit 1
 echo "Resource availability: PASSED"
 
-echo "🎉 All compatibility tests passed!"
+echo "All compatibility tests passed!"
 ```
 
 ### **Ручные тесты:**
@@ -308,7 +308,7 @@ docker run --rm -v $PWD:/config krakend/krakend:latest \
   check -c /config/krakend.json
 ```
 
-## 📊 **10. Результаты проверки**
+## **10. Результаты проверки**
 
 ### **Общая совместимость: 95%**
 
@@ -348,7 +348,7 @@ docker run --rm -v $PWD:/config krakend/krakend:latest \
 5. **Неделя 5:** Интеграция CrowdSec
 6. **Неделя 6:** Тестирование и оптимизация
 
-## 🎯 **Заключение**
+## **Заключение**
 
 **Совместимость WAF стека с CloudBridge Relay: 95%**
 

@@ -327,7 +327,7 @@ EOF
 
 ---
 
-**Развертывание завершено успешно!** 🎉
+**Развертывание завершено успешно!** 
 EOF
     
     log_success "Отчет создан: $report_file"
@@ -335,7 +335,7 @@ EOF
 
 # Основная функция
 main() {
-    log_info "🚀 Запуск автоматического развертывания CloudBridge Relay в VK Cloud..."
+    log_info "Запуск автоматического развертывания CloudBridge Relay в VK Cloud..."
     
     # Проверка зависимостей
     check_dependencies
@@ -367,7 +367,7 @@ main() {
     # Создание отчета
     create_deployment_report
     
-    log_success "🎉 Развертывание CloudBridge Relay в VK Cloud завершено успешно!"
+    log_success "Развертывание CloudBridge Relay в VK Cloud завершено успешно!"
     
     # Вывод итоговой информации
     echo ""
@@ -384,7 +384,7 @@ main() {
     echo "- Документация: https://mcs.mail.ru/docs"
     echo "- Поддержка: support@vk.com"
     echo ""
-    echo "📊 Мониторинг:"
+    echo "Мониторинг:"
     echo "- kubectl get pods -A"
     echo "- kubectl get services -A"
     echo "- kubectl top nodes"

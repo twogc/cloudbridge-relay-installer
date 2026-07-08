@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🚀 Настройка Container Registry для CloudBridge Relay"
+echo "Настройка Container Registry для CloudBridge Relay"
 echo "=================================================="
 
 # Цвета для вывода

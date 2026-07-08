@@ -195,7 +195,7 @@ show_status() {
         echo "   Владелец: $(stat -c '%U:%G' "$SYSTEM_CONFIG")"
         echo "   Права: $(stat -c '%a' "$SYSTEM_CONFIG")"
     else
-        echo "❌ Системная конфигурация не найдена"
+        echo "Системная конфигурация не найдена"
     fi
     
     if [[ -f "$USER_CONFIG" ]]; then
@@ -204,7 +204,7 @@ show_status() {
         echo "   Владелец: $(stat -c '%U:%G' "$USER_CONFIG")"
         echo "   Права: $(stat -c '%a' "$USER_CONFIG")"
     else
-        echo "❌ Пользовательская конфигурация не найдена"
+        echo "Пользовательская конфигурация не найдена"
     fi
     
     if [[ -f "$BACKUP_CONFIG" ]]; then
@@ -212,7 +212,7 @@ show_status() {
         echo "   Размер: $(du -h "$BACKUP_CONFIG" | cut -f1)"
         echo "   Дата: $(stat -c '%y' "$BACKUP_CONFIG")"
     else
-        echo "❌ Резервная копия не найдена"
+        echo "Резервная копия не найдена"
     fi
     
     echo
@@ -224,7 +224,7 @@ show_status() {
             echo "  Конфигурации различаются"
         fi
     else
-        echo "❌ Невозможно сравнить конфигурации"
+        echo "Невозможно сравнить конфигурации"
     fi
 }
 

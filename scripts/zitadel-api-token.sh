@@ -51,7 +51,7 @@ discover_system_apps() {
         local error_type=$(echo "$test_response" | jq -r '.error // empty' 2>/dev/null)
         
         if [[ "$error_type" != "invalid_client" ]]; then
-            log "✅ Найден валидный client_id: $client_id"
+            log "Найден валидный client_id: $client_id"
             echo "$client_id"
             return 0
         fi
@@ -90,7 +90,7 @@ try_device_code_flow() {
     info "   Verification URI: $verification_uri"
     info "   Expires in: $expires_in seconds"
     info ""
-    warn "⚠️  ВНИМАНИЕ: Поскольку веб-интерфейс зациклен,"
+    warn " ВНИМАНИЕ: Поскольку веб-интерфейс зациклен,"
     warn "   этот метод может не сработать."
     info ""
     info "Попробуйте:"
@@ -106,7 +106,7 @@ try_device_code_flow() {
     
     # Polling для получения токена
     local end_time=$(($(date +%s) + expires_in))
-    info "⏳ Ожидание авторизации (максимум $expires_in секунд)..."
+    info "Ожидание авторизации (максимум $expires_in секунд)..."
     
     while [[ $(date +%s) -lt $end_time ]]; do
         sleep "$interval"
@@ -124,13 +124,13 @@ try_device_code_flow() {
             "")
                 local access_token=$(echo "$token_response" | jq -r '.access_token // empty')
                 if [[ -n "$access_token" && "$access_token" != "null" ]]; then
-                    log "✅ Токен получен успешно!"
+                    log "Токен получен успешно!"
                     echo "$access_token"
                     return 0
                 fi
                 ;;
             "authorization_pending")
-                info "⏳ Ожидание авторизации пользователя..."
+                info "Ожидание авторизации пользователя..."
                 ;;
             "access_denied"|"expired_token")
                 warn "Авторизация отклонена или истекла"
@@ -183,10 +183,10 @@ try_postgres_direct() {
     " 2>/dev/null || echo "")
     
     if echo "$query_result" | grep -q "$ADMIN_EMAIL"; then
-        log "✅ Пользователь $ADMIN_EMAIL найден в базе данных"
+        log "Пользователь $ADMIN_EMAIL найден в базе данных"
         
         # Это продвинутый метод - создание личного токена напрямую в БД
-        warn "⚠️  Прямое создание токена в БД требует глубокого понимания структуры ZITADEL"
+        warn " Прямое создание токена в БД требует глубокого понимания структуры ZITADEL"
         warn "   Это может нарушить целостность данных"
         
         info "Рекомендуется использовать другие методы получения токена"
@@ -288,19 +288,19 @@ fix_web_interface() {
 
 # Основная функция
 main() {
-    log "🔐 ZITADEL API Token - альтернативные методы"
+    log "ZITADEL API Token - альтернативные методы"
     log "Domain: $ZITADEL_DOMAIN"
     log "Admin: $ADMIN_EMAIL"
     log ""
     
     # Проверяем существующий токен
     if [[ -n "${ZITADEL_TOKEN:-}" ]]; then
-        log "✅ Токен уже установлен: ZITADEL_TOKEN"
+        log "Токен уже установлен: ZITADEL_TOKEN"
         return 0
     fi
     
     if [[ -f "$HOME/.zitadel/token" ]]; then
-        log "✅ Найден токен в ~/.zitadel/token"
+        log "Найден токен в ~/.zitadel/token"
         export ZITADEL_TOKEN=$(cat "$HOME/.zitadel/token" | tr -d '\n\r')
         return 0
     fi
@@ -321,7 +321,7 @@ main() {
                     mkdir -p "$HOME/.zitadel"
                     echo "$token" > "$HOME/.zitadel/token"
                     chmod 600 "$HOME/.zitadel/token"
-                    log "✅ Токен сохранен"
+                    log "Токен сохранен"
                     info "export ZITADEL_TOKEN='$token'"
                 fi
             fi

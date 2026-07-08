@@ -76,7 +76,7 @@ CREATE DATABASE cadence_visibility;
 kubectl exec -n cloudbridge-system postgres-587dfcc9cd-cvwsk -- psql -U ipam_user -d cadence -c "SELECT 1;"
 ```
 
-## 🚨 Частые проблемы и решения
+## Частые проблемы и решения
 
 ### Проблема 1: "no config files found"
 **Причина:** Cadence ищет `base.yaml` в режиме директории

@@ -4,7 +4,7 @@
 
 Этот документ описывает процесс миграции системы аутентификации CloudBridge Relay с Keycloak на Zitadel.
 
-## 🎯 Цели миграции
+## Цели миграции
 
 1. **Улучшенная производительность**: Zitadel обеспечивает лучшую производительность и масштабируемость
 2. **Современная архитектура**: Event sourcing, CQRS, cloud-native подход
@@ -73,7 +73,7 @@ export KEYCLOAK_ENABLED="false"
 }
 ```
 
-## 🚀 Процесс миграции
+## Процесс миграции
 
 ### Этап 1: Подготовка Zitadel
 
@@ -162,7 +162,7 @@ export KEYCLOAK_ENABLED="false"
 }
 ```
 
-## 🔐 Управление тенантами
+## Управление тенантами
 
 ### Создание тенанта
 
@@ -189,7 +189,7 @@ quotas := map[string]interface{}{
 err := tenantManager.UpdateTenantQuotas(ctx, tenantID, quotas)
 ```
 
-## 📊 Мониторинг миграции
+## Мониторинг миграции
 
 ### Метрики
 
@@ -248,9 +248,9 @@ err := tenantManager.UpdateTenantQuotas(ctx, tenantID, quotas)
 }
 ```
 
-## 🎯 Roadmap
+## Roadmap
 
-### Фаза 1: Базовая интеграция ✅
+### Фаза 1: Базовая интеграция 
 - [x] Zitadel валидатор токенов
 - [x] Управление тенантами
 - [x] Конфигурация и интеграция

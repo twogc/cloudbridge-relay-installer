@@ -56,11 +56,11 @@ CloudBridge Client Architecture
 | `pkg/relay/` | Relay client для сервера | ритическая |
 | `pkg/p2p/` | P2P mesh manager | редняя |
 | `pkg/quic/` | QUIC connection handler | редняя |
-| `pkg/ice/` | ICE agent для NAT traversal | ⚠️ Низкая |
-| `pkg/masque/` | MASQUE client | ⚠️ Низкая |
+| `pkg/ice/` | ICE agent для NAT traversal | Низкая |
+| `pkg/masque/` | MASQUE client | Низкая |
 | `pkg/heartbeat/` | Heartbeat manager | ысокая |
-| `pkg/metrics/` | Metrics system | ⚠️ Низкая |
-| `pkg/handover/` | Connection handover | ⚠️ Средняя |
+| `pkg/metrics/` | Metrics system | Низкая |
+| `pkg/handover/` | Connection handover | Средняя |
 
 ---
 
@@ -125,7 +125,7 @@ type AuthManager struct {
 
 ** СОВМЕСТИМОСТЬ**: Client и Server используют одинаковую аутентификацию (OIDC/JWT)
 
-**⚠️ ТРЕБУЕТ ПРОВЕРКИ**:
+**ТРЕБУЕТ ПРОВЕРКИ**:
 - Формат JWT claims
 - OIDC issuer URL
 - JWKS endpoint consistency
@@ -162,7 +162,7 @@ type Manager struct {
 
 ** СОВМЕСТИМОСТЬ**: Базовая функциональность совпадает
 
-**⚠️ ТРЕБУЕТ СИНХРОНИЗАЦИИ**:
+**ТРЕБУЕТ СИНХРОНИЗАЦИИ**:
 - Peer discovery protocol
 - Mesh configuration format
 - Connection state management
@@ -194,7 +194,7 @@ type Manager struct {
 
 ** СОВМЕСТИМОСТЬ**: Оба используют QUIC/gRPC
 
-**⚠️ ТРЕБУЕТ СИНХРОНИЗАЦИИ**:
+**ТРЕБУЕТ СИНХРОНИЗАЦИИ**:
 - Proto definitions (версии)
 - QUIC configuration parameters
 - Connection handshake protocol
@@ -230,7 +230,7 @@ type WireGuardManager struct {
 
 ** СОВМЕСТИМОСТЬ**: IPAM на сервере, WireGuard на клиенте
 
-**⚠️ ТРЕБУЕТ СИНХРОНИЗАЦИИ**:
+**ТРЕБУЕТ СИНХРОНИЗАЦИИ**:
 - IP allocation API
 - WireGuard config format
 - Peer update notifications
@@ -274,7 +274,7 @@ type Manager struct {
 
 ** СОВМЕСТИМОСТЬ**: Протокол heartbeat совпадает
 
-**⚠️ ТРЕБУЕТ ПРОВЕРКИ**:
+**ТРЕБУЕТ ПРОВЕРКИ**:
 - Heartbeat interval (client: configurable, server: ?)
 - Timeout values
 - Metrics format
@@ -308,7 +308,7 @@ type Manager struct {
 
 ** ПРОБЛЕМА**: Server TURN сервер не настроен (coturn)
 
-**⚠️ ТРЕБУЕТ ДОРАБОТКИ**:
+**ТРЕБУЕТ ДОРАБОТКИ**:
 - TURN server deployment (coturn)
 - ICE credentials API
 - Fallback strategies
@@ -334,7 +334,7 @@ type Manager struct {
 
 ** СОВМЕСТИМОСТЬ**: Оба реализуют MASQUE
 
-**⚠️ ТРЕБУЕТ ПРОВЕРКИ**:
+**ТРЕБУЕТ ПРОВЕРКИ**:
 - Protocol version compatibility
 - Configuration parameters
 
@@ -367,7 +367,7 @@ type Manager struct {
 
 ** СОВМЕСТИМОСТЬ**: Оба используют Prometheus
 
-**⚠️ ТРЕБУЕТ СИНХРОНИЗАЦИИ**:
+**ТРЕБУЕТ СИНХРОНИЗАЦИИ**:
 - Metric naming convention
 - Label consistency
 - Dashboard integration
@@ -433,7 +433,7 @@ api/proto/
 └── control.proto (?)
 ```
 
-**Impact**: ⚠️ **ВАЖНО** - Возможны проблемы совместимости gRPC
+**Impact**: **ВАЖНО** - Возможны проблемы совместимости gRPC
 
 **Решение**: Централизовать proto definitions
 ```bash
@@ -463,7 +463,7 @@ ice:
 - TUN support есть
 -  Fallback strategies не реализованы
 
-**Impact**: ⚠️ **КРИТИЧНО** - P2P connections будут fails в симметричных NAT
+**Impact**: **КРИТИЧНО** - P2P connections будут fails в симметричных NAT
 
 **Решение**: Развернуть coturn TURN server
 ```bash
@@ -516,7 +516,7 @@ type Claims struct {
 }
 ```
 
-**Impact**: ⚠️ **ВАЖНО** - Token validation может fails
+**Impact**: **ВАЖНО** - Token validation может fails
 
 **Решение**: Проверить и синхронизировать claims
 ```go
@@ -537,22 +537,22 @@ func MapZitadelClaims(next http.Handler) http.Handler {
 
 | Компонент | Client | Server | Статус | Приоритет | Усилия |
 |-----------|--------|--------|--------|-----------|--------|
-| API Paths |   | Не совпадают | 🔴 Критично | 2-3 дня |
+| API Paths |   | Не совпадают | Критично | 2-3 дня |
 | Authentication (OIDC) |  | овместимо | | 0 ней |
-| JWT Claims |  ⚠️ | Требует проверки | 🟡 Важно | 1 день |
+| JWT Claims |  | Требует проверки | Важно | 1 день |
 | QUIC Transport |  | овместимо | | 0 ней |
-| gRPC Proto |  ⚠️ | Требует sync | 🟡 Важно | 2-3 дня |
-| P2P Discovery |  | астично | 🟡 Важно | 3-4 дня |
+| gRPC Proto |  | Требует sync | Важно | 2-3 дня |
+| P2P Discovery |  | астично | Важно | 3-4 дня |
 | ICE/STUN |  | овместимо | | 0 ней |
-| TURN Server |   | Не настроен | 🔴 Критично | 2-3 дня |
+| TURN Server |   | Не настроен | Критично | 2-3 дня |
 | WireGuard IPAM |  | ребует sync | 🟠 Средний | 3-4 дня |
 | Heartbeat |  | овместимо | | 0 ней |
 | MASQUE Protocol |  | ребует проверки | 🟠 Средний | 1-2 дня |
 | Metrics |  | астично | 🟠 Средний | 2-3 дня |
 
 **Легенда**:
-- 🔴 Критично - блокирует работу
-- 🟡 Важно - ограничивает функциональность
+- Критично - блокирует работу
+- Важно - ограничивает функциональность
 - 🟠 Средний - желательно для полной функциональности
 - отово - не требует действий
 

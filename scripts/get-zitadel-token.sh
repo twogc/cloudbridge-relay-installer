@@ -53,14 +53,14 @@ get_token_device_flow() {
         return 1
     fi
     
-    info "🔐 Для аутентификации:"
+    info "Для аутентификации:"
     info "   1. Откройте браузер по ссылке: $verification_uri"
     info "   2. Введите код: $user_code"
     if [[ -n "$verification_uri_complete" && "$verification_uri_complete" != "null" ]]; then
         info "   3. Или откройте прямую ссылку: $verification_uri_complete"
     fi
     info ""
-    info "⏱️  У вас есть $expires_in секунд для завершения аутентификации"
+    info "У вас есть $expires_in секунд для завершения аутентификации"
     info "🔄 Ожидание завершения аутентификации..."
     
     # Polling для получения токена
@@ -85,20 +85,20 @@ get_token_device_flow() {
                 local access_token
                 access_token=$(echo "$token_response" | jq -r '.access_token // empty')
                 if [[ -n "$access_token" && "$access_token" != "null" ]]; then
-                    log "✅ Токен доступа получен успешно!"
+                    log "Токен доступа получен успешно!"
                     echo "$access_token"
                     return 0
                 fi
                 ;;
             "authorization_pending")
-                info "⏳ Ожидание аутентификации пользователя..."
+                info "Ожидание аутентификации пользователя..."
                 ;;
             "slow_down")
                 info "🐌 Замедление запросов..."
                 interval=$((interval + 2))
                 ;;
             "access_denied")
-                error "❌ Аутентификация отклонена пользователем"
+                error "Аутентификация отклонена пользователем"
                 return 1
                 ;;
             "expired_token")
@@ -106,7 +106,7 @@ get_token_device_flow() {
                 return 1
                 ;;
             *)
-                error "❌ Неизвестная ошибка: $error_type"
+                error "Неизвестная ошибка: $error_type"
                 error "Response: $token_response"
                 return 1
                 ;;
@@ -119,7 +119,7 @@ get_token_device_flow() {
 
 # Инструкция по созданию Personal Access Token
 show_pat_instructions() {
-    info "📋 Инструкция по созданию Personal Access Token:"
+    info "Инструкция по созданию Personal Access Token:"
     info ""
     info "1. Откройте ZITADEL Console: $ZITADEL_API_URL"
     info "2. Войдите под admin учетной записью:"
@@ -141,7 +141,7 @@ show_pat_instructions() {
 
 # Создание Machine User через console
 show_machine_user_instructions() {
-    info "📋 Инструкция по созданию Machine User:"
+    info "Инструкция по созданию Machine User:"
     info ""
     info "1. Откройте ZITADEL Console: $ZITADEL_API_URL"
     info "2. Войдите под admin учетной записью"
@@ -201,17 +201,17 @@ validate_token() {
     if [[ -n "$user_id" && "$user_id" != "null" ]]; then
         local display_name
         display_name=$(echo "$response" | jq -r '.user.human.profile.display_name // .user.machine.name // "Unknown"' 2>/dev/null)
-        log "✅ Токен валиден, пользователь: $display_name ($user_id)"
+        log "Токен валиден, пользователь: $display_name ($user_id)"
         return 0
     fi
     
-    error "❌ Токен недействителен или истек"
+    error "Токен недействителен или истек"
     return 1
 }
 
 # Основная функция
 main() {
-    log "🔐 ZITADEL Token Helper"
+    log "ZITADEL Token Helper"
     log "Domain: $ZITADEL_DOMAIN"
     log ""
     
@@ -244,7 +244,7 @@ main() {
                 echo "$token" > "$HOME/.zitadel/token"
                 chmod 600 "$HOME/.zitadel/token"
                 
-                log "✅ Токен сохранен в ~/.zitadel/token"
+                log "Токен сохранен в ~/.zitadel/token"
                 info "Для использования в других скриптах:"
                 info "export ZITADEL_TOKEN='$token'"
             fi

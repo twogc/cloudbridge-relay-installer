@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🚀 CloudBridge Relay - Автоматизированное развертывание"
+echo "CloudBridge Relay - Автоматизированное развертывание"
 echo "====================================================="
 
 # Цвета для вывода
@@ -311,7 +311,7 @@ show_deployment_info() {
     VM_IP=$(terraform output -raw relay_ddos_fip_address)
     
     echo ""
-    echo "🎉 CloudBridge Relay успешно развернут!"
+    echo "CloudBridge Relay успешно развернут!"
     echo "====================================="
     echo "IP адрес: $VM_IP"
     echo "SSH подключение: ssh ubuntu@$VM_IP"

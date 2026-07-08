@@ -52,7 +52,7 @@ CloudBridge Relay — платформа для построения «умно�
 ✔ Сервер: gRPC-API на :8444, JSON-API на :5550, TLS 1.3, Prometheus-метрики.  
 ✔ Клиент: тоннели, p2p-mesh, WireGuard fallback, hot-reload конфигурации, Pushgateway-метрики.  
 ✔ Helm-чарт для Minikube / K8s, порт-forward работает.  
-⏳ В работе: Retry-policy gRPC, автоген CA-пиннинг, Anycast rollout.
+В работе: Retry-policy gRPC, автоген CA-пиннинг, Anycast rollout.
 
 ✔ Добавлено в Q3-2025:
 • **Полноценный gRPC-API** на сервере (:8444) и клиентский транспорт по умолчанию.

@@ -53,7 +53,7 @@ check_dependencies() {
     log_info "Проверка зависимостей..."
     
     if ! command -v go &> /dev/null; then
-        log_error "Go не установлен. Установите Go 1.21 или выше."
+        log_error "Go не установлен. Установите Go 1.25.12 или выше."
         exit 1
     fi
     

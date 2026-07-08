@@ -22,7 +22,7 @@
                        └──────────────────┘    └─────────────────┘
 ```
 
-## 📍 Компоненты системы
+## Компоненты системы
 
 ### 1. Zabbix Server
 - **URL**: `zbx.2gc.ru` (10.0.0.241)
@@ -231,23 +231,23 @@ echo " Обновление deployment..."
 kubectl set image deployment/ai-service ai-service=ai-service:$TAG -n cloudbridge
 
 # 7. Ожидание завершения обновления
-echo "⏳ Ожидание завершения обновления..."
+echo "Ожидание завершения обновления..."
 kubectl rollout status deployment/ai-service -n cloudbridge --timeout=300s
 
 # 8. Проверка статуса pods
-echo "🔍 Проверка статуса pods..."
+echo "Проверка статуса pods..."
 kubectl get pods -n cloudbridge | grep ai-service
 
 # 9. Ожидание стабилизации метрик
-echo "⏳ Ожидание стабилизации метрик (60 секунд)..."
+echo "Ожидание стабилизации метрик (60 секунд)..."
 sleep 60
 
 # 10. Проверка метрик
 echo "🧪 Проверка метрик..."
 curl -s --max-time 5 "http://192.168.49.2:30083/metrics" | grep "ai_processing_time_milliseconds"
 
-echo "🎉 Обновление завершено!"
-echo "📊 Тег образа: $TAG"
+echo "Обновление завершено!"
+echo "Тег образа: $TAG"
 ```
 
 ### Быстрая проверка системы
@@ -256,7 +256,7 @@ echo "📊 Тег образа: $TAG"
 #!/bin/bash
 # Скрипт быстрой проверки состояния системы
 
-echo "🔍 ПРОВЕРКА СИСТЕМЫ МОНИТОРИНГА"
+echo "ПРОВЕРКА СИСТЕМЫ МОНИТОРИНГА"
 echo "==============================="
 
 # 1. Проверка Kubernetes
@@ -283,7 +283,7 @@ echo "AI accuracy: $(zabbix_get -s localhost -k ai.anomaly_detection_accuracy 2>
 echo -e "\n Проверка завершена"
 ```
 
-## 🐛 Диагностика проблем
+## Диагностика проблем
 
 ### Частые проблемы и решения
 

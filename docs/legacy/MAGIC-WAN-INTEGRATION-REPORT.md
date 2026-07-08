@@ -176,7 +176,7 @@ server {
 }
 ```
 
-## 🧪 Тестирование и валидация
+## Тестирование и валидация
 
 ### 1. Magic WAN туннель
 ```bash
@@ -275,7 +275,7 @@ sudo systemctl enable cloudflared
 - **Туннель статус:** `swanctl --list-sas`
 - **Логи:** nginx, strongSwan, CloudBridge Relay
 
-## 🚨 Аварийные процедуры
+## Аварийные процедуры
 
 ### 1. Отключение Magic WAN туннеля
 ```bash
@@ -291,7 +291,7 @@ ping -c 3 8.8.8.8
 ```bash
 #!/bin/bash
 # /usr/local/bin/emergency-disconnect.sh
-echo "🚨 Аварийное отключение Magic WAN туннеля..."
+echo "Аварийное отключение Magic WAN туннеля..."
 sudo swanctl --terminate --child magic-wan-child
 sudo swanctl --terminate --ike magic-wan-primary
 echo " Туннель отключен. Проверьте доступность интернета."

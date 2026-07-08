@@ -17,18 +17,18 @@
 
 ## **Структура репозиториев**
 
-### **🚀 1. QUIC-first + MASQUE (3 репозитория)**
+### **1. QUIC-first + MASQUE (3 репозитория)**
 - `masque-go` - CONNECT-UDP реализация
 - `connect-ip-go` - CONNECT-IP реализация  
 - `masquerade` - Rust альтернатива
 
-### **🌐 2. ICE/STUN/TURN + Метрики (4 репозитория)**
+### **2. ICE/STUN/TURN + Метрики (4 репозитория)**
 - `ice` - Pion ICE реализация
 - `stun` - Pion STUN протокол
 - `coturn` - TURN сервер с метриками
 - `go-stun` - Альтернативная STUN/TURN/ICE
 
-### **🔒 3. WireGuard (2 репозитория)**
+### **3. WireGuard (2 репозитория)**
 - `wireguard-go` - Userspace WireGuard
 - `wgctrl-go` - Управление WG интерфейсами
 

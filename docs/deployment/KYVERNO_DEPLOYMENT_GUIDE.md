@@ -2,7 +2,7 @@
 
 **Date**: 2025-10-13
 **Status**: Ready for deployment
-**Priority**: 🔴 **CRITICAL - Week 1**
+**Priority**: **CRITICAL - Week 1**
 
 ---
 
@@ -261,7 +261,7 @@ spec:
       image: unsigned-image:latest
 ```
 
-⚠️ **WARNING**: Only use in emergencies. Requires approval.
+**WARNING**: Only use in emergencies. Requires approval.
 
 ### Namespace Exclusions
 

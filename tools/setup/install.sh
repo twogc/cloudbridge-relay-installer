@@ -313,7 +313,7 @@ main() {
 
   verify_installation
 
-  echo -e "\n${GREEN}🎉 Установка завершена успешно!${NC}\n"
+  echo -e "\n${GREEN}Установка завершена успешно!${NC}\n"
   echo -e "${BLUE}Управление:${NC}
   • systemctl start|stop|status cloudbridge-relay
   • journalctl -u cloudbridge-relay -f"

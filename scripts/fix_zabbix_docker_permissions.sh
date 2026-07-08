@@ -15,22 +15,22 @@ echo "🧪 Тестирование доступа к Docker..."
 if sudo -u zabbix docker ps >/dev/null 2>&1; then
     echo "Пользователь zabbix может получить доступ к Docker"
 else
-    echo "❌ Ошибка доступа к Docker для пользователя zabbix"
+    echo "Ошибка доступа к Docker для пользователя zabbix"
     echo "Попробуйте перезапустить систему или выполнить:"
     echo "   sudo systemctl restart zabbix-agent"
     exit 1
 fi
 
 # Проверяем права на Docker socket
-echo "🔍 Проверка прав на Docker socket..."
+echo "Проверка прав на Docker socket..."
 if [ -S /var/run/docker.sock ]; then
     echo "Текущие права на Docker socket:"
     ls -la /var/run/docker.sock
     echo ""
-    echo "👥 Группа docker:"
+    echo "Группа docker:"
     getent group docker
 else
-    echo "❌ Docker socket не найден"
+    echo "Docker socket не найден"
     exit 1
 fi
 

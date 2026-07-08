@@ -70,9 +70,9 @@ echo "✓ Port 32500 (Kubernetes NodePort) - NEW"
 echo
 
 echo "=== Current Issues ==="
-echo "❌ LoadBalancer still returns 503 Service Unavailable"
-echo "❌ Member health check may be failing"
-echo "❌ Possible VK Cloud LoadBalancer internal issues"
+echo "LoadBalancer still returns 503 Service Unavailable"
+echo "Member health check may be failing"
+echo "Possible VK Cloud LoadBalancer internal issues"
 echo
 
 echo "=== Recommended Actions ==="

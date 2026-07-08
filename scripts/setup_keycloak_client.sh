@@ -25,7 +25,7 @@ if echo "$ADMIN_TOKEN_RESPONSE" | grep -q "access_token"; then
     ADMIN_TOKEN=$(echo "$ADMIN_TOKEN_RESPONSE" | jq -r '.access_token')
     echo "Токен администратора получен"
 else
-    echo "❌ Не удалось получить токен администратора:"
+    echo "Не удалось получить токен администратора:"
     echo "$ADMIN_TOKEN_RESPONSE"
     echo ""
     echo "Попробуйте войти в Admin Console: $KEYCLOAK_URL/admin/"
@@ -59,7 +59,7 @@ if [ $? -eq 0 ]; then
     echo "Username: testuser"
     echo "Password: testpass123"
 else
-    echo "❌ Ошибка создания пользователя:"
+    echo "Ошибка создания пользователя:"
     echo "$USER_RESPONSE"
 fi
 
@@ -96,7 +96,7 @@ if [ $? -eq 0 ]; then
     CLIENT_SECRET=$(echo "$CLIENT_SECRET_RESPONSE" | jq -r '.value')
     echo "Client Secret: $CLIENT_SECRET"
 else
-    echo "❌ Ошибка создания клиента:"
+    echo "Ошибка создания клиента:"
     echo "$CLIENT_RESPONSE"
 fi
 
@@ -120,7 +120,7 @@ if echo "$TOKEN_RESPONSE" | grep -q "access_token"; then
     echo "Полный ответ:"
     echo "$TOKEN_RESPONSE" | jq .
 else
-    echo "❌ Ошибка получения токена:"
+    echo "Ошибка получения токена:"
     echo "$TOKEN_RESPONSE"
 fi
 

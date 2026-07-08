@@ -46,7 +46,7 @@ flag.BoolVar(&enableLeaderElection, "leader-elect", true, "...")
 -  NO Calico CRD integration
 -  Minimal configuration (only metrics/probe addresses)
 -  Leader election **disabled** by default (`--leader-elect` defaults to false)
-- ⚠️ Uses deprecated health check: `mgr.GetWebhookServer().StartedChecker()` (no webhook server!)
+- Uses deprecated health check: `mgr.GetWebhookServer().StartedChecker()` (no webhook server!)
 -  Missing production features
 
 **Problem with Health Checks**:
@@ -201,7 +201,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o tenant-policy-con
  **Correctly builds the full version** (cmd/tenant-policy-controller)
 
 **Dockerfile Features**:
-- ulti-stage build (golang:1.25.1-alpine → alpine:latest)
+- Multi-stage build (golang:1.25.12-alpine → alpine:latest)
 - on-root user (tenant-controller:1001)
 - inimal dependencies (ca-certificates, tzdata)
 - ealth check configured

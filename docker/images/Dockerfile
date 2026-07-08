@@ -3,7 +3,7 @@
 # =========================================================
 
 # ---------- Builder: Go binary ----------
-  FROM golang:1.25.1-bookworm AS builder
+  FROM golang:1.25.12-bookworm AS builder
 
   ENV CGO_ENABLED=1 GOOS=linux
   WORKDIR /app
@@ -31,7 +31,7 @@
   
   # ---------- (Optional) Builder: wireguard-go from GitHub mirror ----------
   # Используется только если WITH_WG_GO=true
-  FROM golang:1.25.1-bookworm AS wggo-builder
+  FROM golang:1.25.12-bookworm AS wggo-builder
   
   WORKDIR /tmp/wireguard-go
   RUN apt-get update && apt-get install -y --no-install-recommends \

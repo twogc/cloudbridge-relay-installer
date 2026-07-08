@@ -83,7 +83,7 @@ POST https://2gc.ru/api/zitadel/users
 - Migration complete
 ```
 
-## 🧪 Testing Status
+## Testing Status
 
 ### JWT Token Format
 - FC 7519 compliant (3 segments)

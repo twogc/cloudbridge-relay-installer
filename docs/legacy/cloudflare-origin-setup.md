@@ -245,7 +245,7 @@ sudo systemctl status nginx
 curl -k https://edge.2gc.ru/health
 ```
 
-## 🚨 Устранение неполадок
+## Устранение неполадок
 
 ### Проблема: "Connection refused"
 ```bash
@@ -335,5 +335,5 @@ ingress:
 3. Проверьте статус всех компонентов
 4. Обратитесь к документации Cloudflare
 
-**🎉 CloudBridge Relay готов к работе как Cloudflare Origin!**
+**CloudBridge Relay готов к работе как Cloudflare Origin!**
 

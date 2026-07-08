@@ -1,6 +1,6 @@
 module github.com/twogc/cloudbridge-relay-installer
 
-go 1.25.1
+go 1.25.12
 
 require (
 	github.com/containernetworking/cni v0.8.1

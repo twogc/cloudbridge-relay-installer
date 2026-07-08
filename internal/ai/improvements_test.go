@@ -285,7 +285,7 @@ func TestUserProfilePersistence(t *testing.T) {
 	assert.Len(t, profile1.LoginPatterns, 2)
 	assert.Equal(t, "/api/admin", profile2.AccessPatterns[0].Resource)
 
-	t.Logf("✅ Successfully persisted and loaded %d user profiles", len(ba2.UserProfiles))
+	t.Logf("Successfully persisted and loaded %d user profiles", len(ba2.UserProfiles))
 }
 
 // TestConcurrentProfileAccess проверяет thread-safety
@@ -347,7 +347,7 @@ func TestConcurrentProfileAccess(t *testing.T) {
 	assert.Greater(t, profileCount, 0, "Should have created profiles")
 	assert.LessOrEqual(t, profileCount, 26, "Should have at most 26 profiles (A-Z)")
 
-	t.Logf("✅ Concurrent access test passed: created %d profiles without races", profileCount)
+	t.Logf("Concurrent access test passed: created %d profiles without races", profileCount)
 }
 
 // TestIntegrationP2PQUICEventType проверяет правильность типа события в P2P QUIC интеграции
@@ -373,7 +373,7 @@ func TestIntegrationP2PQUICEventType(t *testing.T) {
 	assert.NotNil(t, profile)
 	assert.Equal(t, userID, profile.UserID)
 
-	t.Logf("✅ P2P QUIC integration creates profile with correct user ID")
+	t.Logf("P2P QUIC integration creates profile with correct user ID")
 }
 
 // TestIntegrationQUICEventType проверяет правильность типа события в QUIC интеграции
@@ -399,7 +399,7 @@ func TestIntegrationQUICEventType(t *testing.T) {
 	assert.NotNil(t, profile)
 	assert.Equal(t, userID, profile.UserID)
 
-	t.Logf("✅ QUIC integration creates profile with correct user ID")
+	t.Logf("QUIC integration creates profile with correct user ID")
 }
 
 // BenchmarkEventParsingPerformance бенчмарк производительности парсинга

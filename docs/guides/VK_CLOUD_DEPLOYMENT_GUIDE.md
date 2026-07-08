@@ -345,7 +345,7 @@ helm install jaeger jaegertracing/jaeger \
 # Создание Dockerfile для CloudBridge Relay
 cat > docker/Dockerfile << 'EOF'
 # Multi-stage build for CloudBridge Relay with Enhanced Components
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 # Install build dependencies
 RUN apk update && apk add --no-cache git ca-certificates tzdata

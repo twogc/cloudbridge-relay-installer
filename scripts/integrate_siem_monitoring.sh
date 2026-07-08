@@ -866,9 +866,9 @@ main() {
     
     cat << EOF
 
-🎉 Интеграция завершена!
+Интеграция завершена!
 
-📊 Доступные дашборды:
+Доступные дашборды:
    - SIEM Events Dashboard: http://localhost:3000/d/siem-events
    - SIEM Alerts Dashboard: http://localhost:3000/d/siem-alerts  
    - SIEM Security Dashboard: http://localhost:3000/d/siem-security

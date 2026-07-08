@@ -27,13 +27,13 @@
 | `POST /api/v1/tenants/:tid/peers/:pid/heartbeat` | ES | Compatible | Via compatibility middleware |
 | `GET /api/v1/tenants/:tid/peers/:pid/ice-credentials` | ES | Compatible | Via compatibility middleware |
 | `GET /api/v1/tenants/:tid/peers/:pid/wireguard-config` | ES | Compatible | Via compatibility middleware |
-| `POST /api/v1/ice/candidates` | ⚠️ PARTIAL | Check needed | ICE handler exists |
-| `POST /api/v1/p2p/connect` | ⚠️ PARTIAL | Check needed | P2P handler exists |
-| `POST /api/v1/relay/connections/*` | ⚠️ PARTIAL | Check needed | Relay handlers exist |
+| `POST /api/v1/ice/candidates` | PARTIAL | Check needed | ICE handler exists |
+| `POST /api/v1/p2p/connect` | PARTIAL | Check needed | P2P handler exists |
+| `POST /api/v1/relay/connections/*` | PARTIAL | Check needed | Relay handlers exist |
 
 ### Legend:
 - *YES**: Fully supported and tested
-- ⚠️ **PARTIAL**: Handler exists, needs verification
+- **PARTIAL**: Handler exists, needs verification
 -  **NO**: Not implemented
 - **DEPRECATED**: Old format, use new API
 
@@ -175,7 +175,7 @@ $ go build -o bin/cloudbridge-client ./cmd/cloudbridge-client
  BUILD SUCCESSFUL
 Binary size: 25 MB
 Platform: darwin/arm64
-Go version: go1.25.1
+Go version: go1.25.12
 ```
 
 ### Client Version
@@ -189,7 +189,7 @@ Build Type:  unknown
 Build OS:    unknown
 Build Arch:  unknown
 Build Time:  unknown
-Go Version:  go1.25.1
+Go Version:  go1.25.12
 Go OS/Arch:  darwin/arm64
 ```
 
@@ -221,7 +221,7 @@ Available Commands:
 
 ---
 
-## 🧪 Testing Plan
+## Testing Plan
 
 ### Recommended Integration Tests
 
@@ -351,7 +351,7 @@ wireguard:
 
 ---
 
-## 🐛 Potential Issues & Mitigations
+## Potential Issues & Mitigations
 
 ### Issue 1: Port Mismatch
 
@@ -486,13 +486,13 @@ kubectl get pods -n cloudbridge -l app=turn-server
 
 ---
 
-## 💡 Recommendations
+## Recommendations
 
 ### Short-term (This Week)
 1. *No client changes needed** - Use as-is
 2. *Focus on server testing** - Verify all handlers work
 3. *Test compatibility layer** - Ensure middleware works correctly
-4. ⚠️ **Deploy TURN server** - Critical for NAT traversal
+4. **Deploy TURN server** - Critical for NAT traversal
 
 ### Medium-term (Next Month)
 1. **Update client to use native API paths** (optional)

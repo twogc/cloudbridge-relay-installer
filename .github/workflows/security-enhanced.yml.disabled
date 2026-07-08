@@ -1,4 +1,4 @@
-name: 🔒 Enhanced Security Scanning
+name: Enhanced Security Scanning
 
 on:
   push:
@@ -13,11 +13,11 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  GO_VERSION: '1.25'
+  GO_VERSION: '1.25.12'
 
 jobs:
   security-scan:
-    name: 🔒 Comprehensive Security Scan
+    name: Comprehensive Security Scan
     runs-on: ubuntu-latest
     
     steps:
@@ -59,9 +59,9 @@ jobs:
         # Install nancy for Go dependencies
         go install github.com/sonatype-nexus-community/nancy@latest
 
-    - name: 🔍 Run Trivy filesystem scan
+    - name: Run Trivy filesystem scan
       run: |
-        echo "🔍 Running Trivy filesystem scan..."
+        echo "Running Trivy filesystem scan..."
         mkdir -p security_reports
         
         # Scan filesystem for vulnerabilities
@@ -74,27 +74,27 @@ jobs:
           echo " Trivy found secrets, but continuing..."
         }
 
-    - name: 🔍 Run Trivy dependency scan
+    - name: Run Trivy dependency scan
       run: |
-        echo "🔍 Running Trivy dependency scan..."
+        echo "Running Trivy dependency scan..."
         
         # Scan Go dependencies
         trivy fs --scanners vuln --format json --output security_reports/trivy-deps-results.json . || {
           echo " Trivy found dependency issues, but continuing..."
         }
 
-    - name: 🔍 Run Gosec security scan
+    - name: Run Gosec security scan
       run: |
-        echo "🔍 Running Gosec security scan..."
+        echo "Running Gosec security scan..."
         
         # Run gosec for Go security
         gosec -fmt json -out security_reports/gosec-results.json ./... || {
           echo " gosec found issues, but continuing..."
         }
 
-    - name: 🔍 Run golangci-lint
+    - name: Run golangci-lint
       run: |
-        echo "🔍 Running golangci-lint..."
+        echo "Running golangci-lint..."
         export PATH=$PATH:$(go env GOPATH)/bin
         
         # Run golangci-lint with timeout
@@ -102,31 +102,31 @@ jobs:
           echo " golangci-lint found issues, but continuing..."
         }
 
-    - name: 🔍 Run Nancy dependency scan
+    - name: Run Nancy dependency scan
       run: |
-        echo "🔍 Running Nancy dependency scan..."
+        echo "Running Nancy dependency scan..."
         
         # Run nancy for dependency vulnerabilities
         go list -json -deps ./... | nancy sleuth --output json > security_reports/nancy-results.json || {
           echo " nancy found issues, but continuing..."
         }
 
-    - name: 🔍 Run Safety Python scan
+    - name: Run Safety Python scan
       run: |
-        echo "🔍 Running Safety Python scan..."
+        echo "Running Safety Python scan..."
         
         # Check for Python dependencies (if any)
         if [ -f "requirements.txt" ]; then
           safety check -r requirements.txt --json --output security_reports/python-security-results.json || true
         fi
 
-    - name: 📊 Generate security report
+    - name: Generate security report
       run: |
-        echo "📊 Generating comprehensive security report..."
+        echo "Generating comprehensive security report..."
         
         # Create markdown report
         cat > security_reports/security-report.md << 'EOF'
-        # 🔒 Security Scan Report
+        # Security Scan Report
         
         **Date:** $(date)
         **Repository:** ${{ github.repository }}
@@ -176,14 +176,14 @@ jobs:
 
     - name: 📢 Security scan summary
       run: |
-        echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Status:** Completed" >> $GITHUB_STEP_SUMMARY
         echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
         echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
         echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🔍 Scans Performed:" >> $GITHUB_STEP_SUMMARY
+        echo "### Scans Performed:" >> $GITHUB_STEP_SUMMARY
         echo "- Trivy filesystem scan" >> $GITHUB_STEP_SUMMARY
         echo "- Trivy secrets scan" >> $GITHUB_STEP_SUMMARY
         echo "- Trivy dependency scan" >> $GITHUB_STEP_SUMMARY
@@ -192,7 +192,7 @@ jobs:
         echo "- Nancy dependency scan" >> $GITHUB_STEP_SUMMARY
         echo "- Safety Python scan" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📊 Results:" >> $GITHUB_STEP_SUMMARY
+        echo "### Results:" >> $GITHUB_STEP_SUMMARY
         echo "Check the uploaded artifacts for detailed scan results." >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
@@ -213,7 +213,7 @@ jobs:
     - name: 🐳 Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: 🔐 Log in to Container Registry
+    - name: Log in to Container Registry
       uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
@@ -238,9 +238,9 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y trivy
 
-    - name: 🔍 Scan Docker image
+    - name: Scan Docker image
       run: |
-        echo "🔍 Scanning Docker image for vulnerabilities..."
+        echo "Scanning Docker image for vulnerabilities..."
         mkdir -p security_reports
         
         # Scan Docker image
@@ -264,5 +264,5 @@ jobs:
         echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
         echo "**Image:** cloudbridge-relay:security-test" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🔍 Scan Results:" >> $GITHUB_STEP_SUMMARY
+        echo "### Scan Results:" >> $GITHUB_STEP_SUMMARY
         echo "Check the uploaded artifacts for detailed Docker image scan results." >> $GITHUB_STEP_SUMMARY

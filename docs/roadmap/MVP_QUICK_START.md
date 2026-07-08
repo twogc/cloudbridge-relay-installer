@@ -35,8 +35,8 @@
 1. ubernetes cluster (VK Cloud или bare-metal)
 2. oadBalancer (для TURN server)
 3. itadel instance (для аутентификации)
-4. ⚠️ TLS сертификаты (можно self-signed для dev)
-5. ⚠️ PostgreSQL (для IPAM и AI)
+4. TLS сертификаты (можно self-signed для dev)
+5. PostgreSQL (для IPAM и AI)
 
 ### Что можно отложить:
 - ⏸️ Quantum Service (заглушка, не критично)
@@ -288,20 +288,20 @@ histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m]))
 
 ### Technical
 - [x] WT validation через JWKS
-- [ ] ⏳ TURN server deployed и работает
-- [ ] ⏳ NAT traversal success > 90%
-- [ ] ⏳ All services healthy
+- [ ] TURN server deployed и работает
+- [ ] NAT traversal success > 90%
+- [ ] All services healthy
 
 ### Functional
-- [ ] ⏳ Client может зарегистрироваться
-- [ ] ⏳ P2P connection через MASQUE
-- [ ] ⏳ TURN fallback работает
-- [ ] ⏳ Multi-tenancy изоляция
+- [ ] Client может зарегистрироваться
+- [ ] P2P connection через MASQUE
+- [ ] TURN fallback работает
+- [ ] Multi-tenancy изоляция
 
 ### Operational
 - [x] rometheus metrics экспортируются
 - [x] ogs структурированные
-- [ ] ⏳ Health checks работают
+- [ ] Health checks работают
 
 ---
 
@@ -341,6 +341,6 @@ histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m]))
 
 ---
 
-**Status**: 🟢 Ready for MVP deployment
+**Status**: Ready for MVP deployment
 **Last Updated**: 2025-10-13 23:50
 **Next Milestone**: Production TURN deployment

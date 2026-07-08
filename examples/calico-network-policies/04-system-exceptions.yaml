@@ -1,12 +1,12 @@
 # System Services Exceptions
-# ⚡ ЖЕЛЕЗОБЕТОННАЯ защита: разрешения для системных сервисов (DNS, kube-system)
+# ЖЕЛЕЗОБЕТОННАЯ защита: разрешения для системных сервисов (DNS, kube-system)
 ---
 apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: allow-system-services
 spec:
-  order: 50           # ⚡ Самый высокий приоритет для системных сервисов
+  order: 50           # Самый высокий приоритет для системных сервисов
   selector: has(tenant.cloudbridge.io/id)
   types: [Egress]
   egress:
@@ -23,14 +23,14 @@ spec:
       namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system"
       selector: k8s-app == "kube-dns"
     protocol: UDP
-    ports: [5353]  # ⚡ ИСПРАВЛЕНО: учитываем DNAT в некоторых дистрибутивах
+    ports: [5353]  # ИСПРАВЛЕНО: учитываем DNAT в некоторых дистрибутивах
   # CoreDNS поддержка
   - action: Allow
     destination:
       namespaceSelector: kubernetes.io/metadata.kubernetes.io/metadata.name == "kube-system" 
       selector: k8s-app == "coredns"
     protocol: UDP
-    ports: [53, 5353]  # ⚡ Оба порта для надежности
+    ports: [53, 5353]  # Оба порта для надежности
   # TCP DNS для больших запросов
   - action: Allow
     destination:

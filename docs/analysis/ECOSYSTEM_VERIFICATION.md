@@ -237,7 +237,7 @@ curl -u admin:admin http://grafana:3000/api/dashboards/uid/cloudbridge-overview
 
 ---
 
-## 🧪 Integration Test Results
+## Integration Test Results
 
 ### Test Suite 1: End-to-End Client Connection
 

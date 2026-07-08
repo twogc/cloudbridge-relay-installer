@@ -15,10 +15,10 @@
 - ort 443 is open on LoadBalancer (109.120.180.160)
 - ll domains are reachable on port 443
 
-### ⚠️ SSL Certificates
-- ⚠️ Self-signed wildcard certificate `*.2gc.ru` is properly configured
-- ⚠️ Certificate valid from Sep 28, 2025 to Sep 28, 2026
-- ⚠️ SSL termination is working on LoadBalancer
+### SSL Certificates
+- Self-signed wildcard certificate `*.2gc.ru` is properly configured
+- Certificate valid from Sep 28, 2025 to Sep 28, 2026
+- SSL termination is working on LoadBalancer
 
 ###  HTTP Endpoints
 -  All endpoints return **HTTP 503 Service Unavailable**

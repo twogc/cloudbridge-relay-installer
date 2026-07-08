@@ -11,11 +11,11 @@ ZABBIX_AGENT_CONFIG="/etc/zabbix/zabbix_agentd.conf"
 echo " Настройка Zabbix Agent для подключения к серверу $ZABBIX_SERVER_IP..."
 
 # Проверяем доступность Zabbix сервера
-echo "📡 Проверка доступности Zabbix сервера..."
+echo "Проверка доступности Zabbix сервера..."
 if ping -c 1 -W 5 "$ZABBIX_SERVER_IP" > /dev/null 2>&1; then
     echo "Zabbix сервер $ZABBIX_SERVER_IP доступен"
 else
-    echo "❌ Zabbix сервер $ZABBIX_SERVER_IP недоступен"
+    echo "Zabbix сервер $ZABBIX_SERVER_IP недоступен"
     echo "   Проверьте сетевую связность и настройки файрвола"
     exit 1
 fi
@@ -25,7 +25,7 @@ echo "🔌 Проверка порта Zabbix Agent (10050)..."
 if timeout 5 bash -c "</dev/tcp/$ZABBIX_SERVER_IP/10050" 2>/dev/null; then
     echo "Порт 10050 на $ZABBIX_SERVER_IP открыт"
 else
-    echo "❌ Порт 10050 на $ZABBIX_SERVER_IP недоступен"
+    echo "Порт 10050 на $ZABBIX_SERVER_IP недоступен"
     echo "   Убедитесь, что Zabbix Server запущен и слушает на порту 10050"
     exit 1
 fi
@@ -58,16 +58,16 @@ sudo pkill -f zabbix_agentd || true
 sleep 2
 
 # Запускаем Zabbix Agent как сервис
-echo "🚀 Запуск Zabbix Agent как сервис..."
+echo "Запуск Zabbix Agent как сервис..."
 sudo systemctl start zabbix-agent
 
 # Проверяем статус сервиса
-echo "📊 Проверка статуса Zabbix Agent..."
+echo "Проверка статуса Zabbix Agent..."
 if sudo systemctl is-active --quiet zabbix-agent; then
     echo "Zabbix Agent успешно запущен"
     sudo systemctl status zabbix-agent --no-pager
 else
-    echo "❌ Ошибка запуска Zabbix Agent"
+    echo "Ошибка запуска Zabbix Agent"
     sudo systemctl status zabbix-agent --no-pager
     echo "Логи Zabbix Agent:"
     sudo journalctl -u zabbix-agent --no-pager -n 20

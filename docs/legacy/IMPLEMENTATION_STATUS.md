@@ -69,12 +69,12 @@
 - крипты автоматизации: 5+ готовых скриптов
 - roubleshooting руководства
 
-## ⚠️ **ОСТАЕТСЯ ВЫПОЛНИТЬ** 
+## **ОСТАЕТСЯ ВЫПОЛНИТЬ** 
 
 ### 10. Acceptance Criteria (требуют admin прав)
-- ⏳ **Создание OIDC приложений** в ZITADEL (нужны права администратора)
-- ⏳ **Настройка custom scopes** через Management API  
-- ⏳ **Финальное тестирование** grpcurl и kubectl plugin
+- **Создание OIDC приложений** в ZITADEL (нужны права администратора)
+- **Настройка custom scopes** через Management API  
+- **Финальное тестирование** grpcurl и kubectl plugin
 
 ##  **ТЕКУЩАЯ СИТУАЦИЯ**
 
@@ -109,10 +109,10 @@
 ## **ГОТОВАЯ ИНФРАСТРУКТУРА**
 
 ### Доступные компоненты:
-- **🔐 ZITADEL**: https://edge.2gc.ru (полностью рабочий)
+- **ZITADEL**: https://edge.2gc.ru (полностью рабочий)
 - **☸️ Kubernetes**: namespace `cloudbridge` с RBAC и секретами
-- **🛡️ mTLS сертификаты**: готовы к использованию
-- **📊 Monitoring**: ServiceMonitor и Dashboard готовы
+- **mTLS сертификаты**: готовы к использованию
+- **Monitoring**: ServiceMonitor и Dashboard готовы
 - **📝 Документация**: полная и актуальная
 
 ### Готовые файлы:
@@ -169,7 +169,7 @@ docs/zitadel/GET_ADMIN_TOKEN.md
 | SSL/TLS | orking | 100% |
 | mTLS Certs | enerated | 100% |
 | RBAC Rules | reated | 100% |
-| API Integration | ⚠️ Needs Admin | 95% |
+| API Integration | Needs Admin | 95% |
 | Documentation | omplete | 100% |
 | Monitoring | eady | 100% |
 | **ОБЩИЙ ПРОГРЕСС** | ** Ready** | **98%** |

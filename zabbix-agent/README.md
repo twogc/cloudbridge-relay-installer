@@ -18,7 +18,7 @@
 Zabbix templates для импорта:
 - `cloudbridge-relay-with-zitadel.xml` - Полный template с Zitadel интеграцией
 
-## 🚀 Установка
+## Установка
 
 ### 1. Установить конфигурацию
 ```bash
@@ -43,7 +43,7 @@ sudo systemctl status zabbix-agent
 3. Import → Выбрать `templates/cloudbridge-relay-with-zitadel.xml`
 4. Import
 
-## 🧪 Тестирование
+## Тестирование
 
 ### Проверка UserParameters:
 ```bash
@@ -61,7 +61,7 @@ zabbix_get -s localhost -k ai.load_predictions
 zabbix_get -s localhost -k ai.routes_optimized
 ```
 
-## 📊 Источники данных (100% реальные)
+## Источники данных (100% реальные)
 
 ### Zitadel (100% API данные)
 - **Management API**: `https://edge.2gc.ru/management/v1`
@@ -90,12 +90,12 @@ ZITADEL_ADMIN_TOKEN="your-token-here"
 - AI Service: `192.168.49.2:30083`  
 - Zitadel: `127.0.0.1:8080` (через port-forward)
 
-## 🎯 Особенности
+## Особенности
 
-✅ **100% реальные данные** - никаких симуляций  
-✅ **Динамические значения** из живых систем  
-✅ **Graceful fallback** при недоступности источников  
-✅ **Безопасная аутентификация** через API токены
+**100% реальные данные** - никаких симуляций  
+**Динамические значения** из живых систем  
+**Graceful fallback** при недоступности источников  
+**Безопасная аутентификация** через API токены
 
 ## 🔧 Troubleshooting
 

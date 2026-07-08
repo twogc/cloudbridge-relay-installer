@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🚀 Скрипт миграции CloudBridge Relay в Kubernetes
+# Скрипт миграции CloudBridge Relay в Kubernetes
 # Автоматизация процесса миграции монолитного приложения в микросервисы
 
 set -e
@@ -353,7 +353,7 @@ create_dockerfiles() {
     
     # WireGuard Service Dockerfile
     cat > Dockerfile.wireguard << 'EOF'
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -374,7 +374,7 @@ EOF
 
     # QUIC Service Dockerfile
     cat > Dockerfile.quic << 'EOF'
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -395,7 +395,7 @@ EOF
 
     # Cadence Service Dockerfile
     cat > Dockerfile.cadence << 'EOF'
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -416,7 +416,7 @@ EOF
 
     # AI Service Dockerfile
     cat > Dockerfile.ai << 'EOF'
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -437,7 +437,7 @@ EOF
 
     # Quantum Service Dockerfile
     cat > Dockerfile.quantum << 'EOF'
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -1017,7 +1017,7 @@ main() {
     deploy_to_kubernetes
     verify_deployment
     
-    print_success "🎉 Миграция успешно завершена!"
+    print_success "Миграция успешно завершена!"
     echo ""
     echo "Следующие шаги:"
     echo "1. Настройте DNS для api.cloudbridge.local"

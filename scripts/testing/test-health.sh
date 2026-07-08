@@ -11,9 +11,9 @@ RELAY_PORT="${2:-3456}"
 TIMEOUT=10
 
 echo "🧪 Testing CloudBridge Relay health endpoint..."
-echo "📍 Host: $RELAY_HOST"
+echo "Host: $RELAY_HOST"
 echo "🔌 Port: $RELAY_PORT"
-echo "⏱️  Timeout: ${TIMEOUT}s"
+echo "Timeout: ${TIMEOUT}s"
 echo ""
 
 # Colors for output
@@ -32,7 +32,7 @@ print_status() {
             echo -e "${GREEN}$message${NC}"
             ;;
         "FAIL")
-            echo -e "${RED}❌ $message${NC}"
+            echo -e "${RED}$message${NC}"
             ;;
         "INFO")
             echo -e "${BLUE}ℹ️  $message${NC}"

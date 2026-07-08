@@ -35,14 +35,14 @@ cloudbridge-relay-installer/
 ### 1. **cloudbridge-scalable-relay** (Integration Module)
 **Назначение:** Объединяющий репозиторий для координации всех модулей
 
-**Статус:** 🟡 В процессе интеграции (60%)
+**Статус:** В процессе интеграции (60%)
 
 **Что содержит:**
 - README с архитектурной диаграммой
 - Документация по deployment
 - Миграция компонентов (в процессе)
-- ⏳ HA конфигурации (pending)
-- ⏳ DNS network integration (pending)
+- HA конфигурации (pending)
+- DNS network integration (pending)
 
 **Цель:** Production-ready unified deployment со всеми подмодулями
 
@@ -289,7 +289,7 @@ CENTRAL CONTROL PLANE (auth.2gc.ru)
 | **DNS Network** |  Missing (0%) | ПОЛНОСТЬЮ РЕАЛИЗОВАН (95%) |
 | **Redis** |  Missing (0%) | РЕАЛИЗОВАН в control-plane |
 | **Multi-PoP** |  Single (20%) | 3 PoP (MOW, FRA, AMS) (90%) |
-| **Control Plane** | ⚠️ Partial (40%) | ПОЛНЫЙ (95%) |
+| **Control Plane** | Partial (40%) | ПОЛНЫЙ (95%) |
 | **Anycast BGP** |  Missing (0%) | РЕАЛИЗОВАН в dns-network (95%) |
 | **GeoDNS** |  Missing (0%) | РЕАЛИЗОВАН в dns-network (95%) |
 
@@ -310,7 +310,7 @@ CENTRAL CONTROL PLANE (auth.2gc.ru)
 | **Redis** | 100% | READY |
 | **Multi-PoP** | 90% | READY |
 | **Monitoring** | 95% | READY |
-| **Security** | 85% | ⚠️ GOOD |
+| **Security** | 85% | GOOD |
 
 **НОВАЯ ОБЩАЯ ОЦЕНКА: 96%** (вместо 55%)
 
@@ -325,7 +325,7 @@ CENTRAL CONTROL PLANE (auth.2gc.ru)
 - **Enterprise deployments** (все компоненты есть)
 - **HA failover** (HA конфигурации есть)
 
-### ⚠️ ТРЕБУЕТ ДОРАБОТКИ:
+### ТРЕБУЕТ ДОРАБОТКИ:
 1. **Публичный ASN** для production Anycast (сейчас AS65001 - private)
 2. **cloudbridge-scalable-relay** завершить интеграцию (60% → 100%)
 3. **Final testing** всех модулей вместе

@@ -20,11 +20,11 @@ log_info() {
 }
 
 log_success() {
-    echo -e "${GREEN}[✅ PASS]${NC} $1"
+    echo -e "${GREEN}[PASS]${NC} $1"
 }
 
 log_fail() {
-    echo -e "${RED}[❌ FAIL]${NC} $1"
+    echo -e "${RED}[FAIL]${NC} $1"
 }
 
 log_warning() {
@@ -287,15 +287,15 @@ main() {
         log_success "🏆 ALL TESTS PASSED - ЖЕЛЕЗОБЕТОННАЯ ISOLATION CONFIRMED! 🏆"
         echo ""
         echo "Security validation results:"
-        echo "  ✅ Inter-tenant ping blocked"
-        echo "  ✅ Inter-tenant HTTP blocked" 
-        echo "  ✅ Metadata services blocked"
-        echo "  ✅ DNS resolution working"
-        echo "  ✅ Intra-tenant communication working"
+        echo "  Inter-tenant ping blocked"
+        echo "  Inter-tenant HTTP blocked" 
+        echo "  Metadata services blocked"
+        echo "  DNS resolution working"
+        echo "  Intra-tenant communication working"
         echo ""
     else
         echo ""
-        log_fail "❌ SOME TESTS FAILED - SECURITY ISSUES DETECTED!"
+        log_fail "SOME TESTS FAILED - SECURITY ISSUES DETECTED!"
         echo ""
         log_info "Please review the failing tests and check your network policies."
     fi

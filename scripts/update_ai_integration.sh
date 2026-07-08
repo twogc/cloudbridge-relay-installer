@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🚀 Обновление AI сервиса с интеграцией реальных данных..."
+echo "Обновление AI сервиса с интеграцией реальных данных..."
 
 # Переходим в директорию проекта
 cd /home/ubuntu/cloudbridge-relay-installer
@@ -15,7 +15,7 @@ kubectl scale deployment ai-service -n cloudbridge --replicas=0
 kubectl scale deployment ai-worker -n cloudbridge --replicas=0
 
 # Ждем завершения остановки
-echo "⏳ Ждем завершения остановки..."
+echo "Ждем завершения остановки..."
 kubectl wait --for=delete pod -l app.kubernetes.io/name=ai-service -n cloudbridge --timeout=60s
 kubectl wait --for=delete pod -l app.kubernetes.io/name=ai-worker -n cloudbridge --timeout=60s
 
@@ -24,7 +24,7 @@ echo "🔨 Собираем новый образ AI сервиса..."
 docker build -f Dockerfile.ai-service -t ai-service:latest .
 
 # Загружаем образ в Minikube
-echo "📦 Загружаем образ в Minikube..."
+echo "Загружаем образ в Minikube..."
 minikube image load ai-service:latest
 
 # Обновляем конфигурацию AI
@@ -37,7 +37,7 @@ kubectl scale deployment ai-service -n cloudbridge --replicas=2
 kubectl scale deployment ai-worker -n cloudbridge --replicas=2
 
 # Ждем готовности
-echo "⏳ Ждем готовности сервисов..."
+echo "Ждем готовности сервисов..."
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=ai-service -n cloudbridge --timeout=120s
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=ai-worker -n cloudbridge --timeout=120s
 
@@ -45,9 +45,9 @@ kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=ai-worker -n cl
 echo "Проверяем статус сервисов..."
 kubectl get pods -n cloudbridge | grep ai
 
-echo "🎉 AI сервис обновлен с интеграцией реальных данных!"
-echo "📊 Теперь AI будет получать реальные метрики от Relay сервера"
-echo "⏱️ Интервал обработки увеличен до 60 секунд"
+echo "AI сервис обновлен с интеграцией реальных данных!"
+echo "Теперь AI будет получать реальные метрики от Relay сервера"
+echo "Интервал обработки увеличен до 60 секунд"
 echo " Тестовый режим отключен"
 
 # Показываем логи

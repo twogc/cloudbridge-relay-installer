@@ -190,11 +190,11 @@ func (s *AIService) formatTelegramReport(report *AIReport) string {
     
     return fmt.Sprintf(`%s <b>Отчет системы CloudBridge AI</b>
 
-<b>📊 Статус системы:</b> %s (Оценка: %d/100)
+<b>Статус системы:</b> %s (Оценка: %d/100)
 <b>🕐 Время:</b> %s
 <b>🏷️ Namespace:</b> cloudbridge
 
-<b>📈 Ключевые метрики:</b>
+<b>Ключевые метрики:</b>
 • Обнаружено аномалий: %d
 • Сделано предсказаний: %d
 • Обработано запросов: %d
@@ -204,13 +204,13 @@ func (s *AIService) formatTelegramReport(report *AIReport) string {
 • Использование памяти: %.1f MB
 • Активные алерты: %d
 
-<b>🔍 AI Анализ:</b>
+<b>AI Анализ:</b>
 %s
 
-<b>⚠️ Выявленные проблемы:</b>
+<b>Выявленные проблемы:</b>
 %s
 
-<b>💡 Рекомендации:</b>
+<b> Рекомендации:</b>
 %s
 
 <b>🔮 Прогноз:</b>
@@ -242,10 +242,10 @@ func (s *AIService) formatTelegramReport(report *AIReport) string {
 
 func getStatusEmoji(status string) string {
     switch status {
-    case "excellent": return "🟢"
-    case "good": return "🟡"
+    case "excellent": return ""
+    case "good": return ""
     case "attention": return "🟠"
-    case "critical": return "🔴"
+    case "critical": return ""
     default: return "⚪"
     }
 }
@@ -339,13 +339,13 @@ func (s *AIService) generateLocalAnalysis(metrics MetricsData) *AIReport {
 ## Пример ожидаемого результата
 
 ```
-🟢 Отчет системы CloudBridge AI
+Отчет системы CloudBridge AI
 
-📊 Статус системы: excellent (Оценка: 95/100)
+Статус системы: excellent (Оценка: 95/100)
 🕐 Время: 2025-09-25 15:00:00 UTC
 🏷️ Namespace: cloudbridge
 
-📈 Ключевые метрики:
+Ключевые метрики:
 • Обнаружено аномалий: 27
 • Сделано предсказаний: 27
 • Обработано запросов: 27
@@ -355,16 +355,16 @@ func (s *AIService) generateLocalAnalysis(metrics MetricsData) *AIReport {
 • Использование памяти: 256.7 MB
 • Активные алерты: 0
 
-🔍 AI Анализ:
+AI Анализ:
 Система CloudBridge AI демонстрирует отличную производительность. 
 AI компоненты работают стабильно, обрабатывая 27 запросов с высокой точностью предсказаний (85.5%). 
 Обнаружение 27 аномалий указывает на активный мониторинг сетевой активности. 
 Низкое использование ресурсов (CPU: 12.3%, память: 256.7 MB) свидетельствует об эффективной работе.
 
-⚠️ Выявленные проблемы:
+Выявленные проблемы:
 • Точность предсказаний может быть улучшена до 90%+
 
-💡 Рекомендации:
+ Рекомендации:
 • Рассмотреть дополнительное обучение модели для повышения точности
 • Продолжить мониторинг аномалий для раннего выявления проблем
 • Оптимизировать алгоритмы для снижения времени обработки

@@ -98,7 +98,7 @@ check_existing_org() {
         cloudbridge_org=$(echo "$orgs_response" | jq -r '.result[]? | select(.name=="cloudbridge") | .id' 2>/dev/null)
         
         if [[ -n "$cloudbridge_org" && "$cloudbridge_org" != "null" ]]; then
-            log "✅ Организация 'cloudbridge' уже существует: $cloudbridge_org"
+            log "Организация 'cloudbridge' уже существует: $cloudbridge_org"
             echo "$cloudbridge_org"
             return 0
         fi
@@ -135,13 +135,13 @@ EOF
         local org_id
         org_id=$(echo "$body" | jq -r '.id // empty')
         if [[ -n "$org_id" ]]; then
-            log "✅ Организация '$ORG_NAME' создана успешно: $org_id"
+            log "Организация '$ORG_NAME' создана успешно: $org_id"
             echo "$org_id"
             return 0
         fi
     fi
     
-    error "❌ Ошибка создания организации: HTTP $http_code"
+    error "Ошибка создания организации: HTTP $http_code"
     error "Response: $body"
     return 1
 }
@@ -167,7 +167,7 @@ check_existing_project() {
         relay_project=$(echo "$projects_response" | jq -r '.result[]? | select(.name=="cloudbridge-relay") | .id' 2>/dev/null)
         
         if [[ -n "$relay_project" && "$relay_project" != "null" ]]; then
-            log "✅ Проект 'cloudbridge-relay' уже существует: $relay_project"
+            log "Проект 'cloudbridge-relay' уже существует: $relay_project"
             echo "$relay_project"
             return 0
         fi
@@ -207,13 +207,13 @@ EOF
         local project_id
         project_id=$(echo "$body" | jq -r '.id // empty')
         if [[ -n "$project_id" ]]; then
-            log "✅ Проект '$PROJECT_NAME' создан успешно: $project_id"
+            log "Проект '$PROJECT_NAME' создан успешно: $project_id"
             echo "$project_id"
             return 0
         fi
     fi
     
-    error "❌ Ошибка создания проекта: HTTP $http_code"
+    error "Ошибка создания проекта: HTTP $http_code"
     error "Response: $body"
     return 1
 }
@@ -276,7 +276,7 @@ EOF
         client_id=$(echo "$body" | jq -r '.client_id // empty')
         client_secret=$(echo "$body" | jq -r '.client_secret // empty')
         
-        log "✅ Back-channel приложение создано:"
+        log "Back-channel приложение создано:"
         log "   App ID: $app_id"
         log "   Client ID: $client_id"
         log "   Client Secret: $client_secret"
@@ -305,7 +305,7 @@ EOF
         return 0
     fi
     
-    error "❌ Ошибка создания Back-channel приложения: HTTP $http_code"
+    error "Ошибка создания Back-channel приложения: HTTP $http_code"
     error "Response: $body"
     return 1
 }
@@ -366,7 +366,7 @@ EOF
         app_id=$(echo "$body" | jq -r '.app_id // empty')
         client_id=$(echo "$body" | jq -r '.client_id // empty')
         
-        log "✅ Front-channel приложение создано:"
+        log "Front-channel приложение создано:"
         log "   App ID: $app_id"
         log "   Client ID: $client_id"
         
@@ -393,7 +393,7 @@ EOF
         return 0
     fi
     
-    error "❌ Ошибка создания Front-channel приложения: HTTP $http_code"
+    error "Ошибка создания Front-channel приложения: HTTP $http_code"
     error "Response: $body"
     return 1
 }
@@ -407,7 +407,7 @@ verify_setup() {
     
     # Обновление OIDC конфигурации
     if curl -k -s "$ZITADEL_API_URL/.well-known/openid-configuration" > "$PROJECT_ROOT/configs/updated-oidc-config.json"; then
-        log "✅ OIDC конфигурация обновлена"
+        log "OIDC конфигурация обновлена"
     fi
     
     # Создание сводного файла конфигурации
@@ -428,21 +428,21 @@ verify_setup() {
 }
 EOF
     
-    log "🎉 Базовая настройка CloudBridge ZITADEL завершена!"
+    log "Базовая настройка CloudBridge ZITADEL завершена!"
     log ""
-    log "📋 Созданные ресурсы:"
+    log "Созданные ресурсы:"
     log "   • Организация: $ORG_NAME ($org_id)"
     log "   • Проект: $PROJECT_NAME ($project_id)"
     log "   • Back-channel приложение: cloudbridge-relay-api"
     log "   • Front-channel приложение: cloudbridge-relay-ui"
     log ""
-    log "📄 Конфигурационные файлы:"
+    log " Конфигурационные файлы:"
     log "   • configs/cloudbridge-zitadel-setup.json - основная конфигурация"
     log "   • configs/backend-app-config.json - настройки API приложения"
     log "   • configs/frontend-app-config.json - настройки UI приложения"
     log "   • configs/updated-oidc-config.json - обновленная OIDC конфигурация"
     log ""
-    log "🔗 Полезные ссылки:"
+    log "Полезные ссылки:"
     log "   • ZITADEL Console: $ZITADEL_API_URL"
     log "   • OIDC Discovery: $ZITADEL_API_URL/.well-known/openid-configuration"
     log "   • JWKS: $ZITADEL_API_URL/oauth/v2/keys"
@@ -455,8 +455,8 @@ EOF
 
 # Основная функция
 main() {
-    log "🚀 Настройка CloudBridge ZITADEL Organization & Project"
-    log "📋 Конфигурация:"
+    log "Настройка CloudBridge ZITADEL Organization & Project"
+    log "Конфигурация:"
     log "   ZITADEL Domain: $ZITADEL_DOMAIN"
     log "   Organization: $ORG_NAME"
     log "   Project: $PROJECT_NAME"

@@ -108,7 +108,7 @@ associate_ip_to_anycast() {
         echo "IP адрес успешно привязан к Anycast IP"
         echo "$RESULT" | jq '.anycastip'
     else
-        echo "❌ Ошибка привязки:"
+        echo "Ошибка привязки:"
         echo "$RESULT"
     fi
 }
@@ -132,7 +132,7 @@ disassociate_ip_from_anycast() {
         echo "IP адрес успешно отвязан от Anycast IP"
         echo "$RESULT" | jq '.anycastip'
     else
-        echo "❌ Ошибка отвязки:"
+        echo "Ошибка отвязки:"
         echo "$RESULT"
     fi
 }
@@ -161,7 +161,7 @@ add_healthcheck() {
         echo "Healthcheck успешно добавлен"
         echo "$RESULT" | jq '.healthcheck'
     else
-        echo "❌ Ошибка добавления healthcheck:"
+        echo "Ошибка добавления healthcheck:"
         echo "$RESULT"
     fi
 }
@@ -210,20 +210,20 @@ check_anycast_status() {
             echo "Healthcheck не настроен"
         fi
     else
-        echo "❌ Anycast IP не найден"
+        echo "Anycast IP не найден"
     fi
 }
 
 # Функция для автоматической настройки Anycast IP для CloudBridge Relay
 setup_cloudbridge_anycast() {
-    echo "🚀 Автоматическая настройка Anycast IP для CloudBridge Relay..."
+    echo "Автоматическая настройка Anycast IP для CloudBridge Relay..."
     
     # Создаем Anycast IP
     echo "1. Создание Anycast IP..."
     ANYCAST_ID=$(create_anycast_ip "cloudbridge-relay-anycast" "Anycast IP для CloudBridge Relay - отказоустойчивая маршрутизация")
     
     if [ -z "$ANYCAST_ID" ]; then
-        echo "❌ Ошибка создания Anycast IP"
+        echo "Ошибка создания Anycast IP"
         exit 1
     fi
     
@@ -239,7 +239,7 @@ setup_cloudbridge_anycast() {
     
     echo ""
     echo "Anycast IP настроен!"
-    echo "📍 ID: $ANYCAST_ID"
+    echo "ID: $ANYCAST_ID"
     echo ""
     echo " Для привязки IP адресов используйте:"
     echo "   ./anycast-api.sh associate $ANYCAST_ID <port_id>"

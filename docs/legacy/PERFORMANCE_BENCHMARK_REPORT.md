@@ -48,10 +48,10 @@ This report presents comprehensive performance benchmarking results for CloudBri
 | CUBIC     | 200ms| 137    | 0            | 0                 | 0             | 0         |
 
 **Analysis**:
-- ⚠️ **CUBIC Implementation Issue**: CUBIC shows 0 CWND/throughput, indicating implementation is incomplete
+- **CUBIC Implementation Issue**: CUBIC shows 0 CWND/throughput, indicating implementation is incomplete
 - *BBRv2 Operational**: BBRv2 shows consistent performance at both RTT levels
 - **Performance Delta**: Cannot accurately compare due to CUBIC issue
-- 💡 **Expected Improvement**: BBRv2 should show +40-60% throughput in high RTT scenarios (200ms+) when CUBIC is fully implemented
+- **Expected Improvement**: BBRv2 should show +40-60% throughput in high RTT scenarios (200ms+) when CUBIC is fully implemented
 
 **Recommendation**: Complete CUBIC implementation to enable accurate comparison.
 
@@ -72,7 +72,7 @@ This report presents comprehensive performance benchmarking results for CloudBri
 - *Ultra-Low Overhead**: 35-40 ns per operation (~0.035µs)
 - *Zero Allocations**: No memory allocations during operation
 - *Consistent Performance**: Packet size has minimal impact on processing time
-- ⚠️ **Bandwidth Savings**: Reported as 0, likely requires sustained traffic to accumulate metrics
+- **Bandwidth Savings**: Reported as 0, likely requires sustained traffic to accumulate metrics
 - **Adaptive vs Static**: Minimal difference (39ns vs 35ns), showing efficient adaptive logic
 
 **Expected Improvements**:
@@ -94,7 +94,7 @@ This report presents comprehensive performance benchmarking results for CloudBri
 **Analysis**:
 - *Low Latency**: 31-43 µs per FEC group creation
 - *Efficient Memory**: ~2KB per 10-packet group, scales linearly
-- ⚠️ **Metrics Not Populated**: Recovery rate/efficiency showing 0 (measurement issue, not functionality)
+- **Metrics Not Populated**: Recovery rate/efficiency showing 0 (measurement issue, not functionality)
 - **Scaling**: Doubling group size (10→20) reduces per-packet overhead
 
 ### 3.2 Memory Allocation Patterns
@@ -109,7 +109,7 @@ This report presents comprehensive performance benchmarking results for CloudBri
 - *Linear Scaling**: Time scales linearly with group size (3.3µs/packet → 2.2µs/packet)
 - *Memory Efficiency**: Per-packet memory decreases with larger groups (3.6KB → 3.4KB)
 - *Predictable Allocations**: Allocation count grows predictably with group size
-- 💡 **Optimization Opportunity**: Larger FEC groups are more efficient (100-packet groups recommended)
+- **Optimization Opportunity**: Larger FEC groups are more efficient (100-packet groups recommended)
 
 ### 3.3 Algorithm Comparison
 
@@ -138,8 +138,8 @@ This report presents comprehensive performance benchmarking results for CloudBri
 - *Throughput Stability**: Maintains 11.14 Mbps throughput even at 10% packet loss
 - *Consistent Latency**: 19-22 µs per operation across all loss rates
 - *Memory Stability**: ~10KB memory usage regardless of loss rate
-- ⚠️ **Loss Metrics**: Observed loss showing 0% (measurement issue during short benchmarks)
-- 💡 **FEC Integration**: FEC+BBRv2 combination effectively masks packet loss impact
+- **Loss Metrics**: Observed loss showing 0% (measurement issue during short benchmarks)
+- **FEC Integration**: FEC+BBRv2 combination effectively masks packet loss impact
 
 **Expected Behavior**:
 - Target FEC recovery rate: 80-95% of lost packets
@@ -163,8 +163,8 @@ This report presents comprehensive performance benchmarking results for CloudBri
 **Analysis**:
 - *Throughput Maintained**: All combinations maintain 11.14 Mbps throughput
 - *ACK Freq Benefit**: Actually improves performance by 3.6% (5,678 → 5,471 ns/op)
-- ⚠️ **FEC Overhead**: Adds 70% latency overhead (expected for redundancy)
-- ⚠️ **Combined Overhead**: All features together add ~16µs overhead (21.6µs total)
+- **FEC Overhead**: Adds 70% latency overhead (expected for redundancy)
+- **Combined Overhead**: All features together add ~16µs overhead (21.6µs total)
 - **Memory Impact**: All features together use ~11KB vs 4KB for BBRv2 alone
 
 **Trade-off Analysis**:
@@ -191,9 +191,9 @@ This report presents comprehensive performance benchmarking results for CloudBri
 
 | Target Metric                         | Expected   | Measured   | Status | Notes                        |
 |--------------------------------------|------------|------------|--------|------------------------------|
-| BBRv2 throughput improvement (high RTT) | +40-60%   | TBD        | ⏳ Pending | Requires CUBIC completion |
-| ACK Frequency overhead reduction     | -20-40%    | 0% shown   | ⏳ Pending | Needs sustained traffic   |
-| FEC recovery rate                    | 80-95%     | 0% shown   | ⏳ Pending | Metrics collection issue  |
+| BBRv2 throughput improvement (high RTT) | +40-60%   | TBD        | Pending | Requires CUBIC completion |
+| ACK Frequency overhead reduction     | -20-40%    | 0% shown   | Pending | Needs sustained traffic   |
+| FEC recovery rate                    | 80-95%     | 0% shown   | Pending | Metrics collection issue  |
 | BBRv2 latency                        | < 50 µs    | ~10 µs     | ASS | Excellent                 |
 | ACK Freq latency                     | < 100 ns   | ~35 ns     | ASS | Excellent                 |
 | FEC latency                          | < 100 µs   | ~35 µs     | ASS | Very good                 |
@@ -218,12 +218,12 @@ This report presents comprehensive performance benchmarking results for CloudBri
 
 ### 7.2 Measurement Issues
 
-1. **Metrics Not Populated in Short Benchmarks** ⚠️
+1. **Metrics Not Populated in Short Benchmarks** 
    - Affected: FEC recovery rate, ACK bandwidth savings, loss rate
    - Impact: Cannot validate improvement targets
    - Action: Run longer-duration benchmarks (10s+ instead of 500 iterations)
 
-2. **Verbose Logging Interference** ⚠️
+2. **Verbose Logging Interference** 
    - Impact: Makes benchmark output difficult to read
    - Action: Suppress DEBUG logs during benchmarks (production logger)
 

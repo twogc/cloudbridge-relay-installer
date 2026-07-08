@@ -1,10 +1,10 @@
 # 🔧 MASQUE Architecture Fixes
 
-## ❌ **Критические проблемы в текущем коде**
+## **Критические проблемы в текущем коде**
 
 ### 1. **Неправильная архитектура серверов**
 ```go
-// ❌ НЕПРАВИЛЬНО - один сервер для всех протоколов
+// НЕПРАВИЛЬНО - один сервер для всех протоколов
 http3Server := &http3.Server{
     Handler: createHTTPHandler(), // Смешивает H3 и H2/H1
 }
@@ -12,7 +12,7 @@ http3Server := &http3.Server{
 
 ### 2. **Неправильный TLS конфиг**
 ```go
-// ❌ НЕПРАВИЛЬНО - TLS 1.2 + ручные cipher suites
+// НЕПРАВИЛЬНО - TLS 1.2 + ручные cipher suites
 tlsConfig := &tls.Config{
     MinVersion: tls.VersionTLS12,
     CipherSuites: []uint16{...}, // Не нужно для TLS 1.3
@@ -22,11 +22,11 @@ tlsConfig := &tls.Config{
 
 ### 3. **Неправильный CONNECT parsing**
 ```go
-// ❌ НЕПРАВИЛЬНО - парсинг из URL path
+// НЕПРАВИЛЬНО - парсинг из URL path
 target := r.URL.Path[len("/.well-known/masque/udp/"):]
 ```
 
-## ✅ **Правильная архитектура**
+## **Правильная архитектура**
 
 ### 1. **Разделение H3 (UDP) и H2/H1 (TCP) серверов**
 
@@ -76,7 +76,7 @@ tlsConfig := &tls.Config{
 ### 3. **Правильный CONNECT parsing**
 
 ```go
-// ✅ ПРАВИЛЬНО - CONNECT parsing из :authority
+// ПРАВИЛЬНО - CONNECT parsing из :authority
 func (ms *MASQUEServer) handleConnectUDP(w http.ResponseWriter, r *http.Request) {
     // RFC 9298: CONNECT-UDP target в :authority header
     target := r.Host // или r.Header.Get(":authority")
@@ -189,7 +189,7 @@ func (fm *FlowManager) RegisterFlow(streamID, contextID uint64, target string) *
 }
 ```
 
-## 🚀 **Итоговая архитектура**
+## **Итоговая архитектура**
 
 ### Серверы:
 1. **H3 Server (UDP/QUIC)** - порт 443, только H3/MASQUE + datagrams
@@ -210,7 +210,7 @@ func (fm *FlowManager) RegisterFlow(streamID, contextID uint64, target string) *
 - **WebSocket** для WS fallback
 - **Health checks** для мониторинга
 
-## 📊 **Ожидаемые результаты**
+## **Ожидаемые результаты**
 
 1. **99.9%** обход корпоративных прокси
 2. **100%** совместимость с MASQUE клиентами

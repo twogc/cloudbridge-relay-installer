@@ -9,7 +9,7 @@ echo " Установка WireGuard-go и зависимостей..."
 
 # Проверяем, что мы root или используем sudo
 if [[ $EUID -ne 0 ]]; then
-   echo "❌ Этот скрипт должен быть запущен с правами root (sudo)"
+   echo "Этот скрипт должен быть запущен с правами root (sudo)"
    exit 1
 fi
 
@@ -19,15 +19,15 @@ if [ -f /etc/os-release ]; then
     OS=$NAME
     VER=$VERSION_ID
 else
-    echo "❌ Не удалось определить дистрибутив"
+    echo "Не удалось определить дистрибутив"
     exit 1
 fi
 
-echo "📦 Дистрибутив: $OS $VER"
+echo "Дистрибутив: $OS $VER"
 
 # Установка зависимостей
 install_dependencies() {
-    echo "📦 Установка зависимостей..."
+    echo "Установка зависимостей..."
     
     case $OS in
         "Ubuntu"|"Debian GNU/Linux")
@@ -50,7 +50,7 @@ install_dependencies() {
                 wireguard-tools
             ;;
         *)
-            echo "❌ Неподдерживаемый дистрибутив: $OS"
+            echo "Неподдерживаемый дистрибутив: $OS"
             exit 1
             ;;
     esac
@@ -98,14 +98,14 @@ create_directories() {
 
 # Проверка установки
 verify_installation() {
-    echo "🔍 Проверка установки..."
+    echo "Проверка установки..."
     
     # Проверяем wireguard-go
     if command -v wireguard-go >/dev/null 2>&1; then
         echo "wireguard-go найден"
         wireguard-go --version
     else
-        echo "❌ wireguard-go не найден"
+        echo "wireguard-go не найден"
         exit 1
     fi
     
@@ -114,7 +114,7 @@ verify_installation() {
         echo "wg найден"
         wg version
     else
-        echo "❌ wg не найден"
+        echo "wg не найден"
         exit 1
     fi
     
@@ -122,7 +122,7 @@ verify_installation() {
     if command -v ip >/dev/null 2>&1; then
         echo "ip найден"
     else
-        echo "❌ ip не найден"
+        echo "ip не найден"
         exit 1
     fi
     
@@ -154,7 +154,7 @@ EOF
 
 # Основная функция
 main() {
-    echo "🚀 Начинаем установку WireGuard-go..."
+    echo "Начинаем установку WireGuard-go..."
     
     install_dependencies
     build_wireguard_go
@@ -163,7 +163,7 @@ main() {
     setup_systemd_service
     
     echo ""
-    echo "🎉 Установка завершена успешно!"
+    echo "Установка завершена успешно!"
     echo ""
     echo "Что было установлено:"
     echo "  • wireguard-go - пользовательская реализация WireGuard"

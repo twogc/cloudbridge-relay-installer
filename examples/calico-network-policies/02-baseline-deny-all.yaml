@@ -1,12 +1,12 @@
 # Baseline Security Policy - Deny All Inter-Tenant Traffic
-# ⚡ ЖЕЛЕЗОБЕТОННАЯ защита: default-deny для межтенантного трафика
+# ЖЕЛЕЗОБЕТОННАЯ защита: default-deny для межтенантного трафика
 ---
 apiVersion: crd.projectcalico.org/v1
 kind: GlobalNetworkPolicy
 metadata:
   name: deny-all-cross-tenant-baseline
 spec:
-  order: 100          # ⚡ Высокий приоритет для baseline deny
+  order: 100          # Высокий приоритет для baseline deny
   selector: has(tenant.cloudbridge.io/id)
   types: [Ingress, Egress]
   # По умолчанию deny все, исключения будут в отдельных политиках

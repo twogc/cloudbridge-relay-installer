@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Скрипт для проверки реальных метрик AI Service
-echo "🔍 ПРОВЕРКА РЕАЛЬНЫХ МЕТРИК AI SERVICE"
+echo "ПРОВЕРКА РЕАЛЬНЫХ МЕТРИК AI SERVICE"
 echo "======================================"
 
 MINIKUBE_IP=$(minikube ip)
@@ -14,7 +14,7 @@ check_metric() {
     local prometheus_name="$2"
     local api_endpoint="$3"
     
-    echo "📊 Проверка: $name"
+    echo "Проверка: $name"
     echo "Prometheus: $prometheus_name"
     
     # Получаем значение из Prometheus
@@ -54,7 +54,7 @@ echo " ДОПОЛНИТЕЛЬНЫЕ МЕТРИКИ"
 echo "========================="
 
 # Проверяем точность предсказаний
-echo "🎯 Route Optimization Accuracy:"
+echo "Route Optimization Accuracy:"
 accuracy=$(curl -s "http://$MINIKUBE_IP:30083/metrics" | grep "ai_prediction_accuracy" | awk '{print $2}' | head -1)
 echo "  Значение: $accuracy"
 if [ "$accuracy" != "0" ] && [ "$accuracy" != "" ]; then
@@ -65,7 +65,7 @@ fi
 echo ""
 
 # Проверяем время обработки
-echo "⏱️  AI Processing Time:"
+echo "AI Processing Time:"
 processing_time=$(curl -s "http://$MINIKUBE_IP:30083/metrics" | grep "ai_processing_time" | awk '{print $2}' | head -1)
 echo "  Значение: $processing_time ms"
 if [ "$processing_time" != "0" ] && [ "$processing_time" != "" ]; then
@@ -84,13 +84,13 @@ echo "  Memory Usage: $memory_usage bytes"
 echo ""
 
 # Проверяем статус AI Service
-echo "🔍 AI Service Status:"
+echo "AI Service Status:"
 status=$(curl -s "http://$MINIKUBE_IP:30083/api/v1/ai/status" | jq -r '.status' 2>/dev/null)
 echo "  Status: $status"
 if [ "$status" = "running" ]; then
     echo "  СЕРВИС РАБОТАЕТ"
 else
-    echo "  ❌ СЕРВИС НЕ РАБОТАЕТ"
+    echo "  СЕРВИС НЕ РАБОТАЕТ"
 fi
 echo ""
 
@@ -113,7 +113,7 @@ fi
 echo ""
 
 # Итоговый отчет
-echo "📊 ИТОГОВЫЙ ОТЧЕТ"
+echo "ИТОГОВЫЙ ОТЧЕТ"
 echo "=================="
 
 total_metrics=0
@@ -133,15 +133,15 @@ echo "Реальных метрик: $real_metrics"
 echo "Процент реальных данных: $((real_metrics * 100 / total_metrics))%"
 
 if [ "$real_metrics" -eq "$total_metrics" ]; then
-    echo "🎉 ВСЕ МЕТРИКИ СОДЕРЖАТ РЕАЛЬНЫЕ ДАННЫЕ!"
+    echo "ВСЕ МЕТРИКИ СОДЕРЖАТ РЕАЛЬНЫЕ ДАННЫЕ!"
 elif [ "$real_metrics" -gt 0 ]; then
     echo "ЧАСТИЧНО РЕАЛЬНЫЕ ДАННЫЕ"
 else
-    echo "❌ НЕТ РЕАЛЬНЫХ ДАННЫХ"
+    echo "НЕТ РЕАЛЬНЫХ ДАННЫХ"
 fi
 
 echo ""
-echo "🔍 ДЕТАЛЬНАЯ ПРОВЕРКА ИСТОЧНИКОВ ДАННЫХ"
+echo "ДЕТАЛЬНАЯ ПРОВЕРКА ИСТОЧНИКОВ ДАННЫХ"
 echo "======================================="
 
 # Проверяем, откуда берутся данные

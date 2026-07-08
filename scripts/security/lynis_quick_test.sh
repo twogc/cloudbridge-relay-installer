@@ -124,7 +124,7 @@ quick_lynis_test() {
         if sudo ufw status | grep -q "51820/udp.*ALLOW"; then
             wireguard_port_status="WireGuard порт 51820/udp открыт"
         else
-            wireguard_port_status="❌ WireGuard порт 51820/udp НЕ открыт"
+            wireguard_port_status="WireGuard порт 51820/udp НЕ открыт"
         fi
         
         # Формируем сообщение

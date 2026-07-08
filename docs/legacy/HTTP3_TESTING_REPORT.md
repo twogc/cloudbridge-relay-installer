@@ -23,7 +23,7 @@
 
 ### 3. Успешное тестирование MASQUE сервера
 
-#### 🟢 Health Endpoint
+#### Health Endpoint
 ```
 URL: https://192.168.49.2:30443/health
 Статус: 200 OK
@@ -35,7 +35,7 @@ URL: https://192.168.49.2:30443/health
 }
 ```
 
-#### 🟢 MASQUE Endpoints
+#### MASQUE Endpoints
 ```
 URL: https://192.168.49.2:30443/.well-known/masque/udp/
 Статус: 405 Method Not Allowed (ожидаемо для GET запроса)

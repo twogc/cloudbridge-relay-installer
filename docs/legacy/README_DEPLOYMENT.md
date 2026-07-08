@@ -192,7 +192,7 @@ kubectl scale deployment cloudbridge-relay --replicas=5 -n cloudbridge
 kubectl set image deployment/cloudbridge-relay cloudbridge-relay=localhost:5000/cloudbridge-relay:v2.0 -n cloudbridge
 ```
 
-## 🚨 Устранение неполадок
+## Устранение неполадок
 
 ### Проблема: Pod в состоянии ImagePullBackOff
 

@@ -8,7 +8,7 @@ echo "🔄 Обновление ai_metrics_collector.sh..."
 
 # Проверяем, что файл существует
 if [ ! -f "scripts/ai_metrics_collector.sh" ]; then
-    echo "❌ Файл scripts/ai_metrics_collector.sh не найден"
+    echo "Файл scripts/ai_metrics_collector.sh не найден"
     exit 1
 fi
 
@@ -17,7 +17,7 @@ echo "Копирование файла в /usr/local/bin/..."
 sudo cp scripts/ai_metrics_collector.sh /usr/local/bin/ai_metrics_collector.sh
 
 # Устанавливаем правильные права
-echo "🔐 Установка прав доступа..."
+echo "Установка прав доступа..."
 sudo chown root:root /usr/local/bin/ai_metrics_collector.sh
 sudo chmod +x /usr/local/bin/ai_metrics_collector.sh
 
@@ -27,7 +27,7 @@ if [ -f "/usr/local/bin/ai_metrics_collector.sh" ]; then
     echo "Файл успешно обновлен в /usr/local/bin/"
     ls -la /usr/local/bin/ai_metrics_collector.sh
 else
-    echo "❌ Ошибка обновления файла"
+    echo "Ошибка обновления файла"
     exit 1
 fi
 
@@ -38,7 +38,7 @@ echo "   AI Health: $(/usr/local/bin/ai_metrics_collector.sh health)"
 echo "   Anomaly Detections: $(/usr/local/bin/ai_metrics_collector.sh anomaly_detections)"
 
 echo ""
-echo "🎉 Скрипт ai_metrics_collector.sh успешно обновлен!"
+echo "Скрипт ai_metrics_collector.sh успешно обновлен!"
 echo ""
 echo "Информация:"
 echo "   Исходный файл: scripts/ai_metrics_collector.sh"

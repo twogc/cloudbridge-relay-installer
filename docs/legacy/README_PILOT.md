@@ -48,7 +48,7 @@ curl -X POST -k https://edge.2gc.ru/api/v1/tenants/mesh-network-test/peers/regis
 - Серверы увидят друг друга в P2P mesh
 - Установится прямое P2P соединение
 
-## 🔑 JWT токены
+## JWT токены
 
 Токены уже встроены в конфигурации и действительны без ограничений по времени.
 
@@ -60,7 +60,7 @@ curl -X POST -k https://edge.2gc.ru/api/v1/tenants/mesh-network-test/peers/regis
 - **monitor.2gc.ru** - Мониторинг и метрики
 - **api.2gc.ru** - Общий API шлюз
 
-## ⚠️ Важно
+## Важно
 
 - Токены действительны без ограничений по времени
 - Внешний доступ работает через поддомены

@@ -30,7 +30,7 @@ log_test() {
         echo -e "${GREEN}PASS${NC} - $test_name: $message"
         PASSED_TESTS=$((PASSED_TESTS + 1))
     elif [ "$status" = "FAIL" ]; then
-        echo -e "${RED}❌ FAIL${NC} - $test_name: $message"
+        echo -e "${RED}FAIL${NC} - $test_name: $message"
         FAILED_TESTS=$((FAILED_TESTS + 1))
     elif [ "$status" = "WARN" ]; then
         echo -e "${YELLOW}  WARN${NC} - $test_name: $message"
@@ -90,7 +90,7 @@ check_post_response() {
     fi
 }
 
-echo -e "${CYAN}🔍 Этап 1: Проверка доступности сервисов${NC}"
+echo -e "${CYAN}Этап 1: Проверка доступности сервисов${NC}"
 echo "=============================================="
 
 # Проверка подов
@@ -118,7 +118,7 @@ else
     log_test "Cadence Pod" "FAIL" "Pod is not running"
 fi
 
-echo -e "\n${CYAN}🔍 Этап 2: Проверка портов и сервисов${NC}"
+echo -e "\n${CYAN}Этап 2: Проверка портов и сервисов${NC}"
 echo "=============================================="
 
 # Проверка сервисов
@@ -140,7 +140,7 @@ else
     log_test "Prometheus Service" "FAIL" "Service not found"
 fi
 
-echo -e "\n${CYAN}🔍 Этап 3: Проверка метрик CloudBridge Relay${NC}"
+echo -e "\n${CYAN}Этап 3: Проверка метрик CloudBridge Relay${NC}"
 echo "=================================================="
 
 # Пробрасываем порт CloudBridge Relay
@@ -163,7 +163,7 @@ if check_http_response "http://localhost:5551/metrics" "200" "CloudBridge Relay 
     fi
 fi
 
-echo -e "\n${CYAN}🔍 Этап 4: Проверка AI Service API${NC}"
+echo -e "\n${CYAN}Этап 4: Проверка AI Service API${NC}"
 echo "====================================="
 
 # Пробрасываем порт AI Service
@@ -200,7 +200,7 @@ if check_json_response "http://localhost:8080/api/v1/ai/status" "anomaly_detecto
     fi
 fi
 
-echo -e "\n${CYAN}🔍 Этап 5: Тестирование AI функций${NC}"
+echo -e "\n${CYAN}Этап 5: Тестирование AI функций${NC}"
 echo "====================================="
 
 # Тест обнаружения аномалий
@@ -255,7 +255,7 @@ if check_post_response "http://localhost:8080/api/v1/ai/optimize" "$route_data" 
     fi
 fi
 
-echo -e "\n${CYAN}🔍 Этап 6: Проверка Prometheus интеграции${NC}"
+echo -e "\n${CYAN}Этап 6: Проверка Prometheus интеграции${NC}"
 echo "============================================="
 
 # Пробрасываем порт Prometheus
@@ -272,7 +272,7 @@ if check_http_response "http://localhost:9090/api/v1/query?query=up" "200" "Prom
     fi
 fi
 
-echo -e "\n${CYAN}🔍 Этап 7: Проверка Cadence интеграции${NC}"
+echo -e "\n${CYAN}Этап 7: Проверка Cadence интеграции${NC}"
 echo "=========================================="
 
 # Пробрасываем порт Cadence
@@ -286,7 +286,7 @@ else
     log_test "Cadence Integration" "WARN" "Cadence health check failed"
 fi
 
-echo -e "\n${CYAN}🔍 Этап 8: Проверка логов${NC}"
+echo -e "\n${CYAN}Этап 8: Проверка логов${NC}"
 echo "============================="
 
 # Проверка логов AI Service
@@ -307,7 +307,7 @@ else
     log_test "CloudBridge Relay Logs" "PASS" "No critical errors in logs"
 fi
 
-echo -e "\n${CYAN}🔍 Этап 9: Проверка конфигурации${NC}"
+echo -e "\n${CYAN}Этап 9: Проверка конфигурации${NC}"
 echo "====================================="
 
 # Проверка AI конфигурации
@@ -337,7 +337,7 @@ else
     log_test "CloudBridge ConfigMap" "FAIL" "ConfigMap not found"
 fi
 
-echo -e "\n${PURPLE}📊 Итоговый отчет${NC}"
+echo -e "\n${PURPLE}Итоговый отчет${NC}"
 echo "=================="
 
 echo -e "${BLUE}Всего тестов:${NC} $TOTAL_TESTS"
@@ -350,11 +350,11 @@ if [ $TOTAL_TESTS -gt 0 ]; then
     echo -e "${CYAN}Процент успеха:${NC} $success_rate%"
     
     if [ $success_rate -ge 90 ]; then
-        echo -e "${GREEN}🎉 Отличный результат! Система готова к продакшн использованию.${NC}"
+        echo -e "${GREEN}Отличный результат! Система готова к продакшн использованию.${NC}"
     elif [ $success_rate -ge 75 ]; then
         echo -e "${YELLOW}  Хороший результат, но есть области для улучшения.${NC}"
     else
-        echo -e "${RED}❌ Требуется доработка системы.${NC}"
+        echo -e "${RED}Требуется доработка системы.${NC}"
     fi
 fi
 

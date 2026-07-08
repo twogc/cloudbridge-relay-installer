@@ -231,3 +231,6 @@ oss-repositories/
 # Allow cloudbridge-sdk to be tracked
 !oss-repositories/cloudbridge-sdk/
 k8s/secrets/*.yaml
+
+# VOLY control plane (local orchestration, not part of relay installer)
+voly/

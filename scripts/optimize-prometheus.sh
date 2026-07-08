@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🚀 Starting Prometheus optimization..."
+echo "Starting Prometheus optimization..."
 
 # Colors for output
 RED='\033[0;31m'

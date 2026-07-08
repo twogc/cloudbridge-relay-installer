@@ -1,8 +1,8 @@
-# 🔐 IPsec L3-туннель для Cloudflare Magic WAN
+# IPsec L3-туннель для Cloudflare Magic WAN
 
 Этот документ описывает правильную настройку L3-туннеля (IPsec IKEv2) для подключения к Cloudflare Magic WAN.
 
-## 🎯 Архитектура
+## Архитектура
 
 ```
 [CloudBridge Relay] ←→ [IPsec IKEv2 Tunnel] ←→ [Cloudflare Magic WAN]
@@ -11,11 +11,11 @@
 
 **Важно:** Magic WAN - это L3-сервис (IPsec/GRE), а не L7-туннель (cloudflared).
 
-## 📋 Необходимые параметры от Cloudflare
+## Необходимые параметры от Cloudflare
 
 Перед началом настройки получите от вашего TAM/SE Cloudflare:
 
-### 🔑 Обязательные параметры:
+### Обязательные параметры:
 - **CF_PEER_IP** - IP адрес Cloudflare endpoint для Magic WAN
 - **CF_PSK** - Pre-Shared Key для аутентификации
 - **LOCAL_PUBLIC_IP** - Ваш публичный IP адрес
@@ -26,7 +26,7 @@
 - **BGP параметры**: ASN, соседство (если используется BGP)
 - **Политики**: WAF, DDoS, фильтрация
 
-## 🚀 Быстрый старт
+## Быстрый старт
 
 ### 1. Установка переменных окружения
 
@@ -70,7 +70,7 @@ ufw allow esp
 ufw allow gre
 ```
 
-## 📊 Мониторинг и диагностика
+## Мониторинг и диагностика
 
 ### Проверка статуса туннеля:
 ```bash
@@ -93,7 +93,7 @@ kubectl exec -n cloudbridge-testing <pod-name> -- tail -f /var/log/strongswan.lo
 kubectl logs -n cloudbridge-testing <pod-name>
 ```
 
-## 🧪 Тестирование связности
+## Тестирование связности
 
 ### Базовые тесты:
 ```bash
@@ -113,7 +113,7 @@ kubectl exec -n cloudbridge-testing <pod-name> -- iperf3 -c iperf.he.net
 kubectl exec -n cloudbridge-testing <pod-name> -- mtr -r -c 5 8.8.8.8
 ```
 
-## 🔍 Устранение неполадок
+## Устранение неполадок
 
 ### Туннель не устанавливается:
 1. Проверьте параметры CF_PEER_IP, CF_PSK
@@ -131,7 +131,7 @@ kubectl exec -n cloudbridge-testing <pod-name> -- mtr -r -c 5 8.8.8.8
 2. Настройте сжатие (если нужно)
 3. Оптимизируйте параметры IKE/ESP
 
-## 📈 Настройка в Cloudflare Dashboard
+## Настройка в Cloudflare Dashboard
 
 После успешного установления туннеля:
 
@@ -140,7 +140,7 @@ kubectl exec -n cloudbridge-testing <pod-name> -- mtr -r -c 5 8.8.8.8
 3. **Policies** - настройте правила трафика
 4. **Analytics** - мониторьте статистику
 
-## 🔐 Безопасность
+## Безопасность
 
 - Используйте сильные PSK (минимум 32 символа)
 - Регулярно ротируйте ключи

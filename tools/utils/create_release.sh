@@ -8,7 +8,7 @@ set -e
 VERSION=${1:-$(date +v%Y.%m.%d)}
 DIST_DIR="dist"
 
-echo "🚀 Создание релиза CloudBridge Relay $VERSION"
+echo "Создание релиза CloudBridge Relay $VERSION"
 echo "============================================="
 
 # Очистка предыдущих сборок
@@ -16,14 +16,14 @@ rm -rf $DIST_DIR
 mkdir -p $DIST_DIR
 
 # Проверка зависимостей
-echo "📦 Проверка зависимостей..."
+echo "Проверка зависимостей..."
 if ! command -v go &> /dev/null; then
-    echo "❌ Go не установлен"
+    echo "Go не установлен"
     exit 1
 fi
 
 if ! command -v docker &> /dev/null; then
-    echo "❌ Docker не установлен"
+    echo "Docker не установлен"
     exit 1
 fi
 
@@ -32,7 +32,7 @@ echo "Зависимости проверены"
 # Запуск тестов
 echo "🧪 Запуск тестов..."
 make test || {
-    echo "❌ Тесты не прошли"
+    echo "Тесты не прошли"
     exit 1
 }
 echo "Тесты прошли успешно"
@@ -56,11 +56,11 @@ for platform in "${platforms[@]}"; do
         output_name="${output_name}.exe"
     fi
     
-    echo "  📦 Сборка для $os/$arch..."
+    echo "  Сборка для $os/$arch..."
     GOOS=$os GOARCH=$arch go build -ldflags "-X main.version=$VERSION" -o "$DIST_DIR/$output_name" ./cmd/relay
     
     if [ $? -ne 0 ]; then
-        echo "❌ Ошибка сборки для $os/$arch"
+        echo "Ошибка сборки для $os/$arch"
         exit 1
     fi
 done
@@ -68,7 +68,7 @@ done
 echo "Бинарные файлы собраны"
 
 # Создание архивов
-echo "📦 Создание архивов..."
+echo "Создание архивов..."
 cd $DIST_DIR
 
 for file in cloudbridge-relay-*; do
@@ -92,7 +92,7 @@ docker tag "twogc/cloudbridge-relay:$VERSION" "twogc/cloudbridge-relay:latest"
 echo "Docker образ собран"
 
 # Создание checksums
-echo "🔐 Создание checksums..."
+echo "Создание checksums..."
 cd $DIST_DIR
 sha256sum *.tar.gz *.zip > checksums.txt
 echo "Checksums созданы"
@@ -105,7 +105,7 @@ echo "Changelog сгенерирован"
 
 # Показ результатов
 echo ""
-echo "🎉 Релиз $VERSION готов!"
+echo "Релиз $VERSION готов!"
 echo "========================"
 echo ""
 echo "📁 Файлы релиза:"

@@ -6,9 +6,9 @@
 ```
 30080/TCP  - Main Server (5550)
 30081/TCP  - Metrics (5551) 
-32500/TCP  - P2P API (5552) ⭐ ОСНОВНОЙ
+32500/TCP  - P2P API (5552)  ОСНОВНОЙ
 30087/TCP  - HTTP API (5553)
-30302/UDP  - STUN Server (19302) ⭐ ОСНОВНОЙ
+30302/UDP  - STUN Server (19302)  ОСНОВНОЙ
 30090/UDP  - QUIC Transport (9090)
 30443/TCP  - MASQUE Proxy (8443)
 30092/UDP  - Enhanced QUIC (9092)

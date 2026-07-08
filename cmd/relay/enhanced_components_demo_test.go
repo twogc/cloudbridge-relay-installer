@@ -18,7 +18,7 @@ import (
 
 // Демонстрация использования улучшенных компонентов P2P QUIC сервера
 func main() {
-	fmt.Println("🚀 CloudBridge Relay - Enhanced Components Demo")
+	fmt.Println("CloudBridge Relay - Enhanced Components Demo")
 	fmt.Println("================================================")
 
 	// Создаем логгер
@@ -40,12 +40,12 @@ func main() {
 	demoStatelessResetManager(logger, cfg)
 
 	// Демонстрация ICE Support
-	fmt.Println("\n🌐 2. ICE/STUN Support Demo")
+	fmt.Println("\n2. ICE/STUN Support Demo")
 	fmt.Println("---------------------------")
 	demoICESupport(logger, cfg)
 
 	// Демонстрация MASQUE Support
-	fmt.Println("\n🔒 3. MASQUE Support Demo")
+	fmt.Println("\n3. MASQUE Support Demo")
 	fmt.Println("-------------------------")
 	demoMASQUESupport(logger, cfg)
 
@@ -83,7 +83,7 @@ func demoStatelessResetManager(logger *logger.Logger, cfg *config.Config) {
 
 	// Загружаем или генерируем ключ
 	if err := srm.LoadOrGenerateKey(); err != nil {
-		fmt.Printf("❌ Failed to load/generate key: %v\n", err)
+		fmt.Printf("Failed to load/generate key: %v\n", err)
 		return
 	}
 
@@ -96,7 +96,7 @@ func demoStatelessResetManager(logger *logger.Logger, cfg *config.Config) {
 
 	// Валидируем ключ
 	if err := srm.ValidateKey(); err != nil {
-		fmt.Printf("❌ Key validation failed: %v\n", err)
+		fmt.Printf("Key validation failed: %v\n", err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func demoICESupport(logger *logger.Logger, cfg *config.Config) {
 	// Создаем ICE поддержку
 	iceSupport, err := NewICESupport(logger, cfg)
 	if err != nil {
-		fmt.Printf("❌ Failed to create ICE support: %v\n", err)
+		fmt.Printf("Failed to create ICE support: %v\n", err)
 		return
 	}
 
@@ -118,7 +118,7 @@ func demoICESupport(logger *logger.Logger, cfg *config.Config) {
 	defer cancel()
 
 	if err := iceSupport.Start(ctx); err != nil {
-		fmt.Printf("❌ Failed to start ICE support: %v\n", err)
+		fmt.Printf("Failed to start ICE support: %v\n", err)
 		return
 	}
 
@@ -136,7 +136,7 @@ func demoICESupport(logger *logger.Logger, cfg *config.Config) {
 
 	// Закрываем ICE поддержку
 	if err := iceSupport.Close(); err != nil {
-		fmt.Printf("❌ Failed to close ICE support: %v\n", err)
+		fmt.Printf("Failed to close ICE support: %v\n", err)
 		return
 	}
 
@@ -151,7 +151,7 @@ func demoMASQUESupport(logger *logger.Logger, cfg *config.Config) {
 
 	// Запускаем MASQUE сервер
 	if err := masqueServer.Start(); err != nil {
-		fmt.Printf("❌ Failed to start MASQUE server: %v\n", err)
+		fmt.Printf("Failed to start MASQUE server: %v\n", err)
 		return
 	}
 
@@ -167,7 +167,7 @@ func demoMASQUESupport(logger *logger.Logger, cfg *config.Config) {
 
 	// Закрываем MASQUE сервер
 	if err := masqueServer.Close(); err != nil {
-		fmt.Printf("❌ Failed to close MASQUE server: %v\n", err)
+		fmt.Printf("Failed to close MASQUE server: %v\n", err)
 		return
 	}
 

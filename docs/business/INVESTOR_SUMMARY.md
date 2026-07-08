@@ -80,12 +80,12 @@ CloudBridge Relay использует новейшие интернет-про�
 
 | Параметр | CloudBridge | VPN | TeamViewer | Tailscale |
 |----------|-------------|-----|------------|-----------|
-| Скорость | ltra-fast (QUIC) |  Slow | ⚠️ Medium | Fat |
-| Приватность | 2E encryption | ⚠️ Varies |  Centralized | God |
-| Масштабируемость | ubernetes |  Limited |  Proprietary | ⚠️ Good |
-| Self-hosted | ull control | Posible |  SaaS only | ⚠️ Partial |
+| Скорость | ltra-fast (QUIC) |  Slow | Medium | Fat |
+| Приватность | 2E encryption | Varies |  Centralized | God |
+| Масштабируемость | ubernetes |  Limited |  Proprietary | Good |
+| Self-hosted | ull control | Posible |  SaaS only | Partial |
 | Multi-tenancy | ative |  No |  No |  No |
-| Стоимость | ow | ⚠️ Medium |  High | ⚠️ Medium |
+| Стоимость | ow | Medium |  High | Medium |
 
 ---
 
@@ -149,17 +149,17 @@ CloudBridge Relay использует новейшие интернет-про�
 
 ### Что осталось (3 задачи, 1 неделя работы)
 
-⏳ **Blocker #3: API Compatibility Layer** (2-3 дня)
+**Blocker #3: API Compatibility Layer** (2-3 дня)
 - REST API для legacy клиентов
 - Swagger documentation
 - Client SDK (Go, Python, TypeScript)
 
-⏳ **Deployment в production** (1-2 дня)
+**Deployment в production** (1-2 дня)
 - TURN server deployment
 - DNS настройка
 - TLS сертификаты (Let's Encrypt)
 
-⏳ **Load Testing** (1-2 дня)
+**Load Testing** (1-2 дня)
 - 100+ concurrent connections
 - Performance benchmarks
 - Stress testing
@@ -171,9 +171,9 @@ CloudBridge Relay использует новейшие интернет-про�
 ### Immediate (Next 1 week) - MVP Launch
 1. itadel JWKS Integration (completed)
 2. URN Server Automation (completed)
-3. ⏳ API Compatibility Layer
-4. ⏳ Production Deployment
-5. ⏳ Load Testing
+3. API Compatibility Layer
+4. Production Deployment
+5. Load Testing
 
 ### Short-term (1-3 months)
 1. Client SDK (Go, Python, TypeScript, Rust)

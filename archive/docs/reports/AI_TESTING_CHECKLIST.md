@@ -1,6 +1,6 @@
 # Чек-лист тестирования AI сервиса
 
-## 🚀 Быстрый старт
+## Быстрый старт
 
 ```bash
 cd /home/ubuntu/cloudbridge-relay-installer
@@ -114,7 +114,7 @@ kubectl exec -n cloudbridge deployment/ai-service -- nslookup cloudbridge-relay.
 kubectl exec -n cloudbridge deployment/ai-service -- nslookup prometheus.cloudbridge-monitoring.svc.cluster.local
 ```
 
-## 📊 Ожидаемые результаты
+## Ожидаемые результаты
 
 ### Успешный ответ AI Service
 ```json
@@ -148,7 +148,7 @@ kubectl exec -n cloudbridge deployment/ai-service -- nslookup prometheus.cloudbr
 }
 ```
 
-## 🎯 Критерии успеха
+## Критерии успеха
 
 - [ ] Все сервисы отвечают на health check
 - [ ] AI API возвращает корректные ответы
@@ -171,15 +171,15 @@ kubectl exec -n cloudbridge deployment/ai-service -- nslookup prometheus.cloudbr
 ## Результаты тестирования
 
 ### Сервисы
-- CloudBridge Relay: ✅/❌
-- AI Service: ✅/❌  
-- Prometheus: ✅/❌
-- Cadence: ✅/❌
+- CloudBridge Relay: /
+- AI Service: / 
+- Prometheus: /
+- Cadence: /
 
 ### API функции
-- Обнаружение аномалий: ✅/❌
-- Прогнозирование нагрузки: ✅/❌
-- Оптимизация маршрутов: ✅/❌
+- Обнаружение аномалий: /
+- Прогнозирование нагрузки: /
+- Оптимизация маршрутов: /
 
 ### Проблемы
 - [описание проблем]

@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}🚀 CloudBridge Relay Quick Test${NC}"
+echo -e "${BLUE}CloudBridge Relay Quick Test${NC}"
 echo "=================================="
 
 # Check prerequisites
@@ -19,25 +19,25 @@ echo -e "${YELLOW}Проверка требований...${NC}"
 
 # Check kubectl
 if ! command -v kubectl &> /dev/null; then
-    echo -e "${RED}❌ kubectl не найден${NC}"
+    echo -e "${RED}kubectl не найден${NC}"
     exit 1
 fi
-echo -e "${GREEN}✅ kubectl найден${NC}"
+echo -e "${GREEN}kubectl найден${NC}"
 
 # Check minikube  
 if ! minikube status &> /dev/null; then
-    echo -e "${RED}❌ minikube не запущен${NC}"
+    echo -e "${RED}minikube не запущен${NC}"
     echo "Запустите: minikube start --cpus=4 --memory=8192mb"
     exit 1
 fi
-echo -e "${GREEN}✅ minikube запущен${NC}"
+echo -e "${GREEN}minikube запущен${NC}"
 
 # Check docker
 if ! docker info &> /dev/null; then
-    echo -e "${RED}❌ Docker недоступен${NC}"
+    echo -e "${RED}Docker недоступен${NC}"
     exit 1
 fi
-echo -e "${GREEN}✅ Docker доступен${NC}"
+echo -e "${GREEN}Docker доступен${NC}"
 
 # Get minikube info
 MINIKUBE_IP=$(minikube ip)
@@ -54,13 +54,13 @@ echo -e "${YELLOW}Обновление конфигурации...${NC}"
 TEMP_CONFIG="/tmp/minikube-test-config.json"
 cp configs/minikube-example.json $TEMP_CONFIG
 sed -i "s/192.168.49.2:8443/$MINIKUBE_IP:$MINIKUBE_PORT/g" $TEMP_CONFIG
-echo -e "${GREEN}✅ Конфигурация обновлена${NC}"
+echo -e "${GREEN}Конфигурация обновлена${NC}"
 
 # Build Docker image
 echo -e "${YELLOW}Сборка Docker образа...${NC}"
 eval $(minikube docker-env)
 docker build -q -t cloudbridge-relay:test . 
-echo -e "${GREEN}✅ Образ собран: cloudbridge-relay:test${NC}"
+echo -e "${GREEN}Образ собран: cloudbridge-relay:test${NC}"
 
 # Deploy to minikube
 echo -e "${YELLOW}Развертывание в minikube...${NC}"
@@ -151,12 +151,12 @@ spec:
 EOF
 
 kubectl apply -f /tmp/quick-deploy.yaml
-echo -e "${GREEN}✅ Развертывание применено${NC}"
+echo -e "${GREEN}Развертывание применено${NC}"
 
 # Wait for pod to be ready
 echo -e "${YELLOW}Ожидание готовности pod...${NC}"
 kubectl wait --for=condition=ready pod -l app=cloudbridge-relay-test --timeout=120s
-echo -e "${GREEN}✅ Pod готов${NC}"
+echo -e "${GREEN}Pod готов${NC}"
 
 # Create test kubeconfig
 RELAY_URL="http://$MINIKUBE_IP:30444"
@@ -182,18 +182,18 @@ users:
   user: {}
 EOF
 
-echo -e "${GREEN}✅ Test kubeconfig создан${NC}"
+echo -e "${GREEN}Test kubeconfig создан${NC}"
 echo ""
 
 # Wait for relay to be fully ready
 echo -e "${YELLOW}Проверка доступности relay...${NC}"
 for i in {1..30}; do
     if curl -s $RELAY_URL/health > /dev/null; then
-        echo -e "${GREEN}✅ Relay доступен${NC}"
+        echo -e "${GREEN}Relay доступен${NC}"
         break
     fi
     if [ $i -eq 30 ]; then
-        echo -e "${RED}❌ Timeout ожидания готовности relay${NC}"
+        echo -e "${RED}Timeout ожидания готовности relay${NC}"
         kubectl logs deployment/cloudbridge-relay-test --tail=20
         exit 1
     fi
@@ -220,9 +220,9 @@ run_test() {
     echo -ne "${YELLOW}Тест $TOTAL_TESTS: $test_name... ${NC}"
     
     if eval "$test_command" > /tmp/test_output_$TOTAL_TESTS 2>&1; then
-        echo -e "${GREEN}✅ ПРОЙДЕН${NC}"
+        echo -e "${GREEN}ПРОЙДЕН${NC}"
     else
-        echo -e "${RED}❌ ПРОВАЛЕН${NC}"
+        echo -e "${RED}ПРОВАЛЕН${NC}"
         echo "  Вывод: $(cat /tmp/test_output_$TOTAL_TESTS | head -1)"
         FAILED_TESTS=$((FAILED_TESTS + 1))
     fi
@@ -244,7 +244,7 @@ run_test "Получение списка services" \
 echo -ne "${YELLOW}Создание тестового pod... ${NC}"
 kubectl --kubeconfig=$KUBECONFIG_TEST run test-pod-$$ \
     --image=busybox:1.35 --restart=Never -- sleep 300 > /dev/null 2>&1
-echo -e "${GREEN}✅ Создан${NC}"
+echo -e "${GREEN}Создан${NC}"
 
 # Wait for pod to start
 sleep 5
@@ -269,11 +269,11 @@ run_test "Prometheus метрики" \
 kubectl --kubeconfig=$KUBECONFIG_TEST delete pod test-pod-$$ --ignore-not-found=true > /dev/null 2>&1
 
 echo ""
-echo -e "${BLUE}📊 Результаты тестирования${NC}"
+echo -e "${BLUE}Результаты тестирования${NC}"
 echo "=========================="
 
 if [ $FAILED_TESTS -eq 0 ]; then
-    echo -e "${GREEN}🎉 Все тесты пройдены! ($TOTAL_TESTS/$TOTAL_TESTS)${NC}"
+    echo -e "${GREEN}Все тесты пройдены! ($TOTAL_TESTS/$TOTAL_TESTS)${NC}"
     echo ""
     echo -e "${BLUE}Полезная информация:${NC}"
     echo "  Relay URL: $RELAY_URL"
@@ -284,7 +284,7 @@ if [ $FAILED_TESTS -eq 0 ]; then
     
     # Show some metrics
     echo ""
-    echo -e "${BLUE}📈 Текущие метрики:${NC}"
+    echo -e "${BLUE}Текущие метрики:${NC}"
     curl -s $METRICS_URL/metrics | grep -E "kube_proxy_requests_total|kube_ws_" | head -5
     
     echo ""
@@ -294,7 +294,7 @@ if [ $FAILED_TESTS -eq 0 ]; then
     echo "  curl $METRICS_URL/metrics"
     
 else
-    echo -e "${RED}❌ Провалено тестов: $FAILED_TESTS/$TOTAL_TESTS${NC}"
+    echo -e "${RED}Провалено тестов: $FAILED_TESTS/$TOTAL_TESTS${NC}"
     echo ""
     echo -e "${YELLOW}Логи relay для отладки:${NC}"
     kubectl logs deployment/cloudbridge-relay-test --tail=20

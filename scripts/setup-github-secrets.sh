@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# 🔐 Настройка GitHub Secrets для автоматизации Docker Registry
+# Настройка GitHub Secrets для автоматизации Docker Registry
 # Автор: VK Cloud API Manager
 # Версия: 1.0.0
 
@@ -152,7 +152,7 @@ test_registry() {
 # Функция для вывода информации
 print_info() {
     echo ""
-    log_success "🎉 GitHub Secrets настроены!"
+    log_success "GitHub Secrets настроены!"
     echo ""
     echo "Настроенные секреты:"
     echo "   REGISTRY_IP       = $REGISTRY_IP"
@@ -165,7 +165,7 @@ print_info() {
     echo "   2. Проверьте доступность registry: http://$REGISTRY_IP:5000"
     echo "   3. Запустите GitHub Actions workflow"
     echo ""
-    echo "🚀 Команды для тестирования:"
+    echo "Команды для тестирования:"
     echo "   # Тест подключения к registry"
     echo "   curl -u $REGISTRY_USERNAME:$REGISTRY_PASSWORD http://$REGISTRY_IP:5000/v2/_catalog"
     echo ""
@@ -198,7 +198,7 @@ delete_secrets() {
 
 # Главная функция
 main() {
-    log_info "🔐 Настройка GitHub Secrets для VK Cloud Registry"
+    log_info "Настройка GitHub Secrets для VK Cloud Registry"
     
     check_dependencies
     check_github_cli

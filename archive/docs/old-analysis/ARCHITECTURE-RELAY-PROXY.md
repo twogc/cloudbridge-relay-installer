@@ -1,12 +1,12 @@
-# 🚀 CloudBridge Relay как передатчик - Архитектура
+# CloudBridge Relay как передатчик - Архитектура
 
-## 🎯 **Правильная архитектура (CloudBridge Relay как передатчик):**
+## **Правильная архитектура (CloudBridge Relay как передатчик):**
 
 ```
 [Cloudflared Clients] → [CloudBridge Relay:9090] → [Magic WAN туннель] → [Cloudflare] → [Origin Services]
 ```
 
-## 📋 **Как это работает:**
+## **Как это работает:**
 
 ### **1. Клиенты cloudflared подключаются к CloudBridge Relay:**
 - Клиенты настраивают cloudflared для подключения к `edge.2gc.ru:9090`
@@ -60,7 +60,7 @@ sudo swanctl --list-sas
 # magic-wan-primary: #1, ESTABLISHED, IKEv2
 ```
 
-## 🎯 **Преимущества:**
+## **Преимущества:**
 
 1. **Централизованное управление** - все клиенты подключаются к одному серверу
 2. **Безопасность** - Magic WAN туннель обеспечивает шифрование
@@ -68,7 +68,7 @@ sudo swanctl --list-sas
 4. **Мониторинг** - централизованный мониторинг всех подключений
 5. **Управление трафиком** - контроль и фильтрация трафика
 
-## 📊 **Поток данных:**
+## **Поток данных:**
 
 ```
 1. [Cloudflared Client] → [edge.2gc.ru:9090]
@@ -79,7 +79,7 @@ sudo swanctl --list-sas
 6. [Ответ] ← [Обратный путь]
 ```
 
-## 🔍 **Проверка работы:**
+## **Проверка работы:**
 
 ```bash
 # Проверка CloudBridge Relay
@@ -92,7 +92,7 @@ sudo swanctl --list-sas
 curl -k https://app.yourdomain.com
 ```
 
-## 🚀 **Готово к использованию:**
+## **Готово к использованию:**
 
 CloudBridge Relay готов принимать cloudflared клиентов на порту 9090 и перенаправлять их трафик через Magic WAN туннель к Cloudflare!
 

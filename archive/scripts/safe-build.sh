@@ -5,7 +5,7 @@ echo "=== БЕЗОПАСНАЯ СБОРКА В MINIKUBE ==="
 # 1. Проверяем нагрузку системы
 LOAD=$(uptime | awk -F'load average:' '{ print $2 }' | awk '{ print $1 }' | sed 's/,//')
 if (( $(echo "$LOAD > 2.0" | bc -l) )); then
-    echo "⚠️  Высокая нагрузка: $LOAD. Ждем снижения..."
+    echo " Высокая нагрузка: $LOAD. Ждем снижения..."
     while (( $(echo "$(uptime | awk -F'load average:' '{ print $2 }' | awk '{ print $1 }' | sed 's/,//') > 2.0" | bc -l) )); do
         sleep 10
     done
@@ -34,7 +34,7 @@ docker build \
   -f docker/images/Dockerfile.ai-analytics .
 
 if [ $? -eq 0 ]; then
-    echo "✅ Образ собран: $TAG"
+    echo "Образ собран: $TAG"
     echo "TAG=$TAG" > .last-build-tag
     
     # 7. Обновляем deployment
@@ -42,8 +42,8 @@ if [ $? -eq 0 ]; then
       ai-analytics=cloudbridge/ai-analytics:$TAG \
       -n cloudbridge
     
-    echo "✅ Deployment обновлен"
+    echo "Deployment обновлен"
 else
-    echo "❌ Ошибка сборки"
+    echo "Ошибка сборки"
     exit 1
 fi

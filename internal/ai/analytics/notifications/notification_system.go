@@ -198,7 +198,7 @@ func (n *NotificationSystem) sendSlackNotification(report *analytics.Report) err
 
 	// Добавление инсайтов
 	if len(report.Analysis.Insights) > 0 {
-		insightsText := "*🔍 Ключевые инсайты:*\n"
+		insightsText := "*Ключевые инсайты:*\n"
 		for _, insight := range report.Analysis.Insights {
 			insightsText += fmt.Sprintf("• %s\n", insight)
 		}
@@ -250,7 +250,7 @@ func (n *NotificationSystem) sendSlackNotification(report *analytics.Report) err
 			"type": "section",
 			"text": map[string]interface{}{
 				"type": "mrkdwn",
-				"text": fmt.Sprintf("*📊 Производительность:* %s", report.Analysis.Performance),
+				"text": fmt.Sprintf("*Производительность:* %s", report.Analysis.Performance),
 			},
 		})
 	}

@@ -221,12 +221,12 @@ main() {
     log_success "🏆 ЖЕЛЕЗОБЕТОННАЯ SECURITY DEPLOYED SUCCESSFULLY! 🏆"
     echo ""
     log_info "Security features enabled:"
-    echo "  ✅ Default-deny inter-tenant communication"
-    echo "  ✅ Per-tenant isolation"
-    echo "  ✅ IMDS/Metadata server protection"  
-    echo "  ✅ kube-apiserver access control"
-    echo "  ✅ DNS/System service exceptions"
-    echo "  ✅ Network policy monitoring"
+    echo "  Default-deny inter-tenant communication"
+    echo "  Per-tenant isolation"
+    echo "  IMDS/Metadata server protection"  
+    echo "  kube-apiserver access control"
+    echo "  DNS/System service exceptions"
+    echo "  Network policy monitoring"
     echo ""
     
     show_manual_steps

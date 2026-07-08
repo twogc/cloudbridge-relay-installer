@@ -214,16 +214,16 @@ EOF
 
     # Оцениваем общий риск
     if [[ $total_issues -gt 20 ]]; then
-        echo "- **Overall Risk Level:** 🔴 **CRITICAL**" >> "$report_file"
+        echo "- **Overall Risk Level:** **CRITICAL**" >> "$report_file"
         echo "- **Action Required:** Immediate attention required" >> "$report_file"
     elif [[ $total_issues -gt 10 ]]; then
         echo "- **Overall Risk Level:** 🟠 **HIGH**" >> "$report_file"
         echo "- **Action Required:** Prompt attention required" >> "$report_file"
     elif [[ $total_issues -gt 5 ]]; then
-        echo "- **Overall Risk Level:** 🟡 **MEDIUM**" >> "$report_file"
+        echo "- **Overall Risk Level:** **MEDIUM**" >> "$report_file"
         echo "- **Action Required:** Attention required" >> "$report_file"
     else
-        echo "- **Overall Risk Level:** 🟢 **LOW**" >> "$report_file"
+        echo "- **Overall Risk Level:** **LOW**" >> "$report_file"
         echo "- **Action Required:** Monitor and maintain" >> "$report_file"
     fi
 

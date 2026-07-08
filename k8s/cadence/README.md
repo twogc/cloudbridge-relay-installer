@@ -1,10 +1,10 @@
-# 🚀 Cadence Configuration
+# Cadence Configuration
 
-## 📋 Описание
+## Описание
 
 Этот каталог содержит конфигурацию для Cadence workflow engine в Kubernetes.
 
-## 🚀 Быстрый старт
+## Быстрый старт
 
 ```bash
 # 1. Создать базы данных
@@ -35,7 +35,7 @@ kubectl get pods -n cloudbridge | grep cadence
 - **Пользователь**: `ipam_user`
 - **Пароль**: `secure_password_123`
 
-## 📊 Мониторинг
+## Мониторинг
 
 ```bash
 # Статус подов
@@ -48,7 +48,7 @@ kubectl logs -n cloudbridge deployment/cadence
 kubectl port-forward -n cloudbridge svc/cadence 7933:7933
 ```
 
-## 🔍 Диагностика
+## Диагностика
 
 ### Полезные команды
 
@@ -63,7 +63,7 @@ kubectl exec -n cloudbridge deployment/cadence -- nc -zv postgres.cloudbridge-sy
 kubectl exec -n cloudbridge deployment/cadence -- cat /etc/cadence/config/docker.yaml
 ```
 
-## 🚨 Частые проблемы
+## Частые проблемы
 
 ### 1. "password authentication failed"
 **Решение**: Проверить пользователя и пароль в переменных окружения

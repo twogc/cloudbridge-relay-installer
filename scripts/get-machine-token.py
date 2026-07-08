@@ -103,10 +103,10 @@ def main():
     access_token = get_access_token(jwt_assertion, token_url)
     
     if access_token:
-        print("✅ Access token obtained successfully!", file=sys.stderr)
+        print("Access token obtained successfully!", file=sys.stderr)
         print(access_token)  # Выводим токен в stdout
     else:
-        print("❌ Failed to get access token", file=sys.stderr)
+        print("Failed to get access token", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == '__main__':

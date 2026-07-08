@@ -4,11 +4,11 @@
 
 set -e
 
-echo "🚀 Запуск CloudBridge Relay локально..."
+echo "Запуск CloudBridge Relay локально..."
 
 # Проверяем, собран ли образ
 if ! docker images | grep -q "cloudbridge-relay.*alpine"; then
-    echo "📦 Собираем Alpine Docker образ..."
+    echo "Собираем Alpine Docker образ..."
     make docker-build-alpine
 fi
 
@@ -35,16 +35,16 @@ docker run -d \
 
 echo "Контейнер запущен!"
 echo ""
-echo "📊 Статус:"
+echo "Статус:"
 docker ps | grep cloudbridge-relay-alpine
 echo ""
-echo "🔍 Логи:"
+echo "Логи:"
 echo "docker logs cloudbridge-relay-alpine"
 echo ""
 echo "🛑 Остановка:"
 echo "docker stop cloudbridge-relay-alpine"
 echo ""
-echo "🌐 Доступные порты:"
+echo "Доступные порты:"
 echo "  HTTP: http://localhost:80"
 echo "  API: http://localhost:8080"
 echo "  Metrics: http://localhost:8081"

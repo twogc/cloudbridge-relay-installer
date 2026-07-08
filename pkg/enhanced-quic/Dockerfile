@@ -1,5 +1,5 @@
 # Multi-stage build for Enhanced QUIC
-FROM golang:1.25.1-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata

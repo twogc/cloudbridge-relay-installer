@@ -27,25 +27,25 @@ main() {
     log ""
     
     # Тест 1: Personal Access Token
-    log "📋 Тест 1: Personal Access Token"
+    log "Тест 1: Personal Access Token"
     if test_pat_access; then
-        log "✅ PAT работает - у Service User есть Manager роль!"
+        log "PAT работает - у Service User есть Manager роль!"
     else
-        warn "❌ PAT не работает - нужно назначить роль ORG_OWNER"
+        warn "PAT не работает - нужно назначить роль ORG_OWNER"
     fi
     echo ""
     
     # Тест 2: Client Credentials
-    log "📋 Тест 2: Client Credentials Grant"
+    log "Тест 2: Client Credentials Grant"
     if test_client_credentials; then
-        log "✅ Client Credentials работает!"
+        log "Client Credentials работает!"
     else
-        warn "❌ Client Credentials не работает"
+        warn "Client Credentials не работает"
     fi
     echo ""
     
     # Тест 3: Management API endpoints
-    log "📋 Тест 3: Доступ к Management API"
+    log "Тест 3: Доступ к Management API"
     test_management_endpoints
 }
 
@@ -57,10 +57,10 @@ test_pat_access() {
         -d '{"queries": []}')
     
     if echo "$response" | jq -e '.result[]' >/dev/null 2>&1; then
-        log "  ✅ Организации найдены: $(echo "$response" | jq '.result | length') шт."
+        log "  Организации найдены: $(echo "$response" | jq '.result | length') шт."
         return 0
     else
-        warn "  ❌ Ответ: $(echo "$response" | jq -r '.message // "Unknown error"')"
+        warn "  Ответ: $(echo "$response" | jq -r '.message // "Unknown error"')"
         return 1
     fi
 }
@@ -79,7 +79,7 @@ test_client_credentials() {
     access_token=$(echo "$token_response" | jq -r '.access_token // empty')
     
     if [[ -n "$access_token" ]]; then
-        log "  ✅ Access token получен (длина: ${#access_token})"
+        log "  Access token получен (длина: ${#access_token})"
         
         # Тест API вызова с новым токеном
         local api_response
@@ -87,14 +87,14 @@ test_client_credentials() {
             "https://$ZITADEL_DOMAIN/management/v1/orgs/me")
         
         if echo "$api_response" | jq -e '.org' >/dev/null 2>&1; then
-            log "  ✅ API вызов успешен"
+            log "  API вызов успешен"
             return 0
         else
-            warn "  ❌ API вызов не удался: $(echo "$api_response" | jq -r '.message // "Unknown"')"
+            warn "  API вызов не удался: $(echo "$api_response" | jq -r '.message // "Unknown"')"
             return 1
         fi
     else
-        warn "  ❌ Не удалось получить токен: $(echo "$token_response" | jq -r '.error_description // .message // "Unknown"')"
+        warn "  Не удалось получить токен: $(echo "$token_response" | jq -r '.error_description // .message // "Unknown"')"
         return 1
     fi
 }
@@ -111,19 +111,19 @@ test_management_endpoints() {
         local endpoint="${endpoint_info%%:*}"
         local description="${endpoint_info##*:}"
         
-        log "  📡 Тест: $description"
+        log "  Тест: $description"
         local response
         response=$(curl -s -H "Authorization: Bearer $PAT" \
             "https://$ZITADEL_DOMAIN$endpoint" 2>/dev/null)
         
         if echo "$response" | jq -e '.' >/dev/null 2>&1; then
             if echo "$response" | jq -e '.code' >/dev/null 2>&1; then
-                warn "    ❌ Ошибка: $(echo "$response" | jq -r '.message')"
+                warn "    Ошибка: $(echo "$response" | jq -r '.message')"
             else
-                log "    ✅ Успешно"
+                log "    Успешно"
             fi
         else
-            warn "    ❌ Некорректный JSON ответ"
+            warn "    Некорректный JSON ответ"
         fi
     done
 }
@@ -131,7 +131,7 @@ test_management_endpoints() {
 # Инструкции после тестирования
 show_instructions() {
     echo ""
-    log "📋 Если тесты не прошли, выполните следующие шаги:"
+    log "Если тесты не прошли, выполните следующие шаги:"
     log ""
     log "1. Войдите в ZITADEL Console: https://$ZITADEL_DOMAIN/ui/console/"
     log "2. Логин: admin@cloudbridge.local / CloudBridge123!"

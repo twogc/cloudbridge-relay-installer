@@ -2,7 +2,7 @@
 
 **Дата проверки**: 2025-10-20
 **Документ**: CLOUDBRIDGE_ARCHITECTURE_OVERVIEW.md
-**Статус**: ⚠️ Требуются исправления
+**Статус**: Требуются исправления
 
 ---
 
@@ -14,16 +14,16 @@
 
 | Раздел | Точность | Проблемы | Приоритет |
 |--------|----------|----------|-----------|
-| **Статус проекта** | ⚠️ 60% | Противоречия в статусе | 🔴 Высокий |
-| **SLO метрики** | ⚠️ 70% | Нереалистичные RTT targets | 🔴 Высокий |
-| **RFC/Standards** | ⚠️ 75% | Неправильные ссылки на RFC | 🟡 Средний |
-| **Frontend стек** | ⚠️ 80% | Нет упоминания Astro/Tauri | 🟡 Средний |
-| **Архитектура** | 95% | Структура верна | 🟢 Низкий |
-| **Компоненты** | 0% | Все модули описаны | 🟢 Низкий |
+| **Статус проекта** | 60% | Противоречия в статусе | Высокий |
+| **SLO метрики** | 70% | Нереалистичные RTT targets | Высокий |
+| **RFC/Standards** | 75% | Неправильные ссылки на RFC | Средний |
+| **Frontend стек** | 80% | Нет упоминания Astro/Tauri | Средний |
+| **Архитектура** | 95% | Структура верна | Низкий |
+| **Компоненты** | 0% | Все модули описаны | Низкий |
 
 ---
 
-## 🔴 Критические несоответствия (исправить в первую очередь)
+## Критические несоответствия (исправить в первую очередь)
 
 ### 1.  Статус проекта - противоречие
 
@@ -47,7 +47,7 @@ Production Target: 2025-12-01
 **Исправление:**
 ```markdown
 **Дата обновления**: 2025-10-20
-**Статус**: ilot Ready | 🟡 GA Pending (10-12 weeks)
+**Статус**: ilot Ready | GA Pending (10-12 weeks)
 **Версия**: 1.0 (MVP Complete)
 **Production Target**: 2025-12-01
 ```
@@ -132,7 +132,7 @@ QUIC Protocol:
 
 ---
 
-### 4. ⚠️ Frontend Stack - неполная информация
+### 4. Frontend Stack - неполная информация
 
 **Проблема:**
 ```markdown
@@ -174,9 +174,9 @@ Next.js 15 для dashboard - ерно
 
 ---
 
-## 🟡 Важные упущения (добавить)
+## Важные упущения (добавить)
 
-### 5. ⚠️ Deterministic IPAM - отсутствует детальное описание
+### 5. Deterministic IPAM - отсутствует детальное описание
 
 **Проблема:** Упомянут как "IPAM Service" в Edge PoPs, но нет схемы работы.
 
@@ -218,7 +218,7 @@ New subnet: 10.101.0.0/24 (epoch=2)
 
 ---
 
-### 6. ⚠️ P2P/ICE Flow - нет явного описания
+### 6. P2P/ICE Flow - нет явного описания
 
 **Проблема:** Описан relay путь, но не описан Direct P2P путь (который приоритетнее).
 
@@ -254,7 +254,7 @@ sequenceDiagram
         A->>TURN: Allocate relay address
         B->>TURN: Allocate relay address
         A-->>TURN-->>B: Relayed connection
-        Note over A,B: ⚠️ TURN relay (22% of cases)
+        Note over A,B: TURN relay (22% of cases)
     else MASQUE/QUIC fallback (restricted networks)
         A->>PoP: QUIC CONNECT-UDP (MASQUE)
         B->>PoP: QUIC CONNECT-UDP (MASQUE)
@@ -267,13 +267,13 @@ sequenceDiagram
 
 ### Connection Type Distribution:
 - irect P2P: 68% (target ≥ 60%)
-- ⚠️ TURN relay: 22%
+- TURN relay: 22%
 - MASQUE tunnel: 10%
 ```
 
 ---
 
-### 7. ⚠️ SLO Closed Loop - отсутствует описание
+### 7. SLO Closed Loop - отсутствует описание
 
 **Проблема:** Есть SLO targets, но нет описания замкнутого контура оптимизации.
 
@@ -337,7 +337,7 @@ type HandoverTriggers struct {
 
 ---
 
-### 8. ⚠️ Traffic Efficiency 30-40% - ключевое преимущество не зафиксировано
+### 8. Traffic Efficiency 30-40% - ключевое преимущество не зафиксировано
 
 **Проблема:** Одно из главных конкурентных преимуществ не описано в Executive Summary.
 
@@ -349,10 +349,10 @@ type HandoverTriggers struct {
 - **Enterprise Security** - mTLS, tenant isolation, DNSSEC, Zitadel OIDC
 - **Production Monitoring** - Prometheus HA, Grafana, VictoriaMetrics, DDoS protection
 - **Management Dashboard** - Полнофункциональный веб-интерфейс с Next.js 15
-- ⚡ **QUIC/MASQUE Protocol** - Современный транспорт с BBRv2 и handover
-- 🌍 **Anycast DNS Network** - GeoDNS steering с AI telemetry
+- **QUIC/MASQUE Protocol** - Современный транспорт с BBRv2 и handover
+- **Anycast DNS Network** - GeoDNS steering с AI telemetry
 - **SLO-Driven Operations** - RTT p95 < 90ms (RU↔EU), Handover p95 < 300ms
-- 💰 **Traffic Efficiency** - **Сокращение трафика на 30-40%** благодаря:
+- **Traffic Efficiency** - **Сокращение трафика на 30-40%** благодаря:
   - AI-маршрутизации (выбор кратчайшего пути)
   - BBRv2 congestion control (меньше ретрансмитов)
   - QUIC ACK optimization
@@ -361,7 +361,7 @@ type HandoverTriggers struct {
 
 ---
 
-### 9. ⚠️ OPA Gatekeeper - не упомянут в Security
+### 9. OPA Gatekeeper - не упомянут в Security
 
 **Проблема:** Из ранних материалов упоминался OPA для policy-as-code, здесь отсутствует.
 
@@ -451,7 +451,7 @@ spec:
 
 **Стало:**
 ```markdown
-**Статус**: ilot Ready | 🟡 GA Pending (10-12 weeks)
+**Статус**: ilot Ready | GA Pending (10-12 weeks)
 **Версия**: 1.0 (MVP Complete)
 **Production Target**: 2025-12-01
 
@@ -461,13 +461,13 @@ spec:
 - **Enterprise Security** - mTLS, tenant isolation, DNSSEC, Zitadel OIDC
 - **Production Monitoring** - Prometheus HA, Grafana, DDoS protection
 - **Management Dashboard** - Next.js 15 + Astro landing pages
-- ⚡ **QUIC/MASQUE Protocol** - RFC 9297/9298/9000 standards
-- 🌍 **Anycast DNS Network** - GeoDNS with AI telemetry
+- **QUIC/MASQUE Protocol** - RFC 9297/9298/9000 standards
+- **Anycast DNS Network** - GeoDNS with AI telemetry
 - **SLO-Driven Operations**:
   - RTT p95 < 70ms (EU↔EU) / < 90ms (RU↔EU)
   - Handover p95 < 300ms
   - P2P percentage ≥ 60%
-- 💰 **Traffic Efficiency** - 30-40% savings via AI routing + BBRv2 + QUIC ACK optimization
+- **Traffic Efficiency** - 30-40% savings via AI routing + BBRv2 + QUIC ACK optimization
 - **Policy-as-Code** - OPA Gatekeeper for automated security validation
 ```
 
@@ -508,10 +508,10 @@ spec:
 - етальное описание каждого сервиса
 
 **Требуют исправления:**
-- ⚠️ Статус проекта (завышен)
-- ⚠️ SLO targets (нереалистичны для RU↔EU)
-- ⚠️ RFC references (неправильные номера)
-- ⚠️ Неполная информация (IPAM, P2P flow, SLO loop)
+- Статус проекта (завышен)
+- SLO targets (нереалистичны для RU↔EU)
+- RFC references (неправильные номера)
+- Неполная информация (IPAM, P2P flow, SLO loop)
 
 ### Рекомендация:
 

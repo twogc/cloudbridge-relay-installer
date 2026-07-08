@@ -1,4 +1,4 @@
-name: 🔒 Weekly Security Audit
+name: Weekly Security Audit
 
 on:
   schedule:
@@ -12,7 +12,7 @@ env:
 
 jobs:
   security-audit:
-    name: 🔒 Comprehensive Security Audit
+    name: Comprehensive Security Audit
     runs-on: ubuntu-latest
     
     steps:
@@ -22,7 +22,7 @@ jobs:
     - name:  Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.25'
+        go-version: '1.25.12'
         cache: true
 
     - name: 🐍 Install Python
@@ -44,9 +44,9 @@ jobs:
         # Install nancy for Go dependencies
         go install github.com/sonatype-nexus-community/nancy@latest
 
-    - name: 🔍 Run comprehensive security audit
+    - name: Run comprehensive security audit
       run: |
-        echo "🔒 Running comprehensive security audit..."
+        echo "Running comprehensive security audit..."
         
         # Create security reports directory
         mkdir -p security_reports
@@ -75,7 +75,7 @@ jobs:
         
         echo "Comprehensive security audit completed"
 
-    - name: 📊 Create security report
+    - name: Create security report
       run: |
         echo "# Security Audit Report - $(date)" > security-audit-report.md
         echo "" >> security-audit-report.md
@@ -116,7 +116,7 @@ jobs:
 
     - name: 📢 Security audit summary
       run: |
-        echo "## 🔒 Security Audit Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## Security Audit Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Status:** Completed" >> $GITHUB_STEP_SUMMARY
         echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY

@@ -99,7 +99,7 @@ oss-repositories/
 2. Focus on Tasks 1.2, 1.3, 1.4 (API, VictoriaMetrics, SSE)
 3. Check subtasks in [PROGRESS.md](PROGRESS.md)
 
-#### 🎨 Frontend Developer (Dashboard)
+#### Frontend Developer (Dashboard)
 1. Read [WEEK1_ACTION_PLAN.md](WEEK1_ACTION_PLAN.md) - 10 min
 2. Focus on Task 1.4 (SSE integration with React)
 3. File: `frontend/lib/hooks/useSSE.ts`
@@ -114,7 +114,7 @@ oss-repositories/
 2. Focus on service setup and orchestration
 3. Check [MONTH1_STABILIZATION_ROADMAP.md](MONTH1_STABILIZATION_ROADMAP.md) Week 9-10
 
-#### 🧪 QA / Test Engineer
+#### QA / Test Engineer
 1. Read [WEEK1_ACTION_PLAN.md](WEEK1_ACTION_PLAN.md) Task 1.5 - 5 min
 2. Focus on test planning and automation
 3. Target: >85% code coverage

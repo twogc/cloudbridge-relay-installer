@@ -5,14 +5,14 @@
 
 set -e
 
-echo "🚀 Начинаем установку Zabbix Server..."
+echo "Начинаем установку Zabbix Server..."
 
 # Обновление системы
-echo "📦 Обновление системы..."
+echo "Обновление системы..."
 sudo apt update && sudo apt upgrade -y
 
 # Установка необходимых пакетов
-echo "📦 Установка необходимых пакетов..."
+echo "Установка необходимых пакетов..."
 sudo apt install -y wget curl gnupg2 software-properties-common apt-transport-https ca-certificates lsb-release
 
 # Настройка часового пояса
@@ -41,15 +41,15 @@ sudo dpkg -i zabbix-release_6.0-4+ubuntu22.04_all.deb
 sudo apt update
 
 # Установка Zabbix Server и компонентов
-echo "📦 Установка Zabbix Server..."
+echo "Установка Zabbix Server..."
 sudo apt install -y zabbix-server-pgsql zabbix-frontend-php php8.1-pgsql zabbix-sql-scripts
 
 # Установка Apache и PHP
-echo "🌐 Установка Apache и PHP..."
+echo "Установка Apache и PHP..."
 sudo apt install -y apache2 php8.1 libapache2-mod-php8.1
 
 # Импорт схемы базы данных
-echo "📊 Импорт схемы базы данных..."
+echo "Импорт схемы базы данных..."
 sudo zcat /usr/share/zabbix-sql-scripts/postgresql/server.sql.gz | sudo -u zabbix psql zabbix
 
 # Создание директорий для логов и PID
@@ -107,7 +107,7 @@ sudo sed -i 's/max_execution_time = 30/max_execution_time = 300/' /etc/php/8.1/a
 sudo sed -i 's/memory_limit = 128M/memory_limit = 256M/' /etc/php/8.1/apache2/php.ini
 
 # Настройка Apache для Zabbix
-echo "🌐 Настройка Apache..."
+echo "Настройка Apache..."
 sudo tee /etc/apache2/sites-available/zabbix.conf > /dev/null <<EOF
 <VirtualHost *:80>
     ServerName 10.0.0.241
@@ -147,12 +147,12 @@ sudo systemctl restart apache2
 sudo systemctl enable apache2
 
 # Запуск Zabbix Server
-echo "🚀 Запуск Zabbix Server..."
+echo "Запуск Zabbix Server..."
 sudo systemctl start zabbix-server
 sudo systemctl enable zabbix-server
 
 # Установка Zabbix Agent
-echo "📡 Установка Zabbix Agent..."
+echo "Установка Zabbix Agent..."
 sudo apt install -y zabbix-agent
 
 # Настройка Zabbix Agent
@@ -200,11 +200,11 @@ echo "Zabbix Agent:"
 sudo systemctl status zabbix-agent --no-pager -l
 
 # Проверка портов
-echo "🔍 Проверка портов..."
+echo "Проверка портов..."
 sudo netstat -tlnp | grep -E "(80|443|10050|10051|5432)"
 
 echo ""
-echo "🎉 Установка Zabbix завершена!"
+echo "Установка Zabbix завершена!"
 echo ""
 echo "Информация для доступа:"
 echo "   Веб-интерфейс: http://10.0.0.241/zabbix"

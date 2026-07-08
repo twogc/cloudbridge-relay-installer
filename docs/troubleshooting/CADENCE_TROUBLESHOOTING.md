@@ -1,4 +1,4 @@
-# 🚨 Cadence Troubleshooting - Быстрые решения
+# Cadence Troubleshooting - Быстрые решения
 
 ## Диагностика проблем
 
@@ -26,7 +26,7 @@ kubectl logs -f deployment/postgres -n cloudbridge
 kubectl logs -f deployment/cadence -n cloudbridge --previous
 ```
 
-## 🐛 Частые ошибки и быстрые решения
+## Частые ошибки и быстрые решения
 
 ###  CrashLoopBackOff
 
@@ -271,4 +271,4 @@ curl http://localhost:7934/health
 
 ---
 
-**💡 Совет: Сохраните этот файл в закладки для быстрого доступа к решениям!**
+** Совет: Сохраните этот файл в закладки для быстрого доступа к решениям!**

@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Полное развертывание Magic WAN с автоматическим созданием через API..."
+echo "Полное развертывание Magic WAN с автоматическим созданием через API..."
 
 # Проверка наличия jq
 if ! command -v jq &> /dev/null; then
-    echo "📦 Установка jq..."
+    echo "Установка jq..."
     apt-get update && apt-get install -y jq
 fi
 
@@ -14,16 +14,16 @@ echo "🔧 Шаг 1: Создание Magic WAN через Cloudflare API..."
 ./scripts/cloudflare-testing/create-magic-wan-api.sh
 
 # Загрузка параметров
-echo "📋 Загрузка параметров Magic WAN..."
+echo "Загрузка параметров Magic WAN..."
 source /tmp/magic-wan-params.env
 
 # Проверка параметров
 if [[ -z "$CF_PEER_IP" || -z "$CF_PSK" || -z "$LOCAL_PUBLIC_IP" ]]; then
-    echo "❌ Ошибка: Параметры Magic WAN не загружены"
+    echo "Ошибка: Параметры Magic WAN не загружены"
     exit 1
 fi
 
-echo "✅ Параметры загружены:"
+echo "Параметры загружены:"
 echo "   CF_PEER_IP: $CF_PEER_IP"
 echo "   LOCAL_PUBLIC_IP: $LOCAL_PUBLIC_IP"
 echo "   TUNNEL_ID: $TUNNEL_ID"
@@ -37,9 +37,9 @@ if command -v ufw &> /dev/null; then
     ufw allow 500/udp comment "IPsec IKE"
     ufw allow 4500/udp comment "IPsec NAT-T"
     ufw allow esp comment "IPsec ESP"
-    echo "✅ UFW настроен для IPsec"
+    echo "UFW настроен для IPsec"
 else
-    echo "⚠️ UFW не найден, настройте файрвол вручную:"
+    echo "UFW не найден, настройте файрвол вручную:"
     echo "   - UDP 500/4500 для IPsec"
     echo "   - ESP протокол"
 fi
@@ -53,7 +53,7 @@ echo "🧪 Шаг 4: Тестирование IPsec туннеля..."
 ./scripts/cloudflare-testing/test-ipsec-magic-wan.sh
 
 # Шаг 5: Проверка статуса в Cloudflare
-echo "📊 Шаг 5: Проверка статуса в Cloudflare..."
+echo "Шаг 5: Проверка статуса в Cloudflare..."
 ./scripts/cloudflare-testing/check-magic-wan-status.sh
 
 # Шаг 6: Интеграция с CloudBridge Relay
@@ -74,27 +74,27 @@ kubectl apply -f /tmp/cloudbridge-config.yaml
 # Перезапуск CloudBridge Relay
 kubectl rollout restart deployment/cloudbridge-relay-magic-wan -n cloudbridge-testing
 
-echo "⏳ Ожидание перезапуска CloudBridge Relay..."
+echo "Ожидание перезапуска CloudBridge Relay..."
 kubectl wait --for=condition=Ready pod -l app=cloudbridge-relay-magic-wan -n cloudbridge-testing --timeout=300s
 
 # Финальная проверка
-echo "🎉 Развертывание Magic WAN завершено!"
+echo "Развертывание Magic WAN завершено!"
 echo ""
-echo "📋 Итоговая информация:"
+echo "Итоговая информация:"
 echo "   Magic WAN Tunnel ID: $TUNNEL_ID"
 echo "   Cloudflare Endpoint: $CF_PEER_IP"
 echo "   Local Public IP: $LOCAL_PUBLIC_IP"
 echo ""
-echo "🔍 Проверка компонентов:"
+echo "Проверка компонентов:"
 echo "   IPsec туннель: kubectl get pods -n cloudbridge-testing -l app=ipsec-magic-wan"
 echo "   CloudBridge Relay: kubectl get pods -n cloudbridge-testing -l app=cloudbridge-relay-magic-wan"
 echo "   Статус в Cloudflare: ./scripts/cloudflare-testing/check-magic-wan-status.sh"
 echo ""
-echo "🌐 Тестирование:"
+echo "Тестирование:"
 echo "   Локальный тест: ./scripts/cloudflare-testing/test-ipsec-magic-wan.sh"
 echo "   CloudBridge тест: kubectl port-forward -n cloudbridge-testing svc/cloudbridge-relay-magic-wan 6003:6003"
 echo ""
-echo "💡 Следующие шаги:"
+echo " Следующие шаги:"
 echo "1. Настройте DNS записи в Cloudflare"
 echo "2. Настройте политики трафика в Magic WAN"
 echo "3. Протестируйте end-to-end подключение"

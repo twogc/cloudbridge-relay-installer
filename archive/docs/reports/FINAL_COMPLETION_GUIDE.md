@@ -1,4 +1,4 @@
-# 🎯 Финальное завершение CloudBridge + ZITADEL интеграции
+# Финальное завершение CloudBridge + ZITADEL интеграции
 
 **Время на завершение:** 2-3 часа  
 **Статус:** 75% готово → 100% готово  
@@ -6,7 +6,7 @@
 
 ---
 
-## 🌐 **ДОСТУПЫ К ZITADEL CONSOLE**
+## **ДОСТУПЫ К ZITADEL CONSOLE**
 
 ```
 URL: https://edge.2gc.ru/
@@ -16,7 +16,7 @@ Password: suppIw-tegvu9-jocxiq
 
 ---
 
-## 🚨 **КРИТИЧНЫЕ ЗАДАЧИ ДЛЯ ЗАВЕРШЕНИЯ**
+## **КРИТИЧНЫЕ ЗАДАЧИ ДЛЯ ЗАВЕРШЕНИЯ**
 
 ### 1️⃣ **Настроить Custom Scopes (30 мин)**
 
@@ -51,8 +51,8 @@ curl -k -X POST "$ZITADEL_MANAGEMENT_API/projects/$PROJECT_ID/roles" \
 1. Projects → `cloudbridge-relay`
 2. Applications → `cloudbridge-relay-api` (ID: 339537393122017581)
 3. Settings → Grant Types
-4. ✅ Включить: `Client Credentials` 
-5. ✅ Включить: `Token Exchange` (для mTLS)
+4. Включить: `Client Credentials` 
+5. Включить: `Token Exchange` (для mTLS)
 6. Auth Method → `Client Secret (Basic)` или `Private Key JWT` (для mTLS)
 
 **Проверка:**
@@ -81,8 +81,8 @@ curl -k -X POST "https://edge.2gc.ru/oauth/v2/token" \
 **Альтернативный путь:**
 1. Applications → `cloudbridge-relay-api` 
 2. Token Settings
-3. ✅ Include Role Assertion in Access Token
-4. ✅ Include Role Assertion in ID Token
+3. Include Role Assertion in Access Token
+4. Include Role Assertion in ID Token
 
 ---
 
@@ -108,7 +108,7 @@ curl -k -X POST "https://edge.2gc.ru/oauth/v2/token" \
 
 ---
 
-## ✅ **ПРОВЕРКА ГОТОВНОСТИ**
+## **ПРОВЕРКА ГОТОВНОСТИ**
 
 ### Acceptance Criteria Tests:
 
@@ -150,20 +150,20 @@ kubectl get ns --kubeconfig ~/.kube/relay-config
 
 ---
 
-## 📊 **СТАТУС ПО COMPLIANCE_CHECK.md**
+## **СТАТУС ПО COMPLIANCE_CHECK.md**
 
 | Пункт | До | После | Статус |
 |-------|----|----|--------|
-| 1. Базовая настройка | 75% | 95% | 🟡→✅ |
-| 2. Токены/scopes | 40% | 95% | 🟡→✅ |
-| 3. Service Account | 95% | 100% | ✅ |
-| 4. mTLS/JWT Bearer | 70% | 95% | 🟡→✅ |
-| 5. RBAC Kubernetes | 100% | 100% | ✅ |
-| 6. kubectl plugin | 25% | 95% | 🟡→✅ |
-| 7. Audit/Compliance | 50% | 80% | 🟡→🟡 |
-| 8. Observability | 100% | 100% | ✅ |
-| 9. Документация | 100% | 100% | ✅ |
-| 10. Acceptance | 30% | 90% | 🟡→✅ |
+| 1. Базовая настройка | 75% | 95% |→|
+| 2. Токены/scopes | 40% | 95% |→|
+| 3. Service Account | 95% | 100% | |
+| 4. mTLS/JWT Bearer | 70% | 95% |→|
+| 5. RBAC Kubernetes | 100% | 100% | |
+| 6. kubectl plugin | 25% | 95% |→|
+| 7. Audit/Compliance | 50% | 80% |→ |
+| 8. Observability | 100% | 100% | |
+| 9. Документация | 100% | 100% | |
+| 10. Acceptance | 30% | 90% |→|
 
 **Итого: 68% → 95% готовности**
 
@@ -197,15 +197,15 @@ curl -k -H "Authorization: Bearer $ZITADEL_ADMIN_TOKEN" \
 
 ---
 
-## 🎯 **РЕЗУЛЬТАТ ПОСЛЕ ЗАВЕРШЕНИЯ**
+## **РЕЗУЛЬТАТ ПОСЛЕ ЗАВЕРШЕНИЯ**
 
-✅ **100% соответствие техзаданию**  
-✅ **kubectl exec-plugin работает с ZITADEL**  
-✅ **mTLS аутентификация готова**  
-✅ **Custom scopes и claims настроены**  
-✅ **Token Exchange активирован**  
-✅ **Kubernetes RBAC интегрирован**  
-✅ **Мониторинг и observability готовы**  
-✅ **Полная документация**  
+**100% соответствие техзаданию**  
+**kubectl exec-plugin работает с ZITADEL**  
+**mTLS аутентификация готова**  
+**Custom scopes и claims настроены**  
+**Token Exchange активирован**  
+**Kubernetes RBAC интегрирован**  
+**Мониторинг и observability готовы**  
+**Полная документация**  
 
-**🚀 СИСТЕМА ГОТОВА К PRODUCTION ИСПОЛЬЗОВАНИЮ**
+**СИСТЕМА ГОТОВА К PRODUCTION ИСПОЛЬЗОВАНИЮ**

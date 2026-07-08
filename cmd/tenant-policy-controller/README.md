@@ -103,10 +103,10 @@ spec:
 ```
 
 ### 3. Isolation Enforcement
-- ✅ Pods with same `tenant` label can communicate
-- ❌ Pods with different `tenant` labels are blocked
-- ✅ DNS queries (UDP port 53) are always allowed
-- ✅ Policies are automatically updated when pods change
+- Pods with same `tenant` label can communicate
+- Pods with different `tenant` labels are blocked
+- DNS queries (UDP port 53) are always allowed
+- Policies are automatically updated when pods change
 
 ## Deployment
 

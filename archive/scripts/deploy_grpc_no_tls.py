@@ -8,7 +8,7 @@ import os
 
 def run_command(cmd, description):
     """Выполнить команду и показать результат"""
-    print(f"🔍 {description}")
+    print(f"{description}")
     print(f"Команда: {cmd}")
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd="/home/ubuntu/cloudbridge-relay-installer")
@@ -23,26 +23,26 @@ def run_command(cmd, description):
         return False
 
 def main():
-    print("🚀 РАЗВЕРТЫВАНИЕ gRPC СЕРВЕРА БЕЗ TLS")
+    print("РАЗВЕРТЫВАНИЕ gRPC СЕРВЕРА БЕЗ TLS")
     print("=" * 50)
     
     # Шаг 1: Применяем ConfigMap
     if not run_command("kubectl apply -f k8s/configmap-no-tls.yaml", "Применяем ConfigMap без TLS"):
-        print("❌ Ошибка при применении ConfigMap")
+        print("Ошибка при применении ConfigMap")
         return False
     
     # Шаг 2: Применяем Deployment
     if not run_command("kubectl apply -f k8s/deployment-no-tls.yaml", "Применяем Deployment без TLS"):
-        print("❌ Ошибка при применении Deployment")
+        print("Ошибка при применении Deployment")
         return False
     
     # Шаг 3: Применяем Service
     if not run_command("kubectl apply -f k8s/service-no-tls.yaml", "Применяем Service без TLS"):
-        print("❌ Ошибка при применении Service")
+        print("Ошибка при применении Service")
         return False
     
     # Шаг 4: Ждем запуска пода
-    print("⏳ Ждем запуска пода...")
+    print("Ждем запуска пода...")
     time.sleep(10)
     
     # Шаг 5: Проверяем статус
@@ -50,7 +50,7 @@ def main():
     run_command("kubectl get services -n cloudbridge | grep no-tls", "Проверяем сервисы")
     
     # Шаг 6: Настраиваем port-forward
-    print("🔍 Настраиваем port-forward...")
+    print("Настраиваем port-forward...")
     subprocess.run("pkill -f 'kubectl port-forward.*8444'", shell=True, capture_output=True)
     time.sleep(2)
     
@@ -87,10 +87,10 @@ logging:
     with open("/home/ubuntu/cloudbridge-relay-installer/test/relay-client/config-no-tls.yaml", "w") as f:
         f.write(client_config)
     
-    print("✅ Конфигурация клиента создана")
+    print("Конфигурация клиента создана")
     
     # Шаг 9: Тестируем клиент
-    print("🚀 ТЕСТИРУЕМ КЛИЕНТ...")
+    print("ТЕСТИРУЕМ КЛИЕНТ...")
     os.chdir("/home/ubuntu/cloudbridge-relay-installer/test/relay-client")
     
     client_cmd = ("timeout 15s ./cloudbridge-client tunnel "
@@ -105,10 +105,10 @@ logging:
     
     run_command(client_cmd, "ТЕСТИРУЕМ gRPC ПОДКЛЮЧЕНИЕ")
     
-    print("🔍 Проверяем логи сервера...")
+    print("Проверяем логи сервера...")
     run_command("kubectl logs -n cloudbridge -l app=cloudbridge-relay-no-tls --tail=10", "Логи сервера")
     
-    print("✅ РАЗВЕРТЫВАНИЕ ЗАВЕРШЕНО!")
+    print("РАЗВЕРТЫВАНИЕ ЗАВЕРШЕНО!")
 
 if __name__ == "__main__":
     main()

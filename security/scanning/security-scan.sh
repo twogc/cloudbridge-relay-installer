@@ -31,7 +31,7 @@ log_warning() {
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
 }
 
 # Check if tools are installed
@@ -237,7 +237,7 @@ show_results() {
     log_info "Security Scan Results:"
     echo ""
     
-    echo "📊 Scan Results Summary:"
+    echo "Scan Results Summary:"
     echo "• Manifest Analysis: $SCAN_DIR/results/kube-score-results.txt"
     echo "• Vulnerability Scan: $SCAN_DIR/results/trivy-k8s-results.txt"
     echo "• Security Policies: $SCAN_DIR/results/network-policies.txt"
@@ -245,7 +245,7 @@ show_results() {
     echo "• Security Report: $SCAN_DIR/results/security-report.md"
     echo ""
     
-    echo "🔍 Quick Results:"
+    echo "Quick Results:"
     if [ -f "$SCAN_DIR/results/kube-score-results.txt" ]; then
         echo "Kube-score issues found:"
         grep -c "CRITICAL\|WARNING" $SCAN_DIR/results/kube-score-results.txt 2>/dev/null || echo "0"
@@ -280,7 +280,7 @@ cleanup() {
 
 # Main function
 main() {
-    echo "=== 🔒 CloudBridge Relay - Security Scanning ==="
+    echo "=== CloudBridge Relay - Security Scanning ==="
     echo ""
     
     case "${1:-scan}" in

@@ -1,14 +1,14 @@
 #  Оптимизация ресурсов Minikube для стабильной работы
 
-## ❌ Проблема
+## Проблема
 При сборке образов в Minikube перестают работать текущие поды (Zitadel отвечает 503).
 
-## 🔍 Причины
+## Причины
 1. **Конкуренция за ресурсы** - сборка Docker образов создает высокую нагрузку
 2. **Перегрузка VM** - Load Average > 30, постоянные рестарты подов
 3. **Проблемы с образами** - `ErrImageNeverPull` после пересборки
 
-## ✅ Решения
+## Решения
 
 ### 1. **Увеличить ресурсы Minikube**
 ```bash
@@ -39,7 +39,7 @@ echo "=== БЕЗОПАСНАЯ СБОРКА В MINIKUBE ==="
 # 1. Проверяем нагрузку системы
 LOAD=$(uptime | awk -F'load average:' '{ print $2 }' | awk '{ print $1 }' | sed 's/,//')
 if (( $(echo "$LOAD > 2.0" | bc -l) )); then
-    echo "⚠️  Высокая нагрузка: $LOAD. Ждем снижения..."
+    echo " Высокая нагрузка: $LOAD. Ждем снижения..."
     while (( $(echo "$(uptime | awk -F'load average:' '{ print $2 }' | awk '{ print $1 }' | sed 's/,//') > 2.0" | bc -l) )); do
         sleep 10
     done
@@ -65,7 +65,7 @@ docker build \
   -f docker/images/Dockerfile.ai-analytics .
 
 if [ $? -eq 0 ]; then
-    echo "✅ Образ собран: $TAG"
+    echo "Образ собран: $TAG"
     echo "TAG=$TAG" > .last-build-tag
     
     # 6. Обновляем deployment
@@ -73,9 +73,9 @@ if [ $? -eq 0 ]; then
       ai-analytics=cloudbridge/ai-analytics:$TAG \
       -n cloudbridge
     
-    echo "✅ Deployment обновлен"
+    echo "Deployment обновлен"
 else
-    echo "❌ Ошибка сборки"
+    echo "Ошибка сборки"
     exit 1
 fi
 EOF
@@ -130,13 +130,13 @@ minikube image load cloudbridge/ai-analytics:$TAG
 kubectl set image deployment/ai-analytics ai-analytics=cloudbridge/ai-analytics:$TAG -n cloudbridge
 ```
 
-## 📊 Мониторинг
+## Мониторинг
 ```bash
 # Проверка здоровья системы
 watch -n 5 'echo "=== SYSTEM HEALTH ===" && uptime && echo && kubectl get pods -n zitadel | grep -v Running'
 ```
 
-## 🎯 Результат
+## Результат
 - Стабильная работа Zitadel и других сервисов
 - Отсутствие 503 ошибок
 - Успешная сборка без влияния на production поды

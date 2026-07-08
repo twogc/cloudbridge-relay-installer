@@ -90,7 +90,7 @@ curl http://$(minikube ip):30990/health
 curl http://$(minikube ip):30083/health
 ```
 
-## 🧪 Тестирование
+## Тестирование
 
 ### **Health Checks:**
 ```bash

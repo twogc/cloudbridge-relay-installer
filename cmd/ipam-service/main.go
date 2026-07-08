@@ -23,7 +23,7 @@ func main() {
 	}
 	defer logger.Sync()
 
-	logger.Info("🚀 Starting CloudBridge IPAM Service")
+	logger.Info("Starting CloudBridge IPAM Service")
 
 	// Initialize database connection
 	dbConfig := &database.Config{

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🚀 Скрипт автоматического развертывания CloudBridge Relay в VK Cloud Kubernetes
+# Скрипт автоматического развертывания CloudBridge Relay в VK Cloud Kubernetes
 # Автор: CloudBridge Team
 # Версия: 1.0.0
 
@@ -311,7 +311,7 @@ check_deployment() {
 
 # Основная функция
 main() {
-    echo "🚀 Развертывание CloudBridge Relay в VK Cloud Kubernetes"
+    echo "Развертывание CloudBridge Relay в VK Cloud Kubernetes"
     echo "=================================================="
     echo ""
     
@@ -331,7 +331,7 @@ main() {
     check_deployment
     
     echo ""
-    log_success "🎉 Развертывание завершено!"
+    log_success "Развертывание завершено!"
     echo ""
     log_info "Полезные команды:"
     echo "  kubectl get pods -n cloudbridge                    # Статус подов"

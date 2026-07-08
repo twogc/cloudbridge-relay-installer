@@ -11,7 +11,7 @@ ZABBIX_SERVER_PORT="10051"
 ZABBIX_AGENT_PORT="10050"
 HOSTNAME="CloudBridge-Relay-VM"
 
-echo "🚀 Установка Zabbix Agent на CloudBridge Relay VM..."
+echo "Установка Zabbix Agent на CloudBridge Relay VM..."
 
 # Определение операционной системы
 if [ -f /etc/os-release ]; then
@@ -19,25 +19,25 @@ if [ -f /etc/os-release ]; then
     OS=$NAME
     VER=$VERSION_ID
 else
-    echo "❌ Не удалось определить операционную систему"
+    echo "Не удалось определить операционную систему"
     exit 1
 fi
 
 echo "Обнаружена ОС: $OS $VER"
 
 # Обновление системы
-echo "📦 Обновление системы..."
+echo "Обновление системы..."
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     sudo apt update && sudo apt upgrade -y
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Rocky"* ]]; then
     sudo yum update -y
 else
-    echo "❌ Неподдерживаемая операционная система: $OS"
+    echo "Неподдерживаемая операционная система: $OS"
     exit 1
 fi
 
 # Установка необходимых пакетов
-echo "📦 Установка необходимых пакетов..."
+echo "Установка необходимых пакетов..."
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     sudo apt install -y wget curl gnupg2 software-properties-common apt-transport-https ca-certificates lsb-release
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Rocky"* ]]; then
@@ -56,7 +56,7 @@ elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Ro
 fi
 
 # Установка Zabbix Agent
-echo "📦 Установка Zabbix Agent..."
+echo "Установка Zabbix Agent..."
 if [[ "$OS" == *"Ubuntu"* ]] || [[ "$OS" == *"Debian"* ]]; then
     sudo apt install -y zabbix-agent
 elif [[ "$OS" == *"CentOS"* ]] || [[ "$OS" == *"Red Hat"* ]] || [[ "$OS" == *"Rocky"* ]]; then
@@ -197,7 +197,7 @@ elif command -v iptables &> /dev/null; then
 fi
 
 # Запуск и включение Zabbix Agent
-echo "🚀 Запуск Zabbix Agent..."
+echo "Запуск Zabbix Agent..."
 sudo systemctl start zabbix-agent
 sudo systemctl enable zabbix-agent
 
@@ -206,20 +206,20 @@ echo "Проверка статуса Zabbix Agent..."
 sudo systemctl status zabbix-agent --no-pager -l
 
 # Проверка подключения к серверу
-echo "🔍 Проверка подключения к Zabbix Server..."
+echo "Проверка подключения к Zabbix Server..."
 if nc -z $ZABBIX_SERVER_IP $ZABBIX_SERVER_PORT; then
     echo "Подключение к Zabbix Server ($ZABBIX_SERVER_IP:$ZABBIX_SERVER_PORT) успешно"
 else
-    echo "❌ Не удается подключиться к Zabbix Server ($ZABBIX_SERVER_IP:$ZABBIX_SERVER_PORT)"
+    echo "Не удается подключиться к Zabbix Server ($ZABBIX_SERVER_IP:$ZABBIX_SERVER_PORT)"
     echo "   Проверьте сетевую связность и настройки файрвола"
 fi
 
 # Проверка порта агента
-echo "🔍 Проверка порта Zabbix Agent..."
+echo "Проверка порта Zabbix Agent..."
 if netstat -tlnp | grep :$ZABBIX_AGENT_PORT; then
     echo "Zabbix Agent слушает на порту $ZABBIX_AGENT_PORT"
 else
-    echo "❌ Zabbix Agent не слушает на порту $ZABBIX_AGENT_PORT"
+    echo "Zabbix Agent не слушает на порту $ZABBIX_AGENT_PORT"
 fi
 
 # Тестирование пользовательских параметров
@@ -230,7 +230,7 @@ echo "Использование диска: $(sudo -u zabbix /usr/sbin/zabbix_a
 echo "Использование памяти: $(sudo -u zabbix /usr/sbin/zabbix_agentd -t cloudbridge.memory.usage)%"
 
 echo ""
-echo "🎉 Установка Zabbix Agent завершена!"
+echo "Установка Zabbix Agent завершена!"
 echo ""
 echo "Информация:"
 echo "   Hostname: $HOSTNAME"
@@ -250,7 +250,7 @@ echo "1. Добавьте хост '$HOSTNAME' в Zabbix Server"
 echo "2. Примените шаблон 'CloudBridge Relay Server'"
 echo "3. Проверьте сбор метрик в веб-интерфейсе"
 echo ""
-echo "🌐 Веб-интерфейс Zabbix: http://$ZABBIX_SERVER_IP/zabbix"
+echo "Веб-интерфейс Zabbix: http://$ZABBIX_SERVER_IP/zabbix"
 
 
 

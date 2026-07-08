@@ -19,7 +19,7 @@ echo ""
 
 # Проверка, что client_secret заменен
 if [ "$CLIENT_SECRET" = "YOUR_CLIENT_SECRET_HERE" ]; then
-    echo "❌ ОШИБКА: Замените YOUR_CLIENT_SECRET_HERE на реальный client_secret"
+    echo "ОШИБКА: Замените YOUR_CLIENT_SECRET_HERE на реальный client_secret"
     echo "Получите client_secret в Admin Console: $KEYCLOAK_URL/admin/"
     echo "Realm: $REALM -> Clients -> $CLIENT_ID -> Credentials"
     exit 1
@@ -46,7 +46,7 @@ if echo "$TOKEN_RESPONSE" | grep -q "access_token"; then
     echo "Полный ответ:"
     echo "$TOKEN_RESPONSE" | jq .
 else
-    echo "❌ Ошибка получения OAuth Token:"
+    echo "Ошибка получения OAuth Token:"
     echo "$TOKEN_RESPONSE"
 fi
 
@@ -65,7 +65,7 @@ if echo "$API_RESPONSE" | grep -q "access_token"; then
     echo "Полный ответ:"
     echo "$API_RESPONSE" | jq .
 else
-    echo "❌ Ошибка получения API Key:"
+    echo "Ошибка получения API Key:"
     echo "$API_RESPONSE"
 fi
 
@@ -82,7 +82,7 @@ if [ -n "$ACCESS_TOKEN" ]; then
         echo "User Info:"
         echo "$USERINFO_RESPONSE" | jq .
     else
-        echo "❌ OAuth Token невалиден:"
+        echo "OAuth Token невалиден:"
         echo "$USERINFO_RESPONSE"
     fi
 fi

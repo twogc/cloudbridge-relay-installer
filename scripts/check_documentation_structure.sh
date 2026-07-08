@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🔍 Проверка структуры документации CloudBridge Relay"
+echo "Проверка структуры документации CloudBridge Relay"
 echo "=================================================="
 
 # Цвета для вывода
@@ -17,10 +17,10 @@ NC='\033[0m' # No Color
 # Функция для проверки файла
 check_file() {
     if [ -f "$1" ]; then
-        echo -e "${GREEN}✅${NC} $1"
+        echo -e "${GREEN}${NC} $1"
         return 0
     else
-        echo -e "${RED}❌${NC} $1 - НЕ НАЙДЕН"
+        echo -e "${RED}${NC} $1 - НЕ НАЙДЕН"
         return 1
     fi
 }
@@ -31,7 +31,7 @@ check_dir() {
         echo -e "${GREEN}📁${NC} $1"
         return 0
     else
-        echo -e "${RED}❌${NC} $1 - НЕ НАЙДЕНА"
+        echo -e "${RED}${NC} $1 - НЕ НАЙДЕНА"
         return 1
     fi
 }
@@ -82,7 +82,7 @@ check_file "docs/reports/README.md" || ((errors++))
 check_file "docs/changelog/README.md" || ((errors++))
 
 echo ""
-echo "📊 Статистика файлов по категориям:"
+echo "Статистика файлов по категориям:"
 echo "-----------------------------------"
 
 # Подсчет файлов в каждой папке
@@ -95,7 +95,7 @@ count_files "docs/reports"
 count_files "docs/changelog"
 
 echo ""
-echo "🔍 Проверка перемещенных файлов:"
+echo "Проверка перемещенных файлов:"
 echo "-------------------------------"
 
 # Проверка перемещенных файлов
@@ -137,7 +137,7 @@ if [ $errors -eq 0 ]; then
     echo -e "${GREEN}📚 Документация полностью структурирована${NC}"
     exit 0
 else
-    echo -e "${RED}❌ Найдено ошибок: $errors${NC}"
+    echo -e "${RED}Найдено ошибок: $errors${NC}"
     echo -e "${YELLOW}  Проверьте отсутствующие файлы и папки${NC}"
     exit 1
 fi 

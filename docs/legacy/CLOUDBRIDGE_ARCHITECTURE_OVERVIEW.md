@@ -17,7 +17,7 @@ CloudBridge Platform - это enterprise-grade распределённая пл
 - **Production Monitoring** - Prometheus HA, Grafana, VictoriaMetrics, DDoS protection
 - **Management Dashboard** - Полнофункциональный веб-интерфейс с Next.js 15
 - **QUIC/MASQUE Protocol** - Современный транспорт с BBRv2 и handover
-- 🌍 **Anycast DNS Network** - GeoDNS steering с AI telemetry
+- **Anycast DNS Network** - GeoDNS steering с AI telemetry
 - **SLO-Driven Operations** - RTT p95 < 50ms, Handover p95 < 300ms
 
 ---
@@ -317,7 +317,7 @@ AI Analytics → Routing Decisions → Edge PoPs
 
 ---
 
-### 4. 🌍 CloudBridge DNS Network
+### 4. CloudBridge DNS Network
 
 **Репозиторий**: `oss-repositories/cloudbridge-dns-network`
 **Статус**: Production Ready
@@ -509,7 +509,7 @@ Production-ready система мониторинга с SLO tracking и DDoS p
 - Fast query performance
 - Analytics backend
 
-**DDoS Protection** ⭐ NEW
+**DDoS Protection**  NEW
 - BGP blackhole injection (GoBGP v4)
 - Upstream scrubbing (Yandex Cloud, Qrator)
 - Real-time detection (<30s)
@@ -805,7 +805,7 @@ resources:
 
 3. P2P Connection Attempt
    └→ ICE/STUN (NAT Discovery)
-      └→ Direct P2P or TURN Relay ⚠️
+      └→ Direct P2P or TURN Relay 
 
 4. Metrics Export
    └→ Relay → Prometheus → AI Service

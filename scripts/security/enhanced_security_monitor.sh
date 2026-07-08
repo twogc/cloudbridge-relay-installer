@@ -668,9 +668,9 @@ run_security_check() {
 # Функция непрерывного мониторинга
 continuous_monitoring() {
     log_info "Запуск непрерывного улучшенного мониторинга безопасности"
-    send_telegram_message "🛡️ <b>Улучшенный мониторинг безопасности запущен</b>
+    send_telegram_message "<b>Улучшенный мониторинг безопасности запущен</b>
 🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)
+ Сервер: $(hostname)
 ⚙️ Конфигурация: $CONFIG_FILE"
     
     while true; do
@@ -715,7 +715,7 @@ case "${1:-}" in
         send_telegram_message "🧪 <b>Тест улучшенного мониторинга безопасности</b>
 Система мониторинга работает
 🕐 Время: $(date '+%Y-%m-%d %H:%M:%S')
-🖥️ Сервер: $(hostname)
+ Сервер: $(hostname)
 ⚙️ Конфигурация: $CONFIG_FILE"
         ;;
     --config)

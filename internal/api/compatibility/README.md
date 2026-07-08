@@ -1,17 +1,17 @@
 # CloudBridge Client API Compatibility Layer
 
-## 📋 Overview
+## Overview
 
 This package provides backward compatibility for CloudBridge Client API paths. The client expects legacy paths (`/api/v1/tenants/{tenant_id}/peers/*`), while the server uses native paths (`/api/v1/peer/*`).
 
-## 🎯 Purpose
+## Purpose
 
 - **Zero breaking changes**: Existing clients continue to work without modifications
 - **Gradual migration**: New clients can use native paths
 - **Transparent forwarding**: Legacy requests are automatically translated
 - **Observability**: All translations are logged and metriced
 
-## 🔗 Path Mappings
+## Path Mappings
 
 | Client Legacy Path | Server Native Path | Description |
 |--------------------|--------------------|-------------|
@@ -25,7 +25,7 @@ This package provides backward compatibility for CloudBridge Client API paths. T
 | `POST /api/v1/tenants/{tid}/ipam/allocate` | `POST /api/v1/ipam/allocate` | IPAM allocation |
 | `GET /api/v1/tenants/{tid}/wireguard/config` | `GET /api/v1/wireguard/config` | WireGuard config |
 
-## 🚀 Usage
+## Usage
 
 ### Basic Setup
 
@@ -75,7 +75,7 @@ ccl := compatibility.NewClientCompatibilityLayer(logger)
 ccl.RegisterRoutes(router)
 ```
 
-## 📊 Metrics
+## Metrics
 
 The compatibility layer tracks:
 - Total requests through compatibility layer
@@ -91,7 +91,7 @@ type CompatibilityMetrics struct {
 }
 ```
 
-## 🔍 Observability
+## Observability
 
 ### Logging
 
@@ -134,7 +134,7 @@ health := ccl.HealthCheck()
 // }
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Run Tests
 
@@ -210,7 +210,7 @@ Authorization: Bearer $JWT_TOKEN
 }
 ```
 
-## ⚠️ Important Notes
+## Important Notes
 
 1. **tenant_id Propagation**: The `tenant_id` is extracted from the legacy path and added to the request context as `c.Set("tenant_id", tenantID)`. Native handlers can access it via `c.Get("tenant_id")`.
 

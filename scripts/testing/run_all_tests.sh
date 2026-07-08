@@ -204,7 +204,7 @@ show_access_urls() {
     local server_ip=$(hostname -I | awk '{print $1}')
     local password=$(grep "^GRAFANA_ADMIN_PASSWORD=" .env | cut -d'=' -f2 2>/dev/null || echo "change-this-password-immediately")
     
-    echo -e "${GREEN}📊 Grafana:${NC} http://$server_ip:3000"
+    echo -e "${GREEN}Grafana:${NC} http://$server_ip:3000"
     echo -e "${GREEN}   Логин:${NC} admin"
     echo -e "${GREEN}   Пароль:${NC} $password"
     echo

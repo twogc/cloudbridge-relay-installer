@@ -210,7 +210,7 @@ jobs:
       - name: Generate summary
         if: always()
         run: |
-          echo "## 📦 Image Build & Sign Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Image Build & Sign Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Digest:** \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
@@ -220,35 +220,35 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "### ✅ Actions Completed" >> $GITHUB_STEP_SUMMARY
+          echo "### Actions Completed" >> $GITHUB_STEP_SUMMARY
           echo "- 🔨 Image built and pushed" >> $GITHUB_STEP_SUMMARY
           echo "- ✍️  Image signed with cosign (keyless)" >> $GITHUB_STEP_SUMMARY
-          echo "- 📋 SBOM generated (SPDX, CycloneDX)" >> $GITHUB_STEP_SUMMARY
+          echo "- SBOM generated (SPDX, CycloneDX)" >> $GITHUB_STEP_SUMMARY
           echo "- 📎 SBOM attested to image" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔍 Vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # SBOM stats
           if [ -f sbom/sbom-syft.json ]; then
             TOTAL_PACKAGES=$(jq '.artifacts | length' sbom/sbom-syft.json)
-            echo "### 📊 SBOM Statistics" >> $GITHUB_STEP_SUMMARY
+            echo "### SBOM Statistics" >> $GITHUB_STEP_SUMMARY
             echo "**Total Packages:** $TOTAL_PACKAGES" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
           # Vulnerability stats
           if [ -f sbom/vulnerabilities.json ]; then
-            echo "### 🔍 Vulnerability Scan Results" >> $GITHUB_STEP_SUMMARY
+            echo "### Vulnerability Scan Results" >> $GITHUB_STEP_SUMMARY
 
             CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity=="Critical")] | length' sbom/vulnerabilities.json || echo "0")
             HIGH=$(jq '[.matches[] | select(.vulnerability.severity=="High")] | length' sbom/vulnerabilities.json || echo "0")
             MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity=="Medium")] | length' sbom/vulnerabilities.json || echo "0")
             LOW=$(jq '[.matches[] | select(.vulnerability.severity=="Low")] | length' sbom/vulnerabilities.json || echo "0")
 
-            echo "- 🔴 Critical: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+            echo "- Critical: $CRITICAL" >> $GITHUB_STEP_SUMMARY
             echo "- 🟠 High: $HIGH" >> $GITHUB_STEP_SUMMARY
-            echo "- 🟡 Medium: $MEDIUM" >> $GITHUB_STEP_SUMMARY
-            echo "- 🟢 Low: $LOW" >> $GITHUB_STEP_SUMMARY
+            echo "- Medium: $MEDIUM" >> $GITHUB_STEP_SUMMARY
+            echo "- Low: $LOW" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
@@ -301,7 +301,7 @@ jobs:
             --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
             "${IMAGE}"
 
-          echo "✅ Signature verified successfully!"
+          echo "Signature verified successfully!"
 
       - name: Verify SBOM attestation
         run: |
@@ -315,15 +315,15 @@ jobs:
             --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
             "${IMAGE}"
 
-          echo "✅ SBOM attestation verified successfully!"
+          echo "SBOM attestation verified successfully!"
 
       - name: Verification summary
         run: |
-          echo "## ✅ Verification Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Verification Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "All signatures and attestations verified successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- ✍️  Image signature: ✅ Verified" >> $GITHUB_STEP_SUMMARY
-          echo "- 📋 SBOM attestation: ✅ Verified" >> $GITHUB_STEP_SUMMARY
+          echo "- ✍️  Image signature: Verified" >> $GITHUB_STEP_SUMMARY
+          echo "- SBOM attestation: Verified" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Image is production-ready!** 🚀" >> $GITHUB_STEP_SUMMARY

@@ -32,7 +32,7 @@ print_service_info() {
     local description=$3
     local url=$4
     
-    echo -e "${GREEN}📊 $service_name${NC}"
+    echo -e "${GREEN}$service_name${NC}"
     echo -e "   ${CYAN}Описание:${NC} $description"
     echo -e "   ${CYAN}Порт:${NC} $port"
     echo -e "   ${CYAN}URL:${NC} $url"
@@ -41,31 +41,31 @@ print_service_info() {
 
 # Функция для проверки статуса подов
 check_pods_status() {
-    echo -e "${YELLOW}🔍 Проверка статуса подов...${NC}"
+    echo -e "${YELLOW}Проверка статуса подов...${NC}"
     echo ""
     
     # Проверка подов мониторинга
-    echo -e "${BLUE}📊 Мониторинг (cloudbridge-monitoring):${NC}"
+    echo -e "${BLUE}Мониторинг (cloudbridge-monitoring):${NC}"
     kubectl get pods -n $NAMESPACE_MONITORING --no-headers | while read line; do
         pod_name=$(echo $line | awk '{print $1}')
         status=$(echo $line | awk '{print $3}')
         if [ "$status" = "Running" ]; then
             echo -e "   $pod_name - $status"
         else
-            echo -e "   ❌ $pod_name - $status"
+            echo -e "   $pod_name - $status"
         fi
     done
     echo ""
     
     # Проверка подов CloudBridge
-    echo -e "${BLUE}🚀 CloudBridge (cloudbridge):${NC}"
+    echo -e "${BLUE}CloudBridge (cloudbridge):${NC}"
     kubectl get pods -n $NAMESPACE_CLOUDBRIDGE --no-headers | while read line; do
         pod_name=$(echo $line | awk '{print $1}')
         status=$(echo $line | awk '{print $3}')
         if [ "$status" = "Running" ]; then
             echo -e "   $pod_name - $status"
         else
-            echo -e "   ❌ $pod_name - $status"
+            echo -e "   $pod_name - $status"
         fi
     done
     echo ""
@@ -79,7 +79,7 @@ start_port_forward() {
     local remote_port=$4
     local description=$5
     
-    echo -e "${YELLOW}🚀 Запуск port-forward для $service_name...${NC}"
+    echo -e "${YELLOW}Запуск port-forward для $service_name...${NC}"
     
     # Проверяем, не запущен ли уже port-forward
     if pgrep -f "kubectl port-forward.*$service_name.*$local_port:$remote_port" > /dev/null; then
@@ -102,7 +102,7 @@ start_port_forward() {
         echo ""
         return 0
     else
-        echo -e "${RED}❌ Ошибка запуска port-forward для $service_name${NC}"
+        echo -e "${RED}Ошибка запуска port-forward для $service_name${NC}"
         return 1
     fi
 }
@@ -144,7 +144,7 @@ stop_all_port_forwards() {
 
 # Функция для показа статуса port-forward
 show_port_forward_status() {
-    echo -e "${YELLOW}📊 Статус port-forward:${NC}"
+    echo -e "${YELLOW}Статус port-forward:${NC}"
     
     local pids=$(pgrep -f "kubectl port-forward" || true)
     
@@ -157,7 +157,7 @@ show_port_forward_status() {
         echo -e "   ${YELLOW}ℹ️  Нет активных port-forward${NC}"
     fi
     
-    echo -e "${YELLOW}📊 Статус Cadence Web UI:${NC}"
+    echo -e "${YELLOW}Статус Cadence Web UI:${NC}"
     local cadence_web_pids=$(pgrep -f "next dev.*8088" || true)
     
     if [ -n "$cadence_web_pids" ]; then
@@ -169,7 +169,7 @@ show_port_forward_status() {
         echo -e "   ${YELLOW}ℹ️  Cadence Web UI не запущен${NC}"
     fi
     
-    echo -e "${YELLOW}📊 Статус NodePort для Cadence:${NC}"
+    echo -e "${YELLOW}Статус NodePort для Cadence:${NC}"
     if kubectl get svc -n cloudbridge cadence-nodeport > /dev/null 2>&1; then
         local nodeport=$(kubectl get svc -n cloudbridge cadence-nodeport -o jsonpath='{.spec.ports[0].nodePort}')
         local minikube_ip=$(minikube ip 2>/dev/null || echo "unknown")
@@ -186,7 +186,7 @@ open_browser() {
     local url=$1
     local description=$2
     
-    echo -e "${YELLOW}🌐 Открытие $description в браузере...${NC}"
+    echo -e "${YELLOW}Открытие $description в браузере...${NC}"
     
     if command -v xdg-open > /dev/null; then
         xdg-open "$url" 2>/dev/null &
@@ -207,7 +207,7 @@ main() {
     
     case "${1:-}" in
         "start"|"")
-            echo -e "${YELLOW}🚀 Запуск всех UI интерфейсов...${NC}"
+            echo -e "${YELLOW}Запуск всех UI интерфейсов...${NC}"
             echo ""
             
             check_pods_status
@@ -218,7 +218,7 @@ main() {
             start_port_forward "cassandra-service" "$NAMESPACE_CLOUDBRIDGE" 9500 9500 "Cassandra Metrics"
             start_port_forward "cloudbridge-relay" "$NAMESPACE_CLOUDBRIDGE" 8084 8084 "CloudBridge Relay Metrics"
             
-            echo -e "${YELLOW}🚀 Проверка Cadence Web UI в кластере...${NC}"
+            echo -e "${YELLOW}Проверка Cadence Web UI в кластере...${NC}"
             echo -e "${CYAN}Cadence Web UI доступен на: http://192.168.49.2:30088${NC}"
             
             # Проверяем развертывание Cadence Web UI в кластере
@@ -243,7 +243,7 @@ main() {
                 echo -e "${GREEN}Cadence Web UI развернут${NC}"
             fi
             
-            echo -e "${GREEN}🎉 Все UI интерфейсы запущены!${NC}"
+            echo -e "${GREEN}Все UI интерфейсы запущены!${NC}"
             echo ""
             echo -e "${BLUE}Доступные интерфейсы:${NC}"
             print_service_info "Cadence Web UI" "30088" "Полноценный веб-интерфейс для Cadence" "http://192.168.49.2:30088"
@@ -268,7 +268,7 @@ main() {
             ;;
             
         "open")
-            echo -e "${YELLOW}🌐 Открытие всех интерфейсов в браузере...${NC}"
+            echo -e "${YELLOW}Открытие всех интерфейсов в браузере...${NC}"
             echo ""
             
             # Запускаем port-forward если не запущены
@@ -308,7 +308,7 @@ main() {
             ;;
             
         "cadence")
-            echo -e "${YELLOW}🚀 Проверка Cadence Web UI в кластере...${NC}"
+            echo -e "${YELLOW}Проверка Cadence Web UI в кластере...${NC}"
             echo -e "${CYAN}Cadence Web UI доступен на: http://192.168.49.2:30088${NC}"
             echo ""
             
@@ -371,7 +371,7 @@ main() {
             ;;
             
         *)
-            echo -e "${RED}❌ Неизвестная команда: $1${NC}"
+            echo -e "${RED}Неизвестная команда: $1${NC}"
             echo -e "${YELLOW}Используйте '$0 help' для справки${NC}"
             exit 1
             ;;

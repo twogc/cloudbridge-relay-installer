@@ -1,4 +1,4 @@
-# 🌐 **Zitadel External Access Setup - COMPLETED!**
+# **Zitadel External Access Setup - COMPLETED!**
 
 ## **НАСТРОЙКА ЗАВЕРШЕНА УСПЕШНО**
 
@@ -11,7 +11,7 @@
 5. **Host Header**: Исправлен Host заголовок для Zitadel
 6. **SSL Certificate**: Настроен валидный SSL сертификат для edge.2gc.ru
 
-### **🌐 Внешний доступ к Zitadel:**
+### **Внешний доступ к Zitadel:**
 
 #### **HTTPS Access (Recommended)**
 - **URL:** https://edge.2gc.ru
@@ -22,7 +22,7 @@
 - **URL:** http://edge.2gc.ru
 - **Auto-redirect:** HTTP → HTTPS (301)
 
-### **🔑 Учетные данные для входа:**
+### **Учетные данные для входа:**
 
 - **Email:** `admin@local.test`
 - **Password:** `jrcCaigzmqzHpRcxo61RDiS+xejxX4/K`
@@ -69,7 +69,7 @@
 443/tcp                    ALLOW       Anywhere
 ```
 
-### **🔍 Проверка работоспособности:**
+### **Проверка работоспособности:**
 
 #### **1. Health Check:**
 ```bash
@@ -97,7 +97,7 @@ openssl s_client -connect edge.2gc.ru:443 -servername edge.2gc.ru < /dev/null 2>
 
 ### **📝 Следующие шаги:**
 
-#### **1. 🎯 КРИТИЧНО: Создать проект в Zitadel UI**
+#### **1. КРИТИЧНО: Создать проект в Zitadel UI**
 1. Откройте браузер: https://edge.2gc.ru/ui/login
 2. Войдите с учетными данными выше
 3. Создайте проект `cloudbridge-project`
@@ -109,7 +109,7 @@ openssl s_client -connect edge.2gc.ru:443 -servername edge.2gc.ru < /dev/null 2>
 - `configs/config.json`
 - `k8s/configmaps/cloudbridge-config.yaml`
 
-#### **3. 🟢 СРЕДНИЙ: Протестировать интеграцию**
+#### **3. СРЕДНИЙ: Протестировать интеграцию**
 - Перезапустить CloudBridge Relay
 - Протестировать аутентификацию
 - Проверить логи
@@ -165,7 +165,7 @@ sudo ufw allow 443/tcp
 - Проверьте срок действия сертификата: `openssl x509 -in /etc/haproxy/certs/edge.2gc.ru.pem -noout -dates`
 - Убедитесь, что используете правильный домен: `edge.2gc.ru` (не `zitadel.2gc.ru`)
 
-### **📊 Мониторинг:**
+### **Мониторинг:**
 
 #### **HAProxy Stats:**
 ```bash
@@ -184,11 +184,11 @@ kubectl -n zitadel get events
 
 ---
 
-## 🎉 **РЕЗУЛЬТАТ: Zitadel доступен извне через HTTPS!**
+## **РЕЗУЛЬТАТ: Zitadel доступен извне через HTTPS!**
 
 **Внешний доступ настроен и работает**
 **OIDC endpoints доступны**
 **UI доступен через браузер**
 **Готов к созданию проекта и приложения**
 
-**🌐 Доступ:** https://edge.2gc.ru/ui/login
+**Доступ:** https://edge.2gc.ru/ui/login

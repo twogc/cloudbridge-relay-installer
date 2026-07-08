@@ -203,4 +203,4 @@ openstack loadbalancer member list c9c66e2b-8f2a-42a1-937f-a1c4084965c2
 - `VK_CLOUD_FINAL_REPORT.md` - Предыдущий отчет
 - `vk-cloud-openstack.sh` - Скрипт подключения к OpenStack
 
-**Основная проблема**: Нужен SSH доступ к relay серверу 10.0.0.249 для настройки nginx конфигурации! 🔑
+**Основная проблема**: Нужен SSH доступ к relay серверу 10.0.0.249 для настройки nginx конфигурации! 

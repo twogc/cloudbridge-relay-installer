@@ -31,7 +31,7 @@ log_warning() {
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}$1${NC}"
 }
 
 check_prerequisites() {
@@ -150,12 +150,12 @@ show_status() {
     log_info "Deployment Status:"
     echo ""
     
-    echo "📊 Pods Status:"
+    echo "Pods Status:"
     kubectl get pods -n $NAMESPACE
     kubectl get pods -n $MONITORING_NAMESPACE
     echo ""
     
-    echo "🌐 Services Status:"
+    echo "Services Status:"
     kubectl get services -n $NAMESPACE
     kubectl get services -n $MONITORING_NAMESPACE
     echo ""
@@ -174,12 +174,12 @@ show_access_info() {
     log_info "Access Information:"
     echo ""
     
-    echo "🚀 CloudBridge Relay:"
+    echo "CloudBridge Relay:"
     echo "   - Internal: http://cloudbridge-relay.$NAMESPACE.svc.cluster.local:9090"
     echo "   - External: https://cloudbridge.example.com"
     echo ""
     
-    echo "📊 Grafana Dashboard:"
+    echo "Grafana Dashboard:"
     echo "   - Internal: http://grafana.$MONITORING_NAMESPACE.svc.cluster.local:3000"
     echo "   - External: https://grafana.cloudbridge.example.com"
     echo "   - Username: admin"
@@ -195,7 +195,7 @@ show_access_info() {
     echo "   - Internal: cassandra-service.$NAMESPACE.svc.cluster.local:9042"
     echo ""
     
-    echo "⚡ Cadence:"
+    echo "Cadence:"
     echo "   - Internal: cadence-service.$NAMESPACE.svc.cluster.local:7933"
     echo "   - Web UI: http://cadence-service.$NAMESPACE.svc.cluster.local:7934"
     echo ""
@@ -232,7 +232,7 @@ cleanup() {
 
 # Main function
 main() {
-    echo "=== 🚀 CloudBridge Relay - Kubernetes Deployment ==="
+    echo "=== CloudBridge Relay - Kubernetes Deployment ==="
     echo ""
     
     case "${1:-deploy}" in

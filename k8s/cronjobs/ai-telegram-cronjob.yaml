@@ -44,11 +44,11 @@ spec:
                 }' 2>/dev/null)
               
               if [ -n "$RESPONSE" ]; then
-                echo "✅ AI report generated successfully"
+                echo "AI report generated successfully"
                 echo "Response: $RESPONSE"
                 exit 0
               else
-                echo "❌ Failed to generate AI report, using fallback"
+                echo "Failed to generate AI report, using fallback"
                 # Fallback: отправляем базовое уведомление
                 curl -s -X POST "http://ai-service.cloudbridge.svc.cluster.local:8083/api/v1/ai/send-telegram-message" \
                   -H "Content-Type: application/json" \

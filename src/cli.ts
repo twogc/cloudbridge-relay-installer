@@ -61,7 +61,7 @@ program
       
       spinner.succeed(chalk.green('Server started successfully!'));
       
-      console.log(chalk.blue('\n📊 Server Information:'));
+      console.log(chalk.blue('\nServer Information:'));
       console.log(chalk.white(`  • Address: ${options.host}:${options.port}`));
       console.log(chalk.white(`  • WireGuard: ${options.wireguard ? 'Enabled' : 'Disabled'}`));
       console.log(chalk.white(`  • QUIC: ${options.quic ? 'Enabled' : 'Disabled'}`));
@@ -119,7 +119,7 @@ program
       
       spinner.succeed(chalk.green('Connected to server successfully!'));
       
-      console.log(chalk.blue('\n📊 Client Information:'));
+      console.log(chalk.blue('\nClient Information:'));
       console.log(chalk.white(`  • Server: ${options.server}`));
       console.log(chalk.white(`  • WireGuard: ${options.wireguard ? 'Enabled' : 'Disabled'}`));
       console.log(chalk.white(`  • QUIC: ${options.quic ? 'Enabled' : 'Disabled'}`));
@@ -145,7 +145,7 @@ program
   .command('setup')
   .description('Interactive setup wizard')
   .action(async () => {
-    console.log(chalk.blue('🚀 CloudBridge Relay Setup Wizard\n'));
+    console.log(chalk.blue('CloudBridge Relay Setup Wizard\n'));
     
     const answers = await inquirer.prompt([
       {
@@ -228,7 +228,7 @@ program
       
       spinner.succeed(chalk.green('CloudBridge Relay started successfully!'));
       
-      console.log(chalk.blue('\n📊 Status:'));
+      console.log(chalk.blue('\nStatus:'));
       const status = relay.getStatus();
       console.log(chalk.white(`  • Server: ${status.server ? 'Running' : 'Stopped'}`));
       console.log(chalk.white(`  • Client: ${status.client ? 'Connected' : 'Disconnected'}`));
@@ -272,7 +272,7 @@ program
       
       spinner.succeed(chalk.green('Status check completed'));
       
-      console.log(chalk.blue('\n📊 Service Status:'));
+      console.log(chalk.blue('\nService Status:'));
       results.forEach((result, index) => {
         const check = healthChecks[index];
         if (result.status === 'fulfilled') {

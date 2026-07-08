@@ -16,7 +16,7 @@ minikube status
 # minikube start --cpus=4 --memory=8192mb
 ```
 
-## 2. ⚡ Быстрый тест (5 минут)
+## 2. Быстрый тест (5 минут)
 
 ### Шаг 1: Подготовка конфигурации
 
@@ -179,13 +179,13 @@ echo " Тест 5 пройден: kubectl logs через WebSocket"
 # Cleanup
 kubectl --kubeconfig ~/.kube/config-relay-test delete pod test-pod
 
-echo "🎉 Базовые тесты пройдены успешно!"
+echo "Базовые тесты пройдены успешно!"
 ```
 
 ### Шаг 5: Проверка метрик
 
 ```bash
-echo "📊 Проверка метрик..."
+echo "Проверка метрик..."
 
 METRICS_URL="http://$(minikube ip):30551"
 curl -s $METRICS_URL/metrics | grep -E "(kube_proxy_requests_total|kube_ws_)" | head -10
@@ -193,7 +193,7 @@ curl -s $METRICS_URL/metrics | grep -E "(kube_proxy_requests_total|kube_ws_)" | 
 echo " Метрики доступны по адресу: $METRICS_URL/metrics"
 ```
 
-## 3. 🧪 Полные E2E тесты (10-15 минут)
+## 3. Полные E2E тесты (10-15 минут)
 
 ```bash
 # Настройка переменных для тестов
@@ -426,8 +426,8 @@ kubectl --kubeconfig ~/.kube/config-relay-test get pods
 ## Готово!
 
 Теперь у вас есть полный набор инструментов для:
-- ⚡ **Быстрого тестирования** (5 минут)  
-- 🧪 **Полного E2E тестирования** (15 минут)
+- **Быстрого тестирования** (5 минут)  
+- **Полного E2E тестирования** (15 минут)
 - **Безопасного обновления** production системы
 - **Мониторинга** здоровья системы
 

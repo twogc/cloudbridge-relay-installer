@@ -396,7 +396,7 @@ cred, err := tcs.GenerateCredential("tenant-1", "peer-123", 10*time.Minute)
 - sername format is **identical** (`<timestamp>:<peer_id>`)
 - assword generation is **identical** (HMAC-SHA1)
 - uota management is **unchanged**
-- ⚠️ Must add `realm` parameter (required by pion/turn)
+- Must add `realm` parameter (required by pion/turn)
 
 ### Deprecation Timeline
 

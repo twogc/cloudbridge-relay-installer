@@ -249,7 +249,7 @@ CMD ["turnserver", "-c", "/etc/turnserver.conf"]
 - **Kubernetes-native** vs Docker-only
 - **Prometheus интеграция** vs базовые логи
 
-### **🎯 Рекомендации**
+### **Рекомендации**
 
 1. **Добавить TCP allocation support** (как в pion/turn)
 2. **Добавить IPv6 support** (как в coturn)

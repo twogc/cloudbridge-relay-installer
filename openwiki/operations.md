@@ -87,7 +87,7 @@ Multi-stage build:
 
 ```dockerfile
 # Stage 1: Builder
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 # CGO_ENABLED=1, cross-compilation support
 
 # Stage 2: Runtime

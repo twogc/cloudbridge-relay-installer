@@ -155,7 +155,7 @@ Authorization: Bearer <jwt-token>
 - **go_memstats_alloc_bytes** - Использование памяти
 - **go_goroutines** - Количество горутин
 
-## 🧪 **Тестирование API**
+## **Тестирование API**
 
 ### **cURL примеры:**
 ```bash

@@ -170,7 +170,7 @@ check_security_group_exists() {
 
 # Основная функция настройки
 setup_firewall() {
-    log "🚀 Начинаем настройку firewall для CloudBridge Relay"
+    log "Начинаем настройку firewall для CloudBridge Relay"
     
     # Создаем основную Security Group
     relay_sg_id=$(check_security_group_exists "cloudbridge-relay-sg")

@@ -55,33 +55,33 @@ func CorrectWorkflowExample(ctx workflow.Context, input string) error {
 	return nil
 }
 
-// ❌ НЕПРАВИЛЬНО: Недетерминированный workflow
+// НЕПРАВИЛЬНО: Недетерминированный workflow
 // Этот пример показывает, чего НЕ нужно делать
 func IncorrectWorkflowExample(ctx workflow.Context, input string) error {
-	// ❌ НЕ используйте стандартный логгер
+	// НЕ используйте стандартный логгер
 	// log.Println("This is wrong!")
 
-	// ❌ НЕ используйте time.Now()
+	// НЕ используйте time.Now()
 	// now := time.Now()
 
-	// ❌ НЕ используйте time.Sleep()
+	// НЕ используйте time.Sleep()
 	// time.Sleep(time.Minute)
 
-	// ❌ НЕ используйте стандартные горутины
+	// НЕ используйте стандартные горутины
 	// go func() {
 	//     // Это приведет к недетерминированному поведению
 	// }()
 
-	// ❌ НЕ делайте внешние вызовы напрямую в workflow
+	// НЕ делайте внешние вызовы напрямую в workflow
 	// http.Get("https://api.example.com") // Это должно быть в activity!
 
-	// ❌ НЕ используйте range по maps (недетерминированный порядок)
+	// НЕ используйте range по maps (недетерминированный порядок)
 	// data := map[string]int{"a": 1, "b": 2}
 	// for key, value := range data {
 	//     // Порядок итерации может различаться при replay
 	// }
 
-	// ❌ НЕ используйте стандартные каналы и select
+	// НЕ используйте стандартные каналы и select
 	// ch := make(chan string)
 	// select {
 	// case data := <-ch:

@@ -1,4 +1,4 @@
-# 🔒 **SSL Certificate Setup - COMPLETED!**
+# **SSL Certificate Setup - COMPLETED!**
 
 ## **SSL СЕРТИФИКАТ НАСТРОЕН УСПЕШНО**
 
@@ -10,7 +10,7 @@
 4. **Обновлены записи в /etc/hosts** для правильного разрешения домена
 5. **Проверена работоспособность** SSL соединения
 
-### **🔒 SSL Сертификат:**
+### **SSL Сертификат:**
 
 - **Домен:** `edge.2gc.ru`
 - **Issuer:** Let's Encrypt
@@ -19,7 +19,7 @@
 - **Status:** Valid and working
 - **Certificate Path:** `/etc/haproxy/certs/edge.2gc.ru.pem`
 
-### **🌐 Обновленный доступ к Zitadel:**
+### **Обновленный доступ к Zitadel:**
 
 #### **HTTPS Access (SSL Enabled)**
 - **URL:** https://edge.2gc.ru
@@ -30,7 +30,7 @@
 - **URL:** http://edge.2gc.ru
 - **Auto-redirect:** HTTP → HTTPS (301)
 
-### **🔑 Учетные данные для входа:**
+### **Учетные данные для входа:**
 
 - **Email:** `admin@local.test`
 - **Password:** `jrcCaigzmqzHpRcxo61RDiS+xejxX4/K`
@@ -76,7 +76,7 @@ openssl s_client -connect edge.2gc.ru:443 -servername edge.2gc.ru < /dev/null 2>
 
 ### **📝 Следующие шаги:**
 
-#### **1. 🎯 КРИТИЧНО: Создать проект в Zitadel UI**
+#### **1. КРИТИЧНО: Создать проект в Zitadel UI**
 1. Откройте браузер: https://edge.2gc.ru/ui/login
 2. Войдите с учетными данными выше
 3. Создайте проект `cloudbridge-project`
@@ -88,12 +88,12 @@ openssl s_client -connect edge.2gc.ru:443 -servername edge.2gc.ru < /dev/null 2>
 - `configs/config.json`
 - `k8s/configmaps/cloudbridge-config.yaml`
 
-#### **3. 🟢 СРЕДНИЙ: Протестировать интеграцию**
+#### **3. СРЕДНИЙ: Протестировать интеграцию**
 - Перезапустить CloudBridge Relay
 - Протестировать аутентификацию
 - Проверить логи
 
-### **🔍 Troubleshooting:**
+### **Troubleshooting:**
 
 #### **Проблема: "SSL: no alternative certificate subject name matches"**
 - Убедитесь, что используете `edge.2gc.ru`, а не `zitadel.2gc.ru`
@@ -132,7 +132,7 @@ openssl x509 -in /etc/haproxy/certs/edge.2gc.ru.pem -text -noout | grep -E "(Sub
 
 ---
 
-## 🎉 **РЕЗУЛЬТАТ: SSL сертификат настроен и работает!**
+## **РЕЗУЛЬТАТ: SSL сертификат настроен и работает!**
 
 **SSL соединение работает**
 **Валидный сертификат Let's Encrypt**
@@ -140,7 +140,7 @@ openssl x509 -in /etc/haproxy/certs/edge.2gc.ru.pem -text -noout | grep -E "(Sub
 **Автоматический redirect HTTP → HTTPS**
 **Готов к созданию проекта и приложения**
 
-**🌐 Доступ:** https://edge.2gc.ru/ui/login
+**Доступ:** https://edge.2gc.ru/ui/login
 
 
 

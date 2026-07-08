@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 NAMESPACE="cloudbridge"
 SERVICE_NAME="ai-service"
 
-echo -e "${BLUE}🚀 AI Service Autoscaling Setup Script${NC}"
+echo -e "${BLUE}AI Service Autoscaling Setup Script${NC}"
 echo "================================================"
 
 # Function to check if namespace exists
@@ -25,7 +25,7 @@ check_namespace() {
         echo -e "${GREEN}Namespace $NAMESPACE exists${NC}"
         return 0
     else
-        echo -e "${RED}❌ Namespace $NAMESPACE not found${NC}"
+        echo -e "${RED}Namespace $NAMESPACE not found${NC}"
         return 1
     fi
 }
@@ -36,14 +36,14 @@ check_deployment() {
         echo -e "${GREEN}Deployment $SERVICE_NAME exists${NC}"
         return 0
     else
-        echo -e "${RED}❌ Deployment $SERVICE_NAME not found${NC}"
+        echo -e "${RED}Deployment $SERVICE_NAME not found${NC}"
         return 1
     fi
 }
 
 # Function to create HPA
 create_hpa() {
-    echo -e "${BLUE}📊 Creating Horizontal Pod Autoscaler (HPA)...${NC}"
+    echo -e "${BLUE}Creating Horizontal Pod Autoscaler (HPA)...${NC}"
     
     HPA_YAML="apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -95,14 +95,14 @@ spec:
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
 
 # Function to create VPA
 create_vpa() {
-    echo -e "${BLUE}📊 Creating Vertical Pod Autoscaler (VPA)...${NC}"
+    echo -e "${BLUE}Creating Vertical Pod Autoscaler (VPA)...${NC}"
     
     # Check if VPA CRD exists
     if ! kubectl get crd verticalpodautoscalers.autoscaling.k8s.io >/dev/null 2>&1; then
@@ -114,7 +114,7 @@ create_vpa() {
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}VPA installed${NC}"
         else
-            echo -e "${RED}❌ Failed to install VPA${NC}"
+            echo -e "${RED}Failed to install VPA${NC}"
             return 1
         fi
         
@@ -158,14 +158,14 @@ spec:
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
 
 # Function to create Pod Disruption Budget
 create_pdb() {
-    echo -e "${BLUE}📊 Creating Pod Disruption Budget (PDB)...${NC}"
+    echo -e "${BLUE}Creating Pod Disruption Budget (PDB)...${NC}"
     
     PDB_YAML="apiVersion: policy/v1
 kind: PodDisruptionBudget
@@ -185,14 +185,14 @@ spec:
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
 
 # Function to create custom metrics HPA
 create_custom_metrics_hpa() {
-    echo -e "${BLUE}📊 Creating Custom Metrics HPA...${NC}"
+    echo -e "${BLUE}Creating Custom Metrics HPA...${NC}"
     
     # Check if metrics-server is installed
     if ! kubectl get deployment metrics-server -n kube-system >/dev/null 2>&1; then
@@ -203,7 +203,7 @@ create_custom_metrics_hpa() {
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}Metrics server installed${NC}"
         else
-            echo -e "${RED}❌ Failed to install metrics server${NC}"
+            echo -e "${RED}Failed to install metrics server${NC}"
             return 1
         fi
     fi
@@ -248,7 +248,7 @@ spec:
         echo -e "${GREEN}Created${NC}"
         return 0
     else
-        echo -e "${RED}❌ Failed${NC}"
+        echo -e "${RED}Failed${NC}"
         return 1
     fi
 }
@@ -257,7 +257,7 @@ echo -e "${YELLOW}Setting up AI Service Autoscaling...${NC}"
 echo
 
 # Check prerequisites
-echo -e "${BLUE}🔍 Checking prerequisites...${NC}"
+echo -e "${BLUE}Checking prerequisites...${NC}"
 check_namespace $NAMESPACE
 check_deployment $SERVICE_NAME
 
@@ -276,17 +276,17 @@ echo
 
 # Summary
 echo "================================================"
-echo -e "${GREEN}🎉 AI Service Autoscaling Setup Complete!${NC}"
+echo -e "${GREEN}AI Service Autoscaling Setup Complete!${NC}"
 echo
 
-echo -e "${BLUE}📊 Autoscaling Configuration:${NC}"
+echo -e "${BLUE}Autoscaling Configuration:${NC}"
 echo "  - HPA: 2-10 replicas based on CPU (70%) and Memory (80%)"
 echo "  - VPA: Auto mode with CPU 100m-2000m, Memory 128Mi-4Gi"
 echo "  - PDB: Minimum 1 pod available during disruptions"
 echo "  - Custom HPA: 2-15 replicas with custom metrics"
 echo
 
-echo -e "${BLUE}🔍 Monitoring Commands:${NC}"
+echo -e "${BLUE}Monitoring Commands:${NC}"
 echo "  - HPA Status: kubectl get hpa -n $NAMESPACE"
 echo "  - VPA Status: kubectl get vpa -n $NAMESPACE"
 echo "  - PDB Status: kubectl get pdb -n $NAMESPACE"

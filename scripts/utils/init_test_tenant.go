@@ -59,7 +59,7 @@ func main() {
 	log.Printf("Конфигурация tenant'а:\n%s\n", string(jsonData))
 
 	// Проверяем доступность relay сервера
-	log.Println("🌐 Проверка доступности relay сервера...")
+	log.Println("Проверка доступности relay сервера...")
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -68,14 +68,14 @@ func main() {
 	// Проверяем health endpoint
 	resp, err := client.Get("http://localhost:9090/health")
 	if err != nil {
-		log.Printf("❌ Relay сервер недоступен: %v", err)
+		log.Printf("Relay сервер недоступен: %v", err)
 		log.Println("Убедитесь, что relay сервер запущен: docker-compose up -d")
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("❌ Health endpoint вернул статус: %d", resp.StatusCode)
+		log.Printf("Health endpoint вернул статус: %d", resp.StatusCode)
 		return
 	}
 
@@ -87,7 +87,7 @@ func main() {
 	// Создаем тестовый JWT токен
 	testJWT := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRfaWQiOiJyZWxheS10ZXN0LXRlbmFudCIsInVzZXJfaWQiOiJkZXYtdXNlciIsInBlcm1pc3Npb25zIjpbInR1bm5lbCIsInJlYWQiLCJ3cml0ZSJdLCJpc3MiOiIyZ2MucnUiLCJhdWQiOiJyZWxheS10ZXN0LXRlbmFudCIsImV4cCI6MTczNTY4NjQwMCwiaWF0IjoxNzM1NjgyODAwfQ.test-signature"
 
-	log.Printf("🔑 Тестовый JWT токен: %s", testJWT)
+	log.Printf("Тестовый JWT токен: %s", testJWT)
 
 	// Инструкции по тестированию
 	log.Println("\nИнструкции по тестированию:")
@@ -102,7 +102,7 @@ func main() {
 	log.Println("")
 	log.Println("Tenant relay-test-tenant готов к использованию!")
 	log.Println("")
-	log.Println("📊 Проверьте статус:")
+	log.Println("Проверьте статус:")
 	log.Println("   curl -s http://localhost:9090/health | jq .")
 	log.Println("")
 	log.Println("Проверьте логи:")

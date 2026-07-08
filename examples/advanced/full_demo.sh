@@ -20,7 +20,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # Проверка статуса системы
-echo "🔍 Проверка системы..."
+echo "Проверка системы..."
 ../../tools/utils/start_production.sh status
 
 # Запуск P2P демо
@@ -31,4 +31,4 @@ cd ../../tests/demo
 
 echo ""
 echo "✨ Демонстрация завершена!"
-echo "📊 Проверьте Grafana дашборды: http://localhost:3000"
+echo "Проверьте Grafana дашборды: http://localhost:3000"

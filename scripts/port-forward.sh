@@ -73,7 +73,7 @@ start_port_forward() {
         print_status "Port-forward for $description started successfully"
         return 0
     else
-        print_error "❌ Failed to start port-forward for $description"
+        print_error "Failed to start port-forward for $description"
         return 1
     fi
 }
@@ -95,7 +95,7 @@ main() {
             
             print_header "Port-forwards started!"
             echo ""
-            print_status "🌐 Zitadel UI: http://zitadel.local:8080/ui/login"
+            print_status "Zitadel UI: http://zitadel.local:8080/ui/login"
             print_status " Zitadel API: http://zitadel.local:8080"
             echo ""
             print_status "Login credentials:"
@@ -116,19 +116,19 @@ main() {
             if check_port 3000; then
                 print_status "Port 3000 (Zitadel UI): ACTIVE"
             else
-                print_warning "❌ Port 3000 (Zitadel UI): INACTIVE"
+                print_warning "Port 3000 (Zitadel UI): INACTIVE"
             fi
             
             if check_port 8080; then
                 print_status "Port 8080 (Zitadel API): ACTIVE"
             else
-                print_warning "❌ Port 8080 (Zitadel API): INACTIVE"
+                print_warning "Port 8080 (Zitadel API): INACTIVE"
             fi
             
             if check_port 9091; then
                 print_status "Port 9091 (CloudBridge Relay): ACTIVE"
             else
-                print_warning "❌ Port 9091 (CloudBridge Relay): INACTIVE"
+                print_warning "Port 9091 (CloudBridge Relay): INACTIVE"
             fi
             ;;
             
@@ -139,8 +139,8 @@ main() {
             
             print_header "CloudBridge port-forwards started!"
             echo ""
-            print_status "🚀 CloudBridge Relay API: http://localhost:9091"
-            print_status "📊 Health check: http://localhost:9091/health"
+            print_status "CloudBridge Relay API: http://localhost:9091"
+            print_status "Health check: http://localhost:9091/health"
             print_status " Metrics: http://localhost:9091/metrics"
             ;;
             
@@ -157,9 +157,9 @@ main() {
             
             print_header "All port-forwards started!"
             echo ""
-            print_status "🌐 Zitadel UI: http://zitadel.local:8080/ui/login"
+            print_status "Zitadel UI: http://zitadel.local:8080/ui/login"
             print_status " Zitadel API: http://zitadel.local:8080"
-            print_status "🚀 CloudBridge Relay API: http://localhost:9091"
+            print_status "CloudBridge Relay API: http://localhost:9091"
             ;;
             
         "help"|*)

@@ -150,22 +150,22 @@ spec:
 ## Критерии приемки
 
 ### Функциональные требования
-1. ✅ Cadence запускается без ошибок (`kubectl get pods -n cloudbridge | grep cadence` показывает `Running`)
-2. ✅ Cadence предоставляет метрики на порту 7934 (`/metrics` endpoint доступен)
-3. ✅ Prometheus может получить метрики от Cadence (статус `up = 1`)
-4. ✅ AI сервис может подключиться к Cadence для получения статистики workflow'ов
+1. Cadence запускается без ошибок (`kubectl get pods -n cloudbridge | grep cadence` показывает `Running`)
+2. Cadence предоставляет метрики на порту 7934 (`/metrics` endpoint доступен)
+3. Prometheus может получить метрики от Cadence (статус `up = 1`)
+4. AI сервис может подключиться к Cadence для получения статистики workflow'ов
 
 ### Технические требования
-1. ✅ Логи Cadence не содержат ошибок конфигурации
-2. ✅ Все необходимые переменные окружения настроены правильно
-3. ✅ Volume mounts работают корректно
-4. ✅ Service и Endpoints настроены правильно
+1. Логи Cadence не содержат ошибок конфигурации
+2. Все необходимые переменные окружения настроены правильно
+3. Volume mounts работают корректно
+4. Service и Endpoints настроены правильно
 
 ### Метрики
-1. ✅ Доступны метрики `cadence_workflow_executions_total`
-2. ✅ Доступны метрики `cadence_workflow_failures_total`
-3. ✅ Доступны метрики `cadence_activity_executions_total`
-4. ✅ Метрики обновляются в реальном времени
+1. Доступны метрики `cadence_workflow_executions_total`
+2. Доступны метрики `cadence_workflow_failures_total`
+3. Доступны метрики `cadence_activity_executions_total`
+4. Метрики обновляются в реальном времени
 
 ## Возможные решения
 

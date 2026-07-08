@@ -81,7 +81,7 @@ force_cleanup() {
 
 # Функция для мониторинга метрик
 monitor_metrics() {
-    echo "📊 Current Prometheus storage metrics:"
+    echo "Current Prometheus storage metrics:"
     
     # Размер хранилища
     local size_gb=$(get_storage_size_gb)
@@ -102,12 +102,12 @@ monitor_metrics() {
 
 # Основная логика
 main() {
-    echo "🚀 Prometheus Storage Cleanup Script"
+    echo "Prometheus Storage Cleanup Script"
     echo "=================================="
     
     # Проверяем, что под Prometheus запущен
     if ! kubectl get pod -n $NAMESPACE $PROMETHEUS_POD >/dev/null 2>&1; then
-        echo "❌ Prometheus pod not found: $PROMETHEUS_POD"
+        echo "Prometheus pod not found: $PROMETHEUS_POD"
         exit 1
     fi
     
@@ -144,7 +144,7 @@ main() {
     monitor_metrics
     
     echo ""
-    echo "🎉 Prometheus storage cleanup script completed!"
+    echo "Prometheus storage cleanup script completed!"
 }
 
 # Обработка аргументов командной строки

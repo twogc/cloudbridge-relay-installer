@@ -185,7 +185,7 @@ $ git diff go.mod
 
 ### Developer Experience
 - Faster onboarding with SERVICE_CATALOG.md
-- 🧪 Integration tests for smoke testing
+- Integration tests for smoke testing
 - Clear service dependencies and APIs
 - ll tests passing (no broken build)
 
@@ -202,24 +202,24 @@ Based on [PROJECT_ARCHITECTURE_ANALYSIS.md](PROJECT_ARCHITECTURE_ANALYSIS.md) re
    - Add P2P connection test
    - Add NAT traversal test
 
-2. **Load Testing** ⏳ TODO
+2. **Load Testing** TODO
    - Test relay under load
    - Identify bottlenecks
    - Optimize hot paths
 
-3. **Production Deployment** ⏳ TODO
+3. **Production Deployment** TODO
    - Deploy to staging
    - Run integration tests
    - Fix critical bugs
 
 ### Medium-term (Next Month)
 
-1. **Refactoring** ⏳ TODO
+1. **Refactoring** TODO
    - Split relay main.go (2391 lines → modular structure)
    - Add unit tests for core components
    - Improve error handling
 
-2. **Observability** ⏳ TODO
+2. **Observability** TODO
    - Add distributed tracing
    - Standardize logging format
    - Define SLOs

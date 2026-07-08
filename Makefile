@@ -91,7 +91,7 @@ test-coverage: ## Запустить тесты с покрытием
 	@mkdir -p coverage_reports
 	go test -v -race -coverprofile=coverage_reports/coverage.out -covermode=atomic ./...
 	go tool cover -html=coverage_reports/coverage.out -o coverage_reports/coverage.html
-	@echo "📊 Отчет о покрытии: coverage_reports/coverage.html"
+	@echo "Отчет о покрытии: coverage_reports/coverage.html"
 	@echo "Тесты с покрытием завершены"
 
 test-critical: ## Тесты критических компонентов
@@ -110,7 +110,7 @@ test-integration: ## Интеграционные тесты
 	@echo "Интеграционные тесты завершены"
 
 test-benchmark: ## Бенчмарки
-	@echo "⚡ Запуск бенчмарков..."
+	@echo "Запуск бенчмарков..."
 	go test -v -bench=. -benchmem ./...
 	@echo "Бенчмарки завершены"
 
@@ -120,23 +120,23 @@ test-race: ## Тесты с race detection
 	@echo "Race detection тесты завершены"
 
 test-coverage-report: ## Генерация отчета о покрытии
-	@echo "📊 Генерация отчета о покрытии..."
+	@echo "Генерация отчета о покрытии..."
 	@mkdir -p coverage_reports
 	go test -coverprofile=coverage_reports/coverage.out -covermode=atomic ./...
 	go tool cover -html=coverage_reports/coverage.out -o coverage_reports/coverage.html
 	go tool cover -func=coverage_reports/coverage.out > coverage_reports/coverage.txt
 	@echo " Покрытие по функциям:"
 	@tail -1 coverage_reports/coverage.txt
-	@echo "📊 HTML отчет: coverage_reports/coverage.html"
+	@echo "HTML отчет: coverage_reports/coverage.html"
 	@echo "Отчет о покрытии сгенерирован"
 
 test-coverage-check: ## Проверка покрытия тестами
-	@echo "🔍 Проверка покрытия тестами..."
+	@echo "Проверка покрытия тестами..."
 	@mkdir -p coverage_reports
 	go test -coverprofile=coverage_reports/coverage.out -covermode=atomic ./...
 	@COVERAGE=$$(go tool cover -func=coverage_reports/coverage.out | tail -1 | awk '{print $$3}' | sed 's/%//'); \
 	if [ $$(echo "$$COVERAGE < 80" | bc -l) -eq 1 ]; then \
-		echo "❌ Покрытие тестами: $$COVERAGE% (требуется >80%)"; \
+		echo "Покрытие тестами: $$COVERAGE% (требуется >80%)"; \
 		exit 1; \
 	else \
 		echo "Покрытие тестами: $$COVERAGE%"; \
@@ -144,7 +144,7 @@ test-coverage-check: ## Проверка покрытия тестами
 
 test-watch: ## Запуск тестов в режиме наблюдения
 	@echo "👀 Запуск тестов в режиме наблюдения..."
-	@which entr > /dev/null || (echo "❌ entr не установлен. Установите: sudo apt-get install entr" && exit 1)
+	@which entr > /dev/null || (echo "entr не установлен. Установите: sudo apt-get install entr" && exit 1)
 	find . -name "*.go" -not -path "./vendor/*" | entr -c make test
 
 test-clean: ## Очистка отчетов о покрытии
@@ -174,31 +174,31 @@ security-check: ## Проверка безопасности (gosec)
 	@echo "Проверка безопасности завершена"
 
 security-full: ## Полная проверка безопасности (все инструменты)
-	@echo "🔒 Запуск полной проверки безопасности..."
+	@echo "Запуск полной проверки безопасности..."
 	@chmod +x scripts/security-check.sh
 	@./scripts/security-check.sh
 	@echo "Полная проверка безопасности завершена"
 
 security-trivy: ## Сканирование уязвимостей с Trivy
-	@echo "🔍 Сканирование уязвимостей с Trivy..."
+	@echo "Сканирование уязвимостей с Trivy..."
 	@mkdir -p security_reports
 	trivy fs --severity HIGH,CRITICAL --format table .
 	@echo "Сканирование Trivy завершено"
 
 security-secrets: ## Поиск секретов с Trivy
-	@echo "🔍 Поиск секретов с Trivy..."
+	@echo "Поиск секретов с Trivy..."
 	@mkdir -p security_reports
 	trivy fs --scanners secret --format table .
 	@echo "Поиск секретов завершен"
 
 security-deps: ## Проверка зависимостей с Nancy
-	@echo "🔍 Проверка зависимостей с Nancy..."
+	@echo "Проверка зависимостей с Nancy..."
 	@mkdir -p security_reports
 	go list -json -deps ./... | nancy sleuth
 	@echo "Проверка зависимостей завершена"
 
 security-lint: ## Проверка кода с golangci-lint
-	@echo "🔍 Проверка кода с golangci-lint..."
+	@echo "Проверка кода с golangci-lint..."
 	export PATH=$$PATH:$$(go env GOPATH)/bin && golangci-lint run --timeout=5m
 	@echo "Проверка golangci-lint завершена"
 

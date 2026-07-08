@@ -33,7 +33,7 @@ for interface in $(ls /sys/class/net/ | grep -E '^ens|^eth|^enp'); do
 done
 
 if [ -z "$SECONDARY_INTERFACE" ]; then
-    echo "❌ Дополнительная сетевая карта не найдена"
+    echo "Дополнительная сетевая карта не найдена"
     echo "   Убедитесь, что карта добавлена в VK Cloud и видна в системе"
     exit 1
 fi
@@ -74,7 +74,7 @@ if [ $? -eq 0 ]; then
     echo "Сетевая конфигурация применена успешно"
     sudo netplan apply
 else
-    echo "❌ Ошибка применения конфигурации, откатываемся..."
+    echo "Ошибка применения конфигурации, откатываемся..."
     sudo netplan apply
     exit 1
 fi
@@ -94,7 +94,7 @@ echo -e "\n9. Проверяем SSH доступ..."
 if ping -c 1 8.8.8.8 > /dev/null 2>&1; then
     echo "Интернет доступен"
 else
-    echo "❌ Проблемы с интернетом"
+    echo "Проблемы с интернетом"
 fi
 
 # 9. Настраиваем балансировку нагрузки (если нужно)
@@ -135,7 +135,7 @@ if [[ "$response" =~ ^[Yy]$ ]]; then
         sudo netplan apply
         echo "Bonding настроен успешно"
     else
-        echo "❌ Ошибка настройки bonding"
+        echo "Ошибка настройки bonding"
     fi
 fi
 EOF

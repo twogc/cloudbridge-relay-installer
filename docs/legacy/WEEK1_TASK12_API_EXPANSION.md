@@ -1,4 +1,4 @@
-# 📡 НЕДЕЛЯ 1, ЗАДАЧА 1.2: API СТРУКТУРА И РАСШИРЕНИЕ
+# НЕДЕЛЯ 1, ЗАДАЧА 1.2: API СТРУКТУРА И РАСШИРЕНИЕ
 **Duration**: 6 часов
 **Status**: IN PROGRESS
 **Focus**: Dashboard BFF API endpoints

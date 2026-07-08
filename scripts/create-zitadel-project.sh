@@ -8,7 +8,7 @@ ADMIN_PASSWORD="jrcCaigzmqzHpRcxo61RDiS+xejxX4/K"
 PROJECT_NAME="cloudbridge-project"
 APP_NAME="cloudbridge-relay"
 
-echo "🔐 Creating Zitadel project and application..."
+echo "Creating Zitadel project and application..."
 
 # Используем Personal Access Token
 echo "📝 Using Personal Access Token..."
@@ -17,7 +17,7 @@ ACCESS_TOKEN="b4b59e03c344795e8863e9c8f9ff4dd427af46aaa3c1aa65"
 echo "Using PAT for authentication"
 
 # Получаем информацию об организации
-echo "🏢 Getting organization info..."
+echo " Getting organization info..."
 ORG_RESPONSE=$(curl -k -s -X GET "$ZITADEL_DOMAIN/admin/v1/orgs/me" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json")
@@ -42,7 +42,7 @@ PROJECT_RESPONSE=$(curl -k -s -X POST "$ZITADEL_DOMAIN/admin/v1/projects" \
 PROJECT_ID=$(echo "$PROJECT_RESPONSE" | jq -r '.id')
 
 if [ "$PROJECT_ID" = "null" ] || [ -z "$PROJECT_ID" ]; then
-  echo "❌ Failed to create project"
+  echo "Failed to create project"
   echo "Response: $PROJECT_RESPONSE"
   exit 1
 fi
@@ -77,7 +77,7 @@ CLIENT_ID=$(echo "$APP_RESPONSE" | jq -r '.clientId')
 CLIENT_SECRET=$(echo "$APP_RESPONSE" | jq -r '.clientSecret')
 
 if [ "$APP_ID" = "null" ] || [ -z "$APP_ID" ]; then
-  echo "❌ Failed to create application"
+  echo "Failed to create application"
   echo "Response: $APP_RESPONSE"
   exit 1
 fi

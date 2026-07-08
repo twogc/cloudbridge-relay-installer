@@ -3,25 +3,25 @@
 ## 🗑️ **Удаленные файлы:**
 
 ### **Backup файлы:**
-- ❌ `cloudbridge-relay-ddos.tf.backup`
-- ❌ `cloudbridge-relay.tf.backup`
+- `cloudbridge-relay-ddos.tf.backup`
+- `cloudbridge-relay.tf.backup`
 
 ### **Устаревшие скрипты:**
-- ❌ `deploy-with-autoinstall.sh`
-- ❌ `deploy.sh`
-- ❌ `cloudbridge-relay-autoinstall.tf`
+- `deploy-with-autoinstall.sh`
+- `deploy.sh`
+- `cloudbridge-relay-autoinstall.tf`
 
 ### **Устаревшие конфигурации:**
-- ❌ `cloud-init.yaml`
-- ❌ `tfplan`
+- `cloud-init.yaml`
+- `tfplan`
 
 ### **Устаревшая документация:**
-- ❌ `AUTOMATION_README.md`
-- ❌ `CLOUDBRIDGE_RELAY_ARCHITECTURE.md`
-- ❌ `CLOUDBRIDGE_RELAY_CORRECT_ARCHITECTURE.md`
-- ❌ `PROJECT_OVERVIEW.md`
+- `AUTOMATION_README.md`
+- `CLOUDBRIDGE_RELAY_ARCHITECTURE.md`
+- `CLOUDBRIDGE_RELAY_CORRECT_ARCHITECTURE.md`
+- `PROJECT_OVERVIEW.md`
 
-## 🟢 **Сохраненные файлы (актуальные):**
+## **Сохраненные файлы (актуальные):**
 
 ### **Terraform конфигурации:**
 - `cloudbridge-relay-ddos.tf` - основная инфраструктура
@@ -84,25 +84,25 @@ terraform/
 ##  **Исправленные проблемы:**
 
 ### **Дублирование required_providers:**
-- ❌ **Было:** Дублирующий блок `terraform` в `docker-registry-automation.tf`
+- **Было:** Дублирующий блок `terraform` в `docker-registry-automation.tf`
 - **Стало:** Убран дублирующий блок, оставлен только в основном файле
 
 ### **Валидация Terraform:**
-- ❌ **Было:** `terraform validate` выдавал ошибку
+- **Было:** `terraform validate` выдавал ошибку
 - **Стало:** `terraform validate` проходит успешно
 
 ### **Планирование Terraform:**
-- ❌ **Было:** `terraform plan` мог не работать из-за ошибок
+- **Было:** `terraform plan` мог не работать из-за ошибок
 - **Стало:** `terraform plan` создается успешно
 
-## 📊 **Статистика очистки:**
+## **Статистика очистки:**
 
 - **Всего файлов до очистки:** 35
 - **Удалено файлов:** 12
 - **Осталось файлов:** 23
 - **Сокращение:** 34%
 
-## 🎯 **Результаты очистки:**
+## **Результаты очистки:**
 
 1. **Упрощенная структура** - убраны дублирующие и устаревшие файлы
 2. **Улучшенная читаемость** - четкое разделение на категории
@@ -110,7 +110,7 @@ terraform/
 4. **Работоспособность** - Terraform валидируется и планируется
 5. **Актуальная документация** - обновлены все README файлы
 
-## 🚀 **Следующие шаги:**
+## **Следующие шаги:**
 
 1. **Удалить этот файл:** `rm CLEANUP_COMPLETE.md`
 2. **Создать Container Registry** в VK Cloud Console
@@ -118,10 +118,10 @@ terraform/
 4. **Протестировать автоматизацию** через `./test-registry-connection.sh`
 5. **Запустить полное развертывание** через `./deploy-automated.sh`
 
-## 🎉 **Очистка завершена успешно!**
+## **Очистка завершена успешно!**
 
 Terraform директория теперь имеет **чистую, логичную структуру** с **только актуальными файлами** для автоматизации CloudBridge Relay серверов.
 
 ---
 
-**🚀 Готово к автоматизации!** Следуйте инструкциям в `NEXT_STEPS.md` для запуска.
+**Готово к автоматизации!** Следуйте инструкциям в `NEXT_STEPS.md` для запуска.

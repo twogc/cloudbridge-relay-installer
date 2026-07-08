@@ -40,7 +40,7 @@
 
 ---
 
-## 🧪 **ФИНАЛЬНЫЕ РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ:**
+## **ФИНАЛЬНЫЕ РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ:**
 
 ### ** КРИТИЧНО ДЛЯ ENTERPRISE (3/3 = 100%):**
 
@@ -57,7 +57,7 @@
 | **Intra-tenant PING** | orking | **PASS** | Внутритенантная коммуникация |
 | **Intra-tenant HTTP** |  Blocked | **NEEDS TUNING** | Allow правила нужно доработать |
 
-### **⚠️ MINIKUBE ОГРАНИЧЕНИЯ (0/2 = 0%):**
+### **MINIKUBE ОГРАНИЧЕНИЯ (0/2 = 0%):**
 
 | Тест | Результат | Status | Причина |
 |------|-----------|--------|---------|
@@ -70,7 +70,7 @@
 
 ### **Активные GlobalNetworkPolicies (11 политик):**
 ```
-Order 10:   🚨 block-imds-simple (IMDS protection)
+Order 10:   block-imds-simple (IMDS protection)
 Order 49:   enant-*-allow-services-fixed (Service access)
 Order 50:   llow-dns-system-fixed (DNS access)
 Order 50:   enant-*-allow-intra (Per-tenant allow)
@@ -147,7 +147,7 @@ Order 1000:  global-default-deny (Fallback deny)
 - Network policy monitoring infrastructure
 - Enterprise-grade security foundation
 
-### **⚠️ Что требует дополнительной настройки:**
+### **Что требует дополнительной настройки:**
 - Fine-tuning intra-tenant HTTP rules (по мере необходимости)
 - IMDS blocking в облачной среде (AWS/GCP/Azure)
 - ICMP isolation для strict security (eBPF dataplane)

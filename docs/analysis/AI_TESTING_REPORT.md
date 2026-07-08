@@ -32,7 +32,7 @@
 
 ---
 
-## 🧪 Детальные результаты
+## Детальные результаты
 
 ### 1. Event Parsing Tests
 
@@ -167,7 +167,7 @@
 
 ---
 
-## ⚡ Performance Benchmarks
+## Performance Benchmarks
 
 ### Benchmark Results
 
@@ -297,7 +297,7 @@ ba.mutex.Unlock()
 
 ---
 
-## 🐛 Найденные и исправленные проблемы
+## Найденные и исправленные проблемы
 
 ### Проблема #1: Несоответствие структур в тестах
 **Описание:** Тесты использовали неправильные поля структур (Method, Timestamp, BytesSent)
@@ -318,9 +318,9 @@ ba.mutex.Unlock()
  Total Tests:     21
  Passed:          21 (100%)
  Failed:          0 (0%)
-⚠️  Skipped:        0
-⏱️  Duration:       ~10s (with race detector)
-🏁 Race Detector:   Enabled, 0 races found
+ Skipped:        0
+Duration:       ~10s (with race detector)
+Race Detector:   Enabled, 0 races found
 ```
 
 ### Quality Metrics
@@ -397,4 +397,4 @@ go test -race -run="TestEventParsing|TestConcurrent" ./internal/ai -v
 **Race Conditions:** 0
 **Performance:** Excellent
 
-🎉 **Готово к production deployment!**
+**Готово к production deployment!**

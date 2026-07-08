@@ -10,7 +10,7 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}📊 Шаг 1: Проверка статуса AI сервиса${NC}"
+echo -e "${BLUE}Шаг 1: Проверка статуса AI сервиса${NC}"
 echo "----------------------------------------"
 kubectl exec deployment/ai-service -n cloudbridge -c ai-service -- wget -qO- http://localhost:8083/api/v1/ai/status | jq .
 
@@ -25,7 +25,7 @@ kubectl exec deployment/ai-service -n cloudbridge -c ai-service -- wget -qO- htt
 echo "Время обработки:"
 kubectl exec deployment/ai-service -n cloudbridge -c ai-service -- wget -qO- http://localhost:8083/metrics | grep "ai_processing_time_milliseconds"
 
-echo -e "\n${BLUE}🔍 Шаг 3: Данные от Prometheus${NC}"
+echo -e "\n${BLUE}Шаг 3: Данные от Prometheus${NC}"
 echo "-------------------------------"
 echo "AI сервис получает данные от Prometheus через prometheus-proxy:"
 kubectl logs deployment/ai-service -n cloudbridge -c prometheus-proxy --tail=5

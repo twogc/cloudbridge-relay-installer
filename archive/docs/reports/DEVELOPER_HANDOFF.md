@@ -7,7 +7,7 @@
 
 ---
 
-## 🔐 **ZITADEL API Доступ**
+## **ZITADEL API Доступ**
 
 ### Management API Endpoints
 ```bash
@@ -41,7 +41,7 @@ SERVICE_USER_ID="339533564527771946"  # cloudbridge-admin
 
 ---
 
-## 🌐 **Созданные OIDC Приложения**
+## **Созданные OIDC Приложения**
 
 ### API Application (Back-channel)
 ```json
@@ -80,9 +80,9 @@ SERVICE_USER_ID="339533564527771946"  # cloudbridge-admin
 
 ---
 
-## 🚨 **ЗАДАЧИ ДЛЯ РАЗРАБОТЧИКА**
+## **ЗАДАЧИ ДЛЯ РАЗРАБОТЧИКА**
 
-### 🔴 Критичные (обязательные):
+### Критичные (обязательные):
 
 #### 1. Настроить Custom Scopes в проекте
 ```bash
@@ -185,7 +185,7 @@ PAT="1awoo06EgqhX0rQPLiHpQDrMlpj-iLZJ8tc7Jpx7UU4kBLLd5R-xMlEwRR3CEHyI1g1Cp5g"
 
 ---
 
-## 🧪 **Примеры API вызовов**
+## **Примеры API вызовов**
 
 ### Получение токена для тестирования
 ```bash
@@ -262,7 +262,7 @@ kubectl exec -n zitadel pg-postgresql-0 -- env PGPASSWORD="$PG_PASSWORD" psql -U
 
 ---
 
-## ✅ **Acceptance Criteria для проверки**
+## **Acceptance Criteria для проверки**
 
 После реализации должны работать:
 
@@ -313,22 +313,22 @@ mkdir -p cmd/kubectl-zitadel
 
 ## 💪 **Что уже готово (не нужно разрабатывать):**
 
-✅ **ZITADEL развернут и работает**  
-✅ **PostgreSQL с persistent данными**  
-✅ **OIDC приложения созданы через Management API**  
-✅ **Service User с admin правами**  
-✅ **mTLS сертификаты сгенерированы**  
-✅ **Kubernetes RBAC настроен**  
-✅ **Мониторинг (Prometheus/Grafana) готов**  
-✅ **Исчерпывающая документация**
+**ZITADEL развернут и работает**  
+**PostgreSQL с persistent данными**  
+**OIDC приложения созданы через Management API**  
+**Service User с admin правами**  
+**mTLS сертификаты сгенерированы**  
+**Kubernetes RBAC настроен**  
+**Мониторинг (Prometheus/Grafana) готов**  
+**Исчерпывающая документация**
 
-## 🎯 **Что нужно доработать (3-5 дней):**
+## **Что нужно доработать (3-5 дней):**
 
-🔴 **kubectl exec-plugin Go код**  
-🔴 **Custom scopes в ZITADEL проекте**  
-🔴 **Token Exchange для mTLS**  
-🔴 **Custom claims в JWT**  
-🔴 **Acceptance тесты**
+ **kubectl exec-plugin Go код**  
+ **Custom scopes в ZITADEL проекте**  
+ **Token Exchange для mTLS**  
+ **Custom claims в JWT**  
+ **Acceptance тесты**
 
 ---
 

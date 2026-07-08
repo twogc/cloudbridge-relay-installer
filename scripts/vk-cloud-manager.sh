@@ -200,7 +200,7 @@ associate_ip_to_anycast() {
         echo "IP адрес успешно привязан к Anycast IP"
         echo "$RESULT" | jq '.anycastip'
     else
-        echo "❌ Ошибка привязки:"
+        echo "Ошибка привязки:"
         echo "$RESULT"
     fi
 }
@@ -228,7 +228,7 @@ add_anycast_healthcheck() {
         echo "Healthcheck успешно добавлен"
         echo "$RESULT" | jq '.healthcheck'
     else
-        echo "❌ Ошибка добавления healthcheck:"
+        echo "Ошибка добавления healthcheck:"
         echo "$RESULT"
     fi
 }
@@ -267,14 +267,14 @@ list_floating_ips() {
 
 # Автоматическая настройка CloudBridge Relay с балансировщиком и Anycast
 setup_cloudbridge_complete() {
-    echo "🚀 Автоматическая настройка CloudBridge Relay с балансировщиком и Anycast..."
+    echo "Автоматическая настройка CloudBridge Relay с балансировщиком и Anycast..."
     
     # 1. Создание Anycast IP
     echo "1. Создание Anycast IP..."
     ANYCAST_ID=$(create_anycast_ip "cloudbridge-relay-anycast" "Anycast IP для CloudBridge Relay")
     
     if [ -z "$ANYCAST_ID" ]; then
-        echo "❌ Ошибка создания Anycast IP"
+        echo "Ошибка создания Anycast IP"
         exit 1
     fi
     
@@ -289,7 +289,7 @@ setup_cloudbridge_complete() {
     
     echo ""
     echo "Базовая настройка завершена!"
-    echo "📍 Anycast IP ID: $ANYCAST_ID"
+    echo "Anycast IP ID: $ANYCAST_ID"
     echo ""
     echo " Следующие шаги:"
     echo "1. Создайте балансировщик: выберите 'Создать балансировщик'"
@@ -302,10 +302,10 @@ setup_cloudbridge_complete() {
 main_menu() {
     echo "=== VK Cloud Manager - Балансировщик и Anycast IP ==="
     echo ""
-    echo "🔐 АУТЕНТИФИКАЦИЯ:"
+    echo "АУТЕНТИФИКАЦИЯ:"
     echo "1. Получить токен"
     echo ""
-    echo "🌐 СЕТИ И РЕСУРСЫ:"
+    echo "СЕТИ И РЕСУРСЫ:"
     echo "2. Показать сети"
     echo "3. Показать подсети"
     echo "4. Показать порты"
@@ -318,13 +318,13 @@ main_menu() {
     echo "9. Создать пул"
     echo "10. Добавить участника в пул"
     echo ""
-    echo "🌍 ANYCAST IP:"
+    echo " ANYCAST IP:"
     echo "11. Показать Anycast IP"
     echo "12. Создать Anycast IP"
     echo "13. Привязать IP к Anycast"
     echo "14. Добавить healthcheck для Anycast"
     echo ""
-    echo "🚀 АВТОМАТИЧЕСКАЯ НАСТРОЙКА:"
+    echo "АВТОМАТИЧЕСКАЯ НАСТРОЙКА:"
     echo "15. Настроить CloudBridge Relay (полная настройка)"
     echo ""
     echo "0. Выход"

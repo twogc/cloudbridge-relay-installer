@@ -165,8 +165,8 @@ If metrics collection from separate pod is valuable:
 - eep cmd/quic-service
 - eploy alongside relay
 - se for centralized QUIC metrics
-- ⚠️ Remove stub connection endpoints
-- ⚠️ Document as "metrics-only service"
+- Remove stub connection endpoints
+- Document as "metrics-only service"
 
 #### Option B: Remove (Alternative)
 If relay's built-in metrics are sufficient:

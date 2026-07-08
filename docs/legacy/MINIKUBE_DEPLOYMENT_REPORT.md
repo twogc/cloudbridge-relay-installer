@@ -47,7 +47,7 @@
 ### Новый Pod
 | Pod | Статус | Возраст | Готовность | Проблемы |
 |-----|--------|---------|------------|----------|
-| `cloudbridge-relay-5c4c48b6c7-ls76x` | Running | 1m | 0/1 ⚠️ | Конфликт портов |
+| `cloudbridge-relay-5c4c48b6c7-ls76x` | Running | 1m | 0/1 | Конфликт портов |
 
 ### Services
 | Service | Тип | Статус | Порты |
@@ -55,7 +55,7 @@
 | `cloudbridge-relay-external` | NodePort |  5550, 5551, 5552, 5553 |
 | `cloudbridge-relay-loadbalancer` | LoadBalancer |  Все порты |
 
-## 🧪 Результаты тестирования
+## Результаты тестирования
 
 ### Health Endpoints
 ```bash
@@ -71,7 +71,7 @@ curl http://localhost:5552/health
 ### Port Forwarding
 - ort 5553 (HTTP API) - работает
 - ort 5552 (P2P API) - работает
-- ⚠️ Port 8443 (MASQUE) - конфликт портов
+- Port 8443 (MASQUE) - конфликт портов
 
 ## Анализ логов
 
@@ -87,8 +87,8 @@ curl http://localhost:5552/health
 
 ### Проблемы
 -  MASQUE Integration: `failed to listen UDP: listen udp :8443: bind: address already in use`
-- ⚠️ Circuit breaker блокирует некоторые соединения
-- ⚠️ Timeout при получении relay stats
+- Circuit breaker блокирует некоторые соединения
+- Timeout при получении relay stats
 
 ## Ключевые достижения
 
@@ -101,12 +101,12 @@ curl http://localhost:5552/health
 6. **Port forwarding настроен** для тестирования
 7. **Основные сервисы запущены** и функционируют
 
-### ⚠️ Частично выполнено
+### Частично выполнено
 1. **Rollout deployment** - превышен progress deadline
 2. **MASQUE Integration** - конфликт портов
 3. **Новый pod** - не готов из-за конфликтов
 
-## 🚨 Выявленные проблемы
+## Выявленные проблемы
 
 ### 1. Конфликт портов
 - **Проблема:** Порт 8443 уже используется
@@ -181,4 +181,4 @@ curl http://localhost:5552/health
 3. Протестировать AI функциональность в production-like среде
 4. Оптимизировать производительность и стабильность
 
-**🎉 AI сервис успешно развернут в Minikube и готов к тестированию!**
+**AI сервис успешно развернут в Minikube и готов к тестированию!**

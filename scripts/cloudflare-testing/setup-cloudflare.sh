@@ -19,7 +19,7 @@ echo -e "${BLUE}☁️  CloudBridge Cloudflare Setup${NC}"
 
 # Check if cloudflared is installed locally
 if ! command -v cloudflared &> /dev/null; then
-    echo -e "${YELLOW}⚠️  cloudflared not found locally. Installing...${NC}"
+    echo -e "${YELLOW} cloudflared not found locally. Installing...${NC}"
     
     # Detect OS
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
@@ -31,34 +31,34 @@ if ! command -v cloudflared &> /dev/null; then
         # macOS
         brew install cloudflared
     else
-        echo -e "${RED}❌ Unsupported OS. Please install cloudflared manually${NC}"
+        echo -e "${RED}Unsupported OS. Please install cloudflared manually${NC}"
         exit 1
     fi
 fi
 
-echo -e "${GREEN}✅ cloudflared is available${NC}"
+echo -e "${GREEN}cloudflared is available${NC}"
 
 # Step 1: Login to Cloudflare
-echo -e "${BLUE}🔐 Step 1: Login to Cloudflare${NC}"
-echo -e "${YELLOW}💡 You need to login to your Cloudflare account${NC}"
-echo -e "${YELLOW}💡 This will open a browser window for authentication${NC}"
+echo -e "${BLUE}Step 1: Login to Cloudflare${NC}"
+echo -e "${YELLOW} You need to login to your Cloudflare account${NC}"
+echo -e "${YELLOW} This will open a browser window for authentication${NC}"
 read -p "Press Enter to continue with cloudflared login..."
 
 cloudflared tunnel login
 
 # Step 2: Create tunnel
 echo -e "${BLUE}🚇 Step 2: Create Cloudflare tunnel${NC}"
-echo -e "${YELLOW}💡 Creating tunnel for CloudBridge testing${NC}"
+echo -e "${YELLOW} Creating tunnel for CloudBridge testing${NC}"
 
 TUNNEL_NAME="cloudbridge-testing-$(date +%s)"
 TUNNEL_ID=$(cloudflared tunnel create ${TUNNEL_NAME} | grep -o 'Created tunnel [^.]*' | cut -d' ' -f3)
 
 if [ -z "$TUNNEL_ID" ]; then
-    echo -e "${RED}❌ Failed to create tunnel${NC}"
+    echo -e "${RED}Failed to create tunnel${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Tunnel created: ${TUNNEL_ID}${NC}"
+echo -e "${GREEN}Tunnel created: ${TUNNEL_ID}${NC}"
 
 # Step 3: Create tunnel configuration
 echo -e "${BLUE}📝 Step 3: Create tunnel configuration${NC}"
@@ -128,7 +128,7 @@ logfile-max-backups: 3
 logfile-max-age: 7
 EOF
 
-echo -e "${GREEN}✅ Configuration file created: /tmp/cloudflared-config.yml${NC}"
+echo -e "${GREEN}Configuration file created: /tmp/cloudflared-config.yml${NC}"
 
 # Step 4: Update Kubernetes secrets
 echo -e "${BLUE}🔧 Step 4: Update Kubernetes secrets${NC}"
@@ -137,7 +137,7 @@ echo -e "${BLUE}🔧 Step 4: Update Kubernetes secrets${NC}"
 CREDENTIALS_FILE="$HOME/.cloudflared/${TUNNEL_ID}.json"
 
 if [ ! -f "$CREDENTIALS_FILE" ]; then
-    echo -e "${RED}❌ Tunnel credentials file not found: ${CREDENTIALS_FILE}${NC}"
+    echo -e "${RED}Tunnel credentials file not found: ${CREDENTIALS_FILE}${NC}"
     exit 1
 fi
 
@@ -147,15 +147,15 @@ kubectl create secret generic cloudflared-credentials \
   --namespace=${NAMESPACE} \
   --dry-run=client -o yaml | kubectl apply -f -
 
-echo -e "${GREEN}✅ Kubernetes secret updated${NC}"
+echo -e "${GREEN}Kubernetes secret updated${NC}"
 
 # Step 5: Update ConfigMap with tunnel ID
-echo -e "${BLUE}📋 Step 5: Update ConfigMap with tunnel ID${NC}"
+echo -e "${BLUE}Step 5: Update ConfigMap with tunnel ID${NC}"
 
 # Update the cloudflared ConfigMap
 kubectl patch configmap cloudflared-test-config -n ${NAMESPACE} --type merge -p "{\"data\":{\"config.yml\":\"$(cat /tmp/cloudflared-config.yml | sed 's/"/\\"/g' | tr '\n' '\\n')\"}}"
 
-echo -e "${GREEN}✅ ConfigMap updated with tunnel ID: ${TUNNEL_ID}${NC}"
+echo -e "${GREEN}ConfigMap updated with tunnel ID: ${TUNNEL_ID}${NC}"
 
 # Step 6: Restart cloudflared deployment
 echo -e "${BLUE}🔄 Step 6: Restart cloudflared deployment${NC}"
@@ -164,24 +164,24 @@ kubectl rollout restart deployment/cloudflared-testing -n ${NAMESPACE}
 # Wait for deployment to be ready
 kubectl wait --for=condition=Available deployment/cloudflared-testing -n ${NAMESPACE} --timeout=300s
 
-echo -e "${GREEN}✅ Cloudflared deployment restarted${NC}"
+echo -e "${GREEN}Cloudflared deployment restarted${NC}"
 
 # Step 7: Display connection information
-echo -e "${GREEN}🎉 Cloudflare setup completed!${NC}"
-echo -e "${BLUE}📋 Connection Information:${NC}"
+echo -e "${GREEN}Cloudflare setup completed!${NC}"
+echo -e "${BLUE}Connection Information:${NC}"
 echo -e "  Tunnel ID: ${TUNNEL_ID}"
 echo -e "  Tunnel Name: ${TUNNEL_NAME}"
 echo -e "  Namespace: ${NAMESPACE}"
 echo -e "  Configuration: /tmp/cloudflared-config.yml"
 
-echo -e "${BLUE}🔗 Next steps:${NC}"
+echo -e "${BLUE}Next steps:${NC}"
 echo -e "  1. Configure DNS records in Cloudflare dashboard"
 echo -e "  2. Set up custom domains for testing"
 echo -e "  3. Run connectivity tests"
 echo -e "  4. Monitor tunnel status"
 
-echo -e "${YELLOW}💡 To check tunnel status:${NC}"
+echo -e "${YELLOW} To check tunnel status:${NC}"
 echo -e "  kubectl logs -n ${NAMESPACE} deployment/cloudflared-testing -f"
 
-echo -e "${YELLOW}💡 To test connectivity:${NC}"
+echo -e "${YELLOW} To test connectivity:${NC}"
 echo -e "  ./scripts/cloudflare-testing/test-connectivity.sh"

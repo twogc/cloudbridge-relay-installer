@@ -423,15 +423,15 @@ BenchmarkGreasingManager_ValidateGreaseValue-8         Expected: 10-50 ns/op
 - Configurable probability
 
 ### Pending Work
-⏳ **Integration with QUICConnection** (Etap 2)
+**Integration with QUICConnection** (Etap 2)
 - Wire up experimental features to main QUIC connection
 - Add feature flags and configuration
 
-⏳ **Prometheus Metrics** (Etap 3)
+**Prometheus Metrics** (Etap 3)
 - Expose BBRv2, ACK, FEC, and Greasing metrics
 - Create Grafana dashboards
 
-⏳ **End-to-End Testing** (Etap 4)
+**End-to-End Testing** (Etap 4)
 - Performance benchmarking
 - Real-world traffic simulation
 - SLA compliance validation

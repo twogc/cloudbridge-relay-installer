@@ -44,7 +44,7 @@ class ZitadelMigration {
   }
 
   async run(): Promise<void> {
-    console.log('🚀 Начинаем миграцию с Keycloak на Zitadel...');
+    console.log('Начинаем миграцию с Keycloak на Zitadel...');
     
     try {
       // 1. Получаем access token для Zitadel
@@ -69,7 +69,7 @@ class ZitadelMigration {
       this.printStats();
       
     } catch (error) {
-      console.error('❌ Ошибка миграции:', error);
+      console.error('Ошибка миграции:', error);
       throw error;
     } finally {
       await this.prisma.$disconnect();
@@ -77,19 +77,19 @@ class ZitadelMigration {
   }
 
   private async authenticate(): Promise<void> {
-    console.log('🔐 Аутентификация в Zitadel...');
+    console.log('Аутентификация в Zitadel...');
     
     try {
       this.accessToken = await this.authService.getAccessToken();
-      console.log('✅ Аутентификация успешна');
+      console.log('Аутентификация успешна');
     } catch (error) {
-      console.error('❌ Ошибка аутентификации:', error);
+      console.error('Ошибка аутентификации:', error);
       throw error;
     }
   }
 
   private async migrateOrganizations(): Promise<void> {
-    console.log('🏢 Миграция организаций...');
+    console.log(' Миграция организаций...');
     
     const orgService = new ZitadelOrganizationService(this.accessToken);
     
@@ -120,18 +120,18 @@ class ZitadelMigration {
         });
         
         this.stats.organizations++;
-        console.log(`✅ Организация создана: ${org.organization_name} (${zitadelOrg.id})`);
+        console.log(`Организация создана: ${org.organization_name} (${zitadelOrg.id})`);
         
       } catch (error) {
         const errorMsg = `Ошибка создания организации ${org.organization_name}: ${error}`;
-        console.error(`❌ ${errorMsg}`);
+        console.error(`${errorMsg}`);
         this.stats.errors.push(errorMsg);
       }
     }
   }
 
   private async migrateUsers(): Promise<void> {
-    console.log('👥 Миграция пользователей...');
+    console.log('Миграция пользователей...');
     
     const userService = new ZitadelUserService(this.accessToken);
     
@@ -170,18 +170,18 @@ class ZitadelMigration {
         });
         
         this.stats.users++;
-        console.log(`✅ Пользователь создан: ${user.email} (${zitadelUser.id})`);
+        console.log(`Пользователь создан: ${user.email} (${zitadelUser.id})`);
         
       } catch (error) {
         const errorMsg = `Ошибка создания пользователя ${user.email}: ${error}`;
-        console.error(`❌ ${errorMsg}`);
+        console.error(`${errorMsg}`);
         this.stats.errors.push(errorMsg);
       }
     }
   }
 
   private async migrateTenants(): Promise<void> {
-    console.log('🏢 Миграция тенантов...');
+    console.log(' Миграция тенантов...');
     
     const cloudBridgeService = new ZitadelCloudBridgeService(this.accessToken);
     
@@ -222,18 +222,18 @@ class ZitadelMigration {
         });
         
         this.stats.tenants++;
-        console.log(`✅ Тенант создан: ${tenant.name} (${tenant.id})`);
+        console.log(`Тенант создан: ${tenant.name} (${tenant.id})`);
         
       } catch (error) {
         const errorMsg = `Ошибка создания тенанта ${tenant.name}: ${error}`;
-        console.error(`❌ ${errorMsg}`);
+        console.error(`${errorMsg}`);
         this.stats.errors.push(errorMsg);
       }
     }
   }
 
   private async migrateTokens(): Promise<void> {
-    console.log('🔑 Миграция токенов...');
+    console.log('Миграция токенов...');
     
     // Получаем все активные токены
     const tokens = await this.prisma.userToken.findMany({
@@ -254,7 +254,7 @@ class ZitadelMigration {
         });
         
         if (!zitadelUser) {
-          console.warn(`⚠️ Пользователь не найден для токена ${token.id}`);
+          console.warn(`Пользователь не найден для токена ${token.id}`);
           continue;
         }
         
@@ -262,18 +262,18 @@ class ZitadelMigration {
         // Здесь можно добавить логику создания токенов в Zitadel
         
         this.stats.tokens++;
-        console.log(`✅ Токен обработан: ${token.id}`);
+        console.log(`Токен обработан: ${token.id}`);
         
       } catch (error) {
         const errorMsg = `Ошибка обработки токена ${token.id}: ${error}`;
-        console.error(`❌ ${errorMsg}`);
+        console.error(`${errorMsg}`);
         this.stats.errors.push(errorMsg);
       }
     }
   }
 
   private async createNetworkConfigurations(): Promise<void> {
-    console.log('🌐 Создание сетевых конфигураций...');
+    console.log('Создание сетевых конфигураций...');
     
     const cloudBridgeService = new ZitadelCloudBridgeService(this.accessToken);
     
@@ -285,11 +285,11 @@ class ZitadelMigration {
         // Выделяем подсеть для тенанта
         const subnet = await cloudBridgeService.allocateSubnetForTenant(tenant.id);
         
-        console.log(`✅ Подсеть выделена для тенанта ${tenant.name}: ${subnet}`);
+        console.log(`Подсеть выделена для тенанта ${tenant.name}: ${subnet}`);
         
       } catch (error) {
         const errorMsg = `Ошибка выделения подсети для тенанта ${tenant.name}: ${error}`;
-        console.error(`❌ ${errorMsg}`);
+        console.error(`${errorMsg}`);
         this.stats.errors.push(errorMsg);
       }
     }
@@ -313,21 +313,21 @@ class ZitadelMigration {
   }
 
   private printStats(): void {
-    console.log('\n📊 Статистика миграции:');
-    console.log(`✅ Организаций создано: ${this.stats.organizations}`);
-    console.log(`✅ Пользователей создано: ${this.stats.users}`);
-    console.log(`✅ Тенантов создано: ${this.stats.tenants}`);
-    console.log(`✅ Токенов обработано: ${this.stats.tokens}`);
-    console.log(`❌ Ошибок: ${this.stats.errors.length}`);
+    console.log('\nСтатистика миграции:');
+    console.log(`Организаций создано: ${this.stats.organizations}`);
+    console.log(`Пользователей создано: ${this.stats.users}`);
+    console.log(`Тенантов создано: ${this.stats.tenants}`);
+    console.log(`Токенов обработано: ${this.stats.tokens}`);
+    console.log(`Ошибок: ${this.stats.errors.length}`);
     
     if (this.stats.errors.length > 0) {
-      console.log('\n❌ Ошибки:');
+      console.log('\nОшибки:');
       this.stats.errors.forEach((error, index) => {
         console.log(`${index + 1}. ${error}`);
       });
     }
     
-    console.log('\n🎉 Миграция завершена!');
+    console.log('\nМиграция завершена!');
   }
 }
 

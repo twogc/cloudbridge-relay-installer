@@ -119,7 +119,7 @@ check_resources() {
 
 # Основная функция проверки
 main() {
-    echo "🔍 CloudBridge Relay WAF Stack Compatibility Check"
+    echo "CloudBridge Relay WAF Stack Compatibility Check"
     echo "=================================================="
     echo
     
@@ -233,7 +233,7 @@ main() {
     echo
     
     # Итоговый отчет
-    echo "📊 Compatibility Check Summary"
+    echo "Compatibility Check Summary"
     echo "============================="
     echo "Total tests: $TOTAL_TESTS"
     echo -e "Passed: ${GREEN}$PASSED_TESTS${NC}"
@@ -255,7 +255,7 @@ main() {
         log_warning " Medium compatibility - Some issues need to be resolved"
         exit 1
     else
-        log_error "❌ Low compatibility - Major issues need to be resolved"
+        log_error "Low compatibility - Major issues need to be resolved"
         exit 2
     fi
 }

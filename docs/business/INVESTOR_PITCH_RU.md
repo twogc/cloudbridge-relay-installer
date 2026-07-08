@@ -29,7 +29,7 @@
 - Риск санкций и блокировок
 - Нет контроля над данными
 
-**2. Российские решения устарели** ⚠️
+**2. Российские решения устарели** 
 - UserGate, Континент - legacy архитектура
 - Высокая стоимость (₽500k-2M/год)
 - Сложная настройка и поддержка
@@ -54,7 +54,7 @@
 
 ---
 
-## 💡 Решение
+## Решение
 
 ### Product
 
@@ -73,11 +73,11 @@
 | Возможность | CloudBridge | Tailscale | UserGate |
 |-------------|-------------|-----------|----------|
 | **Цена** | ₽150k-500k/год | ₽1.5M-2M/год (100 users) | ₽500k-2M/год |
-| **Open Source** | Да | ⚠️ Partial |  Нет |
+| **Open Source** | Да | Partial |  Нет |
 | **Self-hosted** | а | Да| Да |
 | **QUIC Protocol** | а |  Нет |  Нет |
 | **AI Optimization** | а |  Нет |  Нет |
-| **РФ Available** | а | ⚠️ Ограничено | Да|
+| **РФ Available** | а | Ограничено | Да|
 | **152-ФЗ Ready** | а |  Нет | Да|
 
 **Экономия**: 60-80% vs Tailscale, 40-60% vs UserGate
@@ -119,7 +119,7 @@
 
 ---
 
-## 💰 Business Model
+## Business Model
 
 ### Revenue Streams
 
@@ -246,7 +246,7 @@ Use of Funds:
 
 ---
 
-## 👥 Team
+## Team
 
 ### Core Team
 
@@ -362,11 +362,11 @@ Use of Funds:
 
 ---
 
-## ⚠️ Risks & Mitigation
+## Risks & Mitigation
 
 ### Critical Risks
 
-**1. Regulatory (30%)** 🔴
+**1. Regulatory (30%)**
 - **Risk**: No ФСТЭК certification
 - **Impact**: Can't sell to gov/large enterprise
 - **Mitigation**: Start process ASAP, focus SMB initially
@@ -376,12 +376,12 @@ Use of Funds:
 - **Impact**: Market share loss
 - **Mitigation**: Speed, community, open source
 
-**3. Market (20%)** 🟡
+**3. Market (20%)**
 - **Risk**: Economic crisis, budget cuts
 - **Impact**: Slower growth
 - **Mitigation**: Cost-saving positioning, flexible pricing
 
-**4. Technical (10%)** 🟢
+**4. Technical (10%)** 
 - **Risk**: QUIC not adopted
 - **Impact**: Protocol change needed
 - **Mitigation**: Modular architecture, multi-protocol
@@ -423,7 +423,7 @@ Use of Funds:
 
 ---
 
-## 🏁 Investment Highlights
+## Investment Highlights
 
 ### Why Invest in CloudBridge?
 
@@ -442,7 +442,7 @@ Use of Funds:
 - ZeroTier 2M+ users
 - Strong replacement market in RU
 
-**4. Capital Efficient** 💰
+**4. Capital Efficient**
 - Software margins: 70-80%
 - LTV/CAC: 6-10x
 - Scalable business model
@@ -545,7 +545,7 @@ Use of Funds:
 **Location**: Москва, Россия
 
 **Follow-up**:
-- 📄 Full pitch deck (20-30 slides)
+- Full pitch deck (20-30 slides)
 - Financial model (3-way forecast)
 - 🎥 Product demo video
 - 📑 Technical documentation

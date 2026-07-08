@@ -1,6 +1,6 @@
-# 🚀 CloudBridge Relay Enhanced Template
+# CloudBridge Relay Enhanced Template
 
-## 📋 ОБЗОР
+## ОБЗОР
 
 Расширенный шаблон Zabbix для мониторинга CloudBridge Relay с полным покрытием современных сетевых технологий:
 - **MASQUE Protocol** - HTTP/3 туннелирование
@@ -12,7 +12,7 @@
 
 ---
 
-## 📊 СТАТИСТИКА УЛУЧШЕНИЙ
+## СТАТИСТИКА УЛУЧШЕНИЙ
 
 | Компонент | Оригинал | Enhanced | Прирост |
 |-----------|----------|----------|---------|
@@ -25,7 +25,7 @@
 
 ## 🆕 НОВЫЕ СЕКЦИИ
 
-### 📡 **MASQUE Protocol** (6 items + 3 triggers)
+### **MASQUE Protocol** (6 items + 3 triggers)
 - `masque.tunnels.active` - Активные туннели
 - `masque.connect.udp.requests.total` - CONNECT-UDP запросы
 - `masque.connect.ip.requests.total` - CONNECT-IP запросы  
@@ -42,7 +42,7 @@
 - `turn.relayed.bytes.inbound` - TURN трафик
 - `nat.traversal.success.rate` - Общая успешность NAT
 
-### ⚡ **Enhanced QUIC** (6 items + 3 triggers)
+### **Enhanced QUIC** (6 items + 3 triggers)
 - `quic.rtt.p50.seconds` - RTT 50-й перцентиль
 - `quic.rtt.p95.seconds` - RTT 95-й перцентиль
 - `quic.congestion.window.bytes` - Congestion window
@@ -56,14 +56,14 @@
 - `ai.bandwidth.prediction.accuracy` - Точность предсказания полосы
 - `ai.routing.optimization.effect.percent` - Эффект оптимизации
 
-### 🛡️ **Security** (5 items + 4 triggers)
+### **Security** (5 items + 4 triggers)
 - `tls.handshake.duration.seconds` - Время TLS handshake
 - `jwt.validation.duration.seconds` - Время валидации JWT
 - `security.policy.violations.total` - Нарушения политик
 - `geo.blocked.connections.total` - Геоблокировки
 - `suspicious.connection.patterns.total` - Подозрительные паттерны
 
-### 📈 **Performance** (5 items + 7 triggers)
+### **Performance** (5 items + 7 triggers)
 - `connection.quality.score` - Оценка качества соединения
 - `bandwidth.utilization.inbound.percent` - Входящая утилизация
 - `bandwidth.utilization.outbound.percent` - Исходящая утилизация
@@ -120,7 +120,7 @@
 
 ---
 
-## 🚨 НОВЫЕ АЛЕРТЫ
+## НОВЫЕ АЛЕРТЫ
 
 ### Критичные
 - `MASQUE: No Active Tunnels` - Нет активных MASQUE туннелей
@@ -135,7 +135,7 @@
 
 ---
 
-## 🎯 ИСПОЛЬЗОВАНИЕ
+## ИСПОЛЬЗОВАНИЕ
 
 ### Dashboard Configuration
 1. **Executive Level**: Connection quality, security incidents
@@ -183,5 +183,5 @@ sudo chmod +x /usr/local/bin/masque_collector.sh
 
 ---
 
-**🎉 Готово! Теперь у вас есть enterprise-grade мониторинг CloudBridge Relay!** 🚀
+**Готово! Теперь у вас есть enterprise-grade мониторинг CloudBridge Relay!** 🚀
 

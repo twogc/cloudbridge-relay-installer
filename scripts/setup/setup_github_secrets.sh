@@ -3,7 +3,7 @@
 # CloudBridge Relay - Помощник настройки GitHub Secrets
 # Этот скрипт поможет вам создать и настроить необходимые секреты
 
-echo "🔐 Настройка GitHub Secrets для CloudBridge Relay"
+echo "Настройка GitHub Secrets для CloudBridge Relay"
 echo "================================================="
 echo ""
 
@@ -23,13 +23,13 @@ echo ""
 
 echo " Ссылки для настройки:"
 echo ""
-echo "📍 GitHub Personal Access Token:"
+echo "GitHub Personal Access Token:"
 echo "   https://github.com/settings/tokens"
 echo ""
-echo "📍 Docker Hub Access Token:"  
+echo "Docker Hub Access Token:"  
 echo "   https://hub.docker.com/settings/security"
 echo ""
-echo "📍 GitHub Repository Secrets:"
+echo "GitHub Repository Secrets:"
 echo "   https://github.com/twogc/cloudbridge-relay-installer/settings/secrets/actions"
 echo ""
 
@@ -37,10 +37,10 @@ read -p "❓ Хотите проверить текущие секреты? (y/N
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
-    echo "🔍 Проверка доступности GitHub API..."
+    echo "Проверка доступности GitHub API..."
     
     if [ -z "$GITHUB_TOKEN" ]; then
-        echo "❌ GITHUB_TOKEN не установлен в переменных окружения"
+        echo "GITHUB_TOKEN не установлен в переменных окружения"
         echo "Установите: export GITHUB_TOKEN=your_token"
         echo "В GitHub Secrets используйте имя: GH_TOKEN"
     else
@@ -57,11 +57,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             if echo "$scopes" | grep -q "workflow"; then
                 echo "Права workflow: ОК"
             else
-                echo "❌ Права workflow: НЕ НАЙДЕНЫ"
+                echo "Права workflow: НЕ НАЙДЕНЫ"
                 echo "Добавьте scope 'workflow' к токену"
             fi
         else
-            echo "❌ Токен недействителен"
+            echo "Токен недействителен"
         fi
     fi
 fi
@@ -70,7 +70,7 @@ echo ""
 echo "📖 Подробная инструкция:"
 echo "   docs/guides/github_secrets_setup.md"
 echo ""
-echo "🚀 После настройки секретов запустите:"
+echo "После настройки секретов запустите:"
 echo "   git push origin main"
 echo "   # или создайте release:"
 echo "   git tag v1.0.0 && git push origin v1.0.0"

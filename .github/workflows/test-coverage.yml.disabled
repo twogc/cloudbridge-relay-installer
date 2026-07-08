@@ -1,4 +1,4 @@
-name: 🧪 Test Coverage & Quality
+name: Test Coverage & Quality
 
 on:
   push:
@@ -11,12 +11,12 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VERSION: '1.25'
+  GO_VERSION: '1.25.12'
   COVERAGE_THRESHOLD: 80
 
 jobs:
   test-coverage:
-    name: 🧪 Test Coverage Analysis
+    name: Test Coverage Analysis
     runs-on: ubuntu-latest
     
     steps:
@@ -31,12 +31,12 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
 
-    - name: 📦 Install dependencies
+    - name: Install dependencies
       run: |
         go mod download
         go mod verify
 
-    - name: 🧪 Run unit tests
+    - name: Run unit tests
       run: |
         echo "🧪 Running unit tests..."
         go test -v -race -short ./internal/... ./config/...
@@ -46,14 +46,14 @@ jobs:
         echo " Running integration tests..."
         go test -v -race -tags=integration ./...
 
-    - name: ⚡ Run benchmarks
+    - name: Run benchmarks
       run: |
-        echo "⚡ Running benchmarks..."
+        echo "Running benchmarks..."
         go test -v -bench=. -benchmem ./...
 
-    - name: 📊 Generate coverage report
+    - name: Generate coverage report
       run: |
-        echo "📊 Generating coverage report..."
+        echo "Generating coverage report..."
         mkdir -p coverage_reports
         go test -v -race -coverprofile=coverage_reports/coverage.out -covermode=atomic ./...
         go tool cover -html=coverage_reports/coverage.out -o coverage_reports/coverage.html
@@ -67,20 +67,20 @@ jobs:
         echo "Required coverage: ${COVERAGE_THRESHOLD}%"
         
         if (( $(echo "$COVERAGE < $COVERAGE_THRESHOLD" | bc -l) )); then
-          echo "❌ Coverage $COVERAGE% is below threshold $COVERAGE_THRESHOLD%"
+          echo "Coverage $COVERAGE% is below threshold $COVERAGE_THRESHOLD%"
           exit 1
         else
           echo "Coverage $COVERAGE% meets threshold $COVERAGE_THRESHOLD%"
         fi
 
-    - name: 📊 Upload coverage reports
+    - name: Upload coverage reports
       uses: actions/upload-artifact@v4
       with:
         name: coverage-reports
         path: coverage_reports/
         retention-days: 30
 
-    - name: 📊 Upload to Codecov
+    - name: Upload to Codecov
       uses: codecov/codecov-action@v4
       with:
         file: coverage_reports/coverage.out
@@ -108,7 +108,7 @@ jobs:
         go test -v -race -cover ./internal/token/... ./internal/auth/... ./internal/p2p/... ./internal/api/... ./internal/quic/... ./internal/keycloak/... ./config/...
 
   test-performance:
-    name: ⚡ Performance Tests
+    name: Performance Tests
     runs-on: ubuntu-latest
     
     steps:
@@ -121,14 +121,14 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
 
-    - name: ⚡ Run performance tests
+    - name: Run performance tests
       run: |
-        echo "⚡ Running performance tests..."
+        echo "Running performance tests..."
         go test -v -bench=. -benchmem -benchtime=10s ./...
 
-    - name: 📊 Generate performance report
+    - name: Generate performance report
       run: |
-        echo "📊 Generating performance report..."
+        echo "Generating performance report..."
         go test -bench=. -benchmem -benchtime=30s ./... > performance_report.txt
         cat performance_report.txt
 
@@ -152,7 +152,7 @@ jobs:
         go test -v -race ./...
 
   test-coverage-by-component:
-    name: 📊 Coverage by Component
+    name: Coverage by Component
     runs-on: ubuntu-latest
     
     steps:
@@ -165,9 +165,9 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
 
-    - name: 📊 Generate component coverage
+    - name: Generate component coverage
       run: |
-        echo "📊 Generating coverage by component..."
+        echo "Generating coverage by component..."
         
         # Critical components
         echo "🔥 Critical Components:"
@@ -180,14 +180,14 @@ jobs:
         go test -cover ./config/... | grep coverage
         
         # Medium priority components
-        echo "🟡 Medium Priority Components:"
+        echo " Medium Priority Components:"
         go test -cover ./internal/ai/... | grep coverage
         go test -cover ./internal/cadence/... | grep coverage
         go test -cover ./internal/wireguard/... | grep coverage
         go test -cover ./internal/tenant/... | grep coverage
         
         # Low priority components
-        echo "🟢 Low Priority Components:"
+        echo "Low Priority Components:"
         go test -cover ./internal/logger/... | grep coverage
         go test -cover ./internal/errors/... | grep coverage
         go test -cover ./internal/metrics/... | grep coverage
@@ -208,9 +208,9 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
 
-    - name: 📊 Generate final coverage summary
+    - name: Generate final coverage summary
       run: |
-        echo "📊 Final Coverage Summary"
+        echo "Final Coverage Summary"
         echo "========================"
         
         # Generate overall coverage
@@ -234,7 +234,7 @@ jobs:
         COVERAGE_NUM=$(echo $COVERAGE | sed 's/%//')
         if (( $(echo "$COVERAGE_NUM < $COVERAGE_THRESHOLD" | bc -l) )); then
           echo ""
-          echo "❌ Coverage $COVERAGE is below threshold $COVERAGE_THRESHOLD%"
+          echo "Coverage $COVERAGE is below threshold $COVERAGE_THRESHOLD%"
           echo "Please add more tests to improve coverage."
           exit 1
         else
@@ -242,7 +242,7 @@ jobs:
           echo "Coverage $COVERAGE meets threshold $COVERAGE_THRESHOLD%"
         fi
 
-    - name: 📊 Comment on PR
+    - name: Comment on PR
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v7
       with:
@@ -250,19 +250,19 @@ jobs:
           const fs = require('fs');
           const coverage = process.env.COVERAGE || '0.0%';
           
-          const comment = `## 📊 Test Coverage Report
+          const comment = `## Test Coverage Report
           
           **Overall Coverage:** ${coverage}
           **Threshold:** ${process.env.COVERAGE_THRESHOLD}%
           
-          ${coverage >= process.env.COVERAGE_THRESHOLD ? '✅' : '❌'} Coverage ${coverage >= process.env.COVERAGE_THRESHOLD ? 'meets' : 'does not meet'} the required threshold.
+          ${coverage >= process.env.COVERAGE_THRESHOLD ? '' : ''} Coverage ${coverage >= process.env.COVERAGE_THRESHOLD ? 'meets' : 'does not meet'} the required threshold.
           
           ### Component Coverage:
           - 🔥 Critical Components: See detailed report above
-          - 🟡 Medium Priority: See detailed report above  
-          - 🟢 Low Priority: See detailed report above
+          - Medium Priority: See detailed report above  
+          - Low Priority: See detailed report above
           
-          📊 [View detailed coverage report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          [View detailed coverage report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           `;
           
           github.rest.issues.createComment({

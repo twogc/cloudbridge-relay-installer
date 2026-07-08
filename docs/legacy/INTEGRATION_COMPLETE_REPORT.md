@@ -34,7 +34,7 @@
 
 ### *ЭТАП 2: Enterprise безопасность (ЗАВЕРШЕН)**
 
-#### 2.1 Calico Network Policies ⭐ **"ЖЕЛЕЗОБЕТОННАЯ" РЕАЛИЗАЦИЯ**
+#### 2.1 Calico Network Policies  **"ЖЕЛЕЗОБЕТОННАЯ" РЕАЛИЗАЦИЯ**
 - *Baseline Security**: Создана deny-all policy как фундамент
 - *Per-tenant Policies**: Отдельные GNP для каждого tenant'а (исправлено - без переменных)
 - *DNS Isolation**: Network-level изоляция с системными исключениями
@@ -175,7 +175,7 @@ go run test_ipam.go
 
 Реализация согласно roadmap завершена. **Этапы 3-4 являются опциональными** для дальнейшего масштабирования:
 
-### **🚀 ЭТАП 3: Масштабирование (1-2 недели)**
+### **ЭТАП 3: Масштабирование (1-2 недели)**
 - [ ] Миграция с 10.100.0.0/16 на 10.0.0.0/8 (для 65,536 tenant'ов)
 - [ ] Standalone IPAM микросервис
 - [ ] High Availability setup
@@ -203,6 +203,6 @@ go run test_ipam.go
 
 **Выполнено**: 27 сентября 2025  
 **Статус**: *ИНТЕГРАЦИЯ ЗАВЕРШЕНА**  
-**Качество**: ⭐ **Enterprise-grade с comprehensive security**  
+**Качество**:  **Enterprise-grade с comprehensive security**  
 **Соответствие roadmap**: **100% для Этапов 1-2**
 

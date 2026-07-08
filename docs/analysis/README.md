@@ -4,7 +4,7 @@ This directory contains comprehensive analysis and improvements documentation fo
 
 ---
 
-## 📄 Documents
+## Documents
 
 ### 1. [AI_ANALYZER_AND_ANALYTICS_REVIEW_RU.md](AI_ANALYZER_AND_ANALYTICS_REVIEW_RU.md)
 **Original analysis document** identifying issues in AI components.
@@ -47,8 +47,8 @@ This directory contains comprehensive analysis and improvements documentation fo
  Total Tests:     21
  Passed:          21 (100%)
  Failed:          0 (0%)
-🏁 Race Detector:   0 races found
-⚡ Performance:     < 30ns per operation
+Race Detector:   0 races found
+Performance:     < 30ns per operation
 ```
 
 **Coverage:**
@@ -139,7 +139,7 @@ go build ./cmd/ai-service/...
 | Component | Before | After | Improvement |
 |-----------|--------|-------|-------------|
 | **Event Parsing** |  Broken | orking | +100% |
-| **Type Handling** | ⚠️ Partial (int only) | omplete (int/float64/string/duration) | +300% |
+| **Type Handling** | Partial (int only) | omplete (int/float64/string/duration) | +300% |
 | **Persistence** |  None | ull (JSON) | Profiles saved |
 | **API Endpoints** |  Stubs | eal detectors | Production-ready |
 | **Scheduler** |  Not working | utomated | Reports every 15m |

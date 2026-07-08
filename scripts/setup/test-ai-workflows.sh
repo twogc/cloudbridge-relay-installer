@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 🧪 Тест AI Workflows через Cadence
+# Тест AI Workflows через Cadence
 # Этот скрипт тестирует AI workflows через Cadence API
 
 set -e
@@ -8,11 +8,11 @@ set -e
 echo "🧪 Тестирование AI Workflows через Cadence..."
 
 # Проверяем, что Cadence Web UI доступен
-echo "📡 Проверка доступности Cadence Web UI..."
+echo "Проверка доступности Cadence Web UI..."
 if curl -s http://localhost:8088 > /dev/null; then
     echo "Cadence Web UI доступен на http://localhost:8088"
 else
-    echo "❌ Cadence Web UI недоступен. Запускаем port-forward..."
+    echo "Cadence Web UI недоступен. Запускаем port-forward..."
     kubectl port-forward -n cloudbridge service/cadence-web-service 8088:8088 &
     sleep 3
 fi
@@ -22,13 +22,13 @@ echo " Проверка доступности AI Service..."
 if curl -s http://localhost:8083/api/v1/ai/status > /dev/null; then
     echo "AI Service доступен на http://localhost:8083"
 else
-    echo "❌ AI Service недоступен. Запускаем port-forward..."
+    echo "AI Service недоступен. Запускаем port-forward..."
     kubectl port-forward -n cloudbridge service/ai-service-nodeport 8083:8083 &
     sleep 3
 fi
 
 echo ""
-echo "🎯 Тестирование AI компонентов..."
+echo "Тестирование AI компонентов..."
 
 # 1. Тест статуса AI Service
 echo "1️⃣ Проверка статуса AI Service..."
@@ -76,9 +76,9 @@ echo "5️⃣ Проверка AI метрик..."
 curl -s http://localhost:8083/metrics | grep -E "(ai_|anomaly_|prediction_)" | head -10
 
 echo ""
-echo "🎉 Тестирование завершено!"
+echo "Тестирование завершено!"
 echo ""
-echo "📊 Доступные интерфейсы:"
+echo "Доступные интерфейсы:"
 echo "   • AI Service API: http://localhost:8083"
 echo "   • Cadence Web UI: http://localhost:8088"
 echo "   • AI Metrics: http://localhost:8083/metrics"

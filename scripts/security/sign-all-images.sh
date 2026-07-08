@@ -343,9 +343,9 @@ generate_report() {
 
 ## Summary
 
-- ✅ **Signatures**: $signed_count/$total_images
-- ✅ **SBOM Attestations**: Generated for all signed images
-- ✅ **Vulnerability Scans**: Completed for all signed images
+- **Signatures**: $signed_count/$total_images
+- **SBOM Attestations**: Generated for all signed images
+- **Vulnerability Scans**: Completed for all signed images
 
 ## Signed Images
 
@@ -354,9 +354,9 @@ EOF
     # List signed images
     for image in $(get_all_images); do
         if cosign verify --key env://COSIGN_PUBLIC_KEY "$image" &>/dev/null; then
-            echo "- ✅ $image" >> /tmp/signing-report.md
+            echo "- $image" >> /tmp/signing-report.md
         else
-            echo "- ❌ $image" >> /tmp/signing-report.md
+            echo "- $image" >> /tmp/signing-report.md
         fi
     done
 

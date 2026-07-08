@@ -32,11 +32,11 @@ spec:
               PROMETHEUS_POD=$(kubectl get pods -n cloudbridge-monitoring -l "app.kubernetes.io/name=prometheus,deployment-type=optimized" -o jsonpath='{.items[0].metadata.name}')
               
               if [ -z "$PROMETHEUS_POD" ]; then
-                echo "❌ Prometheus pod not found"
+                echo "Prometheus pod not found"
                 exit 1
               fi
               
-              echo "📊 Current storage metrics:"
+              echo "Current storage metrics:"
               
               # Размер хранилища
               STORAGE_SIZE=$(kubectl exec -n cloudbridge-monitoring $PROMETHEUS_POD -- du -sb /prometheus/ 2>/dev/null | awk '{print $1}')
@@ -115,7 +115,7 @@ spec:
                 echo "No cleanup needed at this time"
               fi
               
-              echo "🎉 Prometheus storage cleanup completed!"
+              echo "Prometheus storage cleanup completed!"
             resources:
               requests:
                 memory: "64Mi"

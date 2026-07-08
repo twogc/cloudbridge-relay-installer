@@ -162,24 +162,24 @@ show_status() {
     
     # Статус сервисов
     echo "Systemd сервисы:"
-    systemctl is-active security-monitor 2>/dev/null && echo "security-monitor: активен" || echo "❌ security-monitor: неактивен"
-    systemctl is-active lynis-security-audit.timer 2>/dev/null && echo "lynis-security-audit.timer: активен" || echo "❌ lynis-security-audit.timer: неактивен"
+    systemctl is-active security-monitor 2>/dev/null && echo "security-monitor: активен" || echo "security-monitor: неактивен"
+    systemctl is-active lynis-security-audit.timer 2>/dev/null && echo "lynis-security-audit.timer: активен" || echo "lynis-security-audit.timer: неактивен"
     
     echo
     echo "Зависимости:"
-    command -v jq &> /dev/null && echo "jq: установлен" || echo "❌ jq: не установлен"
-    command -v curl &> /dev/null && echo "curl: установлен" || echo "❌ curl: не установлен"
-    command -v fail2ban-client &> /dev/null && echo "fail2ban: установлен" || echo "❌ fail2ban: не установлен"
+    command -v jq &> /dev/null && echo "jq: установлен" || echo "jq: не установлен"
+    command -v curl &> /dev/null && echo "curl: установлен" || echo "curl: не установлен"
+    command -v fail2ban-client &> /dev/null && echo "fail2ban: установлен" || echo "fail2ban: не установлен"
     
     echo
     echo "Файлы состояния:"
-    [[ -d "/var/lib/security-monitor" ]] && echo "/var/lib/security-monitor: существует" || echo "❌ /var/lib/security-monitor: не существует"
-    [[ -d "/var/lib/lynis-telegram" ]] && echo "/var/lib/lynis-telegram: существует" || echo "❌ /var/lib/lynis-telegram: не существует"
+    [[ -d "/var/lib/security-monitor" ]] && echo "/var/lib/security-monitor: существует" || echo "/var/lib/security-monitor: не существует"
+    [[ -d "/var/lib/lynis-telegram" ]] && echo "/var/lib/lynis-telegram: существует" || echo "/var/lib/lynis-telegram: не существует"
     
     echo
     echo "Логи:"
-    [[ -f "/var/lib/security-monitor/events.log" ]] && echo "events.log: существует" || echo "❌ events.log: не существует"
-    [[ -f "/var/lib/lynis-telegram/changes.log" ]] && echo "changes.log: существует" || echo "❌ changes.log: не существует"
+    [[ -f "/var/lib/security-monitor/events.log" ]] && echo "events.log: существует" || echo "events.log: не существует"
+    [[ -f "/var/lib/lynis-telegram/changes.log" ]] && echo "changes.log: существует" || echo "changes.log: не существует"
 }
 
 # Запуск сервисов

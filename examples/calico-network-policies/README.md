@@ -2,13 +2,13 @@
 
 🏆 **Enterprise-grade multi-tenant network isolation using Calico Network Policies**
 
-## 📊 Overview
+## Overview
 
 This directory contains production-ready Calico Network Policies that implement **"железобетонную" (ironclad)** security for CloudBridge multi-tenant environments. The policies follow NSA/CISA Kubernetes hardening guidelines and implement defense-in-depth security.
 
-## 🔒 Security Features
+## Security Features
 
-### ✅ **Implemented Protections:**
+### **Implemented Protections:**
 
 - **Default-deny inter-tenant communication** - Zero-trust baseline
 - **Per-tenant isolation** - Dedicated network policies per tenant
@@ -17,7 +17,7 @@ This directory contains production-ready Calico Network Policies that implement 
 - **DNS/System service exceptions** - Allows necessary system communication
 - **Network policy monitoring** - Comprehensive logging and metrics
 
-### 🛡️ **Defense Layers:**
+### **Defense Layers:**
 
 1. **Tier-based policy ordering** - Correct precedence for security rules
 2. **Comprehensive metadata blocking** - Multi-cloud IMDS protection
@@ -37,7 +37,7 @@ This directory contains production-ready Calico Network Policies that implement 
 | `deploy-ironclad-security.sh` | **Main deployment script** |
 | `test-tenant-isolation.sh` | **Automated testing suite** |
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Prerequisites
 
@@ -68,14 +68,14 @@ chmod +x deploy-ironclad-security.sh test-tenant-isolation.sh
 
 Expected output:
 ```
-✅ ALL TESTS PASSED - ЖЕЛЕЗОБЕТОННАЯ ISOLATION CONFIRMED! 🏆
+ALL TESTS PASSED - ЖЕЛЕЗОБЕТОННАЯ ISOLATION CONFIRMED! 🏆
 
 Security validation results:
-  ✅ Inter-tenant ping blocked
-  ✅ Inter-tenant HTTP blocked
-  ✅ Metadata services blocked
-  ✅ DNS resolution working
-  ✅ Intra-tenant communication working
+  Inter-tenant ping blocked
+  Inter-tenant HTTP blocked
+  Metadata services blocked
+  DNS resolution working
+  Intra-tenant communication working
 ```
 
 ## 🏗️ Manual Configuration
@@ -118,7 +118,7 @@ kubectl label pods -n tenant-namespace --all \
   tenant.cloudbridge.io/id=tenant-XXXXX --overwrite
 ```
 
-## 🔍 Monitoring & Troubleshooting
+## Monitoring & Troubleshooting
 
 ### Check Policy Status
 
@@ -198,14 +198,14 @@ The policies include protection for multiple cloud providers:
 - **GCP**: 169.254.169.254 (metadata server)
 - **Azure**: 169.254.169.254 + 168.63.129.16 (WireServer)
 
-## 📈 Performance Considerations
+## Performance Considerations
 
 - **Policy order matters** - Lower numbers = higher precedence
 - **Selector efficiency** - Use specific selectors for better performance
 - **Tier usage** - Reduces policy evaluation overhead
 - **Regular cleanup** - Remove unused policies
 
-## 🐛 Common Issues
+## Common Issues
 
 ### 1. Policies Not Applied
 
@@ -235,7 +235,7 @@ Some Calico installations don't support Tiers. The policies include fallback con
 - [Kubernetes Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
 - [Calico Policy Tiers](https://docs.tigera.io/calico/latest/network-policy/policy-tiers/tiered-policy)
 
-## 🎯 Compliance
+## Compliance
 
 These policies meet or exceed requirements for:
 
@@ -246,7 +246,7 @@ These policies meet or exceed requirements for:
 
 ---
 
-**Status**: ✅ Production Ready  
+**Status**: Production Ready  
 **Last Updated**: September 27, 2025  
 **Tested With**: Calico v3.x, Kubernetes 1.25+
 

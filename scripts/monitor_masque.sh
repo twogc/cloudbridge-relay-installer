@@ -2,7 +2,7 @@
 
 # Скрипт мониторинга MASQUE HTTP/3 сервера
 
-echo "🔍 Мониторинг MASQUE HTTP/3 сервера"
+echo "Мониторинг MASQUE HTTP/3 сервера"
 echo "=================================="
 
 # Цвета для вывода
@@ -23,7 +23,7 @@ check_status() {
         echo -e "${GREEN}OK${NC}"
         return 0
     else
-        echo -e "${RED}❌ FAIL${NC}"
+        echo -e "${RED}FAIL${NC}"
         return 1
     fi
 }
@@ -43,7 +43,7 @@ check_warning() {
     fi
 }
 
-echo "📊 Проверка компонентов:"
+echo "Проверка компонентов:"
 echo "------------------------"
 
 # 1. Проверка pod'ов
@@ -63,7 +63,7 @@ echo -n "Проверка логов MASQUE... "
 if kubectl logs -n cloudbridge $(kubectl get pods -n cloudbridge | grep cloudbridge-relay | head -1 | awk '{print $1}') | grep -q "MASQUE server started successfully"; then
     echo -e "${GREEN}OK${NC}"
 else
-    echo -e "${RED}❌ FAIL${NC}"
+    echo -e "${RED}FAIL${NC}"
 fi
 
 echo ""
@@ -85,7 +85,7 @@ echo "Порты MASQUE:"
 kubectl get service cloudbridge-relay-external -n cloudbridge -o jsonpath='{.spec.ports[?(@.name=="masque-proxy")]}' | jq -r '"  - " + .name + ": " + .port + "/" + .protocol + " (NodePort: " + (.nodePort|tostring) + ")"'
 
 echo ""
-echo "🎯 Рекомендации:"
+echo "Рекомендации:"
 echo "----------------"
 
 # Проверка мониторинга

@@ -75,7 +75,7 @@ analyze_data() {
 echo -e "${BLUE}🕐 Время генерации: $(date)${NC}"
 echo ""
 
-echo -e "${BLUE}📊 СТАТИСТИКА AI СЕРВИСА:${NC}"
+echo -e "${BLUE}СТАТИСТИКА AI СЕРВИСА:${NC}"
 echo "================================"
 ai_metrics=$(kubectl exec deployment/ai-service -n cloudbridge -c ai-service -- wget -qO- --timeout=5 http://localhost:8083/metrics 2>/dev/null | grep -E "ai_" | head -5)
 echo "$ai_metrics"

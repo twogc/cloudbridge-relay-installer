@@ -19,7 +19,7 @@
 
 ---
 
-## 🧪 **РЕЗУЛЬТАТЫ SMOKE-ТЕСТОВ:**
+## **РЕЗУЛЬТАТЫ SMOKE-ТЕСТОВ:**
 
 ### *КРИТИЧЕСКИЕ SECURITY ТЕСТЫ - PASSED:**
 
@@ -28,13 +28,13 @@
 | **Inter-tenant HTTP blocking** | аблокирован | **PASSED** | 🔥 Критично |
 | **IMDS blocking** | аблокирован | **PASSED** | 🔥 Критично |
 | **DNS resolution** | аботает | **PASSED** | 🔥 Критично |
-| **Intra-tenant PING** | азрешен | **PASSED** | ⭐ Важно |
+| **Intra-tenant PING** | азрешен | **PASSED** |  Важно |
 
-### ⚠️ **ЧАСТИЧНЫЕ РЕЗУЛЬТАТЫ:**
+### **ЧАСТИЧНЫЕ РЕЗУЛЬТАТЫ:**
 
 | Тест | Результат | Статус | Примечания |
 |------|-----------|--------|------------|
-| **Inter-tenant PING** | ⚠️ Не блокируется | **PARTIAL** | Возможно, особенность minikube ICMP |
+| **Inter-tenant PING** | Не блокируется | **PARTIAL** | Возможно, особенность minikube ICMP |
 | **Intra-tenant HTTP** |  Блокируется | **NEEDS FIX** | Allow правила требуют доработки |
 
 ---
@@ -91,7 +91,7 @@ labels: tenant.cloudbridge.io/id=tenant-123456789
 - *DNS queries**: kubernetes.default.svc.cluster.local ALLOWED
 - *Intra-tenant PING**: tenant A pod → tenant A pod2 ALLOWED
 -  **Intra-tenant HTTP**: tenant A → tenant A2 BLOCKED (needs fix)
-- ⚠️ **Cross-tenant PING**: tenant A → tenant B NOT BLOCKED (minikube ICMP)
+- **Cross-tenant PING**: tenant A → tenant B NOT BLOCKED (minikube ICMP)
 
 ---
 
@@ -104,7 +104,7 @@ labels: tenant.cloudbridge.io/id=tenant-123456789
 - [x] Metadata API Protection: IMDS + kube-apiserver блокировка
 - [x] Automated Tests: smoke-тесты для проверки изоляции
 
-### **⏳ СЛЕДУЮЩИЕ ЭТАПЫ:**
+### **СЛЕДУЮЩИЕ ЭТАПЫ:**
 - [ ] **2.2 Enhanced gRPC Security**: RBAC + fine-grained permissions
 - [ ] **2.3 WireGuard per-tenant**: для критичных клиентов  
 - [ ] **3.1 Расширение IP пространства**: миграция на 10.0.0.0/8
@@ -112,9 +112,9 @@ labels: tenant.cloudbridge.io/id=tenant-123456789
 
 ---
 
-## 🏁 **ЗАКЛЮЧЕНИЕ:**
+## **ЗАКЛЮЧЕНИЕ:**
 
-**🎉 Network Policy foundation успешно развернута!** 
+**Network Policy foundation успешно развернута!** 
 
 Основные enterprise security компоненты работают:
 - **Межтенантная HTTP изоляция**

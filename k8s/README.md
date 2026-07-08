@@ -1,4 +1,4 @@
-# 🚀 CloudBridge Relay - Kubernetes Deployment
+# CloudBridge Relay - Kubernetes Deployment
 
 ## Обзор
 
@@ -44,7 +44,7 @@ k8s/
     └── grafana-deployment.yaml
 ```
 
-## 🚀 Быстрый старт
+## Быстрый старт
 
 ### 1. **Предварительные требования**
 
@@ -110,7 +110,7 @@ kubectl logs -f deployment/cloudbridge-relay -n cloudbridge
 - `grafana-pv` - дашборды Grafana (5Gi)
 - `cloudbridge-logs-pv` - логи (5Gi)
 
-## 🌐 Доступ к сервисам
+## Доступ к сервисам
 
 ### **Внутренний доступ**
 
@@ -144,7 +144,7 @@ https://grafana.cloudbridge.example.com
 https://prometheus.cloudbridge.example.com
 ```
 
-## 📊 Мониторинг
+## Мониторинг
 
 ### **Health Checks**
 
@@ -173,7 +173,7 @@ readinessProbe:
 - **Prometheus**: `:9090/metrics`
 - **Grafana**: `:3000/metrics`
 
-## 🔒 Безопасность
+## Безопасность
 
 ### **RBAC**
 
@@ -227,7 +227,7 @@ spec:
       port: 9090
 ```
 
-## 🚀 Масштабирование
+## Масштабирование
 
 ### **Horizontal Pod Autoscaler**
 
@@ -355,7 +355,7 @@ kubectl port-forward service/grafana 3000:3000 -n cloudbridge-monitoring
 5. **Используйте Network Policies** - для изоляции сети
 6. **Настройте Monitoring** - для observability
 
-## 🎯 Заключение
+## Заключение
 
 Kubernetes deployment обеспечивает:
 

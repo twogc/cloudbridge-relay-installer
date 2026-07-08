@@ -247,7 +247,7 @@ alerting:
       template: |
         {severity} Alert: {title}
         
-        📊 Details:
+        Details:
         • Tenant: {tenant_id}
         • Source: {source_ip}
         • User: {user_id}

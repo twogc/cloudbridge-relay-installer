@@ -32,7 +32,7 @@ if echo "$RESPONSE" | grep -q "access_token"; then
     echo "Успешно получен токен через password grant"
     echo "$RESPONSE" | jq .
 else
-    echo "❌ Ошибка получения токена через password grant:"
+    echo "Ошибка получения токена через password grant:"
     echo "$RESPONSE"
 fi
 
@@ -47,7 +47,7 @@ if echo "$RESPONSE2" | grep -q "access_token"; then
     echo "Успешно получен токен через client credentials"
     echo "$RESPONSE2" | jq .
 else
-    echo "❌ Ошибка получения токена через client credentials:"
+    echo "Ошибка получения токена через client credentials:"
     echo "$RESPONSE2"
 fi
 
@@ -59,7 +59,7 @@ if echo "$REALM_INFO" | grep -q "realm"; then
     echo "Realm $REALM доступен"
     echo "Public Key: $(echo "$REALM_INFO" | jq -r '.public_key' | head -c 50)..."
 else
-    echo "❌ Realm $REALM недоступен"
+    echo "Realm $REALM недоступен"
 fi
 
 echo ""

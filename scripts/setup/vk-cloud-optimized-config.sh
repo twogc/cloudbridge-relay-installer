@@ -128,26 +128,26 @@ export VK_SPOT_INSTANCES="enabled"
 
 # Функция валидации конфигурации
 validate_vk_cloud_config() {
-    echo "🔍 Валидация конфигурации VK Cloud..."
+    echo "Валидация конфигурации VK Cloud..."
     
     # Проверка обязательных переменных
     if [[ -z "$OS_AUTH_URL" ]]; then
-        echo "❌ OS_AUTH_URL не установлен"
+        echo "OS_AUTH_URL не установлен"
         return 1
     fi
     
     if [[ -z "$OS_PROJECT_ID" ]]; then
-        echo "❌ OS_PROJECT_ID не установлен"
+        echo "OS_PROJECT_ID не установлен"
         return 1
     fi
     
     if [[ -z "$OS_USERNAME" ]]; then
-        echo "❌ OS_USERNAME не установлен"
+        echo "OS_USERNAME не установлен"
         return 1
     fi
     
     if [[ -z "$OS_PASSWORD" ]]; then
-        echo "❌ OS_PASSWORD не установлен"
+        echo "OS_PASSWORD не установлен"
         return 1
     fi
     
@@ -158,20 +158,20 @@ validate_vk_cloud_config() {
     if openstack token issue >/dev/null 2>&1; then
         echo "Подключение к VK Cloud успешно"
     else
-        echo "❌ Ошибка подключения к VK Cloud"
+        echo "Ошибка подключения к VK Cloud"
         return 1
     fi
     
-    echo "🎉 Конфигурация VK Cloud валидна!"
+    echo "Конфигурация VK Cloud валидна!"
     return 0
 }
 
 # Функция тестирования производительности
 test_vk_cloud_performance() {
-    echo "🚀 Тестирование производительности VK Cloud..."
+    echo "Тестирование производительности VK Cloud..."
     
     # Тест скорости сети
-    echo "📡 Тест скорости сети..."
+    echo "Тест скорости сети..."
     if command -v speedtest-cli >/dev/null 2>&1; then
         speedtest-cli --simple
     else
@@ -191,7 +191,7 @@ test_vk_cloud_performance() {
 
 # Функция оптимизации ресурсов
 optimize_vk_cloud_resources() {
-    echo "⚡ Оптимизация ресурсов VK Cloud..."
+    echo "Оптимизация ресурсов VK Cloud..."
     
     # Оптимизация CPU
     echo " Оптимизация CPU..."
@@ -204,7 +204,7 @@ optimize_vk_cloud_resources() {
     export CLOUDBRIDGE_MEMORY_COMPRESSION="enabled"
     
     # Оптимизация сети
-    echo "🌐 Оптимизация сети..."
+    echo "Оптимизация сети..."
     export CLOUDBRIDGE_NETWORK_BUFFERING="enabled"
     export CLOUDBRIDGE_NETWORK_OFFLOADING="enabled"
     
@@ -213,7 +213,7 @@ optimize_vk_cloud_resources() {
 
 # Функция настройки мониторинга
 setup_vk_cloud_monitoring() {
-    echo "📊 Настройка мониторинга VK Cloud..."
+    echo "Настройка мониторинга VK Cloud..."
     
     # Настройка метрик
     export VK_METRICS_ENDPOINT="https://monitoring.vkcs.ru/api/v1"
@@ -238,11 +238,11 @@ setup_vk_cloud_monitoring() {
 
 # Основная функция
 main() {
-    echo "🚀 Инициализация оптимизированной конфигурации VK Cloud..."
+    echo "Инициализация оптимизированной конфигурации VK Cloud..."
     
     # Валидация конфигурации
     if ! validate_vk_cloud_config; then
-        echo "❌ Ошибка валидации конфигурации"
+        echo "Ошибка валидации конфигурации"
         exit 1
     fi
     
@@ -255,7 +255,7 @@ main() {
     # Тестирование производительности
     test_vk_cloud_performance
     
-    echo "🎉 Оптимизированная конфигурация VK Cloud готова!"
+    echo "Оптимизированная конфигурация VK Cloud готова!"
     echo ""
     echo "Следующие шаги:"
     echo "1. Запустите Terraform: terraform init && terraform apply"

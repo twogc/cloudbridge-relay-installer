@@ -34,11 +34,11 @@ check() {
     echo -ne "${YELLOW}Проверка: $name... ${NC}"
     
     if eval "$command" > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ OK${NC}"
+        echo -e "${GREEN}OK${NC}"
         return 0
     else
         if [ "$critical" = "true" ]; then
-            echo -e "${RED}❌ КРИТИЧНО${NC}"
+            echo -e "${RED}КРИТИЧНО${NC}"
         else
             echo -e "${YELLOW}⚠ ВНИМАНИЕ${NC}"
         fi
@@ -58,27 +58,27 @@ if kubectl get namespace $NAMESPACE > /dev/null 2>&1; then
     if kubectl get deployment $DEPLOYMENT_NAME -n $NAMESPACE > /dev/null 2>&1; then
         # Pod status
         echo ""
-        echo -e "${BLUE}🚀 Состояние подов${NC}"
+        echo -e "${BLUE}Состояние подов${NC}"
         
         READY_PODS=$(kubectl get pods -n $NAMESPACE -l app=$DEPLOYMENT_NAME --no-headers 2>/dev/null | grep "Running" | grep "1/1" | wc -l)
         TOTAL_PODS=$(kubectl get pods -n $NAMESPACE -l app=$DEPLOYMENT_NAME --no-headers 2>/dev/null | wc -l)
         
         if [ $TOTAL_PODS -gt 0 ]; then
             if [ $READY_PODS -eq $TOTAL_PODS ]; then
-                echo -e "${GREEN}✅ Все поды готовы ($READY_PODS/$TOTAL_PODS)${NC}"
+                echo -e "${GREEN}Все поды готовы ($READY_PODS/$TOTAL_PODS)${NC}"
             else
-                echo -e "${RED}❌ Не все поды готовы ($READY_PODS/$TOTAL_PODS)${NC}"
+                echo -e "${RED}Не все поды готовы ($READY_PODS/$TOTAL_PODS)${NC}"
                 ISSUES=$((ISSUES + 1))
                 kubectl get pods -n $NAMESPACE -l app=$DEPLOYMENT_NAME
             fi
         else
-            echo -e "${RED}❌ Поды не найдены${NC}"
+            echo -e "${RED}Поды не найдены${NC}"
             ISSUES=$((ISSUES + 1))
         fi
         
         # Service status
         echo ""
-        echo -e "${BLUE}🌐 Сервисы${NC}"
+        echo -e "${BLUE}Сервисы${NC}"
         check "Service существует" "kubectl get service $DEPLOYMENT_NAME -n $NAMESPACE"
         
         # Get service endpoint
@@ -87,7 +87,7 @@ if kubectl get namespace $NAMESPACE > /dev/null 2>&1; then
         
         if [ -n "$SERVICE_IP" ]; then
             SERVICE_URL="http://$SERVICE_IP"
-            echo -e "${GREEN}✅ LoadBalancer IP: $SERVICE_IP${NC}"
+            echo -e "${GREEN}LoadBalancer IP: $SERVICE_IP${NC}"
         else
             # Try NodePort
             NODE_PORT=$(kubectl get service $DEPLOYMENT_NAME -n $NAMESPACE -o jsonpath='{.spec.ports[?(@.name=="api")].nodePort}' 2>/dev/null || echo "")
@@ -95,7 +95,7 @@ if kubectl get namespace $NAMESPACE > /dev/null 2>&1; then
                 NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}' 2>/dev/null || kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null || echo "")
                 if [ -n "$NODE_IP" ]; then
                     SERVICE_URL="http://$NODE_IP:$NODE_PORT"
-                    echo -e "${GREEN}✅ NodePort: $NODE_IP:$NODE_PORT${NC}"
+                    echo -e "${GREEN}NodePort: $NODE_IP:$NODE_PORT${NC}"
                 fi
             fi
         fi
@@ -104,7 +104,7 @@ fi
 
 # Application endpoints
 echo ""
-echo -e "${BLUE}🎯 HTTP Endpoints${NC}"
+echo -e "${BLUE}HTTP Endpoints${NC}"
 
 # Try different URL sources
 TEST_URLS=()
@@ -121,7 +121,7 @@ done
 
 # Metrics
 echo ""
-echo -e "${BLUE}📊 Метрики${NC}"
+echo -e "${BLUE}Метрики${NC}"
 METRICS_URLS=()
 if [ -n "$SERVICE_URL" ]; then
     METRICS_URLS+=("$SERVICE_URL:5551")
@@ -144,7 +144,7 @@ echo -e "${BLUE}⚙️ kubectl proxy функциональность${NC}"
 KUBECONFIG_EXPANDED="${KUBECONFIG_PATH/#\~/$HOME}"
 
 if [ -f "$KUBECONFIG_EXPANDED" ]; then
-    echo -e "${GREEN}✅ Kubeconfig найден: $KUBECONFIG_EXPANDED${NC}"
+    echo -e "${GREEN}Kubeconfig найден: $KUBECONFIG_EXPANDED${NC}"
     
     export KUBECTL_REMOTE_COMMAND_WEBSOCKETS=1
     export KUBECTL_PORT_FORWARD_WEBSOCKETS=1
@@ -179,15 +179,15 @@ fi
 # Recent logs check for errors
 if kubectl get namespace $NAMESPACE > /dev/null 2>&1 && kubectl get deployment $DEPLOYMENT_NAME -n $NAMESPACE > /dev/null 2>&1; then
     echo ""
-    echo -e "${BLUE}📜 Проверка логов на ошибки${NC}"
+    echo -e "${BLUE}Проверка логов на ошибки${NC}"
     
     ERROR_COUNT=$(kubectl logs deployment/$DEPLOYMENT_NAME -n $NAMESPACE --tail=100 --since=10m 2>/dev/null | grep -i error | wc -l)
     WARN_COUNT=$(kubectl logs deployment/$DEPLOYMENT_NAME -n $NAMESPACE --tail=100 --since=10m 2>/dev/null | grep -i warn | wc -l)
     
     if [ $ERROR_COUNT -eq 0 ]; then
-        echo -e "${GREEN}✅ Ошибки не найдены${NC}"
+        echo -e "${GREEN}Ошибки не найдены${NC}"
     else
-        echo -e "${RED}❌ Найдено ошибок: $ERROR_COUNT${NC}"
+        echo -e "${RED}Найдено ошибок: $ERROR_COUNT${NC}"
         ISSUES=$((ISSUES + 1))
         echo "Последние ошибки:"
         kubectl logs deployment/$DEPLOYMENT_NAME -n $NAMESPACE --tail=100 --since=10m | grep -i error | tail -3
@@ -200,12 +200,12 @@ fi
 
 # Summary
 echo ""
-echo -e "${BLUE}📋 Итоги проверки${NC}"
+echo -e "${BLUE}Итоги проверки${NC}"
 echo "=================="
 
 if [ $ISSUES -eq 0 ]; then
-    echo -e "${GREEN}🎉 Все проверки пройдены успешно!${NC}"
-    echo -e "${GREEN}✅ Система работает нормально${NC}"
+    echo -e "${GREEN}Все проверки пройдены успешно!${NC}"
+    echo -e "${GREEN}Система работает нормально${NC}"
     exit 0
 else
     echo -e "${YELLOW}⚠ Обнаружено проблем: $ISSUES${NC}"
