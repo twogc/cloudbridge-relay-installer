@@ -24,6 +24,44 @@ build/
 releases/
 dist/
 
+# Compiled Go binaries (no extension)
+/ai-service
+/api
+/quic-service
+/ipam-service
+/kubectl-zitadel
+/tenant-policy-controller
+/relay
+cmd/relay/relay
+cmd/kubectl-zitadel/kubectl-zitadel
+cmd/zerotrust-demo/zerotrust-demo
+pkg/enhanced-quic/enhanced-quic
+services/ai-service
+services/cadence-service
+services/ipam-service
+
+# Terraform local cache
+**/.terraform/
+.terraform.lock.hcl
+
+# Development build artifacts
+tools/development/*.tar
+tools/development/relay
+tools/development/cloudbridge-relay
+tools/development/ai-service
+tools/development/p2p-proxy
+tools/development/quantum-service
+tools/development/cadence-service
+tools/development/quic-service
+tools/development/wireguard-service
+
+# Archive binaries
+archive/*.tar
+*.tar
+
+# Generated security reports
+security_reports/gosec_report.*
+
 # IDE files
 .vscode/
 .idea/
