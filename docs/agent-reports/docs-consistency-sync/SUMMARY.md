@@ -143,7 +143,7 @@ Commit/push: не выполнялись.
 |------|--------|
 | Client wraps ProductionClient | ✅ |
 | SQLite peer IPAM for SCORE hybrid | ✅ `SCORE_SQLITE_PATH` |
-| `k8s/overlays/production` skeleton | ✅ not in deploy.sh yet |
+| `k8s/overlays/production` skeleton | ✅ later wired in step08 `--use-overlay` |
 | Tests cadence/database/p2p + build | ✅ |
 
 Отчёт: [step07-cadence-facade-sqlite-overlays.md](step07-cadence-facade-sqlite-overlays.md)
