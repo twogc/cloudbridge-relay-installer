@@ -53,4 +53,5 @@ kubectl apply -f k8s-manifests/09-zitadel.yaml
 - **`k8s-manifests/`** — ordered prod deploy (relay, AI, Cadence, ingress, Zitadel wrappers).
 - **`k8s/`** — domain/ops manifests (Helm values, schema jobs, BGP, Kyverno, cert-manager) — **не** заменяет нумерованный стек.
 
-Оставшийся drift (relay prometheus annotation **8084**, ops-only sidecars) — см. [openwiki/port-scheme.md §k8s drift](../openwiki/port-scheme.md).
+Prod `05–06`: prometheus annotation + Service metrics **5551**; AI Service без phantom **8084**.  
+Остаточный drift (ops `k8s/deployments` legacy 8080/8084, mws OVA) — [openwiki/port-scheme.md §k8s drift](../openwiki/port-scheme.md).
