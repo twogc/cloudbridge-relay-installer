@@ -75,6 +75,8 @@ The script applies manifests in order:
 | `04-registry.yaml` | In-cluster Docker registry |
 | `05-deployments.yaml` | Relay (3 replicas), AI service, Cadence, Cassandra |
 | `06-services.yaml` | ClusterIP services |
+
+> **Важно (2026-07-09):** `05-deployments.yaml` и `06-services.yaml` **больше не nginx-stubs**. Используются production-образы (`docker-registry:5000/cloudbridge-relay:latest`, `docker-registry:5000/ai-service:latest`, `ubercadence/server:v0.22.4`) и canonical-порты (relay **9090**, AI **8083**). `deploy.sh` → `load_images()` собирает relay/ai и пушит в in-cluster registry. См. [k8s-manifests/README.md](../k8s-manifests/README.md), [port-scheme.md §k8s drift](port-scheme.md).
 | `07-ingress.yaml` | NGINX Ingress with TLS |
 | `08-servicemonitor.yaml` | Prometheus ServiceMonitor |
 

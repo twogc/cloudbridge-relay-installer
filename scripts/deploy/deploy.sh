@@ -190,6 +190,9 @@ deploy_registry() {
 load_images() {
     log_info "Загрузка образов в registry..."
     
+    local registry_host="localhost:5000"
+    local ai_dockerfile="docker/dockerfiles/Dockerfile.ai-service"
+    
     # Проверка существования образов
     if ! docker image inspect cloudbridge-relay:latest &> /dev/null; then
         log_warning "Образ cloudbridge-relay:latest не найден. Создание образа..."
@@ -197,26 +200,11 @@ load_images() {
     fi
     
     if ! docker image inspect ai-service:latest &> /dev/null; then
-        log_warning "Образ ai-service:latest не найден. Создание образа..."
-        # Создание простого образа для тестирования
-        docker build -f - -t ai-service:latest << 'EOF'
-FROM alpine:3.18
-RUN apk add --no-cache wget
-EXPOSE 8080
-CMD ["sh", "-c", "while true; do echo 'AI Service running on port 8080'; sleep 30; done"]
-EOF
+        log_warning "Образ ai-service:latest не найден. Сборка из ${ai_dockerfile}..."
+        docker build -f "${ai_dockerfile}" -t ai-service:latest .
     fi
     
-    if ! docker image inspect cadence:latest &> /dev/null; then
-        log_warning "Образ cadence:latest не найден. Создание образа..."
-        # Создание простого образа для тестирования
-        docker build -f - -t cadence:latest << 'EOF'
-FROM alpine:3.18
-RUN apk add --no-cache wget
-EXPOSE 7933
-CMD ["sh", "-c", "while true; do echo 'Cadence Service running on port 7933'; sleep 30; done"]
-EOF
-    fi
+    log_info "Cadence: образ ubercadence/server:v0.22.4 берётся с Docker Hub (см. k8s-manifests/05-deployments.yaml), push в локальный registry не требуется"
     
     # Настройка port-forward для registry
     log_info "Настройка port-forward для registry..."
@@ -226,21 +214,19 @@ EOF
     # Ожидание готовности registry
     sleep 10
     
-    # Тегирование и загрузка образов
-    log_info "Тегирование образов..."
-    docker tag cloudbridge-relay:latest localhost:5000/cloudbridge-relay:latest
-    docker tag ai-service:latest localhost:5000/ai-service:latest
-    docker tag cadence:latest localhost:5000/cadence:latest
+    # Тегирование и загрузка образов (имена совпадают с image: в 05-deployments.yaml)
+    log_info "Тегирование образов для ${registry_host}..."
+    docker tag cloudbridge-relay:latest "${registry_host}/cloudbridge-relay:latest"
+    docker tag ai-service:latest "${registry_host}/ai-service:latest"
     
     log_info "Загрузка образов в registry..."
-    docker push localhost:5000/cloudbridge-relay:latest
-    docker push localhost:5000/ai-service:latest
-    docker push localhost:5000/cadence:latest
+    docker push "${registry_host}/cloudbridge-relay:latest"
+    docker push "${registry_host}/ai-service:latest"
     
     # Остановка port-forward
     kill $PORT_FORWARD_PID 2>/dev/null || true
     
-    log_success "Образы загружены в registry"
+    log_success "Образы cloudbridge-relay и ai-service загружены в registry"
 }
 
 # Создание секрета для registry

@@ -39,11 +39,12 @@
 
 ### Шаги миграции (короткие)
 
-1. Инвентаризация: `rg -l 'kubectl apply' scripts/` → таблица «скрипт → путь манифеста».
-2. Зафиксировать diff `k8s-manifests/` vs `k8s/deployments|services/` для relay/AI/Cadence.
-3. Обновить `scripts/deploy/deploy.sh` на опциональный режим `k8s/overlays/production/` (будущее), сохранив текущий `k8s-manifests/` до полной проверки.
-4. Перенести уникальные файлы из `k8s-manifests/` в `k8s/` только после обновления deploy.sh.
-5. Пометить `k8s-manifests/` deprecated в README, удалить через 1 релиз.
+1. [x] Инвентаризация: `rg -l 'kubectl apply' scripts/` → таблица «скрипт → путь манифеста».
+2. [x] Зафиксировать diff `k8s-manifests/` vs `k8s/deployments|services/` для relay/AI/Cadence — см. [step03 report](../agent-reports/cloudbridge-relay-k8s-consol/step03-configmap-or-port-sync-step.md), `openwiki/port-scheme.md` §k8s drift.
+3. [x] **P0 stub fix (2026-07-09, k8s-prod-fix):** `k8s-manifests/05–06` — убраны `nginx:latest`/port 80/AI 8080 stubs; `deploy.sh` → `load_images()` собирает relay/ai; см. [step02](../agent-reports/cloudbridge-relay-k8s-prod-fix/step02-write-mimo-fix-05-06-manifests.md), [step03](../agent-reports/cloudbridge-relay-k8s-prod-fix/step03-fix-deploy-sh-load-images.md), [SUMMARY](../agent-reports/cloudbridge-relay-k8s-prod-fix/SUMMARY.md).
+4. Обновить `scripts/deploy/deploy.sh` на опциональный режим `k8s/overlays/production/` (будущее), сохранив текущий `k8s-manifests/` до полной проверки.
+5. Перенести уникальные файлы из `k8s-manifests/` в `k8s/` только после обновления deploy.sh.
+6. Пометить `k8s-manifests/` deprecated в README, удалить через 1 релиз.
 
 **Не делать в step 4:** массовый merge деревьев, изменение `scripts/deploy/deploy.sh`.
 

@@ -1,8 +1,8 @@
 # Port Scheme (Canonical)
 
-Single source of truth for CloudBridge Relay ports. Derived from `configs/config.json`, `docs/operations/SERVICE_CATALOG.md`, and `k8s-manifests/`. Runtime-fixed listeners in `cmd/relay/main.go` are noted where they differ from config keys.
+Single source of truth for CloudBridge Relay ports. Relay ports from `configs/config.json`; auxiliary microservice ports from **`cmd/*` defaults + `k8s/` ops manifests** (`k8s/deployments/`, `k8s/services/`). Runtime-fixed listeners in `cmd/relay/main.go` are noted where they differ from config keys.
 
-**Config note:** `configs/config.json` contains duplicate `http_api` / `https_api` keys; JSON parsers keep the **last** value (`http_api.port` → 9090, `https_api.port` → 5553).
+**Host note:** Prometheus and other smarty Docker services on the dev host may use **9090** TCP — that is external to this installer; relay QUIC also uses 9090 **UDP** (no TCP conflict).
 
 ---
 
@@ -35,10 +35,10 @@ Single source of truth for CloudBridge Relay ports. Derived from `configs/config
 | Service | Port(s) | Protocol | Primary source | Notes |
 |---|---:|---|---|---|
 | TURN (coturn, external pool) | 3478 | UDP/TCP | SERVICE_CATALOG, `configs/config.json` `turn_pool` | Standalone coturn; relay also embeds TURN on 3478 |
-| IPAM | 8083 | TCP | SERVICE_CATALOG | `cmd/ipam-service` listens on **8080** — drift |
-| Tenant Policy Controller | 8080 / 8081 | TCP | SERVICE_CATALOG | metrics / health |
-| AI Service | 8085 | TCP | SERVICE_CATALOG | k8s Service **8080**; code default **8083** via `AI_PORT` |
-| AI Worker | 8086 | TCP | SERVICE_CATALOG | `cmd/ai-worker` health on **8085** |
+| IPAM | 8080 | TCP | `cmd/ipam-service`, `configs/cni/cloudbridge-cni.conf` | Internal; CNI `serviceUrl` |
+| Tenant Policy Controller | 8080 / 8081 | TCP | `cmd/tenant-policy-controller` | metrics / health |
+| AI Service | 8083 | TCP | `cmd/ai-service` (`AI_PORT`), `k8s/services/ai-service.yaml` | HTTP + `/metrics` on same port |
+| AI Worker | 8085 | TCP | `cmd/ai-worker`, `k8s/services/ai-service.yaml` (`ai-worker`) | Health / metrics |
 | QUIC Service (optional) | 8081 | TCP | SERVICE_CATALOG | metrics sidecar |
 | Quantum Service | 8084 | TCP | SERVICE_CATALOG | disabled stub |
 | WireGuard Service | 51820 | UDP | SERVICE_CATALOG | same as relay WireGuard |
@@ -63,8 +63,8 @@ Single source of truth for CloudBridge Relay ports. Derived from `configs/config
 | `cloudbridge-relay-service` | 9090 TCP/UDP | relay HTTP + QUIC |
 | `cloudbridge-relay-service` | 51820 UDP | WireGuard |
 | `cloudbridge-relay-service` | 8444 TCP | gRPC |
-| `ai-service` | 8080 TCP | AI HTTP |
-| `ai-service` | 9090 TCP | AI metrics |
+| `ai-service` | 8083 TCP | AI HTTP + `/metrics` (runtime on same port per `cmd/ai-service`) |
+| `ai-service` | 8084 TCP | AI metrics (Service port; runtime serves `/metrics` on **8083** — known drift) |
 | `cadence-service` | 7933–7939 TCP | Cadence gRPC |
 | `cassandra-service` | 9042 TCP | Cassandra CQL |
 
@@ -86,6 +86,48 @@ Public-facing relay ports (see also `docs/network/PORTS_SUMMARY.md`):
 
 ---
 
+## `k8s-manifests/` vs `k8s/` Manifest Drift
+
+Canonical prod apply: `k8s-manifests/` via `scripts/deploy/deploy.sh`. Ops/component manifests: `k8s/deployments/`, `k8s/services/`.
+
+**P0 stub fix (2026-07-09, k8s-prod-fix steps 2–3):** `05-deployments.yaml` и `06-services.yaml` больше не содержат `nginx:latest` / port 80 / AI **8080** stubs. Образы: `docker-registry:5000/cloudbridge-relay:latest`, `docker-registry:5000/ai-service:latest`, `ubercadence/server:v0.22.4`; `deploy.sh` → `load_images()` собирает relay/ai и пушит в in-cluster registry.
+
+### CloudBridge Relay
+
+| Поле | `k8s-manifests/05–06` | `k8s/deployments|services` | Canonical (`configs/config.json` + §Relay) |
+|---|---|---|---|
+| Image | `docker-registry:5000/cloudbridge-relay:latest` | `cloudbridge-relay:mvp-20251010-110859` | Built image from `docker/Dockerfile` |
+| containerPort (declared) | http **9090**, quic **9090** UDP, wg **51820**, grpc **8444**, health **9091** | http **8080** (legacy), quic **9090** UDP, wg **51820**, metrics **9091**, grpc **8444** | HTTP API **9090**, metrics **5551**, P2P API **5552** |
+| Health/readiness probe | **9090** `/health` | **9090** `/health` | HTTP API **9090** |
+| Service `cloudbridge-relay*` | 9090 TCP/UDP, 51820 UDP, 8444 TCP | 9090 TCP/UDP, 51820 UDP, **8084** metrics, **нет grpc** в `cloudbridge-services.yaml` | 9090, 51820, 8444 per §K8s Service Exposure |
+| prometheus.io/port | **8084** | **8084** | Relay metrics **5551** (annotation drift) |
+
+**Вывод:** `k8s-manifests/05–06` выровнены с canonical Service-портами. Остаточный drift: ops `k8s/deployments/cloudbridge-relay-deployment.yaml` — legacy `containerPort: 8080`; prometheus annotation **8084** vs runtime **5551**.
+
+### AI Service
+
+| Поле | `k8s-manifests/05–06` | `k8s/deployments|services` | Canonical |
+|---|---|---|---|
+| Image | `docker-registry:5000/ai-service:latest` | `ai-service:latest` | Built `cmd/ai-service` image |
+| containerPort | **8083** | http **8083**, metrics **8084** | `AI_PORT` default **8083** (`cmd/ai-service`) |
+| Health probe | **8083** | **8083** | **8083** |
+| Service ports | http **8083**, metrics **8084** | http **8083**, metrics **8084** | Canonical **8083** (HTTP + `/metrics` on same port) |
+
+**Вывод:** Stub drift устранён (k8s-prod-fix). Остаточный drift: Service metrics port **8084** vs runtime `/metrics` on **8083** (нет `containerPort: 8084` в deployment).
+
+### Cadence
+
+| Поле | `k8s-manifests/05–06` | `k8s/deployments|services` |
+|---|---|---|
+| Image | `ubercadence/server:v0.22.4` | `cadence-working.yaml` (отдельный файл) |
+| Service ports | 7933, 7934, 7935, **7939** | 7933, 7934, 7935 (без 7939 в `cloudbridge-services.yaml`) |
+| Probe | tcpSocket **7933** | varies by deployment variant |
+| Runtime env | минимальный | полный (Cassandra/Ringpop) в `k8s/cadence/` |
+
+**Вывод:** Образ и порты согласованы; `k8s-manifests` добавляет **7939** (worker). Cadence pod может потребовать env из ops-дерева `k8s/cadence/`.
+
+---
+
 ## Known Documentation Drift (TODO)
 
 | Item | Issue |
@@ -93,4 +135,6 @@ Public-facing relay ports (see also `docs/network/PORTS_SUMMARY.md`):
 | `docs/operations/SERVICE_CATALOG.md` | Lists relay HTTP **8080** / HTTPS **8443** — legacy; installer uses `configs/config.json` scheme above |
 | `config/config.json` (dev) | Uses `server.port` **9090** — not the installer canonical `configs/config.json` |
 | `docker/Dockerfile` EXPOSE | Lists **8082** (API fallback), not **5552** from installer config |
-| AI / IPAM ports | SERVICE_CATALOG vs k8s-manifests vs `cmd/*` defaults differ — table notes list actuals |
+| `k8s/services/ai-service.yaml` metrics **8084** | Declared Service port; `cmd/ai-service` serves `/metrics` on HTTP port **8083** |
+| `k8s/deployments/cloudbridge-relay-deployment.yaml` http **8080** | Legacy `containerPort` in ops tree; `k8s-manifests/05` uses **9090** |
+| `k8s-manifests/05` prometheus.io/port **8084** | Annotation drift vs relay metrics **5551** |

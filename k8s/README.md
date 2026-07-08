@@ -1,8 +1,19 @@
-# CloudBridge Relay - Kubernetes Deployment
+# CloudBridge Relay — Kubernetes Manifests (`k8s/`)
+
+## Canonical deployment (read first)
+
+| Слой | Canonical path | Примечание |
+|------|----------------|------------|
+| **Ordered prod deploy** | [`k8s-manifests/`](../k8s-manifests/) + [`scripts/deploy/deploy.sh`](../scripts/deploy/deploy.sh) | Манифесты `00–15`; см. [k8s-manifests/README.md](../k8s-manifests/README.md) |
+| **Component / ops manifests** | `k8s/` (эта директория) | Zitadel Helm values, Cadence schema jobs, BGP, Kyverno, cert-manager — вызываются отдельными скриптами в `scripts/` |
+
+Документация: [openwiki/deploy.md](../openwiki/deploy.md), [CONSOLIDATION_PLAN §1](../docs/audit/CONSOLIDATION_PLAN.md).
+
+> **Не использовать** устаревшие standalone YAML из корня `k8s/` (`*-fixed.yaml`) — перенесены в `archive/k8s/standalone-root/`.
 
 ## Обзор
 
-Этот раздел содержит Kubernetes манифесты для развертывания CloudBridge Relay Server с полным стеком сервисов, включая Cadence Workflow Engine, Cassandra, Prometheus и Grafana.
+Доменная структура манифестов для ops и компонентных задач: Cadence, Zitadel, monitoring-stack, BGP, security, RBAC. Для полного prod-стека используйте `k8s-manifests/`, не корневые YAML здесь.
 
 ## 🏗️ Архитектура
 

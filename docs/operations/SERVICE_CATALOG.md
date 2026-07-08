@@ -7,7 +7,7 @@
 
 This document catalogs all services in the CloudBridge relay system, their dependencies, APIs, and deployment status.
 
-**Canonical ports:** [`openwiki/port-scheme.md`](../../openwiki/port-scheme.md). Where this catalog, k8s manifests, or `cmd/*` defaults disagree, the port-scheme is authoritative; env-specific drift is called out inline.
+**Canonical ports:** [`openwiki/port-scheme.md`](../../openwiki/port-scheme.md). Relay ports from `configs/config.json`; auxiliary microservices (IPAM, AI) from **`cmd/*` defaults + `k8s/` ops manifests**.
 
 ---
 
@@ -116,10 +116,8 @@ lt-cred-mech: true
 ### 3. IPAM Service
 
 **Directory**: `cmd/ipam-service/`
-**Port**: 8083 (catalog canonical)
+**Port**: 8080
 **Status**: Production Ready
-
-> **Drift:** `cmd/ipam-service` listens on **8080** (`main.go`); catalog/k8s target **8083**.
 **Lines of Code**: 156
 
 #### Purpose
@@ -168,10 +166,8 @@ Kubernetes controller for tenant network isolation using Calico NetworkPolicies.
 ### 5. AI Service
 
 **Directory**: `cmd/ai-service/`
-**Port**: 8085 (catalog canonical)
+**Port**: 8083 (`AI_PORT` env, default `8083`)
 **Status**: Production Ready (Optional)
-
-> **Drift:** k8s Service `ai-service` exposes **8080** (`k8s-manifests/06-services.yaml`); `cmd/ai-service` default via `AI_PORT` is **8083**; `k8s/deployments/ai-service-deployment.yaml` uses **8083**.
 **Lines of Code**: 83
 
 #### Purpose
@@ -197,10 +193,8 @@ AI-powered analytics and predictions for relay optimization.
 ### 6. AI Worker
 
 **Directory**: `cmd/ai-worker/`
-**Port**: 8086 (catalog canonical)
+**Port**: 8085 (health / metrics)
 **Status**: Production Ready (Optional)
-
-> **Drift:** `cmd/ai-worker` health server listens on **8085** (`main.go`).
 
 #### Purpose
 Background worker for batch AI processing.
@@ -445,8 +439,8 @@ Web UI for Cadence workflow monitoring.
 
 All services expose Prometheus metrics at `/metrics`:
 - **Relay**: `:5551/metrics` (`metrics.port`; legacy docs used `:8080`)
-- **IPAM**: `:8083/metrics` (catalog; runtime **8080** — see drift above)
-- **AI Service**: `:8085/metrics` (catalog; runtime **8083** default — see drift above)
+- **IPAM**: `:8080/metrics` (via `/api/v1/ipam/metrics` and `/health`)
+- **AI Service**: `:8083/metrics`
 - **Tenant Controller**: `:8080/metrics`
 
 ### Health Checks
@@ -479,9 +473,7 @@ All services expose health checks:
                              │
          ┌───────────────────┼───────────────────┐
          ↓                   ↓                   ↓
-    TURN (3478)         IPAM (8083*)      PostgreSQL (5432)
-
-    * IPAM runtime :8080 — see drift note in §3
+    TURN (3478)         IPAM (8080)       PostgreSQL (5432)
 ```
 
 ---
