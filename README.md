@@ -1,5 +1,9 @@
 # CloudBridge Relay - Развертывание в VK Cloud Kubernetes
 
+> **SoT (Source of Truth) for pilot / lab / L0** — this repository.  
+> Companion client: `cloudbridge-client` (`scripts/all-smoke.sh`).  
+> `cloudbridge-scalable-relay` is multi-region **WIP**, not deployable main (see strategy `RELAY_SOT_POLICY.md`).
+
 ## Обзор проекта
 
 CloudBridge Relay - это высокопроизводительная система для ретрансляции и маршрутизации сетевого трафика с поддержкой:
