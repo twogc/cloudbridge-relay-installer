@@ -1,0 +1,425 @@
+{
+  "server": {
+    "port": 5550,
+    "timeout": "30s",
+    "max_tunnels": 1000,
+    "ping_interval": "30s",
+    "cleanup_interval": "60s"
+  },
+  "zitadel": {
+    "enabled": false,
+    "domain": "${ZITADEL_DOMAIN:-https://zitadel.local}",
+    "project_id": "${ZITADEL_PROJECT_ID}",
+    "client_id": "${ZITADEL_CLIENT_ID}",
+    "client_secret": "${ZITADEL_CLIENT_SECRET}",
+    "fallback_secret": "local-smoke-secret-for-tests-only-32b",
+    "token_validation": {
+      "audience": "cloudbridge-relay",
+      "clock_skew": "30s"
+    },
+    "cache_ttl": "5m",
+    "http_timeout": "30s",
+    "tenant_management": {
+      "enabled": true,
+      "auto_create": false,
+      "default_quotas": {
+        "max_peers": 10,
+        "max_connections": 100,
+        "max_tunnels": 20,
+        "bandwidth_limit": "1GB",
+        "storage_limit": "10GB"
+      }
+    }
+  },
+  "security": {
+    "tls_enabled": false,
+    "cert_file": "${RELAY_TLS_CERT_FILE}",
+    "key_file": "${RELAY_TLS_KEY_FILE}",
+    "allowed_ips": [],
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_second": 100.0,
+      "burst": 1000
+    },
+    "mtls": {
+      "enabled": true,
+      "ca_file": "${RELAY_MTLS_CA_FILE}"
+    },
+    "cipher_suites": [],
+    "min_tls_version": "TLS1.3",
+    "audit": {
+      "enabled": true,
+      "log_file": "/var/log/relay_audit.log"
+    }
+  },
+  "metrics": {
+    "enabled": true,
+    "port": 5551,
+    "path": "/metrics"
+  },
+  "api": {
+    "enabled": true,
+    "port": 5552,
+    "version": "v1"
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "output": "stdout",
+    "file": "/var/log/relay.log",
+    "max_size": "100m",
+    "max_age": "720h",
+    "max_backups": 10
+  },
+  "protocol": {
+    "auto_select": true,
+    "preferred": "quic",
+    "fallback": "http",
+    "switch_threshold": 0.2,
+    "health_check_interval": "30s"
+  },
+  "http_api": {
+    "enabled": true,
+    "port": 19090,
+    "host": "0.0.0.0",
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 100
+    }
+  },
+  "https_api": {
+    "enabled": false,
+    "port": 5553,
+    "host": "0.0.0.0",
+    "tls": {
+      "enabled": true,
+      "cert_file": "/app/certs/tls.crt",
+      "key_file": "/app/certs/tls.key"
+    },
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 100
+    }
+  },
+  "quic": {
+    "enabled": true,
+    "max_streams": 100,
+    "keep_alive": true,
+    "idle_timeout": "30s",
+    "handshake_timeout": "10s",
+    "connection_migration": true,
+    "multiplexing": true
+  },
+  "zero_trust": {
+    "enabled": false,
+    "client_daemon": false,
+    "service_discovery": false,
+    "auto_reconnect": true,
+    "circuit_breaker": {
+      "enabled": true,
+      "failure_threshold": 5,
+      "success_threshold": 2,
+      "timeout": "30s",
+      "window_size": "60s"
+    },
+    "health_check": {
+      "enabled": true,
+      "interval": "30s",
+      "timeout": "10s",
+      "checks": []
+    },
+    "rate_limit": {
+      "enabled": true,
+      "requests_per": 100,
+      "window_size": 60
+    },
+    "authentication": {
+      "enabled": false,
+      "type": "jwt",
+      "jwt_secret": "local-smoke-secret-for-tests-only-32b"
+    }
+  },
+  "ingress": {
+    "enabled": true,
+    "bastion_mode": false,
+    "ip_access_control": {
+      "enabled": true,
+      "default_allow": true,
+      "rules": []
+    },
+    "tls": {
+      "enabled": true,
+      "cert_file": "${RELAY_TLS_CERT_FILE}",
+      "key_file": "${RELAY_TLS_KEY_FILE}",
+      "min_version": "TLS1.3",
+      "cipher_suites": [],
+      "verify_client_cert": false,
+      "client_ca_file": "",
+      "insecure_skip_verify": false
+    },
+    "connection_pool": {
+      "max_size": 200,
+      "idle_timeout": "60s",
+      "max_idle": 50,
+      "max_lifetime": "10m",
+      "retry": {
+        "max_retries": 3,
+        "base_time": "100ms",
+        "max_delay": "2s",
+        "jitter": 0.1,
+        "retry_forever": false
+      },
+      "graceful_shutdown": {
+        "grace_period": "10s",
+        "max_wait_time": "20s"
+      },
+      "http2_reuse": {
+        "max_connections": 100,
+        "max_idle_time": "30s",
+        "cleanup_interval": "30s"
+      }
+    },
+    "rules": [],
+    "origin_request": {
+      "connect_timeout": "5s",
+      "tls_timeout": "5s",
+      "tcp_keep_alive": "30s",
+      "keep_alive_connections": 64,
+      "keep_alive_timeout": "30s",
+      "http_host_header": "",
+      "origin_server_name": "",
+      "no_tls_verify": false,
+      "ca_pool": "",
+      "disable_chunked_encoding": false,
+      "bastion_mode": false,
+      "proxy_address": "",
+      "proxy_port": 0,
+      "proxy_type": "",
+      "http2_origin": true
+    }
+  },
+  "enhanced_quic": {
+    "enabled": true,
+    "max_streams": 100,
+    "keep_alive": true,
+    "idle_timeout": "30s",
+    "handshake_timeout": "10s",
+    "ddos_protection": true,
+    "geographic_routing": false
+  },
+  "p2p_api": {
+    "enabled": true,
+    "port": 8082,
+    "host": "0.0.0.0",
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 100
+    },
+    "endpoints": {
+      "register": "/api/v1/register",
+      "peers": "/api/v1/peers",
+      "health": "/api/v1/health"
+    }
+  },
+  "p2p_api_https": {
+    "enabled": true,
+    "port": 8083,
+    "host": "0.0.0.0",
+    "tls": {
+      "enabled": true,
+      "cert_file": "/app/certs/tls.crt",
+      "key_file": "/app/certs/tls.key"
+    },
+    "cors_enabled": true,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 100
+    },
+    "endpoints": {
+      "register": "/api/v1/register",
+      "peers": "/api/v1/peers",
+      "health": "/api/v1/health"
+    }
+  },
+  "ice_stun_turn": {
+    "enabled": true,
+    "stun_servers": [
+      "stun.l.google.com:19302",
+      "stun1.l.google.com:19302",
+      "auth.2gc.ru:19302"
+    ],
+    "turn_servers": [],
+    "ice_timeout": "30s",
+    "connection_timeout": "10s",
+    "gathering_timeout": "5s",
+    "candidate_types": [
+      "host",
+      "srflx",
+      "relay"
+    ]
+  },
+  "turn_pool": {
+    "enabled": false,
+    "default_pool_name": "primary",
+    "allocation_timeout": "10m",
+    "health_check_interval": "30s",
+    "health_check_timeout": "5s",
+    "max_allocations_per_client": 10,
+    "load_balancing_strategy": "weighted",
+    "weighted_threshold": 0.8,
+    "metrics_enabled": true,
+    "stats_interval": "60s",
+    "latency_history_size": 100,
+    "failover_enabled": true,
+    "failover_timeout": "30s",
+    "max_retries": 3,
+    "backoff_multiplier": 2.0,
+    "pools": {
+      "primary": {
+        "name": "primary",
+        "region": "ru-central1",
+        "servers": [
+          {
+            "address": "turn1.cloudbridge.ru:3478",
+            "username": "cloudbridge",
+            "password": "${TURN_PASSWORD}",
+            "realm": "cloudbridge.ru",
+            "priority": 100,
+            "weight": 80,
+            "max_connections": 1000,
+            "region": "ru-central1",
+            "provider": "vkcloud",
+            "capabilities": [
+              "udp",
+              "tcp",
+              "tls"
+            ],
+            "tags": {
+              "environment": "production",
+              "tier": "primary"
+            }
+          },
+          {
+            "address": "turn2.cloudbridge.ru:3478",
+            "username": "cloudbridge",
+            "password": "${TURN_PASSWORD}",
+            "realm": "cloudbridge.ru",
+            "priority": 90,
+            "weight": 60,
+            "max_connections": 500,
+            "region": "ru-central1",
+            "provider": "vkcloud",
+            "capabilities": [
+              "udp",
+              "tcp"
+            ],
+            "tags": {
+              "environment": "production",
+              "tier": "secondary"
+            }
+          }
+        ]
+      },
+      "backup": {
+        "name": "backup",
+        "region": "ru-west1",
+        "servers": [
+          {
+            "address": "turn-backup.cloudbridge.ru:3478",
+            "username": "cloudbridge-backup",
+            "password": "${TURN_BACKUP_PASSWORD}",
+            "realm": "cloudbridge.ru",
+            "priority": 50,
+            "weight": 40,
+            "max_connections": 200,
+            "region": "ru-west1",
+            "provider": "yandex",
+            "capabilities": [
+              "udp"
+            ],
+            "tags": {
+              "environment": "production",
+              "tier": "backup"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "masque": {
+    "enabled": false,
+    "proxy_url": "https://auth.2gc.ru:8443",
+    "alpn_protocols": [
+      "h3",
+      "h3-29",
+      "h3-28",
+      "h3-27"
+    ],
+    "fallback_enabled": true
+  },
+  "wireguard": {
+    "enabled": false,
+    "interface": {
+      "name": "wg0",
+      "listen_port": 51820,
+      "address": "10.100.1.1/24"
+    },
+    "discovery": {
+      "registry_url": "https://registry.cloudbridge.com",
+      "heartbeat_interval": "30s",
+      "max_peers": 50
+    },
+    "mesh": {
+      "enabled": true,
+      "auto_discovery": true,
+      "max_connections": 100,
+      "routing_strategy": "hybrid"
+    },
+    "site_to_site": {
+      "enabled": true,
+      "corporate_networks": []
+    }
+  },
+  "ai": {
+    "enabled": false,
+    "behavior_analysis": {
+      "enabled": true,
+      "model_path": "",
+      "threshold": 0.8,
+      "learning_rate": 0.01
+    },
+    "predictive_security": {
+      "enabled": true,
+      "confidence": 0.9
+    },
+    "automated_response": {
+      "enabled": true
+    },
+    "monitoring": {
+      "enabled": true,
+      "dashboard_url": "http://localhost:3000",
+      "refresh_rate": "30s"
+    }
+  },
+  "cadence": {
+    "enabled": false,
+    "host_port": "cadence:7933",
+    "domain": "cloudbridge-p2p",
+    "task_list": "p2p-quic-tasks"
+  },
+  "grpc": {
+    "enabled": true,
+    "port": 8444,
+    "tls_enabled": false,
+    "mtls_enabled": false,
+    "cert_file": "",
+    "key_file": "",
+    "keepalive_ping": "15s",
+    "keepalive_timeout": "10s",
+    "max_recv_msg_size": 4194304,
+    "max_send_msg_size": 4194304
+  }
+}
