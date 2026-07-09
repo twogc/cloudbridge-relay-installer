@@ -149,7 +149,13 @@ func (qrh *QUICRelayHandler) handleStreams(conn *quic.Conn, peerID string) {
 	}
 }
 
-// handleStream обрабатывает QUIC поток
+// handleStream обрабатывает QUIC поток после AUTH.
+// Control frames (single-peer liveness / local smoke):
+//
+//	PING[ payload]  →  PONG[ same payload]
+//	ECHO[ payload]  →  ECHO[ same payload]
+//
+// Everything else is peer relay (TO:<peer>:...).
 func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 	defer (*stream).Close()
 
@@ -187,8 +193,13 @@ func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 				return
 			}
 
+			msg := buffer[:n]
+			if handled := qrh.handleControlFrame(stream, peerID, msg); handled {
+				continue
+			}
+
 			// Пересылаем пакет
-			err = qrh.relayManager.RelayPacket(peerID, buffer[:n])
+			err = qrh.relayManager.RelayPacket(peerID, msg)
 			if err != nil {
 				qrh.logger.Error("Failed to relay packet",
 					zap.String("peer_id", peerID),
@@ -201,6 +212,43 @@ func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 				zap.Int("bytes", n))
 		}
 	}
+}
+
+// handleControlFrame answers PING/ECHO on the same stream. Returns true if consumed.
+func (qrh *QUICRelayHandler) handleControlFrame(stream *quic.Stream, peerID string, msg []byte) bool {
+	// Trim optional trailing newline for line-oriented smokes
+	raw := msg
+	if len(raw) > 0 && raw[len(raw)-1] == '\n' {
+		raw = raw[:len(raw)-1]
+	}
+	s := string(raw)
+
+	var reply string
+	switch {
+	case s == "PING" || len(s) >= 5 && s[:5] == "PING ":
+		// PING → PONG; preserve optional payload after "PING"
+		if s == "PING" {
+			reply = "PONG"
+		} else {
+			reply = "PONG" + s[4:] // keep leading space + payload
+		}
+	case s == "ECHO" || len(s) >= 5 && s[:5] == "ECHO ":
+		reply = s // echo back as-is
+	default:
+		return false
+	}
+
+	if _, err := (*stream).Write([]byte(reply)); err != nil {
+		qrh.logger.Error("Failed to write control response",
+			zap.String("peer_id", peerID),
+			zap.Error(err))
+		return true
+	}
+	qrh.logger.Debug("Control frame answered",
+		zap.String("peer_id", peerID),
+		zap.String("request", s),
+		zap.String("reply", reply))
+	return true
 }
 
 // authenticateConnection аутентифицирует QUIC соединение через JWT токен
