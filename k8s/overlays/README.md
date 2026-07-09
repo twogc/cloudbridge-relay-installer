@@ -21,8 +21,8 @@
 ./scripts/deploy/deploy.sh --use-overlay
 ./scripts/deploy/deploy.sh --render-overlay
 
-# IAM (after core)
-kubectl apply -k k8s/overlays/zitadel
+# IAM (after core; load-restrictor required for paths outside overlay dir)
+kubectl apply -k k8s/overlays/zitadel --load-restrictor=LoadRestrictionsNone
 ```
 
 ## E2E checklist

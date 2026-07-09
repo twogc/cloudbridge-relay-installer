@@ -48,9 +48,9 @@ spec:
           protocol: TCP
         - name: health
           containerPort: 9091
+          protocol: TCP
         - name: metrics
           containerPort: 5551
-          protocol: TCP
           protocol: TCP
         env:
         - name: CONFIG_PATH
