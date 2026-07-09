@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/quic-go/quic-go"
 	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
@@ -212,7 +213,7 @@ func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, st
 		qrh.logger.Error("Failed to accept auth stream", zap.Error(err))
 		return "", "", fmt.Errorf("failed to accept auth stream: %v", err)
 	}
-	defer stream.Close()
+	// stream closed after AUTH_OK write
 
 	qrh.logger.Debug("Auth stream accepted, waiting for token")
 
@@ -264,13 +265,28 @@ func (qrh *QUICRelayHandler) authenticateConnection(conn *quic.Conn) (string, st
 
 	qrh.logger.Debug("Generated peer ID", zap.String("peer_id", peerID), zap.String("tenant_id", tenantID))
 
-	// Отправляем подтверждение
-	_, err = stream.Write([]byte("AUTH_OK"))
-	if err != nil {
+	// Fallback peer_id if claim missing (local smoke / partial JWTs)
+	if peerID == "" {
+		peerID = "anonymous-peer"
+	}
+	if tenantID == "" {
+		tenantID = "default"
+	}
+
+	// Отправляем подтверждение. Keep stream open briefly so peer can read before FIN.
+	if _, err = stream.Write([]byte("AUTH_OK")); err != nil {
 		qrh.logger.Warn("Failed to send auth confirmation", zap.Error(err))
 	} else {
-		qrh.logger.Debug("Auth confirmation sent")
+		qrh.logger.Info("Auth confirmation AUTH_OK sent",
+			zap.String("peer_id", peerID),
+			zap.String("tenant_id", tenantID))
 	}
+	// Cancel read side only; leave write data deliverable. Full close after short delay.
+	stream.CancelRead(0)
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		_ = stream.Close()
+	}()
 
 	qrh.logger.Info("Authentication completed successfully",
 		zap.String("peer_id", peerID),

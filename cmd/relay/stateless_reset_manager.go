@@ -150,7 +150,9 @@ func (srm *StatelessResetManager) SetTransport(transport *quic.Transport) {
 
 	srm.transport = transport
 	if transport != nil {
-		transport.StatelessResetKey = srm.GetKey()
+		// Do not call GetKey() here — it also takes the mutex (deadlock).
+		key := srm.key
+		transport.StatelessResetKey = &key
 		srm.logger.Info("StatelessResetKey set on QUIC Transport")
 	}
 }
