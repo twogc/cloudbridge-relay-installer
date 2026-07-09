@@ -135,15 +135,19 @@ func (qrh *QUICRelayHandler) handleStreams(conn *quic.Conn, peerID string) {
 		default:
 			stream, err := conn.AcceptStream(qrh.ctx)
 			if err != nil {
+				// Connection closed / remote gone — stop loop (do not spin+flood logs).
 				if qrh.ctx.Err() != nil {
 					return
 				}
-				qrh.logger.Error("Failed to accept stream",
+				qrh.logger.Info("Stop accepting streams",
 					zap.String("peer_id", peerID),
 					zap.Error(err))
-				continue
+				return
 			}
 
+			qrh.logger.Info("Accepted data stream",
+				zap.String("peer_id", peerID),
+				zap.Int64("stream_id", int64(stream.StreamID())))
 			go qrh.handleStream(stream, peerID)
 		}
 	}
@@ -175,6 +179,7 @@ func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 
 	// Читаем данные из потока
 	buffer := make([]byte, 4096)
+	_ = (*stream).SetReadDeadline(time.Now().Add(30 * time.Second))
 	for {
 		select {
 		case <-qrh.ctx.Done():
@@ -187,7 +192,8 @@ func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 						zap.String("peer_id", peerID))
 					return
 				}
-				qrh.logger.Error("Failed to read from stream",
+				// deadline / reset after peer FIN is normal end of stream
+				qrh.logger.Debug("Stream read ended",
 					zap.String("peer_id", peerID),
 					zap.Error(err))
 				return
@@ -198,7 +204,7 @@ func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 				continue
 			}
 
-			// Пересылаем пакет
+			// Пересылаем пакет (TO:<peer>:<payload>)
 			err = qrh.relayManager.RelayPacket(peerID, msg)
 			if err != nil {
 				qrh.logger.Error("Failed to relay packet",
@@ -207,7 +213,7 @@ func (qrh *QUICRelayHandler) handleStream(stream *quic.Stream, peerID string) {
 				continue
 			}
 
-			qrh.logger.Debug("Packet relayed",
+			qrh.logger.Info("Packet relayed",
 				zap.String("peer_id", peerID),
 				zap.Int("bytes", n))
 		}

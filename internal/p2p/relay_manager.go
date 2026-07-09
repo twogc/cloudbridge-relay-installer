@@ -298,10 +298,49 @@ func (rm *RelayManager) RegisterPeer(tenantID, peerID, publicKey string, allowed
 	return peer, nil
 }
 
-// RegisterQUICConnection регистрирует QUIC соединение с пиром
+// RegisterQUICConnection регистрирует QUIC соединение с пиром.
+// Also ensures a tenant skeleton exists so RelayPacket / EstablishP2PConnection
+// work for pure QUIC AUTH peers (no prior REST RegisterPeer required).
 func (rm *RelayManager) RegisterQUICConnection(peerID, tenantID string, conn *quic.Conn) error {
 	rm.mutex.Lock()
 	defer rm.mutex.Unlock()
+
+	if tenantID == "" {
+		tenantID = "default"
+	}
+	if peerID == "" {
+		return fmt.Errorf("peer_id is required")
+	}
+
+	// Lazy tenant for mesh data plane (TO:<peer>:…) without HTTP register.
+	if _, exists := rm.tenants[tenantID]; !exists {
+		rm.tenants[tenantID] = &Tenant{
+			TenantID:       tenantID,
+			NetworkCIDR:    "0.0.0.0/0",
+			Peers:          make(map[string]*Peer),
+			Connections:    make(map[string]*RelayP2PConnection),
+			MaxPeers:       100,
+			MaxConnections: 1000,
+			CreatedAt:      time.Now(),
+			LastActivity:   time.Now(),
+		}
+		rm.logger.Info("Tenant created for QUIC peer",
+			zap.String("tenant_id", tenantID))
+	}
+	tenant := rm.tenants[tenantID]
+	if _, ok := tenant.Peers[peerID]; !ok {
+		tenant.Peers[peerID] = &Peer{
+			PeerID:       peerID,
+			TenantID:     tenantID,
+			IsOnline:     true,
+			LastSeen:     time.Now(),
+			RegisteredAt: time.Now(),
+		}
+	} else {
+		tenant.Peers[peerID].IsOnline = true
+		tenant.Peers[peerID].LastSeen = time.Now()
+	}
+	tenant.LastActivity = time.Now()
 
 	quicConn := &QUICConnection{
 		PeerID:   peerID,
@@ -359,12 +398,27 @@ func (rm *RelayManager) RelayPacket(sourcePeerID string, data []byte) error {
 	_, exists = rm.connections[connectionID]
 	rm.mutex.RUnlock()
 	if !exists {
+		rm.logger.Info("Establishing P2P for relay",
+			zap.String("source", sourcePeerID),
+			zap.String("target", targetPeerID))
 		if _, err := rm.EstablishP2PConnection(sourcePeerID, targetPeerID); err != nil {
 			return fmt.Errorf("failed to establish P2P connection: %v", err)
 		}
 	}
 
+	// Re-fetch target under lock in case map was updated (same pointer usually).
+	rm.mutex.RLock()
+	targetConn, exists = rm.quicConnections[targetPeerID]
+	rm.mutex.RUnlock()
+	if !exists || targetConn == nil {
+		return fmt.Errorf("target peer connection not found after establish: %s", targetPeerID)
+	}
+
 	// Пересылаем пакет
+	rm.logger.Info("Forwarding packet",
+		zap.String("source", sourcePeerID),
+		zap.String("target", targetPeerID),
+		zap.Int("bytes", len(data)))
 	err = rm.forwardPacket(targetConn, data)
 	if err != nil {
 		return fmt.Errorf("failed to forward packet: %v", err)
@@ -472,14 +526,26 @@ func (rm *RelayManager) establishP2PConnection(sourcePeerID, targetPeerID string
 			tenant.TenantID, tenant.MaxConnections)
 	}
 
+	// IP lookup without re-locking (we already hold rm.mutex).
+	// Calling getPeerIPSafe here deadlocks: it takes RLock under Lock.
+	sourceIP, targetIP := "0.0.0.0", "0.0.0.0"
+	if rm.peerIndex != nil {
+		if ip, ok := rm.peerIndex[sourcePeerID]; ok {
+			sourceIP = ip
+		}
+		if ip, ok := rm.peerIndex[targetPeerID]; ok {
+			targetIP = ip
+		}
+	}
+
 	// Создаем соединение
 	connection := &RelayP2PConnection{
 		ConnectionID:   id,
 		TenantID:       sourceConn.TenantID,
 		SourcePeer:     sourcePeerID,
 		TargetPeer:     targetPeerID,
-		SourceIP:       rm.getPeerIPSafe(sourcePeerID),
-		TargetIP:       rm.getPeerIPSafe(targetPeerID),
+		SourceIP:       sourceIP,
+		TargetIP:       targetIP,
 		ConnectionType: "quic",
 		Status:         "established",
 		CreatedAt:      time.Now(),
@@ -501,29 +567,35 @@ func (rm *RelayManager) establishP2PConnection(sourcePeerID, targetPeerID string
 	return connection, nil
 }
 
-// forwardPacket пересылает пакет получателю
+// forwardPacket пересылает пакет получателю.
+// Does not hold targetConn.Mutex across OpenStream/Write (avoids stalling the conn).
 func (rm *RelayManager) forwardPacket(targetConn *QUICConnection, data []byte) error {
 	targetConn.Mutex.Lock()
-	defer targetConn.Mutex.Unlock()
-
 	if !targetConn.IsActive || targetConn.Conn == nil {
+		targetConn.Mutex.Unlock()
 		return fmt.Errorf("target connection is not active")
 	}
+	conn := targetConn.Conn
+	targetConn.Mutex.Unlock()
 
-	// Создаем новый поток для пересылки данных
-	stream, err := targetConn.Conn.OpenStream()
+	// Non-blocking open; peer AcceptStream receives server-initiated bidi stream.
+	stream, err := conn.OpenStream()
 	if err != nil {
 		return fmt.Errorf("failed to open stream: %v", err)
 	}
-	defer stream.Close()
 
-	// Отправляем данные
-	_, err = stream.Write(data)
-	if err != nil {
+	if _, err = stream.Write(data); err != nil {
+		_ = stream.Close()
 		return fmt.Errorf("failed to write to stream: %v", err)
 	}
+	// Close write side so receiver ReadAll sees EOF after payload.
+	if err = stream.Close(); err != nil {
+		return fmt.Errorf("failed to close stream: %v", err)
+	}
 
+	targetConn.Mutex.Lock()
 	targetConn.LastSeen = time.Now()
+	targetConn.Mutex.Unlock()
 
 	return nil
 }
