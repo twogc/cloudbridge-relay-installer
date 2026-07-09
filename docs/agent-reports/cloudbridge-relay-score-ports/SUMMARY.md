@@ -58,8 +58,8 @@
 |-----------|--------|------------|
 | `score_allocator_production.go` | **keep (canonical)** | Единственная реализация после удаления v1/v2 |
 | `relay_manager_hybrid.go` | interface готов | Принимает `network.TenantNetworkAllocator` |
-| `NewSCORETenantNetworkAllocatorProduction` | **не wired** | 0 вызовов вне definition (grep step 4) |
-| Следующий шаг | отдельная пачка | Подключить в `cmd/relay` → hybrid relay manager |
+| `NewSCORETenantNetworkAllocatorProduction` | **wired (optional)** | `SCORE_BASE_URL` → hybrid; IPAM Postgres→SQLite |
+| Следующий шаг | live e2e | SCORE + Postgres on real cluster |
 
 ---
 
