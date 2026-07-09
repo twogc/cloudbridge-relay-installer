@@ -114,9 +114,10 @@ validate_overlay() {
     log_ok "$count resource path(s) checked ($missing missing)"
   fi
 
-  # Optional kustomize render
+  # Optional kustomize render.
+  # LoadRestrictionsNone: overlays reference ../../../k8s-manifests (outside overlay dir).
   if command -v kubectl >/dev/null 2>&1; then
-    if out=$(kubectl kustomize "$dir" 2>&1); then
+    if out=$(kubectl kustomize --load-restrictor=LoadRestrictionsNone "$dir" 2>&1); then
       local kinds
       kinds=$(printf '%s\n' "$out" | grep -c '^kind:' || true)
       log_ok "kubectl kustomize rendered (kind count≈$kinds)"
@@ -125,7 +126,7 @@ validate_overlay() {
       FAILS=$((FAILS + 1))
     fi
   elif command -v kustomize >/dev/null 2>&1; then
-    if out=$(kustomize build "$dir" 2>&1); then
+    if out=$(kustomize build --load-restrictor=LoadRestrictionsNone "$dir" 2>&1); then
       log_ok "kustomize build OK"
     else
       log_err "kustomize build failed: $out"

@@ -31,10 +31,10 @@ jobs:
           ./scripts/deploy/deploy.sh --validate-overlay
 
       - name: Render production overlay
-        run: kubectl kustomize k8s/overlays/production | head -n 50
+        run: kubectl kustomize --load-restrictor=LoadRestrictionsNone k8s/overlays/production | head -n 50
 
       - name: Render zitadel overlay
-        run: kubectl kustomize k8s/overlays/zitadel | head -n 50
+        run: kubectl kustomize --load-restrictor=LoadRestrictionsNone k8s/overlays/zitadel | head -n 50
 
   unit-score-ipam:
     runs-on: ubuntu-latest

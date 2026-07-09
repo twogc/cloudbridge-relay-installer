@@ -160,7 +160,8 @@ check_dependencies() {
     done
 
     if [[ "$DEPLOY_MODE" == "overlay" ]]; then
-        if ! kubectl kustomize "$OVERLAY_DIR" &> /dev/null; then
+        # LoadRestrictionsNone: resources live under k8s-manifests/, outside overlay dir.
+        if ! kubectl kustomize --load-restrictor=LoadRestrictionsNone "$OVERLAY_DIR" &> /dev/null; then
             log_error "kubectl kustomize failed for $OVERLAY_DIR (need kubectl with kustomize support)"
             exit 1
         fi
@@ -413,17 +414,18 @@ apply_overlay() {
         log_error "Missing $OVERLAY_DIR/kustomization.yaml"
         exit 1
     fi
+    # --load-restrictor=LoadRestrictionsNone: allow ../../../k8s-manifests resources
     if [[ "$DRY_RUN" == "1" ]]; then
-        kubectl apply -k "$OVERLAY_DIR" --dry-run=client
+        kubectl apply -k "$OVERLAY_DIR" --load-restrictor=LoadRestrictionsNone --dry-run=client
     else
-        kubectl apply -k "$OVERLAY_DIR"
+        kubectl apply -k "$OVERLAY_DIR" --load-restrictor=LoadRestrictionsNone
     fi
     log_success "Overlay applied: $OVERLAY_DIR"
 }
 
 render_overlay() {
     log_info "Rendering overlay (no apply): $OVERLAY_DIR"
-    kubectl kustomize "$OVERLAY_DIR"
+    kubectl kustomize --load-restrictor=LoadRestrictionsNone "$OVERLAY_DIR"
 }
 
 # Проверка статуса развертывания

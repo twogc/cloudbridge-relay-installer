@@ -3,10 +3,11 @@
 #
 # Usage:
 #   ./scripts/deploy/deploy.sh --use-overlay
-#   kubectl apply -k k8s/overlays/production
-#   kubectl kustomize k8s/overlays/production   # render only
+#   kubectl apply -k k8s/overlays/production --load-restrictor=LoadRestrictionsNone
+#   kubectl kustomize --load-restrictor=LoadRestrictionsNone k8s/overlays/production
 #
-# Zitadel (09–15) is not included — deploy separately after core stack.
+# LoadRestrictionsNone is required because resources live under ../../../k8s-manifests.
+# Zitadel (09–15) is not included — use k8s/overlays/zitadel after core stack.
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
