@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/twogc/cloudbridge-relay-installer/internal/auth"
@@ -17,12 +18,23 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// tunnelListener holds a TCP listener that accepts client connections
+// and proxies each to remote_host:remote_port (real gRPC tunnel data plane).
+type tunnelListener struct {
+	ln         net.Listener
+	tunnelID   string
+	remoteHost string
+	remotePort int
+}
+
 // TunnelService implements the TunnelService gRPC service
 type TunnelService struct {
 	relayv1.UnimplementedTunnelServiceServer
 	tunnelManager *tunnel.Manager
 	authAdapter   *auth.Adapter
 	logger        *logger.Logger
+	listeners     map[string]*tunnelListener // tunnel_id -> listener
+	mu            sync.Mutex
 }
 
 // NewTunnelService creates a new TunnelService
@@ -31,10 +43,13 @@ func NewTunnelService(tunnelManager *tunnel.Manager, authAdapter *auth.Adapter, 
 		tunnelManager: tunnelManager,
 		authAdapter:   authAdapter,
 		logger:        logger,
+		listeners:     make(map[string]*tunnelListener),
 	}
 }
 
-// CreateTunnel implements the CreateTunnel RPC method
+// CreateTunnel implements the CreateTunnel RPC method.
+// Data plane: open a TCP listener; each Accept() is proxied to remote_host:remote_port.
+// Endpoint in the response is host:port clients connect to (loopback for local-smoke).
 func (s *TunnelService) CreateTunnel(ctx context.Context, req *relayv1.CreateTunnelRequest) (*relayv1.CreateTunnelResponse, error) {
 	s.logger.Info("Received CreateTunnel request",
 		zap.String("tunnel_id", req.TunnelId),
@@ -55,34 +70,54 @@ func (s *TunnelService) CreateTunnel(ctx context.Context, req *relayv1.CreateTun
 		return nil, status.Error(codes.InvalidArgument, "remote_port must be positive")
 	}
 
-	// For gRPC, we need to create a virtual connection
-	// This is different from HTTP where we have a real TCP connection
-	clientConn, serverConn := net.Pipe()
-	defer clientConn.Close() // We'll return the server end
+	s.mu.Lock()
+	if _, exists := s.listeners[req.TunnelId]; exists {
+		s.mu.Unlock()
+		return nil, status.Error(codes.AlreadyExists, "tunnel already exists")
+	}
+	s.mu.Unlock()
 
-	// Create tunnel using existing tunnel manager
-	proxy, err := s.tunnelManager.CreateTunnel(
-		req.TunnelId,
-		serverConn,
-		req.RemoteHost,
-		int(req.RemotePort),
-	)
+	// Bind TCP listen port for client-facing side (0 = ephemeral)
+	listenHost := "0.0.0.0"
+	listenPort := int(req.LocalPort)
+	if listenPort < 0 {
+		listenPort = 0
+	}
+	ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", listenHost, listenPort))
 	if err != nil {
-		s.logger.Error("Failed to create tunnel",
+		s.logger.Error("Failed to listen for tunnel",
 			zap.String("tunnel_id", req.TunnelId),
 			zap.Error(err),
 		)
 		return &relayv1.CreateTunnelResponse{
 			Status:       "error",
-			ErrorMessage: fmt.Sprintf("Failed to create tunnel: %v", err),
+			ErrorMessage: fmt.Sprintf("listen failed: %v", err),
 		}, status.Error(codes.Internal, err.Error())
 	}
+
+	actualPort := ln.Addr().(*net.TCPAddr).Port
+	// Advertise loopback endpoint for local clients; production should use public host.
+	endpoint := fmt.Sprintf("127.0.0.1:%d", actualPort)
+
+	tl := &tunnelListener{
+		ln:         ln,
+		tunnelID:   req.TunnelId,
+		remoteHost: req.RemoteHost,
+		remotePort: int(req.RemotePort),
+	}
+
+	s.mu.Lock()
+	s.listeners[req.TunnelId] = tl
+	s.mu.Unlock()
+
+	// Accept loop: each client connection gets a proxy to remote
+	go s.acceptLoop(tl)
 
 	// Create tunnel info
 	tunnelInfo := &relayv1.TunnelInfo{
 		TunnelId:     req.TunnelId,
 		TenantId:     req.TenantId,
-		LocalPort:    req.LocalPort,
+		LocalPort:    int32(actualPort),
 		RemoteHost:   req.RemoteHost,
 		RemotePort:   req.RemotePort,
 		Status:       "active",
@@ -94,19 +129,53 @@ func (s *TunnelService) CreateTunnel(ctx context.Context, req *relayv1.CreateTun
 	resp := &relayv1.CreateTunnelResponse{
 		Status:     "ok",
 		TunnelId:   req.TunnelId,
-		Endpoint:   fmt.Sprintf("%s:%d", req.RemoteHost, req.RemotePort),
+		Endpoint:   endpoint,
 		TunnelInfo: tunnelInfo,
 	}
 
-	s.logger.Info("Tunnel created successfully",
+	s.logger.Info("Tunnel created successfully (TCP data plane)",
 		zap.String("tunnel_id", req.TunnelId),
 		zap.String("endpoint", resp.Endpoint),
+		zap.String("remote", fmt.Sprintf("%s:%d", req.RemoteHost, req.RemotePort)),
 	)
 
-	// Start tracking the proxy if needed
-	_ = proxy // proxy can be used for additional operations
-
 	return resp, nil
+}
+
+func (s *TunnelService) acceptLoop(tl *tunnelListener) {
+	for {
+		clientConn, err := tl.ln.Accept()
+		if err != nil {
+			// listener closed
+			s.logger.Info("Tunnel accept loop stopped",
+				zap.String("tunnel_id", tl.tunnelID),
+				zap.Error(err),
+			)
+			return
+		}
+
+		// Unique sub-id per connection so manager can track concurrent sessions
+		connID := fmt.Sprintf("%s-%d", tl.tunnelID, time.Now().UnixNano())
+		proxy, err := s.tunnelManager.CreateTunnel(
+			connID,
+			clientConn,
+			tl.remoteHost,
+			tl.remotePort,
+		)
+		if err != nil {
+			s.logger.Error("Failed to create proxy for accepted connection",
+				zap.String("tunnel_id", tl.tunnelID),
+				zap.Error(err),
+			)
+			_ = clientConn.Close()
+			continue
+		}
+		s.logger.Debug("Tunnel session proxy started",
+			zap.String("tunnel_id", tl.tunnelID),
+			zap.String("session_id", connID),
+		)
+		_ = proxy
+	}
 }
 
 // CloseTunnel implements the CloseTunnel RPC method
@@ -121,18 +190,23 @@ func (s *TunnelService) CloseTunnel(ctx context.Context, req *relayv1.CloseTunne
 		return nil, status.Error(codes.InvalidArgument, "tunnel_id is required")
 	}
 
-	// Close tunnel using tunnel manager
+	// Stop TCP listener for this tunnel
+	s.mu.Lock()
+	if tl, ok := s.listeners[req.TunnelId]; ok {
+		_ = tl.ln.Close()
+		delete(s.listeners, req.TunnelId)
+	}
+	s.mu.Unlock()
+
+	// Best-effort: close any manager entries that use tunnel_id prefix
+	// (sessions are connID = tunnelID-timestamp)
 	err := s.tunnelManager.CloseTunnel(req.TunnelId)
 	if err != nil {
-		s.logger.Error("Failed to close tunnel",
+		// not fatal if only listener sessions exist under prefixed IDs
+		s.logger.Debug("CloseTunnel manager entry",
 			zap.String("tunnel_id", req.TunnelId),
 			zap.Error(err),
 		)
-		return &relayv1.CloseTunnelResponse{
-			Status:       "error",
-			TunnelId:     req.TunnelId,
-			ErrorMessage: fmt.Sprintf("Failed to close tunnel: %v", err),
-		}, status.Error(codes.Internal, err.Error())
 	}
 
 	s.logger.Info("Tunnel closed successfully",
