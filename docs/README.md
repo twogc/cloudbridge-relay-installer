@@ -40,6 +40,9 @@ Human-oriented documentation index for CloudBridge Relay. For agent-oriented ove
 
 | Document | Description |
 |----------|-------------|
+| [ARCHITECTURE_VS_MARKET.md](architecture/ARCHITECTURE_VS_MARKET.md) | Architecture vs business segment (SKU, scorecard) |
+| [RFP_REQUIREMENT_MATRIX.md](architecture/RFP_REQUIREMENT_MATRIX.md) | RFP/pilot: requirement → component → gap |
+| [adr/](architecture/adr/README.md) | Architecture Decision Records (ADR-001…005) |
 | [ARCHITECTURE_ANALYSIS.md](architecture/ARCHITECTURE_ANALYSIS.md) | Main architecture analysis |
 | [CLOUDBRIDGE_COMPLETE_ARCHITECTURE.md](architecture/CLOUDBRIDGE_COMPLETE_ARCHITECTURE.md) | Complete system architecture |
 | [CLOUDBRIDGE_TCP_TUNNEL_TECHNICAL_SPEC.md](architecture/CLOUDBRIDGE_TCP_TUNNEL_TECHNICAL_SPEC.md) | TCP tunnel technical spec |

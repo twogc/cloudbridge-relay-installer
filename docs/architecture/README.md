@@ -1,45 +1,47 @@
-# **Архитектура CloudBridge Relay**
+# Архитектура CloudBridge Relay
 
-## **Обзор**
+## Обзор
 
-Этот раздел содержит документы по архитектуре CloudBridge Relay - QUIC-first + MASQUE глобальной Zero-Trust overlay сети.
+Документы по архитектуре CloudBridge: QUIC/MASQUE data plane, multi-tenant platform, self-hosted ZTNA-oriented delivery (K8s + OVA).
 
-## **Документы**
+## С чего начать (продукт + архитектура)
 
-### **Основные документы:**
-- [**2GC CloudBridge Overview**](2GC_CLOUDBRIDGE_OVERVIEW.md) - Общий обзор архитектуры системы
-- [**MASQUE Usage Guide**](MASQUE_USAGE_GUIDE.md) - Подробное руководство по использованию MASQUE протокола
-- [**Implementation Plan**](IMPLEMENTATION_PLAN.md) - Детальный план реализации архитектуры
+| Document | Description |
+|----------|-------------|
+| [**ARCHITECTURE_VS_MARKET.md**](ARCHITECTURE_VS_MARKET.md) | Архитектура vs бизнес-сегмент (SKU, scorecard) |
+| [**RFP_REQUIREMENT_MATRIX.md**](RFP_REQUIREMENT_MATRIX.md) | RFP/пилот: требование → компонент → gap |
+| [**adr/**](adr/README.md) | ADR-пакет (принятые архитектурные решения) |
 
-## **Ключевые концепции**
+## Основные технические документы
 
-### **QUIC-first архитектура:**
-- HTTP/3 как базовый транспорт
-- Низкая задержка и высокая производительность
-- Встроенная безопасность
+| Document | Description |
+|----------|-------------|
+| [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) | Detailed architecture analysis |
+| [CLOUDBRIDGE_COMPLETE_ARCHITECTURE.md](CLOUDBRIDGE_COMPLETE_ARCHITECTURE.md) | Complete system architecture |
+| [CLOUDBRIDGE_TCP_TUNNEL_TECHNICAL_SPEC.md](CLOUDBRIDGE_TCP_TUNNEL_TECHNICAL_SPEC.md) | TCP tunnel technical spec |
+| [MASQUE_USAGE_GUIDE.md](MASQUE_USAGE_GUIDE.md) | MASQUE protocol usage |
 
-### **MASQUE протокол:**
-- Туннелирование поверх HTTP/3
-- Поддержка UDP и TCP трафика
-- NAT traversal
+## Agent / ops SoT (openwiki)
 
-### **Zero-Trust модель:**
-- Проверка каждого соединения
-- Микросервисная архитектура
-- Изолированные компоненты
+| Document | Description |
+|----------|-------------|
+| [openwiki/architecture.md](../../openwiki/architecture.md) | Service topology, IAM |
+| [openwiki/port-scheme.md](../../openwiki/port-scheme.md) | Canonical ports |
+| [openwiki/deploy.md](../../openwiki/deploy.md) | Canonical deploy path |
 
-##  **Компоненты системы**
+## Ключевые концепции
 
-1. **CloudBridge Relay** - Основной relay сервер
-2. **P2P Manager** - Управление P2P соединениями
-3. **QUIC Transport** - QUIC транспортный слой
-4. **MASQUE Handler** - Обработка MASQUE протокола
-5. **Security Layer** - Слой безопасности и аутентификации
+- **QUIC-first** + MASQUE; WireGuard as fallback/mesh familiarity ([ADR-004](adr/ADR-004-modern-data-plane.md))
+- **Zero-Trust / OIDC**: Zitadel only ([ADR-003](adr/ADR-003-zitadel-only-iam.md))
+- **Thick relay + optional sidecars** ([ADR-001](adr/ADR-001-thick-relay-optional-sidecars.md))
+- **K8s canonical + OVA edge** ([ADR-002](adr/ADR-002-k8s-canonical-ova-edge.md))
+- **Multi-tenant platform** ([ADR-005](adr/ADR-005-multi-tenant-platform.md))
 
-## **Диаграммы архитектуры**
+## Компоненты (кратко)
 
-*Диаграммы будут добавлены в будущих версиях*
-
----
-
-**Изучите архитектуру CloudBridge Relay для понимания системы!**
+1. **CloudBridge Relay** — core relay (`cmd/relay`)
+2. **P2P / NAT** — peers, ICE/STUN/TURN
+3. **QUIC / MASQUE** — modern transport
+4. **Zitadel** — IAM
+5. **IPAM / SCORE / policies** — multi-tenant platform
+6. **AI / Cadence** — optional add-ons
