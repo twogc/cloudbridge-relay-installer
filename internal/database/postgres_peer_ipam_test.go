@@ -58,6 +58,28 @@ func TestPostgresPeerIPAM_Disabled(t *testing.T) {
 	}
 }
 
+func TestPostgresPeerIPAMFromEnv_DatabaseURLFallback(t *testing.T) {
+	t.Setenv("SCORE_DATABASE_URL", "")
+	t.Setenv("DATABASE_URL", "postgresql://app:x@pg:5432/p2p")
+	t.Setenv("SCORE_PG_HOST", "")
+	cfg := PostgresPeerIPAMFromEnv()
+	if !cfg.Enabled() || cfg.URL == "" {
+		t.Fatalf("expected DATABASE_URL fallback, got %+v", cfg)
+	}
+	if cfg.URL != "postgresql://app:x@pg:5432/p2p" {
+		t.Fatalf("unexpected URL %q", cfg.URL)
+	}
+}
+
+func TestPostgresPeerIPAMFromEnv_ScoreURLWins(t *testing.T) {
+	t.Setenv("SCORE_DATABASE_URL", "postgres://score@s:5432/s")
+	t.Setenv("DATABASE_URL", "postgres://other@o:5432/o")
+	cfg := PostgresPeerIPAMFromEnv()
+	if cfg.URL != "postgres://score@s:5432/s" {
+		t.Fatalf("SCORE_DATABASE_URL should win, got %q", cfg.URL)
+	}
+}
+
 func TestPostgresPeerIPAM_ConnectFail(t *testing.T) {
 	cfg := PostgresPeerIPAMConfig{
 		Host:     "127.0.0.1",

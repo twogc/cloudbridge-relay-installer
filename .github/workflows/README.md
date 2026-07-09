@@ -16,6 +16,8 @@ The following workflows have been temporarily disabled due to GitHub Actions bil
 
 ## Active Workflows
 
+- `offline-validate.yml` - **No cluster:** overlay path checks, kustomize render, SCORE/IPAM/cadence unit tests, relay build
+- `lint.yml` - go vet + golangci-lint
 - `security-audit.yml` - Security audit (may also fail due to billing)
 - `release.yml` - Release workflow
 - `staging-deployment.yml` - Staging deployment
@@ -35,14 +37,15 @@ The following workflows have been temporarily disabled due to GitHub Actions bil
 While CI/CD is disabled, run tests locally:
 
 ```bash
-# Run tests
+# Offline overlay + deploy script checks (no cluster)
+make validate-overlay
+# or: ./scripts/deploy/validate-overlay.sh --all
+
+# Focused unit tests used in CI offline-validate
+make test-offline
+
+# Full tests
 go test ./...
-
-# Run security checks
-go mod audit
-
-# Build and test Docker image
-docker build -f Dockerfile.local -t cloudbridge-relay:test .
 
 # Run linting
 golangci-lint run

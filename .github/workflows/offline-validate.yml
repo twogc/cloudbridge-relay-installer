@@ -1,0 +1,57 @@
+name: Offline validate
+
+# No cluster required: overlay path checks, shell syntax, focused unit tests.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  overlay-and-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Shell syntax
+        run: |
+          bash -n scripts/deploy/deploy.sh
+          bash -n scripts/deploy/validate-overlay.sh
+
+      - name: Install kubectl (for kustomize render)
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Validate overlays
+        run: |
+          chmod +x scripts/deploy/validate-overlay.sh
+          ./scripts/deploy/validate-overlay.sh --all
+          ./scripts/deploy/deploy.sh --validate-overlay
+
+      - name: Render production overlay
+        run: kubectl kustomize k8s/overlays/production | head -n 50
+
+      - name: Render zitadel overlay
+        run: kubectl kustomize k8s/overlays/zitadel | head -n 50
+
+  unit-score-ipam:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.12'
+          cache: true
+
+      - name: Unit tests (SCORE hybrid / peer IPAM / cadence factory)
+        run: |
+          go test -short -count=1 ./internal/database/ -run 'Postgres|SQLite|OpenSQLite|Normalize'
+          go test -short -count=1 ./internal/p2p/ -run 'SCORE|NilRepository|ResolvePeer'
+          go test -short -count=1 ./internal/cadence/ -run 'CreateWorkflow|HealthCheck|TestNewClient|TestClient_'
+
+      - name: Build relay + ai-worker
+        run: |
+          go build -o /dev/null ./cmd/relay/
+          go build -o /dev/null ./cmd/ai-worker/

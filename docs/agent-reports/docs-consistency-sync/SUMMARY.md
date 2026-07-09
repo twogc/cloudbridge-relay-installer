@@ -163,6 +163,18 @@ Commit/push: не выполнялись.
 
 ---
 
+## Pass 11 (step11) — CI offline-validate
+
+| Item | Result |
+|------|--------|
+| `offline-validate.yml` | ✅ overlay + unit jobs |
+| `make validate-overlay` / `test-offline` | ✅ |
+| Postgres env priority tests | ✅ |
+
+Отчёт: [step11-ci-offline-validate.md](step11-ci-offline-validate.md)
+
+---
+
 ## Pass 7 (step07) — Cadence facade + SQLite + overlays
 
 | Item | Result |
