@@ -150,6 +150,19 @@ Commit/push: не выполнялись.
 
 ---
 
+## Pass 10 (step10) — Postgres peer IPAM (offline)
+
+| Item | Result |
+|------|--------|
+| `OpenPostgresPeerIPAM` + env resolution | ✅ |
+| Priority Postgres → SQLite → none | ✅ |
+| Offline unit tests | ✅ |
+| Live Postgres | ⏭ not required for unit tests |
+
+Отчёт: [step10-postgres-peer-ipam.md](step10-postgres-peer-ipam.md)
+
+---
+
 ## Pass 7 (step07) — Cadence facade + SQLite + overlays
 
 | Item | Result |

@@ -161,7 +161,7 @@ voly ui   # http://127.0.0.1:7788
 - [x] Ops relay + mws metrics **5551**; `go vet` Cadence cancel leak fixed
 - [x] SCORE allocator wiring (optional `SCORE_BASE_URL`); p2p-deployment ports aligned
 - [x] Cadence: Client wraps ProductionClient; service factories unified
-- [x] Hybrid SQLite peer IPAM (`SCORE_SQLITE_PATH`) when SCORE hybrid enabled
+- [x] Hybrid peer IPAM: Postgres (`SCORE_DATABASE_URL`/`SCORE_PG_*`) → SQLite fallback
 - [x] K8s: `deploy.sh --use-overlay` + production/zitadel overlays + `validate-overlay.sh`
 - [ ] Live-cluster e2e sign-off; promote overlay to default; full tree merge
 
