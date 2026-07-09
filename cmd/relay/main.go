@@ -433,12 +433,14 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		cadenceClient, err = cadence.NewProductionClient(cadenceConfig, loggerInstance.GetZapLogger())
 		if err != nil {
 			loggerInstance.Error("Failed to initialize Cadence client", zap.Error(err))
+			cancel()
 			return nil, fmt.Errorf("failed to initialize Cadence client: %v", err)
 		}
 
 		// Запускаем Cadence worker
 		if err := cadenceClient.Start(); err != nil {
 			loggerInstance.Error("Failed to start Cadence worker", zap.Error(err))
+			cancel()
 			return nil, fmt.Errorf("failed to start Cadence worker: %v", err)
 		}
 
@@ -533,9 +535,14 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		// Set managers for P2P API Server
 		if p2pAPIServer != nil {
 			p2pAPIServer.SetManagers(p2pIntegration.GetRelayManager(), p2pIntegration.GetHeartbeatManager())
+			if hybrid := p2pIntegration.GetRelayManagerHybrid(); hybrid != nil {
+				p2pAPIServer.SetRelayManagerHybrid(hybrid)
+			}
 		}
 
-		loggerInstance.Info("P2P Integration initialized successfully")
+		loggerInstance.Info("P2P Integration initialized successfully",
+			zap.Bool("score_hybrid", p2pIntegration.GetRelayManagerHybrid() != nil),
+		)
 	}
 
 	// Initialize WireGuard Profile Manager

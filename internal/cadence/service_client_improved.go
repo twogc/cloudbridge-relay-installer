@@ -12,8 +12,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// CreateWorkflowServiceClientImproved создает реальный клиент для Cadence
+// CreateWorkflowServiceClientImproved is the canonical workflow service factory
+// for both NewProductionClient (relay) and NewClient (ai-worker via service_client.go).
+// Returns (nil, nil) when the host is unreachable (stub mode).
 func CreateWorkflowServiceClientImproved(hostPort string, logger *zap.Logger) (workflowserviceclient.Interface, error) {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
 	logger.Info("Creating improved workflow service client", zap.String("hostPort", hostPort))
 
 	// Проверяем доступность хоста
@@ -25,7 +30,7 @@ func CreateWorkflowServiceClientImproved(hostPort string, logger *zap.Logger) (w
 	}
 
 	// Создаем реальный Cadence client
-	client, err := createRealCadenceClient(hostPort, logger)
+	svc, err := createRealCadenceClient(hostPort, logger)
 	if err != nil {
 		logger.Error("Failed to create Cadence client",
 			zap.String("hostPort", hostPort),
@@ -34,7 +39,7 @@ func CreateWorkflowServiceClientImproved(hostPort string, logger *zap.Logger) (w
 	}
 
 	logger.Info("Cadence client created successfully", zap.String("hostPort", hostPort))
-	return client, nil
+	return svc, nil
 }
 
 // createRealCadenceClient создает реальный Cadence клиент

@@ -44,15 +44,23 @@ MiMo audit: [MIMO_AUDIT_REPORT.md §1.3](../../audit/MIMO_AUDIT_REPORT.md), drif
 
 ---
 
-## Остаточный drift (не P0)
+## Остаточный drift (на момент k8s-prod-fix)
 
 | Элемент | Описание |
 |---------|----------|
-| AI metrics Service **8084** | Runtime `/metrics` на **8083**; `containerPort: 8084` не объявлен в deployment |
-| Relay prometheus.io/port **8084** | Annotation drift vs runtime metrics **5551** |
-| Ops `k8s/deployments/` relay http **8080** | Legacy `containerPort` в ops-дереве; `k8s-manifests/05` использует **9090** |
-| Cadence runtime env | Минимальный env в `05`; полная конфигурация в `k8s/cadence/` |
-| Cadence worker port **7939** | Есть в `k8s-manifests/06`, нет в `k8s/services/cloudbridge-services.yaml` |
+| AI metrics Service **8084** | Runtime `/metrics` на **8083** |
+| Relay prometheus.io/port **8084** | vs runtime metrics **5551** |
+| Ops `k8s/deployments/` relay http **8080** | Legacy vs prod **9090** |
+| Cadence runtime env | Минимальный env в `05`; full в `k8s/cadence/` |
+| Cadence worker port **7939** | Есть в `06`, нет в части ops services |
+
+### Superseded (docs-consistency residual-port-fix, 2026-07-09)
+
+| Item | Статус |
+|------|--------|
+| AI Service metrics **8084** in `k8s-manifests/06` + `k8s/services/ai-service.yaml` | ✅ removed; scrape **8083** |
+| Relay prometheus annotation **8084** | ✅ **5551** + containerPort/Service metrics |
+| Ops relay http **8080** / mws 8084 | **ещё open** (ops/OVA path) |
 
 ---
 

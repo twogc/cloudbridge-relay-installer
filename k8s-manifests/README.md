@@ -36,8 +36,8 @@ kubectl apply -f k8s-manifests/09-zitadel.yaml
 
 | Компонент | Image | Источник | Порты (deployment / service) |
 |-----------|-------|----------|------------------------------|
-| cloudbridge-relay | `docker-registry:5000/cloudbridge-relay:latest` | in-cluster registry (`deploy.sh` build + push) | 9090 TCP/UDP, 51820 UDP, 8444 TCP, 9091 TCP |
-| ai-service | `docker-registry:5000/ai-service:latest` | in-cluster registry (`docker/dockerfiles/Dockerfile.ai-service`) | 8083 HTTP, 8084 metrics (Service) |
+| cloudbridge-relay | `docker-registry:5000/cloudbridge-relay:latest` | in-cluster registry (`deploy.sh` build + push) | 9090 TCP/UDP, 51820 UDP, 8444 TCP, 9091 health, **5551** metrics |
+| ai-service | `docker-registry:5000/ai-service:latest` | in-cluster registry (`docker/dockerfiles/Dockerfile.ai-service`) | **8083** HTTP + `/metrics` (same port) |
 | cadence | `ubercadence/server:v0.22.4` | Docker Hub (push в локальный registry **не** нужен) | 7933–7935, 7939 (tcpSocket probe на 7933) |
 
 ### Стратегия pull (step 3, 2026-07-09)
@@ -53,4 +53,5 @@ kubectl apply -f k8s-manifests/09-zitadel.yaml
 - **`k8s-manifests/`** — ordered prod deploy (relay, AI, Cadence, ingress, Zitadel wrappers).
 - **`k8s/`** — domain/ops manifests (Helm values, schema jobs, BGP, Kyverno, cert-manager) — **не** заменяет нумерованный стек.
 
-Оставшийся drift (relay prometheus annotation **8084**, ops-only sidecars) — см. [openwiki/port-scheme.md §k8s drift](../openwiki/port-scheme.md).
+Prod `05–06`: prometheus annotation + Service metrics **5551**; AI Service без phantom **8084**.  
+Остаточный drift (ops `k8s/deployments` legacy 8080/8084, mws OVA) — [openwiki/port-scheme.md §k8s drift](../openwiki/port-scheme.md).

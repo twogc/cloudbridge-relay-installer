@@ -1,0 +1,30 @@
+# Production overlay — optional path for deploy.sh --use-overlay
+# Default (canonical): scripts/deploy/deploy.sh applies k8s-manifests/ file-by-file.
+#
+# Usage:
+#   ./scripts/deploy/deploy.sh --use-overlay
+#   kubectl apply -k k8s/overlays/production --load-restrictor=LoadRestrictionsNone
+#   kubectl kustomize --load-restrictor=LoadRestrictionsNone k8s/overlays/production
+#
+# LoadRestrictionsNone is required because resources live under ../../../k8s-manifests.
+# Zitadel (09–15) is not included — use k8s/overlays/zitadel after core stack.
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cloudbridge
+
+resources:
+  - ../../../k8s-manifests/00-namespace.yaml
+  - ../../../k8s-manifests/01-pvc.yaml
+  - ../../../k8s-manifests/02-secrets.yaml
+  - ../../../k8s-manifests/03-configmap.yaml
+  - ../../../k8s-manifests/04-registry.yaml
+  - ../../../k8s-manifests/05-deployments.yaml
+  - ../../../k8s-manifests/06-services.yaml
+  - ../../../k8s-manifests/07-ingress.yaml
+  - ../../../k8s-manifests/08-servicemonitor.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: cloudbridge-relay
+  app.kubernetes.io/managed-by: kustomize-overlay

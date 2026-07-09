@@ -186,6 +186,7 @@ REST API service (Gin framework) backed by PostgreSQL:
 
 - `IPAMRepository` — Subnet CRUD with CIDR parsing
 - `PeerIPAMRepository` — Per-peer IP allocation tracking
+- SCORE hybrid peer IPAM (optional): Postgres via `SCORE_DATABASE_URL` / `SCORE_PG_*`, else SQLite `SCORE_SQLITE_PATH` (see `internal/p2p/score_wiring.go`)
 - Models: JSONB fields for flexible config storage, UUID primary keys
 
 ---

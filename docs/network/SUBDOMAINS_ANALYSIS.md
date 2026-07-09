@@ -1,5 +1,8 @@
 # CloudBridge Relay - Анализ поддоменов
 
+> **Ports SoT:** [openwiki/port-scheme.md](../../openwiki/port-scheme.md).  
+> Metrics = **5551** TCP; HTTP API = **9090** TCP; QUIC = **9090** UDP — do not conflate.
+
 ## Текущие поддомены и их назначение:
 
 ### 1. **relay.2gc.ru** - Основной релей сервер
@@ -84,7 +87,7 @@
         service:
           name: cloudbridge-relay-external
           port:
-            number: 5551
+            number: 5552   # same P2P API surface; metrics is 5551 only for /metrics
 ```
 
 ### 2. **masque.2gc.ru** → порт 8443 (MASQUE)
@@ -113,7 +116,7 @@
             number: 5552
 ```
 
-### 4. **admin.2gc.ru** → порт 5551 (Admin API)
+### 4. **admin.2gc.ru** → порт 9090 (HTTP API)
 ```yaml
 - host: admin.2gc.ru
   http:
@@ -123,20 +126,20 @@
         service:
           name: cloudbridge-relay-external
           port:
-            number: 5551
+            number: 9090   # http_api (not metrics)
 ```
 
-### 5. **monitor.2gc.ru** → порт 9090 (Metrics)
+### 5. **monitor.2gc.ru** → порт **5551** (relay metrics)
 ```yaml
 - host: monitor.2gc.ru
   http:
     paths:
-    - path: /metrics/
+    - path: /metrics
       backend:
         service:
           name: cloudbridge-relay-external
           port:
-            number: 9090
+            number: 5551   # metrics.port — TCP, not 9090 UDP/QUIC
 ```
 
 ### 6. **api.2gc.ru** → порт 5552 (General API)
@@ -171,13 +174,13 @@
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  admin.2gc.ru   │───▶│   Admin Panel   │───▶│   Port 5551      │
-│   (Management)   │    │   /admin/       │    │   (TCP)          │
+│  admin.2gc.ru   │───▶│   HTTP API      │───▶│   Port 9090     │
+│   (Management)  │    │   /admin/       │    │   (TCP)         │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ monitor.2gc.ru  │───▶│   Metrics       │───▶│   Port 9090     │
-│   (Monitoring)  │    │   /metrics/     │    │   (UDP)         │
+│ monitor.2gc.ru  │───▶│   Metrics       │───▶│   Port 5551     │
+│   (Monitoring)  │    │   /metrics      │    │   (TCP)         │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐

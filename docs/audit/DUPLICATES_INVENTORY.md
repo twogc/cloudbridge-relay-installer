@@ -16,7 +16,7 @@
 |------|------|--------------|--------|------|
 | `internal/network/score_tenant_network_allocator.go` | — | **deleted step 1 (next)** | `NewSCORETenantNetworkAllocatorV2` — 0 внешних вызовов | — |
 | `internal/network/score_tenant_network_allocator_improved.go` | — | **deleted step 1 (next)** | `NewSCORETenantNetworkAllocatorImproved` — 0 внешних вызовов | — |
-| `internal/network/score_allocator_production.go` | **keep** | — | Каноническая версия (production-ready, circuit breaker, `RetryConfigImproved`); **не wired** — 0 prod-вызовов (verified score-ports step 4) | Средний |
+| `internal/network/score_allocator_production.go` | **keep** | — | Каноническая production-версия; **wired** optional via `SCORE_BASE_URL` → `p2p.NewRelayManagerHybridFromSCORE` | Средний |
 | `internal/network/retry_config.go` | — | **deleted step 1 (next)** | `network.RetryConfig` использовался только v2 allocator; `connection/retry.go` — отдельный тип | — |
 | `internal/network/retry_config_improved.go` | **keep** | — | Используется production allocator; jitter, Retry-After | Низкий |
 | `internal/cadence/service_client.go` | **keep** (ai-worker path) | merge позже | `CreateWorkflowServiceClient*` — 4 файла; вызывается из `client.go` → `cmd/ai-worker` | Средний — два параллельных пути |
@@ -77,9 +77,9 @@ internal/cadence/worker/   → *cadence.Client
 
 ## SCORE allocators: canonical production, не wired
 
-`internal/p2p/relay_manager_hybrid.go` принимает `network.TenantNetworkAllocator`, но `NewSCORETenantNetworkAllocatorProduction` не вызывается в репозитории (grep step 4: только `score_allocator_production.go`). Удалены v2/improved (`score_tenant_network_allocator*.go`) и `retry_config.go`; остаётся `score_allocator_production.go` + `retry_config_improved.go`.
+`internal/p2p/relay_manager_hybrid.go` + `score_wiring.go`: production allocator **подключается** при `SCORE_BASE_URL` (P2PIntegration → WireGuard API). Без env — classic `RelayManager` only. v2/improved allocators удалены ранее.
 
-**Wiring status (score-ports step 4):** не выполнен — вне scope миссии (только верификация портов + документация). Отдельная пачка: подключить allocator в `cmd/relay` → `relay_manager_hybrid`.
+**Wiring status (2026-07-09):** ✅ optional path — `p2p.NewRelayManagerHybridFromSCORE` + `SCORE_BASE_URL`/`SCORE_API_KEY` env; wired from `cmd/relay` `P2PIntegration` → P2P API WireGuard endpoints. Disabled when URL empty (default).
 
 ---
 
@@ -105,11 +105,11 @@ internal/cadence/worker/   → *cadence.Client
 - [x] Типы ML вынесены в `internal/ai/ml/types.go` (для `model_implementations.go`)
 - [x] `ai.Service.OptimizeRoute` возвращает `*routing.OptimizedRoute` (убрана зависимость от удалённого `routing.Route`)
 - [x] Canonical: `ai.Service` + `detector.go` / `load_predictor.go` / `optimizer.go` / `collectors.go`
-- [ ] Cadence dual-path merge (трек A) — **step 4+** (medium risk, intentional dual entrypoint)
-- [ ] Wiring production SCORE allocator — **отдельная пачка** (verified step 4: 0 prod callers; interface готов в `relay_manager_hybrid.go`)
+- [~] Cadence dual-path — **public APIs kept** (`NewClient` / `NewProductionClient`); service factories **unified** via `CreateWorkflowServiceClient*` → `CreateWorkflowServiceClientImproved` (2026-07-09)
+- [x] Wiring production SCORE allocator — optional `SCORE_BASE_URL` (step05 docs-consistency-sync)
 
 ### cloudbridge-relay-score-ports / step 4 — verify + wiring status
 
 - [x] `go build ./cmd/relay/ ./cmd/ipam-service/ ./cmd/ai-worker/ ./cmd/ai-service/` — OK
 - [x] Порты IPAM **8080**, AI **8083**, AI Worker **8085** — совпадают `cmd/*`, `openwiki/port-scheme.md`, `k8s/` ops, CNI
-- [x] Wiring status SCORE allocator зафиксирован: **не wired** (только definition в `score_allocator_production.go`)
+- [x] Wiring status SCORE allocator: optional `SCORE_BASE_URL` (docs-consistency step05)

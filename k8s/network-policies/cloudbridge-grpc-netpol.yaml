@@ -30,9 +30,9 @@ spec:
     - protocol: UDP
       port: 9090
     - protocol: TCP
-      port: 8082
+      port: 5552
     - protocol: TCP
-      port: 8084
+      port: 5551
   # Allow inter-pod communication for P2P mesh
   - from:
     - podSelector:

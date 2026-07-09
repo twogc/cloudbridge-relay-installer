@@ -90,7 +90,7 @@ data:
       },
       "metrics": {
         "enabled": true,
-        "port": 8084,
+        "port": 5551,
         "path": "/metrics"
       },
       "api": {

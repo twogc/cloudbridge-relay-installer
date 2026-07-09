@@ -537,18 +537,18 @@ sequenceDiagram
 
 | Сервис | Порт | Назначение | Статус |
 |--------|------|------------|--------|
-| **relay** | 9090 (UDP), 8444 (TCP) | Основной P2P relay сервер | Production |
-| **ai-service** | 8083 | AI аналитика и ML | Production |
-| **api** | 5552 | REST API Gateway | Production |
-| **cadence-service** | 8082 | Workflow orchestration | Production |
-| **ipam-service** | 8080 | IP Address Management | Production |
-| **tenant-policy-controller** | 8080, 8081 | Kubernetes controller для изоляции | Production |
-| **quic-service** | 8081 | QUIC protocol handler | Production |
-| **quantum-service** | 8084 | Post-quantum cryptography | Production |
-| **ai-analytics** | 8085 | AI Analytics Engine | Production |
-| **ai-worker** | 8085 | AI Worker (Cadence) | Production |
+| **relay** | 5550/5551/5552 + **9090** UDP QUIC, 9090 TCP http_api, 8444 gRPC, 51820 WG — full table: [port-scheme](../../openwiki/port-scheme.md) | Основной P2P relay | Production |
+| **ai-service** | **8083** | AI / ML HTTP + `/metrics` | Production |
+| **api** (P2P REST) | **5552** | P2P REST API on relay | Production |
+| **cadence-service** | **7933–7939** (not 8082) | Workflow orchestration | Production |
+| **ipam-service** | **8080** | IP Address Management | Production |
+| **tenant-policy-controller** | 8080, 8081 | K8s isolation controller | Production |
+| **quic-service** | 8081 (optional metrics) | QUIC sidecar / experimental | Optional |
+| **quantum-service** | — | **Disabled** (`DISABLED.md` only) | Removed |
+| **ai-analytics** | (cmd-specific) | AI Analytics Engine | Optional |
+| **ai-worker** | **8085** | AI Worker (Cadence) | Production |
 | **cni-plugin** | - | Kubernetes CNI plugin | Production |
-| **zerotrust-demo** | 9090 | Zero Trust demo | Demo |
+| **zerotrust-demo** | demo | Zero Trust demo | Demo |
 
 ### Взаимодействие микросервисов
 
@@ -563,9 +563,9 @@ graph LR
     end
     
     subgraph "Core Services"
-        RELAY[Relay :9090]
+        RELAY[Relay :9090 QUIC]
         AI[AI Service :8083]
-        CAD[Cadence :8082]
+        CAD[Cadence :7933]
         IPAM[IPAM :8080]
     end
     

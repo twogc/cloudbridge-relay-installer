@@ -325,15 +325,19 @@ terraform destroy -auto-approve
 
 ### Сетевые порты
 
+> Полная таблица: [openwiki/port-scheme.md](openwiki/port-scheme.md).
+
 | Сервис | Порт | Протокол | Описание |
 |--------|------|----------|----------|
-| CloudBridge Relay | 9090 | HTTP | Основной API |
-| CloudBridge Relay | 9090 | UDP | QUIC сервер |
+| CloudBridge Relay | 9090 | TCP | HTTP API (`http_api.port`) |
+| CloudBridge Relay | 9090 | UDP | QUIC transport |
+| CloudBridge Relay | 5552 | TCP | P2P REST API |
+| CloudBridge Relay | **5551** | TCP | Prometheus metrics |
 | CloudBridge Relay | 51820 | UDP | WireGuard |
-| CloudBridge Relay | 8084 | HTTP | Метрики |
-| AI Service | 8080 | HTTP | AI API |
-| AI Service | 9090 | HTTP | Метрики |
-| Cadence | 7933 | gRPC | Workflow API |
+| AI Service | **8083** | TCP | HTTP + `/metrics` |
+| AI Worker | **8085** | TCP | Health / metrics |
+| IPAM | **8080** | TCP | IP allocation |
+| Cadence | 7933–7939 | gRPC | Workflow API |
 | PostgreSQL | 5432 | TCP | База данных |
 | Cassandra | 9042 | TCP | NoSQL база |
 

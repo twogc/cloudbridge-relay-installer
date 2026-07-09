@@ -90,7 +90,7 @@ enhanced_quic:
 
 **Directory**: N/A (coturn binary)
 **Port**: 3478 (UDP/TCP)
-**Status**: roduction Ready
+**Status**: Production Ready
 
 #### Purpose
 TURN relay for NAT traversal when direct P2P connection fails.
@@ -143,7 +143,7 @@ IP address management and allocation for P2P connections.
 
 **Directory**: `cmd/tenant-policy-controller/`
 **Port**: 8080 (metrics), 8081 (health)
-**Status**: roduction Ready
+**Status**: Production Ready
 **Lines of Code**: 119
 
 #### Purpose

@@ -9,38 +9,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// CreateWorkflowServiceClient создает workflowserviceclient.Interface для подключения к Cadence серверу
-func CreateWorkflowServiceClient(hostPort string, logger *zap.Logger) (workflowserviceclient.Interface, error) {
-	logger.Info("Creating workflow service client", zap.String("hostPort", hostPort))
-
-	// Проверяем доступность хоста
-	if err := checkHostAvailability(hostPort, logger); err != nil {
-		logger.Warn("Cadence server not available, falling back to stub mode",
-			zap.String("hostPort", hostPort),
-			zap.Error(err))
-		return nil, nil
-	}
-
-	// Создаем простой Cadence client
-	// Пока возвращаем nil для отладки, позже добавим полную реализацию
-	logger.Info("Cadence server is available, but using stub client for now")
-	return nil, nil
-}
-
-// checkHostAvailability проверяет доступность Cadence сервера
-func checkHostAvailability(hostPort string, logger *zap.Logger) error {
-	timeout := 5 * time.Second
-	conn, err := net.DialTimeout("tcp", hostPort, timeout)
-	if err != nil {
-		return fmt.Errorf("failed to connect to %s: %w", hostPort, err)
-	}
-	defer conn.Close()
-
-	logger.Debug("Cadence server is available", zap.String("hostPort", hostPort))
-	return nil
-}
-
-// ServiceClientOptions опции для создания service client
+// ServiceClientOptions options for creating a workflow service client.
+// Used by ai-worker path (NewClient); production path uses CreateWorkflowServiceClientImproved.
 type ServiceClientOptions struct {
 	Timeout     time.Duration
 	ServiceName string
@@ -50,34 +20,70 @@ type ServiceClientOptions struct {
 	TLSCAPath   string
 }
 
-// CreateWorkflowServiceClientWithOptions создает service client с дополнительными опциями
-func CreateWorkflowServiceClientWithOptions(hostPort string, options ServiceClientOptions, logger *zap.Logger) (workflowserviceclient.Interface, error) {
-	logger.Info("Creating workflow service client with options",
-		zap.String("hostPort", hostPort),
-		zap.Bool("enableTLS", options.EnableTLS))
-
-	// Проверяем доступность хоста
-	if err := checkHostAvailability(hostPort, logger); err != nil {
-		logger.Warn("Cadence server not available, falling back to stub mode",
-			zap.String("hostPort", hostPort),
-			zap.Error(err))
-		return nil, nil
+// CreateWorkflowServiceClient creates a workflowserviceclient.Interface for Cadence.
+// Delegates to the improved factory so ai-worker and relay share one dial/create path.
+// Returns (nil, nil) in stub mode when the host is unreachable (legacy behaviour).
+func CreateWorkflowServiceClient(hostPort string, logger *zap.Logger) (workflowserviceclient.Interface, error) {
+	if logger == nil {
+		logger = zap.NewNop()
 	}
-
-	// Создаем простой Cadence client с опциями
-	// Пока возвращаем nil для отладки, позже добавим полную реализацию
-	logger.Info("Cadence server is available, but using stub client with options for now")
-	return nil, nil
+	logger.Info("Creating workflow service client",
+		zap.String("hostPort", hostPort),
+		zap.String("factory", "shared→improved"),
+	)
+	return CreateWorkflowServiceClientImproved(hostPort, logger)
 }
 
-// HealthCheck проверяет здоровье Cadence сервера
-func HealthCheck(client workflowserviceclient.Interface, logger *zap.Logger) error {
-	if client == nil {
-		return fmt.Errorf("cadence client is nil (stub mode)")
+// CreateWorkflowServiceClientWithOptions creates a service client with extra options.
+// TLS options are logged; transport still uses the shared improved factory until
+// full TChannel TLS is implemented. Host probe uses Timeout when set.
+func CreateWorkflowServiceClientWithOptions(hostPort string, options ServiceClientOptions, logger *zap.Logger) (workflowserviceclient.Interface, error) {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
+	logger.Info("Creating workflow service client with options",
+		zap.String("hostPort", hostPort),
+		zap.Bool("enableTLS", options.EnableTLS),
+		zap.String("serviceName", options.ServiceName),
+		zap.String("factory", "shared→improved"),
+	)
+
+	// Optional pre-check with custom timeout (improved also probes with default).
+	if options.Timeout > 0 {
+		if err := checkHostAvailabilityWithTimeout(hostPort, options.Timeout, logger); err != nil {
+			logger.Warn("Cadence server not available, falling back to stub mode",
+				zap.String("hostPort", hostPort),
+				zap.Error(err))
+			return nil, nil
+		}
 	}
 
-	// Пока просто проверяем, что клиент не nil
-	// В будущем можно добавить реальную проверку здоровья
-	logger.Debug("Cadence server health check passed")
+	return CreateWorkflowServiceClientImproved(hostPort, logger)
+}
+
+// checkHostAvailability probes Cadence frontend TCP reachability (5s default).
+func checkHostAvailability(hostPort string, logger *zap.Logger) error {
+	return checkHostAvailabilityWithTimeout(hostPort, 5*time.Second, logger)
+}
+
+func checkHostAvailabilityWithTimeout(hostPort string, timeout time.Duration, logger *zap.Logger) error {
+	if timeout <= 0 {
+		timeout = 5 * time.Second
+	}
+	conn, err := net.DialTimeout("tcp", hostPort, timeout)
+	if err != nil {
+		return fmt.Errorf("failed to connect to %s: %w", hostPort, err)
+	}
+	defer conn.Close()
+
+	if logger != nil {
+		logger.Debug("Cadence server is available", zap.String("hostPort", hostPort))
+	}
 	return nil
+}
+
+// HealthCheck checks Cadence service client health (nil = stub mode).
+// Prefer HealthCheckImproved when DescribeDomain is needed.
+func HealthCheck(client workflowserviceclient.Interface, logger *zap.Logger) error {
+	return HealthCheckImproved(client, logger)
 }

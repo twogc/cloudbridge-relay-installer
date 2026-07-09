@@ -42,7 +42,10 @@
 1. [x] Инвентаризация: `rg -l 'kubectl apply' scripts/` → таблица «скрипт → путь манифеста».
 2. [x] Зафиксировать diff `k8s-manifests/` vs `k8s/deployments|services/` для relay/AI/Cadence — см. [step03 report](../agent-reports/cloudbridge-relay-k8s-consol/step03-configmap-or-port-sync-step.md), `openwiki/port-scheme.md` §k8s drift.
 3. [x] **P0 stub fix (2026-07-09, k8s-prod-fix):** `k8s-manifests/05–06` — убраны `nginx:latest`/port 80/AI 8080 stubs; `deploy.sh` → `load_images()` собирает relay/ai; см. [step02](../agent-reports/cloudbridge-relay-k8s-prod-fix/step02-write-mimo-fix-05-06-manifests.md), [step03](../agent-reports/cloudbridge-relay-k8s-prod-fix/step03-fix-deploy-sh-load-images.md), [SUMMARY](../agent-reports/cloudbridge-relay-k8s-prod-fix/SUMMARY.md).
-4. Обновить `scripts/deploy/deploy.sh` на опциональный режим `k8s/overlays/production/` (будущее), сохранив текущий `k8s-manifests/` до полной проверки.
+3b. [x] **Ops ports sync (2026-07-09):** relay/AI metrics → 5551/8083 in `k8s/deployments|services|configmaps`; mws OVA aligned.
+3c. [x] **Cadence manifests cleanup (2026-07-09):** `fixed/simple/clean` deployment variants → `archive/k8s/cadence/manifests-variants/`; keep `k8s/cadence/cadence.yaml` + schema jobs.
+4. [x] `k8s/overlays/production/` + `deploy.sh --use-overlay` / `--render-overlay` / `--dry-run` (2026-07-09). Default remains file-by-file manifests.
+4b. [x] Offline validator `scripts/deploy/validate-overlay.sh` + E2E checklist + `k8s/overlays/zitadel/` (09/11/15). Live-cluster sign-off still required before overlay-as-default.
 5. Перенести уникальные файлы из `k8s-manifests/` в `k8s/` только после обновления deploy.sh.
 6. Пометить `k8s-manifests/` deprecated в README, удалить через 1 релиз.
 

@@ -1,85 +1,111 @@
-# CloudBridge Relay - Сводка по портам
+# CloudBridge Relay — сводка по портам
 
-> **Canonical source:** [openwiki/port-scheme.md](../../openwiki/port-scheme.md) — единая таблица service → port из `configs/config.json`, SERVICE_CATALOG и k8s-manifests. Этот файл — Minikube NodePort и firewall для продакшена.
+> **Canonical source:** [openwiki/port-scheme.md](../../openwiki/port-scheme.md)  
+> Этот файл — Minikube NodePort examples и firewall checklist. При расхождении верить port-scheme.
 
-## Текущая конфигурация Minikube
+## Relay listeners (canonical)
 
-### Открытые порты:
+| Listener | Port | Protocol |
+|----------|-----:|----------|
+| Main TCP | 5550 | TCP |
+| Prometheus metrics | **5551** | TCP |
+| P2P REST API | 5552 | TCP |
+| HTTP API | 9090 | TCP |
+| HTTPS API | 5553 | TCP |
+| Health / TLS tunnel | 9091 | TCP |
+| QUIC transport | 9090 | UDP |
+| Enhanced QUIC | 9092 | UDP |
+| P2P QUIC | 5553 | UDP |
+| STUN | 19302 | UDP |
+| TURN | 3478 | UDP/TCP |
+| MASQUE | 8443 | TCP/UDP |
+| gRPC | 8444 | TCP |
+| WireGuard | 51820 | UDP |
+
+**Auxiliary:** IPAM **8080**, AI Service **8083**, AI Worker **8085** (см. port-scheme).
+
+## Пример: Minikube NodePort (исторический lab)
+
+Значения NodePort зависят от Service; ниже — типичный lab mapping, **не** prod contract:
+
 ```
 30080/TCP  - Main Server (5550)
-30081/TCP  - Metrics (5551) 
-32500/TCP  - P2P API (5552)  ОСНОВНОЙ
-30087/TCP  - HTTP API (5553)
-30302/UDP  - STUN Server (19302)  ОСНОВНОЙ
+30081/TCP  - Metrics (5551)
+32500/TCP  - P2P API (5552)   # primary public API
+30087/TCP  - HTTPS API (5553) # was mislabeled as "HTTP API" in older notes
 30090/UDP  - QUIC Transport (9090)
 30443/TCP  - MASQUE Proxy (8443)
 30092/UDP  - Enhanced QUIC (9092)
 30844/TCP  - gRPC (8444)
 ```
 
-## Для интернет-доступа нужно открыть:
+HTTP API (**9090** TCP) и metrics (**5551**) — разные listeners.
 
-### 🔥 КРИТИЧЕСКИЕ порты:
-```
-5552/TCP   - P2P API (регистрация клиентов)
-5553/UDP   - P2P QUIC (P2P соединения)
-19302/UDP  - STUN (NAT traversal)
-```
+## Интернет: открыть
 
-### РЕКОМЕНДУЕМЫЕ порты:
+### Критические
+
 ```
-5551/TCP   - Health Check (для load balancer)
-9090/UDP   - QUIC Transport (дополнительный)
+5552/TCP   - P2P API
+5553/UDP   - P2P QUIC
+19302/UDP  - STUN
 ```
 
-### ВНУТРЕННИЕ порты (не открывать наружу):
+### Рекомендуемые
+
 ```
-5550/TCP   - Main Server
-8443/TCP   - MASQUE Proxy
-9092/UDP   - Enhanced QUIC
+9090/UDP   - QUIC transport
+8443/TCP   - MASQUE (optional)
+3478/UDP   - TURN (optional)
+51820/UDP  - WireGuard (optional)
+```
+
+### Внутренние (не наружу)
+
+```
+5550/TCP   - Main server
+5551/TCP   - Prometheus metrics
+9090/TCP   - HTTP API (ingress only)
+9091/TCP   - Health tunnel
 8444/TCP   - gRPC
+9092/UDP   - Enhanced QUIC (optional)
 ```
 
-## Firewall правила для продакшена:
+## Firewall (prod)
 
 ```bash
-# Обязательные порты
 sudo ufw allow 5552/tcp comment "CloudBridge P2P API"
 sudo ufw allow 5553/udp comment "CloudBridge P2P QUIC"
 sudo ufw allow 19302/udp comment "CloudBridge STUN"
-
-# Рекомендуемые порты
-sudo ufw allow 5551/tcp comment "CloudBridge Health Check"
 sudo ufw allow 9090/udp comment "CloudBridge QUIC Transport"
+# Metrics — only monitoring CIDR:
+# sudo ufw allow from 10.0.0.0/8 to any port 5551 proto tcp comment "CloudBridge metrics"
 ```
 
-## Nginx конфигурация:
+## Nginx (edge → P2P API)
 
 ```nginx
-# Основной API
 upstream cloudbridge_api {
-    server 192.168.58.2:32500;
+    server RELAY_IP:5552;
 }
 
 server {
     listen 443 ssl;
-    server_name edge.2gc.ru;
-    
-    # P2P API
+    server_name edge.example.com;
+
     location /api/ {
         proxy_pass http://cloudbridge_api;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
-    
-    # Health check
+
     location /health {
         proxy_pass http://cloudbridge_api;
     }
 }
 ```
 
-## Kubernetes LoadBalancer:
+## Kubernetes LoadBalancer (public surface)
 
 ```yaml
 apiVersion: v1
@@ -101,58 +127,27 @@ spec:
     port: 19302
     targetPort: 19302
     protocol: UDP
-  - name: health
-    port: 5551
-    targetPort: 5551
-    protocol: TCP
+  - name: quic
+    port: 9090
+    targetPort: 9090
+    protocol: UDP
   selector:
     app: cloudbridge-relay
 ```
 
-## Тестирование доступности:
+Prod numbered stack: `k8s-manifests/06-services.yaml` (9090 TCP/UDP, 51820, 8444) — см. [openwiki/deploy.md](../../openwiki/deploy.md).
+
+## Тестирование
 
 ```bash
-# Проверить HTTP API
-curl -X GET https://edge.2gc.ru/health
-
-# Проверить P2P API
-curl -X POST https://edge.2gc.ru/api/v1/tenants/test/peers/register \
-  -H "Content-Type: application/json" \
-  -d '{"peer_id": "test-peer"}'
-
-# Проверить STUN
-nc -u edge.2gc.ru 19302
-
-# Проверить QUIC
-nc -u edge.2gc.ru 5553
+curl -sS "http://127.0.0.1:5551/metrics" | head
+curl -sS "http://127.0.0.1:5552/health" || true
+# External
+curl -X GET "https://edge.example.com/health"
 ```
 
-## Безопасность:
+## См. также
 
-1. **HTTPS** для HTTP API (порт 5552)
-2. **JWT аутентификация** для всех API запросов
-3. **Rate limiting** для предотвращения DDoS
-4. **Firewall** для ограничения доступа
-5. **Monitoring** для отслеживания атак
-
-## Минимальная конфигурация для продакшена:
-
-```yaml
-# Только критически важные порты
-ports:
-  - 5552/tcp   # P2P API
-  - 5553/udp   # P2P QUIC  
-  - 19302/udp  # STUN
-```
-
-## Полная конфигурация для продакшена:
-
-```yaml
-# Все рекомендуемые порты
-ports:
-  - 5551/tcp   # Health Check
-  - 5552/tcp   # P2P API
-  - 5553/udp   # P2P QUIC
-  - 19302/udp  # STUN
-  - 9090/udp   # QUIC Transport
-```
+- [INTERNET_PORTS.md](INTERNET_PORTS.md)
+- [INTERNET_PORTS_FULL.md](INTERNET_PORTS_FULL.md)
+- [SERVICE_CATALOG.md](../operations/SERVICE_CATALOG.md)

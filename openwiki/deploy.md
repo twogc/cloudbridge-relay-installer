@@ -60,11 +60,25 @@ terraform apply -auto-approve
 **Canonical:** `scripts/deploy/deploy.sh` applying numbered manifests from `k8s-manifests/`
 
 ```bash
-# From repository root
+# From repository root (canonical default: file-by-file k8s-manifests/)
 ./scripts/deploy/deploy.sh
+
+# Optional: kustomize overlay (same 00–08 resources)
+./scripts/deploy/deploy.sh --use-overlay
+./scripts/deploy/deploy.sh --render-overlay   # print only
+./scripts/deploy/deploy.sh --use-overlay --dry-run
 ```
 
-The script applies manifests in order:
+| Mode | Flag | Path |
+|------|------|------|
+| **manifests** (default) | _(none)_ | `kubectl apply -f k8s-manifests/0N-…` step by step |
+| **overlay** | `--use-overlay` | `kubectl apply -k k8s/overlays/production` |
+| **validate** | `--validate-overlay` | Offline path/render checks (`validate-overlay.sh`) |
+| **zitadel overlay** | `kubectl apply -k k8s/overlays/zitadel` | IAM 09+11+15 after core |
+
+E2E checklist: [docs/guides/OVERLAY_E2E_CHECKLIST.md](../docs/guides/OVERLAY_E2E_CHECKLIST.md).
+
+The default script applies manifests in order:
 
 | File | Layer |
 |------|-------|

@@ -1,176 +1,170 @@
-# CloudBridge Relay - Порты для интернет доступа
+# CloudBridge Relay — порты для интернет-доступа (полный)
 
-## 🔥 КРИТИЧЕСКИЕ порты (ОБЯЗАТЕЛЬНО открыть):
+> **Canonical:** [openwiki/port-scheme.md](../../openwiki/port-scheme.md).  
+> Краткая версия: [INTERNET_PORTS.md](INTERNET_PORTS.md).
 
-### 1. **P2P API (TCP 5552)**
-- **Назначение**: Регистрация клиентов, P2P API
-- **Протокол**: TCP
-- **Безопасность**: Высокая (требует JWT токен)
-- **Пример**: `ufw allow 5552/tcp`
+## Критические (обязательно открыть)
 
-### 2. **P2P QUIC (UDP 5553)**
-- **Назначение**: P2P соединения через QUIC
-- **Протокол**: UDP
-- **Безопасность**: Средняя (защищено QUIC)
-- **Пример**: `ufw allow 5553/udp`
+### 1. P2P API — TCP 5552
 
-### 3. **STUN (UDP 19302)**
-- **Назначение**: NAT traversal для P2P
-- **Протокол**: UDP
-- **Безопасность**: Средняя (публичный STUN)
-- **Пример**: `ufw allow 19302/udp`
+- **Назначение:** регистрация клиентов, P2P REST API
+- **Безопасность:** высокая (JWT / Zitadel)
+- **Пример:** `ufw allow 5552/tcp`
 
-## РЕКОМЕНДУЕМЫЕ порты (для полной функциональности):
+### 2. P2P QUIC — UDP 5553
 
-### 4. **Health Check (TCP 5551)**
-- **Назначение**: Health check для load balancer
-- **Протокол**: TCP
-- **Безопасность**: Низкая (публичный health check)
-- **Пример**: `ufw allow 5551/tcp`
+- **Назначение:** P2P data plane
+- **Безопасность:** средняя (QUIC crypto)
+- **Пример:** `ufw allow 5553/udp`
 
-### 5. **QUIC Transport (UDP 9090)**
-- **Назначение**: Дополнительный QUIC транспорт
-- **Протокол**: UDP
-- **Безопасность**: Средняя (защищено QUIC)
-- **Пример**: `ufw allow 9090/udp`
+### 3. STUN — UDP 19302
 
-### 6. **MASQUE HTTP/3 (TCP 8443)**
-- **Назначение**: HTTP/3 MASQUE прокси
-- **Протокол**: TCP
-- **Безопасность**: Высокая (TLS 1.3)
-- **Пример**: `ufw allow 8443/tcp`
+- **Назначение:** NAT traversal
+- **Пример:** `ufw allow 19302/udp`
 
-##  ДОПОЛНИТЕЛЬНЫЕ порты (опционально):
+## Рекомендуемые
 
-### 7. **Admin API (TCP 5551)**
-- **Назначение**: Административная панель
-- **Протокол**: TCP
-- **Безопасность**: Высокая (требует аутентификации)
-- **Пример**: `ufw allow 5551/tcp`
+### 4. QUIC transport — UDP 9090
 
-### 8. **Metrics (UDP 9090)**
-- **Назначение**: Prometheus метрики
-- **Протокол**: UDP
-- **Безопасность**: Низкая (публичные метрики)
-- **Пример**: `ufw allow 9090/udp`
+- **Назначение:** основной QUIC listener relay
+- **Пример:** `ufw allow 9090/udp`
+- **Не путать с** metrics (5551 TCP) и HTTP API (9090 TCP)
 
-### 9. **WireGuard (UDP 51820)**
-- **Назначение**: WireGuard VPN mesh (`wireguard.interface.listen_port`)
-- **Протокол**: UDP
-- **Безопасность**: Высокая (WireGuard crypto)
-- **Пример**: `ufw allow 51820/udp`
+### 5. MASQUE HTTP/3 — TCP 8443
 
-## Команды для открытия портов:
+- **Назначение:** MASQUE proxy
+- **Пример:** `ufw allow 8443/tcp`
 
-### UFW (Ubuntu Firewall):
+### 6. TURN — UDP/TCP 3478
+
+- **Назначение:** TURN (built-in или coturn pool)
+- **Пример:** `ufw allow 3478/udp`
+
+### 7. WireGuard — UDP 51820
+
+- **Назначение:** WireGuard mesh (`wireguard.interface.listen_port`)
+- **Пример:** `ufw allow 51820/udp`
+
+## Внутренние / ограниченные
+
+### 8. Prometheus metrics — TCP 5551
+
+- **Назначение:** `/metrics` на relay (`metrics.port`)
+- **Протокол:** **TCP** (не UDP)
+- **Доступ:** только monitoring network / scrape
+- **Пример:** `ufw allow from 10.0.0.0/8 to any port 5551 proto tcp`
+
+### 9. HTTP API — TCP 9090
+
+- **Назначение:** `http_api.port` (REST/health via ingress)
+- **Не** публиковать «как metrics»
+
+### 10. Health / TLS tunnel — TCP 9091
+
+- **Назначение:** internal health / TLS tunnel
+- **Доступ:** cluster-internal
+
+### 11. gRPC — TCP 8444
+
+- **Назначение:** control plane
+- **Доступ:** internal
+
+## Команды firewall
+
+### UFW
+
 ```bash
-# Критические порты
+# Критические
 sudo ufw allow 5552/tcp comment "P2P API"
 sudo ufw allow 5553/udp comment "P2P QUIC"
 sudo ufw allow 19302/udp comment "STUN"
 
-# Рекомендуемые порты
-sudo ufw allow 5551/tcp comment "Health Check"
+# Рекомендуемые
 sudo ufw allow 9090/udp comment "QUIC Transport"
 sudo ufw allow 8443/tcp comment "MASQUE HTTP/3"
-
-# Дополнительные порты
+sudo ufw allow 3478/udp comment "TURN"
 sudo ufw allow 51820/udp comment "WireGuard VPN"
+
+# Metrics — только из monitoring CIDR
+# sudo ufw allow from 10.0.0.0/8 to any port 5551 proto tcp comment "Relay metrics"
 ```
 
-### iptables (альтернатива):
+### iptables
+
 ```bash
-# Критические порты
 sudo iptables -A INPUT -p tcp --dport 5552 -j ACCEPT
 sudo iptables -A INPUT -p udp --dport 5553 -j ACCEPT
 sudo iptables -A INPUT -p udp --dport 19302 -j ACCEPT
-
-# Рекомендуемые порты
-sudo iptables -A INPUT -p tcp --dport 5551 -j ACCEPT
 sudo iptables -A INPUT -p udp --dport 9090 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 8443 -j ACCEPT
 ```
 
-## Безопасность портов:
+## Уровни безопасности
 
-### Высокая безопасность (требуют аутентификации):
-- **5552/TCP** - P2P API (JWT токен)
-- **8443/TCP** - MASQUE HTTP/3 (TLS 1.3)
+| Порт | Протокол | Уровень | Заметка |
+|-----:|----------|---------|---------|
+| 5552 | TCP | Высокая | JWT |
+| 8443 | TCP | Высокая | TLS / MASQUE |
+| 5553 | UDP | Средняя | QUIC |
+| 9090 | UDP | Средняя | QUIC transport |
+| 19302 | UDP | Средняя | STUN |
+| 51820 | UDP | Высокая | WireGuard crypto |
+| 3478 | UDP/TCP | Средняя | TURN |
+| **5551** | **TCP** | Низкая (internal) | **Metrics only** |
+| 9091 | TCP | Internal | Health tunnel |
 
-### Средняя безопасность (защищено протоколом):
-- **5553/UDP** - P2P QUIC (QUIC шифрование)
-- **19302/UDP** - STUN (публичный, но ограниченный)
-- **9090/UDP** - QUIC Transport (QUIC шифрование)
-- **51820/UDP** - WebRTC (WebRTC шифрование)
+## Минимальные профили
 
-### Низкая безопасность (публичные):
-- **5551/TCP** - Health Check (публичный health check)
-- **9090/UDP** - Metrics (публичные метрики)
+### Базовый P2P
 
-## Минимальная конфигурация:
-
-### Для базовой работы P2P:
 ```bash
-sudo ufw allow 5552/tcp  # P2P API
-sudo ufw allow 5553/udp  # P2P QUIC
-sudo ufw allow 19302/udp # STUN
+sudo ufw allow 5552/tcp
+sudo ufw allow 5553/udp
+sudo ufw allow 19302/udp
 ```
 
-### Для полной функциональности:
+### Полная публичная поверхность
+
 ```bash
-sudo ufw allow 5552/tcp  # P2P API
-sudo ufw allow 5553/udp  # P2P QUIC
-sudo ufw allow 19302/udp # STUN
-sudo ufw allow 5551/tcp  # Health Check
-sudo ufw allow 9090/udp  # QUIC Transport
-sudo ufw allow 8443/tcp  # MASQUE HTTP/3
+sudo ufw allow 5552/tcp
+sudo ufw allow 5553/udp
+sudo ufw allow 19302/udp
+sudo ufw allow 9090/udp   # QUIC transport (not metrics)
+sudo ufw allow 8443/tcp
+sudo ufw allow 51820/udp
 ```
 
-## Поддомены и порты:
+## Поддомены (типовая схема)
 
-| Поддомен | Порт | Назначение | Безопасность |
-|----------|------|------------|--------------|
-| **relay.2gc.ru** | 5552/TCP | P2P API | Высокая (JWT) |
-| **masque.2gc.ru** | 8443/TCP | HTTP/3 MASQUE | Высокая (TLS 1.3) |
-| **p2p.2gc.ru** | 5552/TCP | P2P Discovery | Высокая (JWT) |
-| **admin.2gc.ru** | 5551/TCP | Admin Panel | Высокая (Auth) |
-| **monitor.2gc.ru** | 9090/UDP | Metrics | Низкая (Public) |
-| **api.2gc.ru** | 5552/TCP | General API | Высокая (JWT) |
+| Поддомен | Backend port | Назначение |
+|----------|-------------:|------------|
+| relay / p2p / api | **5552** TCP | P2P REST API |
+| masque | **8443** TCP | MASQUE |
+| admin | **9090** TCP | HTTP API (ingress) |
+| monitor (relay scrape) | **5551** TCP | Relay `/metrics` |
+| monitor (Prometheus UI) | **9090** TCP | Prometheus server (host/stack), не listener metrics relay |
 
-## Важные замечания:
+## Важные замечания
 
-1. **Порт 5552** - самый критический, используется для всех API
-2. **Порт 5553** - необходим для P2P соединений
-3. **Порт 19302** - критичен для NAT traversal
-4. **Порт 8443** - для HTTP/3 MASQUE прокси
-5. **Порт 5551** - для health check и админки
-6. **Порт 9090** - для метрик и дополнительного QUIC
+1. **5552** — критический API entry
+2. **5553/UDP** — P2P QUIC
+3. **19302** — STUN
+4. **9090/UDP** — QUIC transport; **9090/TCP** — HTTP API или host Prometheus
+5. **5551/TCP** — **единственный** canonical metrics port relay
+6. **Не** открывать metrics (5551) в интернет без network policy
 
-## Проверка открытых портов:
+## Проверка
 
 ```bash
-# Проверить статус UFW
 sudo ufw status
-
-# Проверить открытые порты
-sudo netstat -tlnp | grep -E "(5551|5552|5553|8443|9090|19302|51820)"
-
-# Проверить подключения
-sudo ss -tlnp | grep -E "(5551|5552|5553|8443|9090|19302|51820)"
+sudo ss -tulpn | grep -E '(5551|5552|5553|8443|9090|19302|51820|3478|9091)'
+curl -sS http://127.0.0.1:5551/metrics | head
 ```
 
-## Приоритет открытия портов:
+## Приоритет
 
-1. **КРИТИЧЕСКИЕ** (обязательно):
-   - 5552/TCP (P2P API)
-   - 5553/UDP (P2P QUIC)
-   - 19302/UDP (STUN)
+1. **Критические:** 5552/TCP, 5553/UDP, 19302/UDP  
+2. **Рекомендуемые:** 9090/UDP, 8443/TCP, 3478, 51820/UDP  
+3. **Internal:** 5551/TCP metrics, 9091 health, 8444 gRPC  
 
-2. **РЕКОМЕНДУЕМЫЕ** (для полной функциональности):
-   - 5551/TCP (Health Check)
-   - 9090/UDP (QUIC Transport)
-   - 8443/TCP (MASQUE HTTP/3)
-
-3. **ДОПОЛНИТЕЛЬНЫЕ** (опционально):
-   - 51820/UDP (WebRTC P2P)
-   - 9090/UDP (Metrics)
+См. [port-scheme.md](../../openwiki/port-scheme.md) для auxiliary (IPAM **8080**, AI **8083**, Worker **8085**).

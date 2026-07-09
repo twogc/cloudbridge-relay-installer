@@ -31,7 +31,7 @@ datasources:
   - name: CloudBridge Relay Metrics
     type: prometheus
     access: proxy
-    url: http://cloudbridge-relay.cloudbridge.svc.cluster.local:8084
+    url: http://cloudbridge-relay.cloudbridge.svc.cluster.local:5551
     isDefault: false
     editable: true
     jsonData:

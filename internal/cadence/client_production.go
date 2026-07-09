@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/cadence/.gen/go/cadence/workflowserviceclient"
 	"go.uber.org/cadence/activity"
 	"go.uber.org/cadence/client"
 	"go.uber.org/cadence/worker"
@@ -39,6 +40,9 @@ type ProductionConfig struct {
 	TaskList       string
 	WorkerOptions  worker.Options
 	ServiceOptions ServiceClientOptions
+	// Identity for Cadence client Options; default "cloudbridge-relay-production".
+	// ai-worker path sets "cloudbridge-ai-worker" via NewClient.
+	Identity string
 
 	// Сервисы
 	P2PService      interfaces.P2PServiceInterface
@@ -49,13 +53,27 @@ type ProductionConfig struct {
 
 // NewProductionClient создает production-ready Cadence клиент
 func NewProductionClient(config ProductionConfig, logger *zap.Logger) (*ProductionClient, error) {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
+	identity := config.Identity
+	if identity == "" {
+		identity = "cloudbridge-relay-production"
+	}
 	logger.Info("Creating production Cadence client",
 		zap.String("domain", config.Domain),
 		zap.String("taskList", config.TaskList),
-		zap.String("hostPort", config.HostPort))
+		zap.String("hostPort", config.HostPort),
+		zap.String("identity", identity))
 
-	// Создаем service client
-	serviceClient, err := CreateWorkflowServiceClientImproved(config.HostPort, logger)
+	// Prefer options factory when ServiceName set (parity with former NewClient path).
+	var serviceClient workflowserviceclient.Interface
+	var err error
+	if config.ServiceOptions.ServiceName != "" {
+		serviceClient, err = CreateWorkflowServiceClientWithOptions(config.HostPort, config.ServiceOptions, logger)
+	} else {
+		serviceClient, err = CreateWorkflowServiceClientImproved(config.HostPort, logger)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workflow service client: %w", err)
 	}
@@ -78,7 +96,7 @@ func NewProductionClient(config ProductionConfig, logger *zap.Logger) (*Producti
 
 	// Создаем Cadence client
 	cadenceClient := client.NewClient(serviceClient, config.Domain, &client.Options{
-		Identity: "cloudbridge-relay-production",
+		Identity: identity,
 	})
 
 	// Создаем worker с опциями

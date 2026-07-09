@@ -9,6 +9,12 @@ set -e
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
+# Deploy mode: manifests (default, file-by-file k8s-manifests/) | overlay (kustomize)
+DEPLOY_MODE="${DEPLOY_MODE:-manifests}"
+OVERLAY_DIR="${OVERLAY_DIR:-k8s/overlays/production}"
+DRY_RUN="${DRY_RUN:-0}"
+SKIP_MIRRORS="${SKIP_MIRRORS:-0}"
+
 # Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -33,19 +39,136 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+usage() {
+    cat <<'EOF'
+CloudBridge Relay — deploy to Kubernetes (VK Cloud)
+
+Usage:
+  ./scripts/deploy/deploy.sh [options]
+
+Options:
+  --use-overlay          Apply core stack via kustomize overlay
+                         (k8s/overlays/production → k8s-manifests/00–08)
+  --overlay DIR          Overlay path (default: k8s/overlays/production)
+  --mode MODE            manifests (default) | overlay
+  --dry-run              kubectl --dry-run=client where supported; no cluster wait
+  --skip-mirrors         Skip Docker Hub mirror setup
+  --render-overlay       Only print kustomize output (no apply); requires kubectl
+  --validate-overlay     Run scripts/deploy/validate-overlay.sh --all and exit
+  -h, --help             Show this help
+
+Environment:
+  DEPLOY_MODE=manifests|overlay
+  OVERLAY_DIR=k8s/overlays/production
+  DRY_RUN=1
+  SKIP_MIRRORS=1
+  KUBECONFIG=...
+
+Canonical default remains file-by-file k8s-manifests/ (no overlay).
+Zitadel (09–15) is not applied by this script — use zitadel-setup after core.
+EOF
+}
+
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --use-overlay)
+                DEPLOY_MODE=overlay
+                shift
+                ;;
+            --overlay)
+                OVERLAY_DIR="$2"
+                DEPLOY_MODE=overlay
+                shift 2
+                ;;
+            --overlay=*)
+                OVERLAY_DIR="${1#*=}"
+                DEPLOY_MODE=overlay
+                shift
+                ;;
+            --mode)
+                DEPLOY_MODE="$2"
+                shift 2
+                ;;
+            --mode=*)
+                DEPLOY_MODE="${1#*=}"
+                shift
+                ;;
+            --dry-run)
+                DRY_RUN=1
+                shift
+                ;;
+            --skip-mirrors)
+                SKIP_MIRRORS=1
+                shift
+                ;;
+            --render-overlay)
+                DEPLOY_MODE=overlay
+                RENDER_ONLY=1
+                shift
+                ;;
+            --validate-overlay)
+                VALIDATE_ONLY=1
+                shift
+                ;;
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            *)
+                log_error "Unknown option: $1"
+                usage
+                exit 1
+                ;;
+        esac
+    done
+
+    case "$DEPLOY_MODE" in
+        manifests|overlay) ;;
+        *)
+            log_error "Invalid DEPLOY_MODE/mode: $DEPLOY_MODE (use manifests|overlay)"
+            exit 1
+            ;;
+    esac
+}
+
+# kubectl apply helper (supports dry-run)
+kapply() {
+    if [[ "$DRY_RUN" == "1" ]]; then
+        kubectl apply --dry-run=client "$@"
+    else
+        kubectl apply "$@"
+    fi
+}
+
 # Проверка зависимостей
 check_dependencies() {
     log_info "Проверка зависимостей..."
     
-    local deps=("kubectl" "helm" "docker" "terraform")
+    local deps=("kubectl" "docker")
+    # helm/terraform optional for core app deploy; warn only
     for dep in "${deps[@]}"; do
-        if ! command -v $dep &> /dev/null; then
+        if ! command -v "$dep" &> /dev/null; then
             log_error "$dep не установлен. Пожалуйста, установите его перед продолжением."
             exit 1
         fi
     done
+    for dep in helm terraform; do
+        if ! command -v "$dep" &> /dev/null; then
+            log_warning "$dep не найден (не обязателен для core deploy.sh)"
+        fi
+    done
+
+    if [[ "$DEPLOY_MODE" == "overlay" ]]; then
+        # LoadRestrictionsNone: resources live under k8s-manifests/, outside overlay dir.
+        if ! kubectl kustomize --load-restrictor=LoadRestrictionsNone "$OVERLAY_DIR" &> /dev/null; then
+            log_error "kubectl kustomize failed for $OVERLAY_DIR (need kubectl with kustomize support)"
+            exit 1
+        fi
+        log_info "Overlay mode: $OVERLAY_DIR"
+    fi
     
-    log_success "Все зависимости установлены"
+    log_success "Все зависимости установлены (mode=$DEPLOY_MODE)"
 }
 
 # Настройка зеркал Docker Hub
@@ -117,7 +240,7 @@ create_namespace() {
     if kubectl get namespace cloudbridge &> /dev/null; then
         log_warning "Namespace cloudbridge уже существует"
     else
-        kubectl apply -f k8s-manifests/00-namespace.yaml
+        kapply -f k8s-manifests/00-namespace.yaml
         log_success "Namespace cloudbridge создан"
     fi
 }
@@ -126,13 +249,15 @@ create_namespace() {
 create_pvc() {
     log_info "Создание PersistentVolumeClaim..."
     
-    kubectl apply -f k8s-manifests/01-pvc.yaml
+    kapply -f k8s-manifests/01-pvc.yaml
     
-    # Ожидание готовности PVC
-    log_info "Ожидание готовности PVC..."
-    kubectl wait --for=condition=Bound pvc/cloudbridge-logs-pvc -n cloudbridge --timeout=300s
-    kubectl wait --for=condition=Bound pvc/cadence-pvc -n cloudbridge --timeout=300s
-    kubectl wait --for=condition=Bound pvc/registry-pvc -n cloudbridge --timeout=300s
+    if [[ "$DRY_RUN" != "1" ]]; then
+        # Ожидание готовности PVC
+        log_info "Ожидание готовности PVC..."
+        kubectl wait --for=condition=Bound pvc/cloudbridge-logs-pvc -n cloudbridge --timeout=300s
+        kubectl wait --for=condition=Bound pvc/cadence-pvc -n cloudbridge --timeout=300s
+        kubectl wait --for=condition=Bound pvc/registry-pvc -n cloudbridge --timeout=300s
+    fi
     
     log_success "PVC созданы и готовы"
 }
@@ -169,7 +294,7 @@ create_secrets() {
 create_configmap() {
     log_info "Создание ConfigMap..."
     
-    kubectl apply -f k8s-manifests/03-configmap.yaml
+    kapply -f k8s-manifests/03-configmap.yaml
     log_success "ConfigMap создан"
 }
 
@@ -177,11 +302,13 @@ create_configmap() {
 deploy_registry() {
     log_info "Развертывание Docker Registry..."
     
-    kubectl apply -f k8s-manifests/04-registry.yaml
+    kapply -f k8s-manifests/04-registry.yaml
     
-    # Ожидание готовности registry
-    log_info "Ожидание готовности registry..."
-    kubectl wait --for=condition=Available deployment/docker-registry -n cloudbridge --timeout=300s
+    if [[ "$DRY_RUN" != "1" ]]; then
+        # Ожидание готовности registry
+        log_info "Ожидание готовности registry..."
+        kubectl wait --for=condition=Available deployment/docker-registry -n cloudbridge --timeout=300s
+    fi
     
     log_success "Docker Registry развернут"
 }
@@ -246,15 +373,10 @@ create_registry_secret() {
 deploy_services() {
     log_info "Развертывание сервисов..."
     
-    kubectl apply -f k8s-manifests/05-deployments.yaml
-    kubectl apply -f k8s-manifests/06-services.yaml
+    kapply -f k8s-manifests/05-deployments.yaml
+    kapply -f k8s-manifests/06-services.yaml
     
-    # Ожидание готовности deployment
-    log_info "Ожидание готовности сервисов..."
-    kubectl wait --for=condition=Available deployment/cloudbridge-relay -n cloudbridge --timeout=300s || true
-    kubectl wait --for=condition=Available deployment/ai-service -n cloudbridge --timeout=300s || true
-    kubectl wait --for=condition=Available deployment/cadence -n cloudbridge --timeout=300s || true
-    
+    wait_core_deployments
     log_success "Сервисы развернуты"
 }
 
@@ -262,7 +384,7 @@ deploy_services() {
 create_ingress() {
     log_info "Создание Ingress..."
     
-    kubectl apply -f k8s-manifests/07-ingress.yaml
+    kapply -f k8s-manifests/07-ingress.yaml
     log_success "Ingress создан"
 }
 
@@ -270,8 +392,40 @@ create_ingress() {
 create_servicemonitor() {
     log_info "Создание ServiceMonitor..."
     
-    kubectl apply -f k8s-manifests/08-servicemonitor.yaml
+    kapply -f k8s-manifests/08-servicemonitor.yaml
     log_success "ServiceMonitor создан"
+}
+
+wait_core_deployments() {
+    if [[ "$DRY_RUN" == "1" ]]; then
+        log_info "dry-run: skip waiting for deployments"
+        return 0
+    fi
+    log_info "Ожидание готовности сервисов..."
+    kubectl wait --for=condition=Available deployment/cloudbridge-relay -n cloudbridge --timeout=300s || true
+    kubectl wait --for=condition=Available deployment/ai-service -n cloudbridge --timeout=300s || true
+    kubectl wait --for=condition=Available deployment/cadence -n cloudbridge --timeout=300s || true
+}
+
+# Apply production kustomize overlay (core stack 00–08)
+apply_overlay() {
+    log_info "Applying kustomize overlay: $OVERLAY_DIR"
+    if [[ ! -f "$OVERLAY_DIR/kustomization.yaml" ]]; then
+        log_error "Missing $OVERLAY_DIR/kustomization.yaml"
+        exit 1
+    fi
+    # --load-restrictor=LoadRestrictionsNone: allow ../../../k8s-manifests resources
+    if [[ "$DRY_RUN" == "1" ]]; then
+        kubectl apply -k "$OVERLAY_DIR" --load-restrictor=LoadRestrictionsNone --dry-run=client
+    else
+        kubectl apply -k "$OVERLAY_DIR" --load-restrictor=LoadRestrictionsNone
+    fi
+    log_success "Overlay applied: $OVERLAY_DIR"
+}
+
+render_overlay() {
+    log_info "Rendering overlay (no apply): $OVERLAY_DIR"
+    kubectl kustomize --load-restrictor=LoadRestrictionsNone "$OVERLAY_DIR"
 }
 
 # Проверка статуса развертывания
@@ -297,32 +451,92 @@ check_deployment() {
 
 # Основная функция
 main() {
+    parse_args "$@"
+    RENDER_ONLY="${RENDER_ONLY:-0}"
+    VALIDATE_ONLY="${VALIDATE_ONLY:-0}"
+
     echo "Развертывание CloudBridge Relay в VK Cloud Kubernetes"
     echo "=================================================="
+    echo "Mode: $DEPLOY_MODE"
+    if [[ "$DEPLOY_MODE" == "overlay" ]]; then
+        echo "Overlay: $OVERLAY_DIR"
+    fi
+    if [[ "$DRY_RUN" == "1" ]]; then
+        echo "Dry-run: client-side only"
+    fi
     echo ""
+
+    if [[ "$VALIDATE_ONLY" == "1" ]]; then
+        exec "$REPO_ROOT/scripts/deploy/validate-overlay.sh" --all
+    fi
+
+    if [[ "$RENDER_ONLY" == "1" ]]; then
+        check_dependencies
+        render_overlay
+        exit 0
+    fi
     
     check_dependencies
-    setup_docker_mirrors
-    check_cluster
-    create_namespace
-    create_pvc
-    create_secrets
-    create_configmap
-    deploy_registry
-    load_images
-    create_registry_secret
-    deploy_services
-    create_ingress
-    create_servicemonitor
-    check_deployment
+    if [[ "$SKIP_MIRRORS" != "1" ]]; then
+        setup_docker_mirrors
+    else
+        log_info "Skipping Docker mirrors (--skip-mirrors)"
+    fi
+    if [[ "$DRY_RUN" != "1" ]]; then
+        check_cluster
+    else
+        log_warning "dry-run: skip cluster-info check"
+    fi
+
+    if [[ "$DEPLOY_MODE" == "overlay" ]]; then
+        # Bootstrap secrets the same way as manifests mode (overlay 02 may be placeholders).
+        create_namespace
+        create_secrets
+        # Full core stack via kustomize (00–08)
+        apply_overlay
+        if [[ "$DRY_RUN" != "1" ]]; then
+            log_info "Ожидание готовности registry (overlay)..."
+            kubectl wait --for=condition=Available deployment/docker-registry -n cloudbridge --timeout=300s || true
+        fi
+        if [[ "$DRY_RUN" != "1" ]]; then
+            load_images
+            create_registry_secret
+            # Re-apply so pods restart against pushed images if needed
+            apply_overlay
+            wait_core_deployments
+            check_deployment
+        fi
+    else
+        create_namespace
+        create_pvc
+        create_secrets
+        create_configmap
+        deploy_registry
+        if [[ "$DRY_RUN" != "1" ]]; then
+            load_images
+        else
+            log_info "dry-run: skip load_images"
+        fi
+        create_registry_secret
+        deploy_services
+        create_ingress
+        create_servicemonitor
+        if [[ "$DRY_RUN" != "1" ]]; then
+            check_deployment
+        fi
+    fi
     
     echo ""
-    log_success "Развертывание завершено!"
+    log_success "Развертывание завершено! (mode=$DEPLOY_MODE)"
     echo ""
     log_info "Полезные команды:"
     echo "  kubectl get pods -n cloudbridge                    # Статус подов"
     echo "  kubectl logs -f -l app.kubernetes.io/name=cloudbridge-relay -n cloudbridge  # Логи CloudBridge Relay"
     echo "  kubectl port-forward service/cloudbridge-relay-service 9090:9090 -n cloudbridge  # Доступ к сервису"
+    echo ""
+    log_info "Overlay (optional):"
+    echo "  ./scripts/deploy/deploy.sh --use-overlay"
+    echo "  ./scripts/deploy/deploy.sh --render-overlay"
     echo ""
     log_info "Мониторинг:"
     echo "  kubectl port-forward service/prometheus-kube-prometheus-prometheus 9090:9090 -n monitoring  # Prometheus"

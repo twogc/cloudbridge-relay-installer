@@ -102,6 +102,17 @@ test-coverage: ## Запустить тесты с покрытием
 	@echo "Отчет о покрытии: coverage_reports/coverage.html"
 	@echo "Тесты с покрытием завершены"
 
+validate-overlay: ## Offline kustomize overlay path checks (no cluster)
+	bash -n scripts/deploy/deploy.sh
+	bash -n scripts/deploy/validate-overlay.sh
+	./scripts/deploy/validate-overlay.sh --all
+
+test-offline: ## Unit tests used by CI offline-validate (no cluster)
+	go test -short -count=1 ./internal/database/ -run 'Postgres|SQLite|OpenSQLite|Normalize'
+	go test -short -count=1 ./internal/p2p/ -run 'SCORE|NilRepository|ResolvePeer'
+	go test -short -count=1 ./internal/cadence/ -run 'CreateWorkflow|HealthCheck|TestNewClient|TestClient_'
+	go build -o /dev/null ./cmd/relay/ ./cmd/ai-worker/
+
 test-critical: ## Тесты критических компонентов
 	@echo "🔥 Тестирование критических компонентов..."
 	go test -v -race -cover -short ./internal/token/... ./internal/auth/... ./internal/p2p/... ./internal/api/... ./internal/quic/... ./internal/zitadel/... ./config/...

@@ -58,19 +58,27 @@
 |-----------|--------|------------|
 | `score_allocator_production.go` | **keep (canonical)** | Единственная реализация после удаления v1/v2 |
 | `relay_manager_hybrid.go` | interface готов | Принимает `network.TenantNetworkAllocator` |
-| `NewSCORETenantNetworkAllocatorProduction` | **не wired** | 0 вызовов вне definition (grep step 4) |
-| Следующий шаг | отдельная пачка | Подключить в `cmd/relay` → hybrid relay manager |
+| `NewSCORETenantNetworkAllocatorProduction` | **wired (optional)** | `SCORE_BASE_URL` → hybrid; IPAM Postgres→SQLite |
+| Следующий шаг | live e2e | SCORE + Postgres on real cluster |
 
 ---
 
-## Оставшийся drift (вне scope)
+## Оставшийся drift (на момент score-ports)
 
 | Item | Проблема |
 |------|----------|
-| `k8s-manifests/06-services.yaml` | AI stub **8080/9090** vs canonical **8083** |
-| `k8s/services/ai-service.yaml` | metrics port **8084** declared; runtime `/metrics` on **8083** |
+| `k8s-manifests/06-services.yaml` | *Тогда* AI stub **8080/9090** vs canonical **8083** |
+| `k8s/services/ai-service.yaml` | metrics **8084** vs runtime `/metrics` **8083** |
 | `config/config.json` (dev) | `server.port` **9090** — dev-only |
-| `docs/network/PORTS_SUMMARY.md` | Может отставать от port-scheme (не проверялось в step 4) |
+| `docs/network/PORTS_SUMMARY.md` | Может отставать от port-scheme |
+
+### Superseded by later missions (2026-07-09)
+
+| Open item (score-ports) | Статус |
+|-------------------------|--------|
+| `k8s-manifests/06` AI stub 8080/9090 | ✅ **k8s-prod-fix** — AI Service **8083**, metrics port **8084** |
+| SCORE wiring | **ещё open** (0 prod callers) |
+| ops metrics 8084 / dev config 9090 / PORTS_SUMMARY lag | **ещё open** (не P0) |
 
 ---
 

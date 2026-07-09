@@ -70,25 +70,39 @@ go test -short ./internal/auth/... ./internal/zitadel/... ./config/...
 - Удаление мёртвого TURN v1 и Cadence CI leftovers (`github_actions/`)
 - План merge k8s / terraform / monitoring / test без риска для `deploy.sh`
 
-### Не сделано (намеренно / следующая фаза)
+### Не сделано (на момент medium; см. Superseded)
 
 - Merge дубликатов (`score_allocator`, cadence clients, AI троек) — нужен refactor API
 - Объединение `k8s/` + `k8s-manifests/`, terraform, monitoring — только план
 - `docs/operations/SERVICE_CATALOG.md` — drift портов AI/IPAM не синхронизирован
 - Duplicate keys в `configs/config.json`
-- `systemd/enhanced-quic-proxy.service` — diff с `quic-proxy.service` (порты 9090 vs 9092)
+- `systemd/enhanced-quic-proxy.service` — diff с `quic-proxy.service` (порты 9090 vs 9092) — **оставляем оба**
 - Commit/push — не запрошено
+
+### Superseded by later missions (2026-07-09)
+
+| Open item (medium) | Закрыто / уточнено |
+|--------------------|--------------------|
+| score_allocator + retry_config merge | **next** — v1/v2 deleted; production/improved canonical |
+| AI тройки real/optimized | **cadence-ai** — removed; `ai.Service` |
+| SERVICE_CATALOG / AI-IPAM drift | **next** partial → **score-ports** authoritative 8080/8083/8085 |
+| Duplicate keys `configs/config.json` | **next** step 2 |
+| CI go vet / golangci-lint | **next** → `.github/workflows/lint.yml` |
+| K8s roles / first consol | **k8s-consol**; P0 stubs → **k8s-prod-fix** |
+| Cadence dual-path / full k8s merge / SCORE wire | **ещё open** (см. MIMO checklist) |
 
 ---
 
 ## Next steps (рекомендуемый порядок)
 
-1. **Commit** изменений миссии (отдельный PR «medium audit cleanup»).
-2. **Merge дубликатов** по `DUPLICATES_INVENTORY.md`: начать с `score_allocator` + `retry_config`, затем cadence clients.
-3. **K8s merge** по `CONSOLIDATION_PLAN.md` §1 — с сохранением `scripts/deploy/deploy.sh` → `k8s-manifests/`.
-4. **SERVICE_CATALOG** и drift AI/IPAM портов — выровнять с `port-scheme.md` или зафиксировать env-specific профили.
-5. **CI:** включить `go vet` / `golangci-lint` в `.github/workflows/`.
-6. **Интеграционные тесты Zitadel** — mock или `-short` guard для `internal/zitadel`.
+> Исторический список medium. Актуальный backlog — `docs/audit/MIMO_AUDIT_REPORT.md` §план + open items cadence-ai / score-ports / k8s-prod-fix.
+
+1. **Commit** накопленных изменений (по запросу).
+2. ~~Merge score/retry~~ → сделано **next**.
+3. K8s: full merge / overlays — **ещё open** (`CONSOLIDATION_PLAN`); P0 stubs уже **k8s-prod-fix**.
+4. ~~SERVICE_CATALOG~~ → **score-ports**.
+5. ~~CI lint~~ → **next**.
+6. **Интеграционные тесты Zitadel** — mock / `-short` (open).
 
 ---
 

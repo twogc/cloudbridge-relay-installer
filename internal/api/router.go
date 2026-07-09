@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/twogc/cloudbridge-relay-installer/internal/p2p"
 	"go.uber.org/zap"
 )
 
@@ -123,6 +124,13 @@ func (r *APIRouter) GetMonitoringEndpoints() *MonitoringEndpoints {
 // GetWireGuardEndpoints возвращает WireGuardEndpoints
 func (r *APIRouter) GetWireGuardEndpoints() *WireGuardSimpleEndpoints {
 	return r.wireguardEndpoints
+}
+
+// SetRelayManagerHybrid attaches SCORE-backed hybrid manager to WireGuard endpoints.
+func (r *APIRouter) SetRelayManagerHybrid(hybrid *p2p.RelayManagerHybrid) {
+	if r.wireguardEndpoints != nil {
+		r.wireguardEndpoints.SetRelayManagerHybrid(hybrid)
+	}
 }
 
 // rateLimitMiddleware возвращает rate limiter middleware

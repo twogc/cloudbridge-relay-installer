@@ -91,15 +91,25 @@ internal/enhanced/metrics/          — health check "keycloak"
 
 ---
 
-## Открытые пункты (вне scope миссии)
+## Открытые пункты (вне scope на момент fixes)
 
-1. **`config/config.json`** (dev) — всё ещё содержит `django`, `keycloak`, `quantum`
-2. **K8s configmaps** — вложенные `keycloak_url`, `keycloak_integration` в `zero_trust`/`enhanced_quic`
-3. **`scripts/get_keycloak_tokens.sh`**, **`scripts/setup_keycloak_client.sh`** — не удалены
-4. **Сломанные ссылки** в `scripts/utils/start_production.sh`, `tools/utils/start_production.sh`, `tools/setup/setup_cloudbridge.sh`
-5. **`rep/`** — ломает `go build ./...` (примеры go-rod без зависимостей)
-6. **`internal/zitadel` тесты** — требуют mock или `-short` skip для внешнего API
-7. **Портовая схема**, дубликаты `_enhanced`/`_production`, консолидация K8s/terraform — средний/стратегический срок
+1. **`config/config.json`** (dev) — django/keycloak/quantum residual
+2. **K8s configmaps** — nested `keycloak_*` в zero_trust/enhanced_quic
+3. **`scripts/get_keycloak_tokens.sh`**, **`scripts/setup_keycloak_client.sh`** — residual scripts
+4. **Сломанные ссылки** production/setup scripts
+5. **`rep/`** — ломает `go build ./...` (Makefile `GO_PKGS` excludes)
+6. **`internal/zitadel` тесты** — mock / `-short`
+7. **Портовая схема**, дубликаты, K8s/terraform consol — medium+
+
+### Superseded by later missions (2026-07-09)
+
+| Open item (fixes) | Статус |
+|-------------------|--------|
+| Портовая схема | **medium** → port-scheme; **score-ports** auxiliary |
+| score/retry / AI duplicates | **next** / **cadence-ai** |
+| K8s consol + stubs | **k8s-consol** roles; **k8s-prod-fix** P0 images |
+| Makefile rep/ / zitadel short / extra keycloak scripts | marked [x] в «Рекомендации» ниже (последующие пачки) |
+| Residual nested keycloak / dev config / SCORE wire | **частично open** — см. MIMO |
 
 ---
 
