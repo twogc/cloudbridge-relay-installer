@@ -409,5 +409,17 @@
     "host_port": "cadence:7933",
     "domain": "cloudbridge-p2p",
     "task_list": "p2p-quic-tasks"
+  },
+  "grpc": {
+    "enabled": true,
+    "port": 8444,
+    "tls_enabled": false,
+    "mtls_enabled": false,
+    "cert_file": "",
+    "key_file": "",
+    "keepalive_ping": "15s",
+    "keepalive_timeout": "10s",
+    "max_recv_msg_size": 4194304,
+    "max_send_msg_size": 4194304
   }
 }

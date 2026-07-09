@@ -201,6 +201,16 @@ func NewP2PAPIServer(logger *zap.Logger, jwtSecret []byte, port int) *P2PAPIServ
 				apiRouter.GetPeerManager().UpdatePeerStatus(c)
 			})
 
+			// Peer heartbeat (client: POST …/peers/:peer_id/heartbeat).
+			// Same body shape as status update; was missing from the router (404 in local smoke).
+			tenants.POST("/peers/:peer_id/heartbeat", func(c *gin.Context) {
+				if apiRouter.GetPeerManager() == nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "peer manager unavailable"})
+					return
+				}
+				apiRouter.GetPeerManager().UpdatePeerStatus(c)
+			})
+
 			// WireGuard configuration endpoint
 			tenants.GET("/peers/:peer_id/wireguard-config", func(c *gin.Context) {
 				if apiRouter.GetWireGuardEndpoints() == nil {
