@@ -35,7 +35,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
-	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/mattn/go-sqlite3 v1.14.48
 	github.com/pion/ice/v3 v3.0.16
 	github.com/pion/stun v0.6.1
 	github.com/pion/turn/v3 v3.0.3
