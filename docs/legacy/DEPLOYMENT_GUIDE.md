@@ -50,7 +50,7 @@ go test ./internal/testing -v -run TestTenantIsolation
 curl -s http://localhost:9090/api/v1/query?query=cloudbridge_tenant_total
 ```
 
-##  Конфигурация
+## Конфигурация
 
 ### **Переменные окружения**
 
@@ -265,7 +265,7 @@ kubectl get globalnetworkpolicies
 calicoctl get globalnetworkpolicies
 ```
 
-## 📞 Поддержка
+## Поддержка
 
 - **Документация**: [docs/TENANT_ISOLATION_OPERATIONS_GUIDE.md](docs/TENANT_ISOLATION_OPERATIONS_GUIDE.md)
 - **Техподдержка**: support@cloudbridge.io
@@ -273,8 +273,8 @@ calicoctl get globalnetworkpolicies
 
 ---
 
-**Статус**: Production Ready  
-**Версия**: 1.0  
+**Статус**: Production Ready
+**Версия**: 1.0
 **Последнее обновление**: $(date)
 
 

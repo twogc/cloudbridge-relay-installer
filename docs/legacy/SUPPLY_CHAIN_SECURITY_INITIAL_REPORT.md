@@ -24,9 +24,9 @@
 
 ```bash
 supply-chain/signing/
-├── cosign/    # v2.4.1 (sigstore/cosign)
-├── syft/      # v1.16.0 (anchore/syft)
-└── grype/     # v0.82.1 (anchore/grype)
+├── cosign/ # v2.4.1 (sigstore/cosign)
+├── syft/ # v1.16.0 (anchore/syft)
+└── grype/ # v0.82.1 (anchore/grype)
 ```
 
 **Детали**:
@@ -259,17 +259,17 @@ spec:
 
 ### Требуется реализовать
 
-1. **Policy Enforcement** 
+1. **Policy Enforcement**
    - Kyverno ClusterPolicy
    - Admission Controller
    - Exemptions management
 
-2. **Monitoring** 
+2. **Monitoring**
    - Prometheus метрики для подписей
    - Алерты для unsigned images
    - Dashboard для vulnerabilities
 
-3. **Compliance** 
+3. **Compliance**
    - SBOM публикация
    - Audit trail
    - Transparency reporting
@@ -389,7 +389,7 @@ cosign attest --yes \
 
 ### После начальной реализации
 - **Supply Chain Security**: 40% (В РАЗРАБОТКЕ)
-- **Общая готовность проекта**: 76% ⬆️ +4%
+- **Общая готовность проекта**: 76% +4%
 
 ### Компоненты Supply Chain Security
 

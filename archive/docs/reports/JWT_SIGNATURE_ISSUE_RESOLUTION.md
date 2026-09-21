@@ -39,7 +39,7 @@ cd /home/ubuntu/cloudbridge-relay-installer/test/relay-client
 go run test-jwt-signature.go "$(tail -1 zitadel-infinite-token.txt)" "RELAY_SECRET_HERE"
 ```
 
-## 🔧 Тестовые токены с разными секретами
+## Тестовые токены с разными секретами
 
 ### 1. Токен с текущим секретом (85Sk/...)
 ```bash
@@ -98,7 +98,7 @@ func main() {
     if secret == "" {
         secret = "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=" // default
     }
-    
+
     // ... rest of the code
 }
 ```
@@ -125,7 +125,7 @@ JWT_SECRET="Wahm7Iti1VAoXsFAV1MBeMfPv1yope2IJ47utB30Pk4FgZyJFZK0ayfX4zNstkUh" go
 3. Проще обновить один секрет, чем менять код
 4. Единый секрет для всей системы CloudBridge
 
-## 📞 Следующие шаги
+## Следующие шаги
 
 1. **Разработчик Relay:** Проверить секрет в K8s Secret `cloudbridge-relay-jwt`
 2. **Если секрет отличается:** Обновить на `85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=`

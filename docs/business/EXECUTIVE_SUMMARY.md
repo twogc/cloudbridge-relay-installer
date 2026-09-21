@@ -18,8 +18,8 @@
 ## Проблема & Решение
 
 ### Проблема
-- 🚫 Зарубежные VPN (Tailscale, Cloudflare) - заблокированы или недоступны
-- 💸 Российские решения (UserGate, Континент) - дорогие (₽500k-2M/год) и устаревшие
+- Зарубежные VPN (Tailscale, Cloudflare) - заблокированы или недоступны
+- Российские решения (UserGate, Континент) - дорогие (₽500k-2M/год) и устаревшие
 - Нет контроля данных - не соответствует 152-ФЗ
 - Рост удалённой работы требует новых решений
 
@@ -49,10 +49,10 @@ CloudBridge Relay:
 
 **Драйверы роста**:
 1. Импортозамещение (₽1 trillion госпрограмма)
-2. 🏠 Удалённая работа (+400% с 2020)
+2. Удалённая работа (+400% с 2020)
 3. Усиление требований кибербезопасности
 4. Рост IoT и Edge computing (+25% CAGR)
-5. 🎮 Gaming индустрия (+20% CAGR)
+5. Gaming индустрия (+20% CAGR)
 
 ---
 
@@ -61,11 +61,11 @@ CloudBridge Relay:
 | Metric | CloudBridge | Tailscale | UserGate |
 |--------|-------------|-----------|----------|
 | **Цена/год** | ₽150k-500k | ₽1.5M-2M | ₽500k-2M |
-| **Доступность РФ** |  | |
-| **Open Source** |  Partial |  |
-| **QUIC** |   |  |
-| **AI** |   |  |
-| **152-ФЗ** |   | |
+| **Доступность РФ** | | |
+| **Open Source** | Partial | |
+| **QUIC** | | |
+| **AI** | | |
+| **152-ФЗ** | | |
 
 **Наши преимущества**:
 - **Technology**: Единственный QUIC/MASQUE relay в РФ
@@ -115,7 +115,7 @@ CloudBridge Relay:
 
 ---
 
-## 💵 Финансы
+## Финансы
 
 ### Прогнозы (Realistic Scenario)
 
@@ -167,7 +167,7 @@ CloudBridge Relay:
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
 | No ФСТЭК cert | 20-30% | High | Start early, focus SMB |
-| Competition | 40-50% | 🟠 Medium | Speed, community, open source |
+| Competition | 40-50% | Medium | Speed, community, open source |
 | Economic crisis | 30-40% | Medium | Cost-saving positioning |
 | Tech shift | 10-20% | Low | Modular architecture |
 
@@ -229,11 +229,11 @@ CloudBridge Relay:
 3. *Competitive vacuum**: Tailscale limited, UserGate outdated
 4. *Window**: 18-36 months before others catch up
 
-**This is THE opportunity to build the leading P2P relay in Russia** 🇷🇺
+**This is THE opportunity to build the leading P2P relay in Russia**
 
 ---
 
-## 📞 Contact
+## Contact
 
 **Company**: CloudBridge (2GC)
 **Location**: Москва, Россия
@@ -243,9 +243,9 @@ CloudBridge Relay:
 **Documents Available**:
 - Full pitch deck (20-30 slides)
 - Financial model (3-statement forecast)
-- 📑 Market analysis (50+ pages)
-- 🎥 Product demo
-- 💻 Technical documentation (3000+ lines)
+- Market analysis (50+ pages)
+- Product demo
+- Technical documentation (3000+ lines)
 
 ---
 

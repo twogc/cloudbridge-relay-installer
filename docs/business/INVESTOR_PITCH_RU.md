@@ -1,6 +1,6 @@
 # CloudBridge Relay - Pitch для Инвесторов
 
-> ⚠️ **ДОКУМЕНТ УСТАРЕЛ.** Дата: 13 октября 2025. Указанные ниже оценки готовности («Production-ready компоненты», «98% MVP»)
+> **ДОКУМЕНТ УСТАРЕЛ.** Дата: 13 октября 2025. Указанные ниже оценки готовности («Production-ready компоненты», «98% MVP»)
 > не подтверждены и были завышены уже на момент написания. Проект заморожен ~11 мес.
 > Актуальный технический статус — только в `CLOUDBRIDGE_STRATEGY/2gc_cloudbridge/00_current_reality/REALITY_CHECK_vs_CODE.md`.
 
@@ -28,17 +28,17 @@
 
 ### Pain Points
 
-**1. Зарубежные VPN недоступны** 🚫
+**1. Зарубежные VPN недоступны**
 - Tailscale, Cloudflare Tunnel - заблокированы/ограничены
 - Риск санкций и блокировок
 - Нет контроля над данными
 
-**2. Российские решения устарели** 
+**2. Российские решения устарели**
 - UserGate, Континент - legacy архитектура
 - Высокая стоимость (₽500k-2M/год)
 - Сложная настройка и поддержка
 
-**3. DIY решения дороги** 💸
+**3. DIY решения дороги**
 - Собственная разработка - ₽10M-50M
 - Долгий time-to-market (12-24 месяца)
 - Необходимы редкие специалисты (QUIC, networking)
@@ -77,12 +77,12 @@
 | Возможность | CloudBridge | Tailscale | UserGate |
 |-------------|-------------|-----------|----------|
 | **Цена** | ₽150k-500k/год | ₽1.5M-2M/год (100 users) | ₽500k-2M/год |
-| **Open Source** | Да | Partial |  Нет |
+| **Open Source** | Да | Partial | Нет |
 | **Self-hosted** | а | Да| Да |
-| **QUIC Protocol** | а |  Нет |  Нет |
-| **AI Optimization** | а |  Нет |  Нет |
+| **QUIC Protocol** | а | Нет | Нет |
+| **AI Optimization** | а | Нет | Нет |
 | **РФ Available** | а | Ограничено | Да|
-| **152-ФЗ Ready** | а |  Нет | Да|
+| **152-ФЗ Ready** | а | Нет | Да|
 
 **Экономия**: 60-80% vs Tailscale, 40-60% vs UserGate
 
@@ -129,18 +129,18 @@
 
 **1. Enterprise Licenses** (Primary)
 ```
-Basic Edition       | ₽150k/год
+Basic Edition | ₽150k/год
 ├─ Up to 100 users
 ├─ Community support
 └─ Email support (business hours)
 
-Enterprise Edition  | ₽500k/год
+Enterprise Edition | ₽500k/год
 ├─ Unlimited users
 ├─ ГОСТ crypto
 ├─ Priority support
 └─ SLA 99.9%
 
-Enterprise+         | ₽1M-5M+/год
+Enterprise+ | ₽1M-5M+/год
 ├─ ФСТЭК certified
 ├─ 24/7 support
 ├─ Custom features
@@ -223,19 +223,19 @@ Training: ₽50k-100k/course
 ```
 Use of Funds:
 ├─ Product (35%): ₽17.5M-35M
-│   ├─ R&D team (5 engineers)
-│   ├─ ФСТЭК certification
-│   └─ Feature development
+│ ├─ R&D team (5 engineers)
+│ ├─ ФСТЭК certification
+│ └─ Feature development
 │
 ├─ Sales & Marketing (40%): ₽20M-40M
-│   ├─ 2-3 Enterprise sales
-│   ├─ Marketing campaigns
-│   └─ Conferences/events
+│ ├─ 2-3 Enterprise sales
+│ ├─ Marketing campaigns
+│ └─ Conferences/events
 │
 ├─ Operations (15%): ₽7.5M-15M
-│   ├─ Infrastructure
-│   ├─ Support team
-│   └─ Legal/admin
+│ ├─ Infrastructure
+│ ├─ Support team
+│ └─ Legal/admin
 │
 └─ Buffer (10%): ₽5M-10M
     └─ Contingency reserve
@@ -352,7 +352,7 @@ Use of Funds:
 - ГОСТ crypto compliance
 - High barrier for new entrants
 
-**4. Switching Costs** 💼
+**4. Switching Costs**
 - Integration with infrastructure
 - Training and adoption
 - Data migration costs
@@ -375,7 +375,7 @@ Use of Funds:
 - **Impact**: Can't sell to gov/large enterprise
 - **Mitigation**: Start process ASAP, focus SMB initially
 
-**2. Competition (40%)** 🟠
+**2. Competition (40%)**
 - **Risk**: Yandex/Mail.ru launch competitor
 - **Impact**: Market share loss
 - **Mitigation**: Speed, community, open source
@@ -385,7 +385,7 @@ Use of Funds:
 - **Impact**: Slower growth
 - **Mitigation**: Cost-saving positioning, flexible pricing
 
-**4. Technical (10%)** 
+**4. Technical (10%)**
 - **Risk**: QUIC not adopted
 - **Impact**: Protocol change needed
 - **Mitigation**: Modular architecture, multi-protocol
@@ -399,7 +399,7 @@ Use of Funds:
 
 ---
 
-## 🎪 Why Now?
+## Why Now?
 
 ### Perfect Storm of Tailwinds
 
@@ -436,7 +436,7 @@ Use of Funds:
 - SAM: ₽25-35 млрд (Enterprise + IoT)
 - SOM: ₽2-4 млрд realistic к 2027
 
-**2. Strong Defensibility** 🏰
+**2. Strong Defensibility**
 - Technology moat (QUIC/MASQUE expertise)
 - Open source community
 - ФСТЭК certification (18-24 months barrier)
@@ -471,7 +471,7 @@ Use of Funds:
 
 ---
 
-## 📞 Ask
+## Ask
 
 ### Investment Terms
 
@@ -541,7 +541,7 @@ Use of Funds:
 
 ---
 
-## 📧 Contact
+## Contact
 
 **Company**: CloudBridge (2GC)
 **Website**: [https://cloudbridge.io] (TBD)
@@ -551,8 +551,8 @@ Use of Funds:
 **Follow-up**:
 - Full pitch deck (20-30 slides)
 - Financial model (3-way forecast)
-- 🎥 Product demo video
-- 📑 Technical documentation
+- Product demo video
+- Technical documentation
 
 ---
 

@@ -7,7 +7,7 @@
 
 ## Критические Исправления (Делать Сейчас)
 
-### 1.  Исправить Падающие Тесты
+### 1. Исправить Падающие Тесты
 
 #### Test 1: TestRelayClaims_ValidateRoles
 **Файл**: `internal/auth/relay_claims_test.go:159`
@@ -16,8 +16,8 @@
 **Текущий код** (строка 158-159):
 ```go
 // Тестируем невалидные роли
-invalidRoles := []string{"service", "admin"}  // "service" есть у claims!
-assert.False(t, claims.ValidateRoles(invalidRoles))  // Ожидаем false
+invalidRoles := []string{"service", "admin"} // "service" есть у claims!
+assert.False(t, claims.ValidateRoles(invalidRoles)) // Ожидаем false
 ```
 
 **Логика ValidateRoles**: Возвращает `true` если **ХОТЯ БЫ ОДНА** роль совпадает
@@ -27,7 +27,7 @@ assert.False(t, claims.ValidateRoles(invalidRoles))  // Ожидаем false
 **Исправление**:
 ```go
 // Тестируем невалидные роли (ни одна роль не совпадает)
-invalidRoles := []string{"admin", "superuser"}  // Нет этих ролей у claims
+invalidRoles := []string{"admin", "superuser"} // Нет этих ролей у claims
 assert.False(t, claims.ValidateRoles(invalidRoles))
 ```
 
@@ -64,7 +64,7 @@ sed -i.bak 's/^.*quantum-service.*$/# DISABLED: &/' scripts/migrate-to-kubernete
 
 ---
 
-### 3. 🧹 Удалить Дублирующиеся Kubernetes Deployments
+### 3. Удалить Дублирующиеся Kubernetes Deployments
 
 **Проблема**: Есть 3 версии deployment для relay:
 - `cloudbridge-relay-deployment.yaml` (базовый)
@@ -127,13 +127,13 @@ sed -i.bak 's/^.*quantum-service.*$/# DISABLED: &/' scripts/migrate-to-kubernete
 **Рекомендация**: Разбить на модули:
 ```go
 cmd/relay/
-├── main.go              // Только main() и initialization
-├── server.go            // RelayServer struct
-├── config.go            // Configuration loading
-├── handlers.go          // HTTP handlers
-├── websocket.go         // WebSocket handlers
-├── p2p.go              // P2P logic
-└── enhanced_quic.go    // Enhanced QUIC (уже есть!)
+├── main.go // Только main() и initialization
+├── server.go // RelayServer struct
+├── config.go // Configuration loading
+├── handlers.go // HTTP handlers
+├── websocket.go // WebSocket handlers
+├── p2p.go // P2P logic
+└── enhanced_quic.go // Enhanced QUIC (уже есть!)
 ```
 
 **Время**: 2-3 часа
@@ -155,7 +155,7 @@ cmd/relay/
 
 ---
 
-### 8. 📖 Улучшить Документацию API
+### 8. Улучшить Документацию API
 
 **Создать**:
 - OpenAPI/Swagger спецификацию
@@ -253,14 +253,14 @@ EOF
 ## Текущий Статус
 
 ### Тесты
--  2 падающих теста в `internal/auth`
+- 2 падающих теста в `internal/auth`
 - elay компилируется
 - ntegration тесты добавлены
 
 ### Документация
 - ERVICE_CATALOG.md создан
 - ROJECT_ARCHITECTURE_ANALYSIS.md создан
--  README для сервисов созданы
+- README для сервисов созданы
 - Нужны README для остальных cmd/
 
 ### Код

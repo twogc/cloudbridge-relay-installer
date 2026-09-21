@@ -1,4 +1,4 @@
-# 🗺️ МЕСЯЦ 1: Stabilization - ПОЛНЫЙ ROADMAP
+# МЕСЯЦ 1: Stabilization - ПОЛНЫЙ ROADMAP
 
 **Период**: 4 недели (28 октября - 25 ноября 2025)
 **Цель**: Стабилизация инфраструктуры и подготовка к масштабированию
@@ -61,19 +61,19 @@ Week 4: Relay Unification + Testing (Nov 18 - Nov 25)
 ```
 backend/bff/
 ├── handlers/
-│   ├── dashboard_extended.go    # Новые endpoint'ы
-│   └── dashboard_test.go        # Тесты
+│ ├── dashboard_extended.go # Новые endpoint'ы
+│ └── dashboard_test.go # Тесты
 ├── sse/
-│   ├── broadcaster.go           # SSE broadcaster
-│   ├── events.go                # Event types
-│   └── handler.go               # SSE handler
+│ ├── broadcaster.go # SSE broadcaster
+│ ├── events.go # Event types
+│ └── handler.go # SSE handler
 ├── aggregators/
-│   ├── dashboard.go             # Обновлено
-│   └── dashboard_test.go        # Тесты
-└── main.go                      # Обновлено с новыми маршрутами
+│ ├── dashboard.go # Обновлено
+│ └── dashboard_test.go # Тесты
+└── main.go # Обновлено с новыми маршрутами
 
 frontend/
-└── lib/hooks/useSSE.ts          # SSE hook для React
+└── lib/hooks/useSSE.ts # SSE hook для React
 ```
 
 ---
@@ -265,10 +265,10 @@ Mapping:
 ```
 docs/
 ├── SECURITY_AUDIT_DDOS_WEEK3.md
-│   ├── SAST Python Issues
-│   ├── eBPF Security Analysis
-│   ├── Threat Feeds Review
-│   └── Remediation Plan
+│ ├── SAST Python Issues
+│ ├── eBPF Security Analysis
+│ ├── Threat Feeds Review
+│ └── Remediation Plan
 │
 └── RELAY_COMPONENT_ANALYSIS_WEEK3.md
     ├── Component Mapping
@@ -392,14 +392,14 @@ Measure:
 ```
 cloudbridge-scalable-relay/
 ├── cmd/relay/
-│   ├── quic_masque_integration.go  # QUIC+MASQUE
-│   ├── p2p_fallback.go              # P2P+Fallback
-│   └── cadence_workflow.go          # Cadence integration
+│ ├── quic_masque_integration.go # QUIC+MASQUE
+│ ├── p2p_fallback.go # P2P+Fallback
+│ └── cadence_workflow.go # Cadence integration
 │
 ├── internal/
-│   └── relay/
-│       ├── unified_server.go        # Unified server
-│       └── metrics_collector.go     # Metrics
+│ └── relay/
+│ ├── unified_server.go # Unified server
+│ └── metrics_collector.go # Metrics
 │
 └── tests/
     ├── unit_test.go
@@ -458,12 +458,12 @@ docs/
 
 | Метрика | Target | Week 1 | Week 2 | Week 3 | Week 4 |
 |---------|--------|--------|--------|--------|--------|
-| Dashboard API uptime | 99.9% |  |  |
-| Dashboard latency (p95) | <200ms |  |  |
-| Test coverage | >80% |  - | | 
-| Security findings | 0 HIGH | - |  |  |
-| Relay throughput | 10Gbps+ | - | - | - | 
-| Relay latency (p95) | <50ms | - | - | - | 
+| Dashboard API uptime | 99.9% | | |
+| Dashboard latency (p95) | <200ms | | |
+| Test coverage | >80% | - | |
+| Security findings | 0 HIGH | - | | |
+| Relay throughput | 10Gbps+ | - | - | - |
+| Relay latency (p95) | <50ms | - | - | - |
 
 ---
 
@@ -481,7 +481,7 @@ Week 8: Performance Optimization
 
 ---
 
-## 📞 КОНТАКТЫ
+## КОНТАКТЫ
 
 **Статус отслеживание**: `/Users/maxlanies/Git/2GC/cloudbridge-relay-installer/PROGRESS.md`
 

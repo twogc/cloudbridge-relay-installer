@@ -1,10 +1,10 @@
 # gRPC Deployment Checklist
 
-## Pre-Deployment ☐
+## Pre-Deployment
 
 ### Infrastructure
 - [ ] Kubernetes cluster version 1.19+
-- [ ] NGINX Ingress Controller installed  
+- [ ] NGINX Ingress Controller installed
 - [ ] Prometheus & Grafana monitoring stack
 - [ ] Persistent storage for logs and certificates
 - [ ] Network policies support enabled
@@ -15,22 +15,22 @@
 - [ ] Network policies reviewed and approved
 - [ ] Security scanning completed
 
-### Configuration  
+### Configuration
 - [ ] ConfigMap updated with gRPC settings
 - [ ] Environment variables for gRPC enabled
 - [ ] Certificate mounts configured
 - [ ] Resource limits reviewed
 
-## Deployment Steps ☐
+## Deployment Steps
 
-### Phase 1: Infrastructure  
+### Phase 1: Infrastructure
 - [ ] Apply NetworkPolicies: `kubectl apply -f k8s/network-policies/`
 - [ ] Generate certificates: `kubectl apply -f k8s/security/grpc-mtls-ca.yaml`
 - [ ] Wait for cert job: `kubectl wait --for=condition=complete job/generate-grpc-certs`
 - [ ] Verify secrets created: `kubectl get secrets | grep -E "(grpc|tls)"`
 
 ### Phase 2: Configuration
-- [ ] Apply ConfigMap: `kubectl apply -f k8s/configmaps/cloudbridge-config.yaml`  
+- [ ] Apply ConfigMap: `kubectl apply -f k8s/configmaps/cloudbridge-config.yaml`
 - [ ] Update services: `kubectl apply -f k8s/services/`
 - [ ] Apply monitoring: `kubectl apply -f k8s/monitoring/grpc-alerts.yaml`
 - [ ] Add Grafana dashboard: `kubectl apply -f k8s/configmaps/grafana-grpc-dashboard.yaml`
@@ -50,7 +50,7 @@
 ### Phase 5: Traffic Scaling
 - [ ] 25% traffic: Update ingress canary weight to 25
 - [ ] Monitor for 1 hour, check success criteria
-- [ ] 50% traffic: Update canary weight to 50  
+- [ ] 50% traffic: Update canary weight to 50
 - [ ] Monitor for 2 hours, check success criteria
 - [ ] 100% traffic: Update main deployment, scale up
 
@@ -60,16 +60,16 @@
 - [ ] Remove temporary resources and jobs
 - [ ] Update documentation and runbooks
 
-## Validation ☐
+## Validation
 
 ### Functional Testing
 - [ ] gRPC Hello works: Test ControlService.Hello
-- [ ] Authentication works: Test ControlService.Authenticate  
+- [ ] Authentication works: Test ControlService.Authenticate
 - [ ] Tunnel creation works: Test TunnelService.CreateTunnel
 - [ ] Heartbeat stream works: Test HeartbeatService.StreamHeartbeat
 - [ ] TLS handshake successful: `openssl s_client -connect <host>:8444`
 
-### Performance Testing  
+### Performance Testing
 - [ ] Load test with expected RPS: Run gRPC load tests
 - [ ] Memory usage stable: Monitor resource consumption
 - [ ] Connection pooling effective: Check connection metrics
@@ -87,7 +87,7 @@
 - [ ] Alerts configured: Test alert firing with artificial load
 - [ ] Log aggregation working: Verify structured gRPC logs
 
-## Post-Deployment ☐
+## Post-Deployment
 
 ### Performance Optimization
 - [ ] Review resource usage and adjust limits
@@ -97,7 +97,7 @@
 
 ### Documentation Updates
 - [ ] Update operational runbooks
-- [ ] Document new monitoring dashboards and alerts  
+- [ ] Document new monitoring dashboards and alerts
 - [ ] Update client connection instructions
 - [ ] Record lessons learned and known issues
 
@@ -107,7 +107,7 @@
 - [ ] Update incident response procedures
 - [ ] Communicate performance improvements to stakeholders
 
-## Rollback Plan ☐
+## Rollback Plan
 
 ### Immediate Rollback (< 5 minutes)
 - [ ] Scale canary to 0: `kubectl scale deployment cloudbridge-relay-canary --replicas=0`
@@ -122,11 +122,11 @@
 - [ ] Verify system returns to previous stable state
 - [ ] Document rollback reason and plan remediation
 
-## Success Criteria ☐
+## Success Criteria
 
 ### Technical Metrics
 - [ ] Error rate: < 0.1%
-- [ ] P95 Latency: < 1000ms  
+- [ ] P95 Latency: < 1000ms
 - [ ] Availability: > 99.9%
 - [ ] Resource usage: Within 10% of baseline
 
@@ -136,7 +136,7 @@
 - [ ] Successful migration of 100% traffic
 - [ ] Zero unplanned downtime during rollout
 
-## Sign-off ☐
+## Sign-off
 
 - [ ] **Tech Lead**: Deployment technically sound
 - [ ] **DevOps**: Infrastructure ready and monitored
@@ -146,7 +146,7 @@
 
 ---
 
-**Deployment Date**: ___________  
-**Completed By**: ___________  
-**Rollout Duration**: ___________  
+**Deployment Date**: ___________
+**Completed By**: ___________
+**Rollout Duration**: ___________
 **Issues Encountered**: ___________

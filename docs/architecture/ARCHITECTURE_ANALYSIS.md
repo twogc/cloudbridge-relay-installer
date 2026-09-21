@@ -38,13 +38,13 @@
 
 ---
 
-##  Критические исправления и улучшения (Production Ready)
+## Критические исправления и улучшения (Production Ready)
 
 ### Исправленные критические проблемы
 
 #### **1. IPAM (IP Address Management)**
 - **Проблема**: Гонки данных, неэффективный поиск IP, неправильные диапазоны
-- **Решение**: 
+- **Решение**:
   - Единый `sync.RWMutex` для всего IPAM состояния
   - `IPPool` структура с O(1) аллокацией/деаллокацией
   - Правильный диапазон IP для /24 подсетей (2-253)
@@ -90,38 +90,38 @@
 #### **RetryConfigImproved**
 ```go
 type RetryConfigImproved struct {
-    MaxAttempts     int           `yaml:"max_attempts"`
-    InitialDelay    time.Duration `yaml:"initial_delay"`
-    MaxDelay        time.Duration `yaml:"max_delay"`
-    MinDelay        time.Duration `yaml:"min_delay"`
-    BackoffFactor   float64       `yaml:"backoff_factor"`
-    Jitter          bool          `yaml:"jitter"`
-    JitterRatio     float64       `yaml:"jitter_ratio"`
-    RetryableErrors []int         `yaml:"retryable_errors"`
+    MaxAttempts int `yaml:"max_attempts"`
+    InitialDelay time.Duration `yaml:"initial_delay"`
+    MaxDelay time.Duration `yaml:"max_delay"`
+    MinDelay time.Duration `yaml:"min_delay"`
+    BackoffFactor float64 `yaml:"backoff_factor"`
+    Jitter bool `yaml:"jitter"`
+    JitterRatio float64 `yaml:"jitter_ratio"`
+    RetryableErrors []int `yaml:"retryable_errors"`
 }
 ```
 
 #### **CircuitBreaker**
 ```go
 type CircuitBreaker struct {
-    maxFailures    int
-    timeout        time.Duration
+    maxFailures int
+    timeout time.Duration
     halfOpenMaxRequests int
-    state          CircuitBreakerState
-    failures       int
-    lastFailTime   time.Time
+    state CircuitBreakerState
+    failures int
+    lastFailTime time.Time
     halfOpenRequests int
-    mutex          sync.RWMutex
+    mutex sync.RWMutex
 }
 ```
 
 #### **HTTPError**
 ```go
 type HTTPError struct {
-    StatusCode int    `json:"status_code"`
-    Message    string `json:"message"`
+    StatusCode int `json:"status_code"`
+    Message string `json:"message"`
     RetryAfter string `json:"retry_after,omitempty"`
-    Body       string `json:"body,omitempty"`
+    Body string `json:"body,omitempty"`
 }
 ```
 
@@ -152,23 +152,23 @@ type HTTPError struct {
 
 **Проект готов к продакшену!**
 
-###  Технические детали исправлений
+### Технические детали исправлений
 
 #### **IPAM Improvements**
 ```go
 // До: Гонки данных и неэффективность
 type RelayManager struct {
-    mutex     sync.Mutex
-    ipMutex   sync.Mutex  // Двойные блокировки!
+    mutex sync.Mutex
+    ipMutex sync.Mutex // Двойные блокировки!
     allocatedIPs map[string]map[string]string
 }
 
 // После: Единая блокировка и O(1) операции
 type RelayManager struct {
-    mu           sync.RWMutex  // Единая блокировка
+    mu sync.RWMutex // Единая блокировка
     allocatedIPs map[string]map[string]string
-    peerIndex    map[string]string  // O(1) поиск
-    freePools    map[string]*IPPool   // O(1) аллокация
+    peerIndex map[string]string // O(1) поиск
+    freePools map[string]*IPPool // O(1) аллокация
 }
 ```
 
@@ -179,7 +179,7 @@ func (rc *RetryConfigImproved) CalculateDelay(attempt int) time.Duration {
     rc.rndMu.Lock()
     jitter := rc.rnd.Float64()
     rc.rndMu.Unlock()
-    
+
     base := float64(rc.InitialDelay) * math.Pow(rc.BackoffFactor, float64(attempt-1))
     if rc.Jitter {
         j := (jitter - 0.5) * 2 * rc.JitterRatio
@@ -195,16 +195,16 @@ func (cb *CircuitBreaker) Execute(operation func() error) error {
     cb.mutex.RLock()
     state := cb.state
     cb.mutex.RUnlock()
-    
+
     if state == StateOpen && time.Since(cb.lastFailTime) < cb.timeout {
         return ErrCircuitOpen
     }
-    
+
     err := operation()
-    
+
     cb.mutex.Lock()
     defer cb.mutex.Unlock()
-    
+
     if err != nil {
         cb.failures++
         if cb.failures >= cb.maxFailures {
@@ -212,7 +212,7 @@ func (cb *CircuitBreaker) Execute(operation func() error) error {
         }
         return err
     }
-    
+
     cb.failures = 0
     cb.state = StateClosed
     return nil
@@ -223,8 +223,8 @@ func (cb *CircuitBreaker) Execute(operation func() error) error {
 ```go
 // Типизированные ошибки с Retry-After
 type HTTPError struct {
-    StatusCode int    `json:"status_code"`
-    Message    string `json:"message"`
+    StatusCode int `json:"status_code"`
+    Message string `json:"message"`
     RetryAfter string `json:"retry_after,omitempty"`
 }
 
@@ -329,57 +329,57 @@ graph TB
         U2[System Administrators]
         U3[AI Analysts]
     end
-    
+
     subgraph "CloudBridge Platform"
         subgraph "Frontend Layer"
             PC[Personal Cabinet]
             API[REST API Gateway]
         end
-        
+
         subgraph "Identity & Auth"
             ZT[Zitadel IdP]
         end
-        
+
         subgraph "Core Services"
             RELAY[CloudBridge Relay]
             AI[AI Service]
             CAD[Cadence Workflow]
             IPAM[IPAM Service]
         end
-        
+
         subgraph "Infrastructure"
             K8S[Kubernetes Cluster]
             DB[(PostgreSQL)]
             MON[Prometheus/Grafana]
         end
     end
-    
+
     subgraph "External Integrations"
         CF[Cloudflare Magic WAN]
         VK[VK Cloud Infrastructure]
         STUN[STUN/TURN Servers]
     end
-    
+
     U1 --> PC
     U2 --> API
     U3 --> AI
-    
+
     PC --> ZT
     API --> RELAY
     ZT --> RELAY
-    
+
     RELAY --> AI
     RELAY --> CAD
     RELAY --> IPAM
-    
+
     AI --> DB
     CAD --> DB
     IPAM --> DB
-    
+
     RELAY --> K8S
     AI --> K8S
     CAD --> K8S
-    
+
     K8S --> MON
     RELAY --> CF
     RELAY --> STUN
@@ -399,13 +399,13 @@ graph TB
             TPC[Tenant Policy Controller]
             POSTGRES[PostgreSQL IPAM Database]
         end
-        
+
         subgraph "Tenant Namespaces"
             TA[tenant-a-test]
             TB[tenant-b-test]
             TC[tenant-c-test]
         end
-        
+
         subgraph "Calico Network Policies"
             GNP1[tenant-123456789-allow-intra]
             GNP2[tenant-216420165-allow-intra]
@@ -413,30 +413,30 @@ graph TB
             GNP4[tenant-216420165-default-deny]
         end
     end
-    
+
     subgraph "External Resources"
         PODS[Pods with tenant.cloudbridge.io/id labels]
         CALICO[Calico CNI]
     end
-    
+
     TPC --> POSTGRES
     TPC --> PODS
     TPC --> GNP1
     TPC --> GNP2
     TPC --> GNP3
     TPC --> GNP4
-    
+
     PODS --> TA
     PODS --> TB
     PODS --> TC
-    
+
     GNP1 --> CALICO
     GNP2 --> CALICO
     GNP3 --> CALICO
     GNP4 --> CALICO
 ```
 
-###  Tenant Policy Controller Features
+### Tenant Policy Controller Features
 
 | Функция | Описание | Статус |
 |---------|----------|--------|
@@ -458,7 +458,7 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    
+
     TENANT_SUBNETS {
         serial id PK
         text tenant_id FK
@@ -468,7 +468,7 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    
+
     IP_USAGE_TRACKING {
         integer subnet_id PK,FK
         inet ip_address PK
@@ -476,7 +476,7 @@ erDiagram
         timestamptz created_at
         timestamptz updated_at
     }
-    
+
     TENANT_IP_ALLOCATIONS {
         serial id PK
         text tenant_id FK
@@ -486,14 +486,14 @@ erDiagram
         text status
         timestamptz allocated_at
     }
-    
+
     EXCLUDED_CIDRS {
         serial id PK
         cidr cidr
         text reason
         timestamptz created_at
     }
-    
+
     TENANTS ||--o{ TENANT_SUBNETS : "has"
     TENANT_SUBNETS ||--o{ IP_USAGE_TRACKING : "tracks"
     TENANT_SUBNETS ||--o{ TENANT_IP_ALLOCATIONS : "allocates"
@@ -509,7 +509,7 @@ sequenceDiagram
     participant IPAM as IPAM Service
     participant DB as PostgreSQL
     participant CALICO as Calico CNI
-    
+
     C->>API: Create Tenant Request
     API->>IPAM: Create Tenant Subnet
     IPAM->>DB: INSERT tenant_subnets
@@ -518,7 +518,7 @@ sequenceDiagram
     DB->>IPAM: Subnet Created
     IPAM->>API: Subnet Ready
     API->>C: Tenant Created
-    
+
     Note over C,CALICO: Peer Registration
     C->>API: Register Peer
     API->>IPAM: Allocate IP
@@ -531,7 +531,7 @@ sequenceDiagram
 
 ---
 
-##  3. Архитектура микросервисов
+## 3. Архитектура микросервисов
 
 ### Карта сервисов
 
@@ -557,47 +557,47 @@ graph LR
     subgraph "Client Layer"
         CLIENT[Client Applications]
     end
-    
+
     subgraph "API Gateway"
         API[REST API :5552]
     end
-    
+
     subgraph "Core Services"
         RELAY[Relay :9090 QUIC]
         AI[AI Service :8083]
         CAD[Cadence :7933]
         IPAM[IPAM :8080]
     end
-    
+
     subgraph "Protocol Services"
         QUIC[QUIC Service :8081]
         QUANTUM[Quantum :8084]
     end
-    
+
     subgraph "AI Pipeline"
         AI_ANALYTICS[AI Analytics :8085]
         AI_WORKER[AI Worker :8085]
     end
-    
+
     subgraph "Infrastructure"
         CNI[CNI Plugin]
         ZT[Zero Trust Demo :9090]
     end
-    
+
     CLIENT --> API
     API --> RELAY
     API --> AI
     API --> CAD
     API --> IPAM
-    
+
     RELAY --> QUIC
     RELAY --> QUANTUM
     RELAY --> AI
-    
+
     AI --> AI_ANALYTICS
     AI_ANALYTICS --> AI_WORKER
     AI_WORKER --> CAD
-    
+
     RELAY --> CNI
     CNI --> IPAM
 ```
@@ -616,7 +616,7 @@ graph TB
         TOKEN[token/]
         WAF[waf/]
     end
-    
+
     subgraph "P2P & Networking"
         P2P[p2p/]
         TUNNEL[tunnel/]
@@ -624,26 +624,26 @@ graph TB
         WG[wireguard/]
         MASQUE[masque/]
     end
-    
+
     subgraph "Transport Protocols"
         GRPC[transport/grpc/]
         QUIC[quic/]
         PROTO[protocol/]
     end
-    
+
     subgraph "AI & ML"
         AI[ai/]
         AI_ANALYTICS[ai/analytics/]
         AI_ML[ai/ml/]
         AI_PREDICTIVE[ai/predictive/]
     end
-    
+
     subgraph "Workflow & Orchestration"
         CADENCE[cadence/]
         WORKFLOWS[cadence/workflows/]
         ACTIVITIES[cadence/activities/]
     end
-    
+
     subgraph "Infrastructure"
         KUBE[kube/]
         IPAM[ipam/]
@@ -651,18 +651,18 @@ graph TB
         TENANT[tenant/]
         CONTROLLERS[controllers/]
     end
-    
+
     subgraph "Monitoring & Metrics"
         METRICS[metrics/]
         HEALTH[health/]
         SENTRY[sentry/]
     end
-    
+
     subgraph "External Integrations"
         ZITADEL[zitadel/]
         CLOUDFLARE[cloudflare/]
     end
-    
+
     subgraph "Utilities"
         LOGGER[logger/]
         CONFIG[config/]
@@ -679,57 +679,57 @@ graph LR
         API[api/]
         RELAY[relay/]
     end
-    
+
     subgraph "Core Business Logic"
         P2P[p2p/]
         TUNNEL[tunnel/]
         AUTH[auth/]
     end
-    
+
     subgraph "Protocol Handlers"
         GRPC[transport/grpc/]
         QUIC[quic/]
         MASQUE[masque/]
         NAT[nat/]
     end
-    
+
     subgraph "AI Pipeline"
         AI[ai/]
         AI_ANALYTICS[ai/analytics/]
         AI_ML[ai/ml/]
     end
-    
+
     subgraph "Infrastructure"
         KUBE[kube/]
         IPAM[ipam/]
         TENANT[tenant/]
     end
-    
+
     subgraph "External"
         ZITADEL[zitadel/]
         CADENCE[cadence/]
         METRICS[metrics/]
     end
-    
+
     API --> AUTH
     API --> P2P
     API --> TUNNEL
-    
+
     RELAY --> GRPC
     RELAY --> QUIC
     RELAY --> MASQUE
     RELAY --> NAT
-    
+
     P2P --> AI
     TUNNEL --> AI
-    
+
     AI --> AI_ANALYTICS
     AI_ANALYTICS --> AI_ML
-    
+
     AUTH --> ZITADEL
     P2P --> KUBE
     TUNNEL --> IPAM
-    
+
     AI --> CADENCE
     P2P --> METRICS
 ```
@@ -747,7 +747,7 @@ sequenceDiagram
     participant ZT as Zitadel IdP
     participant RELAY as CloudBridge Relay
     participant AUTH as Auth Module
-    
+
     U->>PC: Login Request
     PC->>ZT: OAuth 2.0/OIDC
     ZT->>PC: JWT Token + Metadata
@@ -769,7 +769,7 @@ sequenceDiagram
     participant PB as Peer B
     participant NAT as NAT Traversal
     participant TUNNEL as Tunnel Manager
-    
+
     PA->>RELAY: Connect Request
     RELAY->>NAT: ICE Candidates
     NAT->>RELAY: STUN/TURN Info
@@ -791,24 +791,24 @@ graph TB
         TA1[Server A1 : 10.100.77.78]
         TA2[Server A2 : 10.100.77.10]
     end
-    
+
     subgraph "Tenant B (tenant-123456789)"
         TB1[Server B1 : 10.100.78.10]
         TB2[Server B2 : 10.100.78.11]
     end
-    
+
     subgraph "CloudBridge Relay"
         RELAY[Relay Core]
         ISOLATION[Tenant Isolation]
     end
-    
+
     TA1 <--> RELAY
     TA2 <--> RELAY
     TB1 <--> RELAY
     TB2 <--> RELAY
-    
+
     RELAY --> ISOLATION
-    
+
     TA1 -.->| BLOCKED| TB1
     TA2 -.->| BLOCKED| TB2
 ```
@@ -820,18 +820,18 @@ graph LR
     subgraph "Client"
         C[Client]
     end
-    
+
     subgraph "NAT Traversal"
         STUN[STUN Server :19302]
         ICE[ICE Agent]
         TURN[TURN Server :3478]
         DERP[DERP Fallback]
     end
-    
+
     subgraph "Target"
         T[Target Server]
     end
-    
+
     C --> ICE
     ICE --> STUN
     STUN --> ICE
@@ -852,28 +852,28 @@ graph LR
         LOGS[Application Logs]
         EVENTS[Security Events]
     end
-    
+
     subgraph "AI Pipeline"
         COLLECTOR[Data Collector]
         PREPROCESSOR[Data Preprocessor]
         ML_MODEL[ML Models]
         ANALYZER[Anomaly Analyzer]
     end
-    
+
     subgraph "Actions"
         ALERTS[Alerts]
         RESPONSES[Automated Responses]
         REPORTS[Reports]
     end
-    
+
     METRICS --> COLLECTOR
     LOGS --> COLLECTOR
     EVENTS --> COLLECTOR
-    
+
     COLLECTOR --> PREPROCESSOR
     PREPROCESSOR --> ML_MODEL
     ML_MODEL --> ANALYZER
-    
+
     ANALYZER --> ALERTS
     ANALYZER --> RESPONSES
     ANALYZER --> REPORTS
@@ -881,7 +881,7 @@ graph LR
 
 ---
 
-##  5. Внешние интеграции
+## 5. Внешние интеграции
 
 ### Интеграционная карта
 
@@ -892,65 +892,65 @@ graph TB
         AI[AI Service]
         API[API Gateway]
     end
-    
+
     subgraph "Identity & Auth"
         ZITADEL[Zitadel IdP]
     end
-    
+
     subgraph "Infrastructure"
         K8S[Kubernetes]
         VK[VK Cloud]
         LB[LoadBalancer]
     end
-    
+
     subgraph "Data & Storage"
         POSTGRES[(PostgreSQL)]
         CASSANDRA[(Cassandra)]
     end
-    
+
     subgraph "Monitoring"
         PROMETHEUS[Prometheus]
         GRAFANA[Grafana]
         SENTRY[Sentry]
     end
-    
+
     subgraph "External Services"
         CLOUDFLARE[Cloudflare Magic WAN]
         STUN_TURN[STUN/TURN Servers]
         TELEGRAM[Telegram Bot]
         SLACK[Slack Webhook]
     end
-    
+
     subgraph "Workflow"
         CADENCE[Cadence Workflow]
     end
-    
+
     RELAY --> ZITADEL
     RELAY --> K8S
     RELAY --> CLOUDFLARE
     RELAY --> STUN_TURN
-    
+
     AI --> POSTGRES
     AI --> CASSANDRA
     AI --> TELEGRAM
     AI --> SLACK
-    
+
     API --> K8S
     K8S --> VK
     K8S --> LB
-    
+
     RELAY --> PROMETHEUS
     AI --> PROMETHEUS
     PROMETHEUS --> GRAFANA
-    
+
     RELAY --> SENTRY
     AI --> SENTRY
-    
+
     AI --> CADENCE
     CADENCE --> POSTGRES
 ```
 
-###  Технические детали интеграций
+### Технические детали интеграций
 
 | Интеграция | Протокол | Порт | Назначение |
 |------------|----------|------|------------|
@@ -976,13 +976,13 @@ graph TB
 
 | Функция / Признак | Tailscale | Valve SDR | Cloudflare Argo | iCloud PR | **CloudBridge** |
 |-------------------|-----------|-----------|-----------------|-----------|-----------------|
-| Anycast-кластер релеев | ✔ | ✔ | ✔ | ✔ | ✔ |
-| Клиентский выбор ретранслятора | ✔ | ✔ | ✖ (RUM + DNS) | частично | ✔ |
-| Seamless handover активного туннеля | частично | ✔ | ✖ | ✖ | ✔ |
-| Приоритет прямого P2P (ICE) | ✔ | ✖ | ✖ | ✖ | ✔ |
-| MASQUE/QUIC туннели | ✖ (WireGuard) | ✖ (UDP SDR) | частично (QUIC) | ✔ | ✔ |
-| Deterministic per-tenant IPAM | ✖ | ✖ | ✖ | ✖ | ✔ |
-| SLO-замкнутый контур адаптации | ✖ | частично | ✔ (latency steer) | ✖ | ✔ |
+| Anycast-кластер релеев | | | | | |
+| Клиентский выбор ретранслятора | | | (RUM + DNS) | частично | |
+| Seamless handover активного туннеля | частично | | | | |
+| Приоритет прямого P2P (ICE) | | | | | |
+| MASQUE/QUIC туннели | (WireGuard) | (UDP SDR) | частично (QUIC) | | |
+| Deterministic per-tenant IPAM | | | | | |
+| SLO-замкнутый контур адаптации | | частично | (latency steer) | | |
 
 ### **Технологические преимущества**
 
@@ -1031,7 +1031,7 @@ graph TB
 
 ## 7. Сетевая архитектура
 
-###  Сетевые компоненты
+### Сетевые компоненты
 
 ```mermaid
 graph TB
@@ -1039,44 +1039,44 @@ graph TB
         INTERNET[Internet]
         CF[Cloudflare Magic WAN]
     end
-    
+
     subgraph "VK Cloud Infrastructure"
         LB[LoadBalancer :443/80]
         K8S_NODE[Kubernetes Node]
     end
-    
+
     subgraph "Kubernetes Cluster"
         subgraph "cloudbridge namespace"
             RELAY_POD[Relay Pod :9090]
             AI_POD[AI Service Pod :8083]
             CAD_POD[Cadence Pod :8082]
         end
-        
+
         subgraph "monitoring namespace"
             PROM_POD[Prometheus Pod :9090]
             GRAF_POD[Grafana Pod :3000]
         end
-        
+
         subgraph "zitadel namespace"
             ZIT_POD[Zitadel Pod :8080]
         end
     end
-    
+
     subgraph "P2P Network"
         PEER_A[Peer A :10.100.77.78]
         PEER_B[Peer B :10.100.77.10]
         PEER_C[Peer C :10.100.78.10]
     end
-    
+
     INTERNET --> CF
     CF --> LB
     LB --> K8S_NODE
     K8S_NODE --> RELAY_POD
-    
+
     RELAY_POD --> AI_POD
     RELAY_POD --> CAD_POD
     RELAY_POD --> PROM_POD
-    
+
     RELAY_POD --> PEER_A
     RELAY_POD --> PEER_B
     RELAY_POD --> PEER_C
@@ -1106,36 +1106,36 @@ graph TB
         TA2[Server A2 : 10.100.77.10]
         TA3[Server A3 : 10.100.77.20]
     end
-    
+
     subgraph "Tenant B Network (10.100.78.0/24)"
         TB1[Server B1 : 10.100.78.10]
         TB2[Server B2 : 10.100.78.11]
         TB3[Server B3 : 10.100.78.20]
     end
-    
+
     subgraph "Tenant C Network (10.100.79.0/24)"
         TC1[Server C1 : 10.100.79.10]
         TC2[Server C2 : 10.100.79.11]
     end
-    
+
     subgraph "CloudBridge Relay"
         RELAY[Relay Core]
         ISOLATION[Network Isolation]
     end
-    
+
     TA1 <--> RELAY
     TA2 <--> RELAY
     TA3 <--> RELAY
-    
+
     TB1 <--> RELAY
     TB2 <--> RELAY
     TB3 <--> RELAY
-    
+
     TC1 <--> RELAY
     TC2 <--> RELAY
-    
+
     RELAY --> ISOLATION
-    
+
     TA1 -.->| BLOCKED| TB1
     TA2 -.->| BLOCKED| TC1
     TB1 -.->| BLOCKED| TC2
@@ -1154,37 +1154,37 @@ graph TB
         DDoS[DDoS Protection]
         GEO[Geographic Filtering]
     end
-    
+
     subgraph "Transport Security"
         TLS[TLS 1.3]
         MTLS[mTLS]
         QUIC[QUIC Encryption]
     end
-    
+
     subgraph "Authentication & Authorization"
         JWT[JWT Validation]
         RBAC[RBAC Middleware]
         OIDC[OIDC/OAuth 2.0]
     end
-    
+
     subgraph "Network Security"
         CALICO[Calico Network Policies]
         TENANT_ISOLATION[Tenant Isolation]
         FIREWALL[Firewall Rules]
     end
-    
+
     subgraph "Application Security"
         RATE_LIMIT[Rate Limiting]
         AUDIT[Audit Logging]
         ENCRYPTION[Data Encryption]
     end
-    
+
     subgraph "Infrastructure Security"
         K8S_SEC[Kubernetes Security]
         SECRETS[Secrets Management]
         RBAC_K8S[K8s RBAC]
     end
-    
+
     WAF --> TLS
     TLS --> JWT
     JWT --> RBAC
@@ -1233,28 +1233,28 @@ graph TB
    - Поддержка clock skew для JWT
 
 #### **Удаленные компоненты:**
--  **Keycloak полностью удален** - больше не используется
--  **Dual-issuer validator удален** - упрощена архитектура
--  **Legacy fallback механизмы удалены** - чистый Zitadel-only подход
+- **Keycloak полностью удален** - больше не используется
+- **Dual-issuer validator удален** - упрощена архитектура
+- **Legacy fallback механизмы удалены** - чистый Zitadel-only подход
 
 #### **Техническая реализация:**
 
 ```go
 // Основные компоненты Zitadel интеграции
 internal/zitadel/
-├── client.go              // Zitadel клиент с OAuth2
-├── tenant_manager.go      // Управление tenant'ами
-├── validator.go          // JWT валидация
-├── k8s_client.go         // Kubernetes интеграция
-└── client_test.go        // Unit тесты
+├── client.go // Zitadel клиент с OAuth2
+├── tenant_manager.go // Управление tenant'ами
+├── validator.go // JWT валидация
+├── k8s_client.go // Kubernetes интеграция
+└── client_test.go // Unit тесты
 
 internal/auth/
-├── adapter.go            // Аутентификация адаптер
-└── adapter_test.go       // Тесты (ОБНОВЛЕНО)
+├── adapter.go // Аутентификация адаптер
+└── adapter_test.go // Тесты (ОБНОВЛЕНО)
 
 cmd/relay/
 ├── zitadel_integration.go // Relay интеграция
-└── main.go               // Основная логика (ОБНОВЛЕНО)
+└── main.go // Основная логика (ОБНОВЛЕНО)
 ```
 
 #### **Метрики и мониторинг:**
@@ -1320,7 +1320,7 @@ internal/metrics/zitadel_metrics.go
 
 #### **Достижения:**
 - **100% Zitadel integration** - готово к production
-- **Zero Keycloak dependencies** - упрощенная архитектура  
+- **Zero Keycloak dependencies** - упрощенная архитектура
 - **Enterprise security** - JWT, RBAC, TLS 1.3
 - **Multi-tenant ready** - полная изоляция
 - **Kubernetes native** - cloud-ready deployment
@@ -1340,7 +1340,7 @@ graph TB
         LB[LoadBalancer]
         K8S_CLUSTER[Kubernetes Cluster]
     end
-    
+
     subgraph "Namespaces"
         subgraph "cloudbridge namespace"
             RELAY_DEPLOY[Relay Deployment]
@@ -1348,38 +1348,38 @@ graph TB
             CAD_DEPLOY[Cadence Deployment]
             IPAM_DEPLOY[IPAM Deployment]
         end
-        
+
         subgraph "monitoring namespace"
             PROM_DEPLOY[Prometheus Deployment]
             GRAF_DEPLOY[Grafana Deployment]
         end
-        
+
         subgraph "zitadel namespace"
             ZIT_DEPLOY[Zitadel Deployment]
         end
     end
-    
+
     subgraph "Services"
         RELAY_SVC[Relay Service :32500]
         AI_SVC[AI Service :30083]
         PROM_SVC[Prometheus Service :30080]
     end
-    
+
     subgraph "Storage"
         PV[Persistent Volumes]
         PVC[Persistent Volume Claims]
     end
-    
+
     LB --> K8S_CLUSTER
     K8S_CLUSTER --> RELAY_DEPLOY
     K8S_CLUSTER --> AI_DEPLOY
     K8S_CLUSTER --> CAD_DEPLOY
     K8S_CLUSTER --> IPAM_DEPLOY
-    
+
     RELAY_DEPLOY --> RELAY_SVC
     AI_DEPLOY --> AI_SVC
     PROM_DEPLOY --> PROM_SVC
-    
+
     RELAY_DEPLOY --> PV
     AI_DEPLOY --> PV
     PROM_DEPLOY --> PV
@@ -1411,51 +1411,51 @@ graph TB
         EVENTS[Security Events]
         NETWORK[Network Traffic]
     end
-    
+
     subgraph "Data Collection"
         COLLECTOR[Data Collector]
         PREPROCESSOR[Data Preprocessor]
         CACHE[Data Cache]
     end
-    
+
     subgraph "ML Models"
         ANOMALY[Anomaly Detection]
         PREDICTIVE[Load Prediction]
         ROUTING[Route Optimization]
         SECURITY[Security Analysis]
     end
-    
+
     subgraph "AI Services"
         CLOUDFLARE_AI[Cloudflare AI]
         LLM[Large Language Model]
         EMBEDDINGS[Vector Embeddings]
     end
-    
+
     subgraph "Actions"
         ALERTS[Real-time Alerts]
         AUTOMATION[Automated Responses]
         REPORTS[Analytics Reports]
         NOTIFICATIONS[Notifications]
     end
-    
+
     METRICS --> COLLECTOR
     LOGS --> COLLECTOR
     EVENTS --> COLLECTOR
     NETWORK --> COLLECTOR
-    
+
     COLLECTOR --> PREPROCESSOR
     PREPROCESSOR --> CACHE
-    
+
     CACHE --> ANOMALY
     CACHE --> PREDICTIVE
     CACHE --> ROUTING
     CACHE --> SECURITY
-    
+
     ANOMALY --> CLOUDFLARE_AI
     PREDICTIVE --> LLM
     ROUTING --> EMBEDDINGS
     SECURITY --> CLOUDFLARE_AI
-    
+
     CLOUDFLARE_AI --> ALERTS
     LLM --> AUTOMATION
     EMBEDDINGS --> REPORTS
@@ -1476,7 +1476,7 @@ graph TB
 
 ## 10. Технические детали
 
-###  Технологический стек
+### Технологический стек
 
 | Категория | Технология | Версия | Назначение |
 |-----------|-------------|--------|------------|
@@ -1538,18 +1538,18 @@ sequenceDiagram
     participant Q as QUIC Handler
     participant W as WebSocket Handler
     participant T as TCP Handler
-    
+
     C->>R: Connection Request
     R->>Q: Try QUIC First
     Q->>R: QUIC Available
     R->>C: QUIC Connection Established
-    
+
     Note over C,R: If QUIC fails
     C->>R: Fallback Request
     R->>W: Try WebSocket
     W->>R: WebSocket Available
     R->>C: WebSocket Connection
-    
+
     Note over C,R: If WebSocket fails
     C->>R: Final Fallback
     R->>T: Use TCP
@@ -1566,18 +1566,18 @@ sequenceDiagram
     participant A as Auth Module
     participant Z as Zitadel IdP
     participant CACHE as Token Cache
-    
+
     C->>R: Request + JWT Token
     R->>A: Validate Token
     A->>CACHE: Check Cache
     CACHE->>A: Cache Miss
-    
+
     A->>Z: Verify Token
     Z->>A: Token Valid + Claims
     A->>CACHE: Store Token
     A->>R: User Authorized
     R->>C: Request Processed
-    
+
     Note over A,CACHE: Subsequent requests
     C->>R: Request + JWT Token
     R->>A: Validate Token
@@ -1597,51 +1597,51 @@ graph TB
         EVENTS[Security Events]
         NETWORK[Network Traffic]
     end
-    
+
     subgraph "Data Collection"
         COLLECTOR[Data Collector]
         PREPROCESSOR[Data Preprocessor]
         CACHE[Data Cache]
     end
-    
+
     subgraph "ML Processing"
         ANOMALY[Anomaly Detection]
         PREDICTIVE[Load Prediction]
         ROUTING[Route Optimization]
         SECURITY[Security Analysis]
     end
-    
+
     subgraph "AI Services"
         CLOUDFLARE_AI[Cloudflare AI]
         LLM[Large Language Model]
         EMBEDDINGS[Vector Embeddings]
     end
-    
+
     subgraph "Output Actions"
         ALERTS[Real-time Alerts]
         AUTOMATION[Automated Responses]
         REPORTS[Analytics Reports]
         NOTIFICATIONS[Notifications]
     end
-    
+
     METRICS --> COLLECTOR
     LOGS --> COLLECTOR
     EVENTS --> COLLECTOR
     NETWORK --> COLLECTOR
-    
+
     COLLECTOR --> PREPROCESSOR
     PREPROCESSOR --> CACHE
-    
+
     CACHE --> ANOMALY
     CACHE --> PREDICTIVE
     CACHE --> ROUTING
     CACHE --> SECURITY
-    
+
     ANOMALY --> CLOUDFLARE_AI
     PREDICTIVE --> LLM
     ROUTING --> EMBEDDINGS
     SECURITY --> CLOUDFLARE_AI
-    
+
     CLOUDFLARE_AI --> ALERTS
     LLM --> AUTOMATION
     EMBEDDINGS --> REPORTS
@@ -1657,7 +1657,7 @@ sequenceDiagram
     participant W as Workflow
     participant A as Activity
     participant R as Result
-    
+
     T->>C: Start Workflow
     C->>W: Execute Workflow
     W->>A: Execute Activity 1
@@ -1679,38 +1679,38 @@ graph TB
         TA2[Server A2 : 10.100.77.10]
         TA3[Server A3 : 10.100.77.20]
     end
-    
+
     subgraph "Tenant B (tenant-123456789)"
         TB1[Server B1 : 10.100.78.10]
         TB2[Server B2 : 10.100.78.11]
         TB3[Server B3 : 10.100.78.20]
     end
-    
+
     subgraph "Tenant C (tenant-987654321)"
         TC1[Server C1 : 10.100.79.10]
         TC2[Server C2 : 10.100.79.11]
     end
-    
+
     subgraph "CloudBridge Relay Core"
         RELAY[Relay Core]
         ISOLATION[Network Isolation Engine]
         CALICO[Calico Policies]
     end
-    
+
     TA1 <--> RELAY
     TA2 <--> RELAY
     TA3 <--> RELAY
-    
+
     TB1 <--> RELAY
     TB2 <--> RELAY
     TB3 <--> RELAY
-    
+
     TC1 <--> RELAY
     TC2 <--> RELAY
-    
+
     RELAY --> ISOLATION
     ISOLATION --> CALICO
-    
+
     TA1 -.->| BLOCKED| TB1
     TA2 -.->| BLOCKED| TC1
     TB1 -.->| BLOCKED| TC2
@@ -1769,7 +1769,7 @@ graph TB
 - **Vendor independence** vs lock-in у крупных вендоров
 - **Cost efficiency** vs premium pricing у SASE решений
 
-###  Критические исправления (10-11 октября 2025)
+### Критические исправления (10-11 октября 2025)
 
 #### **Проблема:** Отсутствующие API endpoints
 - **Симптомы:** 404 ошибки для всех API endpoints (`/api/v1/tenants/{tenant_id}/peers/register`)
@@ -1878,10 +1878,10 @@ graph TB
        ready := apiRouter != nil &&
            apiRouter.GetPeerManager() != nil &&
            apiRouter.GetRelayManager() != nil
-       
+
        status := "degraded"
        if ready { status = "ready" }
-       
+
        c.JSON(200, gin.H{
            "status": status,
            "services": gin.H{
@@ -1896,13 +1896,13 @@ graph TB
 4. ** Улучшенная HTTP конфигурация:**
    ```go
    server := &http.Server{
-       Addr:              fmt.Sprintf("0.0.0.0:%d", port),
-       Handler:           router,
-       ReadTimeout:       30 * time.Second,
-       ReadHeaderTimeout: 10 * time.Second,  // Защита от slowloris
-       WriteTimeout:      30 * time.Second,
-       IdleTimeout:       120 * time.Second,
-       MaxHeaderBytes:    1 << 20, // 1MB
+       Addr: fmt.Sprintf("0.0.0.0:%d", port),
+       Handler: router,
+       ReadTimeout: 30 * time.Second,
+       ReadHeaderTimeout: 10 * time.Second, // Защита от slowloris
+       WriteTimeout: 30 * time.Second,
+       IdleTimeout: 120 * time.Second,
+       MaxHeaderBytes: 1 << 20, // 1MB
    }
    ```
 
@@ -1932,12 +1932,12 @@ graph TB
        s.logger.Info("Stopping P2P API server")
        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
        defer cancel()
-       
+
        if err := s.server.Shutdown(ctx); err != nil {
            s.logger.Error("HTTP server shutdown error", zap.Error(err))
            return err
        }
-       
+
        s.logger.Info("P2P API server stopped")
        return nil
    }
@@ -1993,44 +1993,44 @@ graph TB
             TUNNEL_API[Tunnel API]
             WG_API[WireGuard API]
         end
-        
+
         subgraph "Transport Layer"
             QUIC[QUIC Primary]
             WS[WebSocket Fallback]
             GRPC[gRPC API]
         end
-        
+
         subgraph "Security Layer"
             OIDC[OIDC Auth]
             JWT[JWT Tokens]
             TLS[TLS Encryption]
         end
-        
+
         subgraph "Network Layer"
             ICE[ICE/STUN/TURN]
             MASQUE[MASQUE Protocol]
             WG[WireGuard Overlay]
         end
     end
-    
+
     subgraph "CloudBridge Relay Server"
         RELAY[Relay Core]
         CONTROL[Control Plane]
         DATA[Data Plane]
     end
-    
+
     P2P_API --> QUIC
     TUNNEL_API --> WS
     WG_API --> GRPC
-    
+
     QUIC --> OIDC
     WS --> JWT
     GRPC --> TLS
-    
+
     OIDC --> ICE
     JWT --> MASQUE
     TLS --> WG
-    
+
     ICE --> RELAY
     MASQUE --> CONTROL
     WG --> DATA
@@ -2048,16 +2048,16 @@ graph TB
 ```go
 // Основные компоненты P2P Manager
 type Manager struct {
-    config          *P2PConfig
-    iceAgent        *ice.ICEAgent
-    quicConn        *quic.QUICConnection
-    mesh            *MeshNetwork
-    status          *P2PStatus
-    apiManager      *api.Manager
+    config *P2PConfig
+    iceAgent *ice.ICEAgent
+    quicConn *quic.QUICConnection
+    mesh *MeshNetwork
+    status *P2PStatus
+    apiManager *api.Manager
     wireguardClient *api.WireGuardClient
     // L3-overlay network fields
-    peerIP          string
-    tenantCIDR      string
+    peerIP string
+    tenantCIDR string
     wireguardConfig string
 }
 ```
@@ -2128,34 +2128,34 @@ graph TB
             REACT[React Components]
             TAURI[Tauri Desktop Client]
         end
-        
+
         subgraph "API Layer"
             WORKERS[Cloudflare Workers]
             ROUTES[API Routes]
             MIDDLEWARE[Auth Middleware]
         end
-        
+
         subgraph "Data Layer"
             D1[D1 Database]
             KV[KV Storage]
             R2[R2 Object Storage]
         end
-        
+
         subgraph "External Services"
             ZITADEL[Zitadel IdP]
             RELAY[CloudBridge Relay]
             CLOUDFLARE[Cloudflare Services]
         end
     end
-    
+
     ASTRO --> WORKERS
     REACT --> WORKERS
     TAURI --> WORKERS
-    
+
     WORKERS --> D1
     WORKERS --> KV
     WORKERS --> R2
-    
+
     WORKERS --> ZITADEL
     WORKERS --> RELAY
     WORKERS --> CLOUDFLARE
@@ -2183,13 +2183,13 @@ export class D1TenantService implements TenantService {
     if (currentCount >= 5) {
       return { success: false, errors: ['Maximum limit reached'] };
     }
-    
+
     // Создание тенанта с изоляцией
     const tenantId = await this.createTenant(realm, normalizedName, ownerId);
-    
+
     // Создание Zitadel org/project для тенанта
     await this.createTenantZitadelOrg(tenantId);
-    
+
     return { success: true, tenantId, realm };
   }
 }
@@ -2206,7 +2206,7 @@ export class GroupPermissionService {
       JOIN user_groups ug ON gp.group_id = ug.group_id
       WHERE ug.user_id = ? AND gp.resource = ? AND gp.action = ?
     `).bind(userId, resource, action).first();
-    
+
     return !!result;
   }
 }
@@ -2226,16 +2226,16 @@ export class RelayService {
         max_bandwidth: data.max_bandwidth
       });
     }
-    
+
     if (data.p2p_enabled !== false) {
       const p2pClient = await multitenancyService.createP2PClient(tenantId, id, {
         max_peers: data.max_peers
       });
     }
-    
+
     // Сохранение в базу данных
     await this.env.AUTH_DB.prepare(query).bind(...bindParams).run();
-    
+
     return id;
   }
 }
@@ -2281,7 +2281,7 @@ graph TB
         CLIENT_MAC[macOS Client]
         DESKTOP_APP[Tauri Desktop App]
     end
-    
+
     subgraph "SaaS Platform (Cloudflare Workers)"
         WEB_APP[Web Application]
         API_GATEWAY[API Gateway]
@@ -2289,41 +2289,41 @@ graph TB
         USER_MGMT[User Management]
         RELAY_MGMT[Relay Management]
     end
-    
+
     subgraph "CloudBridge Relay Infrastructure"
         RELAY_CORE[Relay Core]
         P2P_MANAGER[P2P Manager]
         IPAM[IPAM Service]
         TENANT_CONTROLLER[Tenant Policy Controller]
     end
-    
+
     subgraph "Identity & Auth"
         ZITADEL[Zitadel IdP]
     end
-    
+
     subgraph "Data Storage"
         D1_DB[D1 Database]
         POSTGRES[PostgreSQL]
         KV_STORAGE[KV Storage]
     end
-    
+
     CLIENT_WIN --> WEB_APP
     CLIENT_LINUX --> WEB_APP
     CLIENT_MAC --> WEB_APP
     DESKTOP_APP --> API_GATEWAY
-    
+
     WEB_APP --> TENANT_MGMT
     API_GATEWAY --> USER_MGMT
     API_GATEWAY --> RELAY_MGMT
-    
+
     TENANT_MGMT --> ZITADEL
     USER_MGMT --> ZITADEL
     RELAY_MGMT --> RELAY_CORE
-    
+
     RELAY_CORE --> P2P_MANAGER
     P2P_MANAGER --> IPAM
     IPAM --> TENANT_CONTROLLER
-    
+
     ZITADEL --> D1_DB
     ZITADEL --> POSTGRES
     RELAY_CORE --> KV_STORAGE
@@ -2406,8 +2406,8 @@ Tenant B → Tenant Policy Controller → Calico Policies → Network Isolation
 
 ---
 
-**Последнее обновление:** 11 октября 2025  
-**Статус проекта:** Полная архитектура с Client + Server + SaaS готова к production  
-**Архитектура:** Enterprise-grade, Kubernetes-native, AI-powered, L3-overlay, Multi-tenant isolation, Cross-platform client, SaaS platform  
-**Критические исправления:** API endpoints + L3-overlay + IPAM + Tenant Controller + Client + SaaS полностью реализованы  
+**Последнее обновление:** 11 октября 2025
+**Статус проекта:** Полная архитектура с Client + Server + SaaS готова к production
+**Архитектура:** Enterprise-grade, Kubernetes-native, AI-powered, L3-overlay, Multi-tenant isolation, Cross-platform client, SaaS platform
+**Критические исправления:** API endpoints + L3-overlay + IPAM + Tenant Controller + Client + SaaS полностью реализованы
 **Новые возможности:** Per-peer IPAM, WireGuard API, Tenant Policy Controller, PostgreSQL IPAM, Calico Network Policies, Cross-platform Client, SaaS Platform на Cloudflare Workers

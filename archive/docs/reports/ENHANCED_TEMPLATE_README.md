@@ -4,7 +4,7 @@
 
 Расширенный шаблон Zabbix для мониторинга CloudBridge Relay с полным покрытием современных сетевых технологий:
 - **MASQUE Protocol** - HTTP/3 туннелирование
-- **ICE/STUN/TURN** - NAT traversal мониторинг  
+- **ICE/STUN/TURN** - NAT traversal мониторинг
 - **Enhanced QUIC** - детальная производительность
 - **AI Analytics** - интеллектуальная аналитика соединений
 - **Advanced Security** - расширенный мониторинг безопасности
@@ -28,12 +28,12 @@
 ### **MASQUE Protocol** (6 items + 3 triggers)
 - `masque.tunnels.active` - Активные туннели
 - `masque.connect.udp.requests.total` - CONNECT-UDP запросы
-- `masque.connect.ip.requests.total` - CONNECT-IP запросы  
+- `masque.connect.ip.requests.total` - CONNECT-IP запросы
 - `masque.tunnel.establishment.time.seconds` - Время установки туннеля
 - `websocket.fallback.connections.active` - WebSocket fallback
 - `tcp.fallback.connections.active` - TCP fallback
 
-### 🔄 **NAT Traversal** (7 items + 5 triggers)
+### **NAT Traversal** (7 items + 5 triggers)
 - `ice.candidate.gathering.time.seconds` - ICE gathering time
 - `ice.connection.success.rate` - Успешность ICE соединений
 - `stun.binding.success.rate` - Успешность STUN
@@ -50,7 +50,7 @@
 - `quic.stream.count.bidirectional` - Bidirectional streams
 - `quic.stream.count.unidirectional` - Unidirectional streams
 
-### 🤖 **AI Analytics** (4 items + 3 triggers)
+### **AI Analytics** (4 items + 3 triggers)
 - `ai.connection.anomaly.score` - Оценка аномальности
 - `ai.route.prediction.accuracy` - Точность предсказания маршрутов
 - `ai.bandwidth.prediction.accuracy` - Точность предсказания полосы
@@ -72,14 +72,14 @@
 
 ---
 
-## 🎛️ НОВЫЕ МАКРОСЫ (23 шт)
+## НОВЫЕ МАКРОСЫ (23 шт)
 
 ### MASQUE Thresholds
 - `{$CB.MASQUE.TUNNELS.MIN}` = 1 - Минимум туннелей
 - `{$CB.MASQUE.ESTABLISHMENT.WARN}` = 2000ms - Предупреждение
 - `{$CB.MASQUE.ESTABLISHMENT.HIGH}` = 5000ms - Критично
 
-### ICE/STUN/TURN Thresholds  
+### ICE/STUN/TURN Thresholds
 - `{$CB.ICE.SUCCESS.WARN}` = 80% - Предупреждение успешности ICE
 - `{$CB.STUN.RTT.WARN}` = 200ms - Предупреждение STUN RTT
 - `{$CB.NAT.SUCCESS.WARN}` = 75% - Предупреждение NAT traversal
@@ -95,7 +95,7 @@
 
 ---
 
-## 📥 УСТАНОВКА
+## УСТАНОВКА
 
 1. **Импорт в Zabbix:**
    ```bash
@@ -149,7 +149,7 @@
 
 ---
 
-## 🛠️ СОЗДАНИЕ КОЛЛЕКТОРОВ
+## СОЗДАНИЕ КОЛЛЕКТОРОВ
 
 Для новых метрик необходимо создать соответствующие коллекторы:
 
@@ -161,7 +161,7 @@ METRIC_TYPE="$1"
 case "$METRIC_TYPE" in
     "tunnels_active")
         # Логика получения количества активных MASQUE туннелей
-        echo "2"  # Заглушка
+        echo "2" # Заглушка
         ;;
     *)
         echo "0"
@@ -174,7 +174,7 @@ sudo chmod +x /usr/local/bin/masque_collector.sh
 
 ---
 
-## 📞 ПОДДЕРЖКА
+## ПОДДЕРЖКА
 
 Для вопросов по расширенному шаблону:
 - Техническая документация: `SYSTEM_OVERVIEW.md`
@@ -183,5 +183,5 @@ sudo chmod +x /usr/local/bin/masque_collector.sh
 
 ---
 
-**Готово! Теперь у вас есть enterprise-grade мониторинг CloudBridge Relay!** 🚀
+**Готово! Теперь у вас есть enterprise-grade мониторинг CloudBridge Relay!**
 

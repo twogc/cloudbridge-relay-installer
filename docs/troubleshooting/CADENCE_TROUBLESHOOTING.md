@@ -28,7 +28,7 @@ kubectl logs -f deployment/cadence -n cloudbridge --previous
 
 ## Частые ошибки и быстрые решения
 
-###  CrashLoopBackOff
+### CrashLoopBackOff
 
 #### Проблема: Cadence не запускается
 ```bash
@@ -53,7 +53,7 @@ kubectl delete pvc postgres-pvc -n cloudbridge
 kubectl apply -f k8s/deployments/postgres-simple.yaml -n cloudbridge
 ```
 
-###  ImagePullBackOff
+### ImagePullBackOff
 
 #### Проблема: Не удается загрузить образ
 ```bash
@@ -64,7 +64,7 @@ docker pull ubercadence/server:v0.22.4
 kubectl patch deployment cadence -n cloudbridge -p '{"spec":{"template":{"spec":{"containers":[{"name":"cadence","imagePullPolicy":"IfNotPresent"}]}}}}'
 ```
 
-###  Config validation failed
+### Config validation failed
 
 #### Проблема: Must provide one of VisibilityStore and AdvancedVisibilityStore
 ```bash
@@ -72,7 +72,7 @@ kubectl patch deployment cadence -n cloudbridge -p '{"spec":{"template":{"spec":
 kubectl patch deployment cadence -n cloudbridge -p '{"spec":{"template":{"spec":{"containers":[{"name":"cadence","env":[{"name":"VISIBILITY_STORE","value":"sqlite"},{"name":"VISIBILITY_DB_PATH","value":"/var/lib/cadence/visibility.db"}]}]}}}}'
 ```
 
-###  Connection refused
+### Connection refused
 
 #### Проблема: База данных недоступна
 ```bash
@@ -83,7 +83,7 @@ kubectl exec -it deployment/cadence -n cloudbridge -- nslookup postgres-service
 kubectl apply -f k8s/deployments/cadence-working.yaml -n cloudbridge
 ```
 
-###  Port already in use
+### Port already in use
 
 #### Проблема: Порт занят при port forwarding
 ```bash
@@ -97,7 +97,7 @@ kill -9 <PID>
 kubectl port-forward service/cadence-nodeport 8081:7934 -n cloudbridge
 ```
 
-##  Быстрые исправления
+## Быстрые исправления
 
 ### 1. Сброс конфигурации Cadence
 ```bash
@@ -206,7 +206,7 @@ git checkout HEAD -- k8s/deployments/cadence-working.yaml
 kubectl apply -f k8s/deployments/cadence-working.yaml -n cloudbridge
 ```
 
-## 🧹 Очистка
+## Очистка
 
 ### 1. Очистка ресурсов
 ```bash
@@ -230,7 +230,7 @@ docker rmi ubercadence/server:v0.22.4
 docker rmi postgres:13
 ```
 
-## 📞 Экстренные команды
+## Экстренные команды
 
 ### 1. Когда ничего не работает
 ```bash

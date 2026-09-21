@@ -76,8 +76,8 @@ func (c *ZitadelClient) GetJWKS(ctx context.Context) (interface{}, error) {
 4. **Добавить кеширование JWKS** (TTL 1 час):
    ```go
    type JWKSCache struct {
-       mu        sync.RWMutex
-       jwks      *jose.JSONWebKeySet
+       mu sync.RWMutex
+       jwks *jose.JSONWebKeySet
        expiresAt time.Time
    }
    ```
@@ -292,7 +292,7 @@ curl http://localhost:9641/metrics
 
 ** РЕАЛИЗОВАНО (2025-01-02)**:
 - lusterIssuer для Let's Encrypt Production и Staging
--  сертификатов для всех доменов (main, gRPC, API, monitoring, Zitadel)
+- сертификатов для всех доменов (main, gRPC, API, monitoring, Zitadel)
 - втоматическое обновление за 15 дней до истечения
 - etup Script - полная автоматизация установки (400+ строк)
 - ониторинг и алерты - Prometheus метрики для сертификатов
@@ -469,13 +469,13 @@ curl http://localhost:9641/metrics
    // config/experimental-features.yaml
    experimental:
      bbr_v2:
-       enabled: false  # RTT variance не реализован
+       enabled: false # RTT variance не реализован
      fec:
-       enabled: false  # Reed-Solomon не реализован
+       enabled: false # Reed-Solomon не реализован
      ack_frequency:
-       enabled: true   # Работает
+       enabled: true # Работает
      greasing:
-       enabled: true   # Работает
+       enabled: true # Работает
    ```
 
 2. **Обновить configs/config.json**:
@@ -551,10 +551,10 @@ kubectl apply -f k8s/security/external-secrets-setup.yaml
 ```go
 // Все endpoints - заглушки:
 r.GET("/keys", func(c *gin.Context) {
-    c.JSON(200, gin.H{"keys": []string{}})  // Пустой массив
+    c.JSON(200, gin.H{"keys": []string{}}) // Пустой массив
 })
 r.POST("/generate", func(c *gin.Context) {
-    c.JSON(201, gin.H{"message": "quantum key generated"})  // Мок
+    c.JSON(201, gin.H{"message": "quantum key generated"}) // Мок
 })
 ```
 
@@ -612,10 +612,10 @@ cmd/relay/enhanced_quic.go (Integration Adapter)
 **Анализ**: [TENANT_POLICY_CONTROLLER_ANALYSIS.md](TENANT_POLICY_CONTROLLER_ANALYSIS.md)
 
 **Проблемы Simple Version**:
-1.  Неправильные health checks (WebhookServer без webhook!)
-2.  Leader election отключен по умолчанию
-3.  Нет Calico CRDs (не будет работать!)
-4.  Нет production функций
+1. Неправильные health checks (WebhookServer без webhook!)
+2. Leader election отключен по умолчанию
+3. Нет Calico CRDs (не будет работать!)
+4. Нет production функций
 
 **Решение**:
 - *DELETED** `cmd/tenant-policy-controller-simple/` (сломанная версия)
@@ -654,7 +654,7 @@ cmd/relay/enhanced_quic.go (Integration Adapter)
 
 | Сценарий | Время | Готовность к MVP |
 |----------|-------|------------------|
-| **Минимальный MVP** | ~~4-5 дней~~ **1 ДЕНЬ!**  ~~85%~~ **90%** |
+| **Минимальный MVP** | ~~4-5 дней~~ **1 ДЕНЬ!** ~~85%~~ **90%** |
 | **Рекомендуемый MVP** | ~~7-8 дней~~ **2-3 дня** | ~~92%~~ **95%** |
 | **Полный MVP** | ~~10-12 дней~~ **5-7 дней** | 97% |
 
@@ -684,7 +684,7 @@ cmd/relay/enhanced_quic.go (Integration Adapter)
 
 ---
 
-## 🔥 БЫСТРЫЙ СТАРТ (Fast Track)
+## БЫСТРЫЙ СТАРТ (Fast Track)
 
 Если нужно **минимально жизнеспособное MVP за 3 дня**:
 
@@ -746,9 +746,9 @@ cmd/relay/enhanced_quic.go (Integration Adapter)
 2. **Caching Layer**:
    ```go
    type JWKSCache struct {
-       mu        sync.RWMutex  // Thread-safe доступ
-       jwks      *oidc.KeySet  // Кешированные ключи
-       expiresAt time.Time     // Время истечения кеша
+       mu sync.RWMutex // Thread-safe доступ
+       jwks *oidc.KeySet // Кешированные ключи
+       expiresAt time.Time // Время истечения кеша
    }
    ```
    - TTL: 1 час (configurable)
@@ -901,7 +901,7 @@ cmd/relay/enhanced_quic.go (Integration Adapter)
 
 ### Финальный прогресс:
 - **Начальная готовность**: 75%
-- **Плановая готовность**: 90% 
+- **Плановая готовность**: 90%
 - **Фактическая готовность**: 95%
 - **Статус**: MVP DEPLOYED в production!
 
@@ -918,7 +918,7 @@ cmd/relay/enhanced_quic.go (Integration Adapter)
 
 ### Финальный прогресс:
 - **Начальная готовность**: 75%
-- **Плановая готовность**: 90% 
+- **Плановая готовность**: 90%
 - **Фактическая готовность**: 95%
 - **Статус**: MVP DEPLOYED в production!
 
@@ -935,8 +935,8 @@ cmd/relay/enhanced_quic.go (Integration Adapter)
 ### Next Steps:
 **Если нужен MVP прямо сейчас**:
 ```bash
-./scripts/deploy-turn-server.sh  # 30 минут
-# Manual testing                  # 3-4 часа
+./scripts/deploy-turn-server.sh # 30 минут
+# Manual testing # 3-4 часа
 # MVP READY!
 ```
 
@@ -992,7 +992,7 @@ cmd/relay/enhanced_quic.go (Integration Adapter)
 - **ARCHITECTURE_ANALYSIS.md** - детальный технический анализ
 
 ---
- 
-**Статус**: **MVP DEPLOYED в production!** 75% → 82% → 90% → 95%  
-**Рекомендация**: Система готова к production использованию  
+
+**Статус**: **MVP DEPLOYED в production!** 75% → 82% → 90% → 95%
+**Рекомендация**: Система готова к production использованию
 **Следующий этап**: Post-MVP roadmap и масштабирование

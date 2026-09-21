@@ -39,9 +39,9 @@
 # 2. Перейдите в "Container Registry"
 # 3. Нажмите "Create Registry"
 # 4. Заполните форму:
-#    - Name: cloudbridge-relay
-#    - Description: CloudBridge Relay Docker Registry
-#    - Region: MS1 (Москва)
+# - Name: cloudbridge-relay
+# - Description: CloudBridge Relay Docker Registry
+# - Region: MS1 (Москва)
 # 5. Нажмите "Create"
 ```
 
@@ -50,8 +50,8 @@
 ```bash
 # 1. В созданном registry перейдите в "Settings"
 # 2. В разделе "Access" создайте новый токен:
-#    - Username: cloudbridge-user
-#    - Password: [сгенерированный пароль]
+# - Username: cloudbridge-user
+# - Password: [сгенерированный пароль]
 # 3. Скопируйте username и password
 ```
 
@@ -77,7 +77,7 @@ docker login registry.vkcs.ru
 # Password: [ваш пароль]
 ```
 
-##  **Альтернативные способы аутентификации**
+## **Альтернативные способы аутентификации**
 
 ### **Вариант 1: Service Account (Рекомендуемый)**
 
@@ -97,7 +97,7 @@ docker login registry.vkcs.ru
 # 4. Используйте токен для аутентификации
 ```
 
-## 📝 **Пример OpenRC файла**
+## **Пример OpenRC файла**
 
 ```bash
 #!/bin/bash
@@ -188,7 +188,7 @@ git push origin test-automation
 # Проверьте права доступа к registry
 ```
 
-## 📞 **Поддержка**
+## **Поддержка**
 
 ### **VK Cloud:**
 - **Документация:** https://mcs.mail.ru/docs/

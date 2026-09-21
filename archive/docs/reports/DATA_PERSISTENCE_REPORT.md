@@ -2,7 +2,7 @@
 
 ## **Заключение: ВСЕ ДАННЫЕ ПОЛНОСТЬЮ PERSISTENT**
 
-**Дата тестирования:** $(date)  
+**Дата тестирования:** $(date)
 **Статус:** ПОДТВЕРЖДЕНО
 
 ---
@@ -11,17 +11,17 @@
 
 ### Тест Persistence
 1. **PostgreSQL pod полностью удален** - `kubectl delete pod pg-postgresql-0`
-2. **Pod автоматически пересоздан** с тем же Persistent Volume  
+2. **Pod автоматически пересоздан** с тем же Persistent Volume
 3. **Все данные остались** после перезапуска
 
 ### Результаты до/после перезапуска:
-- **👤 Пользователи:** 3 → 3 
-- **Проекты:** 2 → 2  
-- **OIDC Apps:** 6 → 6 
+- ** Пользователи:** 3 → 3
+- **Проекты:** 2 → 2
+- **OIDC Apps:** 6 → 6
 
 ---
 
-## 💾 **Архитектура хранения данных:**
+## **Архитектура хранения данных:**
 
 ### PostgreSQL Configuration
 ```yaml
@@ -35,7 +35,7 @@ Volume ID: pvc-c1d7da4d-0f59-431e-b08d-245729007556
 ### База данных ZITADEL
 ```
 Database: zitadel
-Schema: projections  
+Schema: projections
 Size: ~16MB
 ```
 
@@ -47,12 +47,12 @@ Size: ~16MB
 - **zitadel-admin@zitadel.edge.2gc.ru** (ID: 339340397199818863) - Admin User
 - **cloudbridge-admin** (ID: 339533564527771946) - Service User
 
-### Сохраненный проект:  
+### Сохраненный проект:
 - **cloudbridge-relay** (ID: 339537327304999215)
 
 ### OIDC приложения:
 - **cloudbridge-relay-api** - Client ID: 339537393138794797
-- **cloudbridge-relay-spa** - Client ID: 339537407433048367  
+- **cloudbridge-relay-spa** - Client ID: 339537407433048367
 - + 4 системных ZITADEL приложения
 
 ### Роли и права:
@@ -65,9 +65,9 @@ Size: ~16MB
 ## **Гарантии безопасности:**
 
 ### Persistence гарантии:
-**Переживает перезапуск подов**  
-**Переживает перезапуск узлов кластера**  
-**Переживает перезапуск всего кластера**  
+**Переживает перезапуск подов**
+**Переживает перезапуск узлов кластера**
+**Переживает перезапуск всего кластера**
 **Данные защищены на уровне файловой системы**
 
 ### Backup рекомендации:
@@ -95,7 +95,7 @@ aws s3 cp backup-$(date +%Y%m%d).sql s3://cloudbridge-backups/zitadel/
 
 ### Системные данные:
 - Event Store (audit trail)
-- Sessions и tokens  
+- Sessions и tokens
 - Конфигурации политик
 - Метаданные приложений
 
@@ -105,14 +105,14 @@ aws s3 cp backup-$(date +%Y%m%d).sql s3://cloudbridge-backups/zitadel/
 
 ### Что НЕ потеряется:
 - **Client ID и Client Secret** всех OIDC приложений
-- **Personal Access Tokens**  
+- **Personal Access Tokens**
 - **Service User JSON ключи** (в базе данных)
 - **Роли и права доступа**
 - **Конфигурации проектов**
 
 ### Backup стратегия:
 1. **Регулярные PostgreSQL dumps**
-2. **Persistent Volume snapshots** 
+2. **Persistent Volume snapshots**
 3. **Export конфигураций** в YAML/JSON
 4. **Копирование в внешнее хранилище** (S3/VK Cloud)
 
@@ -129,15 +129,15 @@ aws s3 cp backup-$(date +%Y%m%d).sql s3://cloudbridge-backups/zitadel/
 - **JWT ключи и токены** не теряются
 
 ### Рекомендации:
-1. **Настройте регулярные бэкапы** PostgreSQL 
+1. **Настройте регулярные бэкапы** PostgreSQL
 2. **Мониторьте размер базы данных** (сейчас 16MB)
 3. **Настройте snapshot'ы Persistent Volume**
 4. **Документируйте процедуры восстановления**
 
-**Система полностью готова к эксплуатации!** 
+**Система полностью готова к эксплуатации!**
 
 ---
 
-**Отчет создан:** $(date)  
-**Протестировано:** CloudBridge Team  
-**Статус:** Production Ready 
+**Отчет создан:** $(date)
+**Протестировано:** CloudBridge Team
+**Статус:** Production Ready

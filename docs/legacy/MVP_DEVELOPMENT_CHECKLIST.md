@@ -16,7 +16,7 @@
 
 ---
 
-##  **ЭТАП 1: QUIC-first + MASQUE + ICE селектор (Неделя 1-2)**
+## **ЭТАП 1: QUIC-first + MASQUE + ICE селектор (Неделя 1-2)**
 
 ### **Критические задачи**
 
@@ -122,7 +122,7 @@
 
 ---
 
-##  **ЭТАП 2: ICE/STUN/TURN слой (Неделя 3-4)** **ЗАВЕРШЕНО**
+## **ЭТАП 2: ICE/STUN/TURN слой (Неделя 3-4)** **ЗАВЕРШЕНО**
 
 ### **Критические задачи**
 
@@ -264,7 +264,7 @@
 **MASQUE компоненты:**
 - **MASQUE Server** - запущен на порту 8443 (UDP)
 - **CONNECT-UDP handler** - зарегистрирован
-- **CONNECT-IP handler** - зарегистрирован  
+- **CONNECT-IP handler** - зарегистрирован
 - **HTTP Datagrams handler** - зарегистрирован
 - **Health check handler** - зарегистрирован
 
@@ -280,13 +280,13 @@
 
 #### **Сетевые порты - ВСЕ АКТИВНЫ:**
 ```
-TCP 8080  - HTTP API
-TCP 8082  - P2P API  
-UDP 8443  - MASQUE HTTP/3
-UDP 5553  - P2P QUIC
+TCP 8080 - HTTP API
+TCP 8082 - P2P API
+UDP 8443 - MASQUE HTTP/3
+UDP 5553 - P2P QUIC
 UDP 19302 - STUN Server
-UDP 9092  - Enhanced QUIC
-UDP 5554  - QUIC Underlay
+UDP 9092 - Enhanced QUIC
+UDP 5554 - QUIC Underlay
 ```
 
 #### **Логи показывают успешную работу:**
@@ -298,7 +298,7 @@ UDP 5554  - QUIC Underlay
 
 ---
 
-##  **ЭТАП 3: WG-профиль и финализация (Неделя 5-6)**
+## **ЭТАП 3: WG-профиль и финализация (Неделя 5-6)**
 
 ### **Важные задачи**
 
@@ -381,7 +381,7 @@ UDP 5554  - QUIC Underlay
 
 ---
 
-##  **Технические улучшения**
+## **Технические улучшения**
 
 ### **Код качество** **ЗАВЕРШЕНО**
 - [x] **Рефакторинг**
@@ -464,7 +464,7 @@ UDP 5554  - QUIC Underlay
 
 ---
 
-## ⚔️ **Контрольные «боевые» проверки перед "готово"**
+## **Контрольные «боевые» проверки перед "готово"**
 
 Чтобы MVP действительно держался в реальных сетях, необходимо выполнить 8 быстрых sanity-чеков:
 
@@ -619,7 +619,7 @@ GET /api/v1/wireguard/peers → {}
 
 **Все три этапа MVP полностью реализованы:**
 - **Stage 1**: QUIC-first + MASQUE + ICE selector
-- **Stage 2**: ICE/STUN/TURN layer  
+- **Stage 2**: ICE/STUN/TURN layer
 - **Stage 3**: WireGuard (WG) profile
 
 ---
@@ -631,7 +631,7 @@ GET /api/v1/wireguard/peers → {}
 #### **Проблема решена разработчиком:**
 - **Найден правильный Keycloak сервер**: `https://auth.2gc.ru:443`
 - **Получены все необходимые ключи** через API
-- ⚙️ **Установлены правильные переменные окружения**
+- **Установлены правильные переменные окружения**
 - **Приложение успешно запускается** с Keycloak
 
 #### **Результаты тестирования:**
@@ -685,7 +685,7 @@ curl http://localhost:8080/health
 
 **Все компоненты MVP полностью функциональны:**
 - **Stage 1**: QUIC-first + MASQUE + ICE selector
-- **Stage 2**: ICE/STUN/TURN layer  
+- **Stage 2**: ICE/STUN/TURN layer
 - **Stage 3**: WireGuard (WG) profile
 - **Keycloak интеграция**: Аутентификация и авторизация
 - **CONNECT-IP**: Полная реализация IP-туннелирования
@@ -742,7 +742,7 @@ curl http://localhost:8080/health
 - [RFC 9443](https://datatracker.ietf.org/doc/html/rfc9443) - Multiplexing Scheme Updates for QUIC
 - [RFC 5780](https://datatracker.ietf.org/doc/html/rfc5780) - NAT Behavior Discovery Using Session Traversal Utilities
 
-###  **Reference реализации**
+### **Reference реализации**
 - [quic-go/masque-go](https://github.com/quic-go/masque-go) - MASQUE implementation
 - [connect-ip-go](https://github.com/connect-ip-go) - CONNECT-IP implementation
 - [ngtcp2/nghttp3](https://github.com/ngtcp2/nghttp3) - HTTP/3 client library

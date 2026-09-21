@@ -20,7 +20,7 @@
 3. Проще обновить один секрет, чем менять весь код генерации
 4. Единый секрет для всей экосистемы CloudBridge
 
-## 🔧 Команды для обновления секрета в K8s
+## Команды для обновления секрета в K8s
 
 ### 1. Проверить текущий секрет
 ```bash
@@ -92,7 +92,7 @@ relay_auth_success_total
 **Использование:**
 ```bash
 export RELAY_TOKEN="$(tail -1 zitadel-infinite-token.txt)"
-./cloudbridge-client version  # Тест
+./cloudbridge-client version # Тест
 ```
 
 ### Краткосрочный токен (15 минут)
@@ -102,7 +102,7 @@ cd test/relay-client/scripts
 go run generate-jwt-with-custom-secret.go
 ```
 
-## 🛠️ Дополнительные инструменты
+## Дополнительные инструменты
 
 ### Генератор с кастомным секретом
 ```bash
@@ -129,7 +129,7 @@ go run test-jwt-signature.go "TOKEN_HERE" "SECRET_HERE"
 3. Метрика `relay_auth_success_total` должна увеличиваться
 4. Аутентификация должна работать корректно
 
-## 🔄 Альтернативный вариант (если нужен другой секрет)
+## Альтернативный вариант (если нужен другой секрет)
 
 Если по каким-то причинам нельзя изменить секрет на Relay, сообщите нам точный секрет из K8s, и мы пересоздадим токены:
 
@@ -141,7 +141,7 @@ kubectl get secret cloudbridge-relay-jwt -o jsonpath='{.data.secret}' | base64 -
 JWT_SECRET="RELAY_SECRET_HERE" go run generate-jwt-with-custom-secret.go long
 ```
 
-## 📞 Следующие шаги
+## Следующие шаги
 
 1. **Обновите секрет в K8s** на `85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=`
 2. **Перезапустите Relay pods**
@@ -151,4 +151,4 @@ JWT_SECRET="RELAY_SECRET_HERE" go run generate-jwt-with-custom-secret.go long
 
 ---
 
-**Готовы к тестированию! Токены RFC 7519 совместимые и правильно подписанные.** 🚀
+**Готовы к тестированию! Токены RFC 7519 совместимые и правильно подписанные.**

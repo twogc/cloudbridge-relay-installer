@@ -1,7 +1,7 @@
 # MiMo Analysis — k8s-manifests prod fix
 
-**Дата:** 2026-07-09  
-**Источник:** `docs/audit/MIMO_AUDIT_REPORT.md` (mimo-v2.5-pro, 2026-07-08) + `openwiki/port-scheme.md`  
+**Дата:** 2026-07-09
+**Источник:** `docs/audit/MIMO_AUDIT_REPORT.md` (mimo-v2.5-pro, 2026-07-08) + `openwiki/port-scheme.md`
 **Контекст:** cloudbridge-relay-k8s-prod-fix, step 2
 
 ---
@@ -47,7 +47,7 @@ MiMo зафиксировал **критический drift** в numbered prod 
 |------|----------------------------|-------------------|-----------|
 | Image | `nginx:latest` | `cloudbridge-relay:mvp-*` | `cloudbridge-relay:latest` (deploy.sh) |
 | containerPort | **80** | 8080 (legacy), 9090 UDP, … | **9090** TCP, 9090 UDP, 51820, 8444, 9091 |
-| Health probe | 9090 `/health` ✓ | 9090 `/health` ✓ | 9090 |
+| Health probe | 9090 `/health` | 9090 `/health` | 9090 |
 
 **Вывод MiMo:** Service в `06-services.yaml` уже был корректен (9090, 51820, 8444); deployment — placeholder.
 
@@ -98,7 +98,7 @@ MiMo зафиксировал **критический drift** в numbered prod 
 ## Команды верификации MiMo (из аудита)
 
 ```bash
-go build ./cmd/relay/ ./cmd/ipam-service/ ./cmd/ai-worker/ ./cmd/ai-service/  # OK (score-ports)
+go build ./cmd/relay/ ./cmd/ipam-service/ ./cmd/ai-worker/ ./cmd/ai-service/ # OK (score-ports)
 # Auxiliary: IPAM 8080, AI 8083, AI Worker 8085 — совпадают с port-scheme + cmd/*
 ```
 

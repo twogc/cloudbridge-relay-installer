@@ -39,9 +39,9 @@
 5. PostgreSQL (для IPAM и AI)
 
 ### Что можно отложить:
-- ⏸️ Quantum Service (заглушка, не критично)
-- ⏸️ Kubernetes Cluster Registry (опционально)
-- ⏸️ CNI Plugin (опционально)
+- ⏸ Quantum Service (заглушка, не критично)
+- ⏸ Kubernetes Cluster Registry (опционально)
+- ⏸ CNI Plugin (опционально)
 
 ---
 
@@ -151,13 +151,13 @@ kubectl apply -f k8s/deployments/prometheus-optimized-deployment.yaml
 kubectl get pods -n cloudbridge
 
 # Ожидаемый вывод:
-# NAME                                READY   STATUS    RESTARTS   AGE
-# turn-server-xxxxx                   1/1     Running   0          30m
-# cloudbridge-relay-xxxxx             1/1     Running   0          10m
-# ai-service-xxxxx                    1/1     Running   0          10m
-# ipam-service-xxxxx                  1/1     Running   0          10m
-# postgres-xxxxx                      1/1     Running   0          10m
-# prometheus-xxxxx                    1/1     Running   0          10m
+# NAME READY STATUS RESTARTS AGE
+# turn-server-xxxxx 1/1 Running 0 30m
+# cloudbridge-relay-xxxxx 1/1 Running 0 10m
+# ai-service-xxxxx 1/1 Running 0 10m
+# ipam-service-xxxxx 1/1 Running 0 10m
+# postgres-xxxxx 1/1 Running 0 10m
+# prometheus-xxxxx 1/1 Running 0 10m
 
 # 2. Проверить services
 kubectl get svc -n cloudbridge
@@ -305,7 +305,7 @@ histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m]))
 
 ---
 
-## 🚦 Next Steps
+## Next Steps
 
 ### Immediate (Next 1-2 days)
 1. Deploy TURN server в production кластер

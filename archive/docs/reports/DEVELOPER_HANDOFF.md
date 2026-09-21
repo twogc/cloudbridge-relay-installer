@@ -1,8 +1,8 @@
 # CloudBridge + ZITADEL: Developer Handoff Package
 ## Данные для доработки через API
 
-**Дата передачи:** $(date)  
-**Статус:** Готово к разработке  
+**Дата передачи:** $(date)
+**Статус:** Готово к разработке
 **Приоритет:** Критичный (до 100% соответствия)
 
 ---
@@ -34,9 +34,9 @@ SERVICE_USER_JSON_KEY_PATH="/home/ubuntu/.zitadel/service-key.json"
 
 ### Organization & Project IDs
 ```bash
-ORGANIZATION_ID="339340397199294575"  # ZITADEL org
-PROJECT_ID="339537327304999215"       # cloudbridge-relay project
-SERVICE_USER_ID="339533564527771946"  # cloudbridge-admin
+ORGANIZATION_ID="339340397199294575" # ZITADEL org
+PROJECT_ID="339537327304999215" # cloudbridge-relay project
+SERVICE_USER_ID="339533564527771946" # cloudbridge-admin
 ```
 
 ---
@@ -47,7 +47,7 @@ SERVICE_USER_ID="339533564527771946"  # cloudbridge-admin
 ```json
 {
   "app_id": "339537393122017581",
-  "client_id": "339537393138794797", 
+  "client_id": "339537393138794797",
   "client_secret": "Wahm7Iti1VAoXsFAV1MBeMfPv1yope2IJ47utB30Pk4FgZyJFZK0ayfX4zNstkUh",
   "name": "cloudbridge-relay-api",
   "type": "Web Application",
@@ -60,19 +60,19 @@ SERVICE_USER_ID="339533564527771946"  # cloudbridge-admin
 }
 ```
 
-### SPA Application (Front-channel)  
+### SPA Application (Front-channel)
 ```json
 {
   "app_id": "339537407432982831",
   "client_id": "339537407433048367",
-  "name": "cloudbridge-relay-spa", 
+  "name": "cloudbridge-relay-spa",
   "type": "Single Page Application",
   "auth_method": "PKCE",
   "grant_types": ["authorization_code", "device_code"],
   "redirect_uris": [
     "https://relay.2gc.space/ui/callback",
     "http://localhost:3000/callback",
-    "http://localhost:8080/callback", 
+    "http://localhost:8080/callback",
     "urn:ietf:wg:oauth:2.0:oob"
   ]
 }
@@ -100,7 +100,7 @@ curl -X POST "https://edge.2gc.ru/management/v1/projects/{PROJECT_ID}/roles" \
 -H "Authorization: Bearer $ZITADEL_ADMIN_TOKEN" \
 -H "Content-Type: application/json" \
 -d '{
-  "key": "relay.k8s", 
+  "key": "relay.k8s",
   "display_name": "Kubernetes Access",
   "group": "kubernetes"
 }'
@@ -132,11 +132,11 @@ curl -X PUT "https://edge.2gc.ru/management/v1/projects/{PROJECT_ID}/apps/{APP_I
 ```go
 type ExecCredential struct {
     TypeMeta metav1.TypeMeta `json:",inline"`
-    Status   *ExecCredentialStatus `json:"status,omitempty"`
+    Status *ExecCredentialStatus `json:"status,omitempty"`
 }
 
 type ExecCredentialStatus struct {
-    Token               string      `json:"token,omitempty"`
+    Token string `json:"token,omitempty"`
     ExpirationTimestamp *metav1.Time `json:"expirationTimestamp,omitempty"`
 }
 ```
@@ -155,14 +155,14 @@ curl -X POST "https://edge.2gc.ru/management/v1/projects/{PROJECT_ID}/apps/{APP_
 
 ---
 
-## 📁 **Готовые конфигурационные файлы**
+## **Готовые конфигурационные файлы**
 
 ### Конфигурации для использования:
 ```bash
 # Финальная конфигурация
 /home/ubuntu/cloudbridge-relay-installer/configs/zitadel-final-config.yaml
 
-# Scopes и Claims модель  
+# Scopes и Claims модель
 /home/ubuntu/cloudbridge-relay-installer/configs/zitadel-scopes-claims.yaml
 
 # Kubernetes секреты
@@ -216,7 +216,7 @@ curl -X POST "https://edge.2gc.ru/oauth/v2/introspect" \
 
 ---
 
-## 📖 **Документация для разработчика**
+## **Документация для разработчика**
 
 ### Созданные руководства:
 - `docs/zitadel/SETUP.md` - Полная документация (27k строк)
@@ -226,12 +226,12 @@ curl -X POST "https://edge.2gc.ru/oauth/v2/introspect" \
 
 ### ZITADEL API Reference:
 - [Management API](https://zitadel.com/docs/apis/resources/mgmt/management-service)
-- [OIDC Endpoints](https://zitadel.com/docs/apis/openidoauth/endpoints)  
+- [OIDC Endpoints](https://zitadel.com/docs/apis/openidoauth/endpoints)
 - [Service Users](https://zitadel.com/docs/guides/integrate/service-users)
 
 ---
 
-## ⚙️ **Технические детали**
+## **Технические детали**
 
 ### Kubernetes Integration
 ```bash
@@ -249,7 +249,7 @@ kubectl get secret cloudbridge-zitadel -n cloudbridge
 ### mTLS Certificates (готовы)
 ```bash
 CA_CERT="/home/ubuntu/cloudbridge-relay-installer/certs/relay-mtls/cloudbridge-relay-ca-cert.pem"
-CLIENT_CERT="/home/ubuntu/cloudbridge-relay-installer/certs/relay-mtls/relay-client-cert.pem" 
+CLIENT_CERT="/home/ubuntu/cloudbridge-relay-installer/certs/relay-mtls/relay-client-cert.pem"
 CLIENT_KEY="/home/ubuntu/cloudbridge-relay-installer/certs/relay-mtls/relay-client-key.pem"
 SERVER_CERT="/home/ubuntu/cloudbridge-relay-installer/certs/relay-mtls/relay-server-cert.pem"
 ```
@@ -272,7 +272,7 @@ grpcurl -authority relay.2gc.space:8444 --insecure \
   -H "Authorization: Bearer JWT_TOKEN" list
 ```
 
-### 2. kubectl через exec-plugin  
+### 2. kubectl через exec-plugin
 ```bash
 kubectl get ns --context=relay
 # Должно работать через ~/.kube/config с exec section
@@ -288,7 +288,7 @@ kubectl get ns --context=relay
 
 ---
 
-## 🏃‍♂️ **Быстрый старт для разработчика**
+## ‍ **Быстрый старт для разработчика**
 
 ### 1. Подготовить среду
 ```bash
@@ -311,35 +311,35 @@ mkdir -p cmd/kubectl-zitadel
 
 ---
 
-## 💪 **Что уже готово (не нужно разрабатывать):**
+## **Что уже готово (не нужно разрабатывать):**
 
-**ZITADEL развернут и работает**  
-**PostgreSQL с persistent данными**  
-**OIDC приложения созданы через Management API**  
-**Service User с admin правами**  
-**mTLS сертификаты сгенерированы**  
-**Kubernetes RBAC настроен**  
-**Мониторинг (Prometheus/Grafana) готов**  
+**ZITADEL развернут и работает**
+**PostgreSQL с persistent данными**
+**OIDC приложения созданы через Management API**
+**Service User с admin правами**
+**mTLS сертификаты сгенерированы**
+**Kubernetes RBAC настроен**
+**Мониторинг (Prometheus/Grafana) готов**
 **Исчерпывающая документация**
 
 ## **Что нужно доработать (3-5 дней):**
 
- **kubectl exec-plugin Go код**  
- **Custom scopes в ZITADEL проекте**  
- **Token Exchange для mTLS**  
- **Custom claims в JWT**  
+ **kubectl exec-plugin Go код**
+ **Custom scopes в ZITADEL проекте**
+ **Token Exchange для mTLS**
+ **Custom claims в JWT**
  **Acceptance тесты**
 
 ---
 
-## 📞 **Поддержка**
+## **Поддержка**
 
 Все файлы, конфигурации и документация находятся в:
 ```
 /home/ubuntu/cloudbridge-relay-installer/
 ```
 
-**Передано разработчику:** $(date)  
-**Приоритет:** Критичный  
-**Время на доработку:** 3-5 дней  
+**Передано разработчику:** $(date)
+**Приоритет:** Критичный
+**Время на доработку:** 3-5 дней
 **Цель:** 100% соответствие техническому заданию

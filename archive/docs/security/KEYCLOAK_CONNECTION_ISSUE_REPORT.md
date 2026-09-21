@@ -50,7 +50,7 @@
 # В supervisord.conf
 KEYCLOAK_SERVER_URL="https://auth.2gc.ru"
 
-# В setup_moscow_region.sh  
+# В setup_moscow_region.sh
 KEYCLOAK_SERVER_URL=http://localhost:8080
 ```
 
@@ -68,7 +68,7 @@ KEYCLOAK_SERVER_URL=http://localhost:8080
 
 ---
 
-## 🛠️ **РЕКОМЕНДАЦИИ ДЛЯ РАЗРАБОТЧИКА**
+## **РЕКОМЕНДАЦИИ ДЛЯ РАЗРАБОТЧИКА**
 
 ### **1. Немедленные действия (КРИТИЧНО)**
 
@@ -238,7 +238,7 @@ curl http://localhost:9091/api/v1/auth/status
 
 ---
 
-##  **ПОЛЕЗНЫЕ ССЫЛКИ**
+## **ПОЛЕЗНЫЕ ССЫЛКИ**
 
 - **Keycloak Admin Console**: https://auth.2gc.ru:8080/admin
 - **Realm Settings**: https://auth.2gc.ru:8080/realms/cloudbridge
@@ -247,7 +247,7 @@ curl http://localhost:9091/api/v1/auth/status
 
 ---
 
-## 📞 **КОНТАКТЫ**
+## **КОНТАКТЫ**
 
 **Ответственный за Keycloak сервер**: [Указать контакты администратора Keycloak]
 **Разработчик**: [Указать контакты разработчика]

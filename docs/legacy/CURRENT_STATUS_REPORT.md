@@ -1,46 +1,46 @@
 # CloudBridge LoadBalancer Status Report
 
-**Дата:** $(date)  
-**Внешний IP:** 109.120.180.160  
-**Внутренний IP:** 10.0.0.242  
+**Дата:** $(date)
+**Внешний IP:** 109.120.180.160
+**Внутренний IP:** 10.0.0.242
 
 ## Что работает
 
 ### 1. DNS записи настроены
 ```
-relay.2gc.ru     → 109.120.180.160 ✓
-masque.2gc.ru    → 109.120.180.160 ✓
-p2p.2gc.ru       → 109.120.180.160 ✓
-admin.2gc.ru     → 109.120.180.160 ✓
-monitor.2gc.ru   → 109.120.180.160 ✓
-api.2gc.ru       → 109.120.180.160 ✓
+relay.2gc.ru → 109.120.180.160
+masque.2gc.ru → 109.120.180.160
+p2p.2gc.ru → 109.120.180.160
+admin.2gc.ru → 109.120.180.160
+monitor.2gc.ru → 109.120.180.160
+api.2gc.ru → 109.120.180.160
 ```
 
 ### 2. Порт 443 открыт на балансировщике
 ```bash
 $ telnet 109.120.180.160 443
-Connected to 109.120.180.160 ✓
+Connected to 109.120.180.160
 ```
 
 ### 3. Kubernetes сервисы работают
 ```bash
 $ curl http://192.168.49.2:32500/health
-{"status":"healthy",...} ✓
+{"status":"healthy",...}
 ```
 
 ### 4. TLS сертификаты созданы
 ```bash
 $ kubectl get secrets -n cloudbridge | grep tls
-cloudbridge-2gc-ru-tls   kubernetes.io/tls   2      ✓
+cloudbridge-2gc-ru-tls kubernetes.io/tls 2
 ```
 
 ### 5. Ingress настроен
 ```bash
 $ kubectl get ingress -n cloudbridge
-cloudbridge-simple-ingress   nginx   relay.2gc.ru,masque.2gc.ru... ✓
+cloudbridge-simple-ingress nginx relay.2gc.ru,masque.2gc.ru...
 ```
 
-##  Что нужно исправить
+## Что нужно исправить
 
 ### 1. Балансировщик не настроен
 **Проблема:** Сервер 109.120.180.160 не переадресует трафик на Kubernetes
@@ -50,12 +50,12 @@ cloudbridge-simple-ingress   nginx   relay.2gc.ru,masque.2gc.ru... ✓
 ### 2. HTTPS endpoints недоступны
 ```bash
 $ curl -k https://relay.2gc.ru/health
-curl: (7) Failed to connect 
+curl: (7) Failed to connect
 ```
 
 **Причина:** Отсутствует настройка балансировщика
 
-##  Следующие шаги
+## Следующие шаги
 
 ### Шаг 1: Настроить балансировщик (109.120.180.160)
 
@@ -71,7 +71,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 **Вариант B: HAProxy**
 ```bash
-# На сервере 109.120.180.160  
+# На сервере 109.120.180.160
 sudo apt install haproxy
 sudo nano /etc/haproxy/haproxy.cfg
 # [добавить конфигурацию из LOADBALANCER_CONFIG.md]
@@ -106,7 +106,7 @@ Internet
     ↓
 Kubernetes Cluster (192.168.49.2)
     ↓
-CloudBridge Services ✓
+CloudBridge Services
 ```
 
 ## Целевая архитектура
@@ -155,13 +155,13 @@ curl "http://$(minikube ip):32500/health"
 Все эти endpoints должны работать:
 
 - https://relay.2gc.ru/health
-- https://masque.2gc.ru/health  
+- https://masque.2gc.ru/health
 - https://p2p.2gc.ru/api/v1/health
 - https://admin.2gc.ru/health
 - https://monitor.2gc.ru/metrics
 - https://api.2gc.ru/api/v1/health
 
-## 📞 Поддержка
+## Поддержка
 
 Если нужна помощь с настройкой балансировщика, используйте:
 - `LOADBALANCER_CONFIG.md` - детальные инструкции

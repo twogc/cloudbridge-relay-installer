@@ -1,4 +1,4 @@
-# 🔧 MASQUE Architecture Fixes
+# MASQUE Architecture Fixes
 
 ## **Критические проблемы в текущем коде**
 
@@ -16,7 +16,7 @@ http3Server := &http3.Server{
 tlsConfig := &tls.Config{
     MinVersion: tls.VersionTLS12,
     CipherSuites: []uint16{...}, // Не нужно для TLS 1.3
-    ServerName: "auth.2gc.ru",   // Не работает в сервере
+    ServerName: "auth.2gc.ru", // Не работает в сервере
 }
 ```
 
@@ -33,9 +33,9 @@ target := r.URL.Path[len("/.well-known/masque/udp/"):]
 ```go
 // H3 сервер (UDP/QUIC) - только H3/MASQUE + datagrams
 h3Server := &http3.Server{
-    Addr:            ":443",
-    Handler:         createH3Handler(),     // Только H3
-    TLSConfig:       tlsConfig,
+    Addr: ":443",
+    Handler: createH3Handler(), // Только H3
+    TLSConfig: tlsConfig,
     EnableDatagrams: true,
     QUICConfig: &quic.Config{
         EnableDatagrams: true,
@@ -46,13 +46,13 @@ h3Server := &http3.Server{
 
 // H2/H1 сервер (TCP/TLS) - fallback CONNECT, WS, health
 h2Server := &http.Server{
-    Addr:      ":443",
-    Handler:   createH2H1Handler(), // H2/H1 fallback
+    Addr: ":443",
+    Handler: createH2H1Handler(), // H2/H1 fallback
     TLSConfig: tlsConfig,
 }
 
 // Запуск обоих серверов
-go h3Server.ListenAndServe()  // UDP на :443
+go h3Server.ListenAndServe() // UDP на :443
 go h2Server.ListenAndServeTLS("", "") // TCP на :443
 ```
 
@@ -65,7 +65,7 @@ tlsConfig := &tls.Config{
     // Remove manual cipher suites - let TLS 1.3 choose
     Certificates: []tls.Certificate{cert},
     NextProtos: []string{"h3", "h2", "http/1.1"},
-    
+
     // Proper SNI handling
     GetCertificate: func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
         return &cert, nil // Accept any SNI
@@ -84,14 +84,14 @@ func (ms *MASQUEServer) handleConnectUDP(w http.ResponseWriter, r *http.Request)
         http.Error(w, "Missing :authority header", http.StatusBadRequest)
         return
     }
-    
+
     // Парсим host:port
     host, port, err := net.SplitHostPort(target)
     if err != nil {
         http.Error(w, "Invalid target format", http.StatusBadRequest)
         return
     }
-    
+
     // Обрабатываем CONNECT-UDP
     ms.processConnectUDP(w, r, host, port)
 }
@@ -103,26 +103,26 @@ func (ms *MASQUEServer) handleConnectUDP(w http.ResponseWriter, r *http.Request)
 // H3 handler - только H3/MASQUE + native datagrams
 func (ms *MASQUEServer) createH3Handler() http.Handler {
     mux := http.NewServeMux()
-    
+
     // CONNECT-UDP (H3 native datagrams)
     mux.HandleFunc("/.well-known/masque/udp/", ms.handleConnectUDPH3)
     mux.HandleFunc("/.well-known/masque/ip/", ms.handleConnectIPH3)
-    
+
     return mux
 }
 
 // H2/H1 handler - fallback с Capsule-Protocol
 func (ms *MASQUEServer) createH2H1Handler() http.Handler {
     mux := http.NewServeMux()
-    
+
     // CONNECT-UDP (H2/H1 с Capsule-Protocol)
     mux.HandleFunc("/.well-known/masque/udp/", ms.handleConnectUDPH2)
     mux.HandleFunc("/.well-known/masque/ip/", ms.handleConnectIPH2)
-    
+
     // Fallback handlers
     mux.HandleFunc("/api/v1/connect", ms.handleFallbackConnect)
     mux.HandleFunc("/ws", ms.handleWebSocketFallback)
-    
+
     return mux
 }
 ```
@@ -135,7 +135,7 @@ func (ms *MASQUEServer) handleConnectUDPH3(w http.ResponseWriter, r *http.Reques
     // H3 native datagrams - не нужен Capsule-Protocol
     w.Header().Set("Capsule-Protocol", "?1") // Опционально для совместимости
     w.WriteHeader(http.StatusOK)
-    
+
     // Используем H3 native datagrams
     stream := r.Context().Value("http3.stream").(*http3.Stream)
     ms.processH3Datagrams(stream)
@@ -148,10 +148,10 @@ func (ms *MASQUEServer) handleConnectUDPH2(w http.ResponseWriter, r *http.Reques
         http.Error(w, "Capsule-Protocol header required", http.StatusBadRequest)
         return
     }
-    
+
     w.Header().Set("Capsule-Protocol", "?1")
     w.WriteHeader(http.StatusOK)
-    
+
     // Используем Capsule-Protocol для H2/H1
     ms.processH2Capsules(w, r)
 }
@@ -166,13 +166,13 @@ type FlowManager struct {
 }
 
 type FlowKey struct {
-    StreamID  uint64
+    StreamID uint64
     ContextID uint64
 }
 
 type Flow struct {
-    Target    string
-    UDPConn   *net.UDPConn
+    Target string
+    UDPConn *net.UDPConn
     CreatedAt time.Time
 }
 
@@ -180,11 +180,11 @@ type Flow struct {
 func (fm *FlowManager) RegisterFlow(streamID, contextID uint64, target string) *Flow {
     key := FlowKey{StreamID: streamID, ContextID: contextID}
     flow := &Flow{Target: target, CreatedAt: time.Now()}
-    
+
     fm.mutex.Lock()
     fm.flows[key] = flow
     fm.mutex.Unlock()
-    
+
     return flow
 }
 ```

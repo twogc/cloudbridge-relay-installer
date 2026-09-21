@@ -9,7 +9,7 @@
 ### 1. Базовая настройка ZITADEL
 - ITADEL развернут и работает (3/3 pods Running)
 - ostgreSQL база данных настроена
-- SL/TLS сертификаты установлены  
+- SL/TLS сертификаты установлены
 - AProxy конфигурация исправлена (устранены циклы редиректов)
 - ngress настроен корректно
 - ogin V2 отключен (убрана ошибка 404)
@@ -21,8 +21,8 @@
 - астроены token lifetimes: access=15min, refresh=8h, service=5min
 - онфигурация сохранена: `configs/zitadel-scopes-claims.yaml`
 
-### 3. Service Account для Relay 
-- оздан Machine User: `cloudbridge-admin` 
+### 3. Service Account для Relay
+- оздан Machine User: `cloudbridge-admin`
 - генерирован JSON ключ (RSA 2048-bit)
 - люч сохранен: `~/.zitadel/machine-key.json`
 - олучен рабочий токен: `login-client` (71 chars)
@@ -31,7 +31,7 @@
 ### 4. mTLS / JWT-Bearer flow
 - A сертификат создан (действует до 2035)
 - ерверный сертификат: `relay-server` (SAN: *.2gc.space, relay.local)
-- лиентский сертификат: `relay-client` 
+- лиентский сертификат: `relay-client`
 - KCS#12 файлы сгенерированы (пароль: cloudbridge)
 - ubernetes секреты применены: `relay-mtls-ca`, `relay-mtls-server`, `relay-mtls-client`
 - o конфигурация: `certs/relay-mtls/mtls-config.go`
@@ -52,7 +52,7 @@
 
 ### 7. Audit & Compliance
 - рхитектура экспорта в Loki через WebHook
-- онфигурация `audit_session_id` в JWT claims  
+- онфигурация `audit_session_id` в JWT claims
 - romtail конфигурация для ZITADEL audit logs
 - race ID сквозное отслеживание
 
@@ -69,14 +69,14 @@
 - крипты автоматизации: 5+ готовых скриптов
 - roubleshooting руководства
 
-## **ОСТАЕТСЯ ВЫПОЛНИТЬ** 
+## **ОСТАЕТСЯ ВЫПОЛНИТЬ**
 
 ### 10. Acceptance Criteria (требуют admin прав)
 - **Создание OIDC приложений** в ZITADEL (нужны права администратора)
-- **Настройка custom scopes** через Management API  
+- **Настройка custom scopes** через Management API
 - **Финальное тестирование** grpcurl и kubectl plugin
 
-##  **ТЕКУЩАЯ СИТУАЦИЯ**
+## **ТЕКУЩАЯ СИТУАЦИЯ**
 
 ### Проблема
 Токен `login-client` имеет ограниченные права:
@@ -89,7 +89,7 @@
 
 #### Вариант 1: Веб-интерфейс (рекомендуется)
 ```
-1. Откройте: https://edge.2gc.ru/ui/console/  
+1. Откройте: https://edge.2gc.ru/ui/console/
 2. Создайте admin пользователя или восстановите пароль
 3. Создайте Personal Access Token с правами ORG_OWNER
 4. Запустите: ZITADEL_TOKEN="new_token" ./scripts/setup-cloudbridge-zitadel.sh
@@ -110,10 +110,10 @@
 
 ### Доступные компоненты:
 - **ZITADEL**: https://edge.2gc.ru (полностью рабочий)
-- **☸️ Kubernetes**: namespace `cloudbridge` с RBAC и секретами
+- ** Kubernetes**: namespace `cloudbridge` с RBAC и секретами
 - **mTLS сертификаты**: готовы к использованию
 - **Monitoring**: ServiceMonitor и Dashboard готовы
-- **📝 Документация**: полная и актуальная
+- ** Документация**: полная и актуальная
 
 ### Готовые файлы:
 ```bash
@@ -133,7 +133,7 @@ certs/relay-mtls/*-secret.yaml
 
 # Скрипты
 scripts/zitadel-setup.sh
-scripts/setup-cloudbridge-zitadel.sh  
+scripts/setup-cloudbridge-zitadel.sh
 scripts/setup-zitadel-scopes.sh
 scripts/setup-mtls-certs.sh
 
@@ -155,8 +155,8 @@ docs/zitadel/GET_ADMIN_TOKEN.md
    ```bash
    # gRPC test
    grpcurl -authority relay.2gc.space:8444 --insecure list
-   
-   # kubectl test  
+
+   # kubectl test
    kubectl get ns --context=relay
    ```
 
@@ -178,7 +178,7 @@ docs/zitadel/GET_ADMIN_TOKEN.md
 
 ## **ЗАКЛЮЧЕНИЕ**
 
-**CloudBridge Relay + ZITADEL интеграция на 98% готова!** 
+**CloudBridge Relay + ZITADEL интеграция на 98% готова!**
 
 Все компоненты настроены, документированы и протестированы. Остается только получить административные права для создания финальных OIDC приложений и проведения acceptance тестирования.
 

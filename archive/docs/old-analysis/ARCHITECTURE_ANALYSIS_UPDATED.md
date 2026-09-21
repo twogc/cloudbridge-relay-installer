@@ -1,4 +1,4 @@
-# 🏗️ CloudBridge Relay - Архитектурный анализ (ОБНОВЛЕНО)
+# CloudBridge Relay - Архитектурный анализ (ОБНОВЛЕНО)
 
 ## Обзор проекта
 
@@ -46,22 +46,22 @@
 
 #### **Реализованные компоненты:**
 
-1. **JWT Validation через go-oidc** 
+1. **JWT Validation через go-oidc**
    - Безопасная валидация JWT токенов
    - Поддержка OIDC стандартов
    - Автоматическое обновление JWKS ключей
 
-2. **Zitadel Client** 
+2. **Zitadel Client**
    - OAuth2 Client Credentials flow
    - gRPC подключение к Zitadel Management API
    - Автоматическое управление токенами доступа
 
-3. **Tenant Management** 
+3. **Tenant Management**
    - Синхронизация tenant лимитов из Zitadel
    - Автоматическое создание tenant'ов
    - Идемпотентная синхронизация с пагинацией
 
-4. **Security Features** 
+4. **Security Features**
    - Fallback механизмы для отказоустойчивости
    - Строгая валидация audience и issuer
    - Поддержка clock skew для JWT
@@ -71,24 +71,24 @@
 - **Dual-issuer validator удален** - упрощена архитектура
 - **Legacy fallback механизмы удалены** - чистый Zitadel-only подход
 
-### 🔧 **Техническая реализация:**
+### **Техническая реализация:**
 
 ```go
 // Основные компоненты Zitadel интеграции
 internal/zitadel/
-├── client.go              // Zitadel клиент с OAuth2
-├── tenant_manager.go      // Управление tenant'ами
-├── validator.go          // JWT валидация
-├── k8s_client.go         // Kubernetes интеграция
-└── client_test.go        // Unit тесты
+├── client.go // Zitadel клиент с OAuth2
+├── tenant_manager.go // Управление tenant'ами
+├── validator.go // JWT валидация
+├── k8s_client.go // Kubernetes интеграция
+└── client_test.go // Unit тесты
 
 internal/auth/
-├── adapter.go            // Аутентификация адаптер
-└── adapter_test.go       // Тесты (ОБНОВЛЕНО)
+├── adapter.go // Аутентификация адаптер
+└── adapter_test.go // Тесты (ОБНОВЛЕНО)
 
 cmd/relay/
 ├── zitadel_integration.go // Relay интеграция
-└── main.go               // Основная логика (ОБНОВЛЕНО)
+└── main.go // Основная логика (ОБНОВЛЕНО)
 ```
 
 ### **Метрики и мониторинг:**
@@ -104,7 +104,7 @@ internal/metrics/zitadel_metrics.go
 
 ---
 
-## 🏛️ 2. Архитектура системы
+## 2. Архитектура системы
 
 ### **Multi-Tenant Isolation**
 
@@ -114,18 +114,18 @@ graph TB
         TA[Tenant A Services]
         TAN[Network Policy A]
     end
-    
+
     subgraph "Tenant B"
         TB[Tenant B Services]
         TBN[Network Policy B]
     end
-    
+
     subgraph "Zitadel Integration"
         Z[Zitadel IdP]
         ZT[Tenant Management]
         ZJ[JWT Validation]
     end
-    
+
     TA --> TAN
     TB --> TBN
     Z --> ZT
@@ -142,7 +142,7 @@ sequenceDiagram
     participant R as Relay
     participant Z as Zitadel
     participant T as Tenant Manager
-    
+
     C->>R: Request with JWT
     R->>Z: Validate JWT
     Z-->>R: Valid claims
@@ -158,32 +158,32 @@ sequenceDiagram
 
 ### **Завершенные задачи:**
 
-1. **Zitadel Integration** 
+1. **Zitadel Integration**
    - JWT валидация через go-oidc
    - OAuth2 Client Credentials
    - gRPC Management API
    - Tenant synchronization
 
-2. **Code Cleanup** 
+2. **Code Cleanup**
    - Удален весь Keycloak код
    - Очищена конфигурация
    - Исправлены все compilation errors
    - Обновлены тесты
 
-3. **Security Hardening** 
+3. **Security Hardening**
    - Единый путь валидации через go-oidc
    - Строгая проверка JWT claims
    - Fallback механизмы
    - Production-ready конфигурация
 
-### 🔄 **В процессе:**
+### **В процессе:**
 
-1. **Tenant Sync** 🔄
+1. **Tenant Sync**
    - Идемпотентная синхронизация
    - Пагинация и exponential backoff
    - Метрики и мониторинг
 
-2. **Testing** 🔄
+2. **Testing**
    - Comprehensive integration tests
    - Unit tests для всех компонентов
    - Performance testing
@@ -202,7 +202,7 @@ sequenceDiagram
 
 ---
 
-## 🛠️ 4. Технические детали
+## 4. Технические детали
 
 ### **Конфигурация Zitadel:**
 
@@ -304,9 +304,9 @@ sequenceDiagram
 
 ### **Ключевые достижения:**
 - **100% Zitadel integration** - готово к production
-- **Zero Keycloak dependencies** - упрощенная архитектура  
+- **Zero Keycloak dependencies** - упрощенная архитектура
 - **Enterprise security** - JWT, RBAC, TLS 1.3
 - **Multi-tenant ready** - полная изоляция
 - **Kubernetes native** - cloud-ready deployment
 
-**Проект готов к следующему этапу разработки и production deployment!** 🚀
+**Проект готов к следующему этапу разработки и production deployment!**

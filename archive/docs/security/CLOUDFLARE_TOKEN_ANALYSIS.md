@@ -11,7 +11,7 @@ eyJhIjoiMDczYWUwMTMwYjdjZWU1ZTU1YTFhYzFhMzM1NDMxYTgiLCJ0IjoiZTI0MGQ2ZTEtYTczZC00
 ```json
 {
   "a": "073ae0130b7cee5e55a1ac1a335431a8",
-  "t": "e240d6e1-a73d-41c4-971e-446dd3419822", 
+  "t": "e240d6e1-a73d-41c4-971e-446dd3419822",
   "s": "ZWFiZWQ1N2MtMjhkOS00OTY5LWE5NTUtNmQ3YzhiYTgzOGU4"
 }
 ```
@@ -23,7 +23,7 @@ eabed57c-28d9-4969-a955-6d7c8ba838e8
 
 ---
 
-## 🏗️ **Структура токена Cloudflare**
+## **Структура токена Cloudflare**
 
 ### **Поля токена:**
 - **`a`** - Account ID (идентификатор аккаунта Cloudflare)
@@ -41,21 +41,21 @@ eabed57c-28d9-4969-a955-6d7c8ba838e8
 
 ---
 
-## 🔧 **Реализация в cloudflared**
+## **Реализация в cloudflared**
 
 ### **1. Структура аутентификации в коде:**
 
 ```go
 // TunnelAuth представляет аутентификацию tunnel
 type TunnelAuth struct {
-    AccountTag   string `json:"account_tag"`    // Соответствует полю "a"
+    AccountTag string `json:"account_tag"` // Соответствует полю "a"
     TunnelSecret []byte `json:"tunnel_secret"` // Соответствует полю "s"
 }
 
 // В коде также используется TunnelID
 type TunnelConnection struct {
-    ID            string
-    Auth          *TunnelAuth
+    ID string
+    Auth *TunnelAuth
     // ... другие поля
 }
 ```
@@ -70,26 +70,26 @@ func parseCloudflareToken(token string) (*TunnelAuth, error) {
     if err != nil {
         return nil, err
     }
-    
+
     // Парсинг JSON
     var tokenData struct {
         A string `json:"a"` // Account ID
-        T string `json:"t"` // Tunnel ID  
+        T string `json:"t"` // Tunnel ID
         S string `json:"s"` // Secret (base64)
     }
-    
+
     if err := json.Unmarshal(decoded, &tokenData); err != nil {
         return nil, err
     }
-    
+
     // Декодирование секрета
     secret, err := base64.StdEncoding.DecodeString(tokenData.S)
     if err != nil {
         return nil, err
     }
-    
+
     return &TunnelAuth{
-        AccountTag:   tokenData.A,
+        AccountTag: tokenData.A,
         TunnelSecret: secret,
     }, nil
 }
@@ -103,7 +103,7 @@ func parseCloudflareToken(token string) (*TunnelAuth, error) {
 ```json
 {
   "account_id": "073ae0130b7cee5e55a1ac1a335431a8",
-  "tunnel_id": "e240d6e1-a73d-41c4-971e-446dd3419822", 
+  "tunnel_id": "e240d6e1-a73d-41c4-971e-446dd3419822",
   "tunnel_secret": "eabed57c-28d9-4969-a955-6d7c8ba838e8"
 }
 ```
@@ -163,7 +163,7 @@ func parseCloudflareToken(token string) (*TunnelAuth, error) {
   "service_name": "cloudbridge-service",
   "permissions": [
     "p2p_connect",
-    "mesh_join", 
+    "mesh_join",
     "relay_access",
     "network:allocate",
     "network:deallocate"
@@ -226,5 +226,5 @@ func parseCloudflareToken(token string) (*TunnelAuth, error) {
 - **Реальное время** - актуальная информация
 - **Масштабируемость** - независимое управление
 
-**Вывод: Наш JWT подход с разделением статичных (токен) и динамических (API) данных является оптимальным для CloudBridge Relay!** 
+**Вывод: Наш JWT подход с разделением статичных (токен) и динамических (API) данных является оптимальным для CloudBridge Relay!**
 

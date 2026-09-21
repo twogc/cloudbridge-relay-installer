@@ -1,6 +1,6 @@
 # SUMMARY — docs-consistency-sync
 
-**Дата:** 2026-07-09  
+**Дата:** 2026-07-09
 **Цель:** Устранить противоречия и «пересечения-как-текущий-статус» между отчётами в `docs/audit/` и `docs/agent-reports/`.
 
 ---
@@ -18,7 +18,7 @@
 
 | Файл | Изменение |
 |------|-----------|
-| `docs/audit/MIMO_AUDIT_REPORT.md` | Переписан как living report: snapshot vs status, ✅/⏳ tables, systemd 9090≠9092, mission index, SoT order |
+| `docs/audit/MIMO_AUDIT_REPORT.md` | Переписан как living report: snapshot vs status, /⏳ tables, systemd 9090≠9092, mission index, SoT order |
 | `docs/agent-reports/README.md` | 7 миссий + docs-consistency-sync; ghost audit folder removed; SoT rules |
 | `cloudbridge-relay-fixes/SUMMARY.md` | Superseded block |
 | `cloudbridge-relay-medium/SUMMARY.md` | Superseded + next steps annotated |
@@ -70,10 +70,10 @@ Commit/push: не выполнялись.
 
 | Item | Result |
 |------|--------|
-| Relay prometheus **8084** → **5551** | ✅ `k8s-manifests/05–06` |
-| AI Service metrics **8084** | ✅ removed; **8083** only |
-| Root README ports | ✅ aligned |
-| go build relay/ai-service | ✅ |
+| Relay prometheus **8084** → **5551** | `k8s-manifests/05–06` |
+| AI Service metrics **8084** | removed; **8083** only |
+| Root README ports | aligned |
+| go build relay/ai-service | |
 | go vet cmd/relay | pre-existing cancel leak (not KeycloakURL) |
 
 Отчёт: [step03-residual-port-fix.md](step03-residual-port-fix.md)
@@ -84,11 +84,11 @@ Commit/push: не выполнялись.
 
 | Item | Result |
 |------|--------|
-| Ops relay deployment/services/configmaps | ✅ metrics **5551**, http **9090** |
-| mws OVA minimal + docker-compose | ✅ 5551 / health 9090 |
-| Grafana datasource | ✅ :5551 |
-| `go vet ./cmd/relay/` Cadence cancel leak | ✅ fixed (`cancel()` on fail paths) |
-| `go build ./cmd/relay/` | ✅ |
+| Ops relay deployment/services/configmaps | metrics **5551**, http **9090** |
+| mws OVA minimal + docker-compose | 5551 / health 9090 |
+| Grafana datasource | :5551 |
+| `go vet ./cmd/relay/` Cadence cancel leak | fixed (`cancel()` on fail paths) |
+| `go build ./cmd/relay/` | |
 
 Отчёт: [step04-ops-mws-vet.md](step04-ops-mws-vet.md)
 
@@ -100,10 +100,10 @@ Commit/push: не выполнялись.
 
 | Item | Result |
 |------|--------|
-| SCORE production allocator wired | ✅ env `SCORE_BASE_URL` → hybrid → WireGuard API |
-| Default without SCORE | ✅ unchanged (classic RelayManager) |
-| p2p-deployment ports | ✅ 9090/5552/5551 |
-| Tests | ✅ `go test ./internal/p2p -run SCORE` |
+| SCORE production allocator wired | env `SCORE_BASE_URL` → hybrid → WireGuard API |
+| Default without SCORE | unchanged (classic RelayManager) |
+| p2p-deployment ports | 9090/5552/5551 |
+| Tests | `go test ./internal/p2p -run SCORE` |
 
 Отчёт: [step05-score-wiring-p2p-ports.md](step05-score-wiring-p2p-ports.md)
 
@@ -113,10 +113,10 @@ Commit/push: не выполнялись.
 
 | Item | Result |
 |------|--------|
-| Cadence service client factories | ✅ unified → `CreateWorkflowServiceClientImproved` |
-| Public `NewClient` / `NewProductionClient` | ✅ kept (intentional dual entrypoint) |
-| Cadence fixed/simple/clean YAML | ✅ archived under `archive/k8s/cadence/` |
-| Tests / build relay + ai-worker | ✅ |
+| Cadence service client factories | unified → `CreateWorkflowServiceClientImproved` |
+| Public `NewClient` / `NewProductionClient` | kept (intentional dual entrypoint) |
+| Cadence fixed/simple/clean YAML | archived under `archive/k8s/cadence/` |
+| Tests / build relay + ai-worker | |
 
 Отчёт: [step06-cadence-shared-factory-k8s-archive.md](step06-cadence-shared-factory-k8s-archive.md)
 
@@ -128,10 +128,10 @@ Commit/push: не выполнялись.
 
 | Item | Result |
 |------|--------|
-| `--use-overlay` / `--render-overlay` / `--dry-run` | ✅ |
-| Default manifests path | ✅ unchanged |
-| Overlay resources list fixed (08-servicemonitor) | ✅ |
-| Docs deploy.md + CONSOLIDATION_PLAN | ✅ |
+| `--use-overlay` / `--render-overlay` / `--dry-run` | |
+| Default manifests path | unchanged |
+| Overlay resources list fixed (08-servicemonitor) | |
+| Docs deploy.md + CONSOLIDATION_PLAN | |
 
 Отчёт: [step08-deploy-overlay-flag.md](step08-deploy-overlay-flag.md)
 
@@ -141,9 +141,9 @@ Commit/push: не выполнялись.
 
 | Item | Result |
 |------|--------|
-| `validate-overlay.sh --all` | ✅ offline paths OK |
-| `k8s/overlays/zitadel` (09/11/15) | ✅ |
-| E2E checklist guide | ✅ |
+| `validate-overlay.sh --all` | offline paths OK |
+| `k8s/overlays/zitadel` (09/11/15) | |
+| E2E checklist guide | |
 | Live cluster | ⏭ no kubeconfig in CI agent |
 
 Отчёт: [step09-overlay-e2e-zitadel.md](step09-overlay-e2e-zitadel.md)
@@ -154,9 +154,9 @@ Commit/push: не выполнялись.
 
 | Item | Result |
 |------|--------|
-| `OpenPostgresPeerIPAM` + env resolution | ✅ |
-| Priority Postgres → SQLite → none | ✅ |
-| Offline unit tests | ✅ |
+| `OpenPostgresPeerIPAM` + env resolution | |
+| Priority Postgres → SQLite → none | |
+| Offline unit tests | |
 | Live Postgres | ⏭ not required for unit tests |
 
 Отчёт: [step10-postgres-peer-ipam.md](step10-postgres-peer-ipam.md)
@@ -167,9 +167,9 @@ Commit/push: не выполнялись.
 
 | Item | Result |
 |------|--------|
-| `offline-validate.yml` | ✅ overlay + unit jobs |
-| `make validate-overlay` / `test-offline` | ✅ |
-| Postgres env priority tests | ✅ |
+| `offline-validate.yml` | overlay + unit jobs |
+| `make validate-overlay` / `test-offline` | |
+| Postgres env priority tests | |
 
 Отчёт: [step11-ci-offline-validate.md](step11-ci-offline-validate.md)
 
@@ -179,9 +179,9 @@ Commit/push: не выполнялись.
 
 | Item | Result |
 |------|--------|
-| Client wraps ProductionClient | ✅ |
-| SQLite peer IPAM for SCORE hybrid | ✅ `SCORE_SQLITE_PATH` |
-| `k8s/overlays/production` skeleton | ✅ later wired in step08 `--use-overlay` |
-| Tests cadence/database/p2p + build | ✅ |
+| Client wraps ProductionClient | |
+| SQLite peer IPAM for SCORE hybrid | `SCORE_SQLITE_PATH` |
+| `k8s/overlays/production` skeleton | later wired in step08 `--use-overlay` |
+| Tests cadence/database/p2p + build | |
 
 Отчёт: [step07-cadence-facade-sqlite-overlays.md](step07-cadence-facade-sqlite-overlays.md)

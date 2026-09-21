@@ -19,7 +19,7 @@ Cadence Web UI не отображает workflows на странице `/domai
    - Cadence Web UI подключается к `10.244.4.68:7833` (gRPC порт)
    - Кластер настроен как `primary`
 
-## 📁 **Файлы и конфигурация**
+## **Файлы и конфигурация**
 
 ### **Kubernetes манифесты:**
 ```
@@ -40,7 +40,7 @@ k8s/configmaps/cadence-config.yaml
 /etc/cadence/schema/cassandra/visibility/schema.cql
 ```
 
-##  **Что нужно проверить разработчику**
+## **Что нужно проверить разработчику**
 
 ### **1. Проверить логи Cadence Web UI:**
 ```bash
@@ -113,7 +113,7 @@ kubectl logs -f deployment/cadence-web -n cloudbridge
 # В другом терминале - открыть Web UI и проверить workflow
 ```
 
-## 🔨 **Как собирать и деплоить**
+## **Как собирать и деплоить**
 
 ### **1. Собрать Cadence Web UI:**
 ```bash
@@ -176,7 +176,7 @@ kubectl patch deployment cadence-web -n cloudbridge -p '{"spec":{"template":{"sp
 4. Можно просматривать детали workflow
 5. Логи не содержат ошибок gRPC
 
-##  **Полезные ссылки**
+## **Полезные ссылки**
 
 - **Cadence Web UI**: `http://localhost:8088`
 - **Домены**: `http://localhost:8088/domains`
@@ -184,7 +184,7 @@ kubectl patch deployment cadence-web -n cloudbridge -p '{"spec":{"template":{"sp
 - **API доменов**: `http://localhost:8088/api/v1/domains`
 - **API workflows**: `http://localhost:8088/api/v1/domains/cloudbridge/primary/workflows`
 
-## 📝 **Примечания**
+## **Примечания**
 
 - Cadence использует gRPC для связи между компонентами
 - Web UI подключается к Cadence через gRPC порт 7833

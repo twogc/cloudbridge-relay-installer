@@ -1,7 +1,7 @@
 # MiMo Analysis — K8s Consolidation (`k8s/` vs `k8s-manifests/`)
 
-**Дата:** 2026-07-09  
-**Источник:** [MIMO_AUDIT_REPORT.md](../../audit/MIMO_AUDIT_REPORT.md), [CONSOLIDATION_PLAN.md](../../audit/CONSOLIDATION_PLAN.md)  
+**Дата:** 2026-07-09
+**Источник:** [MIMO_AUDIT_REPORT.md](../../audit/MIMO_AUDIT_REPORT.md), [CONSOLIDATION_PLAN.md](../../audit/CONSOLIDATION_PLAN.md)
 **Миссия:** cloudbridge-relay-k8s-consol
 
 ---
@@ -69,11 +69,11 @@ Standalone `*-fixed.yaml` в корне `k8s/` **не referenced** скрипт�
 
 ## План миграции (полный)
 
-1. ✅ Инвентаризация: `rg -l 'kubectl apply' scripts/` → таблица «скрипт → путь манифеста»
-2. ✅ Зафиксировать diff `k8s-manifests/` vs `k8s/deployments|services/` для relay/AI/Cadence — [step03 report](step03-configmap-or-port-sync-step.md)
-3. ⬜ Обновить `scripts/deploy/deploy.sh` на опциональный режим `k8s/overlays/production/` (будущее)
-4. ⬜ Перенести уникальные файлы из `k8s-manifests/` в `k8s/` только после обновления deploy.sh
-5. ⬜ Пометить `k8s-manifests/` deprecated в README, удалить через 1 релиз
+1. Инвентаризация: `rg -l 'kubectl apply' scripts/` → таблица «скрипт → путь манифеста»
+2. Зафиксировать diff `k8s-manifests/` vs `k8s/deployments|services/` для relay/AI/Cadence — [step03 report](step03-configmap-or-port-sync-step.md)
+3. Обновить `scripts/deploy/deploy.sh` на опциональный режим `k8s/overlays/production/` (будущее)
+4. Перенести уникальные файлы из `k8s-manifests/` в `k8s/` только после обновления deploy.sh
+5. Пометить `k8s-manifests/` deprecated в README, удалить через 1 релиз
 
 **Не делать в step 2:** массовый merge деревьев, изменение `scripts/deploy/deploy.sh`.
 

@@ -1,7 +1,7 @@
 # CloudBridge Relay - Развертывание в VK Cloud Kubernetes
 
-> **SoT (Source of Truth) for pilot / lab / L0** — this repository.  
-> Companion client: `cloudbridge-client` (`scripts/all-smoke.sh`).  
+> **SoT (Source of Truth) for pilot / lab / L0** — this repository.
+> Companion client: `cloudbridge-client` (`scripts/all-smoke.sh`).
 > `cloudbridge-scalable-relay` is multi-region **WIP**, not deployable main (see strategy `RELAY_SOT_POLICY.md`).
 
 ## Обзор проекта
@@ -50,7 +50,7 @@ helm install prometheus prometheus-community/kube-prometheus-stack --namespace m
 kubectl apply -f k8s-manifests/
 ```
 
-## 📚 Документация
+## Документация
 
 См. **[docs/README.md](docs/README.md)** — навигация по всей документации. Для агентов: **[openwiki/quickstart.md](openwiki/quickstart.md)**.
 
@@ -65,15 +65,15 @@ kubectl apply -f k8s-manifests/
 
 ```
 k8s-manifests/
-├── 00-namespace.yaml            # Namespace
-├── 01-pvc.yaml                  # PersistentVolumeClaim
-├── 02-secrets.yaml              # Секреты
-├── 03-configmap.yaml            # ConfigMap
-├── 04-registry.yaml             # Docker Registry
-├── 05-deployments.yaml          # Deployments
-├── 06-services.yaml             # Services
-├── 07-ingress.yaml              # Ingress
-└── 08-servicemonitor.yaml       # ServiceMonitor
+├── 00-namespace.yaml # Namespace
+├── 01-pvc.yaml # PersistentVolumeClaim
+├── 02-secrets.yaml # Секреты
+├── 03-configmap.yaml # ConfigMap
+├── 04-registry.yaml # Docker Registry
+├── 05-deployments.yaml # Deployments
+├── 06-services.yaml # Services
+├── 07-ingress.yaml # Ingress
+└── 08-servicemonitor.yaml # ServiceMonitor
 ```
 
 ### Автоматические скрипты
@@ -81,7 +81,7 @@ k8s-manifests/
 - **`scripts/deploy/deploy.sh`** — полное автоматическое развертывание
 - **`scripts/deploy/setup-docker-mirrors.sh`** — настройка зеркал Docker Hub
 
-## 🛠️ Предварительные требования
+## Предварительные требования
 
 ### Системные требования
 - Ubuntu 18.04+ или аналогичная ОС
@@ -96,7 +96,7 @@ k8s-manifests/
 - OpenStack RC файл v3
 - Достаточные квоты для создания кластера
 
-## 🔧 Настройка
+## Настройка
 
 ### 1. Настройка зеркал Docker Hub (для России)
 
@@ -250,7 +250,7 @@ kubectl autoscale deployment cloudbridge-relay --min=2 --max=10 --cpu-percent=70
 kubectl patch deployment cloudbridge-relay -n cloudbridge -p '{"spec":{"template":{"spec":{"containers":[{"name":"cloudbridge-relay","resources":{"requests":{"memory":"1Gi","cpu":"500m"},"limits":{"memory":"2Gi","cpu":"1000m"}}}]}}}}'
 ```
 
-## 🔄 Обновление
+## Обновление
 
 ### Обновление образов
 
@@ -280,7 +280,7 @@ kubectl rollout undo deployment/cloudbridge-relay -n cloudbridge
 kubectl rollout undo deployment/cloudbridge-relay --to-revision=2 -n cloudbridge
 ```
 
-## 🗑️ Удаление
+## Удаление
 
 ### Удаление сервисов
 
@@ -302,28 +302,28 @@ cd terraform-k8s
 terraform destroy -auto-approve
 ```
 
-## 🏗️ Архитектура
+## Архитектура
 
 ### Компоненты системы
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    CloudBridge Relay                       │
+│ CloudBridge Relay │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │   P2P API   │  │  WireGuard  │  │   HTTP/3    │        │
-│  │   Server    │  │   Server    │  │   Server    │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
+│ │ P2P API │ │ WireGuard │ │ HTTP/3 │ │
+│ │ Server │ │ Server │ │ Server │ │
+│ └─────────────┘ └─────────────┘ └─────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │ AI Service  │  │   Cadence   │  │ PostgreSQL │        │
-│  │             │  │ Workflow   │  │             │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
+│ │ AI Service │ │ Cadence │ │ PostgreSQL │ │
+│ │ │ │ Workflow │ │ │ │
+│ └─────────────┘ └─────────────┘ └─────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │ Prometheus  │  │   Grafana   │  │   Jaeger   │        │
-│  │             │  │             │  │             │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
+│ │ Prometheus │ │ Grafana │ │ Jaeger │ │
+│ │ │ │ │ │ │ │
+│ └─────────────┘ └─────────────┘ └─────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -345,7 +345,7 @@ terraform destroy -auto-approve
 | PostgreSQL | 5432 | TCP | База данных |
 | Cassandra | 9042 | TCP | NoSQL база |
 
-## 📞 Поддержка
+## Поддержка
 
 При возникновении проблем:
 
@@ -360,10 +360,10 @@ terraform destroy -auto-approve
 
 Этот проект распространяется под лицензией MIT. См. файл [LICENSE](LICENSE) для подробностей.
 
-## 🤝 Вклад в проект
+## Вклад в проект
 
 Мы приветствуем вклад в развитие проекта! Пожалуйста, ознакомьтесь с [CONTRIBUTING.md](CONTRIBUTING.md) для получения информации о том, как внести свой вклад.
 
 ---
 
-**Удачного развертывания! 🚀**
+**Удачного развертывания! **

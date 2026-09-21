@@ -10,7 +10,7 @@
 - **Email:** `admin@local.test`
 - **Password:** `jrcCaigzmqzHpRcxo61RDiS+xejxX4/K`
 
-###  Доступ к Zitadel API
+### Доступ к Zitadel API
 
 **Base URL:** http://zitadel.local:8080
 
@@ -66,7 +66,7 @@
     "enabled": true,
     "domain": "http://zitadel.local:8080",
     "project_id": "ВАШ_PROJECT_ID",
-    "client_id": "ВАШ_CLIENT_ID", 
+    "client_id": "ВАШ_CLIENT_ID",
     "client_secret": "ВАШ_CLIENT_SECRET",
     "fallback_secret": "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE=",
     "token_validation": {
@@ -93,7 +93,7 @@
 #### k8s/configmaps/cloudbridge-config.yaml
 Обновите секцию `zitadel` в ConfigMap с теми же значениями.
 
-## 🛠️ Управление пробросом портов
+## Управление пробросом портов
 
 Используйте скрипт `scripts/port-forward.sh`:
 
@@ -128,7 +128,7 @@ curl -k http://zitadel.local:8080/oauth/v2/token \
   -d "grant_type=client_credentials&client_id=ВАШ_CLIENT_ID&client_secret=ВАШ_CLIENT_SECRET"
 ```
 
-##  Важные замечания
+## Важные замечания
 
 1. **Домен:** Используйте `zitadel.local:8080`, а не `localhost:8080`
 2. **HTTPS:** В development режиме используйте HTTP, в production - HTTPS

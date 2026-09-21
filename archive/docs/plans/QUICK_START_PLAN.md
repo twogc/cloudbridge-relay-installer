@@ -2,7 +2,7 @@
 
 ## **Краткий обзор**
 
-### **🔥 КРИТИЧНО (сделать сейчас)**
+### ** КРИТИЧНО (сделать сейчас)**
 1. **MASQUE улучшения** - masque-go + connect-ip-go reference
 2. **TURN сервер** - coturn reference
 3. **TURN клиент** - pion/turn reference
@@ -15,7 +15,7 @@
 
 ---
 
-## 🔥 **КРИТИЧНО (3 недели)**
+## **КРИТИЧНО (3 недели)**
 
 ### **Неделя 1: MASQUE улучшения**
 
@@ -157,7 +157,7 @@ cd reference-repos/bgp-anycast/frr-anycast/
 
 ## **Быстрый чек-лист**
 
-### **🔥 КРИТИЧНО (Неделя 1-3)**
+### ** КРИТИЧНО (Неделя 1-3)**
 - [ ] **MASQUE**: masque-go + connect-ip-go reference
 - [ ] **TURN сервер**: coturn reference
 - [ ] **TURN клиент**: pion/turn reference
@@ -200,5 +200,5 @@ cd reference-repos/bgp-anycast/frr-anycast/
 8. **Улучшить AI/ML** - на основе go-iforest и go-bandit
 9. **Добавить FRR Health Checks** - на основе FRR Anycast
 
-**Готово к реализации! 🎯**
+**Готово к реализации! **
 

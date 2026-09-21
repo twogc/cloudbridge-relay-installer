@@ -6,7 +6,7 @@
 
 ```
 [CloudBridge Relay] ←→ [IPsec IKEv2 Tunnel] ←→ [Cloudflare Magic WAN]
-     (L3)                    (L3)                    (L3)
+     (L3) (L3) (L3)
 ```
 
 **Важно:** Magic WAN - это L3-сервис (IPsec/GRE), а не L7-туннель (cloudflared).
@@ -20,7 +20,7 @@
 - **CF_PSK** - Pre-Shared Key для аутентификации
 - **LOCAL_PUBLIC_IP** - Ваш публичный IP адрес
 
-### 🔧 Дополнительные параметры:
+### Дополнительные параметры:
 - **Тип туннеля**: IPsec IKEv2 (рекомендуется) или GRE
 - **Внутренние сети**: Какие сети объявлять в Magic WAN
 - **BGP параметры**: ASN, соседство (если используется BGP)
@@ -50,7 +50,7 @@ cd /home/ubuntu/cloudbridge-relay-installer
 ./scripts/cloudflare-testing/test-ipsec-magic-wan.sh
 ```
 
-## 🔧 Настройка файрвола
+## Настройка файрвола
 
 На вашем гейтвее/файрволе откройте порты:
 
@@ -147,7 +147,7 @@ kubectl exec -n cloudbridge-testing <pod-name> -- mtr -r -c 5 8.8.8.8
 - Мониторьте логи на предмет подозрительной активности
 - Настройте DPD (Dead Peer Detection)
 
-## 📚 Дополнительные ресурсы
+## Дополнительные ресурсы
 
 - [Cloudflare Magic WAN Documentation](https://developers.cloudflare.com/magic-wan/)
 - [StrongSwan Documentation](https://wiki.strongswan.org/)

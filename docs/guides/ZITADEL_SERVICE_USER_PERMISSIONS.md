@@ -18,7 +18,7 @@ Service User `cloudbridge-admin` не имеет прав доступа к Mana
 
 ### Шаг 1: Войдите в ZITADEL Console
 - **URL:** https://edge.2gc.ru/ui/console/
-- **Логин:** `admin@cloudbridge.local`  
+- **Логин:** `admin@cloudbridge.local`
 - **Пароль:** `CloudBridge123!`
 
 ### Шаг 2: Найдите Service User
@@ -47,7 +47,7 @@ Service User `cloudbridge-admin` не имеет прав доступа к Mana
 - **ORG_OWNER**: Управление всем в рамках организации
 - **Доступ к Management API**: создание проектов, приложений, пользователей
 
-## 🎫 **Использование токенов после назначения ролей**
+## **Использование токенов после назначения ролей**
 
 ### Personal Access Token (готов к использованию)
 ```bash
@@ -65,7 +65,7 @@ curl -s -H "Authorization: Bearer $ZITADEL_TOKEN" \
 # Обязательный scope для ZITADEL API
 SCOPE="openid profile urn:zitadel:iam:org:project:id:zitadel:aud"
 
-# JWT Bearer запрос  
+# JWT Bearer запрос
 curl --request POST \
   --url https://edge.2gc.ru/oauth/v2/token \
   --header 'Content-Type: application/x-www-form-urlencoded' \
@@ -85,7 +85,7 @@ curl --request POST \
 
 **Рекомендация:** Используйте `ORG_OWNER` для CloudBridge Service User.
 
-##  **После назначения роли**
+## **После назначения роли**
 
 1. **Создайте OIDC приложения:**
    ```bash

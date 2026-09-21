@@ -29,7 +29,7 @@
 
 #### Интегрированные компоненты
 
-**Файлы**: 
+**Файлы**:
 - `internal/quic/congestion/bbrv2.go` *РЕАЛИЗОВАНО**
 - `internal/quic/congestion/manager.go` *РЕАЛИЗОВАНО**
 - `internal/quic/congestion/rate_sampler.go` *РЕАЛИЗОВАНО**
@@ -44,11 +44,11 @@
 **Ключевые метрики**:
 ```go
 type BBRv2 struct {
-    state       BBRState      // Current state (Startup/Drain/ProbeBW/ProbeRTT)
-    cwnd        int           // Congestion window
-    pacingBps   int64         // Pacing rate in bytes/sec
-    minRTT      time.Duration // Minimum RTT observed
-    bwBps       float64       // Bandwidth estimate
+    state BBRState // Current state (Startup/Drain/ProbeBW/ProbeRTT)
+    cwnd int // Congestion window
+    pacingBps int64 // Pacing rate in bytes/sec
+    minRTT time.Duration // Minimum RTT observed
+    bwBps float64 // Bandwidth estimate
 }
 ```
 
@@ -68,12 +68,12 @@ type BBRv2 struct {
 
 ```go
 type RateSample struct {
-    Delivered    int64         // Total bytes delivered
-    DeliveredAt  time.Time     // Measurement timestamp
-    FirstSentAt  time.Time     // Interval start
-    Interval     time.Duration // Measurement interval
-    BytesAcked   int64         // Bytes in this ACK
-    IsAppLimited bool          // App-limited state
+    Delivered int64 // Total bytes delivered
+    DeliveredAt time.Time // Measurement timestamp
+    FirstSentAt time.Time // Interval start
+    Interval time.Duration // Measurement interval
+    BytesAcked int64 // Bytes in this ACK
+    IsAppLimited bool // App-limited state
 }
 ```
 
@@ -87,9 +87,9 @@ type RateSample struct {
 
 ```go
 type Pacer struct {
-    rateBps  int64   // Pacing rate (bytes/sec)
-    tokens   float64 // Current tokens
-    mtu      int     // Maximum transmission unit
+    rateBps int64 // Pacing rate (bytes/sec)
+    tokens float64 // Current tokens
+    mtu int // Maximum transmission unit
 }
 ```
 
@@ -105,22 +105,22 @@ type Pacer struct {
 ```go
 type CongestionControlManager struct {
     algorithm CongestionControlAlgorithm
-    bbrv2     *BBRv2           // BBRv2 instance
-    sampler   *Sampler         // Rate sampler
-    metrics   *CCMetrics       // Performance metrics
+    bbrv2 *BBRv2 // BBRv2 instance
+    sampler *Sampler // Rate sampler
+    metrics *CCMetrics // Performance metrics
 }
 ```
 
 **Метрики**:
 ```go
 type CCMetrics struct {
-    CongestionWindow   int64
-    PacingRate         int64
-    RTT                time.Duration
-    Bandwidth          float64
-    BBRState           string
-    MinRTT             time.Duration
-    Throughput         float64  // Mbps
+    CongestionWindow int64
+    PacingRate int64
+    RTT time.Duration
+    Bandwidth float64
+    BBRState string
+    MinRTT time.Duration
+    Throughput float64 // Mbps
 }
 ```
 
@@ -142,18 +142,18 @@ type CCMetrics struct {
 **Конфигурация**:
 ```go
 type ACKFrequencyConfig struct {
-    MaxACKDelay       time.Duration // 25ms
-    MinACKDelay       time.Duration // 1ms
-    DefaultACKDelay   time.Duration // 5ms
+    MaxACKDelay time.Duration // 25ms
+    MinACKDelay time.Duration // 1ms
+    DefaultACKDelay time.Duration // 5ms
 
-    EnableAdaptive    bool
-    HighLoadThreshold int  // 1000 pps
-    LowLoadThreshold  int  // 100 pps
+    EnableAdaptive bool
+    HighLoadThreshold int // 1000 pps
+    LowLoadThreshold int // 100 pps
 
     // Traffic type specific
     BulkTransferDelay time.Duration // 10ms
-    InteractiveDelay  time.Duration // 2ms
-    RealTimeDelay     time.Duration // 1ms
+    InteractiveDelay time.Duration // 2ms
+    RealTimeDelay time.Duration // 1ms
 }
 ```
 
@@ -173,11 +173,11 @@ type ACKFrequencyConfig struct {
 
 ```go
 type ACKFrequencyMetrics struct {
-    TotalACKs         int64         // Total ACKs sent
-    DelayedACKs       int64         // ACKs delayed
-    AdaptiveACKs      int64         // Adaptive adjustments
-    AverageACKDelay   time.Duration // Average delay
-    BandwidthSaved    int64         // Bytes saved (~64 bytes/delayed ACK)
+    TotalACKs int64 // Total ACKs sent
+    DelayedACKs int64 // ACKs delayed
+    AdaptiveACKs int64 // Adaptive adjustments
+    AverageACKDelay time.Duration // Average delay
+    BandwidthSaved int64 // Bytes saved (~64 bytes/delayed ACK)
 }
 ```
 
@@ -195,7 +195,7 @@ type ACKFrequencyMetrics struct {
 ```go
 type ExperimentalFeaturesConfig struct {
     // BBRv2 congestion control
-    EnableBBRv2       bool
+    EnableBBRv2 bool
     CongestionControl string // "cubic", "bbr", "bbrv2", "reno"
 
     // ACK Frequency optimization
@@ -203,17 +203,17 @@ type ExperimentalFeaturesConfig struct {
     ACKFrequencyConfig *ACKFrequencyConfig
 
     // Forward Error Correction (TODO)
-    EnableFEC         bool
-    FECRedundancy     float64 // 0.1 = 10%
+    EnableFEC bool
+    FECRedundancy float64 // 0.1 = 10%
 
     // QUIC Bit Greasing (RFC 9287)
-    EnableGreasing    bool
+    EnableGreasing bool
 
     // Advanced performance
-    EnableGSO         bool  // UDP GSO
-    EnableGRO         bool  // UDP GRO
-    SocketBufferSize  int   // Socket buffer size
-    EnableNUMA        bool  // NUMA pinning
+    EnableGSO bool // UDP GSO
+    EnableGRO bool // UDP GRO
+    SocketBufferSize int // Socket buffer size
+    EnableNUMA bool // NUMA pinning
 }
 ```
 
@@ -222,21 +222,21 @@ type ExperimentalFeaturesConfig struct {
 ```go
 func DefaultExperimentalFeaturesConfig() *ExperimentalFeaturesConfig {
     return &ExperimentalFeaturesConfig{
-        EnableBBRv2:        true,
-        CongestionControl:  "bbrv2",
+        EnableBBRv2: true,
+        CongestionControl: "bbrv2",
 
         EnableACKFrequency: true,
         ACKFrequencyConfig: DefaultACKFrequencyConfig(),
 
-        EnableFEC:          false, // Adds overhead
-        FECRedundancy:      0.1,
+        EnableFEC: false, // Adds overhead
+        FECRedundancy: 0.1,
 
-        EnableGreasing:     true,
+        EnableGreasing: true,
 
-        EnableGSO:          true,
-        EnableGRO:          true,
-        SocketBufferSize:   1024 * 1024, // 1MB
-        EnableNUMA:         false,
+        EnableGSO: true,
+        EnableGRO: true,
+        SocketBufferSize: 1024 * 1024, // 1MB
+        EnableNUMA: false,
     }
 }
 ```
@@ -277,26 +277,26 @@ if config.IsExperimentalEnabled() {
 **Конфигурация**:
 ```go
 type FECConfig struct {
-    RedundancyRatio    float64       // 0.1 = 10% redundancy
-    Algorithm         string        // "xor" or "reed-solomon"
-    GroupSize         int           // Maximum packets per FEC group
-    GroupTimeout      time.Duration // Timeout for completing FEC group
-    EnableAdaptive    bool          // Adaptive redundancy
-    TargetRecoveryRate float64      // 0.9 = 90% recovery
+    RedundancyRatio float64 // 0.1 = 10% redundancy
+    Algorithm string // "xor" or "reed-solomon"
+    GroupSize int // Maximum packets per FEC group
+    GroupTimeout time.Duration // Timeout for completing FEC group
+    EnableAdaptive bool // Adaptive redundancy
+    TargetRecoveryRate float64 // 0.9 = 90% recovery
 }
 ```
 
 **Метрики**:
 ```go
 type FECMetrics struct {
-    TotalGroups       int64
-    ActiveGroups      int64
-    RedundancyBytes   int64
-    RecoveryEvents    int64
-    FailedRecoveries  int64
-    RecoveryRate      float64
-    Efficiency        float64
-    BytesSaved        int64
+    TotalGroups int64
+    ActiveGroups int64
+    RedundancyBytes int64
+    RecoveryEvents int64
+    FailedRecoveries int64
+    RecoveryRate float64
+    Efficiency float64
+    BytesSaved int64
 }
 ```
 
@@ -317,22 +317,22 @@ type FECMetrics struct {
 **Конфигурация**:
 ```go
 type GreasingConfig struct {
-    EnableVersionGreasing        bool
+    EnableVersionGreasing bool
     EnableTransportParamGreasing bool
-    EnableFrameTypeGreasing      bool
-    GreaseProbability           float64 // 0.5 = 50% chance
-    GreaseValues                []uint64 // RFC 9287 reserved values
+    EnableFrameTypeGreasing bool
+    GreaseProbability float64 // 0.5 = 50% chance
+    GreaseValues []uint64 // RFC 9287 reserved values
 }
 ```
 
 **Метрики**:
 ```go
 type GreasingMetrics struct {
-    VersionGreaseCount        int64
+    VersionGreaseCount int64
     TransportParamGreaseCount int64
-    FrameTypeGreaseCount      int64
-    TotalGreaseApplications   int64
-    CompatibilityIssues       int64
+    FrameTypeGreaseCount int64
+    TotalGreaseApplications int64
+    CompatibilityIssues int64
 }
 ```
 
@@ -373,7 +373,7 @@ Based on quic-test research (October 2025):
 
 ---
 
-##  Интеграция с CloudBridge
+## Интеграция с CloudBridge
 
 ### Существующие компоненты
 
@@ -452,25 +452,25 @@ Based on quic-test research (October 2025):
 
 ---
 
-## 🎓 Технические детали
+## Технические детали
 
 ### BBRv2 State Machine
 
 ```
 ┌──────────┐
-│ Startup  │──────────────────┐
-│ (2x BW)  │                  │
-└────┬─────┘                  │
-     │ 2s elapsed             │
-     v                        │
-┌──────────┐                  │
-│  Drain   │                  │
-│ (0.5x BW)│                  │
-└────┬─────┘                  │
-     │ 500ms elapsed          │
-     v                        │
-┌──────────┐                  │
-│ ProbeBW  │<─────────────────┘
+│ Startup │──────────────────┐
+│ (2x BW) │ │
+└────┬─────┘ │
+     │ 2s elapsed │
+     v │
+┌──────────┐ │
+│ Drain │ │
+│ (0.5x BW)│ │
+└────┬─────┘ │
+     │ 500ms elapsed │
+     v │
+┌──────────┐ │
+│ ProbeBW │<─────────────────┘
 │ (cycling)│
 └────┬─────┘
      │ 5s no RTT update
@@ -491,7 +491,7 @@ Packet arrives:
   2. Calculate packets per second
   3. Adaptive adjustment:
      - If pps > 1000: delay *= 1.2 (max 25ms)
-     - If pps < 100:  delay *= 0.8 (min 1ms)
+     - If pps < 100: delay *= 0.8 (min 1ms)
   4. Check time since last ACK
   5. If elapsed >= delay:
      - Send ACK
@@ -547,7 +547,7 @@ Integrated code maintains compatibility with:
 
 ---
 
-## 📞 Support
+## Support
 
 For questions or issues:
 - CloudBridge Relay Team

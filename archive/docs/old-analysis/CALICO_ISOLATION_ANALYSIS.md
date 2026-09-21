@@ -6,22 +6,22 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    ISOLATION TEST RESULTS                 │
+│ ISOLATION TEST RESULTS │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   Tenant A (tenant-216420165)                            │
-│     ├── Pod: tenant-a-pod (10.244.3.96)                   │
-│     └── Labels: tenant.cloudbridge.io/id=tenant-216420165  │
-│                                                             │
-│   Tenant B (tenant-123456789)                            │
-│     ├── Pod: tenant-b-pod (10.244.3.97)                   │
-│     └── Labels: tenant.cloudbridge.io/id=tenant-123456789  │
-│                                                             │
-│  Тест: ping от Tenant A к Tenant B                      │
-│     ├── Команда: kubectl exec tenant-a-pod -- ping 10.244.3.97 │
-│     ├── Результат: PING ПРОШЕЛ!                         │
-│     └── Статус: ИЗОЛЯЦИЯ НЕ РАБОТАЕТ                    │
-│                                                             │
+│ │
+│ Tenant A (tenant-216420165) │
+│ ├── Pod: tenant-a-pod (10.244.3.96) │
+│ └── Labels: tenant.cloudbridge.io/id=tenant-216420165 │
+│ │
+│ Tenant B (tenant-123456789) │
+│ ├── Pod: tenant-b-pod (10.244.3.97) │
+│ └── Labels: tenant.cloudbridge.io/id=tenant-123456789 │
+│ │
+│ Тест: ping от Tenant A к Tenant B │
+│ ├── Команда: kubectl exec tenant-a-pod -- ping 10.244.3.97 │
+│ ├── Результат: PING ПРОШЕЛ! │
+│ └── Статус: ИЗОЛЯЦИЯ НЕ РАБОТАЕТ │
+│ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -34,7 +34,7 @@
 ```yaml
 # В calico-config
 "policy": {
-    "type": "k8s"  # Только Kubernetes Network Policies
+    "type": "k8s" # Только Kubernetes Network Policies
 }
 ```
 
@@ -58,7 +58,7 @@ kubectl get globalnetworkpolicies | grep tenant
 
 ---
 
-## 🔧 **Решения проблемы:**
+## **Решения проблемы:**
 
 ### **1. Включить Calico Global Network Policies**
 
@@ -79,7 +79,7 @@ data:
         {
           "type": "calico",
           "policy": {
-            "type": "calico"  # Включить Calico Global Policies
+            "type": "calico" # Включить Calico Global Policies
           }
         }
       ]
@@ -139,7 +139,7 @@ kubectl get pods -n kube-system -l k8s-app=calico-node -o yaml | grep -i policy
 
 ---
 
-## 🏆 **Заключение:**
+## **Заключение:**
 
 ### **Текущее состояние:**
 - Calico Network Policies развернуты, но не работают

@@ -45,28 +45,28 @@ This strategic roadmap transforms CloudBridge from a relay network into a compre
 **Time Invested:** 10 months
 **Team Size:** 7-15 engineers
 
-### 🔶 What We're Missing (Cloudflare Equivalents)
+### What We're Missing (Cloudflare Equivalents)
 
 | Cloudflare Feature | CloudBridge Status | Gap |
 |-------------------|-------------------|-----|
-| **Cloudflare CDN** |  None | Need full CDN with edge caching, cache invalidation, origin shield |
-| **Argo Tunnel** | 🔶 Partial (P2P/MASQUE) | Need persistent tunnels, TCP-over-QUIC, daemon client |
-| **Zero Trust Access** |  None | Need ZTNA (Zero Trust Network Access), device posture, identity verification |
-| **Workers (Edge Functions)** |  None | Need V8 isolates or WebAssembly runtime at edge |
-| **Workers KV (Edge Storage)** |  None | Need distributed key-value store at edge |
-| **Stream (Video)** |  None | Not priority for v1 |
-| **Images (Optimization)** |  None | Can add in Phase 3 |
-| **Pages (Static Hosting)** |  None | Can add in Phase 3 |
-| **R2 (Object Storage)** |  None | Not priority for v1 |
-| **Magic WAN** | 🔶 Partial (WireGuard) | Need full SD-WAN with BGP |
-| **Spectrum (TCP/UDP Proxy)** | 🔶 Partial (MASQUE) | Need L4 proxy for any protocol |
-| **Load Balancing** | 🔶 Partial (DNS) | Need advanced health checks, geo-steering, session affinity |
+| **Cloudflare CDN** | None | Need full CDN with edge caching, cache invalidation, origin shield |
+| **Argo Tunnel** | Partial (P2P/MASQUE) | Need persistent tunnels, TCP-over-QUIC, daemon client |
+| **Zero Trust Access** | None | Need ZTNA (Zero Trust Network Access), device posture, identity verification |
+| **Workers (Edge Functions)** | None | Need V8 isolates or WebAssembly runtime at edge |
+| **Workers KV (Edge Storage)** | None | Need distributed key-value store at edge |
+| **Stream (Video)** | None | Not priority for v1 |
+| **Images (Optimization)** | None | Can add in Phase 3 |
+| **Pages (Static Hosting)** | None | Can add in Phase 3 |
+| **R2 (Object Storage)** | None | Not priority for v1 |
+| **Magic WAN** | Partial (WireGuard) | Need full SD-WAN with BGP |
+| **Spectrum (TCP/UDP Proxy)** | Partial (MASQUE) | Need L4 proxy for any protocol |
+| **Load Balancing** | Partial (DNS) | Need advanced health checks, geo-steering, session affinity |
 | **Rate Limiting** | asic | Need advanced API rate limiting with custom rules |
-| **WAF (Web Application Firewall)** |  None | Need ModSecurity or custom WAF engine |
-| **Bot Management** |  None | Can add in Phase 2 |
-| **SSL/TLS Management** | 🔶 Partial | Need automatic certificate issuance (Let's Encrypt/ACME) |
-| **Namespace Isolation** |  None | Need per-tenant isolated environments |
-| **Analytics** | 🔶 Basic (Prometheus) | Need real-time analytics like Cloudflare Analytics |
+| **WAF (Web Application Firewall)** | None | Need ModSecurity or custom WAF engine |
+| **Bot Management** | None | Can add in Phase 2 |
+| **SSL/TLS Management** | Partial | Need automatic certificate issuance (Let's Encrypt/ACME) |
+| **Namespace Isolation** | None | Need per-tenant isolated environments |
+| **Analytics** | Basic (Prometheus) | Need real-time analytics like Cloudflare Analytics |
 
 ---
 
@@ -108,40 +108,40 @@ This strategic roadmap transforms CloudBridge from a relay network into a compre
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                     CloudBridge 2.0 Platform                           │
+│ CloudBridge 2.0 Platform │
 ├────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │                    Edge Layer (PoPs)                            │  │
-│  ├─────────────────────────────────────────────────────────────────┤  │
-│  │  • CDN Cache (Varnish/NGINX + Redis)                           │  │
-│  │  • Edge Functions (V8 Isolates / Wasm)                         │  │
-│  │  • QUIC Tunnel Terminators                                     │  │
-│  │  • L7 Load Balancers (Envoy/HAProxy)                           │  │
-│  │  • WAF & DDoS Protection                                       │  │
-│  │  • TLS Termination (Let's Encrypt)                             │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                               ↕                                        │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │              Core Control Plane (Multi-Region HA)              │  │
-│  ├─────────────────────────────────────────────────────────────────┤  │
-│  │  • Zero Trust Gateway (Zitadel + Policy Engine)                │  │
-│  │  • Namespace Manager (Multi-Tenant Isolation)                  │  │
-│  │  • Certificate Manager (ACME Client)                           │  │
-│  │  • Configuration Manager (etcd/Consul)                         │  │
-│  │  • Analytics Aggregator (ClickHouse/TimescaleDB)              │  │
-│  │  • AI Orchestrator (Route Optimization)                        │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                               ↕                                        │
-│  ┌──────────���──────────────────────────────────────────────────────┐  │
-│  │                   Customer Infrastructure                       │  │
-│  ├─────────────────────────────────────────────────────────────────┤  │
-│  │  • CloudBridge Tunnel Daemon (cloudbridge-tunneld)             │  │
-│  │  • Origin Servers (HTTP/TCP/UDP)                               │  │
-│  │  • On-Premise Applications                                     │  │
-│  │  • Private Resources                                            │  │
-│  └─────────────────────────────────────────────────────────────────┘  │
-│                                                                          │
+│ │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ Edge Layer (PoPs) │ │
+│ ├─────────────────────────────────────────────────────────────────┤ │
+│ │ • CDN Cache (Varnish/NGINX + Redis) │ │
+│ │ • Edge Functions (V8 Isolates / Wasm) │ │
+│ │ • QUIC Tunnel Terminators │ │
+│ │ • L7 Load Balancers (Envoy/HAProxy) │ │
+│ │ • WAF & DDoS Protection │ │
+│ │ • TLS Termination (Let's Encrypt) │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ↕ │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ Core Control Plane (Multi-Region HA) │ │
+│ ├─────────────────────────────────────────────────────────────────┤ │
+│ │ • Zero Trust Gateway (Zitadel + Policy Engine) │ │
+│ │ • Namespace Manager (Multi-Tenant Isolation) │ │
+│ │ • Certificate Manager (ACME Client) │ │
+│ │ • Configuration Manager (etcd/Consul) │ │
+│ │ • Analytics Aggregator (ClickHouse/TimescaleDB) │ │
+│ │ • AI Orchestrator (Route Optimization) │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ↕ │
+│ ┌──────────���──────────────────────────────────────────────────────┐ │
+│ │ Customer Infrastructure │ │
+│ ├─────────────────────────────────────────────────────────────────┤ │
+│ │ • CloudBridge Tunnel Daemon (cloudbridge-tunneld) │ │
+│ │ • Origin Servers (HTTP/TCP/UDP) │ │
+│ │ • On-Premise Applications │ │
+│ │ • Private Resources │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -232,7 +232,7 @@ tunnel:
 
   # Authentication
   auth:
-    method: "api-key"  # or "oauth", "certificate"
+    method: "api-key" # or "oauth", "certificate"
     api_key: "${API_KEY}"
 
   # Ingress rules
@@ -324,7 +324,7 @@ policies:
 
           - type: "device_posture"
             checks:
-              - os_version: ">= 10.15"  # macOS
+              - os_version: ">= 10.15" # macOS
               - disk_encryption: true
               - antivirus_enabled: true
 
@@ -404,7 +404,7 @@ namespace:
 
   network_policies:
     allowed_egress_ips:
-      - "0.0.0.0/0"  # Allow all (default)
+      - "0.0.0.0/0" # Allow all (default)
 
     allowed_ingress_countries:
       - "US"
@@ -646,7 +646,7 @@ rules:
 
   - name: "rate-limit-api"
     type: "rate_limit"
-    action: "challenge"  # Show CAPTCHA
+    action: "challenge" # Show CAPTCHA
     conditions:
       - type: "path"
         pattern: "/api/*"
@@ -696,8 +696,8 @@ certificates:
     provider: "letsencrypt"
 
     challenge:
-      type: "dns-01"  # or "http-01"
-      dns_provider: "cloudflare"  # Will integrate with CloudBridge DNS
+      type: "dns-01" # or "http-01"
+      dns_provider: "cloudflare" # Will integrate with CloudBridge DNS
 
     auto_renew: true
     notify_before_expiry: 7d
@@ -915,7 +915,7 @@ certificates:
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│                        User Access Flow                           │
+│ User Access Flow │
 └───────────────────────────────────────────────────────────────────┘
 
 User
@@ -925,22 +925,22 @@ User
 Edge PoP (Zero Trust Gateway)
   │
   ├─2─→ Check: Is user authenticated?
-  │      └─ NO → Redirect to Identity Provider (Zitadel)
-  │      └─ YES → Continue to step 3
+  │ └─ NO → Redirect to Identity Provider (Zitadel)
+  │ └─ YES → Continue to step 3
   │
   ├─3─→ Check: Device posture valid?
-  │      └─ Query device posture service
-  │      └─ Verify: OS version, antivirus, disk encryption, etc.
+  │ └─ Query device posture service
+  │ └─ Verify: OS version, antivirus, disk encryption, etc.
   │
   ├─4─→ Evaluate access policies (Open Policy Agent)
-  │      └─ Check: User role, groups
-  │      └─ Check: Location, IP address
-  │      └─ Check: Time of day
-  │      └─ Check: MFA status
+  │ └─ Check: User role, groups
+  │ └─ Check: Location, IP address
+  │ └─ Check: Time of day
+  │ └─ Check: MFA status
   │
   ├─5─→ Decision:
-  │      └─ ALLOW → Issue short-lived access token (1-8 hours)
-  │      └─ DENY → Show access denied page
+  │ └─ ALLOW → Issue short-lived access token (1-8 hours)
+  │ └─ DENY → Show access denied page
   │
   ├─6─→ Log access attempt (audit trail)
   │
@@ -990,37 +990,37 @@ Edge PoP (Zero Trust Gateway)
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│                        CDN Request Flow                           │
+│ CDN Request Flow │
 └───────────────────────────────────────────────────────────────────┘
 
 User Request
   ↓
   ├─1─→ DNS Resolution (GeoDNS)
-  │      └─ Returns nearest PoP IP
+  │ └─ Returns nearest PoP IP
   │
 Edge PoP (Varnish/NGINX)
   │
   ├─2─→ Check: Cache HIT or MISS?
-  │      │
-  │      ├─ HIT → Return cached response (fast path)
-  │      │
-  │      └─ MISS → Continue to step 3
+  │ │
+  │ ├─ HIT → Return cached response (fast path)
+  │ │
+  │ └─ MISS → Continue to step 3
   │
   ├─3─→ Check: Origin Shield enabled?
-  │      │
-  │      ├─ YES → Query origin shield cache
-  │      │   │
-  │      │   ├─ HIT → Return cached response
-  │      │   └─ MISS → Continue to step 4
-  │      │
-  │      └─ NO → Continue to step 4
+  │ │
+  │ ├─ YES → Query origin shield cache
+  │ │ │
+  │ │ ├─ HIT → Return cached response
+  │ │ └─ MISS → Continue to step 4
+  │ │
+  │ └─ NO → Continue to step 4
   │
   ├─4─→ Fetch from origin via QUIC tunnel
-  │      └─ Connection pooling for efficiency
+  │ └─ Connection pooling for efficiency
   │
   ├─5─→ Store in cache (edge + origin shield)
-  │      └─ Respect Cache-Control headers
-  │      └─ Apply default TTL if no headers
+  │ └─ Respect Cache-Control headers
+  │ └─ Apply default TTL if no headers
   │
   └─6─→ Return response to user
 ```
@@ -1053,29 +1053,29 @@ cache_key = hash(
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│                    QUIC Tunnel Architecture                       │
+│ QUIC Tunnel Architecture │
 └───────────────────────────────────────────────────────────────────┘
 
-Customer Infrastructure                    CloudBridge Platform
+Customer Infrastructure CloudBridge Platform
 ────────────────────────────────────────────────────────────────────
 
-┌──────────────────────────┐             ┌──────────────────────────┐
-│  Origin Server(s)        │             │  Edge PoP                │
-│  ├─ HTTP: 8080           │             │  ├─ Public IP            │
-│  ├─ HTTPS: 8443          │             │  ├─ TLS Termination      │
-│  ├─ SSH: 22              │             │  ├─ DDoS Protection      │
-│  └─ MySQL: 3306          │             │  ├─ WAF                  │
-└──────────────────────────┘             │  └─ CDN Cache            │
-         ↕                               └──────────────────────────┘
-         │                                         ↕
-         │                                         │
-┌──────────────────────────┐             ┌──────────────────────────┐
-│  cloudbridge-tunneld     │═════════════│  Tunnel Coordinator      │
-│  ├─ QUIC Client          │   QUIC      │  ├─ Tunnel Manager       │
-│  ├─ TCP Multiplexer      │  Tunnel     │  ├─ Health Monitor       │
-│  ├─ Config Watcher       │             │  ├─ Load Balancer        │
-│  └─ Health Reporter      │             │  └─ Metrics Collector    │
-└──────────────────────────┘             └──────────────────────────┘
+┌──────────────────────────┐ ┌──────────────────────────┐
+│ Origin Server(s) │ │ Edge PoP │
+│ ├─ HTTP: 8080 │ │ ├─ Public IP │
+│ ├─ HTTPS: 8443 │ │ ├─ TLS Termination │
+│ ├─ SSH: 22 │ │ ├─ DDoS Protection │
+│ └─ MySQL: 3306 │ │ ├─ WAF │
+└──────────────────────────┘ │ └─ CDN Cache │
+         ↕ └──────────────────────────┘
+         │ ↕
+         │ │
+┌──────────────────────────┐ ┌──────────────────────────┐
+│ cloudbridge-tunneld │═════════════│ Tunnel Coordinator │
+│ ├─ QUIC Client │ QUIC │ ├─ Tunnel Manager │
+│ ├─ TCP Multiplexer │ Tunnel │ ├─ Health Monitor │
+│ ├─ Config Watcher │ │ ├─ Load Balancer │
+│ └─ Health Reporter │ │ └─ Metrics Collector │
+└──────────────────────────┘ └──────────────────────────┘
 ```
 
 **Tunnel Daemon Features:**
@@ -1120,7 +1120,7 @@ tunnel:
 
   # Nearest PoP auto-selected, or specify
   edge:
-    region: "auto"  # or "us-east-1", "eu-west-1", etc.
+    region: "auto" # or "us-east-1", "eu-west-1", etc.
 
   # Ingress rules
   ingress:
@@ -1189,20 +1189,20 @@ cloudbridge tunnel delete production
 ### Global PoP Distribution
 
 **Phase 1 (Current):** 6 PoPs
-- 🇺🇸 US East (Virginia)
-- 🇺🇸 US West (California)
-- 🇪🇺 EU West (London)
-- 🇪🇺 EU Central (Frankfurt)
-- 🇷🇺 Russia (Moscow)
-- 🇸🇬 Asia Pacific (Singapore)
+- US East (Virginia)
+- US West (California)
+- EU West (London)
+- EU Central (Frankfurt)
+- Russia (Moscow)
+- Asia Pacific (Singapore)
 
 **Phase 2 (Months 7-9):** +6 PoPs = 12 Total
-- 🇨🇦 Canada (Toronto)
-- 🇧🇷 South America (São Paulo)
-- 🇯🇵 Asia (Tokyo)
-- 🇦🇺 Oceania (Sydney)
-- 🇮🇳 India (Mumbai)
-- 🇿🇦 Africa (Johannesburg)
+- Canada (Toronto)
+- South America (São Paulo)
+- Asia (Tokyo)
+- Oceania (Sydney)
+- India (Mumbai)
+- Africa (Johannesburg)
 
 **Phase 3 (Months 10-12):** +12 PoPs = 24 Total
 - Additional US: Dallas, Miami, Seattle
@@ -1218,51 +1218,51 @@ cloudbridge tunnel delete production
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Edge PoP (Example)                       │
+│ Edge PoP (Example) │
 ├─────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  L3/L4 Layer (DDoS Protection)                         │ │
-│  │  ├─ BGP Anycast                                        │ │
-│  │  ├─ Packet filtering (iptables/nftables)              │ │
-│  │  └─ SYN flood protection                              │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                           ↓                                  │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  L7 Layer (Load Balancer + WAF)                       │ │
-│  │  ├─ HAProxy/Envoy (10+ instances)                     │ │
-│  │  ├─ ModSecurity WAF (integrated)                      │ │
-│  │  ├─ TLS termination                                   │ │
-│  │  └─ Rate limiting                                     │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                           ↓                                  │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Cache Layer (CDN)                                     │ │
-│  │  ├─ Varnish (20+ instances)                           │ │
-│  │  ├─ Redis cluster (hot cache)                         │ │
-│  │  └─ SSD cache (warm cache)                            │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                           ↓                                  │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Tunnel Layer (QUIC Terminators)                      │ │
-│  │  ├─ QUIC tunnel servers (30+ instances)               │ │
-│  │  ├─ TCP/UDP proxy                                     │ │
-│  │  └─ Protocol multiplexing                             │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                           ↓                                  │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Edge Functions (Optional - Phase 4)                  │ │
-│  │  ├─ V8 isolate workers (100+ instances)               │ │
-│  │  └─ WebAssembly runtime                               │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                           ↓                                  │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Observability                                         │ │
-│  │  ├─ Prometheus (metrics)                              │ │
-│  │  ├─ Loki (logs)                                       │ │
-│  │  └─ Jaeger (traces)                                   │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                                                               │
+│ │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ L3/L4 Layer (DDoS Protection) │ │
+│ │ ├─ BGP Anycast │ │
+│ │ ├─ Packet filtering (iptables/nftables) │ │
+│ │ └─ SYN flood protection │ │
+│ └────────────────────────────────────────────────────────┘ │
+│ ↓ │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ L7 Layer (Load Balancer + WAF) │ │
+│ │ ├─ HAProxy/Envoy (10+ instances) │ │
+│ │ ├─ ModSecurity WAF (integrated) │ │
+│ │ ├─ TLS termination │ │
+│ │ └─ Rate limiting │ │
+│ └────────────────────────────────────────────────────────┘ │
+│ ↓ │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ Cache Layer (CDN) │ │
+│ │ ├─ Varnish (20+ instances) │ │
+│ │ ├─ Redis cluster (hot cache) │ │
+│ │ └─ SSD cache (warm cache) │ │
+│ └────────────────────────────────────────────────────────┘ │
+│ ↓ │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ Tunnel Layer (QUIC Terminators) │ │
+│ │ ├─ QUIC tunnel servers (30+ instances) │ │
+│ │ ├─ TCP/UDP proxy │ │
+│ │ └─ Protocol multiplexing │ │
+│ └────────────────────────────────────────────────────────┘ │
+│ ↓ │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ Edge Functions (Optional - Phase 4) │ │
+│ │ ├─ V8 isolate workers (100+ instances) │ │
+│ │ └─ WebAssembly runtime │ │
+│ └────────────────────────────────────────────────────────┘ │
+│ ↓ │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ Observability │ │
+│ │ ├─ Prometheus (metrics) │ │
+│ │ ├─ Loki (logs) │ │
+│ │ └─ Jaeger (traces) │ │
+│ └────────────────────────────────────────────────────────┘ │
+│ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -1283,21 +1283,21 @@ cloudbridge tunnel delete production
 | Feature | Cloudflare | CloudBridge 2.0 | Advantage |
 |---------|-----------|----------------|-----------|
 | **CDN** | es | Ye | Equal |
-| **Global PoPs** | 00+ | 🔶 6-24 | Cloudflare (for now) |
+| **Global PoPs** | 00+ | 6-24 | Cloudflare (for now) |
 | **Tunnel/Argo** | es | Ye (planned) | Equal |
 | **Zero Trust** | ccess | ZTA (planned) | Equal |
-| **Edge Functions** | orkers | 🔶 Planned (Phase 4) | Cloudflare |
+| **Edge Functions** | orkers | Planned (Phase 4) | Cloudflare |
 | **WAF** | es | Ye (planned) | Equal |
 | **DDoS Protection** | es | Ye | Equal |
 | **Load Balancing** | es | Ye (enhanced) | Equal |
 | **Analytics** | eal-time | Rel-time (planned) | Equal |
-| **Open Source** |  Proprietary | ull source | **CloudBridge** |
-| **Data Sovereignty** |  Limited | ull control | **CloudBridge** |
-| **Self-Hosted Option** |  No | es | **CloudBridge** |
-| **Pricing Transparency** | 🔶 Complex | imple | **CloudBridge** |
-| **Vendor Lock-in** |  High | one | **CloudBridge** |
-| **AI-Powered Routing** |  No | es | **CloudBridge** |
-| **Community Support** | 🔶 Forums | pen community | **CloudBridge** |
+| **Open Source** | Proprietary | ull source | **CloudBridge** |
+| **Data Sovereignty** | Limited | ull control | **CloudBridge** |
+| **Self-Hosted Option** | No | es | **CloudBridge** |
+| **Pricing Transparency** | Complex | imple | **CloudBridge** |
+| **Vendor Lock-in** | High | one | **CloudBridge** |
+| **AI-Powered Routing** | No | es | **CloudBridge** |
+| **Community Support** | Forums | pen community | **CloudBridge** |
 
 **Summary:**
 - **Cloudflare Advantages:** More PoPs (for now), mature Workers platform
@@ -1505,9 +1505,9 @@ cloudbridge tunnel delete production
 ### Week 1-2:
 1. *Complete P2P/MASQUE testing** (done - 160+ tests)
 2. *Organize documentation** (done - 11 folders)
-3. 🔶 **Approve this strategic roadmap**
-4. 🔶 **Secure funding** ($2-3M for 6-8 months)
-5. 🔶 **Begin hiring** (start with 3-4 senior engineers)
+3. **Approve this strategic roadmap**
+4. **Secure funding** ($2-3M for 6-8 months)
+5. **Begin hiring** (start with 3-4 senior engineers)
 
 ### Week 3-4:
 6. **Kickoff Phase 1** (Namespace + Certificates + Analytics)

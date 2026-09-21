@@ -1,22 +1,22 @@
-# 📚 Документация по развертыванию CloudBridge Relay в VK Cloud
+# Документация по развертыванию CloudBridge Relay в VK Cloud
 
 ## Структура документации
 
 ```
-├── VK_CLOUD_DEPLOYMENT_GUIDE.md     # Подробное руководство по развертыванию
-├── QUICK_DEPLOYMENT_CHECKLIST.md    # Быстрая шпаргалка
-├── k8s-manifests/                   # Готовые Kubernetes манифесты
-│   ├── 00-namespace.yaml            # Namespace
-│   ├── 01-pvc.yaml                  # PersistentVolumeClaim
-│   ├── 02-secrets.yaml              # Секреты
-│   ├── 03-configmap.yaml            # ConfigMap
-│   ├── 04-registry.yaml             # Docker Registry
-│   ├── 05-deployments.yaml          # Deployments
-│   ├── 06-services.yaml             # Services
-│   ├── 07-ingress.yaml              # Ingress
-│   └── 08-servicemonitor.yaml       # ServiceMonitor
-├── deploy.sh                        # Скрипт автоматического развертывания
-└── README_DEPLOYMENT.md             # Этот файл
+├── VK_CLOUD_DEPLOYMENT_GUIDE.md # Подробное руководство по развертыванию
+├── QUICK_DEPLOYMENT_CHECKLIST.md # Быстрая шпаргалка
+├── k8s-manifests/ # Готовые Kubernetes манифесты
+│ ├── 00-namespace.yaml # Namespace
+│ ├── 01-pvc.yaml # PersistentVolumeClaim
+│ ├── 02-secrets.yaml # Секреты
+│ ├── 03-configmap.yaml # ConfigMap
+│ ├── 04-registry.yaml # Docker Registry
+│ ├── 05-deployments.yaml # Deployments
+│ ├── 06-services.yaml # Services
+│ ├── 07-ingress.yaml # Ingress
+│ └── 08-servicemonitor.yaml # ServiceMonitor
+├── deploy.sh # Скрипт автоматического развертывания
+└── README_DEPLOYMENT.md # Этот файл
 ```
 
 ## Быстрый старт
@@ -88,7 +88,7 @@ kubectl apply -f k8s-manifests/08-servicemonitor.yaml
 - OpenStack RC файл v3
 - Достаточные квоты для создания кластера
 
-##  Настройка
+## Настройка
 
 ### 1. Настройка OpenStack CLI
 
@@ -281,7 +281,7 @@ kubectl rollout undo deployment/cloudbridge-relay -n cloudbridge
 kubectl rollout undo deployment/cloudbridge-relay --to-revision=2 -n cloudbridge
 ```
 
-## 🗑️ Удаление
+## Удаление
 
 ### Удаление сервисов
 
@@ -303,7 +303,7 @@ cd terraform-k8s
 terraform destroy -auto-approve
 ```
 
-## 📞 Поддержка
+## Поддержка
 
 При возникновении проблем:
 

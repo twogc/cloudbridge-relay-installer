@@ -35,7 +35,7 @@
 
 #### **3. Edge Relay Nodes (100% готов)**
 - **Moscow PoP (RU-MOW)** - QUIC Server, WireGuard, TURN, IPAM
-- **Frankfurt PoP (EU-FRA)** - QUIC Server, WireGuard, TURN, IPAM  
+- **Frankfurt PoP (EU-FRA)** - QUIC Server, WireGuard, TURN, IPAM
 - **New York PoP (US-NYC)** - QUIC Server, WireGuard, TURN, IPAM
 - **Inter-PoP Mesh** - MASQUE/QUIC соединения между PoP
 - **Smart Routing** - AI-оптимизированная маршрутизация
@@ -140,7 +140,7 @@
 
 #### **1. IPAM (IP Address Management) - ИСПРАВЛЕНО**
 - **Проблема**: Гонки данных, неэффективный поиск IP, неправильные диапазоны
-- **Решение**: 
+- **Решение**:
   - Единый `sync.RWMutex` для всего IPAM состояния
   - `IPPool` структура с O(1) аллокацией/деаллокацией
   - Правильный диапазон IP для /24 подсетей (2-253)
@@ -215,13 +215,13 @@
 
 | Функция / Признак | Tailscale | Valve SDR | Cloudflare Argo | iCloud PR | **CloudBridge** |
 |-------------------|-----------|-----------|-----------------|-----------|-----------------|
-| Anycast-кластер релеев | ✔ | ✔ | ✔ | ✔ | ✔ |
-| Клиентский выбор ретранслятора | ✔ | ✔ | ✖ (RUM + DNS) | частично | ✔ |
-| Seamless handover активного туннеля | частично | ✔ | ✖ | ✖ | ✔ |
-| Приоритет прямого P2P (ICE) | ✔ | ✖ | ✖ | ✖ | ✔ |
-| MASQUE/QUIC туннели | ✖ (WireGuard) | ✖ (UDP SDR) | частично (QUIC) | ✔ | ✔ |
-| Deterministic per-tenant IPAM | ✖ | ✖ | ✖ | ✖ | ✔ |
-| SLO-замкнутый контур адаптации | ✖ | частично | ✔ (latency steer) | ✖ | ✔ |
+| Anycast-кластер релеев | | | | | |
+| Клиентский выбор ретранслятора | | | (RUM + DNS) | частично | |
+| Seamless handover активного туннеля | частично | | | | |
+| Приоритет прямого P2P (ICE) | | | | | |
+| MASQUE/QUIC туннели | (WireGuard) | (UDP SDR) | частично (QUIC) | | |
+| Deterministic per-tenant IPAM | | | | | |
+| SLO-замкнутый контур адаптации | | частично | (latency steer) | | |
 
 ### **Технологические преимущества:**
 - **MASQUE/QUIC туннелирование** vs WireGuard-only у Tailscale
@@ -256,7 +256,7 @@
 
 #### **Core Infrastructure:**
 - **gRPC сервер (TLS 1.3):** порт 8444, Control/Tunnel/Heartbeat — Pilot-ready
-- **JWT аутентификация:** проверка подписи, RBAC middleware, enterprise permissions — Pilot-ready  
+- **JWT аутентификация:** проверка подписи, RBAC middleware, enterprise permissions — Pilot-ready
 - **P2P Mesh Networking:** автообнаружение peers, relay маршрутизация — Pilot-ready
 - **Multi-Tenancy:** изоляция по tenant_id, уникальные подсети — Pilot-ready
 - **Enterprise Monitoring:** метрики per server/tenant, rich logging — Pilot-ready
@@ -295,7 +295,7 @@
 
 [1 tool called]
 
-Анализ проекта CloudBridge Relay завершен! 
+Анализ проекта CloudBridge Relay завершен!
 
 ## Итоговый анализ
 

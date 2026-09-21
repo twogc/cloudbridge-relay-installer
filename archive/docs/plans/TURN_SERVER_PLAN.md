@@ -1,4 +1,4 @@
-# 🔥 План реализации TURN сервера на основе coturn
+# План реализации TURN сервера на основе coturn
 
 ## **Анализ coturn reference**
 
@@ -7,50 +7,50 @@
 #### **1. Конфигурация TURN сервера**
 ```conf
 # Основные порты
-listening-port=3478          # UDP/TCP TURN
-tls-listening-port=5349      # TLS/DTLS TURN
+listening-port=3478 # UDP/TCP TURN
+tls-listening-port=5349 # TLS/DTLS TURN
 
 # Аутентификация
-user=username:password       # Статический пользователь
-userdb=/var/lib/turn/turndb  # База данных пользователей
+user=username:password # Статический пользователь
+userdb=/var/lib/turn/turndb # База данных пользователей
 
 # Relay настройки
-relay-ip=0.0.0.0            # IP для relay
-relay-ipv6=::                # IPv6 для relay
-min-port=49152               # Минимальный порт для relay
-max-port=65535               # Максимальный порт для relay
+relay-ip=0.0.0.0 # IP для relay
+relay-ipv6=:: # IPv6 для relay
+min-port=49152 # Минимальный порт для relay
+max-port=65535 # Максимальный порт для relay
 
 # Безопасность
-no-multicast-peers           # Отключить multicast
-no-cli                       # Отключить CLI
-no-tlsv1                     # Отключить TLS 1.0
-no-tlsv1_1                   # Отключить TLS 1.1
+no-multicast-peers # Отключить multicast
+no-cli # Отключить CLI
+no-tlsv1 # Отключить TLS 1.0
+no-tlsv1_1 # Отключить TLS 1.1
 ```
 
 #### **2. Health checks и мониторинг**
 ```conf
 # Prometheus метрики
-prometheus                   # Включить Prometheus метрики
-prometheus-port=9641         # Порт для метрик
+prometheus # Включить Prometheus метрики
+prometheus-port=9641 # Порт для метрик
 
 # Логирование
 log-file=/var/log/turnserver.log
-verbose                       # Подробные логи
+verbose # Подробные логи
 ```
 
 #### **3. Docker конфигурация**
 ```dockerfile
 # Основные порты
-EXPOSE 3478/udp              # UDP TURN
-EXPOSE 3478/tcp              # TCP TURN  
-EXPOSE 5349/udp              # DTLS TURN
-EXPOSE 5349/tcp              # TLS TURN
-EXPOSE 49152-65535/udp       # Relay порты
+EXPOSE 3478/udp # UDP TURN
+EXPOSE 3478/tcp # TCP TURN
+EXPOSE 5349/udp # DTLS TURN
+EXPOSE 5349/tcp # TLS TURN
+EXPOSE 49152-65535/udp # Relay порты
 ```
 
 ---
 
-## 🔧 **План реализации TURN-пула**
+## **План реализации TURN-пула**
 
 ### **1. Создать TURNPoolManager (2 дня)**
 
@@ -60,67 +60,67 @@ EXPOSE 49152-65535/udp       # Relay порты
 ```go
 // TURNPoolManager управляет пулом TURN серверов
 type TURNPoolManager struct {
-    logger      *logger.Logger
-    config      *TURNPoolConfig
-    servers     map[string]*TURNServer
+    logger *logger.Logger
+    config *TURNPoolConfig
+    servers map[string]*TURNServer
     healthChecker *TURNHealthChecker
-    loadBalancer  *TURNLoadBalancer
-    metrics      *TURNMetrics
-    
+    loadBalancer *TURNLoadBalancer
+    metrics *TURNMetrics
+
     // Управление состоянием
-    mx       sync.RWMutex
+    mx sync.RWMutex
     isRunning bool
-    ctx       context.Context
-    cancel    context.CancelFunc
+    ctx context.Context
+    cancel context.CancelFunc
 }
 
 // TURNServer представляет TURN сервер в пуле
 type TURNServer struct {
-    ID          string
-    Address     string
-    Username    string
-    Password    string
-    Realm       string
-    Priority    int
-    Weight      int
+    ID string
+    Address string
+    Username string
+    Password string
+    Realm string
+    Priority int
+    Weight int
     MaxConnections int
-    Region      string
-    Provider    string
+    Region string
+    Provider string
     Capabilities []string
-    Tags        map[string]string
-    
+    Tags map[string]string
+
     // Состояние
-    isHealthy   bool
+    isHealthy bool
     connections int
-    lastCheck   time.Time
+    lastCheck time.Time
     responseTime time.Duration
 }
 
 // TURNHealthChecker проверяет здоровье TURN серверов
 type TURNHealthChecker struct {
-    logger      *logger.Logger
-    interval    time.Duration
-    timeout     time.Duration
-    maxRetries  int
-    backoff     time.Duration
+    logger *logger.Logger
+    interval time.Duration
+    timeout time.Duration
+    maxRetries int
+    backoff time.Duration
 }
 
 // TURNLoadBalancer распределяет нагрузку между TURN серверами
 type TURNLoadBalancer struct {
-    strategy    LoadBalancingStrategy
-    servers     []*TURNServer
-    weights     map[string]int
-    thresholds  map[string]float64
+    strategy LoadBalancingStrategy
+    servers []*TURNServer
+    weights map[string]int
+    thresholds map[string]float64
 }
 
 // TURNMetrics собирает метрики TURN-пула
 type TURNMetrics struct {
-    TotalServers     int
-    HealthyServers   int
+    TotalServers int
+    HealthyServers int
     UnhealthyServers int
     TotalConnections int
-    AverageLatency   time.Duration
-    ErrorRate        float64
+    AverageLatency time.Duration
+    ErrorRate float64
 }
 ```
 
@@ -279,7 +279,7 @@ verbose
 
 ### **Результат**
 
-TURN сервер полностью реализован и готов к production использованию! 
+TURN сервер полностью реализован и готов к production использованию!
 
 **Файлы созданы:**
 - `internal/nat/turn_pool_manager.go` - основная логика
@@ -289,4 +289,4 @@ TURN сервер полностью реализован и готов к produ
 - `k8s/turn-server-deployment.yaml` - развертывание
 - `k8s/turn-server-service.yaml` - сервисы
 
-**Готово к production!** 🚀
+**Готово к production!**

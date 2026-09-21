@@ -1,7 +1,7 @@
 # Consolidation Plan — Infrastructure & Test Directories
 
-**Дата:** 2026-07-09  
-**Источник:** [MIMO_AUDIT_REPORT.md §2](MIMO_AUDIT_REPORT.md)  
+**Дата:** 2026-07-09
+**Источник:** [MIMO_AUDIT_REPORT.md §2](MIMO_AUDIT_REPORT.md)
 **Статус:** План (миграция не выполнена в step 4)
 
 Цель — единый canonical путь деплоя и наблюдаемости без поломки `scripts/deploy/deploy.sh`.
@@ -118,10 +118,10 @@
 
 ```
 test/
-├── e2e/              # существующее
-├── load/             # из tests/load/
-├── integration/      # wg_netns_integration.sh и подобное
-└── fixtures/         # config-server-*.yaml
+├── e2e/ # существующее
+├── load/ # из tests/load/
+├── integration/ # wg_netns_integration.sh и подобное
+└── fixtures/ # config-server-*.yaml
 ```
 
 ### Шаги миграции (короткие)
@@ -154,21 +154,21 @@ test/
 ```
 monitoring/
 ├── prometheus/
-│   ├── prometheus.yml          # single base config
-│   └── overlays/
-│       └── multicluster.yml    # из prometheus_multiclusters/
+│ ├── prometheus.yml # single base config
+│ └── overlays/
+│ └── multicluster.yml # из prometheus_multiclusters/
 ├── alertmanager/
-│   └── alertmanager.yml
+│ └── alertmanager.yml
 ├── grafana/
-│   ├── provisioning/           # datasources, dashboards.yml
-│   └── dashboards/             # все JSON (из deploy/grafana + monitoring/dashboards)
+│ ├── provisioning/ # datasources, dashboards.yml
+│ └── dashboards/ # все JSON (из deploy/grafana + monitoring/dashboards)
 ├── rules/
-│   ├── cloudbridge-alerts.yml
-│   └── ai-alerts.yml
+│ ├── cloudbridge-alerts.yml
+│ └── ai-alerts.yml
 └── zabbix/
-    ├── agent/                  # из zabbix-agent/
-    ├── collectors/             # из zabbix-agent/collectors + scripts/zabbix/
-    └── conf.d/                 # из scripts/config/zabbix-agent.d/
+    ├── agent/ # из zabbix-agent/
+    ├── collectors/ # из zabbix-agent/collectors + scripts/zabbix/
+    └── conf.d/ # из scripts/config/zabbix-agent.d/
 ```
 
 **K8s-specific** (`k8s/monitoring/`, `k8s/monitoring-stack/`) остаются в `k8s/` — ссылаются на ConfigMaps/Deployments, не на bare-metal compose.
@@ -196,7 +196,7 @@ monitoring/
 
 ## 6. Порядок выполнения (приоритет)
 
-1. ~~`github_actions/` cleanup~~ ✅ step 4
+1. ~~`github_actions/` cleanup~~ step 4
 2. Monitoring consolidation (низкий риск, много дубликатов)
 3. `tests/` → `test/` rename
 4. Terraform archive + `terraform-k8s/` README

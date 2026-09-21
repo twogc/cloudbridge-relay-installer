@@ -15,7 +15,7 @@
 
 Доменная структура манифестов для ops и компонентных задач: Cadence, Zitadel, monitoring-stack, BGP, security, RBAC. Для полного prod-стека используйте `k8s-manifests/`, не корневые YAML здесь.
 
-## 🏗️ Архитектура
+## Архитектура
 
 ### Компоненты системы:
 
@@ -30,26 +30,26 @@
 - `cloudbridge` - основные сервисы
 - `cloudbridge-monitoring` - мониторинг
 
-## 📁 Структура файлов
+## Структура файлов
 
 ```
 k8s/
 ├── namespaces/
-│   └── cloudbridge-namespace.yaml
+│ └── cloudbridge-namespace.yaml
 ├── configmaps/
-│   └── cloudbridge-config.yaml
+│ └── cloudbridge-config.yaml
 ├── secrets/
-│   └── cloudbridge-secrets.yaml
+│ └── cloudbridge-secrets.yaml
 ├── persistent-volumes/
-│   └── cloudbridge-pv.yaml
+│ └── cloudbridge-pv.yaml
 ├── deployments/
-│   ├── cloudbridge-relay-deployment.yaml
-│   ├── cassandra-deployment.yaml
-│   └── cadence-deployment.yaml
+│ ├── cloudbridge-relay-deployment.yaml
+│ ├── cassandra-deployment.yaml
+│ └── cadence-deployment.yaml
 ├── services/
-│   └── cloudbridge-services.yaml
+│ └── cloudbridge-services.yaml
 ├── ingress/
-│   └── cloudbridge-ingress.yaml
+│ └── cloudbridge-ingress.yaml
 └── monitoring/
     ├── prometheus-deployment.yaml
     └── grafana-deployment.yaml
@@ -100,7 +100,7 @@ kubectl get services -n cloudbridge-monitoring
 kubectl logs -f deployment/cloudbridge-relay -n cloudbridge
 ```
 
-##  Конфигурация
+## Конфигурация
 
 ### **ConfigMaps**
 
@@ -287,7 +287,7 @@ spec:
     updateMode: "Auto"
 ```
 
-##  Troubleshooting
+## Troubleshooting
 
 ### **Общие проблемы**
 
@@ -348,7 +348,7 @@ kubectl port-forward service/cloudbridge-relay 9090:9090 -n cloudbridge
 kubectl port-forward service/grafana 3000:3000 -n cloudbridge-monitoring
 ```
 
-## 📚 Дополнительные ресурсы
+## Дополнительные ресурсы
 
 ### **Полезные ссылки**
 
@@ -379,6 +379,6 @@ Kubernetes deployment обеспечивает:
 
 ---
 
-*Документ создан: 2025-09-06*  
-*Статус: Готов к использованию* 🚀
+*Документ создан: 2025-09-06*
+*Статус: Готов к использованию*
 

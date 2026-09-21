@@ -1,19 +1,19 @@
 # VK Cloud LoadBalancer Configuration - Final Report
 
-**Дата:** $(date)  
-**Проект:** CloudBridge Relay для 2gc.ru  
-**Балансировщик:** LoadBalancer_3398 (109.120.180.160)  
+**Дата:** $(date)
+**Проект:** CloudBridge Relay для 2gc.ru
+**Балансировщик:** LoadBalancer_3398 (109.120.180.160)
 
 ## Что успешно настроено
 
 ### 1. DNS записи
 ```
-relay.2gc.ru     → 109.120.180.160 ✓
-masque.2gc.ru    → 109.120.180.160 ✓
-p2p.2gc.ru       → 109.120.180.160 ✓
-admin.2gc.ru     → 109.120.180.160 ✓
-monitor.2gc.ru   → 109.120.180.160 ✓
-api.2gc.ru       → 109.120.180.160 ✓
+relay.2gc.ru → 109.120.180.160
+masque.2gc.ru → 109.120.180.160
+p2p.2gc.ru → 109.120.180.160
+admin.2gc.ru → 109.120.180.160
+monitor.2gc.ru → 109.120.180.160
+api.2gc.ru → 109.120.180.160
 ```
 
 ### 2. VK Cloud LoadBalancer
@@ -29,7 +29,7 @@ api.2gc.ru       → 109.120.180.160 ✓
 ### 4. Backend Pools
 - **HTTP Pool**: c9c66e2b-8f2a-42a1-937f-a1c4084965c2
   - Member: 10.0.0.249:80 (ONLINE)
-- **TCP Pool**: 0cfacebd-dec0-452c-b814-80ca12ec2c3c  
+- **TCP Pool**: 0cfacebd-dec0-452c-b814-80ca12ec2c3c
   - Member: 10.0.0.249:80 (ONLINE)
 
 ### 5. Kubernetes Integration
@@ -45,7 +45,7 @@ Internet
 DNS (*.2gc.ru) → 109.120.180.160
     ↓
 VK Cloud LoadBalancer (HAProxy/Amphora)
-    ├── HTTP:80  → 10.0.0.249:80
+    ├── HTTP:80 → 10.0.0.249:80
     └── HTTPS:443 → 10.0.0.249:80
          ↓
 Relay Server (10.0.0.249)
@@ -58,7 +58,7 @@ HTTPS Service
 ### HTTP Endpoints (работают с редиректом)
 ```bash
 $ curl -I http://109.120.180.160/health
-HTTP/1.1 301 Moved Permanently ✓
+HTTP/1.1 301 Moved Permanently
 ```
 
 ### HTTPS Endpoints (требуют настройки SSL termination)
@@ -67,7 +67,7 @@ $ curl -k https://relay.2gc.ru/health
 # Пока недоступны - нужна настройка SSL
 ```
 
-##  Следующие шаги для полной настройки
+## Следующие шаги для полной настройки
 
 ### Шаг 1: Настроить SSL Termination на балансировщике
 
@@ -106,9 +106,9 @@ openstack loadbalancer listener set 22abbb98-6ed7-4e31-867c-77d5ce632c42 \
 server {
     listen 80;
     server_name *.2gc.ru;
-    
+
     location / {
-        proxy_pass http://192.168.49.2:32500;  # Kubernetes NodePort
+        proxy_pass http://192.168.49.2:32500; # Kubernetes NodePort
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -187,7 +187,7 @@ curl -k https://api.2gc.ru/health
 3. **Мониторинг**: Настроить алерты на статус балансировщика и members
 4. **Backup**: Создать резервную копию конфигурации балансировщика
 
-## 📞 Поддержка
+## Поддержка
 
 Все конфигурации сохранены в:
 - `VK_CLOUD_ARCHITECTURE.md` - детальная архитектура

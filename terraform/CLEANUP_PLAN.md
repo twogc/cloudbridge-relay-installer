@@ -1,4 +1,4 @@
-# 🧹 **План очистки Terraform директории**
+# **План очистки Terraform директории**
 
 ## **Анализ текущих файлов**
 
@@ -52,7 +52,7 @@
 - `terraform.tfstate.backup` - резервное состояние (не удалять!)
 - `.terraform.lock.hcl` - блокировка провайдеров (не удалять!)
 
-## 🗑️ **Команды для очистки:**
+## **Команды для очистки:**
 
 ```bash
 # Удаление backup файлов
@@ -75,37 +75,37 @@ rm CLOUDBRIDGE_RELAY_CORRECT_ARCHITECTURE.md
 rm PROJECT_OVERVIEW.md
 ```
 
-## 📁 **Структура после очистки:**
+## **Структура после очистки:**
 
 ```
 terraform/
-├── .terraform/                    # Terraform модули (не трогать)
-├── .terraform.lock.hcl           # Блокировка провайдеров
-├── terraform.tfstate             # Состояние (не трогать)
-├── terraform.tfstate.backup      # Резервное состояние (не трогать)
-├── terraform.tfvars              # Переменные
-├── terraform.tfvars.example      # Пример переменных
+├── .terraform/ # Terraform модули (не трогать)
+├── .terraform.lock.hcl # Блокировка провайдеров
+├── terraform.tfstate # Состояние (не трогать)
+├── terraform.tfstate.backup # Резервное состояние (не трогать)
+├── terraform.tfvars # Переменные
+├── terraform.tfvars.example # Пример переменных
 │
-├── cloudbridge-relay-ddos.tf     # Основная инфраструктура
+├── cloudbridge-relay-ddos.tf # Основная инфраструктура
 ├── docker-registry-automation.tf # Автоматизация Container Registry
-├── cloud-init-ddos.yaml          # Конфигурация VM
+├── cloud-init-ddos.yaml # Конфигурация VM
 │
-├── setup-container-registry.sh   # Настройка Container Registry
-├── test-registry-connection.sh   # Тестирование подключения
-├── deploy-automated.sh           # Автоматическое развертывание
-├── create-registry-cli.sh        # CLI создание (справка)
+├── setup-container-registry.sh # Настройка Container Registry
+├── test-registry-connection.sh # Тестирование подключения
+├── deploy-automated.sh # Автоматическое развертывание
+├── create-registry-cli.sh # CLI создание (справка)
 │
-├── AUTOMATION_CONSULTATION.md    # Консультация
-├── AUTOMATION_SUMMARY.md         # Обзор автоматизации
-├── README_AUTOMATION.md          # Полная инструкция
-├── NEXT_STEPS.md                 # Следующие шаги
-├── GITHUB_SECRETS_SETUP.md       # Настройка GitHub Secrets
+├── AUTOMATION_CONSULTATION.md # Консультация
+├── AUTOMATION_SUMMARY.md # Обзор автоматизации
+├── README_AUTOMATION.md # Полная инструкция
+├── NEXT_STEPS.md # Следующие шаги
+├── GITHUB_SECRETS_SETUP.md # Настройка GitHub Secrets
 ├── CONTAINER_REGISTRY_SETUP_GUIDE.md # Инструкция Container Registry
-├── QUICK_REGISTRY_SETUP.md       # Быстрая памятка
-└── CLEANUP_PLAN.md               # Этот файл (удалить после очистки)
+├── QUICK_REGISTRY_SETUP.md # Быстрая памятка
+└── CLEANUP_PLAN.md # Этот файл (удалить после очистки)
 ```
 
-##  **Важные предупреждения:**
+## **Важные предупреждения:**
 
 1. **НЕ УДАЛЯТЬ:**
    - `.terraform/` директорию

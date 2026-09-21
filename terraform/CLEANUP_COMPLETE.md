@@ -1,6 +1,6 @@
 # **Очистка Terraform директории завершена!**
 
-## 🗑️ **Удаленные файлы:**
+## **Удаленные файлы:**
 
 ### **Backup файлы:**
 - `cloudbridge-relay-ddos.tf.backup`
@@ -50,38 +50,38 @@
 - `terraform.tfstate.backup` - резервное состояние
 - `.terraform.lock.hcl` - блокировка провайдеров
 
-## 📁 **Финальная структура:**
+## **Финальная структура:**
 
 ```
 terraform/
-├── .terraform/                    # Terraform модули
-├── .terraform.lock.hcl           # Блокировка провайдеров
-├── terraform.tfstate             # Состояние Terraform
-├── terraform.tfstate.backup      # Резервное состояние
-├── terraform.tfvars              # Переменные конфигурации
-├── terraform.tfvars.example      # Пример переменных
+├── .terraform/ # Terraform модули
+├── .terraform.lock.hcl # Блокировка провайдеров
+├── terraform.tfstate # Состояние Terraform
+├── terraform.tfstate.backup # Резервное состояние
+├── terraform.tfvars # Переменные конфигурации
+├── terraform.tfvars.example # Пример переменных
 │
-├── cloudbridge-relay-ddos.tf     # Основная инфраструктура
+├── cloudbridge-relay-ddos.tf # Основная инфраструктура
 ├── docker-registry-automation.tf # Автоматизация Container Registry
-├── cloud-init-ddos.yaml          # Минимальная конфигурация VM
+├── cloud-init-ddos.yaml # Минимальная конфигурация VM
 │
-├── setup-container-registry.sh   # Настройка Container Registry
-├── test-registry-connection.sh   # Тестирование подключения
-├── deploy-automated.sh           # Автоматическое развертывание
-├── create-registry-cli.sh        # CLI создание (справка)
+├── setup-container-registry.sh # Настройка Container Registry
+├── test-registry-connection.sh # Тестирование подключения
+├── deploy-automated.sh # Автоматическое развертывание
+├── create-registry-cli.sh # CLI создание (справка)
 │
-├── AUTOMATION_CONSULTATION.md    # Консультация по автоматизации
-├── AUTOMATION_SUMMARY.md         # Обзор автоматизации
-├── README_AUTOMATION.md          # Полная инструкция по автоматизации
-├── NEXT_STEPS.md                 # Следующие шаги
-├── GITHUB_SECRETS_SETUP.md       # Настройка GitHub Secrets
+├── AUTOMATION_CONSULTATION.md # Консультация по автоматизации
+├── AUTOMATION_SUMMARY.md # Обзор автоматизации
+├── README_AUTOMATION.md # Полная инструкция по автоматизации
+├── NEXT_STEPS.md # Следующие шаги
+├── GITHUB_SECRETS_SETUP.md # Настройка GitHub Secrets
 ├── CONTAINER_REGISTRY_SETUP_GUIDE.md # Инструкция Container Registry
-├── QUICK_REGISTRY_SETUP.md       # Быстрая памятка
-├── README.md                     # Обновленный основной README
-└── CLEANUP_COMPLETE.md           # Этот файл (удалить после прочтения)
+├── QUICK_REGISTRY_SETUP.md # Быстрая памятка
+├── README.md # Обновленный основной README
+└── CLEANUP_COMPLETE.md # Этот файл (удалить после прочтения)
 ```
 
-##  **Исправленные проблемы:**
+## **Исправленные проблемы:**
 
 ### **Дублирование required_providers:**
 - **Было:** Дублирующий блок `terraform` в `docker-registry-automation.tf`

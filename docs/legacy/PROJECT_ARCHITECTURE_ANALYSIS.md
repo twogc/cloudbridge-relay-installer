@@ -43,27 +43,27 @@
 ```go
 // Основные компоненты (из main.go)
 type Server struct {
-    config        *config.Config
-    logger        *logger.Logger
-    listener      net.Listener
+    config *config.Config
+    logger *logger.Logger
+    listener net.Listener
 
     // Networking
     tunnelManager *tunnel.Manager
-    turnServer    *nat.EnhancedTURNServer
-    turnPool      *nat.TURNPoolManager
-    derpServer    *nat.DERPServer
+    turnServer *nat.EnhancedTURNServer
+    turnPool *nat.TURNPoolManager
+    derpServer *nat.DERPServer
 
     // Enhanced QUIC
     enhancedQUICManager *EnhancedQUICManager
-    tenantManager       *tenant.Manager
-    loadBalancer        *balancer.Balancer
+    tenantManager *tenant.Manager
+    loadBalancer *balancer.Balancer
 
     // P2P Integration
-    p2pIntegration   *P2PIntegration
-    p2pAPIServer     *P2PAPIServer
+    p2pIntegration *P2PIntegration
+    p2pAPIServer *P2PAPIServer
 
     // Authentication
-    authAdapter      *auth.Adapter
+    authAdapter *auth.Adapter
     zitadelIntegration *ZitadelIntegration
 
     // Cadence Workflow
@@ -73,19 +73,19 @@ type Server struct {
     aiComponents *AIComponents
 
     // Protocol Engine
-    protocolSelector  *protocol.IntelligentProtocolSelector
-    protocolEngine    *protocol.ProtocolEngine
-    p2pManager        *p2p.P2PManager
-    p2cManager        *p2c.P2CManager
+    protocolSelector *protocol.IntelligentProtocolSelector
+    protocolEngine *protocol.ProtocolEngine
+    p2pManager *p2p.P2PManager
+    p2cManager *p2c.P2CManager
 
     // MASQUE
     masqueIntegration *MASQUEIntegration
 
     // Monitoring
     metricsServer *metrics.Server
-    metrics       *metrics.Metrics
+    metrics *metrics.Metrics
     circuitBreaker *circuitbreaker.CircuitBreaker
-    healthChecker  *health.HealthChecker
+    healthChecker *health.HealthChecker
 }
 ```
 
@@ -151,10 +151,10 @@ Secret:
 
 **API Endpoints**:
 ```
-GET  /health
-POST /allocate        - Allocate IP for peer
-POST /release         - Release IP
-GET  /status          - IPAM status
+GET /health
+POST /allocate - Allocate IP for peer
+POST /release - Release IP
+GET /status - IPAM status
 ```
 
 **Features**:
@@ -184,10 +184,10 @@ GET  /status          - IPAM status
 ```go
 // AI Analytics Components (relay/main.go)
 type AIComponents struct {
-    analyticsEngine   *ai.AnalyticsEngine
-    metricsCollector  *ai.MetricsCollector
-    predictionEngine  *ai.PredictionEngine
-    anomalyDetector   *ai.AnomalyDetector
+    analyticsEngine *ai.AnalyticsEngine
+    metricsCollector *ai.MetricsCollector
+    predictionEngine *ai.PredictionEngine
+    anomalyDetector *ai.AnomalyDetector
 }
 ```
 
@@ -256,7 +256,7 @@ type AIComponents struct {
 
 ### Supporting Services
 
-#### 7. **CNI Plugin** (cmd/cni-plugin/main.go) - 220 lines 
+#### 7. **CNI Plugin** (cmd/cni-plugin/main.go) - 220 lines
 
 **Роль**: Kubernetes CNI integration
 
@@ -271,7 +271,7 @@ type AIComponents struct {
 
 ---
 
-#### 8. **API Service** (cmd/api/main.go) - 106 lines 
+#### 8. **API Service** (cmd/api/main.go) - 106 lines
 
 **Роль**: Standalone API service (альтернатива P2P API в relay?)
 
@@ -283,17 +283,17 @@ type AIComponents struct {
 
 ### Demo/Dev Services
 
-#### 9. **ZeroTrust Demo** (cmd/zerotrust-demo/main.go) - 164 lines 📘
+#### 9. **ZeroTrust Demo** (cmd/zerotrust-demo/main.go) - 164 lines
 
 **Роль**: Demo application для Zero Trust capabilities
 
-**Status**: 📘 **DEMO ONLY** (не для production)
+**Status**: **DEMO ONLY** (не для production)
 
 ---
 
 ### Services Requiring Attention
 
-#### 10. **Quantum Service** (cmd/quantum-service/main.go) - 44 lines 
+#### 10. **Quantum Service** (cmd/quantum-service/main.go) - 44 lines
 
 **Роль**: Post-quantum cryptography integration
 
@@ -309,7 +309,7 @@ func main() {
 **Проблема**: Только заглушка, нет реальной реализации
 
 **Рекомендация**:
--  **ОТКЛЮЧИТЬ** для MVP
+- **ОТКЛЮЧИТЬ** для MVP
 - Переместить в `cmd/disabled/quantum-service`
 - Удалить из активных deployments
 - Документировать как "Future Enhancement"
@@ -322,7 +322,7 @@ mv cmd/quantum-service cmd/disabled/quantum-service
 
 ---
 
-#### 11. **QUIC Service** (cmd/quic-service/main.go) - 76 lines 
+#### 11. **QUIC Service** (cmd/quic-service/main.go) - 76 lines
 
 **Роль**: Standalone QUIC service
 
@@ -344,7 +344,7 @@ grep -r "quic-service" configs/
 
 ---
 
-#### 12. **Tenant Policy Controller** - 2 версии 
+#### 12. **Tenant Policy Controller** - 2 версии
 
 **Вариант 1**: `cmd/tenant-policy-controller/main.go` - 119 lines
 **Вариант 2**: `cmd/tenant-policy-controller-simple/main.go` - 78 lines
@@ -358,11 +358,11 @@ grep -r "quic-service" configs/
 
 ---
 
-#### 13. **kubectl-zitadel** (cmd/kubectl-zitadel/main.go) - 339 lines 
+#### 13. **kubectl-zitadel** (cmd/kubectl-zitadel/main.go) - 339 lines
 
 **Роль**: kubectl plugin для Zitadel integration
 
-**Status**:  **UTILITY TOOL** (не микросервис)
+**Status**: **UTILITY TOOL** (не микросервис)
 
 **Recommendation**: OK как утилита, не deployment service
 
@@ -374,60 +374,60 @@ grep -r "quic-service" configs/
 
 ```
 ┌─────────────────┐
-│  Client         │
-│  (cloudbridge-  │
-│   client)       │
+│ Client │
+│ (cloudbridge- │
+│ client) │
 └────────┬────────┘
          │ JWT Token
          │ API Requests
          ▼
 ┌─────────────────────────────────────────────────┐
-│  Relay Server (cmd/relay)                       │
-│  ┌──────────────────────────────────────────┐   │
-│  │ P2P API Server (port 8080)               │   │
-│  │ - Compatibility Layer                    │   │
-│  │ - Peer Management                        │   │
-│  │ - WireGuard Config                       │   │
-│  └──────────────┬───────────────────────────┘   │
-│                 │                               │
-│  ┌──────────────▼───────────────────────────┐   │
-│  │ Authentication (internal/auth)           │   │
-│  │ - Zitadel JWKS                          │   │
-│  │ - JWT Validation                        │   │
-│  └──────────────┬───────────────────────────┘   │
-│                 │                               │
-│  ┌──────────────▼───────────────────────────┐   │
-│  │ NAT Traversal (internal/nat)            │   │
-│  │ - ICE Agent                             │   │
-│  │ - TURN Pool Manager                     │   │
-│  └──────────────┬───────────────────────────┘   │
+│ Relay Server (cmd/relay) │
+│ ┌──────────────────────────────────────────┐ │
+│ │ P2P API Server (port 8080) │ │
+│ │ - Compatibility Layer │ │
+│ │ - Peer Management │ │
+│ │ - WireGuard Config │ │
+│ └──────────────┬───────────────────────────┘ │
+│ │ │
+│ ┌──────────────▼───────────────────────────┐ │
+│ │ Authentication (internal/auth) │ │
+│ │ - Zitadel JWKS │ │
+│ │ - JWT Validation │ │
+│ └──────────────┬───────────────────────────┘ │
+│ │ │
+│ ┌──────────────▼───────────────────────────┐ │
+│ │ NAT Traversal (internal/nat) │ │
+│ │ - ICE Agent │ │
+│ │ - TURN Pool Manager │ │
+│ └──────────────┬───────────────────────────┘ │
 └─────────────────┼───────────────────────────────┘
                   │
          ┌────────┼────────┐
-         │        │        │
-         ▼        ▼        ▼
+         │ │ │
+         ▼ ▼ ▼
 ┌────────────┐ ┌───────────┐ ┌──────────────┐
-│ TURN       │ │ IPAM      │ │ AI Service   │
-│ Server     │ │ Service   │ │              │
-│ (coturn)   │ │           │ │ - Analytics  │
-│            │ │ - IP      │ │ - Predictions│
-│ - NAT      │ │   Alloc   │ │ - Anomalies  │
-│   Relay    │ │ - Pools   │ │              │
+│ TURN │ │ IPAM │ │ AI Service │
+│ Server │ │ Service │ │ │
+│ (coturn) │ │ │ │ - Analytics │
+│ │ │ - IP │ │ - Predictions│
+│ - NAT │ │ Alloc │ │ - Anomalies │
+│ Relay │ │ - Pools │ │ │
 └────────────┘ └─────┬─────┘ └──────┬───────┘
-                     │              │
-                     ▼              ▼
+                     │ │
+                     ▼ ▼
               ┌──────────────────────────┐
-              │ PostgreSQL               │
-              │ - Peer state            │
-              │ - IP allocations        │
-              │ - Metrics history       │
+              │ PostgreSQL │
+              │ - Peer state │
+              │ - IP allocations │
+              │ - Metrics history │
               └────────┬─────────────────┘
                        │
                        ▼
               ┌──────────────────────────┐
-              │ Prometheus               │
-              │ - Metrics collection    │
-              │ - Alerting              │
+              │ Prometheus │
+              │ - Metrics collection │
+              │ - Alerting │
               └─────────────────────────┘
 ```
 
@@ -453,11 +453,11 @@ Client → Relay Server → Zitadel
 
 ```
 Peer A → Relay Server ← Peer B
-    ↓         ↓           ↓
+    ↓ ↓ ↓
 ICE Candidates Exchange
-    ↓         ↓           ↓
+    ↓ ↓ ↓
 STUN Binding (Direct P2P attempt)
-    ↓         ↓           ↓
+    ↓ ↓ ↓
     Success? ────YES───→ Direct Connection
          │
          NO
@@ -493,28 +493,28 @@ TURN Allocation (Fallback)
 **Minimal MVP** (must have):
 ```yaml
 deployments:
-  - cloudbridge-relay-p2p-deployment.yaml  # Core relay
-  - turn-server-deployment.yaml            # NAT traversal
-  - postgres-simple.yaml                   # State persistence
-  - prometheus-optimized-deployment.yaml   # Monitoring
+  - cloudbridge-relay-p2p-deployment.yaml # Core relay
+  - turn-server-deployment.yaml # NAT traversal
+  - postgres-simple.yaml # State persistence
+  - prometheus-optimized-deployment.yaml # Monitoring
 ```
 
 **Recommended MVP** (should have):
 ```yaml
 deployments:
-  - cloudbridge-relay-deployment-cert-manager.yaml  # With TLS
+  - cloudbridge-relay-deployment-cert-manager.yaml # With TLS
   - turn-server-deployment.yaml
   - postgres-simple.yaml
   - prometheus-optimized-deployment.yaml
-  - ai-service-deployment.yaml                      # Analytics
-  - cadence-working.yaml                            # Workflows
+  - ai-service-deployment.yaml # Analytics
+  - cadence-working.yaml # Workflows
 ```
 
 **Full Production** (nice to have):
 ```yaml
 # All of above plus:
-  - ai-worker-deployment.yaml      # Background AI
-  - cadence-web-deployment.yaml    # Workflow UI
+  - ai-worker-deployment.yaml # Background AI
+  - cadence-web-deployment.yaml # Workflow UI
 ```
 
 ---
@@ -534,30 +534,30 @@ deployments:
 | API | 106 | Low | Unknown | Check usage |
 | kubectl-zitadel | 339 | Medium | N/A | Utility |
 | ZeroTrust Demo | 164 | Low | N/A | Demo |
-| Quantum | 44 | N/A | N/A |  Stub |
+| Quantum | 44 | N/A | N/A | Stub |
 | QUIC Service | 76 | Low | Unknown | Check usage |
 
 ### Code Smells Detected
 
-1. **Quantum Service** 
+1. **Quantum Service**
    - Only 44 lines, mostly stub
    - No real implementation
    - **Action**: Remove/disable
 
-2. **Duplicate Controllers** 
+2. **Duplicate Controllers**
    - tenant-policy-controller (2 versions)
    - **Action**: Consolidate
 
-3. **Possible Service Duplication** 
+3. **Possible Service Duplication**
    - QUIC Service vs Relay's QUIC Manager
    - API Service vs Relay's P2P API
    - **Action**: Analyze and merge if duplicate
 
-4. **Missing Tests** 
+4. **Missing Tests**
    - Most services have no visible tests
    - **Action**: Add integration tests
 
-5. **Large Relay Main** 
+5. **Large Relay Main**
    - relay/main.go: 2391 lines
    - Monolithic structure
    - **Action**: Consider refactoring (low priority)
@@ -681,8 +681,8 @@ deployments:
 
 ### Services to Disable
 
-- [ ]  Quantum Service (not implemented)
-- [ ]  ZeroTrust Demo (demo only)
+- [ ] Quantum Service (not implemented)
+- [ ] ZeroTrust Demo (demo only)
 
 ---
 
@@ -798,7 +798,7 @@ kubectl apply -f k8s/deployments/cadence-web-deployment.yaml
 - Monitoring integrated
 
 **Weaknesses**:
--  Quantum service not implemented (stub)
+- Quantum service not implemented (stub)
 - Possible service duplication (needs investigation)
 - Limited test coverage
 - Large monolithic relay main

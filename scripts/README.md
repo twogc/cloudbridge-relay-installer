@@ -1,4 +1,4 @@
-# 🛠 CloudBridge Relay Scripts
+# CloudBridge Relay Scripts
 
 Набор утилит для тестирования, мониторинга и обновления CloudBridge Relay.
 
@@ -24,7 +24,7 @@
 - Docker доступен
 - kubectl >= 1.29
 
-### 🏥 `health-check.sh` - Проверка состояния системы
+### `health-check.sh` - Проверка состояния системы
 
 Комплексная диагностика работающей системы.
 
@@ -34,7 +34,7 @@
 
 **Что проверяет:**
 - Подключение к Kubernetes
-- Статус подов и сервисов  
+- Статус подов и сервисов
 - HTTP endpoints (health, ready, metrics)
 - kubectl proxy функциональность
 - Использование ресурсов
@@ -45,12 +45,12 @@
 export NAMESPACE="cloudbridge"
 export DEPLOYMENT_NAME="cloudbridge-relay"
 export RELAY_URL="http://localhost:8444"
-export METRICS_URL="http://localhost:5551"  
+export METRICS_URL="http://localhost:5551"
 export KUBECONFIG_PATH="~/.kube/config-relay"
 ./scripts/health-check.sh
 ```
 
-### 🔄 `update-production.sh` - Обновление production системы
+### `update-production.sh` - Обновление production системы
 
 Безопасное rolling update с резервным копированием и проверками.
 
@@ -91,7 +91,7 @@ export TIMEOUT="300s"
 # 1. Быстрая проверка изменений
 ./scripts/test-quick.sh
 
-# 2. Полная проверка состояния  
+# 2. Полная проверка состояния
 ./scripts/health-check.sh
 
 # 3. Полные E2E тесты
@@ -128,7 +128,7 @@ AUTO_CONFIRM=true IMAGE_TAG=hotfix-v1.2.1 \
 kubectl rollout undo deployment/cloudbridge-relay -n production
 ```
 
-## 🔧 Расширение скриптов
+## Расширение скриптов
 
 ### Добавление custom проверок
 
@@ -148,7 +148,7 @@ if [ $ISSUES -gt 0 ]; then
         $SLACK_WEBHOOK_URL
 fi
 
-# Отправка метрик в Prometheus Pushgateway  
+# Отправка метрик в Prometheus Pushgateway
 echo "cloudbridge_health_issues $ISSUES" | \
     curl --data-binary @- http://pushgateway:9091/metrics/job/health-check
 ```
@@ -191,7 +191,7 @@ ls ./backups/
 **test-quick.sh:**
 - Зеленые галочки = все работает
 - Красные крестики = критические ошибки
-- ⚠ Желтые треугольники = предупреждения
+- Желтые треугольники = предупреждения
 
 **health-check.sh:**
 - Exit code 0 = система здорова
@@ -238,4 +238,4 @@ kubectl logs deployment/cloudbridge-relay -n production --tail=100 | grep ERROR
 curl -s http://production-relay:5551/metrics | grep -E "(up|kube_proxy_requests_total)"
 ```
 
-**Все скрипты готовы к использованию!** 🚀
+**Все скрипты готовы к использованию!**

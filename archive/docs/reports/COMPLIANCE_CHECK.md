@@ -1,26 +1,26 @@
 # CloudBridge Relay + ZITADEL: Compliance Check
 ## Проверка выполнения оригинальной инструкции
 
-**Дата проверки:** $(date)  
+**Дата проверки:** $(date)
 **Статус:** Анализ соответствия
 
 ---
 
 ## **Детальная проверка по пунктам:**
 
-### 1. Базовая настройка Zitadel 
+### 1. Базовая настройка Zitadel
 
-#### 1.1. Создать организацию `cloudbridge` 
+#### 1.1. Создать организацию `cloudbridge`
 - **НЕ ВЫПОЛНЕНО:** Использована существующая организация "ZITADEL"
 - **Фактический результат:** Работаем в org "ZITADEL" (ID: 339340397199294575)
-- **🔧 Доработка нужна:** Создать отдельную организацию "cloudbridge"
+- ** Доработка нужна:** Создать отдельную организацию "cloudbridge"
 
 #### 1.2. Проект `cloudbridge-relay` с двумя приложениями
 - **ВЫПОЛНЕНО:** Проект создан (ID: 339537327304999215)
 - **Back-channel OIDC-client:** cloudbridge-relay-api (Client ID: 339537393138794797)
 - **Front-channel SPA client:** cloudbridge-relay-spa (Client ID: 339537407433048367)
 
-#### 1.3. Issuer URL и JWK endpoint  
+#### 1.3. Issuer URL и JWK endpoint
 - **ВЫПОЛНЕНО:** Issuer: https://edge.2gc.ru
 - **ВЫПОЛНЕНО:** JWKS: https://edge.2gc.ru/oauth/v2/keys
 
@@ -72,10 +72,10 @@
 - **НЕ ВЫПОЛНЕНО:** Функция не включена в ZITADEL
 - **ТРЕБУЕТСЯ:** Настройка Token Exchange в приложении
 
-#### 4.2. Client cert (CN=relay-server, SAN=relay.local)  
+#### 4.2. Client cert (CN=relay-server, SAN=relay.local)
 - **ВЫПОЛНЕНО:** Сертификаты сгенерированы
 - **ВЫПОЛНЕНО:** CA, server, client сертификаты готовы
-- **📁 Расположение:** certs/relay-mtls/
+- ** Расположение:** certs/relay-mtls/
 
 #### 4.3. Документация RFC 8705
 - **ВЫПОЛНЕНО:** Создана документация по mTLS JWT Bearer
@@ -88,7 +88,7 @@
 ### 5. RBAC-карта Kubernetes
 
 #### 5.1. Групповое сопоставление ролей
-- **ВЫПОЛНЕНО:** 
+- **ВЫПОЛНЕНО:**
   - `roles=cluster-admin` → ClusterRoleBinding
   - `roles=tenant-reader` → RoleBinding reader-ns-<tenant>
 - ** Файл:** k8s/rbac/cloudbridge-relay-rbac.yaml
@@ -104,7 +104,7 @@
 ### 6. kubectl ExecCredential plugin
 
 #### 6.1. Go plugin `kubectl-zitadel` (v1beta1)
-- ** ЧАСТИЧНО:** Архитектура и структура подготовлены  
+- ** ЧАСТИЧНО:** Архитектура и структура подготовлены
 - **КОД НЕ РЕАЛИЗОВАН:** Нет рабочего Go кода
 - **ЕСТЬ:** Заготовка в cmd/kubectl-zitadel/main.go
 
@@ -151,7 +151,7 @@
 #### 9.2. `values-zitadel.yaml` для Helm
 - **ВЫПОЛНЕНО:** k8s/zitadel/values-cloudbridge-relay.yaml
 
-#### 9.3. Disaster recovery документация  
+#### 9.3. Disaster recovery документация
 - **ВЫПОЛНЕНО:** Backup Postgres, S3, KMS keys описаны
 
 **Статус пункта 9: ВЫПОЛНЕНО (3/3)**
@@ -200,7 +200,7 @@
 
 ### Высокий приоритет:
 1. **Custom scopes не настроены** в ZITADEL проекте
-2. **kubectl exec-plugin код** не реализован  
+2. **kubectl exec-plugin код** не реализован
 3. **Token Exchange** не включен для mTLS flow
 4. **Acceptance criteria** не протестированы
 
@@ -215,7 +215,7 @@
 
 1. **Полная инфраструктура** - ZITADEL работает
 2. **OIDC приложения** созданы и настроены
-3. **Service User** с правами администратора  
+3. **Service User** с правами администратора
 4. **mTLS сертификаты** готовы к использованию
 5. **Kubernetes RBAC** полностью настроен
 6. **Мониторинг и observability** готовы
@@ -228,7 +228,7 @@
 
 ### Неделя 1 (Критичные):
 - [ ] Реализовать kubectl exec-plugin в Go
-- [ ] Настроить custom scopes в ZITADEL проекте  
+- [ ] Настроить custom scopes в ZITADEL проекте
 - [ ] Включить Token Exchange для mTLS
 - [ ] Протестировать acceptance criteria
 
@@ -237,7 +237,7 @@
 - [ ] Настроить custom claims в JWT
 - [ ] Настроить audit WebHook в Loki
 
-### Неделя 3 (Опциональные):  
+### Неделя 3 (Опциональные):
 - [ ] Полное тестирование под нагрузкой
 - [ ] Оптимизация производительности
 - [ ] Расширенная документация
@@ -246,6 +246,6 @@
 
 ---
 
-**Создано:** $(date)  
-**Анализ выполнен:** CloudBridge Team  
+**Создано:** $(date)
+**Анализ выполнен:** CloudBridge Team
 **Следующий review:** через 1 неделю

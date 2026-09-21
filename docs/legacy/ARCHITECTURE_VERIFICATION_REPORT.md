@@ -25,7 +25,7 @@
 
 ## Критические несоответствия (исправить в первую очередь)
 
-### 1.  Статус проекта - противоречие
+### 1. Статус проекта - противоречие
 
 **Проблема:**
 ```yaml
@@ -54,7 +54,7 @@ Production Target: 2025-12-01
 
 ---
 
-### 2.  SLO Targets - нереалистичные метрики
+### 2. SLO Targets - нереалистичные метрики
 
 **Проблема:**
 ```yaml
@@ -62,13 +62,13 @@ Production Target: 2025-12-01
 Inter-PoP RTT p95: < 50ms (для всех PoP pairs)
 
 # Реальные данные из кода:
-RTT Moscow ↔ Frankfurt:  70-90 ms (физическое расстояние ~2,000 км)
-RTT Moscow ↔ Amsterdam:  80-100 ms (физическое расстояние ~2,500 км)
+RTT Moscow ↔ Frankfurt: 70-90 ms (физическое расстояние ~2,000 км)
+RTT Moscow ↔ Amsterdam: 80-100 ms (физическое расстояние ~2,500 км)
 RTT Frankfurt ↔ Amsterdam: 15-25 ms (физическое расстояние ~500 км)
 
 # Из internal/handover/handover_manager_test.go:
-RTTThresholdMs: 50  // Триггер при увеличении на 50ms
-BaselineRTT: 80ms   // Типичное значение для EU-RU
+RTTThresholdMs: 50 // Триггер при увеличении на 50ms
+BaselineRTT: 80ms // Типичное значение для EU-RU
 ```
 
 **Физика:** Speed of light в оптоволокне ≈ 200,000 км/с
@@ -92,7 +92,7 @@ BaselineRTT: 80ms   // Типичное значение для EU-RU
 
 ---
 
-### 3.  RFC References - неправильные ссылки
+### 3. RFC References - неправильные ссылки
 
 **Проблема:**
 ```markdown
@@ -283,36 +283,36 @@ sequenceDiagram
 
 \`\`\`
 ┌─────────────────────────────────────────────────────────┐
-│           SLO Closed Loop (Thermostat Pattern)          │
+│ SLO Closed Loop (Thermostat Pattern) │
 ├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  1. OBSERVE (Every 30s)                                 │
-│     Prometheus → Scrape metrics from all PoPs           │
-│     └─ RTT, Loss, Jitter, Throughput, Error Rate       │
-│                                                         │
-│  2. DETECT DEVIATION                                    │
-│     AI Service → Compare vs SLO targets                 │
-│     └─ If RTT p95 > 90ms: TRIGGER                      │
-│     └─ If Handover p95 > 300ms: TRIGGER                │
-│     └─ If Error rate > 1%: TRIGGER                     │
-│                                                         │
-│  3. ACT (Corrective Actions)                            │
-│     ├─ Switch to better PoP candidate                   │
-│     ├─ Initiate handover (< 300ms)                     │
-│     ├─ Adjust QUIC parameters (BBRv2 tuning)           │
-│     ├─ Reroute traffic via alternate path              │
-│     └─ Scale resources (if needed)                     │
-│                                                         │
-│  4. VERIFY (Within 60s)                                 │
-│     Prometheus → Re-check metrics                       │
-│     └─ Confirm SLO restored                            │
-│     └─ Log success/failure for ML training             │
-│                                                         │
-│  5. LEARN (Continuous)                                  │
-│     AI Service → Update cost matrix                     │
-│     └─ Improve future predictions                      │
-│     └─ Refine triggers (avoid flapping)                │
-│                                                         │
+│ │
+│ 1. OBSERVE (Every 30s) │
+│ Prometheus → Scrape metrics from all PoPs │
+│ └─ RTT, Loss, Jitter, Throughput, Error Rate │
+│ │
+│ 2. DETECT DEVIATION │
+│ AI Service → Compare vs SLO targets │
+│ └─ If RTT p95 > 90ms: TRIGGER │
+│ └─ If Handover p95 > 300ms: TRIGGER │
+│ └─ If Error rate > 1%: TRIGGER │
+│ │
+│ 3. ACT (Corrective Actions) │
+│ ├─ Switch to better PoP candidate │
+│ ├─ Initiate handover (< 300ms) │
+│ ├─ Adjust QUIC parameters (BBRv2 tuning) │
+│ ├─ Reroute traffic via alternate path │
+│ └─ Scale resources (if needed) │
+│ │
+│ 4. VERIFY (Within 60s) │
+│ Prometheus → Re-check metrics │
+│ └─ Confirm SLO restored │
+│ └─ Log success/failure for ML training │
+│ │
+│ 5. LEARN (Continuous) │
+│ AI Service → Update cost matrix │
+│ └─ Improve future predictions │
+│ └─ Refine triggers (avoid flapping) │
+│ │
 └─────────────────────────────────────────────────────────┘
 
 **Example:**
@@ -327,10 +327,10 @@ sequenceDiagram
 ```go
 // internal/handover/handover_manager.go
 type HandoverTriggers struct {
-    RTTThresholdMs         int  // 50ms delta triggers handover
-    LossThresholdPercent   float64  // 2% loss triggers
-    JitterThresholdMs      int  // 20ms jitter triggers
-    MinTimeBetweenHandovers time.Duration  // 30s anti-flap
+    RTTThresholdMs int // 50ms delta triggers handover
+    LossThresholdPercent float64 // 2% loss triggers
+    JitterThresholdMs int // 20ms jitter triggers
+    MinTimeBetweenHandovers time.Duration // 30s anti-flap
 }
 ```
 ```
@@ -497,7 +497,7 @@ spec:
 
 ---
 
-## 🎬 Заключение
+## Заключение
 
 ### Текущее состояние: 80-90% корректности
 

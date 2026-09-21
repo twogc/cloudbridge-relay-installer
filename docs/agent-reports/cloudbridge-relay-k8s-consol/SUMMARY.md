@@ -1,8 +1,8 @@
 # SUMMARY — cloudbridge-relay-k8s-consol
 
-**Дата:** 2026-07-09  
-**Миссия:** Консолидация `k8s/` vs `k8s-manifests/` (first step, без merge деревьев)  
-**Статус:** ✅ Step 4/4 завершён
+**Дата:** 2026-07-09
+**Миссия:** Консолидация `k8s/` vs `k8s-manifests/` (first step, без merge деревьев)
+**Статус:** Step 4/4 завершён
 
 ---
 
@@ -39,8 +39,8 @@
 ## Верификация (step 4)
 
 ```bash
-git diff scripts/deploy/deploy.sh          # пусто — OK
-rg -n 'kubectl apply' scripts/deploy/      # deploy.sh → k8s-manifests/* — OK
+git diff scripts/deploy/deploy.sh # пусто — OK
+rg -n 'kubectl apply' scripts/deploy/ # deploy.sh → k8s-manifests/* — OK
 ```
 
 `setup-cadence.sh` по-прежнему использует `k8s/cadence/cadence.yaml` — ожидаемо (ops path).
@@ -61,7 +61,7 @@ rg -n 'kubectl apply' scripts/deploy/      # deploy.sh → k8s-manifests/* — O
 | Open item (k8s-consol) | Статус |
 |------------------------|--------|
 | «Prod intentionally stub (`nginx:latest`)» | **Устарело:** **k8s-prod-fix** убрал nginx/port 80/AI 8080 stubs; real images + AI **8083** |
-| AI Service 8080→8083 в `06-services.yaml` | ✅ **k8s-prod-fix** (Service metrics **8084** residual) |
+| AI Service 8080→8083 в `06-services.yaml` | **k8s-prod-fix** (Service metrics **8084** residual) |
 | Full merge / ConfigMap / cadence variants | **ещё open** (`CONSOLIDATION_PLAN`) |
 
 ## Следующие шаги (рекомендация)

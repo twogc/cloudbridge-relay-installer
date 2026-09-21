@@ -1,7 +1,7 @@
 # Отчёт агента — cursor: docs + verify + SUMMARY
 
-**Дата:** 2026-07-09 02:13  
-**Миссия:** cloudbridge-relay-k8s-prod-fix  
+**Дата:** 2026-07-09 02:13
+**Миссия:** cloudbridge-relay-k8s-prod-fix
 **Шаг:** 4
 
 ## Выполнено
@@ -36,19 +36,19 @@
 ```bash
 # nginx stubs
 rg 'nginx:latest' k8s-manifests/
-# → (0 matches) ✅
+# → (0 matches)
 
 # containerPort 80 (exact — не путать с 8083)
 rg 'containerPort: 80$' k8s-manifests/05-deployments.yaml
-# → (0 matches) ✅
+# → (0 matches)
 
 # AI service port 8080 in 06
 rg 'port: 8080' k8s-manifests/06-services.yaml
-# → (0 matches) ✅
+# → (0 matches)
 
 # alpine stub in deploy.sh
 rg 'alpine:3.18' scripts/deploy/deploy.sh
-# → (0 matches) ✅
+# → (0 matches)
 
 # YAML lint
 python3 -c "
@@ -59,7 +59,7 @@ for p in ['k8s-manifests/05-deployments.yaml','k8s-manifests/06-services.yaml']:
     print(f'YAML OK: {p}')
 "
 # → YAML OK: k8s-manifests/05-deployments.yaml
-# → YAML OK: k8s-manifests/06-services.yaml ✅
+# → YAML OK: k8s-manifests/06-services.yaml
 
 # kubectl (optional)
 command -v kubectl

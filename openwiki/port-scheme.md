@@ -134,8 +134,8 @@ Canonical prod apply: `k8s-manifests/` via `scripts/deploy/deploy.sh`. Ops/compo
 |---|---|
 | `config/config.json` (dev) | Uses `server.port` **9090** — not the installer canonical `configs/config.json` |
 | `docker/Dockerfile` EXPOSE | Lists **8082** (API fallback), not **5552** from installer config |
-| ops `k8s/deployments/*relay*` | ✅ main + cert-manager aligned to 9090/5551 (pass 4) |
-| `mws/*` OVA minimal | ✅ metrics **5551**, health **9090** (pass 4) |
+| ops `k8s/deployments/*relay*` | main + cert-manager aligned to 9090/5551 (pass 4) |
+| `mws/*` OVA minimal | metrics **5551**, health **9090** (pass 4) |
 | `k8s/deployments/cloudbridge-relay-p2p-deployment.yaml` | Still uses lab ports 8080/8082 — separate P2P profile |
 | `k8s/services/ai-service.yaml` metrics **8084** | Declared Service port; `cmd/ai-service` serves `/metrics` on HTTP port **8083** |
 | `k8s/deployments/cloudbridge-relay-deployment.yaml` http **8080** | Legacy `containerPort` in ops tree; `k8s-manifests/05` uses **9090** |

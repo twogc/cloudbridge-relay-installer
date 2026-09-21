@@ -1,6 +1,6 @@
 # CloudBridge Relay - Investor Summary
 
-> ⚠️ **ДОКУМЕНТ УСТАРЕЛ.** Дата: 13 октября 2025. С тех пор проект был заморожен (~11 мес).
+> **ДОКУМЕНТ УСТАРЕЛ.** Дата: 13 октября 2025. С тех пор проект был заморожен (~11 мес).
 > Указанные ниже «82% готовности» и «1 неделя до запуска» **не соответствуют действительности**
 > и были завышены уже на момент написания.
 > Актуальная техническая оценка (июль 2026): **~20–30% от стратегического видения**,
@@ -88,12 +88,12 @@ CloudBridge Relay использует новейшие интернет-про�
 
 | Параметр | CloudBridge | VPN | TeamViewer | Tailscale |
 |----------|-------------|-----|------------|-----------|
-| Скорость | ltra-fast (QUIC) |  Slow | Medium | Fat |
-| Приватность | 2E encryption | Varies |  Centralized | God |
-| Масштабируемость | ubernetes |  Limited |  Proprietary | Good |
-| Self-hosted | ull control | Posible |  SaaS only | Partial |
-| Multi-tenancy | ative |  No |  No |  No |
-| Стоимость | ow | Medium |  High | Medium |
+| Скорость | ltra-fast (QUIC) | Slow | Medium | Fat |
+| Приватность | 2E encryption | Varies | Centralized | God |
+| Масштабируемость | ubernetes | Limited | Proprietary | Good |
+| Self-hosted | ull control | Posible | SaaS only | Partial |
+| Multi-tenancy | ative | No | No | No |
+| Стоимость | ow | Medium | High | Medium |
 
 ---
 
@@ -335,25 +335,25 @@ CloudBridge Relay использует новейшие интернет-про�
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Client Application                       │
+│ Client Application │
 └─────────────────┬───────────────────────────────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                  CloudBridge Relay API                       │
-│  ┌────────────┬──────────────┬─────────────┬──────────────┐ │
-│  │  MASQUE    │  NAT         │  TURN       │  Auth        │ │
-│  │  Proxy     │  Traversal   │  Pool       │  (Zitadel)   │ │
-│  └────────────┴──────────────┴─────────────┴──────────────┘ │
+│ CloudBridge Relay API │
+│ ┌────────────┬──────────────┬─────────────┬──────────────┐ │
+│ │ MASQUE │ NAT │ TURN │ Auth │ │
+│ │ Proxy │ Traversal │ Pool │ (Zitadel) │ │
+│ └────────────┴──────────────┴─────────────┴──────────────┘ │
 └─────────────────┬───────────────────────────────────────────┘
                   │
                   ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Infrastructure Layer (Kubernetes)               │
-│  ┌────────────┬──────────────┬─────────────┬──────────────┐ │
-│  │  IPAM      │  AI          │  Monitoring │  Storage     │ │
-│  │  Service   │  Analytics   │  (Prom)     │  (Postgres)  │ │
-│  └────────────┴──────────────┴─────────────┴──────────────┘ │
+│ Infrastructure Layer (Kubernetes) │
+│ ┌────────────┬──────────────┬─────────────┬──────────────┐ │
+│ │ IPAM │ AI │ Monitoring │ Storage │ │
+│ │ Service │ Analytics │ (Prom) │ (Postgres) │ │
+│ └────────────┴──────────────┴─────────────┴──────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 

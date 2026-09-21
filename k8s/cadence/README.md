@@ -17,7 +17,7 @@ kubectl apply -f k8s/cadence/cadence.yaml
 kubectl get pods -n cloudbridge | grep cadence
 ```
 
-## 🔧 Конфигурация
+## Конфигурация
 
 ### Переменные окружения
 
@@ -74,7 +74,7 @@ kubectl exec -n cloudbridge deployment/cadence -- cat /etc/cadence/config/docker
 ### 3. "not supported plugin sqlite3"
 **Решение**: Использовать PostgreSQL вместо SQLite
 
-## 📚 Дополнительные ресурсы
+## Дополнительные ресурсы
 
 - [Полная документация](../CADENCE_SETUP_GUIDE.md)
 - [Скрипт автоматической настройки](../setup-cadence.sh)

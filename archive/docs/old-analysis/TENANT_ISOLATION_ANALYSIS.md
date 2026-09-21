@@ -12,23 +12,23 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    TENANT ISOLATION TEST                   │
+│ TENANT ISOLATION TEST │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   Tenant A (tenant-security-test-a)                      │
-│     ├── Подсеть: 10.66.19.0/24                            │
-│     ├── Peer A-1: 10.66.19.10                              │
-│     └── Peer A-2: 10.66.19.11                              │
-│                                                             │
-│   Tenant B (tenant-security-test-b)                      │
-│     ├── Подсеть: 10.29.187.0/24                           │
-│     ├── Peer B-1: 10.29.187.10                             │
-│     └── Peer B-2: 10.29.187.11                             │
-│                                                             │
-│   Tenant C (tenant-security-test-c)                      │
-│     ├── Подсеть: 10.58.33.0/24                            │
-│     └── Peer C-1: 10.58.33.10                              │
-│                                                             │
+│ │
+│ Tenant A (tenant-security-test-a) │
+│ ├── Подсеть: 10.66.19.0/24 │
+│ ├── Peer A-1: 10.66.19.10 │
+│ └── Peer A-2: 10.66.19.11 │
+│ │
+│ Tenant B (tenant-security-test-b) │
+│ ├── Подсеть: 10.29.187.0/24 │
+│ ├── Peer B-1: 10.29.187.10 │
+│ └── Peer B-2: 10.29.187.11 │
+│ │
+│ Tenant C (tenant-security-test-c) │
+│ ├── Подсеть: 10.58.33.0/24 │
+│ └── Peer C-1: 10.58.33.10 │
+│ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -41,7 +41,7 @@
 
 ---
 
-## 🔧 **Как работает изоляция**
+## **Как работает изоляция**
 
 ### **1. Детерминированное выделение подсетей:**
 
@@ -50,11 +50,11 @@ func (pm *PeerManagerFixed) createTenantSubnet(tenantID string) (string, error) 
     // Используем SHA256 хеш от tenantID для детерминированного выделения
     hash := sha256.Sum256([]byte(tenantID))
     subnetID := int(hash[0])<<8 + int(hash[1]) // 0-65535
-    
+
     // Генерируем подсеть в диапазоне 10.0.0.0/8
     x := (subnetID / 256) % 256
     y := subnetID % 256
-    
+
     return fmt.Sprintf("10.%d.%d.0/24", x, y)
 }
 ```
@@ -69,11 +69,11 @@ func (pm *PeerManagerFixed) createTenantSubnet(tenantID string) (string, error) 
 
 ### **3. Гарантии изоляции:**
 
-**Каждый тенант получает уникальную подсеть**  
-**Пиры разных тенантов не могут взаимодействовать напрямую**  
-**Детерминированное выделение - один тенант всегда получает одну подсеть**  
-**Масштабируемость - до 65,536 уникальных подсетей**  
-**Валидация изоляции - автоматическая проверка коллизий**  
+**Каждый тенант получает уникальную подсеть**
+**Пиры разных тенантов не могут взаимодействовать напрямую**
+**Детерминированное выделение - один тенант всегда получает одну подсеть**
+**Масштабируемость - до 65,536 уникальных подсетей**
+**Валидация изоляции - автоматическая проверка коллизий**
 
 ---
 
@@ -83,7 +83,7 @@ func (pm *PeerManagerFixed) createTenantSubnet(tenantID string) (string, error) 
 
 ```go
 // В internal/api/peer_handlers.go:246
-baseIP := "10.100.77"  // ОДИНАКОВАЯ ПОДСЕТЬ ДЛЯ ВСЕХ ТЕНАНТОВ!
+baseIP := "10.100.77" // ОДИНАКОВАЯ ПОДСЕТЬ ДЛЯ ВСЕХ ТЕНАНТОВ!
 ```
 
 **Результат**: Все тенанты используют подсеть `10.100.77.0/24` - **НЕТ ИЗОЛЯЦИИ!**
@@ -95,10 +95,10 @@ baseIP := "10.100.77"  // ОДИНАКОВАЯ ПОДСЕТЬ ДЛЯ ВСЕХ Т
 func (pm *PeerManagerFixed) allocateIPForTenantFixed(tenantID, peerID string) (string, error) {
     // Получаем уникальную подсеть для тенанта
     tenantSubnet, err := pm.getOrCreateTenantSubnet(tenantID)
-    
+
     // Выделяем IP в рамках подсети тенанта
     allocatedIP, err := pm.allocateIPInTenantSubnet(tenantID, peerID, tenantSubnet)
-    
+
     return allocatedIP, nil
 }
 ```
@@ -127,9 +127,9 @@ go test ./internal/api -v -run TestTenant
 // Добавить метрики изоляции
 func (pm *PeerManager) GetIsolationStats() map[string]interface{} {
     return map[string]interface{}{
-        "total_tenants":     len(pm.tenantSubnets),
-        "total_allocated":   len(pm.allocatedIPs),
-        "tenant_subnets":    pm.tenantSubnets,
+        "total_tenants": len(pm.tenantSubnets),
+        "total_allocated": len(pm.allocatedIPs),
+        "tenant_subnets": pm.tenantSubnets,
         "tenant_peer_counts": pm.tenantIPs,
     }
 }
@@ -137,14 +137,14 @@ func (pm *PeerManager) GetIsolationStats() map[string]interface{} {
 
 ---
 
-## 🏆 **Заключение**
+## **Заключение**
 
 ### **ИЗОЛЯЦИЯ РАБОТАЕТ ПРАВИЛЬНО!**
 
 **Каждый тенант получает свою уникальную подсеть:**
--  **Tenant A** → `10.66.19.0/24`
--  **Tenant B** → `10.29.187.0/24`  
--  **Tenant C** → `10.58.33.0/24`
+- **Tenant A** → `10.66.19.0/24`
+- **Tenant B** → `10.29.187.0/24`
+- **Tenant C** → `10.58.33.0/24`
 
 **Гарантии безопасности:**
 - Полная изоляция между тенантами

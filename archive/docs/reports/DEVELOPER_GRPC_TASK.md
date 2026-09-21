@@ -24,7 +24,7 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay --tail=50 | grep -i grp
 "grpc": {
   "enabled": true,
   "port": 8444,
-  "tls_enabled": false,  // ← ВАЖНО: отключить TLS для тестирования
+  "tls_enabled": false, // ← ВАЖНО: отключить TLS для тестирования
   "cert_file": "/app/certs/tls.crt",
   "key_file": "/app/certs/tls.key",
   "mtls_enabled": false,
@@ -55,15 +55,15 @@ telnet localhost 8444
 ```yaml
 # API Configuration
 api:
-  base_url: "grpc://localhost:8444"          # gRPC протокол + port-forward
+  base_url: "grpc://localhost:8444" # gRPC протокол + port-forward
   timeout: "30s"
   insecure_skip_verify: true
 
-# Authentication Configuration  
+# Authentication Configuration
 auth:
-  type: "jwt"  # или "none" для тестирования
+  type: "jwt" # или "none" для тестирования
   secret: "85Sk/NfLq3gqzCXzmBKbJCpL+f5BssXz3G8dVi3sPiE="
-  skip_validation: true  # для тестирования
+  skip_validation: true # для тестирования
 ```
 
 ## ТОКЕНЫ ДЛЯ АВТОРИЗАЦИИ
@@ -104,7 +104,7 @@ cd test/relay-client
 node create-test-token.js
 ```
 
-## 📂 КЛЮЧЕВЫЕ ФАЙЛЫ КОДА
+## КЛЮЧЕВЫЕ ФАЙЛЫ КОДА
 
 ### 1. gRPC Сервер
 **Основной файл:** `cmd/relay/main.go`
@@ -207,7 +207,7 @@ kubectl logs -n cloudbridge -l app=cloudbridge-relay-no-tls -f
 ## ЦЕЛЬ
 **Добиться успешного подключения клиента к gRPC серверу без ошибок `context deadline exceeded`.**
 
-## 📞 РЕЗУЛЬТАТ
+## РЕЗУЛЬТАТ
 После исправления должны увидеть в логах сервера:
 ```
 [grpc] Incoming connection from client

@@ -30,11 +30,11 @@ type EnhancedConfig struct {
 
     // Experimental features managers
     ExperimentalFeatures *ExperimentalFeaturesConfig
-    CCManager            *congestion.CongestionControlManager
-    ACKFreqManager       *ACKFrequencyManager
-    FECManager           *FECManager
-    GreasingManager      *GreasingManager
-    logger               *zap.Logger
+    CCManager *congestion.CongestionControlManager
+    ACKFreqManager *ACKFrequencyManager
+    FECManager *FECManager
+    GreasingManager *GreasingManager
+    logger *zap.Logger
 }
 ```
 
@@ -158,7 +158,7 @@ ack_frequency:
   enable_adaptive: true
 
 fec:
-  enabled: false  # По умолчанию отключено
+  enabled: false # По умолчанию отключено
   redundancy_ratio: 0.1
   algorithm: "xor"
 
@@ -220,32 +220,32 @@ QUIC Bit Greasing (RFC 9287)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                  EnhancedConnection                      │
+│ EnhancedConnection │
 ├─────────────────────────────────────────────────────────┤
-│  • OnPacketAck()  → BBRv2 Manager                       │
-│  • OnPacketLoss() → BBRv2 Manager                       │
-│  • AfterRead()    → ACK Frequency Manager               │
-│  • ApplyFEC()     → FEC Manager                         │
-│  • GreaseConnection() → Greasing Manager                │
+│ • OnPacketAck() → BBRv2 Manager │
+│ • OnPacketLoss() → BBRv2 Manager │
+│ • AfterRead() → ACK Frequency Manager │
+│ • ApplyFEC() → FEC Manager │
+│ • GreaseConnection() → Greasing Manager │
 └─────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────┐
-│                   EnhancedConfig                         │
+│ EnhancedConfig │
 ├─────────────────────────────────────────────────────────┤
-│  • CCManager (BBRv2)                                    │
-│  • ACKFreqManager                                       │
-│  • FECManager                                           │
-│  • GreasingManager                                      │
-│  • logger                                               │
+│ • CCManager (BBRv2) │
+│ • ACKFreqManager │
+│ • FECManager │
+│ • GreasingManager │
+│ • logger │
 └─────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────┐
-│            ExperimentalFeaturesConfig                    │
+│ ExperimentalFeaturesConfig │
 ├─────────────────────────────────────────────────────────┤
-│  • EnableBBRv2: true                                    │
-│  • EnableACKFrequency: true                             │
-│  • EnableFEC: false (optional)                          │
-│  • EnableGreasing: true                                 │
+│ • EnableBBRv2: true │
+│ • EnableACKFrequency: true │
+│ • EnableFEC: false (optional) │
+│ • EnableGreasing: true │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -397,7 +397,7 @@ greasedVer, greasedParams, _ := conn.GreaseConnection(versions, params)
 
 ---
 
-##  Configuration Best Practices
+## Configuration Best Practices
 
 ### Production Recommendations
 
@@ -406,16 +406,16 @@ greasedVer, greasedParams, _ := conn.GreaseConnection(versions, params)
 enable_experimental: true
 
 bbrv2:
-  enabled: true  # RECOMMENDED
+  enabled: true # RECOMMENDED
 
 ack_frequency:
-  enabled: true  # RECOMMENDED
+  enabled: true # RECOMMENDED
 
 fec:
-  enabled: false  # Only if packet loss > 1%
+  enabled: false # Only if packet loss > 1%
 
 greasing:
-  enabled: true  # RECOMMENDED, zero cost
+  enabled: true # RECOMMENDED, zero cost
 ```
 
 #### 2. Monitor Metrics
@@ -427,7 +427,7 @@ greasing:
 #### 3. Gradual Rollout
 ```yaml
 migration:
-  rollout_percentage: 10  # Start with 10%
+  rollout_percentage: 10 # Start with 10%
   canary_deployment: true
   canary_percentage: 5
 ```
@@ -515,7 +515,7 @@ migration:
 
 ---
 
-## 💾 Files Created/Modified
+## Files Created/Modified
 
 ### Created Files
 1. `config/experimental-features.yaml` - Configuration file

@@ -30,7 +30,7 @@
 - **Мониторинг** - Отслеживание подключений
 - **Безопасность** - Защита от атак
 
-##  **Метрики CloudBridge Relay**
+## **Метрики CloudBridge Relay**
 
 ### **Основные метрики:**
 - **relay_connections_total** - Общее количество соединений
@@ -66,7 +66,7 @@
 | 19302 | UDP | STUN Server | STUN сервер |
 | 8443 | UDP | MASQUE | MASQUE протокол |
 
-## 🛠️ **Настройка мониторинга**
+## **Настройка мониторинга**
 
 ### **Prometheus конфигурация:**
 ```yaml
@@ -86,7 +86,7 @@ sudo ufw allow 9090/tcp comment "Prometheus"
 sudo ufw allow 3000/tcp comment "Grafana"
 ```
 
-##  **Дашборды Grafana**
+## **Дашборды Grafana**
 
 ### **CloudBridge Relay Dashboard:**
 - **Connections** - График соединений

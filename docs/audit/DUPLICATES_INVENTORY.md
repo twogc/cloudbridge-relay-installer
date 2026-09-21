@@ -1,11 +1,11 @@
 # Duplicates Inventory — Go implementations
 
-**Дата:** 2026-07-09  
-**Шаг:** cloudbridge-relay-score-ports / step 4 (verify + wiring status)  
+**Дата:** 2026-07-09
+**Шаг:** cloudbridge-relay-score-ports / step 4 (verify + wiring status)
 **Источник:** [MIMO_AUDIT_REPORT.md §2](MIMO_AUDIT_REPORT.md), grep по символам в `*.go`
 
-Методика: для каждой пары/тройки подсчитаны файлы, ссылающиеся на конструктор/тип (ripgrep).  
-«Активен» = есть вызовы из `cmd/`, `internal/` (не только из файла-определения и его тестов).  
+Методика: для каждой пары/тройки подсчитаны файлы, ссылающиеся на конструктор/тип (ripgrep).
+«Активен» = есть вызовы из `cmd/`, `internal/` (не только из файла-определения и его тестов).
 «Мёртв» = 0 внешних ссылок, только self-reference в пакете.
 
 ---
@@ -66,9 +66,9 @@
 ## Cadence: две production-линии
 
 ```
-cmd/relay/main.go          → NewProductionClient → CreateWorkflowServiceClientImproved
-cmd/ai-worker/main.go      → NewClient           → CreateWorkflowServiceClient(WithOptions)
-internal/cadence/worker/   → *cadence.Client
+cmd/relay/main.go → NewProductionClient → CreateWorkflowServiceClientImproved
+cmd/ai-worker/main.go → NewClient → CreateWorkflowServiceClient(WithOptions)
+internal/cadence/worker/ → *cadence.Client
 ```
 
 `integration_test/cadence_integration_test.go` — **удалён step 2** (stale, ссылался на несуществующие `CadenceClient` / `NewCadenceClient`).
@@ -79,7 +79,7 @@ internal/cadence/worker/   → *cadence.Client
 
 `internal/p2p/relay_manager_hybrid.go` + `score_wiring.go`: production allocator **подключается** при `SCORE_BASE_URL` (P2PIntegration → WireGuard API). Без env — classic `RelayManager` only. v2/improved allocators удалены ранее.
 
-**Wiring status (2026-07-09):** ✅ optional path — `p2p.NewRelayManagerHybridFromSCORE` + `SCORE_BASE_URL`/`SCORE_API_KEY` env; wired from `cmd/relay` `P2PIntegration` → P2P API WireGuard endpoints. Disabled when URL empty (default).
+**Wiring status (2026-07-09):** optional path — `p2p.NewRelayManagerHybridFromSCORE` + `SCORE_BASE_URL`/`SCORE_API_KEY` env; wired from `cmd/relay` `P2PIntegration` → P2P API WireGuard endpoints. Disabled when URL empty (default).
 
 ---
 

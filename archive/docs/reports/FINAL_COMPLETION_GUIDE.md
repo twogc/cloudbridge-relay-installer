@@ -1,8 +1,8 @@
 # Финальное завершение CloudBridge + ZITADEL интеграции
 
-**Время на завершение:** 2-3 часа  
-**Статус:** 75% готово → 100% готово  
-**Приоритет:** Критичный  
+**Время на завершение:** 2-3 часа
+**Статус:** 75% готово → 100% готово
+**Приоритет:** Критичный
 
 ---
 
@@ -10,7 +10,7 @@
 
 ```
 URL: https://edge.2gc.ru/
-Email: zitadel-admin@zitadel.edge.2gc.ru  
+Email: zitadel-admin@zitadel.edge.2gc.ru
 Password: suppIw-tegvu9-jocxiq
 ```
 
@@ -18,9 +18,9 @@ Password: suppIw-tegvu9-jocxiq
 
 ## **КРИТИЧНЫЕ ЗАДАЧИ ДЛЯ ЗАВЕРШЕНИЯ**
 
-### 1️⃣ **Настроить Custom Scopes (30 мин)**
+### 1⃣ **Настроить Custom Scopes (30 мин)**
 
-**Проблема:** Нет scopes `relay.api` и `relay.k8s`  
+**Проблема:** Нет scopes `relay.api` и `relay.k8s`
 **Решение через Console:**
 
 1. Зайти в https://edge.2gc.ru/
@@ -43,15 +43,15 @@ curl -k -X POST "$ZITADEL_MANAGEMENT_API/projects/$PROJECT_ID/roles" \
 
 ---
 
-### 2️⃣ **Включить Client Credentials Flow (15 мин)**
+### 2⃣ **Включить Client Credentials Flow (15 мин)**
 
-**Проблема:** API приложение не поддерживает `client_credentials`  
+**Проблема:** API приложение не поддерживает `client_credentials`
 **Решение через Console:**
 
 1. Projects → `cloudbridge-relay`
 2. Applications → `cloudbridge-relay-api` (ID: 339537393122017581)
 3. Settings → Grant Types
-4. Включить: `Client Credentials` 
+4. Включить: `Client Credentials`
 5. Включить: `Token Exchange` (для mTLS)
 6. Auth Method → `Client Secret (Basic)` или `Private Key JWT` (для mTLS)
 
@@ -65,32 +65,32 @@ curl -k -X POST "https://edge.2gc.ru/oauth/v2/token" \
 
 ---
 
-### 3️⃣ **Настроить Custom Claims (20 мин)**
+### 3⃣ **Настроить Custom Claims (20 мин)**
 
-**Проблема:** JWT не содержит `tenant_id`, `client_id`, `roles`  
+**Проблема:** JWT не содержит `tenant_id`, `client_id`, `roles`
 **Решение через Console:**
 
 1. Projects → `cloudbridge-relay` → Settings
-2. Token Settings / Claims Mapping  
+2. Token Settings / Claims Mapping
 3. Добавить custom claims:
    - `tenant_id` → User Metadata: `tenant_id`
-   - `client_id` → Static Value: `${client_id}` 
+   - `client_id` → Static Value: `${client_id}`
    - `roles` → User Roles: `project_roles`
    - `audit_session_id` → Generate: UUID
 
 **Альтернативный путь:**
-1. Applications → `cloudbridge-relay-api` 
+1. Applications → `cloudbridge-relay-api`
 2. Token Settings
 3. Include Role Assertion in Access Token
 4. Include Role Assertion in ID Token
 
 ---
 
-## 🔧 **ОПЦИОНАЛЬНЫЕ ДОРАБОТКИ**
+## **ОПЦИОНАЛЬНЫЕ ДОРАБОТКИ**
 
-### 4️⃣ **Создать организацию "cloudbridge" (1 час)**
+### 4⃣ **Создать организацию "cloudbridge" (1 час)**
 
-**Текущее:** Работаем в org "ZITADEL"  
+**Текущее:** Работаем в org "ZITADEL"
 **Требуется:** Отдельная org "cloudbridge"
 
 1. Console → Organizations → Create
@@ -99,7 +99,7 @@ curl -k -X POST "https://edge.2gc.ru/oauth/v2/token" \
    - Export project `cloudbridge-relay`
    - Import в новую org
 
-### 5️⃣ **Настроить Audit WebHook → Loki (30 мин)**
+### 5⃣ **Настроить Audit WebHook → Loki (30 мин)**
 
 1. Console → Notifications → WebHooks
 2. Add WebHook:
@@ -169,7 +169,7 @@ kubectl get ns --kubeconfig ~/.kube/relay-config
 
 ---
 
-## 🧰 **ПОЛЕЗНЫЕ КОМАНДЫ ДЛЯ ДИАГНОСТИКИ**
+## **ПОЛЕЗНЫЕ КОМАНДЫ ДЛЯ ДИАГНОСТИКИ**
 
 ### Environment setup:
 ```bash
@@ -199,13 +199,13 @@ curl -k -H "Authorization: Bearer $ZITADEL_ADMIN_TOKEN" \
 
 ## **РЕЗУЛЬТАТ ПОСЛЕ ЗАВЕРШЕНИЯ**
 
-**100% соответствие техзаданию**  
-**kubectl exec-plugin работает с ZITADEL**  
-**mTLS аутентификация готова**  
-**Custom scopes и claims настроены**  
-**Token Exchange активирован**  
-**Kubernetes RBAC интегрирован**  
-**Мониторинг и observability готовы**  
-**Полная документация**  
+**100% соответствие техзаданию**
+**kubectl exec-plugin работает с ZITADEL**
+**mTLS аутентификация готова**
+**Custom scopes и claims настроены**
+**Token Exchange активирован**
+**Kubernetes RBAC интегрирован**
+**Мониторинг и observability готовы**
+**Полная документация**
 
 **СИСТЕМА ГОТОВА К PRODUCTION ИСПОЛЬЗОВАНИЮ**

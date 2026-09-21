@@ -10,7 +10,7 @@ This directory contains a production-ready monitoring stack for CloudBridge, imp
 - **Grafana** - Visualization and provisioning
 - **AlertManager** - Advanced alert routing
 
-## 🏗️ Architecture
+## Architecture
 
 ### **Monitoring Stack Components**
 ```mermaid
@@ -19,16 +19,16 @@ graph TB
         PROM[HA Prometheus<br/>2 Replicas<br/>15d Retention]
         VM[VictoriaMetrics Cluster<br/>1y Retention<br/>3 Storage Nodes]
     end
-    
+
     subgraph "Alerting"
         AM[HA AlertManager<br/>3 Replicas<br/>Advanced Routing]
         SLO[SLO Monitoring<br/>Burn-rate Alerts<br/>Error Budget]
     end
-    
+
     subgraph "Visualization"
         GRAF[Grafana<br/>Provisioning<br/>Dashboards]
     end
-    
+
     PROM -->|remote_write| VM
     PROM --> AM
     SLO --> AM
@@ -36,7 +36,7 @@ graph TB
     GRAF --> VM
 ```
 
-## 📁 Files
+## Files
 
 ### **Core Monitoring**
 - `prometheus-ha.yaml` - HA Prometheus with remote write
@@ -114,7 +114,7 @@ kubectl port-forward svc/grafana 3000:3000 -n monitoring
 
 ### **SLO Monitoring**
 - **CloudBridge Relay**: 99.9% availability
-- **BGP Sessions**: 99.95% availability  
+- **BGP Sessions**: 99.95% availability
 - **Anycast Service**: 99.99% availability
 - **Latency**: 99.5% under 100ms
 - **Burn-rate Alerts**: Multi-window detection
@@ -134,7 +134,7 @@ critical-alerts:
   - slack: #alerts-critical
   - conditions: severity=critical
 
-# Warning Alerts  
+# Warning Alerts
 warning-alerts:
   - email: team@cloudbridge.com
   - slack: #alerts-warning
@@ -169,7 +169,7 @@ period: 30d
 error_budget: 0.1%
 
 # BGP Sessions
-service: "cloudbridge-bgp"  
+service: "cloudbridge-bgp"
 objective: 99.95%
 period: 30d
 error_budget: 0.05%
@@ -186,7 +186,7 @@ error_budget: 0.01%
 - **Slow**: 30m/6h windows for sustained issues
 - **Ticket**: 2h/24h windows for escalation
 
-## 🔧 Configuration
+## Configuration
 
 ### **Storage Classes**
 ```yaml
@@ -233,7 +233,7 @@ grafana: 3000/tcp
 - Prefix counts
 - Session uptime
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### **Common Issues**
 
@@ -274,7 +274,7 @@ kubectl get configmaps -n monitoring -l app.kubernetes.io/name=grafana
 kubectl logs -n monitoring deployment/grafana
 ```
 
-## 📚 References
+## References
 
 - [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus)
 - [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics)

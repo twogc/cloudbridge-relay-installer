@@ -4,11 +4,11 @@
 
 This directory contains Kubernetes manifests for BGP monitoring in the CloudBridge anycast network. The monitoring system provides comprehensive visibility into BGP sessions, route tables, and anycast health across all PoP locations.
 
-## 🏗️ Architecture
+## Architecture
 
 ### **BGP Exporters**
 - **BIRD Exporter**: Monitors BIRD routing daemon (port 9324)
-- **FRR Exporter**: Monitors FRR routing daemon (port 9342)  
+- **FRR Exporter**: Monitors FRR routing daemon (port 9342)
 - **GoBGP Exporter**: Monitors GoBGP routing daemon (port 9474)
 
 ### **Monitoring Stack**
@@ -16,7 +16,7 @@ This directory contains Kubernetes manifests for BGP monitoring in the CloudBrid
 - **Grafana**: Visualization and dashboards
 - **AlertManager**: Alert routing and notifications
 
-## 📁 Files
+## Files
 
 ### **Deployments**
 - `bird-exporter-deployment.yaml` - BIRD exporter deployment
@@ -69,7 +69,7 @@ kubectl get servicemonitors -n monitoring -l component=bgp-monitoring
 # BIRD Exporter
 kubectl port-forward svc/bird-exporter 9324:9324 -n monitoring
 
-# FRR Exporter  
+# FRR Exporter
 kubectl port-forward svc/frr-exporter 9342:9342 -n monitoring
 
 # GoBGP Exporter
@@ -92,7 +92,7 @@ frr_bgp_peer_flop_count{name="peer1"} 0
 
 # GoBGP Metrics
 gobgp_peer_up{name="10.0.2.100"} 1
-gobgp_peer_session_state{name="10.0.2.100"} 6  # established
+gobgp_peer_session_state{name="10.0.2.100"} 6 # established
 gobgp_peer_uptime_seconds{name="10.0.2.100"} 86400
 ```
 
@@ -160,7 +160,7 @@ anycast_availability{pop="newyork"} 99.7
 - Anycast performance heatmap
 - Anycast health table
 
-## 🔧 Configuration
+## Configuration
 
 ### **BGP Daemon Requirements**
 - **BIRD**: Socket at `/var/run/bird.ctl` and `/var/run/bird6.ctl`
@@ -187,7 +187,7 @@ scrape_configs:
       - targets: ['gobgp-exporter:9474']
 ```
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### **Common Issues**
 
@@ -224,7 +224,7 @@ kubectl port-forward svc/prometheus 9090:9090 -n monitoring
 # Open http://localhost:9090/targets
 ```
 
-## 📚 References
+## References
 
 - [BIRD Exporter Documentation](https://github.com/czerwonk/bird_exporter)
 - [FRR Exporter Documentation](https://github.com/tynany/frr_exporter)

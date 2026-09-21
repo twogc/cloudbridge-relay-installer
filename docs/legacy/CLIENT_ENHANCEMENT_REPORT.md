@@ -4,7 +4,7 @@
 
 Реализованы критические улучшения клиента для интеграции с серверной архитектурой H3→H2 CONNECT→WS→TCP и seamless handover.
 
-## 🔥 **Реализованные компоненты**
+## **Реализованные компоненты**
 
 ### **1. MASQUE Client (`pkg/masque/client.go`)**
 - **HTTP/3 + MASQUE поддержка** с CONNECT-UDP/CONNECT-IP
@@ -76,19 +76,19 @@ min_dwell: "20s"
 - handover_ttr_seconds
 ```
 
-##  **Обновленная конфигурация**
+## **Обновленная конфигурация**
 
 ### **Критические изменения:**
 ```yaml
 # QUIC - безопасные настройки
 quic:
-  enable_0rtt: false              # CRITICAL: выключено по умолчанию
+  enable_0rtt: false # CRITICAL: выключено по умолчанию
   handshake_timeout: "8s"
   idle_timeout: "30s"
 
 # Auth - включена валидация
 auth:
-  skip_validation: false          # CRITICAL: включить валидацию JWT
+  skip_validation: false # CRITICAL: включить валидацию JWT
   jwks_cache_ttl: "10m"
   audience: "cloudbridge"
   issuer: "https://auth.2gc.ru"
@@ -179,7 +179,7 @@ probe_success_rate{mode, pop}
 - LO-driven адаптация под метрики
 - ynthetic monitoring всех путей
 
-##  **Следующие шаги**
+## **Следующие шаги**
 
 ### **1. Интеграция (готово к выполнению):**
 ```bash
@@ -212,9 +212,9 @@ go get github.com/quic-go/quic-go/http3@v0.54.0
 ### **До улучшений: 7/10**
 - орошая модульная архитектура
 - ульти-транспорт поддержка
--  Отсутствует MASQUE поддержка
--  Нет seamless handover
--  Нет SLO-driven адаптации
+- Отсутствует MASQUE поддержка
+- Нет seamless handover
+- Нет SLO-driven адаптации
 
 ### **После улучшений: 9/10**
 - олная MASQUE поддержка

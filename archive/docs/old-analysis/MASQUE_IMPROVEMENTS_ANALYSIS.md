@@ -9,11 +9,11 @@
 // Основные улучшения для нашего проекта:
 type Client struct {
     TLSClientConfig *tls.Config
-    QUICConfig      *quic.Config
-    dialOnce        sync.Once
-    dialErr         error
-    conn            *quic.Conn
-    clientConn      *http3.ClientConn
+    QUICConfig *quic.Config
+    dialOnce sync.Once
+    dialErr error
+    conn *quic.Conn
+    clientConn *http3.ClientConn
 }
 ```
 
@@ -28,10 +28,10 @@ type Client struct {
 ```go
 // Основные улучшения для нашего проекта:
 type Proxy struct {
-    mx       sync.Mutex
-    closed   bool
+    mx sync.Mutex
+    closed bool
     refCount sync.WaitGroup
-    closers  map[io.Closer]struct{}
+    closers map[io.Closer]struct{}
 }
 ```
 
@@ -46,15 +46,15 @@ type Proxy struct {
 ```go
 // Основные улучшения для нашего проекта:
 type proxiedConn struct {
-    str        http3Stream
-    localAddr  net.Addr
+    str http3Stream
+    localAddr net.Addr
     remoteAddr net.Addr
-    closed     atomic.Bool
-    readDone   chan struct{}
+    closed atomic.Bool
+    readDone chan struct{}
     deadlineMx sync.Mutex
-    readCtx    context.Context
+    readCtx context.Context
     readCtxCancel context.CancelFunc
-    deadline   time.Time
+    deadline time.Time
     readDeadlineTimer *time.Timer
 }
 ```
@@ -96,20 +96,20 @@ func Dial(ctx context.Context, conn *http3.ClientConn, template *uritemplate.Tem
 ```go
 // Основные улучшения для нашего проекта:
 type Conn struct {
-    str    http3Stream
+    str http3Stream
     writes chan writeCapsule
-    
+
     assignedAddressNotify chan struct{}
     availableRoutesNotify chan struct{}
-    
-    mu                sync.Mutex
-    peerAddresses     []netip.Prefix
-    localRoutes       []IPRoute
+
+    mu sync.Mutex
+    peerAddresses []netip.Prefix
+    localRoutes []IPRoute
     assignedAddresses []netip.Prefix
-    availableRoutes   []IPRoute
-    
+    availableRoutes []IPRoute
+
     closeChan chan struct{}
-    closeErr  error
+    closeErr error
 }
 ```
 
@@ -122,7 +122,7 @@ type Conn struct {
 
 ---
 
-## 🔧 **План улучшений для нашего проекта**
+## **План улучшений для нашего проекта**
 
 ### **1. Улучшения CONNECT-UDP (на основе masque-go)**
 
@@ -198,25 +198,25 @@ func (s *Proxy) proxyConnSend(conn *net.UDPConn, str *http3.Stream) error {
 ```go
 // 1. Улучшить IP Route management
 type Conn struct {
-    str    http3Stream
+    str http3Stream
     writes chan writeCapsule
-    
+
     assignedAddressNotify chan struct{}
     availableRoutesNotify chan struct{}
-    
-    mu                sync.Mutex
-    peerAddresses     []netip.Prefix
-    localRoutes       []IPRoute
+
+    mu sync.Mutex
+    peerAddresses []netip.Prefix
+    localRoutes []IPRoute
     assignedAddresses []netip.Prefix
-    availableRoutes   []IPRoute
-    
+    availableRoutes []IPRoute
+
     closeChan chan struct{}
-    closeErr  error
+    closeErr error
 }
 
 // 2. Добавить ICMP support
 const (
-    ipProtoICMP   = 1
+    ipProtoICMP = 1
     ipProtoICMPv6 = 58
 )
 
@@ -226,7 +226,7 @@ const minMTU = 1280
 // 4. Добавить Capsule handling
 type writeCapsule struct {
     capsule appendable
-    result  chan error
+    result chan error
 }
 ```
 
@@ -242,10 +242,10 @@ type proxiedConn struct {
 
 // Использовать proper mutex
 type Proxy struct {
-    mx       sync.Mutex
-    closed   bool
+    mx sync.Mutex
+    closed bool
     refCount sync.WaitGroup
-    closers  map[io.Closer]struct{}
+    closers map[io.Closer]struct{}
 }
 ```
 
@@ -255,23 +255,23 @@ type Proxy struct {
 func (c *proxiedConn) SetReadDeadline(t time.Time) error {
     c.deadlineMx.Lock()
     defer c.deadlineMx.Unlock()
-    
+
     oldDeadline := c.deadline
     c.deadline = t
     now := time.Now()
-    
+
     if t.IsZero() {
         if c.readDeadlineTimer != nil && !c.readDeadlineTimer.Stop() {
             <-c.readDeadlineTimer.C
         }
         return nil
     }
-    
+
     if !t.After(now) {
         c.readCtxCancel()
         return nil
     }
-    
+
     // ... остальная логика
 }
 ```
@@ -284,7 +284,7 @@ start:
     c.deadlineMx.Lock()
     ctx := c.readCtx
     c.deadlineMx.Unlock()
-    
+
     data, err := c.str.ReceiveDatagram(ctx)
     if err != nil {
         if !errors.Is(err, context.Canceled) {
@@ -299,7 +299,7 @@ start:
         }
         return 0, nil, os.ErrDeadlineExceeded
     }
-    
+
     contextID, n, err := quicvarint.Parse(data)
     if err != nil {
         return 0, nil, fmt.Errorf("masque: malformed datagram: %w", err)
@@ -307,7 +307,7 @@ start:
     if contextID != 0 {
         goto start
     }
-    
+
     return copy(b, data[n:]), c.remoteAddr, nil
 }
 ```
@@ -347,5 +347,5 @@ start:
 
 ## **Готово к реализации!**
 
-Теперь у нас есть детальный план улучшений на основе изучения reference репозиториев. Можно приступать к реализации улучшений! 🎯
+Теперь у нас есть детальный план улучшений на основе изучения reference репозиториев. Можно приступать к реализации улучшений!
 

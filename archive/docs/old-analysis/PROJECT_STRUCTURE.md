@@ -1,10 +1,10 @@
 # CloudBridge Relay - Project Structure
 
-## 📁 Root Files
+## Root Files
 - `MINIKUBE_BUILD_GUIDE.md` - Основное руководство по сборке в Minikube
 - `DEVELOPER_BRIEFING.md` - Техническое описание проекта для разработчиков
 
-## 📁 Directory Structure
+## Directory Structure
 
 ### `/docs/` - Документация
 - `reports/` - Отчеты по тестированию, диагностике и статусу
@@ -33,5 +33,5 @@
 ## Quick Start
 Для начала работы см. `MINIKUBE_BUILD_GUIDE.md`
 
-## 📖 Developer Info
+## Developer Info
 Для технических деталей см. `DEVELOPER_BRIEFING.md`

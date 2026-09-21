@@ -2,10 +2,10 @@
 
 ## **Краткое резюме**
 
-**Статус**: **ЧАСТИЧНО УСПЕШНО**  
-**Дата**: 21 сентября 2025  
-**Образ**: `cloudbridge-relay:masque-fixed-20250921-122920`  
-**Namespace**: `cloudbridge`  
+**Статус**: **ЧАСТИЧНО УСПЕШНО**
+**Дата**: 21 сентября 2025
+**Образ**: `cloudbridge-relay:masque-fixed-20250921-122920`
+**Namespace**: `cloudbridge`
 
 ### **Результат развертывания:**
 Основной функционал CloudBridge Relay успешно развернут в Minikube. HTTP API и P2P API работают корректно. Обнаружена проблема с HTTP/3 сервером MASQUE на порту 8443.
@@ -94,7 +94,7 @@ curl http://localhost:8082/health
 
 ---
 
-##  **Обнаруженная проблема**
+## **Обнаруженная проблема**
 
 ### **MASQUE HTTP/3 сервер (порт 8443)**
 
@@ -114,10 +114,10 @@ kubectl exec deployment/cloudbridge-relay -n cloudbridge -- netstat -tlnp
 ```
 **Результат**:
 ```
-tcp        0      0 :::9091                 :::*                    LISTEN      1/cloudbridge-relay
-tcp        0      0 :::9090                 :::*                    LISTEN      1/cloudbridge-relay
-tcp        0      0 :::8080                 :::*                    LISTEN      1/cloudbridge-relay
-tcp        0      0 :::8082                 :::*                    LISTEN      1/cloudbridge-relay
+tcp 0 0 :::9091 :::* LISTEN 1/cloudbridge-relay
+tcp 0 0 :::9090 :::* LISTEN 1/cloudbridge-relay
+tcp 0 0 :::8080 :::* LISTEN 1/cloudbridge-relay
+tcp 0 0 :::8082 :::* LISTEN 1/cloudbridge-relay
 # Порт 8443 ОТСУТСТВУЕТ
 ```
 
@@ -125,7 +125,7 @@ tcp        0      0 :::8082                 :::*                    LISTEN      
 ```bash
 curl -k -v https://localhost:8443/health
 ```
-**Результат**:  **Connection refused / TLS handshake error**
+**Результат**: **Connection refused / TLS handshake error**
 
 ---
 
@@ -163,12 +163,12 @@ curl -k -v https://localhost:8443/health
 #### **HTTP/3 конфигурация:**
 ```go
 ms.http3Server = &http3.Server{
-    Addr:            ":8443",
-    Handler:         ms.createHTTPHandler(),
-    TLSConfig:       tlsConfig,
+    Addr: ":8443",
+    Handler: ms.createHTTPHandler(),
+    TLSConfig: tlsConfig,
     EnableDatagrams: true, // Включено
     QUICConfig: &quic.Config{
-        MaxIdleTimeout:  30 * time.Second,
+        MaxIdleTimeout: 30 * time.Second,
         EnableDatagrams: true, // Включено
     },
 }
@@ -176,7 +176,7 @@ ms.http3Server = &http3.Server{
 
 ---
 
-##  **Рекомендации по устранению**
+## **Рекомендации по устранению**
 
 ### **1. Добавить детальное логирование ошибок**
 ```go
@@ -186,12 +186,12 @@ go func() {
             ms.logger.Error("HTTP/3 server panic", zap.Any("panic", r))
         }
     }()
-    
+
     addr := ":8443"
     ms.logger.Info("MASQUE HTTP/3 server starting", zap.String("addr", addr))
-    
+
     if err := ms.http3Server.ListenAndServe(); err != nil {
-        ms.logger.Error("MASQUE HTTP/3 server error", 
+        ms.logger.Error("MASQUE HTTP/3 server error",
             zap.Error(err),
             zap.String("error_type", fmt.Sprintf("%T", err)))
         ms.isRunning = false
@@ -217,8 +217,8 @@ ms.http3Server = &http3.Server{
 ```go
 // Минимальная конфигурация для тестирования
 ms.http3Server = &http3.Server{
-    Addr:      ":8443",
-    Handler:   http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    Addr: ":8443",
+    Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(200)
         w.Write([]byte("HTTP/3 OK"))
     }),
@@ -269,7 +269,7 @@ ms.http3Server = &http3.Server{
 - QUIC и STUN сервисы работают корректно
 
 ### **Проблема:**
--  HTTP/3 сервер MASQUE не запускается на порту 8443
+- HTTP/3 сервер MASQUE не запускается на порту 8443
 - Требуется дополнительная отладка и исправление
 
 ### **Общий статус:**
@@ -277,7 +277,7 @@ ms.http3Server = &http3.Server{
 
 ---
 
-## 📞 **Контакты и файлы**
+## **Контакты и файлы**
 
 - **Образ**: `cloudbridge-relay:masque-fixed-20250921-122920`
 - **Код MASQUE**: `cmd/relay/masque_support.go`
@@ -286,8 +286,8 @@ ms.http3Server = &http3.Server{
 
 ---
 
-*Отчет создан: 21 сентября 2025*  
-*Статус: Частично успешно*  
+*Отчет создан: 21 сентября 2025*
+*Статус: Частично успешно*
 *Следующий шаг: Отладка HTTP/3 сервера*
 
 

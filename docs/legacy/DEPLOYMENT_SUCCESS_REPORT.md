@@ -31,7 +31,7 @@ CloudBridge CF-SaaS с JWT RFC 7519 интеграцией успешно раз
  JWT_SECRET configured
 ```
 
-##  Git & Build Process
+## Git & Build Process
 
 ### Git Commit
 ```
@@ -49,11 +49,11 @@ feat: JWT RFC 7519 implementation complete
 - ependencies installed
 - roject built successfully (23.91s)
 - 96 assets processed
--  new/modified assets uploaded
+- new/modified assets uploaded
 
 ### Secrets Configuration
 - WT_SECRET uploaded
-- ITADEL_CLIENT_SECRET uploaded  
+- ITADEL_CLIENT_SECRET uploaded
 - ITADEL_ADMIN_TOKEN uploaded
 
 ## Available Endpoints
@@ -151,7 +151,7 @@ POST https://2gc.ru/api/zitadel/users
 - All API calls over HTTPS
 - Organization/Project isolation
 
-## 📞 Support & Monitoring
+## Support & Monitoring
 
 ### URLs
 - **Production:** https://2gc.ru/

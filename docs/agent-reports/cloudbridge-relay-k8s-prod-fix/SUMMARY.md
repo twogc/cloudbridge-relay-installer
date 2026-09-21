@@ -1,6 +1,6 @@
 # SUMMARY — cloudbridge-relay-k8s-prod-fix
 
-**Дата:** 2026-07-09  
+**Дата:** 2026-07-09
 **Миссия:** Устранить P0 production drift в `k8s-manifests/05–06` и `scripts/deploy/deploy.sh` (nginx-stubs → реальные образы/порты).
 
 ---
@@ -35,11 +35,11 @@ MiMo audit: [MIMO_AUDIT_REPORT.md §1.3](../../audit/MIMO_AUDIT_REPORT.md), drif
 
 | Команда | Ожидание | Результат |
 |---------|----------|-----------|
-| `rg 'nginx:latest' k8s-manifests/` | 0 | ✅ 0 |
-| `rg 'containerPort: 80$' k8s-manifests/05-deployments.yaml` | 0 | ✅ 0 |
-| `rg 'port: 8080' k8s-manifests/06-services.yaml` (ai-service) | 0 | ✅ 0 |
-| `rg 'alpine:3.18' scripts/deploy/deploy.sh` | 0 | ✅ 0 |
-| YAML parse `05–06` | OK | ✅ python3 yaml.safe_load_all |
+| `rg 'nginx:latest' k8s-manifests/` | 0 | 0 |
+| `rg 'containerPort: 80$' k8s-manifests/05-deployments.yaml` | 0 | 0 |
+| `rg 'port: 8080' k8s-manifests/06-services.yaml` (ai-service) | 0 | 0 |
+| `rg 'alpine:3.18' scripts/deploy/deploy.sh` | 0 | 0 |
+| YAML parse `05–06` | OK | python3 yaml.safe_load_all |
 | `kubectl` dry-run | optional | ⏭ kubectl not in PATH |
 
 ---
@@ -58,8 +58,8 @@ MiMo audit: [MIMO_AUDIT_REPORT.md §1.3](../../audit/MIMO_AUDIT_REPORT.md), drif
 
 | Item | Статус |
 |------|--------|
-| AI Service metrics **8084** in `k8s-manifests/06` + `k8s/services/ai-service.yaml` | ✅ removed; scrape **8083** |
-| Relay prometheus annotation **8084** | ✅ **5551** + containerPort/Service metrics |
+| AI Service metrics **8084** in `k8s-manifests/06` + `k8s/services/ai-service.yaml` | removed; scrape **8083** |
+| Relay prometheus annotation **8084** | **5551** + containerPort/Service metrics |
 | Ops relay http **8080** / mws 8084 | **ещё open** (ops/OVA path) |
 
 ---

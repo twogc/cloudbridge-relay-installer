@@ -11,7 +11,7 @@ cd /home/ubuntu/cloudbridge-relay-installer
 
 ### 1. Проверка сервисов
 - [ ] CloudBridge Relay запущен
-- [ ] AI Service запущен  
+- [ ] AI Service запущен
 - [ ] Prometheus запущен
 - [ ] Cadence запущен
 
@@ -89,7 +89,7 @@ kubectl get configmap ai-config -n cloudbridge -o yaml
 kubectl get configmap cloudbridge-config -n cloudbridge -o yaml
 ```
 
-##  Устранение проблем
+## Устранение проблем
 
 ### Проблема: AI Service не отвечает
 ```bash
@@ -157,7 +157,7 @@ kubectl exec -n cloudbridge deployment/ai-service -- nslookup prometheus.cloudbr
 - [ ] Конфигурация применена корректно
 - [ ] Мониторинг работает
 
-## 📝 Отчет о тестировании
+## Отчет о тестировании
 
 После выполнения всех проверок создайте отчет:
 
@@ -172,7 +172,7 @@ kubectl exec -n cloudbridge deployment/ai-service -- nslookup prometheus.cloudbr
 
 ### Сервисы
 - CloudBridge Relay: /
-- AI Service: / 
+- AI Service: /
 - Prometheus: /
 - Cadence: /
 

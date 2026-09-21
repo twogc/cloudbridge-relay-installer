@@ -1,4 +1,4 @@
-#  **Пошаговая инструкция: Создание Container Registry в VK Cloud Console**
+# **Пошаговая инструкция: Создание Container Registry в VK Cloud Console**
 
 ## **Обзор**
 
@@ -30,7 +30,7 @@ Container Registry в VK Cloud - это приватный реестр Docker �
 - Обратитесь в поддержку VK Cloud: **support@vk.com**
 - Или попробуйте найти в разделе **"Все сервисы"**
 
-## 🏗️ **Шаг 3: Создание Container Registry**
+## **Шаг 3: Создание Container Registry**
 
 ### **3.1 Нажмите "Create Registry"**
 - В правом верхнем углу найдите кнопку **"Create Registry"**
@@ -77,7 +77,7 @@ Description: CloudBridge Relay automation token
 - **Сохраните их в безопасном месте**
 - Нажмите **"Create"** или **"Создать"**
 
-## 📝 **Шаг 5: Получение информации о registry**
+## **Шаг 5: Получение информации о registry**
 
 ### **5.1 Registry URL**
 - В настройках найдите **"Registry URL"**
@@ -90,7 +90,7 @@ Description: CloudBridge Relay automation token
 registry.vkcs.ru/cloudbridge-relay/cloudbridge-relay:latest
 ```
 
-##  **Шаг 6: Обновление .env файла**
+## **Шаг 6: Обновление .env файла**
 
 ### **6.1 Отредактируйте .env файл**
 ```bash
@@ -162,7 +162,7 @@ docker push registry.vkcs.ru/cloudbridge-relay/test:latest
 - Убедитесь, что образ правильно тегирован
 - Проверьте права доступа к проекту
 
-## 📞 **Поддержка**
+## **Поддержка**
 
 ### **VK Cloud поддержка:**
 - **Email:** support@vk.com

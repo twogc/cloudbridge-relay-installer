@@ -12,23 +12,23 @@
 4. **Встроенное управление тенантами**: Нативная поддержка мульти-тенантности
 5. **Безопасность**: Современные стандарты безопасности из коробки
 
-## 🏗️ Архитектура интеграции
+## Архитектура интеграции
 
 ### Новые компоненты
 
 ```
 internal/zitadel/
-├── validator.go          # Валидатор JWT токенов через Zitadel API
-├── tenant_manager.go     # Управление тенантами через Zitadel организации
-└── types.go              # Типы данных (совместимые с Keycloak)
+├── validator.go # Валидатор JWT токенов через Zitadel API
+├── tenant_manager.go # Управление тенантами через Zitadel организации
+└── types.go # Типы данных (совместимые с Keycloak)
 
 cmd/relay/
 ├── zitadel_integration.go # Интеграция Zitadel в основной сервер
-└── migration_helper.go    # Помощник для плавной миграции
+└── migration_helper.go # Помощник для плавной миграции
 
 configs/
-├── zitadel_config.json   # Конфигурация Zitadel
-└── config.json           # Обновленная основная конфигурация
+├── zitadel_config.json # Конфигурация Zitadel
+└── config.json # Обновленная основная конфигурация
 ```
 
 ### Совместимость
@@ -37,7 +37,7 @@ configs/
 - **Постепенная миграция**: Возможность работы в гибридном режиме
 - **Сохранение API**: Существующие endpoints остаются без изменений
 
-##  Конфигурация
+## Конфигурация
 
 ### 1. Переменные окружения
 
@@ -128,7 +128,7 @@ export KEYCLOAK_ENABLED="false"
    - Отключить Keycloak
    - Перевести всех клиентов на Zitadel
 
-## 🔄 Mapping между системами
+## Mapping между системами
 
 ### Keycloak → Zitadel
 
@@ -156,9 +156,9 @@ export KEYCLOAK_ENABLED="false"
 {
   "iss": "https://zitadel.local",
   "aud": "cloudbridge-relay",
-  "tenant_id": "org-789",        // из метаданных
-  "server_id": "server-456",     // из метаданных
-  "protocol_type": "p2p-mesh"    // из метаданных
+  "tenant_id": "org-789", // из метаданных
+  "server_id": "server-456", // из метаданных
+  "protocol_type": "p2p-mesh" // из метаданных
 }
 ```
 
@@ -250,7 +250,7 @@ err := tenantManager.UpdateTenantQuotas(ctx, tenantID, quotas)
 
 ## Roadmap
 
-### Фаза 1: Базовая интеграция 
+### Фаза 1: Базовая интеграция
 - [x] Zitadel валидатор токенов
 - [x] Управление тенантами
 - [x] Конфигурация и интеграция
@@ -265,14 +265,14 @@ err := tenantManager.UpdateTenantQuotas(ctx, tenantID, quotas)
 - [ ] Batch операции
 - [ ] Мониторинг и алерты
 
-## 📚 Ресурсы
+## Ресурсы
 
 - [Zitadel Documentation](https://zitadel.com/docs)
 - [Zitadel Go SDK](https://github.com/zitadel/zitadel-go)
 - [Миграция с Keycloak](https://zitadel.com/docs/guides/migrate/keycloak)
 - [OIDC/OAuth2 в Zitadel](https://zitadel.com/docs/apis/openidoauth)
 
-## 🤝 Поддержка
+## Поддержка
 
 Для вопросов по миграции:
 - Создать issue в репозитории

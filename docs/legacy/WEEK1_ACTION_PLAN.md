@@ -64,14 +64,14 @@ docker ps | grep cloudbridge
 
 ### Текущие endpoint'ы (в main.go)
 ```
-GET /api/v1/dashboard/summary       - Собирает данные в реальном времени
-GET /api/v1/dashboard/health        - Здоровье всех сервисов
-GET /api/v1/dashboard/metrics       - Метрики VictoriaMetrics
-GET /api/v1/dashboard/analytics     - Аналитика трафика (от/до времени)
-GET /api/v1/relay/status            - Статус Relay сервиса
-GET /api/v1/p2p/status              - Статус P2P сервиса
-GET /api/v1/ai/insights             - AI insights
-GET /api/v1/edge-pops/status        - Статус Edge PoP
+GET /api/v1/dashboard/summary - Собирает данные в реальном времени
+GET /api/v1/dashboard/health - Здоровье всех сервисов
+GET /api/v1/dashboard/metrics - Метрики VictoriaMetrics
+GET /api/v1/dashboard/analytics - Аналитика трафика (от/до времени)
+GET /api/v1/relay/status - Статус Relay сервиса
+GET /api/v1/p2p/status - Статус P2P сервиса
+GET /api/v1/ai/insights - AI insights
+GET /api/v1/edge-pops/status - Статус Edge PoP
 ```
 
 ### Требуемые работы
@@ -202,15 +202,15 @@ histogram_quantile(0.95, rate(edge_pop_latency_milliseconds_bucket[5m]))
 ```go
 // backend/bff/sse/broadcaster.go
 type EventBroadcaster struct {
-    clients    map[*Client]bool
-    broadcast  chan *Event
-    register   chan *Client
+    clients map[*Client]bool
+    broadcast chan *Event
+    register chan *Client
     unregister chan *Client
 }
 
 type Event struct {
-    Type string          // "metrics", "health", "alert", "analytics"
-    Data interface{}    // JSON payload
+    Type string // "metrics", "health", "alert", "analytics"
+    Data interface{} // JSON payload
     Timestamp time.Time
 }
 ```
@@ -218,7 +218,7 @@ type Event struct {
 #### 2. Реализовать SSE endpoint'ы в main.go
 ```go
 // Прямая трансляция событий в реальном времени
-r.Get("/api/v1/events/stream", sseHandler.StreamEvents)  // Все события
+r.Get("/api/v1/events/stream", sseHandler.StreamEvents) // Все события
 r.Get("/api/v1/events/metrics", sseHandler.StreamMetrics)
 r.Get("/api/v1/events/alerts", sseHandler.StreamAlerts)
 r.Get("/api/v1/events/health", sseHandler.StreamHealth)
@@ -371,7 +371,7 @@ curl http://localhost:8080/metrics | grep dashboard
 
 ---
 
-## 📞 КОНТАКТЫ И ВОПРОСЫ
+## КОНТАКТЫ И ВОПРОСЫ
 
 При возникновении вопросов обратитесь к:
 - Документации в `docs/` каталоге

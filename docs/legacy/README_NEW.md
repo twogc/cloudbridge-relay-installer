@@ -3,8 +3,8 @@
 **Enterprise SD-WAN Platform with AI Optimization**
 
 > **Status:** Production Ready
-> 📅 **Last Updated:** 2025-10-12
-> 🏷️ **Version:** 1.1.0
+> **Last Updated:** 2025-10-12
+> **Version:** 1.1.0
 
 ---
 
@@ -20,13 +20,13 @@
 - [Developer Briefing](../DEVELOPER_BRIEFING.md) - брифинг для разработчиков
 - [Tenant Isolation](TENANT_ISOLATION_OPERATIONS_GUIDE.md) - мульти-тенантность
 
-### 📖 Guides
+### Guides
 - [Deployment Guides](guides/) - инструкции по развертыванию
 - [Security Guides](security/) - безопасность и authentication
 - [Monitoring & Observability](monitoring/) - мониторинг и метрики
 - [Troubleshooting](troubleshooting/) - решение проблем
 
-###  API Documentation
+### API Documentation
 - [Admin API](ADMIN_API.md) - административный API
 - [API Documentation](api/) - полная API документация
 
@@ -46,62 +46,62 @@
 
 ```
 docs/
-├── README.md                    # Этот файл - главная навигация
-├── SYSTEM_OVERVIEW.md           # Обзор системы
-├── STATUS.md                    # Текущий статус
-├── ROADMAP.md                   # Дорожная карта
+├── README.md # Этот файл - главная навигация
+├── SYSTEM_OVERVIEW.md # Обзор системы
+├── STATUS.md # Текущий статус
+├── ROADMAP.md # Дорожная карта
 │
-├── analysis/                    # Анализ и улучшения
-│   ├── README.md                # Навигация по анализу
-│   ├── AI_IMPROVEMENTS_SUMMARY.md
-│   └── AI_TESTING_REPORT.md
+├── analysis/ # Анализ и улучшения
+│ ├── README.md # Навигация по анализу
+│ ├── AI_IMPROVEMENTS_SUMMARY.md
+│ └── AI_TESTING_REPORT.md
 │
-├── guides/                      # Руководства пользователя
-│   ├── QUICK_START_GUIDE.md
-│   ├── DEPLOYMENT_GUIDE.md
-│   └── CLIENT_CONNECTION_GUIDE.md
+├── guides/ # Руководства пользователя
+│ ├── QUICK_START_GUIDE.md
+│ ├── DEPLOYMENT_GUIDE.md
+│ └── CLIENT_CONNECTION_GUIDE.md
 │
-├── deployment/                  # Деплоймент
-│   ├── kubernetes/
-│   ├── docker/
-│   └── production/
+├── deployment/ # Деплоймент
+│ ├── kubernetes/
+│ ├── docker/
+│ └── production/
 │
-├── security/                    # Безопасность
-│   ├── README.md
-│   ├── SECURITY.md
-│   └── ENTERPRISE_SECURITY_COMPLETE.md
+├── security/ # Безопасность
+│ ├── README.md
+│ ├── SECURITY.md
+│ └── ENTERPRISE_SECURITY_COMPLETE.md
 │
-├── api/                         # API документация
-│   └── openapi/
+├── api/ # API документация
+│ └── openapi/
 │
-├── architecture/                # Архитектурная документация
-│   ├── networking/
-│   ├── storage/
-│   └── scaling/
+├── architecture/ # Архитектурная документация
+│ ├── networking/
+│ ├── storage/
+│ └── scaling/
 │
-├── monitoring/                  # Мониторинг
-│   ├── prometheus/
-│   ├── grafana/
-│   └── alerting/
+├── monitoring/ # Мониторинг
+│ ├── prometheus/
+│ ├── grafana/
+│ └── alerting/
 │
-├── troubleshooting/             # Устранение неполадок
-│   ├── common-issues.md
-│   └── debugging.md
+├── troubleshooting/ # Устранение неполадок
+│ ├── common-issues.md
+│ └── debugging.md
 │
-├── compliance/                  # Соответствие требованиям
-│   ├── SOC2/
-│   ├── GDPR/
-│   └── ISO27001/
+├── compliance/ # Соответствие требованиям
+│ ├── SOC2/
+│ ├── GDPR/
+│ └── ISO27001/
 │
-├── network/                     # Сетевая конфигурация
-│   ├── calico/
-│   ├── ipam/
-│   └── routing/
+├── network/ # Сетевая конфигурация
+│ ├── calico/
+│ ├── ipam/
+│ └── routing/
 │
-├── reports/                     # Отчеты и метрики
-│   └── performance/
+├── reports/ # Отчеты и метрики
+│ └── performance/
 │
-└── zitadel/                     # Zitadel интеграция
+└── zitadel/ # Zitadel интеграция
     ├── setup/
     └── configuration/
 ```
@@ -141,8 +141,8 @@ docs/
 ## Quick Links
 
 ### Essential Documents
-- 📘 [System Overview](SYSTEM_OVERVIEW.md) - понять что такое CloudBridge
-- 🏃 [Quick Start](guides/QUICK_START_GUIDE.md) - запустить за 5 минут
+- [System Overview](SYSTEM_OVERVIEW.md) - понять что такое CloudBridge
+- [Quick Start](guides/QUICK_START_GUIDE.md) - запустить за 5 минут
 - [Security](security/SECURITY.md) - безопасность и аутентификация
 - [Monitoring](monitoring/) - мониторинг и метрики
 - [Troubleshooting](troubleshooting/) - решение проблем
@@ -154,13 +154,13 @@ docs/
 
 ### External Links
 - [GitHub Repository](https://github.com/twogc/cloudbridge-relay-installer)
-- 📖 [Official Documentation](https://docs.cloudbridge.io)
-- 💬 [Community Forum](https://community.cloudbridge.io)
+- [Official Documentation](https://docs.cloudbridge.io)
+- [Community Forum](https://community.cloudbridge.io)
 - [Issue Tracker](https://github.com/twogc/cloudbridge-relay-installer/issues)
 
 ---
 
-##  Development
+## Development
 
 ### Building from Source
 ```bash
@@ -214,7 +214,7 @@ kubectl apply -f k8s/deployment.yaml
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see:
 - [Contributing Guidelines](../CONTRIBUTING.md)
@@ -223,17 +223,17 @@ We welcome contributions! Please see:
 
 ---
 
-## 📞 Support
+## Support
 
 ### Getting Help
-- 📖 [Documentation](https://docs.cloudbridge.io)
-- 💬 [Community Forum](https://community.cloudbridge.io)
+- [Documentation](https://docs.cloudbridge.io)
+- [Community Forum](https://community.cloudbridge.io)
 - [Report Issues](https://github.com/twogc/cloudbridge-relay-installer/issues)
-- 📧 [Email Support](mailto:support@cloudbridge.io)
+- [Email Support](mailto:support@cloudbridge.io)
 
 ### Commercial Support
 For enterprise support, please contact:
-- 📧 [enterprise@cloudbridge.io](mailto:enterprise@cloudbridge.io)
+- [enterprise@cloudbridge.io](mailto:enterprise@cloudbridge.io)
 - [cloudbridge.io/enterprise](https://cloudbridge.io/enterprise)
 
 ---
@@ -244,7 +244,7 @@ CloudBridge Relay is licensed under the [Apache License 2.0](../LICENSE).
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Built with:
 - [Go](https://golang.org) - Programming Language

@@ -23,7 +23,7 @@
 - Перенаправляет к Origin Services
 - Возвращает ответы обратно через Magic WAN
 
-## 🔧 **Настройка:**
+## **Настройка:**
 
 ### **1. CloudBridge Relay (сервер):**
 ```nginx
@@ -31,12 +31,12 @@
 server {
     listen 9090 ssl;
     server_name edge.2gc.ru;
-    
+
     # Проксирование к CloudBridge Relay в подах
     location /api/ {
         proxy_pass http://192.168.58.2:32500/;
     }
-    
+
     location /health {
         proxy_pass http://192.168.58.2:30080/health;
     }

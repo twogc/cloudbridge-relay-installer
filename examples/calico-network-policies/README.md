@@ -1,6 +1,6 @@
 # CloudBridge "Железобетонная" Network Security
 
-🏆 **Enterprise-grade multi-tenant network isolation using Calico Network Policies**
+ **Enterprise-grade multi-tenant network isolation using Calico Network Policies**
 
 ## Overview
 
@@ -24,7 +24,7 @@ This directory contains production-ready Calico Network Policies that implement 
 3. **Fine-grained RBAC** - Role-based access control
 4. **Automated testing** - Validation of isolation effectiveness
 
-## 📁 Files Description
+## Files Description
 
 | File | Purpose |
 |------|---------|
@@ -68,7 +68,7 @@ chmod +x deploy-ironclad-security.sh test-tenant-isolation.sh
 
 Expected output:
 ```
-ALL TESTS PASSED - ЖЕЛЕЗОБЕТОННАЯ ISOLATION CONFIRMED! 🏆
+ALL TESTS PASSED - ЖЕЛЕЗОБЕТОННАЯ ISOLATION CONFIRMED!
 
 Security validation results:
   Inter-tenant ping blocked
@@ -78,7 +78,7 @@ Security validation results:
   Intra-tenant communication working
 ```
 
-## 🏗️ Manual Configuration
+## Manual Configuration
 
 ### Adding New Tenants
 
@@ -156,7 +156,7 @@ kubectl exec pod-tenant-A -- nslookup kubernetes.default.svc.cluster.local
 kubectl exec pod-tenant-A -- curl http://169.254.169.254/
 ```
 
-## ⚙️ Advanced Configuration
+## Advanced Configuration
 
 ### Custom RBAC Rules
 
@@ -164,7 +164,7 @@ Modify `06-rbac-security.yaml` to add custom RBAC rules:
 
 ```yaml
 # Example: Allow specific pods to access kube-apiserver
-apiVersion: projectcalico.org/v3  
+apiVersion: projectcalico.org/v3
 kind: NetworkPolicy
 metadata:
   name: allow-apiserver-for-operators
@@ -228,7 +228,7 @@ kubectl get globalnetworkpolicy allow-system-services -o yaml
 
 Some Calico installations don't support Tiers. The policies include fallback configurations without tiers.
 
-## 📚 References
+## References
 
 - [Calico Network Policies Documentation](https://docs.projectcalico.org/security/policy)
 - [NSA/CISA Kubernetes Hardening Guide](https://media.defense.gov/2022/Aug/29/2003066362/-1/-1/0/CTR_KUBERNETES_HARDENING_GUIDANCE_1.2_20220829.PDF)
@@ -246,7 +246,7 @@ These policies meet or exceed requirements for:
 
 ---
 
-**Status**: Production Ready  
-**Last Updated**: September 27, 2025  
+**Status**: Production Ready
+**Last Updated**: September 27, 2025
 **Tested With**: Calico v3.x, Kubernetes 1.25+
 

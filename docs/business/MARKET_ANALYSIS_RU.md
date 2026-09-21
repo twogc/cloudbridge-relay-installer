@@ -1,6 +1,6 @@
 # CloudBridge Relay - Анализ Рынка и Конкурентов (Россия)
 
-> ⚠️ **ДОКУМЕНТ УСТАРЕЛ.** Дата: 2025-10-13 (~11 мес назад, проект был заморожен).
+> **ДОКУМЕНТ УСТАРЕЛ.** Дата: 2025-10-13 (~11 мес назад, проект был заморожен).
 > Рыночные оценки ниже (TAM, конкурентная карта, цены) требуют полного пересчёта на сентябрь 2026.
 > Оценка «MVP 98%» **ошибочна** — см. `CLOUDBRIDGE_STRATEGY/2gc_cloudbridge/00_current_reality/REALITY_CHECK_vs_CODE.md`.
 > До обновления не использовать для внешних заявлений.
@@ -36,11 +36,11 @@ CloudBridge Relay — это современный P2P relay сервер но�
 
 | Сегмент | Размер рынка (РФ) | CAGR 2025-2027 | Потенциал для CloudBridge |
 |---------|-------------------|----------------|---------------------------|
-| Enterprise VPN | 18-22 млрд ₽ | 12% |  Высокий |
-| Remote Desktop | 8-10 млрд ₽ | 15% |  Средний-высокий |
-| IoT Connectivity | 12-15 млрд ₽ | 25% |  Очень высокий |
-| Gaming P2P | 5-7 млрд ₽ | 20% |  Средний |
-| CDN/Edge | 8-12 млрд ₽ | 18% |  Высокий |
+| Enterprise VPN | 18-22 млрд ₽ | 12% | Высокий |
+| Remote Desktop | 8-10 млрд ₽ | 15% | Средний-высокий |
+| IoT Connectivity | 12-15 млрд ₽ | 25% | Очень высокий |
+| Gaming P2P | 5-7 млрд ₽ | 20% | Средний |
+| CDN/Edge | 8-12 млрд ₽ | 18% | Высокий |
 | **ИТОГО** | **51-66 млрд ₽** | **16%** | **45-60 млрд ₽** доступны |
 
 ### Регуляторные Требования
@@ -67,7 +67,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 #### 1. Tailscale
 **Описание**: Коммерческий VPN на базе WireGuard с mesh networking
 
-**Strengths** 💪:
+**Strengths** :
 - Простая настройка (5 минут)
 - Отличный UX
 - Бесплатный тарий для личного использования
@@ -87,7 +87,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 #### 2. ZeroTier
 **Описание**: Open source P2P VPN с SDN capabilities
 
-**Strengths** 💪:
+**Strengths** :
 - Open source (MIT license)
 - Кроссплатформенность
 - SDN функции
@@ -106,7 +106,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 #### 3. Netmaker
 **Описание**: WireGuard-based mesh VPN с Kubernetes интеграцией
 
-**Strengths** 💪:
+**Strengths** :
 - Open source
 - Kubernetes-native
 - Современный UI
@@ -125,14 +125,14 @@ CloudBridge Relay — это современный P2P relay сервер но�
 #### 4. Cloudflare Tunnel (ранее Argo Tunnel)
 **Описание**: Managed service для безопасного подключения к origin servers
 
-**Strengths** 💪:
+**Strengths** :
 - Глобальная CDN сеть
 - Высокая надёжность (99.99% SLA)
 - DDoS защита
 - Zero Trust интеграция
 
 **Weaknesses** :
--  **Недоступен в РФ с 2022 года**
+- **Недоступен в РФ с 2022 года**
 - Проприетарное решение
 - Vendor lock-in
 - Нет self-hosted опции
@@ -144,7 +144,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 #### 5. ngrok
 **Описание**: Tunneling service для разработчиков
 
-**Strengths** 💪:
+**Strengths** :
 - Простой API
 - Отличная developer experience
 - Быстрый старт
@@ -164,7 +164,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 #### 6. UserGate
 **Описание**: Российский межсетевой экран с VPN функциями
 
-**Strengths** 💪:
+**Strengths** :
 - оссийская разработка
 - СТЭК сертификация
 - ОСТ криптография
@@ -183,7 +183,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 #### 7. С-Терра CSP
 **Описание**: Отечественная криптографическая платформа
 
-**Strengths** 💪:
+**Strengths** :
 - СБ сертификация
 - ОСТ криптография
 - Государственный сектор
@@ -200,7 +200,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 #### 8. Континент
 **Описание**: VPN для защищённых сетей государственных органов
 
-**Strengths** 💪:
+**Strengths** :
 - СТЭК/ФСБ сертификация
 - Государственные заказчики
 
@@ -219,16 +219,16 @@ CloudBridge Relay — это современный P2P relay сервер но�
 
 | Возможность | CloudBridge | Tailscale | ZeroTier | UserGate | Оценка |
 |-------------|-------------|-----------|----------|----------|--------|
-| **QUIC Protocol** | а |  Нет |  Нет |  Нет | Эксклюзив |
-| **MASQUE Proxy** | а |  Нет |  Нет |  Нет | Эксклюзив |
-| **AI Оптимизация** | а |  Нет |  Нет |  Нет | Эксклюзив |
-| **Quantum-Safe** | eady | Partial |  Нет |  Нет | Инновация |
-| **Multi-tenancy** | ative | Addon |  Нет | Limited |  |
-| **Open Source** | а | Partial | Да|  Нет |  |
-| **Self-hosted** | а | Да| Да |Да |  |
-| **Kubernetes-native** | а | Limited | Limited |  Нет |  |
-| **ГОСТ Ready** | одульно |  Нет |  Нет | Да|  |
-| **Observability** | олная | Basic | Basic | Limited |  |
+| **QUIC Protocol** | а | Нет | Нет | Нет | Эксклюзив |
+| **MASQUE Proxy** | а | Нет | Нет | Нет | Эксклюзив |
+| **AI Оптимизация** | а | Нет | Нет | Нет | Эксклюзив |
+| **Quantum-Safe** | eady | Partial | Нет | Нет | Инновация |
+| **Multi-tenancy** | ative | Addon | Нет | Limited | |
+| **Open Source** | а | Partial | Да| Нет | |
+| **Self-hosted** | а | Да| Да |Да | |
+| **Kubernetes-native** | а | Limited | Limited | Нет | |
+| **ГОСТ Ready** | одульно | Нет | Нет | Да| |
+| **Observability** | олная | Basic | Basic | Limited | |
 
 ### Бизнес Преимущества
 
@@ -243,7 +243,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 - Нет зависимости от внешних сервисов
 - Соответствие 152-ФЗ из коробки
 
-**3. Гибкость** 
+**3. Гибкость**
 - Полный контроль над конфигурацией
 - Кастомизация под требования
 - Интеграция с существующей инфраструктурой
@@ -253,7 +253,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 - Горизонтальное масштабирование
 - Multi-region deployment
 
-**5. Импортонезависимость** 🇷🇺
+**5. Импортонезависимость**
 - Open source база
 - Возможность форка и развития
 - Нет риска санкций/блокировок
@@ -262,7 +262,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
 
 ## SWOT Анализ CloudBridge
 
-### Strengths (Сильные Стороны) 💪
+### Strengths (Сильные Стороны)
 
 1. **Технологическое лидерство**
    - QUIC/MASQUE - современные протоколы
@@ -289,7 +289,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
    - ГОСТ-ready архитектура
    - Self-hosted = полный контроль
 
-### Weaknesses (Слабые Стороны) 
+### Weaknesses (Слабые Стороны)
 
 1. **Зрелость продукта**
    - MVP стадия (98%)
@@ -316,7 +316,7 @@ CloudBridge Relay — это современный P2P relay сервер но�
    - Малая команда
    - Нет партнёрской сети
 
-### Opportunities (Возможности) 🌟
+### Opportunities (Возможности)
 
 1. **Рыночные тренды**
    - Импортозамещение - государственная программа
@@ -336,16 +336,16 @@ CloudBridge Relay — это современный P2P relay сервер но�
    - Локализация данных - преимущество self-hosted
 
 4. **Партнёрства**
-   - 🤝 Интеграторы (Ростелеком, РТК, Ланит)
-   - 🤝 Cloud провайдеры (Yandex Cloud, SberCloud)
-   - 🤝 ИБ вендоры (Kaspersky, Positive Technologies)
+   - Интеграторы (Ростелеком, РТК, Ланит)
+   - Cloud провайдеры (Yandex Cloud, SberCloud)
+   - ИБ вендоры (Kaspersky, Positive Technologies)
 
 5. **Вертикали**
    - Enterprise - крупные компании
-   - 🏦 Финансы - банки, страховые
+   - Финансы - банки, страховые
    - Промышленность - IoT в производстве
-   - 🎮 Gaming - игровые платформы
-   - 🏥 Медицина - телемедицина
+   - Gaming - игровые платформы
+   - Медицина - телемедицина
 
 ### Threats (Угрозы)
 
@@ -382,20 +382,20 @@ CloudBridge Relay — это современный P2P relay сервер но�
 
 #### 1. Open Core Model (Рекомендуется)
 ```
-Базовый (Open Source)    | FREE
+Базовый (Open Source) | FREE
 ├─ Relay server core
 ├─ QUIC/MASQUE
 ├─ Basic multi-tenancy
 └─ Community support
 
-Enterprise Edition       | ₽150k-500k/год
+Enterprise Edition | ₽150k-500k/год
 ├─ Advanced multi-tenancy
 ├─ ГОСТ криптография
 ├─ AI optimization
 ├─ Priority support
 └─ SLA 99.9%
 
-Enterprise+ (Custom)     | ₽1M-5M+/год
+Enterprise+ (Custom) | ₽1M-5M+/год
 ├─ ФСТЭК/ФСБ certified
 ├─ Dedicated support
 ├─ Custom features
@@ -405,18 +405,18 @@ Enterprise+ (Custom)     | ₽1M-5M+/год
 
 #### 2. Managed Service (SaaS)
 ```
-Starter       | ₽5k/месяц
+Starter | ₽5k/месяц
 ├─ 10 users
 ├─ 100 GB traffic
 └─ Community support
 
-Professional  | ₽50k/месяц
+Professional | ₽50k/месяц
 ├─ 100 users
 ├─ 1 TB traffic
 ├─ Email support
 └─ 99.9% SLA
 
-Enterprise    | ₽200k+/месяц
+Enterprise | ₽200k+/месяц
 ├─ Unlimited users
 ├─ Unlimited traffic
 ├─ 24/7 support
@@ -426,11 +426,11 @@ Enterprise    | ₽200k+/месяц
 
 #### 3. Professional Services
 ```
-Консалтинг        | ₽10k-15k/час
-Внедрение         | ₽500k-2M (проект)
-Интеграция        | ₽300k-1M (проект)
-Обучение          | ₽50k-100k (курс)
-Support 24/7      | ₽150k-300k/месяц
+Консалтинг | ₽10k-15k/час
+Внедрение | ₽500k-2M (проект)
+Интеграция | ₽300k-1M (проект)
+Обучение | ₽50k-100k (курс)
+Support 24/7 | ₽150k-300k/месяц
 ```
 
 ### Целевые Сегменты и Цены
@@ -523,7 +523,7 @@ Support 24/7      | ₽150k-300k/месяц
 └─ Sustainable business
 ```
 
-### Пессимистичный Сценарий 
+### Пессимистичный Сценарий
 
 **Предпосылки**:
 - Экономический кризис
@@ -644,7 +644,7 @@ Support 24/7      | ₽150k-300k/месяц
 
 ---
 
-## 🚧 Риски и Митигация
+## Риски и Митигация
 
 ### Критические Риски
 
@@ -664,7 +664,7 @@ Support 24/7      | ₽150k-300k/месяц
 
 ---
 
-#### 2. Конкуренция 🟠
+#### 2. Конкуренция
 
 **Риск**: Крупные игроки (Yandex, Mail.ru, Kaspersky) запустят аналог
 **Вероятность**: 40-50%

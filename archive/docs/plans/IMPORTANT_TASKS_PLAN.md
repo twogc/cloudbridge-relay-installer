@@ -17,8 +17,8 @@
 ### **AI/ML улучшения (30% готовности)**
 - **Behavior Analyzer** - базовая реализация есть
 - **Predictive Security** - базовая реализация есть
-- 🔧 **Anomaly Detection** - требует улучшения на основе go-iforest
-- 🔧 **Traffic Optimization** - требует добавления на основе go-bandit
+- **Anomaly Detection** - требует улучшения на основе go-iforest
+- **Traffic Optimization** - требует добавления на основе go-bandit
 
 ### **FRR Anycast Health Checks (0% готовности)**
 - **FRR конфигурация** - нет настройки
@@ -325,5 +325,5 @@ cd reference-repos/bgp-anycast/frr-anycast/
 4. **Добавить FRR Health Checks** - изучить FRR Anycast reference
 5. **Интегрировать все компоненты** - создать единую систему
 
-**Готово к реализации! 🎯**
+**Готово к реализации! **
 

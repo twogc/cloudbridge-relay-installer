@@ -1,7 +1,7 @@
 # MiMo Analysis — Cadence dual-path + AI duplicates
 
-**Дата:** 2026-07-09  
-**Модель:** mimo-v2.5-pro (шаг 1/4 миссии `cloudbridge-relay-cadence-ai`)  
+**Дата:** 2026-07-09
+**Модель:** mimo-v2.5-pro (шаг 1/4 миссии `cloudbridge-relay-cadence-ai`)
 **Источники:** `docs/audit/DUPLICATES_INVENTORY.md`, `docs/audit/MIMO_AUDIT_REPORT.md` §2, live grep по `*.go`
 
 > **Примечание (step 2):** MiMo на шаге 1 выдаёт только текст (без записи на диск). Этот файл зафиксирован Cursor на шаге 2 по структуре задания step 1 и верифицирован grep-командами 2026-07-09.
@@ -46,7 +46,7 @@ internal/cadence/worker/
 | `service_client.go` | **KEEP** | **medium** | Используется ai-worker client |
 | `integration_test/cadence_integration_test.go` | **DELETE** | **low** | Stale: ссылается на несуществующие `CadenceClient` / `NewCadenceClient`; build tag `integration`; 0 prod-вызовов |
 
-**Можно ли свести к одному API без поломки обоих entrypoints?**  
+**Можно ли свести к одному API без поломки обоих entrypoints?**
 Нет в step 2. Разные конфиги, разные фабрики gRPC, разное поведение retry/CB. Безопасный merge — только thin wrapper / shared helper (step 3+), с регрессионными тестами для обоих бинарников.
 
 ---
@@ -78,12 +78,12 @@ internal/cadence/worker/
 
 | Пакет | KEEP | Использование |
 |-------|------|---------------|
-| `anomaly/detector.go` | ✅ | `service.go`, relay middleware |
-| `anomaly/isolation_forest.go` | ✅ | `detector.go` |
-| `predictive/load_predictor.go` | ✅ | `service.go`, relay middleware |
-| `routing/optimizer.go` | ✅ | `service.go`, relay middleware |
-| `pipeline/collectors.go` | ✅ | `data_pipeline.go` |
-| `ml/model_implementations.go` | ✅ | типы в пакете `ml` |
+| `anomaly/detector.go` | | `service.go`, relay middleware |
+| `anomaly/isolation_forest.go` | | `detector.go` |
+| `predictive/load_predictor.go` | | `service.go`, relay middleware |
+| `routing/optimizer.go` | | `service.go`, relay middleware |
+| `pipeline/collectors.go` | | `data_pipeline.go` |
+| `ml/model_implementations.go` | | типы в пакете `ml` |
 
 ### Real / Optimized цепочки (мёртвы в prod, связаны между собой)
 

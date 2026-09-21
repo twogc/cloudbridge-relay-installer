@@ -8,13 +8,13 @@
 
 ---
 
-##  [mimo] mimo: тесты + архитектурный аудит
+## [mimo] mimo: тесты + архитектурный аудит
 *00:09:03 → 00:09:03*
 Tokens: 0↑ 0↓ | 0ms
 
 **Error:** openai package not installed
 
-##  [cursor] cursor: quick wins из аудита
+## [cursor] cursor: quick wins из аудита
 *00:09:04 → 00:11:15*
 Tokens: 0↑ 0↓ | 127419ms
 
@@ -27,7 +27,7 @@ Tokens: 0↑ 0↓ | 127419ms
 
 ```97:99:/home/user1/git/cloudbridge-relay-installer/Makefile
 test-critical: ## Тесты критических компонентов
-	@echo "🔥 Тестирование критических компонентов..."
+	@echo " Тестирование критических компонентов..."
 	go test -v -race -cover ./internal/token/... ./internal/auth/... ./internal/p2p/... ./internal/api/... ./internal/quic/... ./internal/zitadel/... ./config/...
 ```
 
@@ -42,7 +42,7 @@ test-critical: ## Тесты критических компонентов
 ... [583 more chars]
 ```
 
-##  [mimo] mimo: финальный отчёт оркестрации
+## [mimo] mimo: финальный отчёт оркестрации
 *00:11:15 → 00:11:45*
 Tokens: 381↑ 2,141↓ | 29776ms
 

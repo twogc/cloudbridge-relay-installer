@@ -30,7 +30,7 @@
 **Приоритет:** CRITICAL
 **Время:** 30 минут
 **Ответственный:** _________
-**Статус:** ⬜ TODO
+**Статус:** TODO
 
 ### Проблема
 - Deployment `cloudbridge-relay-deployment.yaml:197` ссылается на `cloudbridge-logs-pvc`
@@ -58,7 +58,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: fast-ssd  # или standard для dev
+  storageClassName: fast-ssd # или standard для dev
   resources:
     requests:
       storage: 10Gi
@@ -105,7 +105,7 @@ kubectl logs -n cloudbridge -l app.kubernetes.io/name=cloudbridge-relay --tail=5
 **Приоритет:** CRITICAL (Security)
 **Время:** 2 часа
 **Ответственный:** _________
-**Статус:** ⬜ TODO
+**Статус:** TODO
 
 ### Проблема
 - Файл: `k8s/deployments/cloudbridge-relay-p2p-deployment.yaml:58-63`
@@ -177,7 +177,7 @@ metadata:
 spec:
   refreshInterval: 1h
   secretStoreRef:
-    name: vault-backend  # или другой provider
+    name: vault-backend # или другой provider
     kind: ClusterSecretStore
   target:
     name: cloudbridge-relay-secrets
@@ -225,7 +225,7 @@ kubectl exec -n cloudbridge deployment/cloudbridge-relay-p2p -- env | grep JWT_S
 **Приоритет:** CRITICAL
 **Время:** 15 минут
 **Ответственный:** _________
-**Статус:** ⬜ TODO
+**Статус:** TODO
 
 ### Проблема
 - Файл: `k8s/deployments/cloudbridge-relay-p2p-deployment.yaml:29`
@@ -314,12 +314,12 @@ kubectl get events -n cloudbridge --sort-by='.lastTimestamp' | grep -i image
 
 ---
 
-## 💥 Task 1.4: Fix Failing Zitadel Integration Test
+## Task 1.4: Fix Failing Zitadel Integration Test
 
 **Приоритет:** CRITICAL
 **Время:** 1 час
 **Ответственный:** _________
-**Статус:** ⬜ TODO
+**Статус:** TODO
 
 ### Проблема
 - Файл: `cmd/relay/comprehensive_integration_test.go:108`
@@ -353,8 +353,8 @@ func TestComprehensiveZitadelIntegration(t *testing.T) {
 
     // ДОБАВИТЬ: Mock Zitadel client initialization
     mockConfig := &zitadel.Config{
-        Issuer:       "https://zitadel.local",
-        ClientID:     "test-client-id",
+        Issuer: "https://zitadel.local",
+        ClientID: "test-client-id",
         ClientSecret: "test-client-secret",
     }
 
@@ -365,7 +365,7 @@ func TestComprehensiveZitadelIntegration(t *testing.T) {
 
     // ДОБАВИТЬ: Initialize tenant manager with client
     tenantMgr := tenant.NewManager(logger)
-    tenantMgr.SetZitadelClient(zitadelClient)  // Ensure client is set
+    tenantMgr.SetZitadelClient(zitadelClient) // Ensure client is set
 
     // Rest of test...
     tenant, err := tenantMgr.CreateTenant("test-tenant", "test.local")
@@ -413,12 +413,12 @@ go test ./... 2>&1 | grep -i fail
 
 ---
 
-## ⚕️ Task 1.5: Add Health Checks to cadence-web-deployment
+## Task 1.5: Add Health Checks to cadence-web-deployment
 
-**Приоритет:** 🟠 HIGH
+**Приоритет:** HIGH
 **Время:** 30 минут
 **Ответственный:** _________
-**Статус:** ⬜ TODO
+**Статус:** TODO
 
 ### Проблема
 - Файл: `k8s/deployments/cadence-web-deployment.yaml`
@@ -446,7 +446,7 @@ spec:
     spec:
       containers:
       - name: cadence-web
-        image: ubercadence/web:v3.30.2  # Pin version!
+        image: ubercadence/web:v3.30.2 # Pin version!
         ports:
         - containerPort: 8088
           name: http
@@ -483,7 +483,7 @@ spec:
           initialDelaySeconds: 0
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 30  # 5 min max startup time
+          failureThreshold: 30 # 5 min max startup time
 ```
 
 **3. Применить изменения:**
@@ -515,21 +515,21 @@ kubectl get events -n cloudbridge | grep -i "liveness\|readiness"
 
 ---
 
-## 🔓 Task 1.6: Uncomment Health Checks in P2P Deployment
+## Task 1.6: Uncomment Health Checks in P2P Deployment
 
-**Приоритет:** 🟠 HIGH
+**Приоритет:** HIGH
 **Время:** 15 минут
 **Ответственный:** _________
-**Статус:** ⬜ TODO
+**Статус:** TODO
 
 ### Проблема
 - Файл: `k8s/deployments/cloudbridge-relay-p2p-deployment.yaml:81`
 - Health checks закомментированы:
   ```yaml
   # livenessProbe:
-  #   httpGet:
-  #     path: /health
-  #     port: 8080
+  # httpGet:
+  # path: /health
+  # port: 8080
   ```
 - Kubernetes не может определить pod health
 
@@ -602,12 +602,12 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay-p2p | grep -i "health"
 
 ---
 
-##  Task 1.7: Fix Port Conflicts
+## Task 1.7: Fix Port Conflicts
 
 **Приоритет:** MEDIUM
 **Время:** 1 час
 **Ответственный:** _________
-**Статус:** ⬜ TODO
+**Статус:** TODO
 
 ### Проблема
 - **Conflict 1:** Port 9090 используется для:
@@ -638,9 +638,9 @@ ports:
     name: http-api
     protocol: TCP
   - containerPort: 9090
-    name: quic  # Keep for QUIC
+    name: quic # Keep for QUIC
     protocol: UDP
-  - containerPort: 9091  # CHANGE: New metrics port
+  - containerPort: 9091 # CHANGE: New metrics port
     name: metrics
     protocol: TCP
 ```
@@ -649,9 +649,9 @@ ports:
 ```yaml
 # k8s/deployments/cadence-web-deployment.yaml
 ports:
-  - containerPort: 8088  # Web UI
+  - containerPort: 8088 # Web UI
     name: http
-  - containerPort: 9092  # CHANGE: Separate metrics port
+  - containerPort: 9092 # CHANGE: Separate metrics port
     name: metrics
 ```
 
@@ -665,7 +665,7 @@ metadata:
   name: cloudbridge-relay-metrics
 spec:
   ports:
-  - port: 9091  # Changed
+  - port: 9091 # Changed
     targetPort: metrics
     name: metrics
 ```
@@ -679,7 +679,7 @@ metadata:
   name: cloudbridge-relay
 spec:
   endpoints:
-  - port: metrics  # Will use port 9091
+  - port: metrics # Will use port 9091
     path: /metrics
 ```
 
@@ -712,7 +712,7 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay | grep -i "address alre
 **Приоритет:** MEDIUM
 **Время:** 2 часа
 **Ответственный:** _________
-**Статус:** ⬜ TODO
+**Статус:** TODO
 
 ### Проблема
 - Containers без resource limits:
@@ -885,7 +885,7 @@ kubectl logs -n cloudbridge deployment/cloudbridge-relay --previous
 
 ---
 
-## 📞 КОНТАКТЫ И ESCALATION
+## КОНТАКТЫ И ESCALATION
 
 **Technical Lead:** _________
 **DevOps Lead:** _________

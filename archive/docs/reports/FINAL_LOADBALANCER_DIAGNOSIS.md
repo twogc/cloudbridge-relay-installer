@@ -1,8 +1,8 @@
 # ОКОНЧАТЕЛЬНЫЙ ДИАГНОЗ ПРОБЛЕМЫ LOADBALANCER
 
-**Дата:** 28 сентября 2025  
-**LoadBalancer ID:** 95bd8ca8-b30d-461a-9206-eb04c403a544  
-**Статус:** AMPHORA INSTANCE НЕИСПРАВЕН  
+**Дата:** 28 сентября 2025
+**LoadBalancer ID:** 95bd8ca8-b30d-461a-9206-eb04c403a544
+**Статус:** AMPHORA INSTANCE НЕИСПРАВЕН
 
 ## Проведенная диагностика
 
@@ -30,13 +30,13 @@ arp -a | grep 192.168.49.8
 ```bash
 openstack port show 651156ce-c733-4084-8f2a-e7d45c1bbcf9
 # admin_state_up: true
-# status: DOWN  ← Не поднимается!
+# status: DOWN ← Не поднимается!
 ```
 
 #### 3. Все Members переходят в ERROR
 Протестированы различные конфигурации:
 - **Nginx Proxy** (`192.168.49.10:8080`) → ERROR
-- **Nginx Proxy** (`192.168.49.10:32500`) → ERROR  
+- **Nginx Proxy** (`192.168.49.10:32500`) → ERROR
 - **Kubernetes Direct** (`192.168.49.2:32500`) → ERROR
 
 **Все backend серверы работают идеально**, но LoadBalancer не может их достичь.
@@ -55,7 +55,7 @@ openstack port show 651156ce-c733-4084-8f2a-e7d45c1bbcf9
 - **HTTP Pool:** `055aa59c-0672-4c5c-9821-e94d5a31e856` (ONLINE)
 - **HTTPS Pool:** `b4b3126a-8d19-4c55-ba8c-6ce948cf1474` (ONLINE)
 
-## 🔧 Результаты тестирования
+## Результаты тестирования
 
 ### Что работает:
 - **SSL Handshake:** Проходит успешно на внешнем IP
@@ -88,7 +88,7 @@ openstack port show 651156ce-c733-4084-8f2a-e7d45c1bbcf9
 - Members конфигурация - исправлена
 - Статические маршруты - не требуются
 
-## 📞 Критический запрос в техподдержку VK Cloud
+## Критический запрос в техподдержку VK Cloud
 
 **Тема:** КРИТИЧЕСКАЯ ПРОБЛЕМА: Amphora Instance LoadBalancer неисправен
 

@@ -16,7 +16,7 @@
 - **Интеграция**: QUIC datagrams с Context ID управлением
 - **Стандарт**: Соответствует masque-go reference implementation
 
-#### **CONNECT-IP (RFC 9484)**  
+#### **CONNECT-IP (RFC 9484)**
 - **Файл**: `internal/masque/connect_ip.go` (новый)
 - **Функциональность**: IP туннелирование через HTTP/3
 - **Интерфейс**: Реализует net.Conn для совместимости
@@ -41,7 +41,7 @@
 
 #### **STUN Client**
 - **Файл**: `internal/nat/stun_client.go` (новый)
-- **Функциональность**: 
+- **Функциональность**:
   - Автоматический сбор host кандидатов
   - Server-reflexive кандидаты через STUN
   - NAT type discovery (RFC 5780)
@@ -58,7 +58,7 @@
   - Диагностические рекомендации
 
 #### **Connectivity Checks**
-- **Файл**: `internal/nat/connectivity_checker.go` (новый)  
+- **Файл**: `internal/nat/connectivity_checker.go` (новый)
 - **Функциональность**:
   - ICE connectivity checks с приоритизацией
   - Параллельные проверки кандидатов
@@ -112,13 +112,13 @@
 
 ---
 
-## 🏥 **4. HEALTH CHECKS (100% ЗАВЕРШЕНЫ)**
+## **4. HEALTH CHECKS (100% ЗАВЕРШЕНЫ)**
 
 ### *Реализованные компоненты:**
 
 #### **Database Connectivity**
 - **Файл**: `internal/health/comprehensive_checker.go` (новый)
-- **Функциональность**: 
+- **Функциональность**:
   - Ping подключения к базе данных
   - Тестовые SQL запросы
   - Timeout handling
@@ -162,7 +162,7 @@
 
 ---
 
-## 📁 **СОЗДАННЫЕ/ОБНОВЛЕННЫЕ ФАЙЛЫ**
+## **СОЗДАННЫЕ/ОБНОВЛЕННЫЕ ФАЙЛЫ**
 
 ### **MASQUE Protocol:**
 ```
@@ -223,14 +223,14 @@ internal/enhanced/metrics/
 
 ---
 
-##  **КОНФИГУРАЦИЯ ДЛЯ K8S**
+## **КОНФИГУРАЦИЯ ДЛЯ K8S**
 
 ### **Zitadel Service Discovery:**
 ```json
 {
   "k8s_config": {
     "zitadel_service_name": "zitadel",
-    "zitadel_namespace": "zitadel-system", 
+    "zitadel_namespace": "zitadel-system",
     "zitadel_port": 8080,
     "use_internal_dns": true,
     "insecure_skip_verify": true,

@@ -21,7 +21,7 @@ Internet → L4 DDoS Protection (Cloud/ISP)
        → Backend Services
 ```
 
-##  **1. Реалистичные цели и SLO**
+## **1. Реалистичные цели и SLO**
 
 ### **Метрики производительности:**
 ```yaml
@@ -39,24 +39,24 @@ data:
         p95: "300ms"
         p99: "500ms"
         target: "150ms"
-      
+
       # WAF overhead (внутри кластера)
       waf_overhead:
         p95: "8ms"
         p99: "15ms"
         target: "3ms"
-      
+
       # Availability
       availability:
-        target: "99.9%"  # 99.99% только при мультизоне
+        target: "99.9%" # 99.99% только при мультизоне
         measurement_window: "30d"
-      
+
       # WAF False Positive Rate
       waf_false_positive_rate:
         target: "0.5%"
         measurement_window: "24h"
         canary_period: "72h"
-      
+
       # Error rates
       error_rate:
         target: "0.1%"
@@ -85,7 +85,7 @@ data:
         annotations:
           summary: "WAF block rate is high (possible FPR)"
           description: "WAF is blocking {{ $value | humanizePercentage }} of requests"
-      
+
       - alert: WAFRulesEvalLatencyHigh
         expr: histogram_quantile(0.95, rate(coraza_waf_rule_eval_duration_seconds_bucket[5m])) > 0.02
         for: 1m
@@ -94,7 +94,7 @@ data:
         annotations:
           summary: "WAF rule evaluation latency is high"
           description: "p95 WAF rule evaluation latency is {{ $value }}s"
-      
+
       - alert: Upstream5xxSpike
         expr: rate(traefik_service_requests_total{code=~"5.."}[5m]) > 0.01
         for: 1m
@@ -138,7 +138,7 @@ spec:
         - name: XDP_MODE
           value: "native"
         - name: RATE_LIMIT
-          value: "1000"  # packets per second per IP
+          value: "1000" # packets per second per IP
         volumeMounts:
         - name: bpf-maps
           mountPath: /sys/fs/bpf
@@ -178,47 +178,47 @@ data:
     iptables -A INPUT -p tcp --dport 443 -m limit --limit 1000/sec --limit-burst 2000 -j ACCEPT
     iptables -A INPUT -p tcp --dport 80 -j DROP
     iptables -A INPUT -p tcp --dport 443 -j DROP
-    
+
     # SYN flood protection
     iptables -A INPUT -p tcp --syn -m limit --limit 100/sec --limit-burst 200 -j ACCEPT
     iptables -A INPUT -p tcp --syn -j DROP
 ```
 
-## 📝 **3. Policy-as-Code и канареечные выкаты**
+## **3. Policy-as-Code и канареечные выкаты**
 
 ### **Структура репозитория waf-policies:**
 ```
 waf-policies/
 ├── .github/
-│   ├── workflows/
-│   │   ├── validate-policies.yml
-│   │   ├── canary-deploy.yml
-│   │   └── negative-tests.yml
-│   └── PULL_REQUEST_TEMPLATE.md
+│ ├── workflows/
+│ │ ├── validate-policies.yml
+│ │ ├── canary-deploy.yml
+│ │ └── negative-tests.yml
+│ └── PULL_REQUEST_TEMPLATE.md
 ├── policies/
-│   ├── coraza/
-│   │   ├── crs-overrides/
-│   │   │   ├── staging/
-│   │   │   ├── canary/
-│   │   │   └── production/
-│   │   └── custom-rules/
-│   ├── oathkeeper/
-│   │   ├── access-rules/
-│   │   └── policies/
-│   └── krakend/
-│       ├── endpoints/
-│       └── middleware/
+│ ├── coraza/
+│ │ ├── crs-overrides/
+│ │ │ ├── staging/
+│ │ │ ├── canary/
+│ │ │ └── production/
+│ │ └── custom-rules/
+│ ├── oathkeeper/
+│ │ ├── access-rules/
+│ │ └── policies/
+│ └── krakend/
+│ ├── endpoints/
+│ └── middleware/
 ├── tests/
-│   ├── negative/
-│   │   ├── bola-tests.yml
-│   │   ├── ssrf-tests.yml
-│   │   └── path-traversal-tests.yml
-│   └── positive/
-│       └── legitimate-traffic.yml
+│ ├── negative/
+│ │ ├── bola-tests.yml
+│ │ ├── ssrf-tests.yml
+│ │ └── path-traversal-tests.yml
+│ └── positive/
+│ └── legitimate-traffic.yml
 ├── scripts/
-│   ├── validate-policies.sh
-│   ├── canary-deploy.sh
-│   └── rollback.sh
+│ ├── validate-policies.sh
+│ ├── canary-deploy.sh
+│ └── rollback.sh
 └── docs/
     ├── policy-guidelines.md
     └── deployment-process.md
@@ -239,22 +239,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Validate Coraza Rules
       run: |
         docker run --rm -v $PWD:/policies coraza/coraza-waf:latest \
           --config=/policies/policies/coraza/coraza.conf \
           --validate-only
-    
+
     - name: Validate Oathkeeper Rules
       run: |
         docker run --rm -v $PWD:/policies ory/oathkeeper:latest \
           rules validate /policies/policies/oathkeeper/access-rules/
-    
+
     - name: Run Negative Tests
       run: |
         ./scripts/run-negative-tests.sh
-    
+
     - name: Check Policy Coverage
       run: |
         ./scripts/check-coverage.sh
@@ -275,24 +275,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Deploy to Staging
       run: |
         kubectl apply -f policies/coraza/crs-overrides/staging/ -n traefik-system
         kubectl apply -f policies/oathkeeper/access-rules/ -n oathkeeper-system
-    
+
     - name: Wait for Staging Validation
       run: |
         ./scripts/wait-for-staging-validation.sh
-    
+
     - name: Deploy Canary (5% traffic)
       run: |
         ./scripts/canary-deploy.sh --percentage=5
-    
+
     - name: Monitor Canary Metrics
       run: |
         ./scripts/monitor-canary.sh --duration=30m
-    
+
     - name: Deploy to Production (if canary successful)
       if: success()
       run: |
@@ -345,7 +345,7 @@ metadata:
   name: jwks-cache-key
   namespace: oathkeeper-system
 spec:
-  refreshInterval: "15m"  # JWKS rotation
+  refreshInterval: "15m" # JWKS rotation
   secretStoreRef:
     name: vault-secret-store
     kind: SecretStore
@@ -386,12 +386,12 @@ data:
               jwks_url: https://zitadel.local/.well-known/jwks.json
               jwks_cache_ttl: 15m
               jwks_refresh_interval: 10m
-              jwks_refresh_jitter: 2m  # ±2 minutes jitter
+              jwks_refresh_jitter: 2m # ±2 minutes jitter
               jwks_pinning:
                 enabled: true
                 fingerprint: "sha256:ABC123..."
               # ACR/AMR support
-              acr_values: ["1", "2"]  # MFA levels
+              acr_values: ["1", "2"] # MFA levels
               amr_required: ["mfa"]
               # Audience and issuer validation
               audience: ["cloudbridge-relay"]
@@ -415,60 +415,60 @@ metadata:
 data:
   fluent-bit.conf: |
     [SERVICE]
-        Flush         1
-        Log_Level     info
-        Daemon        off
-        Parsers_File  parsers.conf
-        HTTP_Server   On
-        HTTP_Listen   0.0.0.0
-        HTTP_Port     2020
+        Flush 1
+        Log_Level info
+        Daemon off
+        Parsers_File parsers.conf
+        HTTP_Server On
+        HTTP_Listen 0.0.0.0
+        HTTP_Port 2020
 
     [INPUT]
-        Name              tail
-        Path              /var/log/traefik/*.log
-        Parser            traefik
-        Tag               traefik.*
-        Refresh_Interval  5
-        Mem_Buf_Limit     50MB
-        Skip_Long_Lines   On
+        Name tail
+        Path /var/log/traefik/*.log
+        Parser traefik
+        Tag traefik.*
+        Refresh_Interval 5
+        Mem_Buf_Limit 50MB
+        Skip_Long_Lines On
 
     [INPUT]
-        Name              tail
-        Path              /var/log/coraza/*.log
-        Parser            coraza
-        Tag               coraza.*
-        Refresh_Interval  5
-        Mem_Buf_Limit     50MB
-        Skip_Long_Lines   On
+        Name tail
+        Path /var/log/coraza/*.log
+        Parser coraza
+        Tag coraza.*
+        Refresh_Interval 5
+        Mem_Buf_Limit 50MB
+        Skip_Long_Lines On
 
     [INPUT]
-        Name              tail
-        Path              /var/log/oathkeeper/*.log
-        Parser            oathkeeper
-        Tag               oathkeeper.*
-        Refresh_Interval  5
-        Mem_Buf_Limit     50MB
-        Skip_Long_Lines   On
+        Name tail
+        Path /var/log/oathkeeper/*.log
+        Parser oathkeeper
+        Tag oathkeeper.*
+        Refresh_Interval 5
+        Mem_Buf_Limit 50MB
+        Skip_Long_Lines On
 
     [FILTER]
-        Name                kubernetes
-        Match               traefik.*
-        Kube_URL            https://kubernetes.default.svc:443
-        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
-        Kube_Tag_Prefix     traefik.
-        Merge_Log           On
-        Keep_Log            Off
-        K8S-Logging.Parser  On
+        Name kubernetes
+        Match traefik.*
+        Kube_URL https://kubernetes.default.svc:443
+        Kube_CA_File /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_Tag_Prefix traefik.
+        Merge_Log On
+        Keep_Log Off
+        K8S-Logging.Parser On
         K8S-Logging.Exclude Off
 
     [OUTPUT]
-        Name  opensearch
+        Name opensearch
         Match *
-        Host  opensearch.logging.svc.cluster.local
-        Port  9200
+        Host opensearch.logging.svc.cluster.local
+        Port 9200
         Index cloudbridge-waf-logs
-        Type  _doc
+        Type _doc
         # Retention policy for audit logs (365 days)
         Retry_Limit 3
         Buffer_Size 5MB
@@ -572,7 +572,7 @@ data:
     }
 ```
 
-##  **6. Fail-open / Fail-closed стратегии**
+## **6. Fail-open / Fail-closed стратегии**
 
 ### **Конфигурация по типам API:**
 ```yaml
@@ -594,7 +594,7 @@ data:
                 fail_open: true
                 timeout: 5s
                 max_request_size: 10MB
-        
+
         # Admin API - fail-closed
         waf-admin:
           plugin:
@@ -603,7 +603,7 @@ data:
                 fail_open: false
                 timeout: 10s
                 max_request_size: 1MB
-        
+
         # Internal API - fail-closed with alert
         waf-internal:
           plugin:
@@ -634,7 +634,7 @@ data:
       - handler: oidc
         config:
           provider: zitadel
-          fail_open: true  # Allow on auth failure
+          fail_open: true # Allow on auth failure
     authorizer:
       handler: remote
       config:
@@ -651,7 +651,7 @@ data:
       - handler: oidc
         config:
           provider: zitadel
-          fail_open: false  # Block on auth failure
+          fail_open: false # Block on auth failure
     authorizer:
       handler: remote
       config:
@@ -660,7 +660,7 @@ data:
       - handler: header
 ```
 
-## 🔄 **7. Релизы и откат**
+## **7. Релизы и откат**
 
 ### **Feature flags:**
 ```yaml
@@ -676,17 +676,17 @@ data:
       enabled: true
       version: "v1.2.0"
       canary_percentage: 0
-    
+
     oathkeeper:
       enabled: true
       version: "v0.40.0"
       canary_percentage: 0
-    
+
     krakend:
       enabled: true
       version: "v2.4.0"
       canary_percentage: 0
-    
+
     # Rollback flags
     rollback:
       waf_previous_version: "v1.1.0"
@@ -768,16 +768,16 @@ data:
                 - email
                 - cloudbridge-relay
               # ACR (Authentication Context Class Reference)
-              acr_values: ["1", "2"]  # 1=basic, 2=MFA
+              acr_values: ["1", "2"] # 1=basic, 2=MFA
               acr_validation:
-                required: ["1"]  # Minimum ACR level
+                required: ["1"] # Minimum ACR level
                 preferred: ["2"] # Preferred ACR level
               # AMR (Authentication Methods References)
-              amr_required: ["pwd", "mfa"]  # Password + MFA
+              amr_required: ["pwd", "mfa"] # Password + MFA
               amr_validation: true
               # Audience and authorization party
               audience: ["cloudbridge-relay"]
-              azp_validation: true  # Authorized party validation
+              azp_validation: true # Authorized party validation
               # Token validation
               token_validation:
                 clock_skew: 30s
@@ -846,28 +846,28 @@ data:
         - waf_rules_inventory
         - policy_versioning
         - asset_classification
-      
+
       A.12_Operations_Security:
         - waf_monitoring
         - incident_response
         - change_management
-      
+
       A.13_Communications_Security:
         - network_segmentation
         - tls_encryption
         - mfa_authentication
-      
+
       A.12.4_Logging_and_Monitoring:
         - audit_logs
         - security_monitoring
         - log_retention
-    
+
     compliance_requirements:
       iso_27017_cloud_security:
         - shared_responsibility_model
         - cloud_service_monitoring
         - data_location_controls
-      
+
       iso_27018_privacy:
         - data_processing_records
         - consent_management
@@ -919,7 +919,7 @@ data:
         - duration: 30m
         - metrics_monitoring: true
         - rollback_plan: ready
-      
+
       negative_testing:
         - bola_tests: passed
         - ssrf_tests: passed
@@ -927,18 +927,18 @@ data:
         - rce_patterns: tested
         - file_upload_abuse: tested
         - header_smuggling: tested
-      
+
       rule_hygiene:
         - paranoia_level: 1-2
         - custom_exceptions: configured
         - false_positive_rate: <0.5%
         - rule_coverage: documented
-      
+
       rollback_rehearsal:
         - rollback_time: <5min
         - data_consistency: verified
         - service_availability: maintained
-      
+
       audit_readiness:
         - logs_accessible: true
         - retention_policy: 365d
@@ -952,11 +952,11 @@ data:
 
 1. **Реалистичные SLO** с учетом интернет-латентности
 2. **L3/L4 защиту** с eBPF и rate limiting
-3. **📝 Policy-as-Code** с канареечными выкатами
+3. ** Policy-as-Code** с канареечными выкатами
 4. **Безопасное управление секретами** через Vault
 5. **Полную observability** для аудита ISO
 6. ** Fail-open/fail-closed** стратегии
-7. **🔄 Blue/Green релизы** с быстрым откатом
+7. ** Blue/Green релизы** с быстрым откатом
 8. **Совместимость с Zitadel** ACR/AMR
 9. **ISO compliance** документацию
 10. **Production readiness** чек-лист

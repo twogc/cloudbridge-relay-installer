@@ -6,11 +6,11 @@ Comprehensive end-to-end tests for CloudBridge Relay kubectl proxy functionality
 
 These tests verify the complete kubectl proxy integration including:
 
-- ✅ **Basic kubectl commands** (get, list, describe, watch)
-- ✅ **WebSocket streams** (exec, attach, logs, port-forward) 
-- ✅ **Authorization policies** (tenant/user/group-based access control)
-- ✅ **Prometheus metrics** (request counters, duration, WebSocket metrics)
-- ✅ **Integration scenarios** (real workloads, concurrent operations)
+- **Basic kubectl commands** (get, list, describe, watch)
+- **WebSocket streams** (exec, attach, logs, port-forward)
+- **Authorization policies** (tenant/user/group-based access control)
+- **Prometheus metrics** (request counters, duration, WebSocket metrics)
+- **Integration scenarios** (real workloads, concurrent operations)
 
 ## Prerequisites
 
@@ -30,10 +30,10 @@ These tests verify the complete kubectl proxy integration including:
 
 # 3. Or run specific test suites
 cd test/e2e
-go test -v -run TestKubeProxyE2E        # Basic kubectl functionality
-go test -v -run TestAuthorizationE2E    # Authorization policies  
-go test -v -run TestMetricsE2E          # Prometheus metrics
-go test -v -run TestIntegration         # Full integration tests
+go test -v -run TestKubeProxyE2E # Basic kubectl functionality
+go test -v -run TestAuthorizationE2E # Authorization policies
+go test -v -run TestMetricsE2E # Prometheus metrics
+go test -v -run TestIntegration # Full integration tests
 ```
 
 ## Test Configuration
@@ -41,12 +41,12 @@ go test -v -run TestIntegration         # Full integration tests
 Set environment variables to customize test behavior:
 
 ```bash
-export RELAY_URL="http://localhost:8444"          # CloudBridge Relay URL
-export METRICS_URL="http://localhost:5551"        # Prometheus metrics endpoint  
-export CLUSTER_ID="minikube"                       # Cluster ID in relay config
-export TEST_NAMESPACE="e2e-test"                   # Kubernetes namespace for tests
-export KUBECTL_REMOTE_COMMAND_WEBSOCKETS=1        # Enable WebSocket for exec/attach
-export KUBECTL_PORT_FORWARD_WEBSOCKETS=1          # Enable WebSocket for port-forward
+export RELAY_URL="http://localhost:8444" # CloudBridge Relay URL
+export METRICS_URL="http://localhost:5551" # Prometheus metrics endpoint
+export CLUSTER_ID="minikube" # Cluster ID in relay config
+export TEST_NAMESPACE="e2e-test" # Kubernetes namespace for tests
+export KUBECTL_REMOTE_COMMAND_WEBSOCKETS=1 # Enable WebSocket for exec/attach
+export KUBECTL_PORT_FORWARD_WEBSOCKETS=1 # Enable WebSocket for port-forward
 ```
 
 ## Test Suites
@@ -69,7 +69,7 @@ go test -v -run TestKubeProxyE2E/TestBasicKubectlCommands
 Tests real-time kubectl operations that require WebSocket upgrades:
 
 - **Exec**: `kubectl exec -it pod -- /bin/bash`
-- **Logs**: `kubectl logs -f deployment/app`  
+- **Logs**: `kubectl logs -f deployment/app`
 - **Port-forward**: `kubectl port-forward svc/app 8080:80`
 - **Attach**: `kubectl attach pod`
 
@@ -122,13 +122,13 @@ go test -v -run TestIntegration
 
 ```
 test/e2e/
-├── run_tests.sh           # Main test runner script
-├── kube_proxy_test.go     # Basic kubectl + WebSocket tests
-├── auth_test.go           # Authorization policy tests
-├── metrics_test.go        # Prometheus metrics tests  
-├── integration_test.go    # Full integration scenarios
-├── go.mod                 # Go dependencies
-└── README.md             # This file
+├── run_tests.sh # Main test runner script
+├── kube_proxy_test.go # Basic kubectl + WebSocket tests
+├── auth_test.go # Authorization policy tests
+├── metrics_test.go # Prometheus metrics tests
+├── integration_test.go # Full integration scenarios
+├── go.mod # Go dependencies
+└── README.md # This file
 ```
 
 Each test file contains:
@@ -143,7 +143,7 @@ Each test file contains:
 kubectl --kubeconfig /tmp/kubeconfig-relay exec deployment/nginx -- echo "hello"
 # → Relay receives request
 # → Checks authorization (tenant_id: default, verb: exec, resource: pods)
-# → Upgrades to WebSocket with v4.channel.k8s.io subprotocol  
+# → Upgrades to WebSocket with v4.channel.k8s.io subprotocol
 # → Proxies to Kubernetes API server
 # → Returns "hello" output
 # → Records metrics: kube_proxy_requests_total{verb="exec"} +1
@@ -181,25 +181,25 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: '1.21'
-      
+
       # Setup minikube + CloudBridge Relay
       - name: Start minikube
         run: |
           minikube start
           eval $(minikube docker-env)
           docker build -t cloudbridge-relay:local .
-          
+
       - name: Deploy relay
         run: |
           kubectl apply -f k8s-minikube-deployment.yaml
           kubectl wait --for=condition=ready pod -l app=cloudbridge-relay --timeout=300s
-          
+
       # Run E2E tests
-      - name: Run E2E Tests  
+      - name: Run E2E Tests
         run: ./test/e2e/run_tests.sh
         env:
           RELAY_URL: "http://$(minikube ip):30444"
-          METRICS_URL: "http://$(minikube ip):30551" 
+          METRICS_URL: "http://$(minikube ip):30551"
 ```
 
 ## Troubleshooting
@@ -256,14 +256,14 @@ export KUBECONFIG=~/.kube/config-relay
 kubectl get pods --all-namespaces
 kubectl logs deployment/nginx-test -n e2e-test
 
-# Test WebSocket streams  
+# Test WebSocket streams
 kubectl exec -it deployment/busybox-test -n e2e-test -- /bin/sh
 kubectl port-forward svc/nginx-test 8080:80 -n e2e-test
 ```
 
 ---
 
-## ✅ Test Coverage
+## Test Coverage
 
 The E2E test suite provides comprehensive coverage of CloudBridge Relay kubectl proxy functionality:
 

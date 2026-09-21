@@ -2,10 +2,10 @@
 
 ## Общая информация
 
-**Дата:** 25 сентября 2025  
-**Приоритет:** Высокий  
-**Статус:** В работе  
-**Исполнитель:** Разработчик DevOps/Мониторинг  
+**Дата:** 25 сентября 2025
+**Приоритет:** Высокий
+**Статус:** В работе
+**Исполнитель:** Разработчик DevOps/Мониторинг
 
 ## Цель
 
@@ -38,8 +38,8 @@
 
 ## Анализ шаблона
 
-**Файл:** `cloudbridge-relay-template-fixed.xml`  
-**Всего метрик:** 45+ метрик  
+**Файл:** `cloudbridge-relay-template-fixed.xml`
+**Всего метрик:** 45+ метрик
 **Группы метрик:**
 - Relay Server Items (JSON API)
 - AI Integration Items
@@ -48,7 +48,7 @@
 - Docker Items
 - Kubernetes Items
 
-## 🛠️ Задачи для выполнения
+## Задачи для выполнения
 
 ### Задача 1: Исправить конфигурацию Zabbix агента
 **Приоритет:** Критический
@@ -166,27 +166,27 @@
    zabbix_get -s localhost -k cloudbridge.system.cpu.usage
    zabbix_get -s localhost -k cloudbridge.system.memory.usage
    zabbix_get -s localhost -k cloudbridge.system.disk.usage
-   
+
    # Docker метрики
    zabbix_get -s localhost -k cloudbridge.docker.containers.running
    zabbix_get -s localhost -k cloudbridge.docker.containers.total
    zabbix_get -s localhost -k cloudbridge.docker.images.total
-   
+
    # Kubernetes метрики
    zabbix_get -s localhost -k cloudbridge.k8s.pods.running
    zabbix_get -s localhost -k cloudbridge.k8s.pods.total
    zabbix_get -s localhost -k cloudbridge.k8s.nodes.ready
-   
+
    # AI метрики
    zabbix_get -s localhost -k ai.status
    zabbix_get -s localhost -k ai.health
    zabbix_get -s localhost -k ai.anomaly_detections
-   
+
    # P2P метрики
    zabbix_get -s localhost -k p2p.quic.connections.active
    zabbix_get -s localhost -k p2p.quic.peers.active
    zabbix_get -s localhost -k p2p.quic.latency.average
-   
+
    # Relay JSON метрики
    zabbix_get -s localhost -k cloudbridge.relay.json.active_connections
    zabbix_get -s localhost -k cloudbridge.relay.json.uptime_seconds
@@ -213,7 +213,7 @@
 3. **Конфигурация оптимизирована и очищена**
 4. **Документация обновлена**
 
-##  Технические детали
+## Технические детали
 
 ### Файлы для работы:
 - `/etc/zabbix/zabbix_agentd.conf` - основная конфигурация
@@ -253,12 +253,12 @@ sudo /usr/sbin/zabbix_agentd -t -c /etc/zabbix/zabbix_agentd.conf
 3. **Тестировать каждое изменение** перед применением
 4. **Проверить права доступа** для всех скриптов
 
-## 📞 Контакты
+## Контакты
 
 При возникновении вопросов или проблем обращаться к команде DevOps.
 
 ---
 
-**Статус:** Ожидает выполнения  
-**Срок выполнения:** 1-2 дня  
+**Статус:** Ожидает выполнения
+**Срок выполнения:** 1-2 дня
 **Приоритет:** Высокий

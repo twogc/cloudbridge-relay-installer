@@ -84,9 +84,9 @@ The compatibility layer tracks:
 
 ```go
 type CompatibilityMetrics struct {
-    RequestsTotal    int64
-    SuccessCount     int64
-    ErrorCount       int64
+    RequestsTotal int64
+    SuccessCount int64
+    ErrorCount int64
     PathTranslations map[string]int64
 }
 ```
@@ -127,10 +127,10 @@ Legacy requests are logged at INFO level:
 health := ccl.HealthCheck()
 // Returns:
 // {
-//   "name": "client_compatibility_layer",
-//   "status": "healthy",
-//   "version": "1.0.0",
-//   "routes_registered": [...]
+// "name": "client_compatibility_layer",
+// "status": "healthy",
+// "version": "1.0.0",
+// "routes_registered": [...]
 // }
 ```
 
@@ -160,7 +160,7 @@ Expected performance:
 - Peer Discovery: ~50-100 µs/op
 - Minimal overhead: < 10 µs for path translation
 
-## 🔧 Configuration
+## Configuration
 
 ### Extracting Peer ID
 
@@ -182,7 +182,7 @@ func customExtractPeerID(c *gin.Context) string {
 }
 ```
 
-## 📝 Examples
+## Examples
 
 ### Client Request (Legacy Path)
 
@@ -222,7 +222,7 @@ Authorization: Bearer $JWT_TOKEN
 
 5. **Migration Path**: Clients can gradually migrate to native paths. Both legacy and native paths work simultaneously.
 
-## 🔜 Future Enhancements
+## Future Enhancements
 
 - [ ] Prometheus metrics export
 - [ ] Request/response transformation
@@ -230,13 +230,13 @@ Authorization: Bearer $JWT_TOKEN
 - [ ] Deprecation warnings with headers
 - [ ] Automatic client version detection
 
-## 📚 References
+## References
 
 - [CloudBridge Client Repository](https://github.com/2gc-dev/cloudbridge-client)
 - [Integration Analysis](../../../docs/implementation/CLIENT_SERVER_INTEGRATION_ANALYSIS.md)
 - [Sync Plan](../../../docs/implementation/CLIENT_SERVER_SYNC_PLAN.md)
 
-## 🤝 Contributing
+## Contributing
 
 When adding new compatibility routes:
 

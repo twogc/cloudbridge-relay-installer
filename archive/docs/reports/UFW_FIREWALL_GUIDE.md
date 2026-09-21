@@ -1,4 +1,4 @@
-# 🔥 **CloudBridge Relay - UFW Firewall Guide**
+# **CloudBridge Relay - UFW Firewall Guide**
 
 ## **Обзор**
 
@@ -36,7 +36,7 @@ sudo ufw allow 8443/udp comment "CloudBridge Relay - MASQUE Protocol"
 sudo ufw allow 5554/udp comment "CloudBridge Relay - UDP Transport"
 ```
 
-##  **Порты CloudBridge Relay**
+## **Порты CloudBridge Relay**
 
 ### **TCP порты:**
 | Порт | Протокол | Назначение | Описание |
@@ -57,7 +57,7 @@ sudo ufw allow 5554/udp comment "CloudBridge Relay - UDP Transport"
 | 8443 | UDP | MASQUE | MASQUE протокол для туннелей |
 | 5554 | UDP | UDP Transport | Дополнительный UDP транспорт |
 
-## 🛠️ **Управление UFW**
+## **Управление UFW**
 
 ### **Основные команды:**
 ```bash
@@ -137,7 +137,7 @@ nmap -p 5550-5555 localhost
    ```bash
    # Включить логирование
    sudo ufw logging on
-   
+
    # Проверить логи
    sudo tail -f /var/log/ufw.log
    ```
@@ -156,7 +156,7 @@ sudo ufw status numbered
 sudo grep UFW /var/log/syslog | tail -20
 ```
 
-## 🔄 **Автоматизация**
+## **Автоматизация**
 
 ### **Скрипт управления:**
 ```bash
@@ -184,7 +184,7 @@ sudo ./scripts/ufw-cloudbridge.sh status
    ```bash
    # Проверить статус
    sudo ufw status
-   
+
    # Временно отключить для тестирования
    sudo ufw disable
    ```
@@ -193,7 +193,7 @@ sudo ./scripts/ufw-cloudbridge.sh status
    ```bash
    # Проверить, что приложение слушает
    sudo netstat -tlnp | grep 5550
-   
+
    # Проверить правила UFW
    sudo ufw status | grep 5550
    ```
@@ -205,7 +205,7 @@ sudo ./scripts/ufw-cloudbridge.sh status
    sudo ufw allow 5550/tcp
    ```
 
-## 📝 **Чек-лист**
+## **Чек-лист**
 
 ### **Настройка UFW:**
 - [ ] UFW включен

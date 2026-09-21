@@ -51,44 +51,44 @@ This document defines the technical architecture for **CloudBridge TCP Tunnel** 
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                    CloudBridge TCP Tunnel Architecture                  │
+│ CloudBridge TCP Tunnel Architecture │
 └─────────────────────────────────────────────────────────────────────────┘
 
-User/Client                          CloudBridge Platform
+User/Client CloudBridge Platform
 ───────────────────────────────────────────────────────────────────────────
 
-┌─────────────────────┐              ┌─────────────────────────────────┐
-│  End User           │              │  Global DNS (GeoDNS)            │
-│  (Browser, SSH      │─────DNS─────→│  tunnel.2gc.ru                  │
-│   Client, etc.)     │   Query      │  ├─ AI-Powered PoP Selection    │
-└─────────────────────┘              │  └─ Returns nearest PoP IP      │
-         │                            └─────────────────────────────────┘
-         │                                           │
-         │ TCP Connection                            │ PoP IP
-         ↓                                           ↓
-┌─────────────────────┐              ┌─────────────────────────────────┐
-│  Edge PoP           │              │  TCP Tunnel Coordinator         │
-│  (Nearest to user)  │←────gRPC────→│  ├─ Tunnel Registry             │
-│  ├─ TCP Terminator  │              │  ├─ Health Monitoring           │
-│  ├─ TLS Terminator  │              │  ├─ Load Balancing              │
-│  ├─ HTTP CDN Cache  │              │  └─ Metrics Collection          │
-│  ├─ WAF + DDoS      │              └─────────────────────────────────┘
-│  └─ QUIC Gateway    │                              │
-└─────────────────────┘                              │
-         │                                           │
-         │ QUIC Tunnel (Persistent)                  │
-         ↓                                           ↓
-┌─────────────────────┐              ┌─────────────────────────────────┐
-│  Customer           │              │  Control Plane                  │
-│  Infrastructure     │              │  ├─ Zero Trust Gateway          │
-│  ├─ Tunnel Daemon   │←───API──────→│  ├─ Namespace Manager           │
-│  │   (cloudbridge- │              │  ├─ Certificate Manager         │
-│  │    tunneld)     │              │  ├─ AI Service (Route Opt)      │
-│  ├─ Origin Servers  │              │  └─ Analytics Pipeline          │
-│  │   ├─ HTTP:8080  │              └─────────────────────────────────┘
-│  │   ├─ SSH:22     │
-│  │   └─ RDP:3389   │
-│  └─ Private Network │
+┌─────────────────────┐ ┌─────────────────────────────────┐
+│ End User │ │ Global DNS (GeoDNS) │
+│ (Browser, SSH │─────DNS─────→│ tunnel.2gc.ru │
+│ Client, etc.) │ Query │ ├─ AI-Powered PoP Selection │
+└─────────────────────┘ │ └─ Returns nearest PoP IP │
+         │ └─────────────────────────────────┘
+         │ │
+         │ TCP Connection │ PoP IP
+         ↓ ↓
+┌─────────────────────┐ ┌─────────────────────────────────┐
+│ Edge PoP │ │ TCP Tunnel Coordinator │
+│ (Nearest to user) │←────gRPC────→│ ├─ Tunnel Registry │
+│ ├─ TCP Terminator │ │ ├─ Health Monitoring │
+│ ├─ TLS Terminator │ │ ├─ Load Balancing │
+│ ├─ HTTP CDN Cache │ │ └─ Metrics Collection │
+│ ├─ WAF + DDoS │ └─────────────────────────────────┘
+│ └─ QUIC Gateway │ │
+└─────────────────────┘ │
+         │ │
+         │ QUIC Tunnel (Persistent) │
+         ↓ ↓
+┌─────────────────────┐ ┌─────────────────────────────────┐
+│ Customer │ │ Control Plane │
+│ Infrastructure │ │ ├─ Zero Trust Gateway │
+│ ├─ Tunnel Daemon │←───API──────→│ ├─ Namespace Manager │
+│ │ (cloudbridge- │ │ ├─ Certificate Manager │
+│ │ tunneld) │ │ ├─ AI Service (Route Opt) │
+│ ├─ Origin Servers │ │ └─ Analytics Pipeline │
+│ │ ├─ HTTP:8080 │ └─────────────────────────────────┘
+│ │ ├─ SSH:22 │
+│ │ └─ RDP:3389 │
+│ └─ Private Network │
 └─────────────────────┘
 ```
 
@@ -151,7 +151,7 @@ User/Client                          CloudBridge Platform
 tunnel:
   # Authentication
   auth:
-    type: "api-key"  # or "oauth2", "certificate"
+    type: "api-key" # or "oauth2", "certificate"
     api_key_file: "/etc/cloudbridge/api-key"
 
   # Namespace
@@ -162,8 +162,8 @@ tunnel:
 
   # Auto-select nearest PoP or specify
   edge:
-    region: "auto"  # or "mow", "fra", "ams", etc.
-    backup_regions: ["fra", "ams"]  # Fallback PoPs
+    region: "auto" # or "mow", "fra", "ams", etc.
+    backup_regions: ["fra", "ams"] # Fallback PoPs
 
   # Ingress rules
   ingress:
@@ -174,7 +174,7 @@ tunnel:
         path: "/*"
       cdn:
         enabled: true
-        cache_ttl: 3600  # seconds
+        cache_ttl: 3600 # seconds
         cache_key_ignore_query: false
 
     # HTTPS service with origin TLS
@@ -211,11 +211,11 @@ tunnel:
     max_streams: 1000
     max_idle_timeout: 300s
     keepalive: 30s
-    initial_window_size: 524288  # 512KB
+    initial_window_size: 524288 # 512KB
 
   # Logging
   logging:
-    level: "info"  # debug, info, warn, error
+    level: "info" # debug, info, warn, error
     format: "json"
     output: "/var/log/cloudbridge/tunnel.log"
 
@@ -308,7 +308,7 @@ Request:
   metrics: { connections: 10, throughput_mbps: 100 }
 Response:
   status: "ok"
-  next_heartbeat: 30  # seconds
+  next_heartbeat: 30 # seconds
 
 # Tunnel Deregistration
 DELETE /api/v1/tunnels/{tunnel_id}
@@ -317,34 +317,34 @@ DELETE /api/v1/tunnels/{tunnel_id}
 **Data Model:**
 ```go
 type Tunnel struct {
-    ID            string    `json:"id"`
-    Namespace     string    `json:"namespace"`
-    Name          string    `json:"name"`
-    AssignedPoP   string    `json:"assigned_pop"`
-    IngressRules  []Ingress `json:"ingress_rules"`
-    Status        string    `json:"status"` // "active", "inactive", "error"
+    ID string `json:"id"`
+    Namespace string `json:"namespace"`
+    Name string `json:"name"`
+    AssignedPoP string `json:"assigned_pop"`
+    IngressRules []Ingress `json:"ingress_rules"`
+    Status string `json:"status"` // "active", "inactive", "error"
     LastHeartbeat time.Time `json:"last_heartbeat"`
-    Metrics       *Metrics  `json:"metrics"`
-    CreatedAt     time.Time `json:"created_at"`
+    Metrics *Metrics `json:"metrics"`
+    CreatedAt time.Time `json:"created_at"`
 }
 
 type Ingress struct {
-    Hostname    string            `json:"hostname"`
-    Service     string            `json:"service"` // "http://localhost:8080"
-    Protocol    string            `json:"protocol"` // "http", "tcp"
-    CDNEnabled  bool              `json:"cdn_enabled"`
-    CacheTTL    int               `json:"cache_ttl"`
-    TLSVerify   bool              `json:"tls_verify"`
-    Headers     map[string]string `json:"headers"` // Custom headers
+    Hostname string `json:"hostname"`
+    Service string `json:"service"` // "http://localhost:8080"
+    Protocol string `json:"protocol"` // "http", "tcp"
+    CDNEnabled bool `json:"cdn_enabled"`
+    CacheTTL int `json:"cache_ttl"`
+    TLSVerify bool `json:"tls_verify"`
+    Headers map[string]string `json:"headers"` // Custom headers
 }
 
 type Metrics struct {
-    ActiveConnections int     `json:"active_connections"`
-    TotalRequests     int64   `json:"total_requests"`
-    ThroughputMbps    float64 `json:"throughput_mbps"`
-    LatencyP50        int     `json:"latency_p50_ms"`
-    LatencyP95        int     `json:"latency_p95_ms"`
-    ErrorRate         float64 `json:"error_rate"`
+    ActiveConnections int `json:"active_connections"`
+    TotalRequests int64 `json:"total_requests"`
+    ThroughputMbps float64 `json:"throughput_mbps"`
+    LatencyP50 int `json:"latency_p50_ms"`
+    LatencyP95 int `json:"latency_p95_ms"`
+    ErrorRate float64 `json:"error_rate"`
 }
 ```
 
@@ -355,36 +355,36 @@ type Metrics struct {
 **Components:**
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    Edge PoP Stack                        │
+│ Edge PoP Stack │
 ├──────────────────────────────────────────────────────────┤
-│                                                            │
-│  Layer 7 (HTTP/HTTPS)                                     │
-│  ├─ NGINX or Envoy (10 instances)                        │
-│  │  ├─ TLS termination (TLS 1.3)                         │
-│  │  ├─ HTTP/2 and HTTP/3 support                         │
-│  │  ├─ CDN cache (SSD + Redis)                           │
-│  │  ├─ WAF (ModSecurity/Coraza)                          │
-│  │  └─ Compression (Brotli, gzip)                        │
-│  │                                                          │
-│  Layer 4 (TCP/UDP)                                        │
-│  ├─ HAProxy or custom Go proxy (20 instances)            │
-│  │  ├─ TCP load balancing                                │
-│  │  ├─ Health checks                                     │
-│  │  └─ Connection pooling                                │
-│  │                                                          │
-│  QUIC Gateway                                             │
-│  ├─ Custom Go service (30 instances)                     │
-│  │  ├─ QUIC tunnel termination                           │
-│  │  ├─ Stream multiplexing (yamux/smux)                  │
-│  │  ├─ Protocol detection                                │
-│  │  └─ Traffic forwarding                                │
-│  │                                                          │
-│  DDoS Protection                                          │
-│  └─ Linux kernel (iptables/nftables)                     │
-│     ├─ SYN flood protection                              │
-│     ├─ Connection rate limiting                          │
-│     └─ GeoIP filtering                                   │
-│                                                            │
+│ │
+│ Layer 7 (HTTP/HTTPS) │
+│ ├─ NGINX or Envoy (10 instances) │
+│ │ ├─ TLS termination (TLS 1.3) │
+│ │ ├─ HTTP/2 and HTTP/3 support │
+│ │ ├─ CDN cache (SSD + Redis) │
+│ │ ├─ WAF (ModSecurity/Coraza) │
+│ │ └─ Compression (Brotli, gzip) │
+│ │ │
+│ Layer 4 (TCP/UDP) │
+│ ├─ HAProxy or custom Go proxy (20 instances) │
+│ │ ├─ TCP load balancing │
+│ │ ├─ Health checks │
+│ │ └─ Connection pooling │
+│ │ │
+│ QUIC Gateway │
+│ ├─ Custom Go service (30 instances) │
+│ │ ├─ QUIC tunnel termination │
+│ │ ├─ Stream multiplexing (yamux/smux) │
+│ │ ├─ Protocol detection │
+│ │ └─ Traffic forwarding │
+│ │ │
+│ DDoS Protection │
+│ └─ Linux kernel (iptables/nftables) │
+│ ├─ SYN flood protection │
+│ ├─ Connection rate limiting │
+│ └─ GeoIP filtering │
+│ │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -515,23 +515,23 @@ $ORIGIN tunnel.2gc.ru.
 $TTL 60
 
 ; Nameservers
-@    IN    NS    ns1.2gc.ru.
-@    IN    NS    ns2.2gc.ru.
+@ IN NS ns1.2gc.ru.
+@ IN NS ns2.2gc.ru.
 
 ; Root domain points to anycast IP
-@    IN    A     1.2.3.4
+@ IN A 1.2.3.4
 
 ; PoP-specific records (for debugging)
-mow  IN    A     1.2.3.5  ; Moscow PoP
-fra  IN    A     1.2.3.6  ; Frankfurt PoP
-ams  IN    A     1.2.3.7  ; Amsterdam PoP
+mow IN A 1.2.3.5 ; Moscow PoP
+fra IN A 1.2.3.6 ; Frankfurt PoP
+ams IN A 1.2.3.7 ; Amsterdam PoP
 
 ; Client-specific subdomains (managed dynamically)
 ; client1.tunnel.2gc.ru → 1.2.3.5 (nearest PoP)
 ; client2.tunnel.2gc.ru → 1.2.3.6 (nearest PoP)
 
 ; Wildcard for unregistered subdomains
-*    IN    A     1.2.3.4  ; Fallback to anycast
+* IN A 1.2.3.4 ; Fallback to anycast
 ```
 
 **Dynamic DNS Update API:**
@@ -541,13 +541,13 @@ Request:
   namespace: "acme-corp"
   tunnel_id: "tunnel-abc123"
   hostname: "app.example.com"
-  client_ip: "203.0.113.1"  # For geo-routing
+  client_ip: "203.0.113.1" # For geo-routing
 Response:
   record_type: "A"
-  record_value: "1.2.3.5"  # Moscow PoP IP
+  record_value: "1.2.3.5" # Moscow PoP IP
   ttl: 60
   pop: "mow"
-  confidence: 0.95  # AI confidence score
+  confidence: 0.95 # AI confidence score
 ```
 
 **AI-Powered PoP Selection:**
@@ -605,29 +605,29 @@ class DNSRoutingOptimizer:
 **Architecture:**
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    CDN Cache Hierarchy                   │
+│ CDN Cache Hierarchy │
 ├──────────────────────────────────────────────────────────┤
-│                                                            │
-│  Hot Cache (In-Memory - Redis Cluster)                   │
-│  ├─ Most frequently accessed content                     │
-│  ├─ Capacity: 64 GB per PoP                              │
-│  ├─ TTL: 60-300 seconds                                  │
-│  └─ Cache key: hash(hostname + path + query)            │
-│                        ↓ (Cache MISS)                     │
-│  Warm Cache (SSD - Varnish/NGINX)                        │
-│  ├─ Frequently accessed content                          │
-│  ├─ Capacity: 1 TB per PoP                               │
-│  ├─ TTL: 300-3600 seconds                                │
-│  └─ LRU eviction policy                                  │
-│                        ↓ (Cache MISS)                     │
-│  Origin Shield (Optional - Aggregation Layer)            │
-│  ├─ Reduces origin load                                  │
-│  ├─ Collapses concurrent requests                        │
-│  └─ Capacity: 4 TB (regional)                            │
-│                        ↓ (Cache MISS)                     │
-│  Origin Server (via QUIC Tunnel)                         │
-│  └─ Customer's application                               │
-│                                                            │
+│ │
+│ Hot Cache (In-Memory - Redis Cluster) │
+│ ├─ Most frequently accessed content │
+│ ├─ Capacity: 64 GB per PoP │
+│ ├─ TTL: 60-300 seconds │
+│ └─ Cache key: hash(hostname + path + query) │
+│ ↓ (Cache MISS) │
+│ Warm Cache (SSD - Varnish/NGINX) │
+│ ├─ Frequently accessed content │
+│ ├─ Capacity: 1 TB per PoP │
+│ ├─ TTL: 300-3600 seconds │
+│ └─ LRU eviction policy │
+│ ↓ (Cache MISS) │
+│ Origin Shield (Optional - Aggregation Layer) │
+│ ├─ Reduces origin load │
+│ ├─ Collapses concurrent requests │
+│ └─ Capacity: 4 TB (regional) │
+│ ↓ (Cache MISS) │
+│ Origin Server (via QUIC Tunnel) │
+│ └─ Customer's application │
+│ │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -743,7 +743,7 @@ func isCacheable(resp *http.Response) bool {
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│               Tunnel Registration Flow                           │
+│ Tunnel Registration Flow │
 └──────────────────────────────────────────────────────────────────┘
 
 1. Customer runs: cloudbridge tunnel create --config tunnel.yaml
@@ -813,7 +813,7 @@ func isCacheable(resp *http.Response) bool {
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    HTTP Request Flow (CDN)                       │
+│ HTTP Request Flow (CDN) │
 └──────────────────────────────────────────────────────────────────┘
 
 1. User: https://app.example.com/page.html
@@ -896,7 +896,7 @@ Total latency breakdown:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    SSH Connection Flow                           │
+│ SSH Connection Flow │
 └──────────────────────────────────────────────────────────────────┘
 
 1. User: ssh user@ssh.example.com -p 22
@@ -959,24 +959,24 @@ Total latency:
 **Frame Format:**
 ```
 ┌───────────────────────────────────────────────────────────┐
-│                    QUIC Tunnel Frame                      │
+│ QUIC Tunnel Frame │
 ├───────────────────────────────────────────────────────────┤
-│                                                             │
-│  Frame Header (8 bytes)                                    │
-│  ├─ Version (1 byte): Protocol version (currently 0x01)   │
-│  ├─ Type (1 byte): Frame type                             │
-│  │   0x00 = METADATA                                       │
-│  │   0x01 = DATA                                           │
-│  │   0x02 = CLOSE                                          │
-│  │   0x03 = HEARTBEAT                                      │
-│  │   0x04 = ERROR                                          │
-│  ├─ Flags (1 byte): Reserved flags                        │
-│  ├─ Stream ID (4 bytes): Unique stream identifier         │
-│  └─ Length (4 bytes): Payload length                      │
-│                                                             │
-│  Payload (variable length)                                 │
-│  └─ Frame-specific data                                   │
-│                                                             │
+│ │
+│ Frame Header (8 bytes) │
+│ ├─ Version (1 byte): Protocol version (currently 0x01) │
+│ ├─ Type (1 byte): Frame type │
+│ │ 0x00 = METADATA │
+│ │ 0x01 = DATA │
+│ │ 0x02 = CLOSE │
+│ │ 0x03 = HEARTBEAT │
+│ │ 0x04 = ERROR │
+│ ├─ Flags (1 byte): Reserved flags │
+│ ├─ Stream ID (4 bytes): Unique stream identifier │
+│ └─ Length (4 bytes): Payload length │
+│ │
+│ Payload (variable length) │
+│ └─ Frame-specific data │
+│ │
 └───────────────────────────────────────────────────────────┘
 ```
 
@@ -984,7 +984,7 @@ Total latency:
 ```json
 {
   "type": "tcp_stream",
-  "protocol": "http",  // or "ssh", "rdp", "tcp"
+  "protocol": "http", // or "ssh", "rdp", "tcp"
   "hostname": "app.example.com",
   "client_ip": "203.0.113.1",
   "client_port": 51234,
@@ -1005,7 +1005,7 @@ Raw TCP payload bytes (no modification)
 **CLOSE Frame:**
 ```json
 {
-  "reason": "client_closed",  // or "origin_closed", "error", "timeout"
+  "reason": "client_closed", // or "origin_closed", "error", "timeout"
   "bytes_sent": 123456,
   "bytes_received": 654321,
   "duration_ms": 5432
@@ -1106,28 +1106,28 @@ func (d *TunnelDaemon) connectToPoP(popEndpoint string) error {
 $ORIGIN tunnel.2gc.ru.
 $TTL 60
 
-@    IN    SOA    ns1.2gc.ru. admin.2gc.ru. (
-    2025010101    ; serial
-    3600          ; refresh (1 hour)
-    1800          ; retry (30 minutes)
-    604800        ; expire (7 days)
-    60            ; minimum TTL (1 minute)
+@ IN SOA ns1.2gc.ru. admin.2gc.ru. (
+    2025010101 ; serial
+    3600 ; refresh (1 hour)
+    1800 ; retry (30 minutes)
+    604800 ; expire (7 days)
+    60 ; minimum TTL (1 minute)
 )
 
 ; Nameservers
-@    IN    NS    ns1.2gc.ru.
-@    IN    NS    ns2.2gc.ru.
+@ IN NS ns1.2gc.ru.
+@ IN NS ns2.2gc.ru.
 
 ; Anycast IP (fallback)
-@    IN    A     1.2.3.4
+@ IN A 1.2.3.4
 
 ; PoP-specific endpoints
-mow  IN    A     1.2.3.5  ; Moscow
-fra  IN    A     1.2.3.6  ; Frankfurt
-ams  IN    A     1.2.3.7  ; Amsterdam
-sin  IN    A     1.2.3.8  ; Singapore
-nyc  IN    A     1.2.3.9  ; New York
-sfo  IN    A     1.2.3.10 ; San Francisco
+mow IN A 1.2.3.5 ; Moscow
+fra IN A 1.2.3.6 ; Frankfurt
+ams IN A 1.2.3.7 ; Amsterdam
+sin IN A 1.2.3.8 ; Singapore
+nyc IN A 1.2.3.9 ; New York
+sfo IN A 1.2.3.10 ; San Francisco
 
 ; Dynamic records (managed by Namespace DNS Manager)
 ; Populated via API on tunnel registration
@@ -1139,7 +1139,7 @@ sfo  IN    A     1.2.3.10 ; San Francisco
 ; app.example.com CNAME tunnel-abc123.tunnel.2gc.ru
 
 ; CloudBridge creates:
-tunnel-abc123.tunnel.2gc.ru  IN  A  1.2.3.5  ; Moscow PoP
+tunnel-abc123.tunnel.2gc.ru IN A 1.2.3.5 ; Moscow PoP
 ```
 
 ### 5.2 GeoDNS Implementation
@@ -1154,9 +1154,9 @@ import (
 )
 
 type GeoDNSServer struct {
-    geoipDB      *geoip2.Reader
-    aiClient     *AIClient
-    popRegistry  map[string]string // pop name → IP
+    geoipDB *geoip2.Reader
+    aiClient *AIClient
+    popRegistry map[string]string // pop name → IP
 }
 
 func (s *GeoDNSServer) handleDNSQuery(w dns.ResponseWriter, r *dns.Msg) {
@@ -1175,7 +1175,7 @@ func (s *GeoDNSServer) handleDNSQuery(w dns.ResponseWriter, r *dns.Msg) {
                 // Fallback to anycast IP
                 rr := &dns.A{
                     Hdr: dns.RR_Header{Name: q.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 60},
-                    A:   net.ParseIP("1.2.3.4"),
+                    A: net.ParseIP("1.2.3.4"),
                 }
                 m.Answer = append(m.Answer, rr)
                 continue
@@ -1187,7 +1187,7 @@ func (s *GeoDNSServer) handleDNSQuery(w dns.ResponseWriter, r *dns.Msg) {
                 // Fallback
                 rr := &dns.A{
                     Hdr: dns.RR_Header{Name: q.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 60},
-                    A:   net.ParseIP("1.2.3.4"),
+                    A: net.ParseIP("1.2.3.4"),
                 }
                 m.Answer = append(m.Answer, rr)
                 continue
@@ -1197,7 +1197,7 @@ func (s *GeoDNSServer) handleDNSQuery(w dns.ResponseWriter, r *dns.Msg) {
             popIP := s.popRegistry[pop.Name]
             rr := &dns.A{
                 Hdr: dns.RR_Header{Name: q.Name, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 60},
-                A:   net.ParseIP(popIP),
+                A: net.ParseIP(popIP),
             }
             m.Answer = append(m.Answer, rr)
         }
@@ -1223,9 +1223,9 @@ dnssec-signzone -A -3 $(head -c 1000 /dev/random | sha1sum | cut -b 1-16) \
 
 **DNSSEC Records:**
 ```dns
-tunnel.2gc.ru.  IN  DNSKEY  257 3 13 ...
-tunnel.2gc.ru.  IN  RRSIG   DNSKEY 13 3 60 ...
-tunnel.2gc.ru.  IN  NSEC    ...
+tunnel.2gc.ru. IN DNSKEY 257 3 13 ...
+tunnel.2gc.ru. IN RRSIG DNSKEY 13 3 60 ...
+tunnel.2gc.ru. IN NSEC ...
 ```
 
 ---
@@ -1262,13 +1262,13 @@ ingress:
 
         # Rule 4: Don't cache dynamic pages
         - path_pattern: "/admin/*"
-          ttl: 0  # No caching
+          ttl: 0 # No caching
 
       # Compression
       compression:
         enabled: true
         algorithms: ["brotli", "gzip"]
-        min_size: 1024  # bytes
+        min_size: 1024 # bytes
 
       # Origin configuration
       origin:
@@ -1351,7 +1351,7 @@ cache_warming:
   ml_prediction:
     enabled: true
     model: "cache_prediction_v1"
-    threshold: 0.7  # Confidence score
+    threshold: 0.7 # Confidence score
 ```
 
 **ML-Based Prediction:**
@@ -1400,8 +1400,8 @@ auth:
 
 **API Key Format:**
 ```
-cb_live_1a2b3c4d5e6f7g8h9i0j  # Production
-cb_test_9z8y7x6w5v4u3t2s1r0q  # Testing
+cb_live_1a2b3c4d5e6f7g8h9i0j # Production
+cb_test_9z8y7x6w5v4u3t2s1r0q # Testing
 
 Prefix: cb_
 Environment: live or test
@@ -1443,21 +1443,21 @@ zero_trust:
   authentication:
     required: true
     methods: ["saml", "oidc", "oauth2"]
-    mfa: true  # Multi-Factor Authentication
+    mfa: true # Multi-Factor Authentication
 
   # Device posture checks
   device_posture:
     enabled: true
     checks:
       - type: "os_version"
-        condition: ">= 10.15"  # macOS Catalina+
+        condition: ">= 10.15" # macOS Catalina+
 
       - type: "disk_encryption"
         condition: "enabled"
 
       - type: "antivirus"
         condition: "enabled"
-        max_age: "24h"  # Signature must be updated within 24h
+        max_age: "24h" # Signature must be updated within 24h
 
   # Context-aware policies
   policies:
@@ -1514,15 +1514,15 @@ User Request
 4. Authenticate user (SAML/OIDC)
   ↓
 5. Check device posture:
-   - OS version ≥ 10.15? ✓
-   - Disk encryption enabled? ✓
-   - Antivirus updated? ✓
+   - OS version ≥ 10.15?
+   - Disk encryption enabled?
+   - Antivirus updated?
   ↓
 6. Evaluate policy (Open Policy Agent):
-   - User in "admins" group? ✓
-   - Location in US/CA? ✓
-   - Time in 09:00-18:00 EST? ✓
-   - MFA completed? ✓
+   - User in "admins" group?
+   - Location in US/CA?
+   - Time in 09:00-18:00 EST?
+   - MFA completed?
   ↓
 7. Decision:
    - ALLOW → Issue short-lived token (1-8 hours)
@@ -1540,7 +1540,7 @@ User Request
 // Certificate manager (using ACME/Let's Encrypt)
 type CertificateManager struct {
     acmeClient *lego.Client
-    storage    Storage
+    storage Storage
 }
 
 func (cm *CertificateManager) ObtainCertificate(hostname string) error {
@@ -1555,7 +1555,7 @@ func (cm *CertificateManager) ObtainCertificate(hostname string) error {
     // 2. Create ACME order
     order, err := cm.acmeClient.Certificate.Obtain(certificate.ObtainRequest{
         Domains: []string{hostname},
-        Bundle:  true,
+        Bundle: true,
     })
     if err != nil {
         return err
@@ -1596,10 +1596,10 @@ func (cm *CertificateManager) solveDNS01Challenge(domain string, challenge acme.
 
     // 2. Create TXT record via DNS API
     record := &dns.Record{
-        Name:  fmt.Sprintf("_acme-challenge.%s", domain),
-        Type:  "TXT",
+        Name: fmt.Sprintf("_acme-challenge.%s", domain),
+        Type: "TXT",
         Value: txtValue,
-        TTL:   60,
+        TTL: 60,
     }
 
     if err := cm.dnsClient.CreateRecord(record); err != nil {
@@ -1663,12 +1663,12 @@ func (d *TunnelDaemon) connectWithResumption(popEndpoint string) error {
 ```go
 type ConnectionPool struct {
     pools map[string]*connPool // hostname → pool
-    mu    sync.RWMutex
+    mu sync.RWMutex
 }
 
 type connPool struct {
     conns chan net.Conn
-    size  int
+    size int
 }
 
 func (p *ConnectionPool) Get(hostname string) (net.Conn, error) {
@@ -1716,9 +1716,9 @@ func (p *ConnectionPool) Put(hostname string, conn net.Conn) {
 // Longer TTL for stable tunnels (reduce DNS queries)
 func calculateDNSTTL(tunnel *Tunnel) int {
     if tunnel.BackupPoPs != nil && len(tunnel.BackupPoPs) > 0 {
-        return 60  // 1 minute
+        return 60 // 1 minute
     }
-    return 300  // 5 minutes
+    return 300 // 5 minutes
 }
 ```
 
@@ -1735,7 +1735,7 @@ func calculateDNSTTL(tunnel *Tunnel) int {
 ```go
 // Enable BBRv2 for QUIC
 quicConfig := &quic.Config{
-    CongestionControl: "bbr2",  // Better than cubic/reno
+    CongestionControl: "bbr2", // Better than cubic/reno
     MaxIncomingStreams: 1000,
     MaxIncomingUniStreams: 1000,
     EnableDatagrams: true,
@@ -1747,8 +1747,8 @@ quicConfig := &quic.Config{
 // Batch multiple small requests into single QUIC stream
 type RequestBatch struct {
     requests []*http.Request
-    maxSize  int
-    timeout  time.Duration
+    maxSize int
+    timeout time.Duration
 }
 
 func (b *RequestBatch) AddAndFlush(req *http.Request, stream quic.Stream) error {
@@ -1772,7 +1772,7 @@ func (b *RequestBatch) flush(stream quic.Stream) error {
             return err
         }
     }
-    b.requests = b.requests[:0]  // Reset
+    b.requests = b.requests[:0] // Reset
     return nil
 }
 ```
@@ -1853,7 +1853,7 @@ spec:
           name: tcp_connections_active
         target:
           type: AverageValue
-          averageValue: "10000"  # 10K connections per pod
+          averageValue: "10000" # 10K connections per pod
 ```
 
 ---
@@ -2063,15 +2063,15 @@ spec:
 ```go
 func TestCacheKeyGeneration(t *testing.T) {
     tests := []struct {
-        name     string
-        req      *http.Request
+        name string
+        req *http.Request
         expected string
     }{
         {
             name: "Basic URL",
             req: &http.Request{
                 Host: "example.com",
-                URL:  &url.URL{Path: "/page.html"},
+                URL: &url.URL{Path: "/page.html"},
             },
             expected: "cache:a1b2c3d4e5f6...",
         },
@@ -2110,7 +2110,7 @@ func TestE2E_HTTPTunnel(t *testing.T) {
     // 2. Create tunnel
     tunnel := &Tunnel{
         Namespace: "test",
-        Name:      "test-tunnel",
+        Name: "test-tunnel",
         Ingress: []Ingress{
             {Hostname: "test.example.com", Service: origin.URL},
         },
@@ -2157,15 +2157,15 @@ import { check, sleep } from 'k6';
 
 export let options = {
   stages: [
-    { duration: '2m', target: 100 },    // Ramp up to 100 users
-    { duration: '5m', target: 100 },    // Stay at 100 users
-    { duration: '2m', target: 1000 },   // Ramp up to 1000 users
-    { duration: '10m', target: 1000 },  // Stay at 1000 users
-    { duration: '2m', target: 0 },      // Ramp down to 0 users
+    { duration: '2m', target: 100 }, // Ramp up to 100 users
+    { duration: '5m', target: 100 }, // Stay at 100 users
+    { duration: '2m', target: 1000 }, // Ramp up to 1000 users
+    { duration: '10m', target: 1000 }, // Stay at 1000 users
+    { duration: '2m', target: 0 }, // Ramp down to 0 users
   ],
   thresholds: {
-    http_req_duration: ['p(95)<100'],  // 95% of requests < 100ms
-    http_req_failed: ['rate<0.01'],     // <1% error rate
+    http_req_duration: ['p(95)<100'], // 95% of requests < 100ms
+    http_req_failed: ['rate<0.01'], // <1% error rate
   },
 };
 
@@ -2265,25 +2265,25 @@ charts/cloudbridge-tcp-tunnel/
 ├─ Chart.yaml
 ├─ values.yaml
 ├─ templates/
-│  ├─ tunnel-coordinator/
-│  │  ├─ deployment.yaml
-│  │  ├─ service.yaml
-│  │  ├─ hpa.yaml
-│  │  └─ configmap.yaml
-│  ├─ edge-pop/
-│  │  ├─ deployment.yaml
-│  │  ├─ service.yaml (LoadBalancer with external IP)
-│  │  ├─ hpa.yaml
-│  │  └─ configmap.yaml
-│  ├─ dns-manager/
-│  │  ├─ deployment.yaml
-│  │  ├─ service.yaml
-│  │  └─ configmap.yaml
-│  ├─ cdn-cache/
-│  │  ├─ statefulset.yaml (for Varnish persistence)
-│  │  ├─ service.yaml
-│  │  └─ pvc.yaml (Persistent Volume Claim)
-│  └─ ingress.yaml
+│ ├─ tunnel-coordinator/
+│ │ ├─ deployment.yaml
+│ │ ├─ service.yaml
+│ │ ├─ hpa.yaml
+│ │ └─ configmap.yaml
+│ ├─ edge-pop/
+│ │ ├─ deployment.yaml
+│ │ ├─ service.yaml (LoadBalancer with external IP)
+│ │ ├─ hpa.yaml
+│ │ └─ configmap.yaml
+│ ├─ dns-manager/
+│ │ ├─ deployment.yaml
+│ │ ├─ service.yaml
+│ │ └─ configmap.yaml
+│ ├─ cdn-cache/
+│ │ ├─ statefulset.yaml (for Varnish persistence)
+│ │ ├─ service.yaml
+│ │ └─ pvc.yaml (Persistent Volume Claim)
+│ └─ ingress.yaml
 └─ README.md
 ```
 
@@ -2425,16 +2425,16 @@ jobs:
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| **Persistent QUIC tunnels** |  Using quic-go, yamux multiplexing |
-| **No public IP for origin** |  Tunnel daemon establishes outbound connection |
-| **Multiple TCP protocols** |  HTTP, SSH, RDP, MySQL, PostgreSQL, generic TCP |
-| **Namespace DNS** |  tunnel.2gc.ru with dynamic subdomains |
-| **CDN caching** |  Hot (Redis) + Warm (Varnish) + Origin Shield |
-| **Zero Trust** |  Identity-based access, device posture, policies |
-| **AI-powered routing** |  ML-based PoP selection |
-| **Auto-scaling** |  Kubernetes HPA based on CPU, memory, connections |
-| **High availability** |  Multi-PoP, automatic failover, 99.9%+ uptime |
-| **Security** |  TLS 1.3, mTLS, WAF, DDoS protection, DNSSEC |
+| **Persistent QUIC tunnels** | Using quic-go, yamux multiplexing |
+| **No public IP for origin** | Tunnel daemon establishes outbound connection |
+| **Multiple TCP protocols** | HTTP, SSH, RDP, MySQL, PostgreSQL, generic TCP |
+| **Namespace DNS** | tunnel.2gc.ru with dynamic subdomains |
+| **CDN caching** | Hot (Redis) + Warm (Varnish) + Origin Shield |
+| **Zero Trust** | Identity-based access, device posture, policies |
+| **AI-powered routing** | ML-based PoP selection |
+| **Auto-scaling** | Kubernetes HPA based on CPU, memory, connections |
+| **High availability** | Multi-PoP, automatic failover, 99.9%+ uptime |
+| **Security** | TLS 1.3, mTLS, WAF, DDoS protection, DNSSEC |
 
 ### 12.2 Performance Validation
 
@@ -2442,14 +2442,14 @@ jobs:
 
 | Metric | Target | Expected | Status |
 |--------|--------|----------|--------|
-| **DNS Resolution** | <10ms | ~8ms | 
-| **TLS Handshake** | <20ms | ~15ms (TLS 1.3) | 
-| **Cache HIT** | <5ms | ~3ms (Redis) | 
-| **Cache MISS** | <100ms (P95) | ~80ms (P95) | 
-| **TCP Tunnel Overhead** | <10ms | ~8ms (QUIC) | 
-| **Concurrent Connections** | 100K+ | 150K+ (per PoP) | 
-| **Throughput** | 10 Gbps (per PoP) | 12 Gbps | 
-| **Cache HIT Rate** | >80% | >85% (with warming) | 
+| **DNS Resolution** | <10ms | ~8ms |
+| **TLS Handshake** | <20ms | ~15ms (TLS 1.3) |
+| **Cache HIT** | <5ms | ~3ms (Redis) |
+| **Cache MISS** | <100ms (P95) | ~80ms (P95) |
+| **TCP Tunnel Overhead** | <10ms | ~8ms (QUIC) |
+| **Concurrent Connections** | 100K+ | 150K+ (per PoP) |
+| **Throughput** | 10 Gbps (per PoP) | 12 Gbps |
+| **Cache HIT Rate** | >80% | >85% (with warming) |
 
 ### 12.3 Security Validation
 
@@ -2457,16 +2457,16 @@ jobs:
 
 | Threat | Protection | Status |
 |--------|-----------|--------|
-| **A01: Broken Access Control** | Zero Trust policies, RBAC | 
-| **A02: Cryptographic Failures** | TLS 1.3, AES-256, DNSSEC | 
-| **A03: Injection** | WAF (ModSecurity), input validation | 
-| **A04: Insecure Design** | Threat modeling, security reviews | 
-| **A05: Security Misconfiguration** | Hardened defaults, auto-patching | 
-| **A06: Vulnerable Components** | Dependency scanning, SBOM | 
-| **A07: Authentication Failures** | MFA, device posture, rate limiting | 
-| **A08: Data Integrity Failures** | Code signing, HTTPS-only | 
-| **A09: Security Logging Failures** | Comprehensive audit logs | 
-| **A10: Server-Side Request Forgery** | Origin validation, WAF rules | 
+| **A01: Broken Access Control** | Zero Trust policies, RBAC |
+| **A02: Cryptographic Failures** | TLS 1.3, AES-256, DNSSEC |
+| **A03: Injection** | WAF (ModSecurity), input validation |
+| **A04: Insecure Design** | Threat modeling, security reviews |
+| **A05: Security Misconfiguration** | Hardened defaults, auto-patching |
+| **A06: Vulnerable Components** | Dependency scanning, SBOM |
+| **A07: Authentication Failures** | MFA, device posture, rate limiting |
+| **A08: Data Integrity Failures** | Code signing, HTTPS-only |
+| **A09: Security Logging Failures** | Comprehensive audit logs |
+| **A10: Server-Side Request Forgery** | Origin validation, WAF rules |
 
 ### 12.4 Scalability Validation
 
@@ -2565,22 +2565,22 @@ jobs:
 
 | Feature | Cloudflare Tunnel | CloudBridge TCP Tunnel | Status |
 |---------|------------------|------------------------|--------|
-| **No public IP** |  | ariy |
-| **HTTP/HTTPS** |  | ariy |
-| **TCP (SSH, RDP, etc.)** |  | ariy |
-| **UDP** |  🔶 Future | 🔶 Roadmap |
-| **CDN caching** |  | ariy |
-| **WAF** |  | ariy |
-| **DDoS protection** |  | ariy |
-| **Load balancing** |  | ariy |
+| **No public IP** | | ariy |
+| **HTTP/HTTPS** | | ariy |
+| **TCP (SSH, RDP, etc.)** | | ariy |
+| **UDP** | Future | Roadmap |
+| **CDN caching** | | ariy |
+| **WAF** | | ariy |
+| **DDoS protection** | | ariy |
+| **Load balancing** | | ariy |
 | **Zero Trust Access** | Cloudflare Access) | | ariy |
-| **Edge functions** | Workers) | 🔶 Future | 🔶 Roadmap |
-| **Global PoPs** | 300+) | 🔶 (6-24) | 🔶 Fewer PoPs initially |
-| **Open source** |  |  **dvantage** |
-| **Self-hosted** |  |  **dvantage** |
-| **Data sovereignty** |  |  **dvantage** |
-| **Pricing transparency** | 🔶 |  **dvantage** |
-| **No vendor lock-in** |  |  **dvantage** |
+| **Edge functions** | Workers) | Future | Roadmap |
+| **Global PoPs** | 300+) | (6-24) | Fewer PoPs initially |
+| **Open source** | | **dvantage** |
+| **Self-hosted** | | **dvantage** |
+| **Data sovereignty** | | **dvantage** |
+| **Pricing transparency** | | **dvantage** |
+| **No vendor lock-in** | | **dvantage** |
 
 **Verdict:** eature parity with Cloudflare Tunnel on core functionality, with significant advantages in open source, self-hosting, and data sovereignty.
 
@@ -2599,11 +2599,11 @@ This technical specification defines a comprehensive TCP tunneling solution that
 - *Timeline:** 16 weeks to production-ready system
 
 **Unique Advantages:**
-- 🌟 **Open Source:** Full code transparency
-- 🌟 **Self-Hosted:** Deploy in your infrastructure
-- 🌟 **Data Sovereignty:** Complete control over data location
-- 🌟 **No Lock-In:** Standard protocols, exportable data
-- 🌟 **AI-Powered:** Intelligent routing and optimization
+- **Open Source:** Full code transparency
+- **Self-Hosted:** Deploy in your infrastructure
+- **Data Sovereignty:** Complete control over data location
+- **No Lock-In:** Standard protocols, exportable data
+- **AI-Powered:** Intelligent routing and optimization
 
 **Next Steps:**
 1. pprove technical specification

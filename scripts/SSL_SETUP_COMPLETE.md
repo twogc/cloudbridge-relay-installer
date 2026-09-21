@@ -61,7 +61,7 @@ openssl s_client -connect edge.2gc.ru:443 -servername edge.2gc.ru < /dev/null 2>
 # Expected: subject=CN = edge.2gc.ru, valid dates
 ```
 
-### **🛠️ Техническая конфигурация:**
+### ** Техническая конфигурация:**
 
 #### **HAProxy Configuration:**
 - **Frontend:** `fe_https_443_zitadel` (HTTPS на порту 443)
@@ -74,7 +74,7 @@ openssl s_client -connect edge.2gc.ru:443 -servername edge.2gc.ru < /dev/null 2>
 - **Internal Domain:** `zitadel.local` (for Zitadel instance)
 - **Host Header:** Automatically set to `zitadel.local` by HAProxy
 
-### **📝 Следующие шаги:**
+### ** Следующие шаги:**
 
 #### **1. КРИТИЧНО: Создать проект в Zitadel UI**
 1. Откройте браузер: https://edge.2gc.ru/ui/login
@@ -83,7 +83,7 @@ openssl s_client -connect edge.2gc.ru:443 -servername edge.2gc.ru < /dev/null 2>
 4. Создайте OIDC приложение `cloudbridge-relay`
 5. Получите Client ID и Client Secret
 
-#### **2.  ВЫСОКИЙ: Обновить конфигурацию CloudBridge**
+#### **2. ВЫСОКИЙ: Обновить конфигурацию CloudBridge**
 После получения credentials обновить:
 - `configs/config.json`
 - `k8s/configmaps/cloudbridge-config.yaml`
@@ -107,7 +107,7 @@ openssl s_client -connect edge.2gc.ru:443 -servername edge.2gc.ru < /dev/null 2>
 - Проверьте срок действия: `openssl x509 -in /etc/haproxy/certs/edge.2gc.ru.pem -noout -dates`
 - Обновите сертификат через Let's Encrypt
 
-### **🛠️ Управление:**
+### ** Управление:**
 
 #### **HAProxy:**
 ```bash

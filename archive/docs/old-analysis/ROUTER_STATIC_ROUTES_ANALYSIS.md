@@ -1,8 +1,8 @@
 # АНАЛИЗ СТАТИЧЕСКИХ МАРШРУТОВ ROUTER_6328
 
-**Дата:** 28 сентября 2025  
-**Router ID:** a894c312-c98c-40ea-ba4f-86c6963e1e99  
-**Статус:** МАРШРУТИЗАЦИЯ НАСТРОЕНА КОРРЕКТНО  
+**Дата:** 28 сентября 2025
+**Router ID:** a894c312-c98c-40ea-ba4f-86c6963e1e99
+**Статус:** МАРШРУТИЗАЦИЯ НАСТРОЕНА КОРРЕКТНО
 
 ## Проверенные компоненты
 
@@ -19,7 +19,7 @@
       "subnet_id": "d3272fe8-fec0-4fbb-8e67-6c6716972f19"
     },
     {
-      "port_id": "506fb8a9-92f9-4997-b2ed-cd9a568cda85", 
+      "port_id": "506fb8a9-92f9-4997-b2ed-cd9a568cda85",
       "ip_address": "192.168.49.1",
       "subnet_id": "ef2d28b4-7bfa-45b7-b5b3-2d0f808f7ae9"
     }
@@ -57,14 +57,14 @@
 openstack router set --route destination=192.168.49.0/24,gateway=192.168.49.1
 # Результат: ERROR - nexthop уже используется router как интерфейс
 
-# Попытка 2: Маршрут для основной подсети  
+# Попытка 2: Маршрут для основной подсети
 openstack router set --route destination=10.0.0.0/24,gateway=10.0.0.1
 # Результат: ERROR - nexthop уже используется router как интерфейс
 ```
 
 **Вывод:** Router правильно настроен и дополнительные маршруты не требуются.
 
-## 🔧 Тестирование Members
+## Тестирование Members
 
 ### Протестированы различные backend серверы:
 
@@ -73,7 +73,7 @@ openstack router set --route destination=10.0.0.0/24,gateway=10.0.0.1
 - **Member ID:** `ead9b596-bede-4914-9e90-36b2f7590342`
 - **Результат:** `operating_status = ERROR`
 
-#### 2. Kubernetes Direct Member  
+#### 2. Kubernetes Direct Member
 - **Address:** `192.168.49.2:32500`
 - **Member ID:** `84ecb9e3-ac4e-450d-8306-aa24ddafe931`
 - **Результат:** `operating_status = ERROR`
@@ -84,7 +84,7 @@ openstack router set --route destination=10.0.0.0/24,gateway=10.0.0.1
 curl http://192.168.49.10:8080/health
 {"status":"healthy","timestamp":"...","version":"v1.0.0",...}
 
-# Kubernetes - РАБОТАЕТ  
+# Kubernetes - РАБОТАЕТ
 curl http://192.168.49.2:32500/health
 {"status":"healthy","timestamp":"...","version":"v1.0.0",...}
 ```
@@ -93,7 +93,7 @@ curl http://192.168.49.2:32500/health
 
 ### Исключенные причины проблемы:
 1. **Статические маршруты** - не нужны, router настроен корректно
-2. **Сетевая связность** - все серверы в одной подсети  
+2. **Сетевая связность** - все серверы в одной подсети
 3. **Backend серверы** - работают идеально
 4. **Health Monitor** - настроен правильно (ONLINE)
 5. **Security Group** - исправлен и работает
@@ -107,7 +107,7 @@ curl http://192.168.49.2:32500/health
 - Правильные настройки health monitor
 - Исправленный Security Group
 
-## 📞 Обновленный запрос в техподдержку
+## Обновленный запрос в техподдержку
 
 **Дополнительная информация для техподдержки:**
 

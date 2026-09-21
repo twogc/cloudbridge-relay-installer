@@ -79,17 +79,17 @@ kubectl exec -n tenant-a-test test-pod-tenant-a -- ping -c 3 10.244.6.2
 kubectl exec -n tenant-a-test test-pod-tenant-a -- ping -c 3 10.244.6.4
 ```
 
-## 📁 Структура файлов
+## Структура файлов
 
 ```
-cmd/tenant-policy-controller/     # Основное приложение контроллера
-internal/controllers/              # Логика контроллера
-internal/ipam/                     # IPAM репозиторий
-k8s/                              # Kubernetes манифесты
-migrations/                       # SQL миграции
+cmd/tenant-policy-controller/ # Основное приложение контроллера
+internal/controllers/ # Логика контроллера
+internal/ipam/ # IPAM репозиторий
+k8s/ # Kubernetes манифесты
+migrations/ # SQL миграции
 ```
 
-##  Конфигурация
+## Конфигурация
 
 ### Переменные окружения
 - `WATCH_NAMESPACE` - namespace для наблюдения (пустой = весь кластер)

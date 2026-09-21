@@ -11,57 +11,57 @@ graph TB
         C2[Mobile App<br/>iOS/Android]
         C3[Web Dashboard<br/>Personal Cabinet]
     end
-    
+
     subgraph "Edge Layer"
         E1[Relay Servers<br/>Global Distribution]
         E2[Load Balancer<br/>VK Cloud]
         E3[CDN Integration<br/>Cloudflare]
     end
-    
+
     subgraph "Core Services"
         S1[API Gateway<br/>REST/GraphQL]
         S2[Authentication<br/>Zitadel SSO]
         S3[IPAM Service<br/>Dynamic Allocation]
         S4[AI Analytics<br/>Traffic Optimization]
     end
-    
+
     subgraph "Infrastructure"
         I1[Kubernetes Cluster<br/>High Availability]
         I2[Database<br/>PostgreSQL + Redis]
         I3[Message Queue<br/>RabbitMQ]
         I4[Monitoring<br/>Prometheus + Grafana]
     end
-    
+
     subgraph "Security & Compliance"
         SC1[WireGuard VPN<br/>End-to-End Encryption]
         SC2[SOC2 Compliance<br/>Audit Logging]
         SC3[Zero Trust<br/>Identity Verification]
     end
-    
+
     C1 --> E1
     C2 --> E1
     C3 --> S1
-    
+
     E1 --> S1
     E2 --> E1
     E3 --> E1
-    
+
     S1 --> S2
     S1 --> S3
     S1 --> S4
-    
+
     S2 --> I2
     S3 --> I2
     S4 --> I3
-    
+
     I1 --> I2
     I1 --> I3
     I1 --> I4
-    
+
     SC1 --> C1
     SC2 --> I4
     SC3 --> S2
-    
+
     style C1 fill:#e1f5fe
     style E1 fill:#f3e5f5
     style S1 fill:#e8f5e8
@@ -81,17 +81,17 @@ graph TB
         E3[Palo Alto Prisma<br/>$50K-1M/год]
         E4[Cisco SD-WAN<br/>$100K-2M/год]
     end
-    
+
     subgraph "SMB/Developer рынок"
         S1[Tailscale<br/>$6-18/user]
         S2[ZeroTier<br/>Free-$5/device]
         S3[Netbird<br/>$5-10/user]
     end
-    
+
     E1 -.->|Competing with| E2
     E1 -.->|Competing with| E3
     E1 -.->|Competing with| E4
-    
+
     style E1 fill:#00ff00
     style E2 fill:#ffcccc
     style E3 fill:#ffcccc
@@ -120,56 +120,56 @@ graph LR
         F2[WireGuard Client<br/>Native Apps]
         F3[Mobile Apps<br/>React Native]
     end
-    
+
     subgraph "Backend Services"
         B1[Go Services<br/>High Performance]
         B2[Kubernetes<br/>Orchestration]
         B3[PostgreSQL<br/>Primary Database]
         B4[Redis<br/>Caching Layer]
     end
-    
+
     subgraph "Networking"
         N1[QUIC Protocol<br/>Fast Handshake]
         N2[WireGuard<br/>VPN Encryption]
         N3[Calico CNI<br/>Network Policies]
         N4[IPAM Service<br/>Dynamic Allocation]
     end
-    
+
     subgraph "AI & Analytics"
         A1[AI Analytics<br/>Traffic Optimization]
         A2[ML Models<br/>Anomaly Detection]
         A3[Prometheus<br/>Metrics Collection]
         A4[Grafana<br/>Visualization]
     end
-    
+
     subgraph "Security"
         S1[Zitadel<br/>Identity Provider]
         S2[SOC2 Compliance<br/>Audit Framework]
         S3[Zero Trust<br/>Network Security]
         S4[Encryption<br/>End-to-End]
     end
-    
+
     F1 --> B1
     F2 --> N1
     F3 --> B1
-    
+
     B1 --> B2
     B2 --> B3
     B2 --> B4
-    
+
     N1 --> N2
     N2 --> N3
     N3 --> N4
-    
+
     A1 --> A2
     A2 --> A3
     A3 --> A4
-    
+
     S1 --> B1
     S2 --> A3
     S3 --> N2
     S4 --> N2
-    
+
     style F1 fill:#e3f2fd
     style B1 fill:#e8f5e8
     style N1 fill:#fff3e0
@@ -183,7 +183,7 @@ graph LR
 
 ** Ваши текущие цены (слишком низкие для enterprise):**
 - **Starter:** $49/month — для конкурента это FREE tier
-- **Professional:** $199/month — для конкурента это STARTER  
+- **Professional:** $199/month — для конкурента это STARTER
 - **Enterprise:** $999/month — для конкурента это SMB
 
 ** Корректные enterprise цены:**
@@ -219,8 +219,8 @@ graph LR
 
 #### **Российский рынок и регуляторика:**
 
-**ИТ-рынок РФ 2024:** ~₽3,1 трлн (+18,7% г/г)  
-**Инфраструктурное ПО РФ:** ~₽132 млрд (+28% г/г)  
+**ИТ-рынок РФ 2024:** ~₽3,1 трлн (+18,7% г/г)
+**Инфраструктурное ПО РФ:** ~₽132 млрд (+28% г/г)
 **Глобальный enterprise networking:** $215,45 млрд (2024) → $298,3 млрд (2030), CAGR 5,4%
 
 #### **Сравнение с рынком:**
@@ -257,8 +257,8 @@ CloudBridge (100 офисов):
 **Формула расчета экономии:**
 ```
 TCO_before = MPLS/SD-WAN каналы + лицензии + NOC/администрирование
-TCO_after  = интернет-каналы + CloudBridge (подписка) + obs/SRE
-Экономия   = (TCO_before - TCO_after) / TCO_before
+TCO_after = интернет-каналы + CloudBridge (подписка) + obs/SRE
+Экономия = (TCO_before - TCO_after) / TCO_before
 ```
 
 **Целевая экономия по пилотам:** -40…-60% TCO
@@ -272,16 +272,16 @@ TCO_after  = интернет-каналы + CloudBridge (подписка) + ob
 
 **Переменные (в год):**
 ```
-N_sites            = число площадок/филиалов
-BW_per_site_mbps   = требуемая средняя полоса, Мбит/с
-Link_cost_MPLS     = ₽/Мбит/с/мес по MPLS/SD-WAN
+N_sites = число площадок/филиалов
+BW_per_site_mbps = требуемая средняя полоса, Мбит/с
+Link_cost_MPLS = ₽/Мбит/с/мес по MPLS/SD-WAN
 Link_cost_Internet = ₽/Мбит/с/мес по обычным каналам
-Ops_FTE             = ставки инженеров (₽ в год)
-Lic_legacy          = лицензии текущего решения (₽ в год)
-Lic_cloudbridge     = подписка CloudBridge (₽ в год)
-NOC_cost            = дежурства/аутсорс (₽ в год)
-Downtime_cost_hour  = средние потери за 1 час простоя (₽)
-Downtime_hours      = часы простоя в год (до/после)
+Ops_FTE = ставки инженеров (₽ в год)
+Lic_legacy = лицензии текущего решения (₽ в год)
+Lic_cloudbridge = подписка CloudBridge (₽ в год)
+NOC_cost = дежурства/аутсорс (₽ в год)
+Downtime_cost_hour = средние потери за 1 час простоя (₽)
+Downtime_hours = часы простоя в год (до/после)
 ```
 
 **Формулы расчета:**
@@ -290,7 +290,7 @@ TCO_before = (N_sites * BW_per_site_mbps * Link_cost_MPLS * 12)
            + Lic_legacy + NOC_cost + Ops_FTE
            + (Downtime_cost_hour * Downtime_hours_before)
 
-TCO_after  = (N_sites * BW_per_site_mbps * Link_cost_Internet * 12)
+TCO_after = (N_sites * BW_per_site_mbps * Link_cost_Internet * 12)
            + Lic_cloudbridge + (NOC_cost * k_opt) + (Ops_FTE * k_auto)
            + (Downtime_cost_hour * Downtime_hours_after)
 
@@ -308,18 +308,18 @@ graph LR
     subgraph "Enterprise Buyer Psychology"
         A1[$50/month]
         A2[Не серьезное решение<br/>Нет бюджета на это]
-        
+
         B1[$5,000/month]
         B2[Серьезный продукт<br/>Требует обоснования]
-        
+
         C1[$50,000/year]
         C2[Strategic investment<br/>Board approval]
     end
-    
+
     A1 --> A2
     B1 --> B2
     C1 --> C2
-    
+
     style A2 fill:#ffcccc
     style B2 fill:#ffffcc
     style C2 fill:#ccffcc
@@ -339,25 +339,25 @@ sequenceDiagram
     participant S as Sales Team
     participant T as Technical Team
     participant P as Platform
-    
+
     Note over C,P: Phase 1: Discovery & Evaluation
     C->>S: Initial inquiry
     S->>C: ROI calculator demo
     C->>S: Technical requirements
     S->>T: Handoff to technical
-    
+
     Note over C,P: Phase 2: Pilot Setup
     T->>P: Create sandbox environment
     T->>C: Deploy 3-5 test servers
     C->>P: Configure network policies
     P->>C: Generate monitoring dashboard
-    
+
     Note over C,P: Phase 3: Production Deployment
     C->>T: Approve pilot results
     T->>P: Scale to full environment
     P->>C: Go-live support
     C->>S: Sign enterprise contract
-    
+
     Note over C,P: Phase 4: Expansion
     C->>S: Additional regions
     S->>T: Upsell AI modules
@@ -372,7 +372,7 @@ sequenceDiagram
 
 **Целевые компании:**
 - **Финтех с 10+ офисами** (Тинькофф, Альфа-Банк)
-- **Retail сети с 50+ магазинами** (Лента, Магнит)  
+- **Retail сети с 50+ магазинами** (Лента, Магнит)
 - **Телеком операторы** (МТС, Мегафон)
 
 **Условия пилота:**
@@ -398,16 +398,16 @@ sequenceDiagram
     participant L as Land (1 region)
     participant E as Expand (Все офисы)
     participant U as Upsell (AI/Compliance)
-    
+
     P->>L: 3 месяца пилот
     Note over P,L: Доказываем ROI
-    
+
     L->>E: $2,499/month (1 регион)
     Note over L,E: 10 офисов = $300/office
-    
+
     E->>U: $9,999/month (100+ офисов)
     Note over E,U: Expansion revenue
-    
+
     U->>U: +$5K AI modules
     Note over U: Upsell add-ons
 ```
@@ -432,52 +432,52 @@ graph TB
         DC2[Grafana<br/>Data Visualization]
         DC3[Custom Dashboards<br/>Business KPIs]
     end
-    
+
     subgraph "Network Metrics"
         NM1[Bandwidth Usage<br/>Per Peer/Region]
         NM2[Latency Monitoring<br/>End-to-End]
         NM3[Connection Quality<br/>Packet Loss/Jitter]
         NM4[Topology Health<br/>Mesh Status]
     end
-    
+
     subgraph "Business Metrics"
         BM1[Customer Usage<br/>Peers/Tenants]
         BM2[Revenue Tracking<br/>MRR/ARR]
         BM3[Churn Analysis<br/>Retention Rates]
         BM4[Expansion Revenue<br/>Upsell Success]
     end
-    
+
     subgraph "Security Metrics"
         SM1[Authentication Events<br/>Login Attempts]
         SM2[Network Anomalies<br/>AI Detection]
         SM3[Compliance Status<br/>SOC2/Audit]
         SM4[Threat Intelligence<br/>Security Alerts]
     end
-    
+
     subgraph "AI Analytics"
         AI1[Traffic Optimization<br/>ML Recommendations]
         AI2[Predictive Scaling<br/>Resource Planning]
         AI3[Anomaly Detection<br/>Real-time Alerts]
         AI4[Cost Optimization<br/>Usage Insights]
     end
-    
+
     DC1 --> NM1
     DC1 --> BM1
     DC1 --> SM1
-    
+
     DC2 --> NM2
     DC2 --> BM2
     DC2 --> SM2
-    
+
     DC3 --> NM3
     DC3 --> BM3
     DC3 --> SM3
-    
+
     NM1 --> AI1
     BM1 --> AI2
     SM1 --> AI3
     AI1 --> AI4
-    
+
     style DC1 fill:#e3f2fd
     style NM1 fill:#e8f5e8
     style BM1 fill:#fff3e0
@@ -559,7 +559,7 @@ graph TB
 
 ---
 
-## 🔥 Критические исправления стратегии
+## Критические исправления стратегии
 
 ### **Архитектура безопасности и compliance**
 
@@ -571,43 +571,43 @@ graph TB
         SL3[Network Segmentation<br/>Calico Policies]
         SL4[Threat Detection<br/>AI-Powered Analytics]
     end
-    
+
     subgraph "Compliance Framework"
         CF1[SOC2 Type I/II<br/>Security Controls]
         CF2[ISO 27001<br/>Information Security]
         CF3[GDPR Compliance<br/>Data Protection]
         CF4[HIPAA Ready<br/>Healthcare Standards]
     end
-    
+
     subgraph "Audit & Monitoring"
         AM1[Audit Logging<br/>Comprehensive Events]
         AM2[Compliance Reporting<br/>Automated Generation]
         AM3[Security Monitoring<br/>Real-time Alerts]
         AM4[Incident Response<br/>Automated Workflows]
     end
-    
+
     subgraph "Data Protection"
         DP1[Data Encryption<br/>At Rest & In Transit]
         DP2[Access Controls<br/>RBAC Implementation]
         DP3[Data Residency<br/>Regional Compliance]
         DP4[Backup & Recovery<br/>Disaster Planning]
     end
-    
+
     SL1 --> CF1
     SL2 --> CF2
     SL3 --> CF3
     SL4 --> CF4
-    
+
     CF1 --> AM1
     CF2 --> AM2
     CF3 --> AM3
     CF4 --> AM4
-    
+
     AM1 --> DP1
     AM2 --> DP2
     AM3 --> DP3
     AM4 --> DP4
-    
+
     style SL1 fill:#ffebee
     style CF1 fill:#e8f5e8
     style AM1 fill:#fff3e0
@@ -643,26 +643,26 @@ graph LR
         W2[Tailscale competitor]
         W3[Developer tool]
     end
-    
+
     subgraph "Correct Positioning"
         C1[CloudBridge]
         C2[Cisco/Palo Alto alternative]
         C3[Enterprise SASE platform]
     end
-    
+
     W1 --> W2
     W2 --> W3
-    
+
     C1 --> C2
     C2 --> C3
-    
+
     style W3 fill:#ffcccc
     style C3 fill:#ccffcc
 ```
 
 ### **3. Sales Motion**
 
-** Product-Led Growth (PLG):** 
+** Product-Led Growth (PLG):**
 - Self-service signup
 - Credit card payment
 - Volume game
@@ -680,21 +680,21 @@ sales_process:
       - "Pain point identification"
       - "ROI calculator"
       - "Executive briefing"
-    
+
   stage_2_evaluation:
     duration: "1-2 months"
     activities:
       - "POC/Pilot (free)"
       - "Technical deep-dive"
       - "Security review"
-    
+
   stage_3_procurement:
     duration: "1-3 months"
     activities:
       - "Legal review"
       - "Vendor assessment"
       - "Contract negotiation"
-    
+
   stage_4_deployment:
     duration: "1-3 months"
     activities:
@@ -774,14 +774,14 @@ gantt
     title Compliance Certification Timeline
     dateFormat YYYY-MM
     section Critical
-    SOC2 Type I      :2025-10, 3M
-    ISO 27001        :2026-01, 4M
+    SOC2 Type I :2025-10, 3M
+    ISO 27001 :2026-01, 4M
     section Important
-    SOC2 Type II     :2026-04, 2M
-    GDPR Compliance  :2026-01, 3M
+    SOC2 Type II :2026-04, 2M
+    GDPR Compliance :2026-01, 3M
     section Optional
-    HIPAA            :2026-06, 3M
-    PCI DSS          :2026-09, 4M
+    HIPAA :2026-06, 3M
+    PCI DSS :2026-09, 4M
 ```
 
 **Costs & ROI (российский рынок):**
@@ -799,7 +799,7 @@ gantt
 - **ГОСТ Р 57580:** Обязательно для финсектора, три уровня защиты
 - **Реестр ПО РФ:** Доступ к госзакупкам, преференции до 15%
 
-**Total investment:** ₽85-135K + $40K  
+**Total investment:** ₽85-135K + $40K
 **Revenue unlock:** ₽200-500M ARR potential (российский рынок)
 
 ---
@@ -908,7 +908,7 @@ gantt
 
 ---
 
-## 💬 Ответы на ваши вопросы
+## Ответы на ваши вопросы
 
 ### **1. Current Traction:**
 **Вопрос:** Есть ли платящие клиенты? Какой MRR?
@@ -952,16 +952,16 @@ gantt
 - **Milestone:** 10 customers, $1M ARR → Series A
 
 ### **4. Target Market:**
-**Рекомендация:** 
+**Рекомендация:**
 
-**Phase 1:** Russia/CIS (меньше конкуренция, ваше преимущество)  
-**Phase 2:** EU (после ISO 27001)  
+**Phase 1:** Russia/CIS (меньше конкуренция, ваше преимущество)
+**Phase 2:** EU (после ISO 27001)
 **Phase 3:** US (после SOC2 Type II)
 
 ### **5. Main Competitor:**
 **Мой анализ:**
 
-**Сейчас:** Cisco SD-WAN (legacy replacement)  
+**Сейчас:** Cisco SD-WAN (legacy replacement)
 **Будущее:** Cloudflare Argo (modern alternative)
 
 ### **6. Killer Feature:**
@@ -972,11 +972,11 @@ graph TB
     K1[7 Unique Tech Features]
     K2[Complete Ecosystem<br/>Client+Server+SaaS]
     K3[90% Cost Reduction<br/>vs Cisco]
-    
+
     K1 --> Winner
     K2 --> Winner
     K3 --> Winner
-    
+
     Winner[Market Winner]
 ```
 

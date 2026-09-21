@@ -11,18 +11,18 @@
 - **Username:** `admin` или `admin@cloudbridge.local`
 - **Password:** `CloudBridge123!`
 
-####  **Service User JSON Key**
+#### **Service User JSON Key**
 ```json
 {
   "type": "application",
   "keyId": "339535653324718382",
-  "appId": "339340397199491183", 
+  "appId": "339340397199491183",
   "clientId": "339340399631990895",
   "key": "-----BEGIN RSA PRIVATE KEY----- ... -----END RSA PRIVATE KEY-----"
 }
 ```
 
-#### 🎫 **Personal Access Token**
+#### **Personal Access Token**
 - **Token:** `1awoo06EgqhX0rQPLiHpQDrMlpj-iLZJ8tc7Jpx7UU4kBLLd5R-xMlEwRR3CEHyI1g1Cp5g`
 - **ID:** `339535554926346543`
 
@@ -34,7 +34,7 @@
 
 Войдите в ZITADEL консоль: https://edge.2gc.ru/ui/console/
 
-#### 📱 **Приложение 1: CloudBridge Relay API**
+#### **Приложение 1: CloudBridge Relay API**
 1. **Projects** → **ZITADEL** → **Applications** → **New**
 2. **Настройки:**
    ```
@@ -49,12 +49,12 @@
 3. **Redirect URIs:**
    ```
    https://b1.2gc.space/auth/callback
-   https://relay.2gc.space/auth/callback  
+   https://relay.2gc.space/auth/callback
    http://localhost:8080/auth/callback
    ```
 
 #### **Приложение 2: CloudBridge Relay SPA**
-1. **Applications** → **New** 
+1. **Applications** → **New**
 2. **Настройки:**
    ```
    Name: cloudbridge-relay-spa
@@ -94,11 +94,11 @@ cd /home/ubuntu/cloudbridge-relay-installer
 
 ---
 
-## 🛠️ **Готовые компоненты**
+## **Готовые компоненты**
 
 ### **Уже настроены:**
 - **ZITADEL Core:** 3/3 pods Running
-- **PostgreSQL:** база данных с пользователями  
+- **PostgreSQL:** база данных с пользователями
 - **SSL/TLS:** сертификаты и Ingress
 - **mTLS:** CA, server, client сертификаты
 - **RBAC:** Kubernetes роли и привязки
@@ -109,21 +109,21 @@ cd /home/ubuntu/cloudbridge-relay-installer
 ### **Конфигурационные файлы:**
 ```
 configs/
-├── zitadel-final-config.yaml           # Финальная конфигурация
-├── zitadel-scopes-claims.yaml          # Custom scopes/claims
-├── oidc-app-1-api.json                 # Шаблон API приложения
-└── oidc-app-2-spa.json                 # Шаблон SPA приложения
+├── zitadel-final-config.yaml # Финальная конфигурация
+├── zitadel-scopes-claims.yaml # Custom scopes/claims
+├── oidc-app-1-api.json # Шаблон API приложения
+└── oidc-app-2-spa.json # Шаблон SPA приложения
 
 certs/relay-mtls/
-├── cloudbridge-relay-ca-cert.pem       # CA сертификат
-├── relay-server-cert.pem               # Серверный сертификат
-├── relay-client-cert.pem               # Клиентский сертификат
-└── *.p12                               # PKCS#12 файлы
+├── cloudbridge-relay-ca-cert.pem # CA сертификат
+├── relay-server-cert.pem # Серверный сертификат
+├── relay-client-cert.pem # Клиентский сертификат
+└── *.p12 # PKCS#12 файлы
 
 scripts/
-├── finalize-cloudbridge-setup.sh       # Финальная настройка
-├── setup-zitadel-scopes.sh            # Настройка scopes
-└── reset-admin-password.sh             # Сброс паролей
+├── finalize-cloudbridge-setup.sh # Финальная настройка
+├── setup-zitadel-scopes.sh # Настройка scopes
+└── reset-admin-password.sh # Сброс паролей
 ```
 
 ### **Kubernetes секреты:**
@@ -171,7 +171,7 @@ kubectl get namespaces --context=relay
 
 ### Prometheus метрики:
 - `zitadel_oauth_requests_total`
-- `zitadel_token_issued_total` 
+- `zitadel_token_issued_total`
 - `zitadel_login_latency_seconds`
 
 ### Grafana Dashboard:
@@ -189,7 +189,7 @@ kubectl get namespaces --context=relay
 ### Проблема: "Not Found" в Management API
 **Решение:** Используйте веб-интерфейс для создания приложений
 
-### Проблема: JWT Bearer не работает  
+### Проблема: JWT Bearer не работает
 **Решение:** Проверьте Service User ключ и endpoint'ы
 
 ### Проблема: gRPC недоступен
@@ -205,7 +205,7 @@ kubectl get namespaces --context=relay
 После выполнения всех шагов у вас будет:
 
  **Полностью рабочая интеграция CloudBridge Relay + ZITADEL**
- **OAuth 2.0/OIDC аутентификация** для gRPC и Web UI  
+ **OAuth 2.0/OIDC аутентификация** для gRPC и Web UI
  **mTLS защищенные соединения**
  **Kubernetes RBAC интеграция**
  **kubectl exec-plugin** для прозрачного входа

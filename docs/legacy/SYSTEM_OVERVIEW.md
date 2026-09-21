@@ -3,23 +3,23 @@
 ## Архитектура системы
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Zabbix Server │◄───│  Zabbix Agent    │◄───│   Prometheus    │
-│  (zbx.2gc.ru)   │    │ (cloudbridge-01) │    │   Endpoints     │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                │                        │
-                                │                        ▼
-                       ┌──────────────────┐    ┌─────────────────┐
-                       │   UserParameters │    │  CloudBridge    │
-                       │     Scripts      │    │     Relay       │
-                       └──────────────────┘    │   :30081/metrics │
-                                │              └─────────────────┘
-                                │                        │
-                                ▼                        ▼
-                       ┌──────────────────┐    ┌─────────────────┐
-                       │  Data Collection │    │   AI Service    │
-                       │    Scripts       │    │   :30083/metrics │
-                       └──────────────────┘    └─────────────────┘
+┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐
+│ Zabbix Server │◄───│ Zabbix Agent │◄───│ Prometheus │
+│ (zbx.2gc.ru) │ │ (cloudbridge-01) │ │ Endpoints │
+└─────────────────┘ └──────────────────┘ └─────────────────┘
+                                │ │
+                                │ ▼
+                       ┌──────────────────┐ ┌─────────────────┐
+                       │ UserParameters │ │ CloudBridge │
+                       │ Scripts │ │ Relay │
+                       └──────────────────┘ │ :30081/metrics │
+                                │ └─────────────────┘
+                                │ │
+                                ▼ ▼
+                       ┌──────────────────┐ ┌─────────────────┐
+                       │ Data Collection │ │ AI Service │
+                       │ Scripts │ │ :30083/metrics │
+                       └──────────────────┘ └─────────────────┘
 ```
 
 ## Компоненты системы
@@ -42,7 +42,7 @@
 - **Функция**: Основное приложение с GRPC/HTTP метриками
 
 ### 4. AI Service
-- **Namespace**: `cloudbridge` 
+- **Namespace**: `cloudbridge`
 - **Service**: `ai-service`
 - **Prometheus**: `http://192.168.49.2:30083/metrics`
 - **Функция**: AI-специфичные метрики и обработка
@@ -52,9 +52,9 @@
 ### 1. Источники метрик
 ```
 CloudBridge Relay → Prometheus :30081 → UserParameter Script → Zabbix Agent → Zabbix Server
-AI Service        → Prometheus :30083 → UserParameter Script → Zabbix Agent → Zabbix Server
-System Resources  → System Commands  → UserParameter Script → Zabbix Agent → Zabbix Server
-Kubernetes API    → kubectl commands → UserParameter Script → Zabbix Agent → Zabbix Server
+AI Service → Prometheus :30083 → UserParameter Script → Zabbix Agent → Zabbix Server
+System Resources → System Commands → UserParameter Script → Zabbix Agent → Zabbix Server
+Kubernetes API → kubectl commands → UserParameter Script → Zabbix Agent → Zabbix Server
 ```
 
 ### 2. Типы метрик
@@ -72,7 +72,7 @@ Kubernetes API    → kubectl commands → UserParameter Script → Zabbix Agent
 - `http_requests_total` - HTTP запросы
 - `http_request_duration_seconds` - время ответа
 
-## 🛠️ Инструментарий разработчика
+## Инструментарий разработчика
 
 ### Полезные команды для проверки
 
@@ -141,7 +141,7 @@ docker images | grep -E "(cloudbridge|ai-service)"
 ```bash
 # Использование:
 ./ai_accuracy_collector.sh anomaly_detection
-./ai_accuracy_collector.sh load_prediction  
+./ai_accuracy_collector.sh load_prediction
 ./ai_accuracy_collector.sh route_optimization
 ```
 
@@ -188,14 +188,14 @@ docker images | grep -E "(cloudbridge|ai-service)"
 - `p2p.quic.latency.average` - динамические значения 15-35ms
 - `p2p.quic.handshake.duration` - динамические значения 10-25ms
 
-###  Требуют проверки/исправления
+### Требуют проверки/исправления
 - Все P2P QUIC метрики с `echo "0"`
 - `ai.load_predictions,echo "0"`
 - `ai.routes_optimized,echo "0"`
 - `ai.requests_per_second,echo "0.0"`
 - И другие метрики с hardcoded значениями
 
-##  Процедура сборки и развертывания
+## Процедура сборки и развертывания
 
 ### Полный цикл обновления AI Service
 
@@ -208,10 +208,10 @@ cd /home/ubuntu/cloudbridge-relay-installer
 
 # 2. Создание уникального тега
 TAG="metrics-update-$(date +%Y%m%d-%H%M%S)"
-echo "🏷️  Создание образа с тегом: $TAG"
+echo " Создание образа с тегом: $TAG"
 
 # 3. Сборка образа
-echo "🔨 Сборка Docker образа..."
+echo " Сборка Docker образа..."
 docker build -t ai-service:$TAG -f Dockerfile.ai-service .
 
 # 4. Проверка успешной сборки
@@ -223,7 +223,7 @@ else
 fi
 
 # 5. Загрузка в Minikube
-echo "📤 Загрузка образа в Minikube..."
+echo " Загрузка образа в Minikube..."
 minikube image load ai-service:$TAG
 
 # 6. Обновление deployment
@@ -243,7 +243,7 @@ echo "Ожидание стабилизации метрик (60 секунд)..
 sleep 60
 
 # 10. Проверка метрик
-echo "🧪 Проверка метрик..."
+echo " Проверка метрик..."
 curl -s --max-time 5 "http://192.168.49.2:30083/metrics" | grep "ai_processing_time_milliseconds"
 
 echo "Обновление завершено!"

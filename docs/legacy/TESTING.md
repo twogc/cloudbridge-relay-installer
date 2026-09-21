@@ -34,16 +34,16 @@ make -f Makefile.test coverage-func
 ```
 internal/ai/
 ├── routing/
-│   ├── network_metrics_collector_test.go      # Тесты NetworkMetricsCollector
-│   ├── path_finder_real_data_test.go          # Тесты PathFinder с реальными данными
-│   └── latency_predictor_real_data_test.go    # Тесты LatencyPredictor с реальными данными
+│ ├── network_metrics_collector_test.go # Тесты NetworkMetricsCollector
+│ ├── path_finder_real_data_test.go # Тесты PathFinder с реальными данными
+│ └── latency_predictor_real_data_test.go # Тесты LatencyPredictor с реальными данными
 ├── cadence/
-│   └── cadence_integration_real_test.go       # Тесты реальной интеграции с Cadence
+│ └── cadence_integration_real_test.go # Тесты реальной интеграции с Cadence
 ├── predictive/
-│   └── real_load_predictor_improved_test.go   # Тесты улучшенного RealLoadPredictor
-├── real_service_integration_test.go           # Интеграционные тесты RealService
-├── error_handling_test.go                     # Тесты обработки ошибок
-└── performance_test.go                        # Тесты производительности
+│ └── real_load_predictor_improved_test.go # Тесты улучшенного RealLoadPredictor
+├── real_service_integration_test.go # Интеграционные тесты RealService
+├── error_handling_test.go # Тесты обработки ошибок
+└── performance_test.go # Тесты производительности
 ```
 
 ## Типы тестов
@@ -113,7 +113,7 @@ make -f Makefile.test test-error-handling
 - Отмена контекста
 - Некорректная конфигурация
 
-##  Конфигурация тестов
+## Конфигурация тестов
 
 ### Переменные окружения
 
@@ -249,7 +249,7 @@ make -f Makefile.test test-race
 make -f Makefile.test test-race-detailed
 ```
 
-## 🧹 Очистка
+## Очистка
 
 ```bash
 # Очистка временных файлов
@@ -259,7 +259,7 @@ make -f Makefile.test clean
 go clean -testcache
 ```
 
-##  Непрерывная интеграция
+## Непрерывная интеграция
 
 ### GitHub Actions
 
@@ -332,7 +332,7 @@ make -f Makefile.test quick-check
 - [Go Coverage Documentation](https://golang.org/cmd/cover/)
 - [Go Race Detector](https://golang.org/doc/articles/race_detector.html)
 
-## 🤝 Вклад в тестирование
+## Вклад в тестирование
 
 При добавлении новых функций:
 

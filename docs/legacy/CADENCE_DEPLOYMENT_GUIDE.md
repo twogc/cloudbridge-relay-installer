@@ -11,7 +11,7 @@
 7. [Мониторинг и отладка](#мониторинг-и-отладка)
 8. [Альтернативные решения](#альтернативные-решения)
 
-##  Предварительные требования
+## Предварительные требования
 
 ### Системные требования
 - **Minikube**: версия 1.28+
@@ -190,8 +190,8 @@ spec:
       - name: cadence
         image: ubercadence/server:v0.22.4
         ports:
-        - containerPort: 7933  # gRPC
-        - containerPort: 7934  # Web UI
+        - containerPort: 7933 # gRPC
+        - containerPort: 7934 # Web UI
         env:
         # Основные настройки
         - name: SERVICES
@@ -202,19 +202,19 @@ spec:
           value: "false"
         - name: AUTO_SETUP
           value: "true"
-        
+
         # База данных - SQLite (проще для разработки)
         - name: DB
           value: "sqlite"
         - name: DB_PATH
           value: "/var/lib/cadence/cadence.db"
-        
+
         # Visibility Store
         - name: VISIBILITY_STORE
           value: "sqlite"
         - name: VISIBILITY_DB_PATH
           value: "/var/lib/cadence/visibility.db"
-        
+
         # Ringpop
         - name: RINGPOP_NAME
           value: "cadence"
@@ -222,7 +222,7 @@ spec:
           value: "hosts"
         - name: RINGPOP_BOOTSTRAP_HOSTS
           value: "cadence:7933"
-        
+
         # Cluster metadata
         - name: CLUSTER_METADATA_ENABLE_GLOBAL_DOMAIN
           value: "true"
@@ -232,7 +232,7 @@ spec:
           value: "active"
         - name: CLUSTER_METADATA_CURRENT_CLUSTER_NAME
           value: "active"
-        
+
         # Отключить конфигурационный файл
         - name: CONFIG_TEMPLATE_PATH
           value: ""
@@ -242,7 +242,7 @@ spec:
           value: ""
         - name: DOCKERIZE_DELAY
           value: "0"
-        
+
         volumeMounts:
         - name: cadence-data
           mountPath: /var/lib/cadence
@@ -327,8 +327,8 @@ curl http://localhost:7934/health
 ```bash
 # Симптомы
 kubectl get pods -n cloudbridge
-# NAME                       READY   STATUS             RESTARTS
-# postgres-xxx               0/1     CrashLoopBackOff   3
+# NAME READY STATUS RESTARTS
+# postgres-xxx 0/1 CrashLoopBackOff 3
 
 # Диагностика
 kubectl logs postgres-xxx -n cloudbridge
@@ -403,7 +403,7 @@ kubectl patch deployment cadence -n cloudbridge -p '{"spec":{"template":{"spec":
 ```bash
 # Симптомы
 kubectl describe pod cadence-xxx -n cloudbridge
-# Warning  FailedScheduling  pod/cadence-xxx 0/1 nodes are available: 1 Insufficient memory.
+# Warning FailedScheduling pod/cadence-xxx 0/1 nodes are available: 1 Insufficient memory.
 
 # Решение: Увеличить память Minikube
 minikube stop
@@ -414,8 +414,8 @@ minikube start --memory=8192 --cpus=4
 ```bash
 # Симптомы
 kubectl get pods -n cloudbridge
-# NAME                       READY   STATUS             RESTARTS
-# cadence-xxx                0/1     ImagePullBackOff   3
+# NAME READY STATUS RESTARTS
+# cadence-xxx 0/1 ImagePullBackOff 3
 
 # Решения:
 # 1. Проверить доступность образа
@@ -554,7 +554,7 @@ docker build -f docker/Dockerfile.cadence -t cloudbridge-cadence:latest .
 kubectl patch deployment cadence -n cloudbridge -p '{"spec":{"template":{"spec":{"containers":[{"name":"cadence","image":"cloudbridge-cadence:latest"}]}}}}'
 ```
 
-## 🧹 Очистка
+## Очистка
 
 ### Полная очистка
 ```bash
@@ -587,7 +587,7 @@ kubectl delete pvc postgres-pvc -n cloudbridge
 - [Minikube Documentation](https://minikube.sigs.k8s.io/docs/)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 
-## 🤝 Поддержка
+## Поддержка
 
 Если у вас возникли проблемы:
 

@@ -5,21 +5,21 @@
 ```mermaid
 graph TB
     A[Global Anycast<br/>BGP ASN: 65001] --> B[Edge PoP MOW<br/>mow.pop.cb:443]
-    A --> C[Edge PoP FRA<br/>fra.pop.cb:443]  
+    A --> C[Edge PoP FRA<br/>fra.pop.cb:443]
     A --> D[Edge PoP AMS<br/>ams.pop.cb:443]
-    
+
     B --> E[AI Service<br/>Smart Routing]
     C --> E
     D --> E
-    
+
     E --> F[Cost Matrix<br/>Dynamic Weights]
     F --> G[Optimal PoP Selection]
-    
+
     classDef anycast fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#000
     classDef pop fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
     classDef ai fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
     classDef selection fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
-    
+
     class A anycast
     class B,C,D pop
     class E,F ai
@@ -48,46 +48,46 @@ graph TB
         P[PostgreSQL]
         R[Redis]
     end
-    
+
     subgraph "Edge PoP"
         MOW[Moscow PoP]
         FRA[Frankfurt PoP]
         AMS[Amsterdam PoP]
     end
-    
+
     subgraph "AI Service"
         AI[Smart Routing]
     end
-    
+
     %% Connections
     Z --> MOW
     C --> MOW
     P --> MOW
     R --> MOW
-    
+
     Z --> FRA
     C --> FRA
     P --> FRA
     R --> FRA
-    
+
     Z --> AMS
     C --> AMS
     P --> AMS
     R --> AMS
-    
+
     MOW --> AI
     FRA --> AI
     AMS --> AI
-    
+
     MOW <--> FRA
     FRA <--> AMS
     AMS <--> MOW
-    
+
     %% Styling
     classDef control fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef pop fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef ai fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    
+
     class Z,C,P,R control
     class MOW,FRA,AMS pop
     class AI ai
@@ -105,22 +105,22 @@ graph TB
         A1[Asia Replica<br/>auth-asia.2gc.ru]
         U1[US Replica<br/>auth-us.2gc.ru]
     end
-    
+
     subgraph "JWKS Configuration"
         J1[JWKS Endpoint<br/>/.well-known/jwks.json]
         I1[Issuer<br/>https://auth.2gc.ru]
     end
-    
+
     C -->|Primary| J1
     C -->|Issuer| I1
     C -.->|Replica| E1
     C -.->|Replica| A1
     C -.->|Replica| U1
-    
+
     classDef central fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef replica fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef config fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    
+
     class C central
     class E1,A1,U1 replica
     class J1,I1 config
@@ -141,23 +141,23 @@ graph TD
     C --> D[3. Configure IPAM]
     D --> E[4. Setup Monitoring]
     E --> F[Workflow Complete]
-    
+
     subgraph "Activities"
         A1[RegisterRelayServerActivity]
         A2[SetupGeographicRoutingActivity]
         A3[ConfigureIPAMActivity]
         A4[SetupMonitoringActivity]
     end
-    
+
     B --> A1
     C --> A2
     D --> A3
     E --> A4
-    
+
     classDef workflow fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef activity fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    
+
     class A workflow
     class A1,A2,A3,A4 activity
     class B,C,D,E,F step
@@ -172,33 +172,33 @@ graph TD
     A[GeographicRouter] --> B[Edge Nodes Map]
     A --> C[Geo Database]
     A --> D[Load Balancer]
-    
+
     E[FindOptimalRelay] --> F[1. Lookup Client IP]
     F --> G[2. Find Nearby Relays]
     G --> H[3. Filter Healthy Relays]
     H --> I[4. Select Optimal Relay]
     I --> J[Return Address]
-    
+
     C --> F
     B --> G
     D --> H
     D --> I
-    
+
     subgraph "Components"
         K[EdgeNode]
         L[GeoDatabase]
         M[LoadBalancer]
     end
-    
+
     B --> K
     C --> L
     D --> M
-    
+
     classDef router fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef method fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef component fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A router
     class E method
     class F,G,H,I,J step
@@ -208,39 +208,39 @@ graph TD
 ### 2. **Координация между relay серверами**
 
 ```mermaid
-graph TD 
+graph TD
     A[RelayCoordinationManager] --> B[Central Hub]
     A --> C[Local Relay]
     A --> D[Peer Relays Map]
     A --> E[Geo Router]
-    
+
     F[SyncRelayState] --> G[1. Get Local State]
     G --> H[2. Update Central Hub]
     H --> I[3. Get Peer States]
     I --> J[4. Update Network Topology]
-    
+
     C --> G
     B --> H
     B --> I
     D --> J
-    
+
     subgraph "Components"
         K[CentralHub]
         L[RelayServer]
         M[PeerRelay]
         N[GeographicRouter]
     end
-    
+
     B --> K
     C --> L
     D --> M
     E --> N
-    
+
     classDef manager fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef method fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef component fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A manager
     class F method
     class G,H,I,J step
@@ -260,7 +260,7 @@ graph TB
         R[Redis Cluster<br/>cache.2gc.ru:6379<br/>Cache]
         M[Prometheus<br/>monitor.2gc.ru<br/>Monitoring]
     end
-    
+
     subgraph "Component Types"
         T1[Identity Provider]
         T2[Orchestration]
@@ -268,19 +268,19 @@ graph TB
         T4[Cache]
         T5[Monitoring]
     end
-    
+
     Z --> T1
     C --> T2
     P --> T3
     R --> T4
     M --> T5
-    
+
     classDef idp fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef orchestration fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef database fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef cache fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     classDef monitoring fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    
+
     class Z idp
     class C orchestration
     class P database
@@ -295,33 +295,33 @@ graph TD
     A[ControlPlaneAPI] --> B[Relay Manager]
     A --> C[Geo Router]
     A --> D[Cadence Client]
-    
+
     E[RegisterRelayServer] --> F[1. Validate Config]
     F --> G[2. Create Workflow Input]
     G --> H[3. Execute Workflow]
-    
+
     I[GetOptimalRelay] --> J[1. Find Optimal Relay]
     J --> K[2. Return Relay Server]
-    
+
     B --> F
     D --> H
     C --> J
-    
+
     subgraph "Components"
         L[RelayManager]
         M[GeographicRouter]
         N[cadence.Client]
     end
-    
+
     B --> L
     C --> M
     D --> N
-    
+
     classDef api fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef method fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef component fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A api
     class E,I method
     class F,G,H,J,K step
@@ -338,36 +338,36 @@ graph TD
     A --> C[Central Hub]
     A --> D[Peer Relays Map]
     A --> E[Sync Interval]
-    
+
     F[StartSync] --> G[1. Create Ticker]
     G --> H[2. Start Goroutine]
     H --> I[3. Periodic Sync]
-    
+
     J[syncRelayState] --> K[1. Get Local State]
     K --> L[2. Update Central Hub]
     L --> M[3. Get Peer States]
     M --> N[4. Update Network Topology]
-    
+
     B --> K
     C --> L
     C --> M
     D --> N
-    
+
     subgraph "Components"
         O[RelayServer]
         P[CentralHub]
         Q[PeerRelay]
     end
-    
+
     B --> O
     C --> P
     D --> Q
-    
+
     classDef protocol fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef method fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef component fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A protocol
     class F,J method
     class G,H,I,K,L,M,N step
@@ -381,44 +381,44 @@ graph TD
     A[SmartRoutingEngine] --> B[Geo Router]
     A --> C[Load Balancer]
     A --> D[Traffic Analyzer]
-    
+
     E[RouteTraffic] --> F[1. Analyze Load Stats]
     F --> G[2. Find Geographic Route]
     G --> H[3. Analyze Quality Metrics]
     H --> I[4. Select Optimal Route]
     I --> J[Return Route]
-    
+
     C --> F
     B --> G
     D --> H
     A --> I
-    
+
     subgraph "Components"
         K[GeographicRouter]
         L[LoadBalancer]
         M[TrafficAnalyzer]
     end
-    
+
     B --> K
     C --> L
     D --> M
-    
+
     subgraph "Input Parameters"
         N[Source IP]
         O[Dest IP]
         P[Tenant ID]
     end
-    
+
     E --> N
     E --> O
     E --> P
-    
+
     classDef engine fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef method fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef component fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     classDef input fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    
+
     class A engine
     class E method
     class F,G,H,I,J step
@@ -436,41 +436,41 @@ graph TB
         P[Prometheus<br/>monitor.2gc.ru<br/>Metrics Collection]
         G[Grafana<br/>grafana.2gc.ru<br/>Dashboards]
     end
-    
+
     subgraph "Prometheus Metrics"
         M1[relay_health]
         M2[connection_quality]
         M3[geographic_distribution]
         M4[load_balancing]
     end
-    
+
     subgraph "Grafana Dashboards"
         D1[edge_network_overview]
         D2[relay_performance]
         D3[geographic_traffic]
         D4[security_alerts]
     end
-    
+
     P --> M1
     P --> M2
     P --> M3
     P --> M4
-    
+
     G --> D1
     G --> D2
     G --> D3
     G --> D4
-    
+
     M1 --> G
     M2 --> G
     M3 --> G
     M4 --> G
-    
+
     classDef prometheus fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef grafana fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef metrics fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef dashboards fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class P prometheus
     class G grafana
     class M1,M2,M3,M4 metrics
@@ -490,33 +490,33 @@ graph TD
     G --> H[4. Update Routing]
     H --> I[Scaling Complete]
     F --> I
-    
+
     subgraph "Activities"
         J[AnalyzeLoadActivity]
         K[DeployRelayActivity]
         L[UpdateRoutingActivity]
     end
-    
+
     C --> J
     G --> K
     H --> L
-    
+
     subgraph "Input/Output"
         M[AutoScalingInput]
         N[LoadAnalysis]
         O[RelayConfig]
     end
-    
+
     A --> M
     C --> N
     E --> O
-    
+
     classDef workflow fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef step fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef decision fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef activity fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     classDef data fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    
+
     class A workflow
     class C,E,G,H step
     class D decision
@@ -535,23 +535,23 @@ graph TD
     C --> D[3. Apply Cadence]
     D --> E[4. Apply PostgreSQL]
     E --> F[Control Plane Ready]
-    
+
     subgraph "Kubernetes Resources"
         G[k8s/control-plane/]
         H[k8s/zitadel/]
         I[k8s/cadence/]
         J[k8s/postgresql/]
     end
-    
+
     B --> G
     C --> H
     D --> I
     E --> J
-    
+
     classDef deployment fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef step fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef resource fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    
+
     class A deployment
     class B,C,D,E,F step
     class G,H,I,J resource
@@ -565,21 +565,21 @@ graph TD
     B --> C[2. Deploy Asia Relays]
     C --> D[3. Deploy US Relays]
     D --> E[Regional Relays Ready]
-    
+
     subgraph "Regional Resources"
         F[k8s/relay-eu/<br/>Europe]
         G[k8s/relay-asia/<br/>Asia]
         H[k8s/relay-us/<br/>USA]
     end
-    
+
     B --> F
     C --> G
     D --> H
-    
+
     classDef deployment fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef step fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef region fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    
+
     class A deployment
     class B,C,D,E step
     class F,G,H region
@@ -592,19 +592,19 @@ graph TD
     A[Setup Coordination] --> B[1. Apply Geo Routing]
     B --> C[2. Apply Monitoring]
     C --> D[Coordination Ready]
-    
+
     subgraph "Coordination Resources"
         E[k8s/geo-routing/<br/>Geographic Routing]
         F[k8s/monitoring/<br/>Monitoring Stack]
     end
-    
+
     B --> E
     C --> F
-    
+
     classDef setup fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef step fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef resource fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    
+
     class A setup
     class B,C,D step
     class E,F resource
@@ -630,22 +630,22 @@ graph LR
         C1[(Client A)]
         C2[(Client B)]
     end
-    
+
     subgraph "Edge Anycast"
         A1[PoP-EU-AMS]
         A2[PoP-EU-FRA]
         A3[PoP-RU-MOW]
     end
-    
+
     subgraph "Private Backbone"
         L1[Inter-PoP QUIC<br/>MASQUE Contexts]
     end
-    
+
     subgraph "Egress/Origin"
         E1[DC London]
         E2[SaaS US-East]
     end
-    
+
     C1 -->|Anycast 443/UDP| A2
     C2 -->|Anycast 443/UDP| A3
     A2 <-->|MASQUE| L1
@@ -653,12 +653,12 @@ graph LR
     L1 -->|best path| A1
     A1 -->|egress| E1
     A2 -->|egress| E2
-    
+
     classDef client fill:#eef,stroke:#99f,color:#000
     classDef pop fill:#efe,stroke:#393,color:#000
     classDef backbone fill:#ffe,stroke:#cc3,color:#000
     classDef egress fill:#f0f,stroke:#c3c,color:#000
-    
+
     class C1,C2 client
     class A1,A2,A3 pop
     class L1 backbone
@@ -727,7 +727,7 @@ graph TB
             CR1[RPO: < 1 min]
             CR2[RTO: < 5 min]
         end
-        
+
         subgraph "PostgreSQL HA"
             P1[Primary DB<br/>control-db-1]
             P2[Replica 1<br/>control-db-2]
@@ -735,7 +735,7 @@ graph TB
             PR1[RPO: < 30 sec]
             PR2[RTO: < 2 min]
         end
-        
+
         subgraph "Zitadel JWKS Cache"
             Z1[TTL: 1 hour]
             Z2[Emergency Refresh]
@@ -743,33 +743,33 @@ graph TB
             Z4[Offline Fallback]
         end
     end
-    
+
     C1 <--> C2
     C2 <--> C3
     C3 <--> C1
-    
+
     P1 -->|Sync Replication| P2
     P1 -->|Sync Replication| P3
-    
+
     C1 --> CR1
     C2 --> CR1
     C3 --> CR1
     C1 --> CR2
     C2 --> CR2
     C3 --> CR2
-    
+
     P1 --> PR1
     P2 --> PR1
     P3 --> PR1
     P1 --> PR2
     P2 --> PR2
     P3 --> PR2
-    
+
     classDef cadence fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef postgres fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef zitadel fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef metrics fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class C1,C2,C3 cadence
     class P1,P2,P3 postgres
     class Z1,Z2,Z3,Z4 zitadel
@@ -788,31 +788,31 @@ graph TD
     A[EdgeBootstrapManager] --> B[Attestation Service]
     A --> C[Credential Issuer]
     A --> D[Canary Deployer]
-    
+
     E[BootstrapNode] --> F[1. Verify Node Attestation]
     F --> G[2. Issue Credentials]
     G --> H[3. Deploy with Canary]
     H --> I[Node Ready]
-    
+
     B --> F
     C --> G
     D --> H
-    
+
     subgraph "Components"
         J[TPMAttestationService]
         K[CredentialIssuer]
         L[CanaryDeployer]
     end
-    
+
     B --> J
     C --> K
     D --> L
-    
+
     classDef manager fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef method fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef component fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A manager
     class E method
     class F,G,H,I step
@@ -830,42 +830,42 @@ graph TD
     A[HandoverManager] --> B[Handover Triggers]
     A --> C[Hysteresis Controller]
     A --> D[Tenant Policies]
-    
+
     E[ShouldHandover] --> F[1. Check Current vs Threshold]
     F --> G[2. Check Previous vs Threshold]
     G --> H[3. Apply Hysteresis Logic]
     H --> I[4. Return Decision]
-    
+
     C --> F
     C --> G
     C --> H
-    
+
     subgraph "Components"
         J[HandoverTrigger]
         K[HysteresisController]
         L[TenantPolicy]
     end
-    
+
     B --> J
     C --> K
     D --> L
-    
+
     subgraph "Hysteresis Logic"
         M[Threshold Check]
         N[Cooldown Period]
         O[Min Interval]
     end
-    
+
     K --> M
     K --> N
     K --> O
-    
+
     classDef manager fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef method fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef component fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     classDef logic fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    
+
     class A manager
     class E method
     class F,G,H,I step
@@ -885,33 +885,33 @@ graph TD
     A[TopologyEventStore] --> B[Events Array]
     A --> C[Gossip Protocol]
     A --> D[Consensus Engine]
-    
+
     E[UpdateTopology] --> F[1. Check Duplicate]
     F --> G{Is Duplicate?}
     G -->|Yes| H[Skip Update - Idempotent]
     G -->|No| I[2. Gossip Propagation]
     I --> J[Topology Updated]
     H --> J
-    
+
     B --> F
     C --> I
-    
+
     subgraph "Components"
         K[TopologyEvent]
         L[GossipProtocol]
         M[ConsensusEngine]
     end
-    
+
     B --> K
     C --> L
     D --> M
-    
+
     classDef store fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef method fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef decision fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     classDef component fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    
+
     class A store
     class E method
     class F,I,J step
@@ -932,17 +932,17 @@ security:
     tool: "syft"
     format: "spdx-json"
     output: "artifacts/sbom.json"
-  
+
   signing:
     tool: "cosign"
     key: "cosign.key"
     policy: "fail-closed"
-  
+
   secrets:
     management: "external-secrets"
     kms: "vault"
     rotation: "automatic"
-  
+
   pq_crypto:
     hybrid_tls: true
     default: "classical"
@@ -965,13 +965,13 @@ graph TB
             T3[P2P Percentage<br/>≥ 60%]
             T4[Error Budget<br/>< 5%]
         end
-        
+
         subgraph "Monitoring"
             M1[SLO-based Alerts]
             M2[SLO Dashboard]
             M3[OpenTelemetry Tracing]
         end
-        
+
         subgraph "Artifacts"
             A1[qlog enabled]
             A2[pcap enabled]
@@ -979,25 +979,25 @@ graph TB
             A4[PII Filtered]
         end
     end
-    
+
     T1 --> M1
     T2 --> M1
     T3 --> M1
     T4 --> M1
-    
+
     M1 --> M2
     M2 --> M3
-    
+
     M3 --> A1
     M3 --> A2
     A1 --> A3
     A2 --> A3
     A3 --> A4
-    
+
     classDef targets fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef monitoring fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef artifacts fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    
+
     class T1,T2,T3,T4 targets
     class M1,M2,M3 monitoring
     class A1,A2,A3,A4 artifacts
@@ -1015,36 +1015,36 @@ graph TD
     A[NATMatrixManager] --> B[NAT Types Map]
     A --> C[TURN Pools Map]
     A --> D[Rate Limiter]
-    
+
     E[TURNAntiAbuse] --> F[Rate Limits Map]
     E --> G[Cost Tracking Map]
     E --> H[Abuse Detection]
-    
+
     subgraph "NAT Components"
         I[NATType]
         J[TURNPool]
         K[RateLimiter]
     end
-    
+
     B --> I
     C --> J
     D --> K
-    
+
     subgraph "Anti-Abuse Components"
         L[RateLimits]
         M[CostTracking]
         N[AbuseDetector]
     end
-    
+
     F --> L
     G --> M
     H --> N
-    
+
     classDef manager fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef antiabuse fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef natcomponent fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef abusecomponent fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A manager
     class E antiabuse
     class I,J,K natcomponent
@@ -1063,12 +1063,12 @@ client_distribution:
   mdm:
     platforms: ["intune", "jamf", "gpo"]
     profiles: "auto-generated"
-  
+
   installation:
     silent_install: true
     auto_update: true
     crash_reports: true
-  
+
   compatibility:
     version_matrix: "server-client"
     graceful_deprecation: true
@@ -1087,12 +1087,12 @@ compliance:
     eu: "eu-only"
     ru: "ru-only"
     us: "us-only"
-  
+
   logging:
     pii_filtering: true
     retention: "configurable"
     export: "on-demand"
-  
+
   runbooks:
     incidents: "automated"
     on_call: "scheduled"
@@ -1110,39 +1110,39 @@ graph TD
     A[TenantQuotaManager] --> B[Quotas Map]
     A --> C[Billing Engine]
     A --> D[Rate Limiter]
-    
+
     E[TenantQuota] --> F[Connections]
     E --> G[Bitrate]
     E --> H[Masks]
     E --> I[Cost]
-    
+
     subgraph "Manager Components"
         J[TenantQuota]
         K[BillingEngine]
         L[RateLimiter]
     end
-    
+
     B --> J
     C --> K
     D --> L
-    
+
     subgraph "Quota Fields"
         M[Connections: int64]
         N[Bitrate: int64]
         O[Masks: int64]
         P[Cost: float64]
     end
-    
+
     F --> M
     G --> N
     H --> O
     I --> P
-    
+
     classDef manager fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef quota fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef component fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef field fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A manager
     class E quota
     class J,K,L component
@@ -1185,7 +1185,7 @@ graph TD
 
 **Добей пункты выше — и архитектура будет уверенно «production-grade» не только по коду, но и по операциям.**
 
-## ⚙️ Конфигурация меж-PoP MASQUE
+## Конфигурация меж-PoP MASQUE
 
 ### **1. Helm-values для меж-PoP MASQUE**
 
@@ -1199,48 +1199,48 @@ graph TB
             Q4[ACK Frequency: true]
             Q5[Keepalive: 10s]
         end
-        
+
         subgraph "mTLS Security"
             M1[Enabled: true]
             M2[CA Secret: cb-ca-bundle]
             M3[Cert: cb-interpop-cert]
         end
-        
+
         subgraph "MASQUE Features"
             MA1[CONNECT-UDP: true]
             MA2[CONNECT-IP: true]
             MA3[Max Contexts: 16384]
             MA4[Tenant Header: x-cb-tenant]
         end
-        
+
         subgraph "Neighbor PoPs"
             N1[EU-AMS<br/>ams.pop.cb:443]
             N2[EU-FRA<br/>fra.pop.cb:443]
             N3[RU-MOW<br/>mow.pop.cb:443]
         end
     end
-    
+
     Q1 --> MA1
     Q2 --> MA2
     Q3 --> MA3
     Q4 --> MA4
     Q5 --> MA4
-    
+
     M1 --> M2
     M2 --> M3
-    
+
     MA1 --> N1
     MA2 --> N2
     MA3 --> N3
     MA4 --> N1
     MA4 --> N2
     MA4 --> N3
-    
+
     classDef quic fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef mtls fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef masque fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef neighbors fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class Q1,Q2,Q3,Q4,Q5 quic
     class M1,M2,M3 mtls
     class MA1,MA2,MA3,MA4 masque
@@ -1258,9 +1258,9 @@ data:
     defaults:
       max_cost_class: standard
     prefixes:
-      - cidr: "51.144.0.0/12"   # Azure UK
+      - cidr: "51.144.0.0/12" # Azure UK
         prefer: ["eu-ams","eu-fra"]
-      - cidr: "172.16.0.0/12"   # Corp-LON
+      - cidr: "172.16.0.0/12" # Corp-LON
         prefer: ["eu-ams"]
     tenants:
       tenant-216420165:
@@ -1271,10 +1271,10 @@ data:
 ### **3. Handover-гистерезис (env)**
 
 ```yaml
-HOVER_TRIGGER_RTT_MS=50         # прирост к базовой медиане
-HOVER_TRIGGER_LOSS=0.5          # %
-HOVER_MIN_STAY_S=30             # анти-флаппинг
-HOVER_WARMUP_PARALLEL=true      # прогрев альтернативы
+HOVER_TRIGGER_RTT_MS=50 # прирост к базовой медиане
+HOVER_TRIGGER_LOSS=0.5 # %
+HOVER_MIN_STAY_S=30 # анти-флаппинг
+HOVER_WARMUP_PARALLEL=true # прогрев альтернативы
 ```
 
 ### **4. Anycast/GeoDNS**
@@ -1282,7 +1282,7 @@ HOVER_WARMUP_PARALLEL=true      # прогрев альтернативы
 - **Вариант A (рекоменд.):** Anycast BGP через провайдера (единообразный 443/UDP/TCP)
 - **Вариант B:** GeoDNS latency-based (Cloudflare DNS/NS1/Route53), пулы: `eu`, `ru`, `asia`, `us`
 
-## 🛠️ План внедрения (4 шага)
+## План внедрения (4 шага)
 
 ### **Шаг 1: PoP-Mesh (стенд)**
 - 3 PoP (MOW/FRA/AMS), включить inter-PoP QUIC
@@ -1331,17 +1331,17 @@ HOVER_WARMUP_PARALLEL=true      # прогрев альтернативы
 
 ## Умная маршрутизация CloudBridge (Argo-аналог)
 
-### **🔹 Что делает Argo у Cloudflare**
+### ** Что делает Argo у Cloudflare**
 
-| Компонент              | Что делает                                                                                               |
+| Компонент | Что делает |
 | ---------------------- | -------------------------------------------------------------------------------------------------------- |
 | **Argo Smart Routing** | Динамически выбирает маршрут между PoP'ами Cloudflare, обходя перегруженные/потерянные участки интернета |
-| **Telemetry Engine**   | Сбор RTT, loss, jitter по миллионам потоков (real-time BBR feedback + active probes)                     |
-| **Decision Engine**    | ML-модель выбирает *лучший следующий PoP* на основе latency, congestion, packet loss и исторических SLO  |
-| **Traffic Steering**   | Перенаправление потоков на "чистые" маршруты внутри сети Cloudflare                                      |
-| **Control Plane**      | Управляет таблицей "PoP↔PoP cost matrix" и политикой балансировки                                        |
+| **Telemetry Engine** | Сбор RTT, loss, jitter по миллионам потоков (real-time BBR feedback + active probes) |
+| **Decision Engine** | ML-модель выбирает *лучший следующий PoP* на основе latency, congestion, packet loss и исторических SLO |
+| **Traffic Steering** | Перенаправление потоков на "чистые" маршруты внутри сети Cloudflare |
+| **Control Plane** | Управляет таблицей "PoP↔PoP cost matrix" и политикой балансировки |
 
-### **🔹 Как мы реализуем аналог в CloudBridge**
+### ** Как мы реализуем аналог в CloudBridge**
 
 #### **Data-plane (физическая часть)**
 
@@ -1361,12 +1361,12 @@ graph LR
     C --> D[Routing Policy Engine]
     D --> E[Relay Router Agents]
     E -->|Update| F[Inter-PoP QUIC<br/>Contexts]
-    
+
     classDef metrics fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef ai fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef routing fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef agents fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A metrics
     class B,C ai
     class D,E routing
@@ -1387,34 +1387,34 @@ graph TD
     B --> C[Define Score Function]
     C --> D[Apply Dijkstra Algorithm]
     D --> E[Return Optimal Path]
-    
+
     subgraph "Score Weights"
         F[Latency: 0.5]
         G[Loss: 0.3]
         H[Jitter: 0.2]
     end
-    
+
     C --> F
     C --> G
     C --> H
-    
+
     subgraph "Algorithm Steps"
         I[1. Calculate Link Scores]
         J[2. Build Cost Matrix]
         K[3. Find Shortest Path]
         L[4. Return Path]
     end
-    
+
     D --> I
     I --> J
     J --> K
     K --> L
-    
+
     classDef function fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef input fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef weight fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef step fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A function
     class B input
     class F,G,H weight
@@ -1423,7 +1423,7 @@ graph TD
 
 > При деградации любого линка handover выполняется мгновенно (make-before-break QUIC контексты)
 
-### **🔹 Где CloudBridge превосходит Argo**
+### ** Где CloudBridge превосходит Argo**
 
 ```mermaid
 graph TB
@@ -1434,7 +1434,7 @@ graph TB
         A4[Нет Multi-Tenancy]
         A5[Частичный SLO loop]
     end
-    
+
     subgraph "CloudBridge Relay"
         B1[MASQUE/QUIC<br/>открытый стандарт]
         B2[Самостоятельная сеть<br/>VK Cloud, ATLEX, Selectel]
@@ -1442,31 +1442,31 @@ graph TB
         B4[Изоляция per-tenant<br/>VRF + Calico]
         B5[Полный SLO-контур<br/>latency/loss → AI feedback]
     end
-    
+
     A1 -.->|vs| B1
     A2 -.->|vs| B2
     A3 -.->|vs| B3
     A4 -.->|vs| B4
     A5 -.->|vs| B5
-    
+
     classDef argo fill:#ffebee,stroke:#d32f2f,stroke-width:2px
     classDef cloudbridge fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
-    
+
     class A1,A2,A3,A4,A5 argo
     class B1,B2,B3,B4,B5 cloudbridge
 ```
 
-| Возможность               | Cloudflare Argo                     | CloudBridge Relay                                                         |
+| Возможность | Cloudflare Argo | CloudBridge Relay |
 | ------------------------- | ----------------------------------- | ------------------------------------------------------------------------- |
-| **Протокол передачи**     | QUIC/HTTP3 (внутри сети Cloudflare) | MASQUE/QUIC открытый стандарт                                             |
-| **Топология**             | Только внутри Cloudflare            | Самостоятельная сеть PoP, можно размещать PoP в VK Cloud, ATLEX, Selectel |
-| **Адаптация**             | На основе телеметрии                | На основе **AI/ML анализа Prometheus метрик** + предсказания нагрузки     |
-| **Multi-Tenancy**         | Отсутствует                         | Изоляция per-tenant (VRF + Calico policies)                               |
-| **QoS/SLO feedback loop** | Частично                            | Полный **SLO-замкнутый контур**: latency/loss → AI feedback → reroute     |
-| **Handover**              | Прозрачный внутри Cloudflare        | Прозрачный **между любыми PoP CloudBridge**                               |
-| **Open deployment**       | Только у Cloudflare                 | Разворачивается где угодно, RU/EU локализованно                           |
+| **Протокол передачи** | QUIC/HTTP3 (внутри сети Cloudflare) | MASQUE/QUIC открытый стандарт |
+| **Топология** | Только внутри Cloudflare | Самостоятельная сеть PoP, можно размещать PoP в VK Cloud, ATLEX, Selectel |
+| **Адаптация** | На основе телеметрии | На основе **AI/ML анализа Prometheus метрик** + предсказания нагрузки |
+| **Multi-Tenancy** | Отсутствует | Изоляция per-tenant (VRF + Calico policies) |
+| **QoS/SLO feedback loop** | Частично | Полный **SLO-замкнутый контур**: latency/loss → AI feedback → reroute |
+| **Handover** | Прозрачный внутри Cloudflare | Прозрачный **между любыми PoP CloudBridge** |
+| **Open deployment** | Только у Cloudflare | Разворачивается где угодно, RU/EU локализованно |
 
-### **🔹 Архитектура умного маршрута CloudBridge**
+### ** Архитектура умного маршрута CloudBridge**
 
 ```mermaid
 graph TB
@@ -1475,28 +1475,28 @@ graph TB
         M2[AI Analyzer]
         M3[Routing Policy Engine]
     end
-    
+
     subgraph "Edge Mesh"
         P1[PoP MOW]
         P2[PoP FRA]
         P3[PoP AMS]
         P4[PoP SGP]
     end
-    
+
     M1 --> M2
     M2 --> M3
     M3 -->|Push via gRPC| P1
     M3 -->|Push via gRPC| P2
     M3 -->|Push via gRPC| P3
     M3 -->|Push via gRPC| P4
-    
+
     P1 <-->|MASQUE/QUIC| P2
     P2 <-->|MASQUE/QUIC| P3
     P3 <-->|MASQUE/QUIC| P4
-    
+
     classDef control fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef pop fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    
+
     class M1,M2,M3 control
     class P1,P2,P3,P4 pop
 ```
@@ -1509,18 +1509,18 @@ graph TB
 4. Relays обновляют MASQUE контексты без обрывов
 5. Grafana показывает «умную карту маршрутов» (Argo-style heatmap)
 
-### **🔹 Компоненты для продакшена**
+### ** Компоненты для продакшена**
 
-| Компонент                  | Реализация                                                            |
+| Компонент | Реализация |
 | -------------------------- | --------------------------------------------------------------------- |
-| **Telemetry Agents**       | встроены в relay, экспорт в `/metrics` (Prometheus)                   |
-| **AI Service**             | уже есть (`internal/ai/service.go`), добавить `RouteOptimizer` модуль |
-| **Cost Matrix Storage**    | PostgreSQL или Redis (ключ `pop_a:pop_b`)                             |
-| **Routing Policy Updater** | Cadence workflow `UpdateRoutingPolicy`                                |
-| **Visualization**          | Grafana Dashboard `Inter-PoP Routing Health`                          |
-| **Alerts**                 | `if relay_rtt_p95 > 150ms OR relay_loss > 1%` → trigger `reroute`     |
+| **Telemetry Agents** | встроены в relay, экспорт в `/metrics` (Prometheus) |
+| **AI Service** | уже есть (`internal/ai/service.go`), добавить `RouteOptimizer` модуль |
+| **Cost Matrix Storage** | PostgreSQL или Redis (ключ `pop_a:pop_b`) |
+| **Routing Policy Updater** | Cadence workflow `UpdateRoutingPolicy` |
+| **Visualization** | Grafana Dashboard `Inter-PoP Routing Health` |
+| **Alerts** | `if relay_rtt_p95 > 150ms OR relay_loss > 1%` → trigger `reroute` |
 
-### **🔹 Конфигурация умной маршрутизации**
+### ** Конфигурация умной маршрутизации**
 
 ```mermaid
 graph TB
@@ -1528,53 +1528,53 @@ graph TB
         subgraph "Routing Mode"
             R1[Mode: Smart]
         end
-        
+
         subgraph "Metrics Weights"
             W1[Latency: 0.5]
             W2[Loss: 0.3]
             W3[Jitter: 0.2]
         end
-        
+
         subgraph "Thresholds"
             T1[Reroute Latency: 40ms]
             T2[Reroute Loss: 1.0%]
         end
-        
+
         subgraph "Topology"
             P1[RU-MOW<br/>peers: EU-FRA, EU-AMS]
             P2[EU-FRA<br/>peers: RU-MOW, EU-AMS, US-NYC]
             P3[EU-AMS<br/>peers: EU-FRA, RU-MOW]
         end
-        
+
         subgraph "AI Service"
             A1[Endpoint: ai-service.cloudbridge:8083]
             A2[Model: routing_optimizer_v2]
         end
     end
-    
+
     R1 --> W1
     R1 --> W2
     R1 --> W3
-    
+
     W1 --> T1
     W2 --> T2
     W3 --> T1
-    
+
     T1 --> P1
     T2 --> P2
     T1 --> P3
-    
+
     P1 --> A1
     P2 --> A1
     P3 --> A1
     A1 --> A2
-    
+
     classDef mode fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef weights fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef thresholds fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef topology fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     classDef ai fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    
+
     class R1 mode
     class W1,W2,W3 weights
     class T1,T2 thresholds
@@ -1582,41 +1582,41 @@ graph TB
     class A1,A2 ai
 ```
 
-### **🔹 Живой цикл "умного маршрута"**
+### ** Живой цикл "умного маршрута"**
 
 ```mermaid
 graph TD
-    A[1️⃣ Baseline<br/>PoP MOW–FRA RTT = 80ms] --> B[2️⃣ Anomaly Detection<br/>RTT grows to 130ms]
-    B --> C[3️⃣ AI Decision<br/>FRA → AMS via AMS path<br/>RTT = 70ms]
-    C --> D[4️⃣ Cadence Workflow<br/>HandoverRelayLink]
-    D --> E[5️⃣ Parallel Path<br/>New QUIC context to AMS]
-    E --> F[6️⃣ Seamless Handover<br/>Traffic switches]
+    A[1⃣ Baseline<br/>PoP MOW–FRA RTT = 80ms] --> B[2⃣ Anomaly Detection<br/>RTT grows to 130ms]
+    B --> C[3⃣ AI Decision<br/>FRA → AMS via AMS path<br/>RTT = 70ms]
+    C --> D[4⃣ Cadence Workflow<br/>HandoverRelayLink]
+    D --> E[5⃣ Parallel Path<br/>New QUIC context to AMS]
+    E --> F[6⃣ Seamless Handover<br/>Traffic switches]
     F --> G[ RTT Restored<br/>AI learns from feedback]
     G --> A
-    
+
     classDef baseline fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
     classDef anomaly fill:#fff3e0,stroke:#ff9800,stroke-width:2px
     classDef decision fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
     classDef action fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
     classDef success fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
-    
+
     class A,G baseline
     class B anomaly
     class C decision
     class D,E,F action
 ```
 
-| Этап                                                    | Действие          |
+| Этап | Действие |
 | ------------------------------------------------------- | ----------------- |
-| 1️⃣ Сеть работает: PoP MOW–FRA RTT = 80 мс              | baseline          |
-| 2️⃣ AI обнаруживает рост RTT до 130 мс                  | anomaly detected  |
-| 3️⃣ AI советует: FRA → AMS (через AMS-путь RTT = 70 мс) | reroute decision  |
-| 4️⃣ Cadence запускает workflow `HandoverRelayLink`      | make-before-break |
-| 5️⃣ Relay MOW открывает новый QUIC-контекст к AMS       | parallel path     |
-| 6️⃣ Трафик переключается, старый путь закрывается       | seamless handover |
-| TT восстановлен → AI записывает обучение в модель    | feedback loop     |
+| 1⃣ Сеть работает: PoP MOW–FRA RTT = 80 мс | baseline |
+| 2⃣ AI обнаруживает рост RTT до 130 мс | anomaly detected |
+| 3⃣ AI советует: FRA → AMS (через AMS-путь RTT = 70 мс) | reroute decision |
+| 4⃣ Cadence запускает workflow `HandoverRelayLink` | make-before-break |
+| 5⃣ Relay MOW открывает новый QUIC-контекст к AMS | parallel path |
+| 6⃣ Трафик переключается, старый путь закрывается | seamless handover |
+| TT восстановлен → AI записывает обучение в модель | feedback loop |
 
-### **🔹 RouteOptimizer модуль (псевдокод)**
+### ** RouteOptimizer модуль (псевдокод)**
 
 ```mermaid
 graph TD
@@ -1624,35 +1624,35 @@ graph TD
     A --> C[AI Model]
     A --> D[Prometheus Client]
     A --> E[Cadence Client]
-    
+
     F[OptimizeRoutes] --> G[1. Collect Metrics]
     G --> H[2. AI Analysis]
     H --> I[3. Update Cost Matrix]
     I --> J[4. Execute Workflow]
     J --> K[Routes Optimized]
-    
+
     D --> G
     C --> H
     B --> I
     E --> J
-    
+
     subgraph "Components"
         L[CostMatrix]
         M[MLModel]
         N[PrometheusClient]
         O[cadence.Client]
     end
-    
+
     B --> L
     C --> M
     D --> N
     E --> O
-    
+
     classDef optimizer fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef method fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef step fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
     classDef component fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
+
     class A optimizer
     class F method
     class G,H,I,J,K step

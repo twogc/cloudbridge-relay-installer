@@ -1,7 +1,7 @@
 # Отчёт агента — cursor: configmap or port sync step
 
-**Дата:** 2026-07-09 02:02  
-**Миссия:** cloudbridge-relay-k8s-consol  
+**Дата:** 2026-07-09 02:02
+**Миссия:** cloudbridge-relay-k8s-consol
 **Шаг:** 3
 
 ## Выполнено
@@ -12,7 +12,7 @@
    - `openwiki/port-scheme.md` — таблицы diff relay / AI / Cadence; уточнён пункт Known Documentation Drift для AI.
    - `k8s-manifests/README.md` — секция «Известный drift с k8s/» с краткой таблицей и ссылкой на port-scheme.
    - `docs/audit/CONSOLIDATION_PLAN.md` — шаг миграции 2 отмечен `[x]`.
-   - `docs/agent-reports/cloudbridge-relay-k8s-consol/mimo-analysis.md` — пункт 2 плана миграции отмечен ✅.
+   - `docs/agent-reports/cloudbridge-relay-k8s-consol/mimo-analysis.md` — пункт 2 плана миграции отмечен .
 
 3. **Решение по YAML:** numbered prod-манифесты (`k8s-manifests/05–06`) **не изменялись** — `nginx:latest` и порты-заглушки осознанные; однозначный AI drift (8080 vs 8083) зафиксирован в docs; актуальное ops-дерево — `k8s/`.
 
@@ -57,7 +57,7 @@ Service-порты relay в `06-services.yaml` **совпадают** с canonic
 | `openwiki/port-scheme.md` | добавлена секция §k8s drift, обновлён Known Documentation Drift |
 | `k8s-manifests/README.md` | добавлена секция drift с `k8s/` |
 | `docs/audit/CONSOLIDATION_PLAN.md` | шаг 2 миграции `[x]` |
-| `docs/agent-reports/cloudbridge-relay-k8s-consol/mimo-analysis.md` | пункт 2 ✅ |
+| `docs/agent-reports/cloudbridge-relay-k8s-consol/mimo-analysis.md` | пункт 2 |
 
 **Не изменялись:** `k8s-manifests/05-deployments.yaml`, `06-services.yaml`, `k8s/deployments/*`, `k8s/services/*`, `scripts/deploy/deploy.sh`.
 

@@ -8,38 +8,38 @@
 - **Интеграции с RBAC** для безопасности
 - **Масштабируемости** и консистентности
 
-## 🏗️ **Архитектура**
+## **Архитектура**
 
 ### **Zitadel (Identity Provider + Network Management):**
 ```
 ┌─────────────────────────────────────┐
-│              Zitadel                │
+│ Zitadel │
 ├─────────────────────────────────────┤
-│  Tenant Management               │
-│  User Authentication             │
-│  JWT Tokens                      │
-│  RBAC Permissions                │
-│  🆕 Tenant Network Configs          │ ← НОВОЕ
-│  🆕 IPAM Pool Management            │ ← НОВОЕ
-│  🆕 Subnet Allocation               │ ← НОВОЕ
+│ Tenant Management │
+│ User Authentication │
+│ JWT Tokens │
+│ RBAC Permissions │
+│ 🆕 Tenant Network Configs │ ← НОВОЕ
+│ 🆕 IPAM Pool Management │ ← НОВОЕ
+│ 🆕 Subnet Allocation │ ← НОВОЕ
 └─────────────────────────────────────┘
 ```
 
 ### **CloudBridge Relay (Stateless Application):**
 ```
 ┌─────────────────────────────────────┐
-│         CloudBridge Relay           │
+│ CloudBridge Relay │
 ├─────────────────────────────────────┤
-│  P2P Networking                  │
-│  MASQUE Protocol                 │
-│  TURN/STUN Servers               │
-│  🆕 IP Allocation (from Zitadel)    │ ← ИЗМЕНЕНО
-│  🆕 Network Config Cache            │ ← НОВОЕ
-│  Local Subnet Storage            │ ← УДАЛЕНО
+│ P2P Networking │
+│ MASQUE Protocol │
+│ TURN/STUN Servers │
+│ 🆕 IP Allocation (from Zitadel) │ ← ИЗМЕНЕНО
+│ 🆕 Network Config Cache │ ← НОВОЕ
+│ Local Subnet Storage │ ← УДАЛЕНО
 └─────────────────────────────────────┘
 ```
 
-## 🔧 **API Endpoints**
+## **API Endpoints**
 
 ### **1. Tenant Network Configuration:**
 
@@ -124,7 +124,7 @@ POST /management/v1/sync/cloudbridge-relay
 }
 ```
 
-## 🔄 **Workflow**
+## **Workflow**
 
 ### **1. Создание нового тенанта:**
 ```
@@ -169,10 +169,10 @@ func (s *TenantNetworkService) CreateTenantNetworkConfig(tenantID string, config
     if err != nil {
         return err
     }
-    
+
     config.AllocatedSubnet = subnet
     s.tenantConfigs[tenantID] = config
-    
+
     return nil
 }
 ```
@@ -183,8 +183,8 @@ func (s *TenantNetworkService) CreateTenantNetworkConfig(tenantID string, config
 // Обновленный PeerManager
 type PeerManagerZitadel struct {
     zitadelClient *zitadel.TenantNetworkClient
-    cache         *NetworkConfigCache
-    logger        *zap.Logger
+    cache *NetworkConfigCache
+    logger *zap.Logger
 }
 
 func (pm *PeerManagerZitadel) AllocateIPForTenant(tenantID, peerID string) (string, error) {
@@ -193,13 +193,13 @@ func (pm *PeerManagerZitadel) AllocateIPForTenant(tenantID, peerID string) (stri
     if err != nil {
         return "", err
     }
-    
+
     // Выделить IP в рамках подсети
     ip, err := pm.allocateIPInSubnet(config.AllocatedSubnet, peerID)
     if err != nil {
         return "", err
     }
-    
+
     // Обновить конфигурацию в Zitadel
     return ip, pm.zitadelClient.AllocateIPForTenant(tenantID, peerID, ip)
 }
@@ -251,7 +251,7 @@ func (pm *PeerManagerZitadel) AllocateIPForTenant(tenantID, peerID string) (stri
 2. Мигрировать существующие данные
 3. Удалить локальное хранение
 
-## 🏆 **Conclusion**
+## **Conclusion**
 
 **Интеграция с Zitadel для управления подсетями тенантов обеспечивает:**
 
@@ -261,4 +261,4 @@ func (pm *PeerManagerZitadel) AllocateIPForTenant(tenantID, peerID string) (stri
 - **Упрощение CloudBridge Relay** - становится stateless
 - **Масштабируемость** - легко добавлять новые relay серверы
 
-**Это правильный архитектурный подход для enterprise-grade решения!** 🚀
+**Это правильный архитектурный подход для enterprise-grade решения!**

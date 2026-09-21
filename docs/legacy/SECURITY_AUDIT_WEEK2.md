@@ -12,11 +12,11 @@
 
 Control Plane компонент CloudBridge содержит **критические уязвимости безопасности**, которые нарушают принципы Zero Trust IAM и могут привести к:
 
--  **Полному нарушению tenant isolation** (любой может создавать invites для другого tenant)
--  **Утечке credentials** (JWT secret, passwords в plaintext в K8s конфигах)
--  **Отсутствию аутентификации** на чувствительные API endpoints
--  **Неэнкрипированной передаче данных** между компонентами (NATS, Redis без TLS)
--  **Отсутствию rate limiting** - возможны brute force атаки
+- **Полному нарушению tenant isolation** (любой может создавать invites для другого tenant)
+- **Утечке credentials** (JWT secret, passwords в plaintext в K8s конфигах)
+- **Отсутствию аутентификации** на чувствительные API endpoints
+- **Неэнкрипированной передаче данных** между компонентами (NATS, Redis без TLS)
+- **Отсутствию rate limiting** - возможны brute force атаки
 
 **Рекомендация**: Немедленно остановить production usage и реализовать ниже перечисленные исправления.
 
@@ -26,14 +26,14 @@ Control Plane компонент CloudBridge содержит **критичес
 
 ```
 ┌─────────────┬──────────┬──────────┬─────────────────────────────────┐
-│ SEVERITY    │ COUNT    │ % TOTAL  │ REQUIRED ACTION TIME            │
+│ SEVERITY │ COUNT │ % TOTAL │ REQUIRED ACTION TIME │
 ├─────────────┼──────────┼──────────┼─────────────────────────────────┤
-│ CRITICAL    │ 5        │ 15.6%    │ FIX IMMEDIATELY (24-48 hours)   │
-│ HIGH        │ 10       │ 31.2%    │ FIX URGENTLY (1-2 weeks)        │
-│ MEDIUM      │ 12       │ 37.5%    │ FIX SOON (2-4 weeks)            │
-│ LOW         │ 5        │ 15.6%    │ FIX IN BACKLOG (1-2 months)     │
+│ CRITICAL │ 5 │ 15.6% │ FIX IMMEDIATELY (24-48 hours) │
+│ HIGH │ 10 │ 31.2% │ FIX URGENTLY (1-2 weeks) │
+│ MEDIUM │ 12 │ 37.5% │ FIX SOON (2-4 weeks) │
+│ LOW │ 5 │ 15.6% │ FIX IN BACKLOG (1-2 months) │
 ├─────────────┼──────────┼──────────┼─────────────────────────────────┤
-│ TOTAL       │ 32       │ 100%     │ TOTAL REMEDIATION: 6-8 weeks    │
+│ TOTAL │ 32 │ 100% │ TOTAL REMEDIATION: 6-8 weeks │
 └─────────────┴──────────┴──────────┴─────────────────────────────────┘
 ```
 
@@ -59,7 +59,7 @@ Control Plane компонент CloudBridge содержит **критичес
 curl -X POST http://control-plane.2gc.ru/api/v1/invites \
   -H "Content-Type: application/json" \
   -d '{
-    "tenant_id": "competitor-tenant-123",  # Чужой tenant
+    "tenant_id": "competitor-tenant-123", # Чужой tenant
     "email": "attacker@evil.com",
     "max_uses": 999
   }'
@@ -154,8 +154,8 @@ func RequireTenantAccess(c *gin.Context) {
 }
 
 type CustomClaims struct {
-    TenantID string   `json:"tenant_id"`
-    Roles    []string `json:"roles"`
+    TenantID string `json:"tenant_id"`
+    Roles []string `json:"roles"`
     jwt.RegisteredClaims
 }
 
@@ -201,7 +201,7 @@ curl -X POST http://control-plane.2gc.ru/api/v1/invites \
 **Code**:
 ```go
 func handleListInvites(c *gin.Context) {
-    tenantID := c.Query("tenant_id")  //  Берет из query param!
+    tenantID := c.Query("tenant_id") // Берет из query param!
 
     invites, err := svc.ListInvites(ctx, tenantID)
     // Любой может получить invites другого tenant
@@ -245,7 +245,7 @@ func handleListInvites(c *gin.Context) {
 ```go
 jwtSecretEnv := flag.String("jwt-secret", "", "JWT secret key")
 // ...
-jwtSecret := []byte(*jwtSecretEnv)  //  Plaintext в памяти
+jwtSecret := []byte(*jwtSecretEnv) // Plaintext в памяти
 ```
 
 **Impact**:
@@ -354,7 +354,7 @@ spec:
 **Code**:
 ```go
 func (v *Validator) loadPolicies() error {
-    files, _ := filepath.Glob("/etc/acl-policies/*.rego")  //  Не верифицировано!
+    files, _ := filepath.Glob("/etc/acl-policies/*.rego") // Не верифицировано!
     for _, file := range files {
         content, _ := ioutil.ReadFile(file)
         // Загружаем напрямую в OPA - если файл модифицирован, ACL будут неправильные
@@ -382,14 +382,14 @@ import (
 
 // policies.go
 type PolicyBundle struct {
-    Policies  []PolicyFile
+    Policies []PolicyFile
     Signature string // Base64-encoded Ed25519 signature
 }
 
 type PolicyFile struct {
-    Name    string // relative path
+    Name string // relative path
     Content string // .rego file content
-    SHA256  string // Content hash
+    SHA256 string // Content hash
 }
 
 func VerifyPolicies(bundle *PolicyBundle, publicKey ed25519.PublicKey) error {
@@ -587,7 +587,7 @@ spec:
 
 ## PART 2: HIGH PRIORITY ISSUES (1-2 WEEKS)
 
-### 🟠 HIGH-1: No Rate Limiting on Token Validation
+### HIGH-1: No Rate Limiting on Token Validation
 
 **Issue**: ValidateInvite endpoint можно спамить для brute force атак
 
@@ -629,7 +629,7 @@ func handleValidateInvite(c *gin.Context) {
 
 ---
 
-### 🟠 HIGH-2: No TLS on NATS and Redis Connections
+### HIGH-2: No TLS on NATS and Redis Connections
 
 **Issue**: Service-to-service трафик не зашифрован
 
@@ -678,7 +678,7 @@ data:
 
 ---
 
-### 🟠 HIGH-3: ACL Deployment Not Implemented
+### HIGH-3: ACL Deployment Not Implemented
 
 **Issue**: ACLValidator.applyACLs() только TODO - ACL rules не применяются на сетевом уровне
 
@@ -715,7 +715,7 @@ func (v *Validator) ApplyACLsToNetwork(ctx context.Context, config *ACLConfig) e
                 networkingv1.PolicyTypeEgress,
             },
             Ingress: v.buildIngressRules(config),
-            Egress:  v.buildEgressRules(config),
+            Egress: v.buildEgressRules(config),
         },
     }
 
@@ -744,7 +744,7 @@ func (v *Validator) buildIngressRules(config *ACLConfig) []networkingv1.NetworkP
                 for _, port := range aclRule.Ports {
                     rule.Ports = append(rule.Ports, networkingv1.NetworkPolicyPort{
                         Protocol: &corev1.ProtocolTCP,
-                        Port:     &intstr.IntOrString{IntVal: int32(port)},
+                        Port: &intstr.IntOrString{IntVal: int32(port)},
                     })
                 }
             }
@@ -828,8 +828,8 @@ func init() {
 // Request structs:
 type CreateInviteRequest struct {
     TenantID string `json:"tenant_id" validate:"required,uuid"`
-    Email    string `json:"email" validate:"required,email"`
-    MaxUses  int    `json:"max_uses" validate:"min=1,max=100"`
+    Email string `json:"email" validate:"required,email"`
+    MaxUses int `json:"max_uses" validate:"min=1,max=100"`
 }
 
 type ACLRule struct {
@@ -859,7 +859,7 @@ func handleCreateInvite(c *gin.Context) {
 **Fix**:
 ```go
 type Invite struct {
-    ID       string
+    ID string
     // ... other fields
     Metadata map[string]string
 

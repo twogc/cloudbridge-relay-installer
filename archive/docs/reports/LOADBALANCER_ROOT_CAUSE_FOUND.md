@@ -1,7 +1,7 @@
 # НАЙДЕНА КОРНЕВАЯ ПРИЧИНА ПРОБЛЕМЫ LOADBALANCER
 
-**Дата:** 28 сентября 2025  
-**Статус:** ПРОБЛЕМА ИДЕНТИФИЦИРОВАНА И ЧАСТИЧНО ИСПРАВЛЕНА  
+**Дата:** 28 сентября 2025
+**Статус:** ПРОБЛЕМА ИДЕНТИФИЦИРОВАНА И ЧАСТИЧНО ИСПРАВЛЕНА
 
 ## Корневая причина проблемы
 
@@ -31,7 +31,7 @@ Description: LoadBalancer Security Group
 
 ### 2. Добавлены необходимые правила:
 - Port 443 (HTTPS) - ingress from 0.0.0.0/0
-- Port 80 (HTTP) - ingress from 0.0.0.0/0  
+- Port 80 (HTTP) - ingress from 0.0.0.0/0
 - Port 8080 (Nginx Proxy) - ingress from 0.0.0.0/0
 - Port 32500 (Kubernetes) - ingress from 0.0.0.0/0
 
@@ -61,7 +61,7 @@ openstack port set 651156ce-c733-4084-8f2a-e7d45c1bbcf9 --enable
 - **Member operating_status:** ERROR (не изменился)
 - **HTTP Response:** 503 Service Unavailable
 
-## 🔧 Техническая диагностика
+## Техническая диагностика
 
 ### Тестирование LoadBalancer:
 ```bash
@@ -121,13 +121,13 @@ curl http://192.168.49.10:8080/health
 ## Статус пилотного проекта
 
 **Пилотный проект готов к запуску** через прямое подключение к Kubernetes:
-- **Direct Access:** http://192.168.49.2:32500 
-- **Client Configuration:** config-pilot-ready.yaml 
-- **All Endpoints Working:** /health, /metrics, /api 
+- **Direct Access:** http://192.168.49.2:32500
+- **Client Configuration:** config-pilot-ready.yaml
+- **All Endpoints Working:** /health, /metrics, /api
 
 **Внешний доступ через LoadBalancer** будет доступен после решения оставшихся проблем техподдержкой VK Cloud.
 
-## 📞 Следующие шаги
+## Следующие шаги
 
 1. **Отправить обновленный запрос в техподдержку** с найденной проблемой
 2. **Запустить пилотный проект** с прямым доступом к Kubernetes

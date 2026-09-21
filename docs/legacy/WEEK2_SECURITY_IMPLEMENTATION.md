@@ -36,14 +36,14 @@
 **Key Findings**:
 ```
 ┌──────────────┬───────┬────────────────────────┐
-│ SEVERITY     │ COUNT │ TIME TO FIX            │
+│ SEVERITY │ COUNT │ TIME TO FIX │
 ├──────────────┼───────┼────────────────────────┤
-│ CRITICAL     │ 5     │ 24-48 hours           │
-│ HIGH         │ 10    │ 1-2 weeks             │
-│ MEDIUM       │ 12    │ 2-4 weeks             │
-│ LOW          │ 5     │ 1-2 months            │
+│ CRITICAL │ 5 │ 24-48 hours │
+│ HIGH │ 10 │ 1-2 weeks │
+│ MEDIUM │ 12 │ 2-4 weeks │
+│ LOW │ 5 │ 1-2 months │
 ├──────────────┼───────┼────────────────────────┤
-│ TOTAL        │ 32    │ 6-8 weeks total       │
+│ TOTAL │ 32 │ 6-8 weeks total │
 └──────────────┴───────┴────────────────────────┘
 ```
 
@@ -162,19 +162,19 @@ validate.RegisterValidation("max_metadata", validateMetadataSize)
 
 // Pre-built request structs
 type CreateInviteRequest struct {
-    TenantID string            `validate:"required,tenant_id"`
-    Email    string            `validate:"required,email"`
-    MaxUses  int               `validate:"min=1,max=100"`
+    TenantID string `validate:"required,tenant_id"`
+    Email string `validate:"required,email"`
+    MaxUses int `validate:"min=1,max=100"`
     Metadata map[string]string `validate:"max=10"`
 }
 
 type ACLRule struct {
-    Name      string   `validate:"required,safe_string,max=100"`
-    FromCIDR  []string `validate:"required,dive,cidr"`
-    ToCIDR    []string `validate:"required,dive,cidr"`
-    Ports     []int    `validate:"required,dive,min=1,max=65535"`
-    Protocol  string   `validate:"required,oneof=tcp udp"`
-    Action    string   `validate:"required,oneof=allow deny"`
+    Name string `validate:"required,safe_string,max=100"`
+    FromCIDR []string `validate:"required,dive,cidr"`
+    ToCIDR []string `validate:"required,dive,cidr"`
+    Ports []int `validate:"required,dive,min=1,max=65535"`
+    Protocol string `validate:"required,oneof=tcp udp"`
+    Action string `validate:"required,oneof=allow deny"`
 }
 ```
 
@@ -203,7 +203,7 @@ invite := createInvite(req.TenantID, req.Email, req.Metadata)
 
 ---
 
-##  QUICK IMPLEMENTATION GUIDE
+## QUICK IMPLEMENTATION GUIDE
 
 ### Step 1: Add Middlewares to Control Plane
 
@@ -264,7 +264,7 @@ func main() {
 ```go
 // Before: handleListInvites(c *gin.Context)
 func handleListInvites(c *gin.Context) {
-    //  OLD: tenantID := c.Query("tenant_id")
+    // OLD: tenantID := c.Query("tenant_id")
 
     // NEW: Get from JWT token
     tenantID, err := middleware.ExtractTenantID(c)
@@ -399,7 +399,7 @@ done
 
 ---
 
-## 🎓 SECURITY TRAINING REQUIREMENTS
+## SECURITY TRAINING REQUIREMENTS
 
 Team members should review:
 1. JWT authentication security best practices
@@ -410,7 +410,7 @@ Team members should review:
 
 ---
 
-## 📞 SUPPORT & QUESTIONS
+## SUPPORT & QUESTIONS
 
 For implementation questions:
 1. See `SECURITY_AUDIT_WEEK2.md` for detailed remediation code
@@ -449,13 +449,13 @@ For implementation questions:
 
 | Aspect | Before | After |
 |--------|--------|-------|
-| Authentication |  None | JWT + RBAC |
-| Rate Limiting |  None | Redis-based |
-| Input Validation |  None | Comprehensive |
-| Tenant Isolation |  Weak | Enforced |
+| Authentication | None | JWT + RBAC |
+| Rate Limiting | None | Redis-based |
+| Input Validation | None | Comprehensive |
+| Tenant Isolation | Weak | Enforced |
 | Logging | Partial | Secure |
-| Encryption |  Weak | In Progress |
-| Secrets Mgmt |  Plaintext | Vault Ready |
+| Encryption | Weak | In Progress |
+| Secrets Mgmt | Plaintext | Vault Ready |
 
 ---
 

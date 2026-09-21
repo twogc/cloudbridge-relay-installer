@@ -95,7 +95,7 @@ curl -X POST "http://localhost:8080/api/v1/ai/optimize" \
   }'
 ```
 
-## 📁 Созданные файлы
+## Созданные файлы
 
 ### Новые Go файлы
 - `internal/ai/pipeline/real_data_collector.go` - коллектор реальных данных
@@ -121,7 +121,7 @@ curl -X POST "http://localhost:8080/api/v1/ai/optimize" \
 - `internal/ai/metrics.go` - новые методы метрик
 - `k8s/configmaps/ai-config.yaml` - обновленная конфигурация
 
-##  Конфигурация
+## Конфигурация
 
 ### AI Service конфигурация
 ```yaml
@@ -211,7 +211,7 @@ kubectl exec -n cloudbridge deployment/ai-service -- nslookup cloudbridge-relay.
 }
 ```
 
-##  Улучшения производительности
+## Улучшения производительности
 
 - **Точность прогнозов:** +40% (с 60% до 85%)
 - **Скорость обнаружения аномалий:** +60% (с 5s до 2s)
@@ -237,9 +237,9 @@ kubectl exec -n cloudbridge deployment/ai-service -- nslookup cloudbridge-relay.
 - **Workflow управление** через Cadence
 - **Продвинутые алгоритмы ML** для анализа данных
 
-**Система готова к продакшн использованию!** 🚀
+**Система готова к продакшн использованию!**
 
-## 📞 Поддержка
+## Поддержка
 
 При возникновении проблем:
 1. Запустите комплексный тест: `./scripts/comprehensive_ai_test.sh`

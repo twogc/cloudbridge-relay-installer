@@ -23,7 +23,7 @@
 
     ## План действий (по приоритетам)
 
-    ### 🔥 **ЭТАП 1: Критические исправления ЗАВЕРШЕНО (100%)**
+    ### **ЭТАП 1: Критические исправления ЗАВЕРШЕНО (100%)**
     **Цель:** Исправить блокирующие проблемы для production **ДОСТИГНУТО**
 
     #### 1.1 IP адресация **ВЫПОЛНЕНО И ПРОТЕСТИРОВАНО**
@@ -55,27 +55,27 @@
   ```yaml
   # ИСПРАВЛЕНО: Calico НЕ ПОДДЕРЖИВАЕТ переменные в селекторах!
   # Генерируем отдельную GNP для каждого tenant'а
-  
+
   # 1. Глобальный deny-all для межтенантного трафика
   apiVersion: projectcalico.org/v3
   kind: GlobalNetworkPolicy
   metadata:
     name: deny-all-cross-tenant-baseline
   spec:
-    tier: security      # ИСПРАВЛЕНО: dedicated tier для всех security правил
-    order: 100          # Высокий приоритет для baseline deny
+    tier: security # ИСПРАВЛЕНО: dedicated tier для всех security правил
+    order: 100 # Высокий приоритет для baseline deny
     selector: has(tenant.cloudbridge.io/id)
     types: [Ingress, Egress]
     # По умолчанию deny все, исключения будут в отдельных политиках
-  
+
   # 2. Per-tenant allow policies (генерируется для каждого tenant'а)
   apiVersion: projectcalico.org/v3
-  kind: GlobalNetworkPolicy  
+  kind: GlobalNetworkPolicy
   metadata:
     name: tenant-216420165-allow-intra
   spec:
-    tier: security  # ИСПРАВЛЕНО: используем dedicated tier
-    order: 200      # Более низкий приоритет чем deny-all (100)
+    tier: security # ИСПРАВЛЕНО: используем dedicated tier
+    order: 200 # Более низкий приоритет чем deny-all (100)
     selector: tenant.cloudbridge.io/id == "tenant-216420165"
     types: [Ingress, Egress]
     ingress:
@@ -86,42 +86,42 @@
     - action: Allow
       destination:
         selector: tenant.cloudbridge.io/id == "tenant-216420165"
-  
+
   # 3. Системные исключения (DNS, kube-system)
   apiVersion: projectcalico.org/v3
   kind: GlobalNetworkPolicy
   metadata:
     name: allow-system-services
   spec:
-    tier: security    # Тот же security tier
-    order: 50         # Самый высокий приоритет для системных сервисов
+    tier: security # Тот же security tier
+    order: 50 # Самый высокий приоритет для системных сервисов
     selector: has(tenant.cloudbridge.io/id)
     types: [Egress]
     egress:
-    - action: Allow  # DNS (порт 53)
+    - action: Allow # DNS (порт 53)
       destination:
         namespaceSelector: kubernetes.io/metadata.name == "kube-system"
         selector: k8s-app == "kube-dns"
       protocol: UDP
       ports: [53]
-    - action: Allow  # DNS (порт 5353 для DNAT случаев)
+    - action: Allow # DNS (порт 5353 для DNAT случаев)
       destination:
-        namespaceSelector: kubernetes.io/metadata.name == "kube-system" 
+        namespaceSelector: kubernetes.io/metadata.name == "kube-system"
         selector: k8s-app == "kube-dns"
       protocol: UDP
-      ports: [5353]  # ИСПРАВЛЕНО: учитываем DNAT в некоторых дистрибутивах
-    - action: Allow  # CoreDNS (порт 53)
+      ports: [5353] # ИСПРАВЛЕНО: учитываем DNAT в некоторых дистрибутивах
+    - action: Allow # CoreDNS (порт 53)
       destination:
-        namespaceSelector: kubernetes.io/metadata.name == "kube-system" 
+        namespaceSelector: kubernetes.io/metadata.name == "kube-system"
         selector: k8s-app == "coredns"
       protocol: UDP
-      ports: [53, 5353]  # Оба порта для надежности
+      ports: [53, 5353] # Оба порта для надежности
   ```
 
 - [ ] **DNS Isolation**: **ПРОВЕРИТЬ CoreDNS policy плагин доступность**
   ```yaml
   # Policy плагин НЕ ВКЛЮЧЕН в CoreDNS по умолчанию!
-  
+
   # ВАРИАНТ A: Если policy плагин доступен
   apiVersion: v1
   kind: ConfigMap
@@ -133,10 +133,10 @@
           policy {
               # ВНИМАНИЕ: переменные не поддерживаются в CoreDNS policy
               match request_name ~* "\.tenant-[^.]*\.svc\.cluster\.local$"
-              action deny  # Базовый deny, allow правила нужно генерировать отдельно
+              action deny # Базовый deny, allow правила нужно генерировать отдельно
           }
       }
-  
+
   # ВАРИАНТ B: Сетевая изоляция DNS (более практичный)
   # Отдельные CoreDNS instances per tenant ИЛИ
   # Network Policies блокируют доступ к "чужим" DNS записям
@@ -155,15 +155,15 @@
         selector: k8s-app == "kube-dns"
         # Ограничиваем DNS queries сетевыми правилами
   ```
-  
+
   - [ ] **Задача**: Проверить наличие CoreDNS policy плагина в кластере
   - [ ] **Fallback**: Использовать network-level DNS изоляцию вместо plugin
 
 - [ ] **Automated Tests**: Изоляция testing suite
   ```bash
   # Automated test: ping/HTTP между pods разных tenant → always deny
-  kubectl exec pod-tenant-A -- ping pod-tenant-B-ip  # MUST FAIL
-  kubectl exec pod-tenant-A -- curl http://svc-tenant-B  # MUST FAIL
+  kubectl exec pod-tenant-A -- ping pod-tenant-B-ip # MUST FAIL
+  kubectl exec pod-tenant-A -- curl http://svc-tenant-B # MUST FAIL
   ```
 
 - [x] Применить Calico Network Policies (18 политик развернуто)
@@ -177,31 +177,31 @@
   metadata:
     name: block-metadata-services
   spec:
-    order: 10  # Очень высокий приоритет
+    order: 10 # Очень высокий приоритет
     selector: has(tenant.cloudbridge.io/id)
     types: [Egress]
     egress:
-    - action: Deny  # Блокируем AWS/GCP/Azure IMDS
+    - action: Deny # Блокируем AWS/GCP/Azure IMDS
       destination:
         nets: ["169.254.169.254/32"]
       protocol: TCP
-    - action: Deny  # Блокируем прямой доступ к kube-apiserver  
+    - action: Deny # Блокируем прямой доступ к kube-apiserver
       destination:
         # ИСПРАВЛЕНО: используем service rules вместо pod селекторов
         services:
           name: kubernetes
           namespace: default
       protocol: TCP
-    
+
   # Точечные разрешения для нужных pods (отдельными политиками)
   ---
-  apiVersion: projectcalico.org/v3  
+  apiVersion: projectcalico.org/v3
   kind: NetworkPolicy
   metadata:
     name: allow-apiserver-for-operators
     namespace: tenant-216420165
   spec:
-    selector: role == "operator"  # Только для operator pods
+    selector: role == "operator" # Только для operator pods
     types: [Egress]
     egress:
     - action: Allow
@@ -313,7 +313,7 @@
     - [ ] Graceful failover
     - [ ] Health checks и auto-recovery
 
-    ### 🌟 **ЭТАП 4: Advanced Networking (опционально)**
+    ### **ЭТАП 4: Advanced Networking (опционально)**
     **Цель:** Следующий уровень enterprise функциональности
 
 #### 4.1 VXLAN Overlay (для мега-масштаба) **ТРЕБУЕТ ПРОДВИНУТОГО DEVOPS/NETOPS**
@@ -323,19 +323,19 @@
 - [ ] **VTEP Infrastructure**: **MTU и миграция considerations**
   ```bash
   # Критические аспекты VXLAN deployment:
-  
+
   # MTU Planning (КРИТИЧНО!)
   - Underlay MTU: 1500 (стандарт)
-  - VXLAN overhead: ~50 bytes  
+  - VXLAN overhead: ~50 bytes
   - Эффективная MTU для pods: 1450 bytes
   - ИЛИ поднять underlay MTU до 1600+ (предпочтительно)
-  
-  # IP Space Migration Strategy  
+
+  # IP Space Migration Strategy
   - Текущее: 10.100.0.0/16 (256 подсетей)
   - Целевое: 10.0.0.0/8 (65,536 подсетей)
   - Миграция: Blue-green deployment новых tenant'ов
   - Rollback plan: Возврат к базовому IPAM
-  
+
   # CALICO IPAM INTEGRATION (ДЕТАЛИЗИРОВАНО)
   apiVersion: projectcalico.org/v3
   kind: IPPool
@@ -343,13 +343,13 @@
     name: tenant-216420165-pool
   spec:
     cidr: 10.100.77.0/24
-    blockSize: 26  # /26 блоки для эффективности
+    blockSize: 26 # /26 блоки для эффективности
     nodeSelector: tenant.cloudbridge.io/id == "tenant-216420165"
     natOutgoing: true
     disabled: false
-  
+
   # MTU Strategy (КРИТИЧНО!)
-  - Underlay MTU: 1500 (стандарт) → эффективная MTU: 1450 
+  - Underlay MTU: 1500 (стандарт) → эффективная MTU: 1450
   - ИЛИ поднять underlay MTU до 1600+ для полноценного 1500 overlay
   - Проверить: kubectl get nodes -o jsonpath='{.items[*].status.addresses[?(@.type=="InternalIP")].address}'
   ```
@@ -368,7 +368,7 @@
 
     ---
 
-    ## 📅 Временные рамки
+    ## Временные рамки
 
     | Этап | Продолжительность | Дата завершения | Статус |
     |------|------------------|-----------------|--------|
@@ -377,19 +377,19 @@
     | **Этап 3.1** | 1 день | 27 сентября | ЗАВЕРШЕН |
     | **Этап 3.2** | 1 день | 27 сентября | ЗАВЕРШЕН |
     | **Этап 3.3** | 2-3 дня | 30 сентября | Следующий |
-    | **Этап 4** | 2-3 недели | 8 ноября | 💭 Опционально |
+    | **Этап 4** | 2-3 недели | 8 ноября | Опционально |
 
     ---
 
     ## Ключевые результаты (KPI)
 
     ### Масштабируемость
-    - **Сейчас**: 3 tenant'а максимум 
+    - **Сейчас**: 3 tenant'а максимум
     - **После Этапа 1**: 256 tenant'ов
     - **После Этапа 3**: 65,536 tenant'ов
 
     ### Безопасность
-    - **Сейчас**: Application-level только 
+    - **Сейчас**: Application-level только
     - **После Этапа 2**: Network-level изоляция
     - **После Этапа 2**: RBAC + Audit
 
@@ -419,7 +419,7 @@
 - [ ] **Automated Isolation Tests**:
   ```bash
   # Непрерывное тестирование изоляции:
-  # 1. Попытки ping между tenant'ами → DENY  
+  # 1. Попытки ping между tenant'ами → DENY
   # 2. HTTP запросы между сервисами → DENY
   # 3. DNS резолюция чужих имен → DENY
   # 4. Metadata API доступ → CONTROLLED
@@ -433,7 +433,7 @@
 
 ### Немедленные действия (сегодня):
 1. Протестировать исправленную IP адресацию
-2. Создать PostgreSQL миграции для IPAM  
+2. Создать PostgreSQL миграции для IPAM
 3. **Подготовить "Железобетонную" Calico Security**:
    ```bash
    # КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ:
@@ -444,7 +444,7 @@
    # 5. Системные исключения (DNS, kube-system)
    ```
 
-### **Критично ("ЖЕЛЕЗОБЕТОННАЯ" ВЕРСИЯ)**: 
+### **Критично ("ЖЕЛЕЗОБЕТОННАЯ" ВЕРСИЯ)**:
 - ** Calico Tier & Order** → `tier: security` с правильными приоритетами (50→100→200)
 - ** Service Rules для API** → `services: {name: kubernetes}` вместо Pod селекторов
 - ** DNS DNAT готовность** → порты 53 и 5353 для всех дистрибутивов
@@ -479,36 +479,36 @@
 3. **Automated policy tests**: "Золотой стандарт" безопасной конфигурации
 4. **IMDS/K8s API protection**: NSA/CISA и vendor guides рекомендации
 
-###  **Критические исправления добавлены:**
+### **Критические исправления добавлены:**
 1. **Selector fix**: Убрали несуществующие переменные `$tenant_id` → per-tenant GNP
 2. **IMDS protection**: Блокировка 169.254.169.254 + kube-apiserver access
-3. **CoreDNS realism**: Policy плагин проверка + network-level fallback  
+3. **CoreDNS realism**: Policy плагин проверка + network-level fallback
 4. **System exceptions**: DNS, kube-system разрешения явно прописаны
-5. **⚙️ MTU considerations**: VXLAN overhead + underlay MTU planning
+5. ** MTU considerations**: VXLAN overhead + underlay MTU planning
 6. **IPAM integration**: Calico IPPools рекомендации + централизованный IPAM
 
-### 🏰 **Результат "железобетонной" защиты**:
+### **Результат "железобетонной" защиты**:
 - **Zero-trust baseline** с системными исключениями
 - **Metadata services locked down** (IMDS + kube-apiserver)
-- **DNS isolation** с realistic implementation  
+- **DNS isolation** с realistic implementation
 - **Per-tenant policy generation** (no variable substitution)
 - **Production-ready VXLAN** с MTU planning
 - **Comprehensive testing** cross-tenant connectivity denial
 
-### **📚 Соответствие стандартам ("ЖЕЛЕЗОБЕТОННАЯ" ПРОВЕРКА):**
+### ** Соответствие стандартам ("ЖЕЛЕЗОБЕТОННАЯ" ПРОВЕРКА):**
 - [Kubernetes Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) - **default-deny → allow-list**
-- [Calico Policy Tiers](https://docs.tigera.io/calico/latest/network-policy/policy-tiers/tiered-policy) - **tier: security с правильными order**  
+- [Calico Policy Tiers](https://docs.tigera.io/calico/latest/network-policy/policy-tiers/tiered-policy) - **tier: security с правильными order**
 - [Calico Service Rules](https://docs.tigera.io/calico/latest/network-policy/policy-rules/service-policy) - **service rules для kube-apiserver**
 - [Calico IPPool Management](https://docs.tigera.io/calico/latest/reference/resources/ippool) - **per-tenant IP pools с nodeSelector**
 - [NSA/CISA Kubernetes Hardening](https://media.defense.gov/2022/Aug/29/2003066362/-1/-1/0/CTR_KUBERNETES_HARDENING_GUIDANCE_1.2_20220829.PDF) - **IMDS baseline блокировка**
 - [CoreDNS Policy Reality Check](https://github.com/coredns/policy) - **fallback к network isolation**
 
-### **🏆 ЭКСПЕРТНАЯ ОЦЕНКА: "ПРОИЗВОДСТВЕННО ЖЕЛЕЗОБЕТОННЫЙ ПЛАН"**
+### ** ЭКСПЕРТНАЯ ОЦЕНКА: "ПРОИЗВОДСТВЕННО ЖЕЛЕЗОБЕТОННЫЙ ПЛАН"**
 Все 6 точечных правок внесены для устранения "острых углов". План достиг уровня **production-grade ironclad** и полностью соответствует **default-deny → точечные allow → per-tenant → наблюдаемость → централизованный IPAM/HA** best practices multi-tenancy в Kubernetes.
 
 ### **КЛЮЧЕВЫЕ УЛУЧШЕНИЯ "ЖЕЛЕЗОБЕТОННОГО" КАЧЕСТВА:**
 1. **Tier & Order семантика**: `tier: security` с правильными приоритетами (50→100→200)
-2. **Service Rules для API**: Вместо Pod селекторов используем `services: {name: kubernetes}`  
+2. **Service Rules для API**: Вместо Pod селекторов используем `services: {name: kubernetes}`
 3. **DNS DNAT готовность**: Поддержка портов 53 и 5353 для всех дистрибутивов
 4. **Calico IPPool per-tenant**: Конкретная реализация с blockSize и nodeSelector
 5. **MTU стратегия**: Детальное планирование для VXLAN overlay (1450 vs 1600+)
@@ -516,10 +516,10 @@
 
 ---
 
-**Обновлено**: 27 сентября 2025 (ВСЕ ЭТАПЫ ЗАВЕРШЕНЫ!)  
-**Статус**: **ПОЛНОСТЬЮ РЕАЛИЗОВАНО** (100% overall, 100% critical)  
-**План качества**:  **PRODUCTION-READY** с network-level isolation + Standalone IPAM + CNI Integration  
-**Следующий этап**: **ВСЕ ЗАВЕРШЕНО** - готово к коммерческому использованию!  
+**Обновлено**: 27 сентября 2025 (ВСЕ ЭТАПЫ ЗАВЕРШЕНЫ!)
+**Статус**: **ПОЛНОСТЬЮ РЕАЛИЗОВАНО** (100% overall, 100% critical)
+**План качества**: **PRODUCTION-READY** с network-level isolation + Standalone IPAM + CNI Integration
+**Следующий этап**: **ВСЕ ЗАВЕРШЕНО** - готово к коммерческому использованию!
 **Следующий review**: **ЗАВЕРШЕНО** - все цели достигнуты!
 
 ---
@@ -528,7 +528,7 @@
 
 ### **Все компоненты протестированы и работают:**
 
-#### **🔥 Этап 1: Критические исправления - 100% ЗАВЕРШЕНО**
+#### ** Этап 1: Критические исправления - 100% ЗАВЕРШЕНО**
 - **IP адресация**: Поддержка 65,536 tenant'ов подтверждена
 - **P2P API**: Health endpoint работает (`{"status":"healthy"}`)
 - **PostgreSQL**: Работает 2d18h без сбоев
@@ -559,7 +559,7 @@
 
 **Все критические этапы завершены:**
 - **Этап 1**: 100%
-- **Этап 2**: 100%  
+- **Этап 2**: 100%
 - **Этап 3**: 100%
 
 **CloudBridge Relay готов к production использованию!**

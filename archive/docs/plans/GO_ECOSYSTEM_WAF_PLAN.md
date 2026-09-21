@@ -16,7 +16,7 @@ Internet → Traefik (Ingress + Rate Limit)
        → Backend Services
 ```
 
-## 🏗️ **Архитектурные компоненты**
+## **Архитектурные компоненты**
 
 ### **1. Traefik (Ingress Controller)**
 - **Роль:** L7 reverse proxy, автоматическое обнаружение сервисов
@@ -43,7 +43,7 @@ Internet → Traefik (Ingress + Rate Limit)
 - **Возможности:** IP reputation, behavioral patterns, CAPTCHA
 - **Интеграция:** Traefik bouncer
 
-## 🗓️ **План реализации (6 недель)**
+## **План реализации (6 недель)**
 
 ### ** Этап 1: Traefik + Coraza WAF (2 недели)**
 
@@ -218,30 +218,30 @@ data:
     SecResponseBodyMimeType text/plain text/html text/xml
     SecDefaultAction "phase:1,log,auditlog,pass"
     SecDefaultAction "phase:2,log,auditlog,pass"
-    
+
     # OWASP CRS Configuration
     SecRule REQUEST_HEADERS:Content-Type "text/xml" \
         "id:200000,phase:1,t:none,t:lowercase,pass,nolog,ctl:requestBodyProcessor=XML"
-    
+
     # SQL Injection Protection
     SecRule ARGS "@detectSQLi" \
         "id:942100,phase:2,block,msg:'SQL Injection Attack Detected via libinjection',logdata:'Matched Data: %{MATCHED_VAR} found within %{MATCHED_VAR_NAME}',tag:'application-multi',tag:'language-multi',tag:'platform-multi',tag:'attack-sqli',setvar:'tx.msg=%{rule.msg}',setvar:tx.sql_injection_score=+%{tx.critical_anomaly_score},setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-OWASP_CRS/PROTOCOL_VIOLATION/EVASION-%{matched_var_name}=%{matched_var}"
-    
+
     # XSS Protection
     SecRule ARGS "@detectXSS" \
         "id:941100,phase:2,block,msg:'XSS Filter - Category 1: Script Tag Vector',logdata:'Matched Data: %{MATCHED_VAR} found within %{MATCHED_VAR_NAME}',tag:'application-multi',tag:'language-multi',tag:'platform-multi',tag:'attack-xss',setvar:'tx.msg=%{rule.msg}',setvar:tx.xss_score=+%{tx.critical_anomaly_score},setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-OWASP_CRS/WEB_ATTACK/XSS-%{matched_var_name}=%{matched_var}"
-    
+
     # Path Traversal Protection
     SecRule REQUEST_URI "@contains ../" \
         "id:930100,phase:1,block,msg:'Path Traversal Attack (/../)',logdata:'Matched Data: %{MATCHED_VAR} found within %{MATCHED_VAR_NAME}',tag:'application-multi',tag:'language-multi',tag:'platform-multi',tag:'attack-path-traversal',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-OWASP_CRS/PROTOCOL_VIOLATION/EVASION-%{matched_var_name}=%{matched_var}"
-    
+
     # Sensitive File Access
     SecRule REQUEST_URI "@contains /.env" \
         "id:930110,phase:1,block,msg:'Sensitive File Access (.env)',logdata:'Matched Data: %{MATCHED_VAR} found within %{MATCHED_VAR_NAME}',tag:'application-multi',tag:'language-multi',tag:'platform-multi',tag:'attack-path-traversal',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-OWASP_CRS/PROTOCOL_VIOLATION/EVASION-%{matched_var_name}=%{matched_var}"
-    
+
     SecRule REQUEST_URI "@contains /.git" \
         "id:930120,phase:1,block,msg:'Sensitive File Access (.git)',logdata:'Matched Data: %{MATCHED_VAR} found within %{MATCHED_VAR_NAME}',tag:'application-multi',tag:'language-multi',tag:'platform-multi',tag:'attack-path-traversal',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-OWASP_CRS/PROTOCOL_VIOLATION/EVASION-%{matched_var_name}=%{matched_var}"
-    
+
     # Rate Limiting
     SecRule IP:REQUEST_COUNT "@gt 100" \
         "id:920100,phase:1,block,msg:'Rate Limit Exceeded',logdata:'Matched Data: %{MATCHED_VAR} found within %{MATCHED_VAR_NAME}',tag:'application-multi',tag:'language-multi',tag:'platform-multi',tag:'attack-dos',setvar:'tx.msg=%{rule.msg}',setvar:tx.anomaly_score=+%{tx.critical_anomaly_score},setvar:tx.%{rule.id}-OWASP_CRS/PROTOCOL_VIOLATION/EVASION-%{matched_var_name}=%{matched_var}"
@@ -268,7 +268,7 @@ data:
     log:
       level: info
       format: json
-    
+
     serve:
       proxy:
         cors:
@@ -278,12 +278,12 @@ data:
         cors:
           enabled: true
         port: 4456
-    
+
     access_rules:
       matching_strategy: glob
       repositories:
         - file:///etc/config/access-rules
-    
+
     authenticators:
       oidc:
         config:
@@ -297,13 +297,13 @@ data:
                 - profile
                 - email
                 - cloudbridge-relay
-    
+
     authorizers:
       remote:
         config:
           http:
             url: http://oathkeeper-authorizer:8080/authorize
-    
+
     mutators:
       header:
         config:
@@ -509,22 +509,22 @@ data:
       simulation_path: /etc/crowdsec/simulation.yaml
       hub_dir: /etc/crowdsec/hub/
       index_path: /etc/crowdsec/hub/.index
-    
+
     db_config:
       type: sqlite
       db_path: /var/lib/crowdsec/data/crowdsec.db
-    
+
     api:
       server:
         listen_uri: 127.0.0.1:8080
         profiles_path: /etc/crowdsec/profiles.yaml
       client:
         credentials_path: /etc/crowdsec/local_api_credentials.yaml
-    
+
     crowdsec_service:
       acquisition_path: /etc/crowdsec/acquis.yaml
       parser_routines: 1
-    
+
     plugin_config:
       user_regex: (?P<user>\S+)
       ip_regex: (?P<ip>\S+)
@@ -547,7 +547,7 @@ data:
     on_success: break
 ```
 
-##  **Интеграция с CloudBridge Relay**
+## **Интеграция с CloudBridge Relay**
 
 ### **Обновление CloudBridge Relay для работы с WAF**
 ```go
@@ -562,29 +562,29 @@ import (
 )
 
 type TraefikWAF struct {
-    client     *http.Client
-    endpoint   string
-    enabled    bool
-    logger     *zap.Logger
-    metrics    *WAFMetrics
+    client *http.Client
+    endpoint string
+    enabled bool
+    logger *zap.Logger
+    metrics *WAFMetrics
 }
 
 func NewTraefikWAF(config *WAFConfig, logger *zap.Logger) (*TraefikWAF, error) {
     client := &http.Client{
         Timeout: config.Timeout,
         Transport: &http.Transport{
-            MaxIdleConns:        100,
+            MaxIdleConns: 100,
             MaxIdleConnsPerHost: 10,
-            IdleConnTimeout:     30 * time.Second,
+            IdleConnTimeout: 30 * time.Second,
         },
     }
 
     return &TraefikWAF{
-        client:   client,
+        client: client,
         endpoint: config.Endpoint,
-        enabled:  config.Enabled,
-        logger:   logger,
-        metrics:  &WAFMetrics{},
+        enabled: config.Enabled,
+        logger: logger,
+        metrics: &WAFMetrics{},
     }, nil
 }
 
@@ -608,9 +608,9 @@ func (t *TraefikWAF) ValidateRequest(ctx context.Context, req *http.Request) (*W
 
     if resp.StatusCode == http.StatusForbidden {
         return &WAFResult{
-            Allowed:    false,
-            Reason:     "Blocked by WAF",
-            Action:     "block",
+            Allowed: false,
+            Reason: "Blocked by WAF",
+            Action: "block",
             StatusCode: http.StatusForbidden,
         }, nil
     }
@@ -632,13 +632,13 @@ import (
 )
 
 type WAFMiddleware struct {
-    waf    WAF
+    waf WAF
     logger *zap.Logger
 }
 
 func NewWAFMiddleware(waf WAF, logger *zap.Logger) *WAFMiddleware {
     return &WAFMiddleware{
-        waf:    waf,
+        waf: waf,
         logger: logger,
     }
 }
@@ -646,7 +646,7 @@ func NewWAFMiddleware(waf WAF, logger *zap.Logger) *WAFMiddleware {
 func (m *WAFMiddleware) Handler(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         start := time.Now()
-        
+
         // Validate request through WAF
         result, err := m.waf.ValidateRequest(r.Context(), r)
         if err != nil {
@@ -660,20 +660,20 @@ func (m *WAFMiddleware) Handler(next http.Handler) http.Handler {
                 zap.String("user_agent", r.UserAgent()),
                 zap.String("url", r.URL.String()),
             )
-            
+
             // Set response headers
             for key, value := range result.Headers {
                 w.Header().Set(key, value)
             }
-            
+
             w.WriteHeader(result.StatusCode)
             w.Write([]byte("Request blocked by WAF"))
             return
         }
-        
+
         // Request allowed, continue
         next.ServeHTTP(w, r)
-        
+
         // Log metrics
         latency := time.Since(start)
         m.logger.Debug("WAF request processed",
@@ -699,35 +699,35 @@ data:
     global:
       scrape_interval: 15s
       evaluation_interval: 15s
-    
+
     rule_files:
       - "waf_rules.yml"
-    
+
     scrape_configs:
       - job_name: 'traefik'
         static_configs:
           - targets: ['traefik.traefik-system.svc.cluster.local:9100']
         metrics_path: /metrics
         scrape_interval: 10s
-      
+
       - job_name: 'coraza-waf'
         static_configs:
           - targets: ['coraza-waf.traefik-system.svc.cluster.local:8081']
         metrics_path: /metrics
         scrape_interval: 10s
-      
+
       - job_name: 'oathkeeper'
         static_configs:
           - targets: ['oathkeeper.oathkeeper-system.svc.cluster.local:4456']
         metrics_path: /metrics
         scrape_interval: 10s
-      
+
       - job_name: 'krakend'
         static_configs:
           - targets: ['krakend.krakend-system.svc.cluster.local:8090']
         metrics_path: /metrics
         scrape_interval: 10s
-      
+
       - job_name: 'crowdsec'
         static_configs:
           - targets: ['crowdsec.crowdsec-system.svc.cluster.local:8080']
@@ -836,31 +836,31 @@ kubectl wait --for=condition=available --timeout=300s deployment/krakend -n krak
 kubectl wait --for=condition=available --timeout=300s deployment/crowdsec -n crowdsec-system
 
 # Run health checks
-echo "🏥 Running health checks..."
+echo " Running health checks..."
 ./scripts/health-check-waf.sh
 
 echo "WAF Stack deployed successfully!"
 ```
 
-##  **Ожидаемые результаты**
+## **Ожидаемые результаты**
 
 ### **Безопасность:**
 - 99.9% защита от OWASP Top 10
-- 🚫 95% снижение ботов и атак
+- 95% снижение ботов и атак
 - 100% географическая фильтрация
 - 0 успешных DDoS атак
 
 ### **Производительность:**
 - < 5ms латентность WAF
 - 5x увеличение пропускной способности
-- 💾 50% снижение потребления памяти
-- 🔄 99.99% uptime
+- 50% снижение потребления памяти
+- 99.99% uptime
 
 ### **Управляемость:**
--  < 2 минуты время развертывания
+- < 2 минуты время развертывания
 - 100% покрытие метриками
 - < 30 секунд время обнаружения инцидентов
-- 📝 100% логирование запросов
+- 100% логирование запросов
 
 ## **Заключение**
 

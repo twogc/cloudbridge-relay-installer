@@ -1,8 +1,8 @@
 # CloudBridge Relay + ZITADEL: Implementation Progress Report
 
-**Дата:** $(date)  
-**Статус:** 75% готовности (5.5/8 критичных задач выполнено)  
-**Следующий этап:** Доработка через ZITADEL Console  
+**Дата:** $(date)
+**Статус:** 75% готовности (5.5/8 критичных задач выполнено)
+**Следующий этап:** Доработка через ZITADEL Console
 
 ---
 
@@ -14,30 +14,30 @@
 - **Функции:**
   - ExecCredential API v1beta1
   - Client Credentials Flow
-  - mTLS поддержка с сертификатами 
+  - mTLS поддержка с сертификатами
   - Token Exchange framework (готов к активации)
   - Insecure TLS для dev/test
   - Конфигурация через JSON файл
-- **Файлы:** 
+- **Файлы:**
   - `cmd/kubectl-zitadel/main.go` - основной код plugin'а
   - `configs/kubectl-zitadel-config.json` - конфигурация
 
 ### 2. mTLS Сертификаты (КРИТИЧНО)
-- **Статус:** ЗАВЕРШЕНО  
+- **Статус:** ЗАВЕРШЕНО
 - **Результат:** Полный набор сертификатов для mTLS аутентификации
 - **Сертификаты:**
   - CA: `certs/relay-mtls/cloudbridge-relay-ca-cert.pem`
   - Client: `certs/relay-mtls/relay-client-cert.pem`
   - Server: `certs/relay-mtls/relay-server-cert.pem`
   - P12 форматы для импорта в браузер
-- **CN:** relay-server  
+- **CN:** relay-server
 - **SAN:** relay.local, relay.2gc.space
 
 ### 3. Developer Environment Setup
 - **Статус:** ЗАВЕРШЕНО
 - **Результат:** Полная среда разработки с токенами и API доступом
 - **Файлы:**
-  - `configs/developer-env.sh` - все credentials и endpoints  
+  - `configs/developer-env.sh` - все credentials и endpoints
   - `docs/DEVELOPER_HANDOFF.md` - полная документация (10.8KB)
   - `scripts/api-examples.sh` - примеры API вызовов
 - **Доступы:**
@@ -45,17 +45,17 @@
   - Management API: доступен
   - Service User: настроен
 
-### 4. OIDC Applications  
+### 4. OIDC Applications
 - **Статус:** ЗАВЕРШЕНО
 - **API App:** `339537393122017581` (client_id: 339537393138794797)
-- **SPA App:** `339537407432982831` (client_id: 339537407433048367)  
+- **SPA App:** `339537407432982831` (client_id: 339537407433048367)
 - **Настройки:**
   - JWT access tokens
   - Role assertions в JWT
   - Redirect URIs настроены
 
 ### 5. RBAC Kubernetes Mapping
-- **Статус:** ЗАВЕРШЕНО  
+- **Статус:** ЗАВЕРШЕНО
 - **Файл:** `k8s/rbac/cloudbridge-relay-rbac.yaml`
 - **Мапинги:**
   - `roles=cluster-admin` → ClusterRoleBinding
@@ -71,23 +71,23 @@
 - **Проблема:** ZITADEL Management API возвращает ошибки валидации
 - **Решение:** Настроить через ZITADEL Console:
   1. Зайти в https://edge.2gc.ru/
-  2. Project "cloudbridge-relay" 
+  2. Project "cloudbridge-relay"
   3. Добавить roles: "relay.api", "relay.k8s"
   4. Обновить приложения для включения scopes
 - **Команда:** `curl -H "Authorization: Bearer $ZITADEL_ADMIN_TOKEN" ...` (примеры в scripts/)
 
-### 2. Token Exchange для mTLS  
+### 2. Token Exchange для mTLS
 - **Статус:** ТРЕБУЕТ РУЧНОЙ НАСТРОЙКИ
 - **Проблема:** OIDC приложение не поддерживает client_credentials flow
 - **Решение:** Через ZITADEL Console:
   1. API App → Settings
   2. Grant Types: добавить "Client Credentials"
-  3. Grant Types: добавить "Token Exchange" 
+  3. Grant Types: добавить "Token Exchange"
   4. Auth Method: "Private Key JWT"
 - **Код:** Готов в `cmd/kubectl-zitadel/main.go`
 
 ### 3. Custom Claims (tenant_id, client_id, roles)
-- **Статус:** ТРЕБУЕТ РУЧНОЙ НАСТРОЙКИ  
+- **Статус:** ТРЕБУЕТ РУЧНОЙ НАСТРОЙКИ
 - **Проблема:** JWT templates не настроены
 - **Решение:** Через ZITADEL Console:
   1. Project Settings → Token Settings
@@ -101,7 +101,7 @@
 
 ### 1. Организация "cloudbridge"
 - **Статус:** НЕ ВЫПОЛНЕНО
-- **Текущее:** Работаем в org "ZITADEL" (ID: 339340397199294575)  
+- **Текущее:** Работаем в org "ZITADEL" (ID: 339340397199294575)
 - **Требуется:** Создать отдельную организацию "cloudbridge"
 - **Приоритет:** Средний (не блокирует основной функционал)
 
@@ -135,13 +135,13 @@
 1. **Настроить Custom Scopes** через ZITADEL Console
    - Время: 30 минут
    - Приоритет: Критичный
-   
-2. **Включить Client Credentials flow** для API приложения  
+
+2. **Включить Client Credentials flow** для API приложения
    - Время: 15 минут
    - Приоритет: Критичный
 
 3. **Настроить Custom Claims** в JWT templates
-   - Время: 20 минут  
+   - Время: 20 минут
    - Приоритет: Высокий
 
 ### Средний приоритет:
@@ -166,7 +166,7 @@
 
 ---
 
-## 🧰 **ИНСТРУМЕНТЫ ДЛЯ РАЗРАБОТЧИКА**
+## **ИНСТРУМЕНТЫ ДЛЯ РАЗРАБОТЧИКА**
 
 ### Быстрый старт:
 ```bash
@@ -183,11 +183,11 @@ cd cmd/kubectl-zitadel
 
 ### Основные файлы:
 - ** Документация:** `docs/DEVELOPER_HANDOFF.md`
-- **Credentials:** `configs/developer-env.sh` 
-- **🧪 API примеры:** `scripts/api-examples.sh`
-- **⚙️ Конфигурации:** `configs/zitadel-final-config.yaml`
+- **Credentials:** `configs/developer-env.sh`
+- ** API примеры:** `scripts/api-examples.sh`
+- ** Конфигурации:** `configs/zitadel-final-config.yaml`
 
 ---
 
-**СИСТЕМА ГОТОВА К БАЗОВОМУ ИСПОЛЬЗОВАНИЮ**  
+**СИСТЕМА ГОТОВА К БАЗОВОМУ ИСПОЛЬЗОВАНИЮ**
 **ТРЕБУЕТСЯ 2-3 часа ДОРАБОТКИ ДЛЯ 100% СООТВЕТСТВИЯ ТЕХЗАДАНИЮ**

@@ -1,4 +1,4 @@
-# 🐳 **CloudBridge Relay - Быстрая сборка в Minikube**
+# **CloudBridge Relay - Быстрая сборка в Minikube**
 
 ## **ВАЖНО: Уникальные теги образов**
 
@@ -96,7 +96,7 @@ kubectl get services -n cloudbridge
 # Port forwarding для HTTP API
 kubectl port-forward service/cloudbridge-relay-external 8080:8080 -n cloudbridge &
 
-# Port forwarding для P2P API  
+# Port forwarding для P2P API
 kubectl port-forward service/cloudbridge-relay-external 8082:8082 -n cloudbridge &
 
 # Port forwarding для MASQUE
@@ -156,7 +156,7 @@ kubectl get events -n cloudbridge --sort-by='.lastTimestamp'
 kubectl logs deployment/cloudbridge-relay -n cloudbridge --tail=50
 ```
 
-## 🧹 **Очистка**
+## **Очистка**
 
 ```bash
 # Удалить namespace

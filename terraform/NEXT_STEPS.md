@@ -111,7 +111,7 @@ ls -la ~/.ssh/cloudbridge-relay
 chmod 600 ~/.ssh/cloudbridge-relay
 ```
 
-## 📞 **Нужна помощь?**
+## **Нужна помощь?**
 
 ### **Документация:**
 - [VK Cloud Container Registry](https://mcs.mail.ru/docs/container-registry/)

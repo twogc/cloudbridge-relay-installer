@@ -1,8 +1,8 @@
 # CloudBridge TLS Certificate Setup Report
 
-**Дата:** 28 сентября 2025  
-**Домен:** edge.2gc.ru  
-**Статус:** TLS сертификаты настроены (тестовые)  
+**Дата:** 28 сентября 2025
+**Домен:** edge.2gc.ru
+**Статус:** TLS сертификаты настроены (тестовые)
 
 ## Выполненные действия
 
@@ -60,7 +60,7 @@ security:
       - "https://dashboard.edge.2gc.ru"
 ```
 
-## 🛠️ Созданные инструменты
+## Созданные инструменты
 
 ### . Скрипт настройки TLS
 **Файл:** `scripts/setup-tls-certs.sh`
@@ -127,18 +127,18 @@ sudo certbot certonly --standalone \
 ### 2. Обновление DNS записей
 ```bash
 # Убедитесь, что домены указывают на ваш сервер:
-edge.2gc.ru         A    YOUR_SERVER_IP
-api.edge.2gc.ru     A    YOUR_SERVER_IP
-www.edge.2gc.ru     A    YOUR_SERVER_IP
-dashboard.edge.2gc.ru A  YOUR_SERVER_IP
+edge.2gc.ru A YOUR_SERVER_IP
+api.edge.2gc.ru A YOUR_SERVER_IP
+www.edge.2gc.ru A YOUR_SERVER_IP
+dashboard.edge.2gc.ru A YOUR_SERVER_IP
 ```
 
 ### 3. Настройка файрвола
 ```bash
 # Откройте необходимые порты:
-sudo ufw allow 80/tcp    # HTTP (для редиректа)
-sudo ufw allow 443/tcp   # HTTPS
-sudo ufw allow 8443/tcp  # CloudBridge HTTPS API
+sudo ufw allow 80/tcp # HTTP (для редиректа)
+sudo ufw allow 443/tcp # HTTPS
+sudo ufw allow 8443/tcp # CloudBridge HTTPS API
 ```
 
 ### 4. Развертывание в продакшене
@@ -220,7 +220,7 @@ echo "0 12 * * * /usr/bin/certbot renew --quiet && kubectl delete secret edge-2g
 
 Основная инфраструктура готова:
 - амоподписанный сертификат для тестирования
-- ubernetes Secret с TLS данными  
+- ubernetes Secret с TLS данными
 - roduction deployment с TLS поддержкой
 - ecurity middleware с HTTPS принуждением
 - нструменты для продакшен настройки

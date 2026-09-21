@@ -1,19 +1,19 @@
 # CloudBridge LoadBalancer - Финальный отчет
 
-**Дата:** $(date)  
-**Проект:** CloudBridge Relay для 2gc.ru  
-**Статус:** SSL Termination настроен, требуется настройка relay сервера  
+**Дата:** $(date)
+**Проект:** CloudBridge Relay для 2gc.ru
+**Статус:** SSL Termination настроен, требуется настройка relay сервера
 
 ## Что успешно выполнено
 
 ### 1. DNS записи настроены и работают
 ```
-relay.2gc.ru     → 109.120.180.160 ✓
-masque.2gc.ru    → 109.120.180.160 ✓
-p2p.2gc.ru       → 109.120.180.160 ✓
-admin.2gc.ru     → 109.120.180.160 ✓
-monitor.2gc.ru   → 109.120.180.160 ✓
-api.2gc.ru       → 109.120.180.160 ✓
+relay.2gc.ru → 109.120.180.160
+masque.2gc.ru → 109.120.180.160
+p2p.2gc.ru → 109.120.180.160
+admin.2gc.ru → 109.120.180.160
+monitor.2gc.ru → 109.120.180.160
+api.2gc.ru → 109.120.180.160
 ```
 
 ### 2. VK Cloud LoadBalancer полностью настроен
@@ -44,11 +44,11 @@ VK Cloud LoadBalancer
     └── HTTP Listener (80 → HTTP)
          ↓
 Relay Server (10.0.0.249:80)
-    ↓ 301 Redirect Loop 
+    ↓ 301 Redirect Loop
 ПРОБЛЕМА: Бесконечный редирект
 ```
 
-##  Текущая проблема
+## Текущая проблема
 
 ### Бесконечный редирект HTTP → HTTPS
 
@@ -59,12 +59,12 @@ Relay Server (10.0.0.249:80)
 $ curl -k https://relay.2gc.ru/health
 # Результат: 301 Moved Permanently (бесконечный редирект)
 
-$ curl -I http://10.0.0.249/health  
+$ curl -I http://10.0.0.249/health
 HTTP/1.1 301 Moved Permanently
 location: https://10.0.0.249/health
 ```
 
-##  Решения
+## Решения
 
 ### Вариант 1: Настройка relay сервера (рекомендуется)
 
@@ -84,13 +84,13 @@ upstream kubernetes_backend {
 server {
     listen 80;
     server_name *.2gc.ru;
-    
+
     location / {
         proxy_pass http://kubernetes_backend;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;  # Важно!
+        proxy_set_header X-Forwarded-Proto https; # Важно!
     }
 }
 
@@ -147,7 +147,7 @@ openstack loadbalancer member create c9c66e2b-8f2a-42a1-937f-a1c4084965c2 \
 ```bash
 # Должны работать без редиректов
 curl -k https://relay.2gc.ru/health
-curl -k https://masque.2gc.ru/health  
+curl -k https://masque.2gc.ru/health
 curl -k https://api.2gc.ru/health
 curl -k https://p2p.2gc.ru/health
 curl -k https://admin.2gc.ru/health
@@ -163,7 +163,7 @@ curl -k https://monitor.2gc.ru/health
 | SSL Certificates | K | Загружены в Barbican |
 | HTTP Listener | K | Порт 80 работает |
 | HTTPS Listener | K | Порт 443 с SSL termination |
-| Relay Server |  REDIRECT | Нужна настройка nginx |
+| Relay Server | REDIRECT | Нужна настройка nginx |
 | Kubernetes | K | Сервисы готовы принимать трафик |
 
 ## После исправления
@@ -184,7 +184,7 @@ Kubernetes (192.168.49.2:32500)
 CloudBridge Services
 ```
 
-## 📞 Поддержка
+## Поддержка
 
 **OpenStack команды для управления:**
 ```bash
@@ -203,4 +203,4 @@ openstack loadbalancer member list c9c66e2b-8f2a-42a1-937f-a1c4084965c2
 - `VK_CLOUD_FINAL_REPORT.md` - Предыдущий отчет
 - `vk-cloud-openstack.sh` - Скрипт подключения к OpenStack
 
-**Основная проблема**: Нужен SSH доступ к relay серверу 10.0.0.249 для настройки nginx конфигурации! 
+**Основная проблема**: Нужен SSH доступ к relay серверу 10.0.0.249 для настройки nginx конфигурации!

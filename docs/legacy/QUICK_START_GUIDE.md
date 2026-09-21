@@ -11,8 +11,8 @@ cd /home/ubuntu/cloudbridge-relay-installer
 kubectl get pods -n cloudbridge
 
 # Проверка Prometheus endpoints
-curl -s "http://192.168.49.2:30081/metrics" | head -5  # CloudBridge Relay
-curl -s "http://192.168.49.2:30083/metrics" | head -5  # AI Service
+curl -s "http://192.168.49.2:30081/metrics" | head -5 # CloudBridge Relay
+curl -s "http://192.168.49.2:30083/metrics" | head -5 # AI Service
 
 # Проверка Zabbix Agent
 systemctl is-active zabbix-agent
@@ -34,7 +34,7 @@ cat > /tmp/test_metrics.sh << 'EOF'
 #!/bin/bash
 METRICS=(
     "ai.health"
-    "ai.cache_hits" 
+    "ai.cache_hits"
     "ai.processing_time"
     "p2p.quic.latency.average"
     "cloudbridge.relay.json.active_connections"
@@ -54,7 +54,7 @@ chmod +x /tmp/test_metrics.sh
 
 ### Шаблон проверки
 ```bash
-METRIC_NAME="p2p.quic.connections.active"  # Замените на нужную
+METRIC_NAME="p2p.quic.connections.active" # Замените на нужную
 
 # 1. Проверить UserParameter
 grep -n "$METRIC_NAME" /etc/zabbix/zabbix_agentd.d/cloudbridge-relay-template.conf
@@ -79,7 +79,7 @@ curl -s "http://192.168.49.2:30083/metrics" | grep -i "connections"
 ```bash
 # P2P QUIC метрики - все возвращают 0
 zabbix_get -s localhost -k p2p.quic.connections.active
-zabbix_get -s localhost -k p2p.quic.peers.active  
+zabbix_get -s localhost -k p2p.quic.peers.active
 zabbix_get -s localhost -k p2p.quic.throughput.inbound
 
 # AI метрики - подозрительные нули
@@ -88,12 +88,12 @@ zabbix_get -s localhost -k ai.routes_optimized
 zabbix_get -s localhost -k ai.requests_per_second
 ```
 
-### 🤔 Средний приоритет (возможно OK)
+### Средний приоритет (возможно OK)
 ```bash
 # Статусные метрики (могут быть статичными)
-zabbix_get -s localhost -k ai.health                    # 1
-zabbix_get -s localhost -k ai.circuit_breaker_state     # closed
-zabbix_get -s localhost -k cloudbridge.ai.status        # running
+zabbix_get -s localhost -k ai.health # 1
+zabbix_get -s localhost -k ai.circuit_breaker_state # closed
+zabbix_get -s localhost -k cloudbridge.ai.status # running
 ```
 
 ### Низкий приоритет (уже исправлены)
@@ -104,7 +104,7 @@ zabbix_get -s localhost -k ai.anomaly_detection_accuracy
 zabbix_get -s localhost -k ai.cache_hits
 ```
 
-## 🛠️ Создание коллектора для новой метрики
+## Создание коллектора для новой метрики
 
 ### Шаблон скрипта коллектора
 ```bash
@@ -113,7 +113,7 @@ sudo tee /usr/local/bin/p2p_metrics_collector.sh > /dev/null << 'EOF'
 #!/bin/bash
 
 # P2P Metrics Collector
-PROMETHEUS_URL_RELAY="http://192.168.49.2:30081/metrics"  
+PROMETHEUS_URL_RELAY="http://192.168.49.2:30081/metrics"
 PROMETHEUS_URL_AI="http://192.168.49.2:30083/metrics"
 TIMEOUT=5
 METRIC_TYPE="$1"
@@ -180,7 +180,7 @@ METRIC="$1"
 TESTS=5
 INTERVAL=5
 
-echo "🧪 Тестирование динамичности метрики: $METRIC"
+echo " Тестирование динамичности метрики: $METRIC"
 echo "================================================"
 
 VALUES=()
@@ -217,7 +217,7 @@ chmod +x /tmp/test_dynamic.sh
 # Быстрая пересборка AI Service после изменений в коде
 
 TAG="hotfix-$(date +%H%M%S)"
-echo "🔨 Пересборка AI Service с тегом: $TAG"
+echo " Пересборка AI Service с тегом: $TAG"
 
 # Сборка и развертывание
 docker build -t ai-service:$TAG -f Dockerfile.ai-service . && \
@@ -238,7 +238,7 @@ fi
 
 ```bash
 # Ежедневная проверка системы мониторинга
-echo "📅 $(date)"
+echo " $(date)"
 echo "=========================="
 
 # 1. Kubernetes
@@ -250,7 +250,7 @@ echo "Prometheus endpoints:"
 curl -s --connect-timeout 3 "http://192.168.49.2:30081/metrics" >/dev/null && echo " Relay OK" || echo " Relay FAIL"
 curl -s --connect-timeout 3 "http://192.168.49.2:30083/metrics" >/dev/null && echo " AI Service OK" || echo " AI Service FAIL"
 
-# 3. Zabbix Agent  
+# 3. Zabbix Agent
 echo "Zabbix Agent:"
 systemctl is-active zabbix-agent >/dev/null && echo " Active" || echo " Inactive"
 
@@ -288,7 +288,7 @@ sudo systemctl restart zabbix-agent
 
 ---
 
-**Цель: Превратить все вымышленные цифры в реальные данные!**  
-**Время на одну метрику: 10-30 минут**  
-**📞 При проблемах: обращайтесь к техлиду**
+**Цель: Превратить все вымышленные цифры в реальные данные!**
+**Время на одну метрику: 10-30 минут**
+** При проблемах: обращайтесь к техлиду**
 

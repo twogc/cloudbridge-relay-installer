@@ -9,17 +9,17 @@
 1. **cloudflared** (QUIC/TLS 1.3, L7) — вариант «маскировки» трафика
 2. **IPsec/GRE** → Magic WAN Anycast IPv4 (для будущих тестов)
 
-## 📁 Структура файлов
+## Структура файлов
 
 ```
 scripts/cloudflare-testing/
-├── deploy-testing.sh          # Развертывание тестового окружения
-├── setup-cloudflare.sh        # Настройка Cloudflare туннеля
-├── test-connectivity.sh       # Тестирование подключения
-└── README.md                  # Этот файл
+├── deploy-testing.sh # Развертывание тестового окружения
+├── setup-cloudflare.sh # Настройка Cloudflare туннеля
+├── test-connectivity.sh # Тестирование подключения
+└── README.md # Этот файл
 
 k8s/cloudflare-testing/
-├── namespace.yaml             # Namespace для тестирования
+├── namespace.yaml # Namespace для тестирования
 ├── cloudbridge-relay-testing-deployment.yaml
 ├── cloudbridge-testing-configmap.yaml
 ├── cloudflared-deployment.yaml
@@ -50,7 +50,7 @@ k8s/cloudflare-testing/
 ./scripts/cloudflare-testing/test-connectivity.sh
 ```
 
-## 🔧 Конфигурация
+## Конфигурация
 
 ### Тестовые порты
 
@@ -150,7 +150,7 @@ kubectl describe pod -n cloudbridge-testing -l app=cloudbridge-relay-testing
 kubectl describe pod -n cloudbridge-testing -l app=cloudflared-testing
 ```
 
-## 🧹 Очистка
+## Очистка
 
 ### Удаление тестового окружения
 
@@ -243,7 +243,7 @@ kubectl exec -n cloudbridge-testing deployment/cloudbridge-relay-testing -- \
 5. **Fallback**: Корректное переключение при блокировке UDP
 6. **Monitoring**: Все метрики поступают в Prometheus
 
-## 🔄 Интеграция с production
+## Интеграция с production
 
 После успешного тестирования:
 
@@ -252,7 +252,7 @@ kubectl exec -n cloudbridge-testing deployment/cloudbridge-relay-testing -- \
 3. Мониторьте метрики в production
 4. Подготовьте план отката
 
-## 📞 Поддержка
+## Поддержка
 
 При возникновении проблем:
 

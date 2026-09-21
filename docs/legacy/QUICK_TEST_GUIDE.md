@@ -6,9 +6,9 @@
 
 ```bash
 # Проверка версий
-kubectl version --client    # Должен быть >= 1.29 для WebSocket
-go version                  # Должен быть >= 1.21
-docker version              # Для сборки образов
+kubectl version --client # Должен быть >= 1.29 для WebSocket
+go version # Должен быть >= 1.21
+docker version # Для сборки образов
 
 # Проверка minikube
 minikube status
@@ -48,7 +48,7 @@ metadata:
   name: relay-config
 data:
   config.json: |
-$(cat configs/minikube-example.json | sed 's/^/    /')
+$(cat configs/minikube-example.json | sed 's/^/ /')
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -104,7 +104,7 @@ spec:
   - name: grpc
     port: 8444
     targetPort: 8444
-    nodePort: 30444  
+    nodePort: 30444
   - name: metrics
     port: 5551
     targetPort: 5551
@@ -154,13 +154,13 @@ echo " Relay URL: $RELAY_URL"
 export KUBECTL_REMOTE_COMMAND_WEBSOCKETS=1
 export KUBECTL_PORT_FORWARD_WEBSOCKETS=1
 
-echo "🧪 Тестирование базовых команд..."
+echo " Тестирование базовых команд..."
 
 # Тест 1: Получение pods
 kubectl --kubeconfig ~/.kube/config-relay-test get pods --all-namespaces
 echo " Тест 1 пройден: получение pods"
 
-# Тест 2: Получение services  
+# Тест 2: Получение services
 kubectl --kubeconfig ~/.kube/config-relay-test get services --all-namespaces
 echo " Тест 2 пройден: получение services"
 
@@ -211,7 +211,7 @@ cd test/e2e
 go test -v -timeout 300s -run TestKubeProxyE2E
 
 # Авторизация
-go test -v -timeout 300s -run TestAuthorizationE2E  
+go test -v -timeout 300s -run TestAuthorizationE2E
 
 # Метрики
 go test -v -timeout 300s -run TestMetricsE2E
@@ -354,14 +354,14 @@ kubectl logs deployment/cloudbridge-relay | grep -i error
 # Health endpoint
 curl -s http://$RELAY_URL/health | jq '.'
 
-# Ready endpoint  
+# Ready endpoint
 curl -s http://$RELAY_URL/ready | jq '.'
 
 # Состояние Kubernetes ресурсов
 kubectl get deployment,service,configmap -l app=cloudbridge-relay
 ```
 
-## 7.  Troubleshooting
+## 7. Troubleshooting
 
 ### Общие проблемы
 
@@ -401,7 +401,7 @@ kubectl --kubeconfig ~/.kube/config-relay-test get pods
 
 ### Перед обновлением:
 - [ ] Создан backup конфигурации и deployment
-- [ ] Протестированы изменения в dev/staging  
+- [ ] Протестированы изменения в dev/staging
 - [ ] Проверена совместимость с kubectl >= 1.29
 - [ ] Проверены метрики и дашборды
 - [ ] Уведомлена команда об обновлении
@@ -426,7 +426,7 @@ kubectl --kubeconfig ~/.kube/config-relay-test get pods
 ## Готово!
 
 Теперь у вас есть полный набор инструментов для:
-- **Быстрого тестирования** (5 минут)  
+- **Быстрого тестирования** (5 минут)
 - **Полного E2E тестирования** (15 минут)
 - **Безопасного обновления** production системы
 - **Мониторинга** здоровья системы

@@ -7,7 +7,7 @@
 - [x] **Создание улучшенной версии masque_support.go** - на основе masque-go подхода
 - [x] **Анализ ключевых улучшений** - error handling, Proxy-Status, Context ID управление
 
-### 🔄 **В процессе**
+### **В процессе**
 - [ ] **Изучение connect-ip-go reference** - client.go, conn.go, proxy.go
 - [ ] **Улучшение CONNECT-UDP** - интеграция masque-go подхода
 
@@ -17,7 +17,7 @@
 
 ---
 
-## 🔧 **Детальный план улучшений**
+## **Детальный план улучшений**
 
 ### **1. Завершить изучение connect-ip-go (1 день)**
 
@@ -73,23 +73,23 @@ func (ms *MASQUEServer) parseConnectUDPRequest(r *http.Request) (*masque.Request
 func (mc *MASQUEConnection) SetReadDeadline(t time.Time) error {
     mc.deadlineMx.Lock()
     defer mc.deadlineMx.Unlock()
-    
+
     oldDeadline := mc.deadline
     mc.deadline = t
     now := time.Now()
-    
+
     if t.IsZero() {
         if mc.readDeadlineTimer != nil && !mc.readDeadlineTimer.Stop() {
             <-mc.readDeadlineTimer.C
         }
         return nil
     }
-    
+
     if !t.After(now) {
         mc.readCtxCancel()
         return nil
     }
-    
+
     deadline := t.Sub(now)
     if mc.readDeadlineTimer != nil {
         if now.Before(oldDeadline) {
@@ -124,32 +124,32 @@ func (mc *MASQUEConnection) SetReadDeadline(t time.Time) error {
 ```go
 // 1. Добавить IP Route management
 type IPRoute struct {
-    Prefix  netip.Prefix
+    Prefix netip.Prefix
     Gateway netip.Addr
-    Metric  int
+    Metric int
 }
 
 // 2. Добавить Address assignment
 type Conn struct {
-    str    http3Stream
+    str http3Stream
     writes chan writeCapsule
-    
+
     assignedAddressNotify chan struct{}
     availableRoutesNotify chan struct{}
-    
-    mu                sync.Mutex
-    peerAddresses     []netip.Prefix
-    localRoutes       []IPRoute
+
+    mu sync.Mutex
+    peerAddresses []netip.Prefix
+    localRoutes []IPRoute
     assignedAddresses []netip.Prefix
-    availableRoutes   []IPRoute
-    
+    availableRoutes []IPRoute
+
     closeChan chan struct{}
-    closeErr  error
+    closeErr error
 }
 
 // 3. Добавить ICMP support
 const (
-    ipProtoICMP   = 1
+    ipProtoICMP = 1
     ipProtoICMPv6 = 58
 )
 
@@ -159,7 +159,7 @@ const minMTU = 1280
 // 5. Добавить Capsule handling
 type writeCapsule struct {
     capsule appendable
-    result  chan error
+    result chan error
 }
 ```
 
@@ -287,5 +287,5 @@ func TestMASQUEIntegration(t *testing.T) {
 - [ ] Создать performance тесты
 - [ ] Оптимизировать производительность
 
-**Готово к реализации! 🎯**
+**Готово к реализации! **
 

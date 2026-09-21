@@ -90,7 +90,7 @@ UserParameter=ai.routes_optimized,echo "0"
 UserParameter=ai.requests_per_second,echo "0.0"
 ```
 
-## 🛠️ Методология проверки метрик
+## Методология проверки метрик
 
 ### Шаг 1: Проверка источника данных
 
@@ -100,8 +100,8 @@ UserParameter=ai.requests_per_second,echo "0.0"
    ```bash
    # CloudBridge Relay Prometheus
    curl -s "http://192.168.49.2:30081/metrics" | grep "METRIC_NAME"
-   
-   # AI Service Prometheus  
+
+   # AI Service Prometheus
    curl -s "http://192.168.49.2:30083/metrics" | grep "METRIC_NAME"
    ```
 
@@ -134,7 +134,7 @@ UserParameter=ai.requests_per_second,echo "0.0"
 - `/usr/local/bin/ai_stats_collector.sh`
 - `/usr/local/bin/p2p_quic_latency_collector.sh`
 
-## 📁 Структура системы мониторинга
+## Структура системы мониторинга
 
 ### Источники метрик
 
@@ -143,7 +143,7 @@ UserParameter=ai.requests_per_second,echo "0.0"
    - GRPC метрики
    - Системные метрики (memory, CPU, goroutines)
 
-2. **AI Service Prometheus**: `http://192.168.49.2:30083/metrics`  
+2. **AI Service Prometheus**: `http://192.168.49.2:30083/metrics`
    - AI-специфичные метрики
    - HTTP метрики
    - Processing time и accuracy
@@ -163,7 +163,7 @@ UserParameter=ai.requests_per_second,echo "0.0"
 - Содержит все UserParameters
 - Скрипты коллекторов в `/usr/local/bin/`
 
-## 🔧 Инструкции по сборке и развертыванию
+## Инструкции по сборке и развертыванию
 
 ### Сборка образов в Minikube
 
@@ -171,19 +171,19 @@ UserParameter=ai.requests_per_second,echo "0.0"
    ```bash
    # Перейти в корень проекта
    cd /home/ubuntu/cloudbridge-relay-installer
-   
+
    # Создать тег для образа
    TAG="updated-metrics-$(date +%Y%m%d-%H%M%S)"
-   
+
    # Собрать образ AI Service
    docker build -t ai-service:$TAG -f Dockerfile.ai-service .
-   
+
    # Загрузить в Minikube
    minikube image load ai-service:$TAG
-   
+
    # Обновить deployment
    kubectl set image deployment/ai-service ai-service=ai-service:$TAG -n cloudbridge
-   
+
    # Дождаться обновления
    kubectl rollout status deployment/ai-service -n cloudbridge --timeout=180s
    ```
@@ -192,10 +192,10 @@ UserParameter=ai.requests_per_second,echo "0.0"
    ```bash
    # Собрать Relay
    docker build -t cloudbridge-relay:$TAG -f Dockerfile.relay .
-   
-   # Загрузить в Minikube  
+
+   # Загрузить в Minikube
    minikube image load cloudbridge-relay:$TAG
-   
+
    # Обновить deployment
    kubectl set image deployment/cloudbridge-relay cloudbridge-relay=cloudbridge-relay:$TAG -n cloudbridge
    ```
@@ -262,17 +262,17 @@ zabbix_get -s localhost -k METRIC_NAME
 
 1. **Все метрики показывают реальные данные**
 2. **Значения изменяются в реальном времени**
-3. **Нет hardcoded числовых значений в UserParameters** 
+3. **Нет hardcoded числовых значений в UserParameters**
 4. **Система мониторинга отражает фактическое состояние**
 5. **Документация обновлена**
 
-## 📞 Контакты для вопросов
+## Контакты для вопросов
 
 При возникновении вопросов по техническим деталям или требованиям к реализации, обращайтесь к техническому руководителю проекта.
 
 ---
 
-**Приоритет**: Высокий  
-**Deadline**: 7 рабочих дней  
+**Приоритет**: Высокий
+**Deadline**: 7 рабочих дней
 **Ответственный**: Разработчик Backend/DevOps
 

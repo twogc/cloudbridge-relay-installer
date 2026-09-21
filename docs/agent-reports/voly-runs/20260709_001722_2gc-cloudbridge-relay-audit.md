@@ -8,7 +8,7 @@
 
 ---
 
-##  [mimo] mimo: тесты + архитектурный аудит
+## [mimo] mimo: тесты + архитектурный аудит
 *00:16:49 → 00:16:54*
 Tokens: 453↑ 207↓ | 4126ms
 
@@ -25,7 +25,7 @@ Tokens: 453↑ 207↓ | 4126ms
 </tool_call>
 ```
 
-##  [cursor] cursor: quick wins из аудита
+## [cursor] cursor: quick wins из аудита
 *00:16:55 → 00:17:12*
 Tokens: 0↑ 0↓ | 14442ms
 
@@ -38,7 +38,7 @@ Tokens: 0↑ 0↓ | 14442ms
 
 ```97:100:/home/user1/git/cloudbridge-relay-installer/Makefile
 test-critical: ## Тесты критических компонентов
-	@echo "🔥 Тестирование критических компонентов..."
+	@echo " Тестирование критических компонентов..."
 	go test -v -race -cover ./internal/token/... ./internal/auth/... ./internal/p2p/... ./internal/api/... ./internal/quic/... ./internal/zitadel/... ./config/...
 	@echo "Критические тесты завершены"
 ```
@@ -53,7 +53,7 @@ test-critical: ## Тесты критических компонентов
 ... [702 more chars]
 ```
 
-##  [mimo] mimo: финальный отчёт оркестрации
+## [mimo] mimo: финальный отчёт оркестрации
 *00:17:13 → 00:17:22*
 Tokens: 381↑ 732↓ | 8968ms
 

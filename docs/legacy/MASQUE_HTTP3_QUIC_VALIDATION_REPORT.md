@@ -2,10 +2,10 @@
 
 ## **Краткое резюме**
 
-**Статус**: **ЗАВЕРШЕНО**  
-**Дата**: 21 сентября 2025  
-**Компонент**: MASQUE HTTP/3 сервер  
-**Порт**: 8443  
+**Статус**: **ЗАВЕРШЕНО**
+**Дата**: 21 сентября 2025
+**Компонент**: MASQUE HTTP/3 сервер
+**Порт**: 8443
 
 ### **Результат проверки:**
 MASQUE реализация для HTTP/3/QUIC была проанализирована и исправлена. Выявлены и устранены критические проблемы в конфигурации HTTP/3 сервера и обработке HTTP Datagrams.
@@ -14,7 +14,7 @@ MASQUE реализация для HTTP/3/QUIC была проанализиро
 
 ## **Выявленные проблемы**
 
-### **1.  Отсутствие EnableDatagrams в HTTP/3 сервере**
+### **1. Отсутствие EnableDatagrams в HTTP/3 сервере**
 **Проблема**: HTTP/3 сервер не был настроен для поддержки datagrams
 **Файл**: `cmd/relay/masque_support.go:199-208`
 **Исправление**: Добавлен `EnableDatagrams: true` в конфигурацию HTTP/3 сервера
@@ -22,8 +22,8 @@ MASQUE реализация для HTTP/3/QUIC была проанализиро
 ```go
 // ДО:
 ms.http3Server = &http3.Server{
-    Addr:      ":8443",
-    Handler:   ms.createHTTPHandler(),
+    Addr: ":8443",
+    Handler: ms.createHTTPHandler(),
     TLSConfig: tlsConfig,
     QUICConfig: &quic.Config{
         MaxIdleTimeout: 30 * time.Second,
@@ -32,18 +32,18 @@ ms.http3Server = &http3.Server{
 
 // ПОСЛЕ:
 ms.http3Server = &http3.Server{
-    Addr:            ":8443",
-    Handler:         ms.createHTTPHandler(),
-    TLSConfig:       tlsConfig,
+    Addr: ":8443",
+    Handler: ms.createHTTPHandler(),
+    TLSConfig: tlsConfig,
     EnableDatagrams: true, // Критично для MASQUE HTTP Datagrams
     QUICConfig: &quic.Config{
-        MaxIdleTimeout:  30 * time.Second,
+        MaxIdleTimeout: 30 * time.Second,
         EnableDatagrams: true, // Включаем QUIC datagrams
     },
 }
 ```
 
-### **2.  Неправильная обработка HTTP/3 Stream**
+### **2. Неправильная обработка HTTP/3 Stream**
 **Проблема**: Код пытался получить HTTP/3 stream неправильным способом
 **Файл**: `cmd/relay/masque_support.go:472-498`
 **Исправление**: Добавлен альтернативный способ получения stream
@@ -69,7 +69,7 @@ if !ok {
 }
 ```
 
-### **3.  Проблемы с обработкой Context ID в datagrams**
+### **3. Проблемы с обработкой Context ID в datagrams**
 **Проблема**: Неправильная обработка HTTP Datagrams согласно RFC 9297
 **Файл**: `cmd/relay/masque_support.go:528-602`
 **Исправление**: Улучшена обработка HTTP Datagrams с правильным парсингом Context ID
@@ -96,7 +96,7 @@ if err != nil {
 }
 ```
 
-### **4.  Отсутствие проверки инициализации IP Capsule Manager**
+### **4. Отсутствие проверки инициализации IP Capsule Manager**
 **Проблема**: Код пытался использовать неинициализированный `ipCapsuleManager`
 **Файл**: `cmd/relay/masque_support.go:605-641`
 **Исправление**: Добавлена проверка инициализации
@@ -170,7 +170,7 @@ if ms.ipCapsuleManager == nil {
     "proxy_url": "https://auth.2gc.ru:8443",
     "alpn_protocols": [
       "h3",
-      "h3-29", 
+      "h3-29",
       "h3-28",
       "h3-27"
     ],
@@ -182,12 +182,12 @@ if ms.ipCapsuleManager == nil {
 ### **HTTP/3 сервер конфигурация:**
 ```go
 ms.http3Server = &http3.Server{
-    Addr:            ":8443",
-    Handler:         ms.createHTTPHandler(),
-    TLSConfig:       tlsConfig,
+    Addr: ":8443",
+    Handler: ms.createHTTPHandler(),
+    TLSConfig: tlsConfig,
     EnableDatagrams: true, // Включено
     QUICConfig: &quic.Config{
-        MaxIdleTimeout:  30 * time.Second,
+        MaxIdleTimeout: 30 * time.Second,
         EnableDatagrams: true, // Включено
     },
 }
@@ -215,11 +215,11 @@ ms.http3Server = &http3.Server{
 
 ---
 
-##  **Endpoints**
+## **Endpoints**
 
 ### **MASQUE endpoints:**
 - `/.well-known/masque/udp/` - CONNECT-UDP
-- `/.well-known/masque/ip/` - CONNECT-IP  
+- `/.well-known/masque/ip/` - CONNECT-IP
 - `/.well-known/masque/datagrams/` - HTTP Datagrams
 - `/health` - Health check
 
@@ -281,7 +281,7 @@ MASQUE реализация для HTTP/3/QUIC была успешно пров�
 
 ---
 
-## 📞 **Контакты**
+## **Контакты**
 
 - **Файлы**: `cmd/relay/masque_support.go`, `cmd/relay/masque_validation_test.go`
 - **Конфигурация**: `configs/config.json`
@@ -289,8 +289,8 @@ MASQUE реализация для HTTP/3/QUIC была успешно пров�
 
 ---
 
-*Отчет создан: 21 сентября 2025*  
-*Статус: Завершено*  
+*Отчет создан: 21 сентября 2025*
+*Статус: Завершено*
 *Приоритет: ВЫСОКИЙ*
 
 

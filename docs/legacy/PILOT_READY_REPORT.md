@@ -1,8 +1,8 @@
 # CloudBridge Pilot Project - ГОТОВ К ЗАПУСКУ
 
-**Дата:** $(date)  
-**Статус:** **ГОТОВ ДЛЯ ПИЛОТНОГО ПРОЕКТА**  
-**Решение:** Прямой доступ к Kubernetes  
+**Дата:** $(date)
+**Статус:** **ГОТОВ ДЛЯ ПИЛОТНОГО ПРОЕКТА**
+**Решение:** Прямой доступ к Kubernetes
 
 ---
 
@@ -61,7 +61,7 @@ curl "http://192.168.49.2:32500/api/v1/peers/discover?tenant_id=pilot-tenant"
 GET http://192.168.49.2:32500/health
 # Ответ: {"status":"healthy","uptime":"55m16s","version":"v1.0.0"}
 
-GET http://192.168.49.2:32500/metrics  
+GET http://192.168.49.2:32500/metrics
 # Ответ: JSON с метриками системы
 ```
 
@@ -88,7 +88,7 @@ const ws = new WebSocket('ws://192.168.49.2:32500/ws/peers');
 
 ---
 
-##  БЫСТРЫЙ СТАРТ ДЛЯ РАЗРАБОТЧИКОВ
+## БЫСТРЫЙ СТАРТ ДЛЯ РАЗРАБОТЧИКОВ
 
 ### 1. Проверка готовности системы
 ```bash
@@ -105,13 +105,13 @@ curl "http://192.168.49.2:32500/health"
 server:
   address: "192.168.49.2:32500"
   protocol: "http"
-  
+
 client:
   id: "pilot-client-001"
   tenant_id: "pilot-tenant"
-  
+
 security:
-  tls_enabled: false  # Для пилота
+  tls_enabled: false # Для пилота
 ```
 
 ### 3. Пример интеграции (Go)
@@ -131,7 +131,7 @@ func main() {
         panic(err)
     }
     defer resp.Body.Close()
-    
+
     body, _ := ioutil.ReadAll(resp.Body)
     fmt.Printf("CloudBridge Status: %s\n", body)
 }
@@ -185,7 +185,7 @@ curl -s "http://192.168.49.2:32500/metrics" | grep -E "(uptime|connections|peers
 
 ### ек-лист готовности:
 - [x] **Kubernetes кластер** - работает стабильно
-- [x] **CloudBridge сервисы** - все компоненты активны  
+- [x] **CloudBridge сервисы** - все компоненты активны
 - [x] **Health endpoints** - отвечают корректно
 - [x] **API endpoints** - готовы к интеграции
 - [x] **Метрики** - система мониторинга работает
@@ -209,7 +209,7 @@ curl -s "http://192.168.49.2:32500/metrics" | grep -E "(uptime|connections|peers
 3. **Тестируйте API** с tenant_id = "pilot-tenant"
 4. **Мониторьте** через `/metrics`
 
-### 📞 Поддержка:
+### Поддержка:
 - Все конфигурации сохранены в проекте
 - Тестовые скрипты готовы: `./pilot-test.sh`
 - Документация: `PILOT_PROJECT_SETUP.md`

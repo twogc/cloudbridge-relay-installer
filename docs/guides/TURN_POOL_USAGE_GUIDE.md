@@ -10,7 +10,7 @@ TURN Pool Manager - это полнофункциональная система
 - **Гибкую конфигурацию** пулов и серверов
 - **Интеграцию с ICE agent** для NAT traversal
 
-##  **Конфигурация**
+## **Конфигурация**
 
 ### **Основные параметры в `config.json`:**
 
@@ -76,12 +76,12 @@ TURN Pool Manager - это полнофункциональная система
 ```go
 // Создание конфигурации
 config := &nat.TURNPoolConfig{
-    DefaultPoolName:         "primary",
-    AllocationTimeout:       10 * time.Minute,
-    HealthCheckInterval:     30 * time.Second,
+    DefaultPoolName: "primary",
+    AllocationTimeout: 10 * time.Minute,
+    HealthCheckInterval: 30 * time.Second,
     MaxAllocationsPerClient: 10,
-    LoadBalancingStrategy:   "weighted",
-    MetricsEnabled:          true,
+    LoadBalancingStrategy: "weighted",
+    MetricsEnabled: true,
 }
 
 // Создание TURN Pool Manager
@@ -100,17 +100,17 @@ if err != nil {
 // Добавление сервера в пул
 server := &nat.TURNServerInfo{
     TURNServerPool: &nat.TURNServerPool{
-        Address:        "turn1.example.com:3478",
-        Username:       "user",
-        Password:       "pass",
-        Realm:          "example.com",
-        Priority:       100,
-        Weight:         80,
+        Address: "turn1.example.com:3478",
+        Username: "user",
+        Password: "pass",
+        Realm: "example.com",
+        Priority: 100,
+        Weight: 80,
         MaxConnections: 1000,
     },
-    Region:   "us-east1",
+    Region: "us-east1",
     Provider: "aws",
-    Tags:     map[string]string{"tier": "primary"},
+    Tags: map[string]string{"tier": "primary"},
 }
 
 err = manager.AddServerToPool("production", server)
@@ -121,10 +121,10 @@ err = manager.AddServerToPool("production", server)
 ```go
 // Создание allocation с предпочтениями
 preferences := &nat.AllocationPreferences{
-    PreferredRegion:   "us-east1",
+    PreferredRegion: "us-east1",
     PreferredProvider: "aws",
-    MaxLatency:        50 * time.Millisecond,
-    PoolName:          "production",
+    MaxLatency: 50 * time.Millisecond,
+    PoolName: "production",
 }
 
 allocation, err := manager.AllocateTURN("client-123", preferences)
@@ -133,8 +133,8 @@ if err != nil {
     return
 }
 
-log.Printf("Allocated TURN: %s on server %s", 
-    allocation.AllocationID, 
+log.Printf("Allocated TURN: %s on server %s",
+    allocation.AllocationID,
     allocation.Server.Address)
 ```
 
@@ -153,8 +153,8 @@ if err != nil {
 ```go
 // Создание ICE Agent с TURN Pool Manager
 iceAgent := nat.NewICEAgentWithTURNPoolManager(
-    logger, 
-    stunServers, 
+    logger,
+    stunServers,
     turnPoolManager,
 )
 
@@ -196,14 +196,14 @@ fmt.Printf("Healthy servers: %d\n", stats["healthy_servers"])
 // Список активных allocations
 allocations := manager.ListAllocations()
 for _, alloc := range allocations {
-    fmt.Printf("Allocation %s: client %s on %s\n", 
-        alloc.AllocationID, 
-        alloc.ClientID, 
+    fmt.Printf("Allocation %s: client %s on %s\n",
+        alloc.AllocationID,
+        alloc.ClientID,
         alloc.Server.Address)
 }
 ```
 
-## ⚙️ **Стратегии балансировки нагрузки**
+## **Стратегии балансировки нагрузки**
 
 ### **1. Round Robin (`"round_robin"`):**
 - Равномерное распределение между серверами
@@ -218,7 +218,7 @@ for _, alloc := range allocations {
 - Выбор сервера с наименьшим количеством соединений
 - Оптимальная балансировка нагрузки
 
-## 🔥 **Failover и отказоустойчивость**
+## **Failover и отказоустойчивость**
 
 ### **Health Checking:**
 - Автоматическая проверка доступности серверов
@@ -269,7 +269,7 @@ for _, alloc := range allocations {
 - Мониторьте latency и connection counts
 - Настройте алерты на критические события
 
-##  **Устранение неполадок**
+## **Устранение неполадок**
 
 ### **Частые проблемы:**
 

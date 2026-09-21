@@ -6,11 +6,11 @@
 ## Текущее состояние
 - Базовые отчеты работают
 - етрики собираются (ai_anomalies_detected_total: 27, ai_predictions_made_total: 27, etc.)
--  Отсутствует реальная интеграция с Cloudflare AI
--  Отчеты содержат только сырые данные без анализа
--  Нет профессиональных рекомендаций
+- Отсутствует реальная интеграция с Cloudflare AI
+- Отчеты содержат только сырые данные без анализа
+- Нет профессиональных рекомендаций
 
-##  Задачи для разработчика
+## Задачи для разработчика
 
 ### 1. Реальная интеграция с Cloudflare AI
 
@@ -18,11 +18,11 @@
 ```go
 // internal/ai/analytics/cloudflare_client.go
 type CloudflareAIClient struct {
-    APIURL     string
-    AccountID  string
-    Token      string
-    Model      string
-    Language   string
+    APIURL string
+    AccountID string
+    Token string
+    Model string
+    Language string
 }
 
 func (c *CloudflareAIClient) GenerateReport(metrics MetricsData, prompt string) (*AIReport, error) {
@@ -34,12 +34,12 @@ func (c *CloudflareAIClient) GenerateReport(metrics MetricsData, prompt string) 
 #### 1.2 Создать профессиональный промпт для Cloudflare AI
 ```go
 const PROFESSIONAL_PROMPT = `
-Ты - эксперт по анализу систем мониторинга CloudBridge AI. 
+Ты - эксперт по анализу систем мониторинга CloudBridge AI.
 Проанализируй следующие метрики и создай профессиональный отчет на русском языке.
 
 МЕТРИКИ СИСТЕМЫ:
 - Обнаружено аномалий: %d
-- Сделано предсказаний: %d  
+- Сделано предсказаний: %d
 - Обработано запросов: %d
 - Оптимизировано маршрутов: %d
 - Точность предсказаний: %.2f
@@ -72,30 +72,30 @@ const PROFESSIONAL_PROMPT = `
 #### 2.1 Создать структуру данных для отчета
 ```go
 type AIReport struct {
-    Timestamp     time.Time `json:"timestamp"`
-    SystemStatus  string    `json:"system_status"`  // "excellent", "good", "attention", "critical"
-    HealthScore   int       `json:"health_score"`   // 0-100
-    
+    Timestamp time.Time `json:"timestamp"`
+    SystemStatus string `json:"system_status"` // "excellent", "good", "attention", "critical"
+    HealthScore int `json:"health_score"` // 0-100
+
     Analysis struct {
-        OverallAssessment string   `json:"overall_assessment"`
-        Performance      string   `json:"performance"`
-        Issues           []string `json:"issues"`
-        Recommendations  []string `json:"recommendations"`
-        Forecast         string   `json:"forecast"`
+        OverallAssessment string `json:"overall_assessment"`
+        Performance string `json:"performance"`
+        Issues []string `json:"issues"`
+        Recommendations []string `json:"recommendations"`
+        Forecast string `json:"forecast"`
     } `json:"analysis"`
-    
+
     Metrics struct {
-        AnomaliesDetected    int     `json:"anomalies_detected"`
-        PredictionsMade      int     `json:"predictions_made"`
-        RequestsProcessed    int     `json:"requests_processed"`
-        RoutesOptimized      int     `json:"routes_optimized"`
-        PredictionAccuracy   float64 `json:"prediction_accuracy"`
-        CPUUsage            float64 `json:"cpu_usage"`
-        MemoryUsage         float64 `json:"memory_usage"`
-        DiskUsage           float64 `json:"disk_usage"`
-        ActiveAlerts        int     `json:"active_alerts"`
-        ProcessingTime      float64 `json:"processing_time"`
-        ServiceUptime       float64 `json:"service_uptime"`
+        AnomaliesDetected int `json:"anomalies_detected"`
+        PredictionsMade int `json:"predictions_made"`
+        RequestsProcessed int `json:"requests_processed"`
+        RoutesOptimized int `json:"routes_optimized"`
+        PredictionAccuracy float64 `json:"prediction_accuracy"`
+        CPUUsage float64 `json:"cpu_usage"`
+        MemoryUsage float64 `json:"memory_usage"`
+        DiskUsage float64 `json:"disk_usage"`
+        ActiveAlerts int `json:"active_alerts"`
+        ProcessingTime float64 `json:"processing_time"`
+        ServiceUptime float64 `json:"service_uptime"`
     } `json:"metrics"`
 }
 ```
@@ -112,23 +112,23 @@ func (s *AIService) GenerateAIReport(c *gin.Context) {
 
     // Получаем реальные метрики
     metrics := s.collectRealMetrics()
-    
+
     // Генерируем отчет через Cloudflare AI
     report, err := s.cloudflareAI.GenerateReport(metrics, PROFESSIONAL_PROMPT)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
-    
+
     // Отправляем в Telegram
     if err := s.sendTelegramReport(report); err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
     }
-    
+
     c.JSON(http.StatusOK, gin.H{
         "message": "AI report generated and sent successfully",
-        "report":  report,
+        "report": report,
     })
 }
 ```
@@ -157,7 +157,7 @@ spec:
             - -c
             - |
               echo "Generating professional AI report via Cloudflare AI..."
-              
+
               # Вызываем AI сервис для генерации отчета
               RESPONSE=$(curl -s -X POST "http://ai-service.cloudbridge.svc.cluster.local:8083/api/v1/ai/generate-report" \
                 -H "Content-Type: application/json" \
@@ -171,7 +171,7 @@ spec:
                   "include_recommendations": true,
                   "include_forecast": true
                 }' 2>/dev/null)
-              
+
               if [ -n "$RESPONSE" ]; then
                 echo "AI report generated successfully: $RESPONSE"
                 exit 0
@@ -187,12 +187,12 @@ spec:
 ```go
 func (s *AIService) formatTelegramReport(report *AIReport) string {
     statusEmoji := getStatusEmoji(report.SystemStatus)
-    
+
     return fmt.Sprintf(`%s <b>Отчет системы CloudBridge AI</b>
 
 <b>Статус системы:</b> %s (Оценка: %d/100)
-<b>🕐 Время:</b> %s
-<b>🏷️ Namespace:</b> cloudbridge
+<b> Время:</b> %s
+<b> Namespace:</b> cloudbridge
 
 <b>Ключевые метрики:</b>
 • Обнаружено аномалий: %d
@@ -213,10 +213,10 @@ func (s *AIService) formatTelegramReport(report *AIReport) string {
 <b> Рекомендации:</b>
 %s
 
-<b>🔮 Прогноз:</b>
+<b> Прогноз:</b>
 %s
 
-<b>⚙️ Конфигурация:</b>
+<b> Конфигурация:</b>
 • Мониторинг: Активен
 • Уведомления: Включены
 • Интервал отчетов: 1 час
@@ -244,9 +244,9 @@ func getStatusEmoji(status string) string {
     switch status {
     case "excellent": return ""
     case "good": return ""
-    case "attention": return "🟠"
+    case "attention": return ""
     case "critical": return ""
-    default: return "⚪"
+    default: return ""
     }
 }
 ```
@@ -260,7 +260,7 @@ func (s *AIService) generateReportWithFallback(metrics MetricsData) (*AIReport, 
     if report, err := s.cloudflareAI.GenerateReport(metrics, PROFESSIONAL_PROMPT); err == nil {
         return report, nil
     }
-    
+
     // Fallback: локальный анализ
     s.logger.Warn("Cloudflare AI unavailable, using local analysis")
     return s.generateLocalAnalysis(metrics), nil
@@ -270,18 +270,18 @@ func (s *AIService) generateLocalAnalysis(metrics MetricsData) *AIReport {
     // Локальный анализ с базовыми правилами
     healthScore := s.calculateHealthScore(metrics)
     status := s.determineSystemStatus(healthScore)
-    
+
     return &AIReport{
-        Timestamp:    time.Now(),
+        Timestamp: time.Now(),
         SystemStatus: status,
-        HealthScore:  healthScore,
-        Metrics:      metrics,
+        HealthScore: healthScore,
+        Metrics: metrics,
         Analysis: Analysis{
             OverallAssessment: s.generateOverallAssessment(metrics),
-            Performance:      s.analyzePerformance(metrics),
-            Issues:          s.identifyIssues(metrics),
+            Performance: s.analyzePerformance(metrics),
+            Issues: s.identifyIssues(metrics),
             Recommendations: s.generateRecommendations(metrics),
-            Forecast:        s.generateForecast(metrics),
+            Forecast: s.generateForecast(metrics),
         },
     }
 }
@@ -342,8 +342,8 @@ func (s *AIService) generateLocalAnalysis(metrics MetricsData) *AIReport {
 Отчет системы CloudBridge AI
 
 Статус системы: excellent (Оценка: 95/100)
-🕐 Время: 2025-09-25 15:00:00 UTC
-🏷️ Namespace: cloudbridge
+ Время: 2025-09-25 15:00:00 UTC
+ Namespace: cloudbridge
 
 Ключевые метрики:
 • Обнаружено аномалий: 27
@@ -356,9 +356,9 @@ func (s *AIService) generateLocalAnalysis(metrics MetricsData) *AIReport {
 • Активные алерты: 0
 
 AI Анализ:
-Система CloudBridge AI демонстрирует отличную производительность. 
-AI компоненты работают стабильно, обрабатывая 27 запросов с высокой точностью предсказаний (85.5%). 
-Обнаружение 27 аномалий указывает на активный мониторинг сетевой активности. 
+Система CloudBridge AI демонстрирует отличную производительность.
+AI компоненты работают стабильно, обрабатывая 27 запросов с высокой точностью предсказаний (85.5%).
+Обнаружение 27 аномалий указывает на активный мониторинг сетевой активности.
 Низкое использование ресурсов (CPU: 12.3%, память: 256.7 MB) свидетельствует об эффективной работе.
 
 Выявленные проблемы:
@@ -369,18 +369,18 @@ AI компоненты работают стабильно, обрабатыв�
 • Продолжить мониторинг аномалий для раннего выявления проблем
 • Оптимизировать алгоритмы для снижения времени обработки
 
-🔮 Прогноз:
-При текущих показателях система будет стабильно работать в ближайшие 24 часа. 
+ Прогноз:
+При текущих показателях система будет стабильно работать в ближайшие 24 часа.
 Рекомендуется еженедельный анализ трендов для долгосрочной оптимизации.
 
-⚙️ Конфигурация:
+ Конфигурация:
 • Мониторинг: Активен
 • Уведомления: Включены
 • Интервал отчетов: 1 час
 • Cloudflare AI: Интегрирован
 ```
 
-##  Технические детали
+## Технические детали
 
 ### Переменные окружения:
 ```bash
@@ -404,7 +404,7 @@ data:
   CLOUDFLARE_ACCOUNT_ID: <base64-encoded-account-id>
 ```
 
-## 📞 Контакты
+## Контакты
 - **Ответственный разработчик**: [Имя разработчика]
 - **Дата начала**: [Дата]
 - **Планируемая дата завершения**: [Дата + 5-7 дней]

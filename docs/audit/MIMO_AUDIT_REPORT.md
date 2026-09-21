@@ -1,12 +1,12 @@
 # MiMo Audit Report — CloudBridge Relay Installer
 
-**Дата аудита (snapshot):** 2026-07-08  
-**Модель:** mimo-v2.5-pro  
+**Дата аудита (snapshot):** 2026-07-08
+**Модель:** mimo-v2.5-pro
 **Последнее согласование docs/status:** 2026-07-09 (doc-sync после VOLY-миссий; см. [agent-reports](../agent-reports/))
 
-> **Как читать:**  
-> - **Чеклист §«Рекомендуемый план»** и **§«Статус после миссий»** — актуальная правда.  
-> - Таблицы findings ниже обновлены: закрытое помечено ✅ / ~~strikethrough~~; open items без галочки.  
+> **Как читать:**
+> - **Чеклист §«Рекомендуемый план»** и **§«Статус после миссий»** — актуальная правда.
+> - Таблицы findings ниже обновлены: закрытое помечено / ~~strikethrough~~; open items без галочки.
 > - Исторический snapshot 2026-07-08 сохранён в формулировках «было»; не трактовать закрытые rows как TODO.
 
 **Статус тестов (актуально):** score-ports + k8s-prod-fix (2026-07-09): `go build ./cmd/relay/ ./cmd/ipam-service/ ./cmd/ai-worker/ ./cmd/ai-service/` OK; auxiliary порты IPAM **8080**, AI **8083**, AI Worker **8085** = `openwiki/port-scheme.md` + `cmd/*` + `k8s/` ops + `SERVICE_CATALOG`. `k8s-manifests/05–06` без `nginx:latest`. Cadence-ai: partial test FAIL pre-existing. Go **1.25.12**.
@@ -23,11 +23,11 @@ CloudBridge Relay Installer — Go-монорепозиторий (~175 000 ст
 
 | Было (критика аудита) | Стало |
 |----------------------|--------|
-| Keycloak + Django + quantum в коде/скриптах | ✅ Удалены (fixes); IAM canonical = **Zitadel** |
-| Порты в 3+ источниках | ✅ SoT = `openwiki/port-scheme.md`; IPAM 8080 / AI 8083 / Worker 8085 |
-| nginx stubs в `k8s-manifests/05–06` | ✅ P0 fix (k8s-prod-fix): production images + ports |
-| Network score/retry тройки, AI real/optimized | ✅ Canonical production / `ai.Service` |
-| Неясный deploy path | ✅ `openwiki/deploy.md` + roles `k8s-manifests/` prod / `k8s/` ops |
+| Keycloak + Django + quantum в коде/скриптах | Удалены (fixes); IAM canonical = **Zitadel** |
+| Порты в 3+ источниках | SoT = `openwiki/port-scheme.md`; IPAM 8080 / AI 8083 / Worker 8085 |
+| nginx stubs в `k8s-manifests/05–06` | P0 fix (k8s-prod-fix): production images + ports |
+| Network score/retry тройки, AI real/optimized | Canonical production / `ai.Service` |
+| Неясный deploy path | `openwiki/deploy.md` + roles `k8s-manifests/` prod / `k8s/` ops |
 
 **Остаётся:** Cadence dual-path merge; wiring SCORE allocator; full k8s/terraform/monitoring merge; residual port drift (AI metrics 8084, relay prometheus annotation); `docs/legacy/`; часть Keycloak-упоминаний в legacy Go examples.
 
@@ -38,12 +38,12 @@ CloudBridge Relay Installer — Go-монорепозиторий (~175 000 ст
 | Проверка | Статус | Примечание |
 |---|---|---|
 | `go build ./...` | Частично | Основной код OK; `go build ./...` падает из‑за `rep/` (`.gitignore`, go-rod examples) — Makefile `GO_PKGS` исключает |
-| `go test -short ./internal/auth/... ./internal/zitadel/... ./internal/network/... ./config/...` | ✅ OK | auth + zitadel с `-short`; network/config — нет test files |
-| `go build ./cmd/relay/ ./cmd/ipam-service/ ./cmd/ai-worker/ ./cmd/ai-service/` | ✅ OK | score-ports / k8s-prod-fix 2026-07-09 |
+| `go test -short ./internal/auth/... ./internal/zitadel/... ./internal/network/... ./config/...` | OK | auth + zitadel с `-short`; network/config — нет test files |
+| `go build ./cmd/relay/ ./cmd/ipam-service/ ./cmd/ai-worker/ ./cmd/ai-service/` | OK | score-ports / k8s-prod-fix 2026-07-09 |
 | `go test -short ./internal/cadence/... ./internal/ai/...` | Частично | activities/workflows/pipeline OK; FAIL client_test, integrations_test, routing real_data (pre-existing) |
 | `go test ./...` (полный) | Частично | Без `-short` zitadel может FAIL (live OIDC) |
-| `make test-critical` | ✅ | `./internal/zitadel/...` (не keycloak) |
-| go.mod Go version | ✅ | **`1.25.12`** |
+| `make test-critical` | | `./internal/zitadel/...` (не keycloak) |
+| go.mod Go version | | **`1.25.12`** |
 
 ---
 
@@ -51,19 +51,19 @@ CloudBridge Relay Installer — Go-монорепозиторий (~175 000 ст
 
 | Объект | Тип | Статус (2026-07-09) | Приоритет (было) |
 |---|---|---|---|
-| ~~`cmd/quantum-service/main.go`~~ | Заглушка | ✅ Удалён; остался `DISABLED.md` | Средний |
-| ~~`internal/quantum/`~~ | Пакет | ✅ Удалён (fixes) | Средний |
-| ~~`internal/metrics/quantum.go`~~ | Метрики | ✅ Удалён | Средний |
-| ~~`internal/cadence/workflows/quantum.go`~~ | Workflow | ✅ Удалён | Средний |
-| ~~`src/` (cli.ts, index.ts)~~ | TS-SDK | ✅ Удалён | Высокий |
+| ~~`cmd/quantum-service/main.go`~~ | Заглушка | Удалён; остался `DISABLED.md` | Средний |
+| ~~`internal/quantum/`~~ | Пакет | Удалён (fixes) | Средний |
+| ~~`internal/metrics/quantum.go`~~ | Метрики | Удалён | Средний |
+| ~~`internal/cadence/workflows/quantum.go`~~ | Workflow | Удалён | Средний |
+| ~~`src/` (cli.ts, index.ts)~~ | TS-SDK | Удалён | Высокий |
 | `pkg/enhanced-quic/` (отдельный go.mod) | Изолированный модуль | ⏳ Open: merge или удалить | Средний |
-| ~~`internal/auth/keycloak_*`, `interfaces.go`~~ | Keycloak | ✅ Удалены (fixes) | Высокий |
-| ~~`configs/config.json` keycloak/django~~ | Конфиг | ✅ Удалены (prod installer config) | Высокий |
-| ~~`config/config.go` Django/Quantum load~~ | Конфиг-код | ✅ Удалены | Высокий |
+| ~~`internal/auth/keycloak_*`, `interfaces.go`~~ | Keycloak | Удалены (fixes) | Высокий |
+| ~~`configs/config.json` keycloak/django~~ | Конфиг | Удалены (prod installer config) | Высокий |
+| ~~`config/config.go` Django/Quantum load~~ | Конфиг-код | Удалены | Высокий |
 | `config/config.json` (dev) | Dev-конфиг | ⏳ Может ещё содержать legacy секции | Низкий |
-| ~~Keycloak scripts (8+ldap)~~ | Скрипты | ✅ Удалены (fixes) | Средний |
-| ~~`.github/workflows/*.disabled`~~ | CI | ✅ Удалены | Низкий |
-| Top-level keycloak в k8s configmaps | K8s | ✅ Top-level blocks removed; nested `keycloak_*` в zero_trust — residual | Средний |
+| ~~Keycloak scripts (8+ldap)~~ | Скрипты | Удалены (fixes) | Средний |
+| ~~`.github/workflows/*.disabled`~~ | CI | Удалены | Низкий |
+| Top-level keycloak в k8s configmaps | K8s | Top-level blocks removed; nested `keycloak_*` в zero_trust — residual | Средний |
 | Residual Keycloak *упоминания* в Go | Examples/metrics | ⏳ `internal/quic/enhanced*.go`, metrics names — не prod auth path | Низкий |
 
 ---
@@ -74,20 +74,20 @@ CloudBridge Relay Installer — Go-монорепозиторий (~175 000 ст
 
 | Пакет | v1 / v2 | Canonical | Статус |
 |---|---|---|---|
-| `internal/network/` | ~~score_* / retry_config.go~~ | `score_allocator_production.go`, `retry_config_improved.go` | ✅; **не wired** в prod |
+| `internal/network/` | ~~score_* / retry_config.go~~ | `score_allocator_production.go`, `retry_config_improved.go` | ; **не wired** в prod |
 | `internal/cadence/` | `service_client.go` / `client.go` | dual-path: relay → improved/production, ai-worker → base | ⏳ merge API отложен (intentional) |
-| `internal/nat/` | ~~`turn_server.go`~~ | `turn_server_enhanced.go` | ✅ v1 удалён (medium) |
+| `internal/nat/` | ~~`turn_server.go`~~ | `turn_server_enhanced.go` | v1 удалён (medium) |
 | `internal/health/` | `health.go`, `health_checker.go`, `comprehensive_checker.go` | — | ⏳ объединить |
-| `internal/ai/*` | ~~real_*/optimized_*~~ | `ai.Service` + detector/predictor/optimizer/collectors | ✅ cadence-ai |
+| `internal/ai/*` | ~~real_*/optimized_*~~ | `ai.Service` + detector/predictor/optimizer/collectors | cadence-ai |
 
 ### Дублирование инфраструктуры
 
 | Дубликат | Где | Статус |
 |---|---|---|
 | Terraform | `terraform/` vs `terraform-k8s/` vs `infra/` | ⏳ план в `CONSOLIDATION_PLAN.md` |
-| K8s | `k8s/` vs `k8s-manifests/` | ✅ roles split (k8s-consol); P0 stubs fixed (k8s-prod-fix); full merge ⏳ |
+| K8s | `k8s/` vs `k8s-manifests/` | roles split (k8s-consol); P0 stubs fixed (k8s-prod-fix); full merge ⏳ |
 | Prometheus / Zabbix / Deploy / Dockerfiles | см. plan | ⏳ |
-| Systemd | `quic-proxy.service` (**9090**) vs `enhanced-quic-proxy.service` (**9092**) | ❌ **не идентичны** — **не удалять** enhanced (разные порты) |
+| Systemd | `quic-proxy.service` (**9090**) vs `enhanced-quic-proxy.service` (**9092**) | **не идентичны** — **не удалять** enhanced (разные порты) |
 | Systemd | `relay.service` vs `cloudbridge-relay.service` | ⏳ оставить один |
 | Test dirs | `test/` vs `tests/` | ⏳ |
 | Nginx | `nginx/` — 10 конфигов | ⏳ |
@@ -98,7 +98,7 @@ CloudBridge Relay Installer — Go-монорепозиторий (~175 000 ст
 |---|---|
 | `docs/legacy/` (~142) | Архив; не SoT |
 | `archive/*` | Доп. архив |
-| ~~`github_actions/`~~ | ✅ Удалена (medium step 4) |
+| ~~`github_actions/`~~ | Удалена (medium step 4) |
 
 ---
 
@@ -121,8 +121,8 @@ CloudBridge Relay Installer — Go-монорепозиторий (~175 000 ст
 
 | Item | Статус |
 |------|--------|
-| AI metrics Service **8084** vs **8083** | ✅ Prod + ops Services: only **8083** (residual-port-fix) |
-| Relay `prometheus.io/port` / Service metrics | ✅ **5551** in `k8s-manifests/05–06` |
+| AI metrics Service **8084** vs **8083** | Prod + ops Services: only **8083** (residual-port-fix) |
+| Relay `prometheus.io/port` / Service metrics | **5551** in `k8s-manifests/05–06` |
 | Ops `k8s/deployments/` relay http **8080** | ⏳ Legacy ops tree |
 | Dev `config/config.json` `server.port` | ⏳ **9090** (dev-only) |
 | `mws/*` metrics **8084** | ⏳ B2B OVA templates |
@@ -133,46 +133,46 @@ CloudBridge Relay Installer — Go-монорепозиторий (~175 000 ст
 
 | Провайдер | Статус 2026-07-09 |
 |---|---|
-| **Zitadel** | ✅ Единственный IAM (`internal/auth/`, `internal/zitadel/`) |
-| **Keycloak** | ✅ Prod path удалён; residual strings/examples в quic/metrics |
-| **Django** | ✅ Структуры/секции installer config удалены |
+| **Zitadel** | Единственный IAM (`internal/auth/`, `internal/zitadel/`) |
+| **Keycloak** | Prod path удалён; residual strings/examples в quic/metrics |
+| **Django** | Структуры/секции installer config удалены |
 
-Canonical docs: `openwiki/architecture.md` (Keycloak/Django = removed).  
+Canonical docs: `openwiki/architecture.md` (Keycloak/Django = removed).
 `docs/legacy/` может ещё упоминать Keycloak — игнорировать.
 
 ### 3. Пути деплоя — canonical задокументирован
 
 | Путь | Статус |
 |---|---|
-| `scripts/deploy/deploy.sh` → `k8s-manifests/` | ✅ **Canonical prod** (`openwiki/deploy.md`) |
-| `k8s/` | ✅ **Canonical ops** (Zitadel Helm, Cadence, BGP…) |
-| `terraform-k8s/` | ✅ Cluster provisioning |
+| `scripts/deploy/deploy.sh` → `k8s-manifests/` | **Canonical prod** (`openwiki/deploy.md`) |
+| `k8s/` | **Canonical ops** (Zitadel Helm, Cadence, BGP…) |
+| `terraform-k8s/` | Cluster provisioning |
 | `terraform/`, `infra/` | ⏳ Дубликаты — plan only |
 | `ansible/` | Минимальный |
 
 ### 4. Дублирование мониторинга
 
-Без изменений с аудита: 2–4 копии Prometheus/Grafana/AlertManager/Zabbix.  
-~~`github_actions/grafana/`~~ — снято с удалением `github_actions/`.  
+Без изменений с аудита: 2–4 копии Prometheus/Grafana/AlertManager/Zabbix.
+~~`github_actions/grafana/`~~ — снято с удалением `github_actions/`.
 План: `CONSOLIDATION_PLAN.md`.
 
 ### 5. Противоречия в документации — статус
 
 | Проблема (аудит 07-08) | Статус 07-09 |
 |---|---|
-| openwiki Keycloak «Alternative OIDC» | ✅ Zitadel-only (medium) |
+| openwiki Keycloak «Alternative OIDC» | Zitadel-only (medium) |
 | ARCHITECTURE_ANALYSIS Keycloak-диаграммы | ~ partial cleanup; legacy sections may remain |
-| SERVICE_CATALOG relay 8080 vs 9090 | ✅ Catalog sync (next + score-ports) |
-| openwiki Django as provider | ✅ marked removed |
-| TURN typo "roduction Ready" | ✅ fixed SERVICE_CATALOG (doc-sync) |
-| **agent-reports SUMMARY vs later missions** | ✅ doc-sync 2026-07-09 (Superseded blocks) |
-| security README still Keycloak | ✅ Zitadel (docs-consistency pass 2) |
-| network docs metrics=9090 UDP / health=5551 mixup | ✅ INTERNET_PORTS*, PORTS_SUMMARY, SUBDOMAINS → metrics **5551** TCP |
-| ARCHITECTURE_ANALYSIS service map (quantum, cadence 8082) | ✅ aligned port-scheme (pass 2) |
+| SERVICE_CATALOG relay 8080 vs 9090 | Catalog sync (next + score-ports) |
+| openwiki Django as provider | marked removed |
+| TURN typo "roduction Ready" | fixed SERVICE_CATALOG (doc-sync) |
+| **agent-reports SUMMARY vs later missions** | doc-sync 2026-07-09 (Superseded blocks) |
+| security README still Keycloak | Zitadel (docs-consistency pass 2) |
+| network docs metrics=9090 UDP / health=5551 mixup | INTERNET_PORTS*, PORTS_SUMMARY, SUBDOMAINS → metrics **5551** TCP |
+| ARCHITECTURE_ANALYSIS service map (quantum, cadence 8082) | aligned port-scheme (pass 2) |
 
 ### 6. Go version
 
-`go.mod` → **`1.25.12`** ✅. Доступна линейка Go 1.26.x.
+`go.mod` → **`1.25.12`** . Доступна линейка Go 1.26.x.
 
 ---
 

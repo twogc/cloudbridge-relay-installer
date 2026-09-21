@@ -90,7 +90,7 @@ cadence:
   domain: "cloudbridge"
   host: "cadence-service.cloudbridge.svc.cluster.local"
   port: 7933
-  protocol: "grpc"  # Изменить с http на grpc
+  protocol: "grpc" # Изменить с http на grpc
   timeout: "30s"
 ```
 
@@ -104,9 +104,9 @@ func NewCadenceIntegration(logger *zap.Logger, host string, port int, domain str
         logger.Error("Failed to connect to Cadence", zap.Error(err))
         return nil
     }
-    
+
     client := workflowservice.NewWorkflowServiceClient(conn)
-    
+
     return &CadenceIntegration{
         logger: logger,
         client: client,
@@ -139,7 +139,7 @@ import (
 )
 ```
 
-##  План исправления
+## План исправления
 
 ### 1. Диагностика (30 минут)
 - [ ] Проверить статус Cadence
@@ -229,7 +229,7 @@ cadence:
 - AI Service создает workflow в Cadence
 - Cadence управляет AI операциями
 
-## 📝 Критерии приемки
+## Критерии приемки
 
 1. **HTTP API работает**: `curl http://cadence-service:7934/health` возвращает статус
 2. **gRPC подключение**: AI Service подключается к Cadence через gRPC
@@ -259,14 +259,14 @@ cadence:
    - Протестировать workflow
    - Убедиться в работоспособности
 
-## 📞 Контакты
+## Контакты
 
 - **Ответственный**: Разработчик Backend
 - **Куратор**: AI Team Lead
 - **Срок выполнения**: 1 рабочий день
 - **Приоритет**: Высокий
 
-##  Полезные ссылки
+## Полезные ссылки
 
 - [Cadence HTTP API Documentation](https://cadenceworkflow.io/docs/operation-guide/tools/cadence-web/)
 - [Cadence gRPC Client](https://cadenceworkflow.io/docs/go-client/)
@@ -274,6 +274,6 @@ cadence:
 
 ---
 
-*Документ создан: 2025-09-22*  
-*Версия: 1.0*  
+*Документ создан: 2025-09-22*
+*Версия: 1.0*
 *Статус: Готов к выполнению*

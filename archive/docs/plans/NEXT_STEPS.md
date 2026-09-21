@@ -46,7 +46,7 @@ curl --cert certs/relay-mtls/relay-client-cert.pem \
 
 ---
 
-## 🔧 **Этап 2: Интеграция с CloudBridge Relay (3-5 дней)**
+## **Этап 2: Интеграция с CloudBridge Relay (3-5 дней)**
 
 ### 2.1 Настройка CloudBridge Relay Server
 
@@ -62,12 +62,12 @@ auth:
     client_secret: "Wahm7Iti1VAoXsFAV1MBeMfPv1yope2IJ47utB30Pk4FgZyJFZK0ayfX4zNstkUh"
     scopes: ["openid", "profile", "email", "relay.api"]
     jwks_uri: "https://edge.2gc.ru/oauth/v2/keys"
-    
+
   # mTLS конфигурация
   mtls:
     enabled: true
     ca_cert_path: "certs/relay-mtls/cloudbridge-relay-ca-cert.pem"
-    client_cert_path: "certs/relay-mtls/relay-client-cert.pem" 
+    client_cert_path: "certs/relay-mtls/relay-client-cert.pem"
     client_key_path: "certs/relay-mtls/relay-client-key.pem"
 
   # JWT валидация
@@ -92,7 +92,7 @@ import (
     "fmt"
     "os"
     "time"
-    
+
     "golang.org/x/oauth2"
     "k8s.io/client-go/tools/auth/exec"
 )
@@ -100,29 +100,29 @@ import (
 func main() {
     // Device Code Flow для CLI
     config := &oauth2.Config{
-        ClientID:     "339537407433048367",
+        ClientID: "339537407433048367",
         Endpoint: oauth2.Endpoint{
-            AuthURL:  "https://edge.2gc.ru/oauth/v2/authorize",
+            AuthURL: "https://edge.2gc.ru/oauth/v2/authorize",
             TokenURL: "https://edge.2gc.ru/oauth/v2/token",
         },
         Scopes: []string{"openid", "profile", "email", "relay.k8s"},
     }
-    
+
     // Получаем токен через Device Code Flow
     token := getTokenViaDeviceFlow(config)
-    
+
     // Возвращаем ExecCredential
     cred := &exec.ExecCredential{
         TypeMeta: metav1.TypeMeta{
             APIVersion: "client.authentication.k8s.io/v1beta1",
-            Kind:       "ExecCredential",
+            Kind: "ExecCredential",
         },
         Status: &exec.ExecCredentialStatus{
-            Token:               token.AccessToken,
+            Token: token.AccessToken,
             ExpirationTimestamp: &metav1.Time{Time: token.Expiry},
         },
     }
-    
+
     json.NewEncoder(os.Stdout).Encode(cred)
 }
 ```
@@ -188,8 +188,8 @@ kubectl apply -f monitoring/grafana-dashboard-relay-auth.yaml
 #### Обновите DNS записи:
 ```bash
 # Добавьте A записи для production доменов
-relay-prod.2gc.space  → IP_ADDRESS
-auth-prod.2gc.space   → IP_ADDRESS
+relay-prod.2gc.space → IP_ADDRESS
+auth-prod.2gc.space → IP_ADDRESS
 ```
 
 #### Настройте production SSL сертификаты:
@@ -214,9 +214,9 @@ zitadel:
     limits:
       cpu: "2"
       memory: "4Gi"
-  
+
   externalDomain: "auth-prod.2gc.space"
-  
+
   database:
     postgres:
       host: "postgres-prod.internal"
@@ -236,13 +236,13 @@ aws s3 sync /backups/ s3://cloudbridge-backups/zitadel/
 
 ---
 
-## 📚 **Этап 5: Документация и обучение (2-3 дня)**
+## **Этап 5: Документация и обучение (2-3 дня)**
 
 ### 5.1 Создайте operational runbooks
 
 #### Документы для создания:
 - **Operations Manual** - ежедневное управление
-- **Troubleshooting Guide** - решение проблем  
+- **Troubleshooting Guide** - решение проблем
 - **Disaster Recovery Plan** - восстановление после сбоев
 - **Security Procedures** - процедуры безопасности
 
@@ -261,7 +261,7 @@ aws s3 sync /backups/ s3://cloudbridge-backups/zitadel/
 # Создание нового пользователя
 ./scripts/create-cloudbridge-user.sh username@company.com "Full Name"
 
-# Выдача доступа к проекту  
+# Выдача доступа к проекту
 ./scripts/grant-project-access.sh username@company.com project-name reader
 
 # Ротация секретов
@@ -270,7 +270,7 @@ aws s3 sync /backups/ s3://cloudbridge-backups/zitadel/
 
 ---
 
-## 🔄 **Этап 6: Continuous Operations**
+## **Этап 6: Continuous Operations**
 
 ### 6.1 Регулярные задачи
 
@@ -304,7 +304,7 @@ aws s3 sync /backups/ s3://cloudbridge-backups/zitadel/
 
 ### Функциональные тесты:
 - [ ] `grpcurl -authority relay.2gc.space:8444 --insecure list` возвращает сервисы с валидным JWT
-- [ ] `kubectl get ns --context=relay` работает через exec-plugin  
+- [ ] `kubectl get ns --context=relay` работает через exec-plugin
 - [ ] Access-denied логи содержат `tenant_id` / `client_id`
 - [ ] Grafana показывает <1% error-rate на login/token endpoints
 
@@ -333,13 +333,13 @@ aws s3 sync /backups/ s3://cloudbridge-backups/zitadel/
 
 ---
 
-## 📞 **Поддержка и контакты**
+## **Поддержка и контакты**
 
 Все файлы конфигурации, скрипты и документация находятся в:
 ```
 /home/ubuntu/cloudbridge-relay-installer/
 ```
 
-**Создано:** $(date)  
-**Статус:** Production Ready  
+**Создано:** $(date)
+**Статус:** Production Ready
 **Версия:** 1.0.0

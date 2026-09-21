@@ -26,20 +26,20 @@ CloudBridge Client - это полнофункциональный cross-platfor
 ```
 CloudBridge Client Architecture
 ├── Transport Layer
-│   ├── QUIC (primary)
-│   ├── WebSocket (fallback)
-│   ├── gRPC (API communication)
-│   └── WireGuard (L3-overlay)
+│ ├── QUIC (primary)
+│ ├── WebSocket (fallback)
+│ ├── gRPC (API communication)
+│ └── WireGuard (L3-overlay)
 ├── Security Layer
-│   ├── OIDC Authentication
-│   ├── JWT Token Management
-│   ├── TLS 1.3 Encryption
-│   └── OS Keyring Integration
+│ ├── OIDC Authentication
+│ ├── JWT Token Management
+│ ├── TLS 1.3 Encryption
+│ └── OS Keyring Integration
 ├── Network Layer
-│   ├── ICE/STUN/TURN (NAT traversal)
-│   ├── MASQUE Protocol (tunneling)
-│   ├── Connection Handover
-│   └── P2P Mesh Networking
+│ ├── ICE/STUN/TURN (NAT traversal)
+│ ├── MASQUE Protocol (tunneling)
+│ ├── Connection Handover
+│ └── P2P Mesh Networking
 └── Management Layer
     ├── Heartbeat Manager
     ├── Metrics & Monitoring
@@ -72,7 +72,7 @@ CloudBridge Client Architecture
 ```yaml
 # pkg/api/client.go
 - POST /api/v1/tenants/{tenant_id}/peers/register
-- GET  /api/v1/tenants/{tenant_id}/peers/discover
+- GET /api/v1/tenants/{tenant_id}/peers/discover
 - POST /api/v1/tenants/{tenant_id}/peers/{peer_id}/heartbeat
 - POST /api/v1/tenants/{tenant_id}/peers/{peer_id}/status
 - POST /api/v1/ice/credentials
@@ -82,10 +82,10 @@ CloudBridge Client Architecture
 ```yaml
 # internal/api/ (relay-installer)
 - POST /api/v1/peer/register
-- GET  /api/v1/peer/{peer_id}/peers
+- GET /api/v1/peer/{peer_id}/peers
 - POST /api/v1/peer/{peer_id}/heartbeat
-- GET  /health
-- GET  /metrics
+- GET /health
+- GET /metrics
 ```
 
 ** ПРОБЛЕМА**: Несовпадение путей API
@@ -102,9 +102,9 @@ CloudBridge Client Architecture
 ```go
 // pkg/auth/auth.go
 type AuthManager struct {
-    Type           string // "jwt" или "oidc"
-    OIDCConfig     *OIDCConfig
-    JWKSClient     *jwks.Client
+    Type string // "jwt" или "oidc"
+    OIDCConfig *OIDCConfig
+    JWKSClient *jwks.Client
     TokenValidator func(token string) (*jwt.Token, error)
 }
 ```
@@ -138,10 +138,10 @@ type AuthManager struct {
 ```go
 // pkg/p2p/manager.go
 type Manager struct {
-    peers          map[string]*Peer
-    localPeerID    string
-    tenantID       string
-    meshEnabled    bool
+    peers map[string]*Peer
+    localPeerID string
+    tenantID string
+    meshEnabled bool
     discoveryTimer *time.Timer
 }
 ```
@@ -207,10 +207,10 @@ type Manager struct {
 ```go
 // pkg/relay/wireguard.go
 type WireGuardManager struct {
-    interfaceName  string
-    privateKey     string
-    listenPort     int
-    peers          map[string]*WireGuardPeer
+    interfaceName string
+    privateKey string
+    listenPort int
+    peers map[string]*WireGuardPeer
 }
 ```
 
@@ -243,10 +243,10 @@ type WireGuardManager struct {
 ```go
 // pkg/heartbeat/manager.go
 type Manager struct {
-    interval       time.Duration
-    lastHeartbeat  time.Time
-    failureCount   int
-    maxFailures    int
+    interval time.Duration
+    lastHeartbeat time.Time
+    failureCount int
+    maxFailures int
 }
 ```
 
@@ -380,14 +380,14 @@ type Manager struct {
 
 **Что не совпадает**:
 ```
-Client                                    Server
+Client Server
 ----------------------------------------------
-/api/v1/tenants/{tid}/peers/register  vs  /api/v1/peer/register
-/api/v1/tenants/{tid}/peers/discover  vs  /api/v1/peer/{pid}/peers
-/api/v1/tenants/{tid}/peers/{pid}/... vs  /api/v1/peer/{pid}/...
+/api/v1/tenants/{tid}/peers/register vs /api/v1/peer/register
+/api/v1/tenants/{tid}/peers/discover vs /api/v1/peer/{pid}/peers
+/api/v1/tenants/{tid}/peers/{pid}/... vs /api/v1/peer/{pid}/...
 ```
 
-**Impact**: ⛔ **БЛОКИРУЮЩАЯ** - Client не может подключиться к серверу
+**Impact**: **БЛОКИРУЮЩАЯ** - Client не может подключиться к серверу
 
 **Решение 1 (Рекомендуемое)**: Добавить alias routes на сервере
 ```go
@@ -455,13 +455,13 @@ make generate-proto-server
 ice:
   stun_servers:
     - "stun.l.google.com:19302"
-  turn_servers: []  # EMPTY!
+  turn_servers: [] # EMPTY!
 ```
 
 **Server status**:
--  TURN server (coturn) не настроен
+- TURN server (coturn) не настроен
 - TUN support есть
--  Fallback strategies не реализованы
+- Fallback strategies не реализованы
 
 **Impact**: **КРИТИЧНО** - P2P connections будут fails в симметричных NAT
 
@@ -498,8 +498,8 @@ ice:
 ```go
 type Claims struct {
     TenantID string `json:"tenant_id"`
-    PeerID   string `json:"peer_id"`
-    Scope    string `json:"scope"`
+    PeerID string `json:"peer_id"`
+    Scope string `json:"scope"`
     jwt.RegisteredClaims
 }
 ```
@@ -511,7 +511,7 @@ type Claims struct {
   "sub": "user-id",
   "aud": ["cloudbridge-relay"],
   "iss": "https://zitadel.2gc.ru",
-  "tenant_id": "...",  // Custom claim?
+  "tenant_id": "...", // Custom claim?
   "scope": "..."
 }
 ```
@@ -537,23 +537,23 @@ func MapZitadelClaims(next http.Handler) http.Handler {
 
 | Компонент | Client | Server | Статус | Приоритет | Усилия |
 |-----------|--------|--------|--------|-----------|--------|
-| API Paths |   | Не совпадают | Критично | 2-3 дня |
-| Authentication (OIDC) |  | овместимо | | 0 ней |
-| JWT Claims |  | Требует проверки | Важно | 1 день |
-| QUIC Transport |  | овместимо | | 0 ней |
-| gRPC Proto |  | Требует sync | Важно | 2-3 дня |
-| P2P Discovery |  | астично | Важно | 3-4 дня |
-| ICE/STUN |  | овместимо | | 0 ней |
-| TURN Server |   | Не настроен | Критично | 2-3 дня |
-| WireGuard IPAM |  | ребует sync | 🟠 Средний | 3-4 дня |
-| Heartbeat |  | овместимо | | 0 ней |
-| MASQUE Protocol |  | ребует проверки | 🟠 Средний | 1-2 дня |
-| Metrics |  | астично | 🟠 Средний | 2-3 дня |
+| API Paths | | Не совпадают | Критично | 2-3 дня |
+| Authentication (OIDC) | | овместимо | | 0 ней |
+| JWT Claims | | Требует проверки | Важно | 1 день |
+| QUIC Transport | | овместимо | | 0 ней |
+| gRPC Proto | | Требует sync | Важно | 2-3 дня |
+| P2P Discovery | | астично | Важно | 3-4 дня |
+| ICE/STUN | | овместимо | | 0 ней |
+| TURN Server | | Не настроен | Критично | 2-3 дня |
+| WireGuard IPAM | | ребует sync | Средний | 3-4 дня |
+| Heartbeat | | овместимо | | 0 ней |
+| MASQUE Protocol | | ребует проверки | Средний | 1-2 дня |
+| Metrics | | астично | Средний | 2-3 дня |
 
 **Легенда**:
 - Критично - блокирует работу
 - Важно - ограничивает функциональность
-- 🟠 Средний - желательно для полной функциональности
+- Средний - желательно для полной функциональности
 - отово - не требует действий
 
 ---

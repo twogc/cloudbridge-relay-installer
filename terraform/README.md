@@ -1,32 +1,32 @@
 # CloudBridge Relay - Terraform автоматизация
 
-## 📁 **Структура проекта**
+## **Структура проекта**
 
 ```
 terraform/
-├── .terraform/                    # Terraform модули
-├── .terraform.lock.hcl           # Блокировка провайдеров
-├── terraform.tfstate             # Состояние Terraform
-├── terraform.tfstate.backup      # Резервное состояние
-├── terraform.tfvars              # Переменные конфигурации
-├── terraform.tfvars.example      # Пример переменных
+├── .terraform/ # Terraform модули
+├── .terraform.lock.hcl # Блокировка провайдеров
+├── terraform.tfstate # Состояние Terraform
+├── terraform.tfstate.backup # Резервное состояние
+├── terraform.tfvars # Переменные конфигурации
+├── terraform.tfvars.example # Пример переменных
 │
-├── cloudbridge-relay-ddos.tf     # Основная инфраструктура
+├── cloudbridge-relay-ddos.tf # Основная инфраструктура
 ├── docker-registry-automation.tf # Автоматизация Container Registry
-├── cloud-init-ddos.yaml          # Минимальная конфигурация VM
+├── cloud-init-ddos.yaml # Минимальная конфигурация VM
 │
-├── setup-container-registry.sh   # Настройка Container Registry
-├── test-registry-connection.sh   # Тестирование подключения
-├── deploy-automated.sh           # Автоматическое развертывание
-├── create-registry-cli.sh        # CLI создание (справка)
+├── setup-container-registry.sh # Настройка Container Registry
+├── test-registry-connection.sh # Тестирование подключения
+├── deploy-automated.sh # Автоматическое развертывание
+├── create-registry-cli.sh # CLI создание (справка)
 │
-├── AUTOMATION_CONSULTATION.md    # Консультация по автоматизации
-├── AUTOMATION_SUMMARY.md         # Обзор автоматизации
-├── README_AUTOMATION.md          # Полная инструкция по автоматизации
-├── NEXT_STEPS.md                 # Следующие шаги
-├── GITHUB_SECRETS_SETUP.md       # Настройка GitHub Secrets
+├── AUTOMATION_CONSULTATION.md # Консультация по автоматизации
+├── AUTOMATION_SUMMARY.md # Обзор автоматизации
+├── README_AUTOMATION.md # Полная инструкция по автоматизации
+├── NEXT_STEPS.md # Следующие шаги
+├── GITHUB_SECRETS_SETUP.md # Настройка GitHub Secrets
 ├── CONTAINER_REGISTRY_SETUP_GUIDE.md # Инструкция Container Registry
-└── QUICK_REGISTRY_SETUP.md       # Быстрая памятка
+└── QUICK_REGISTRY_SETUP.md # Быстрая памятка
 ```
 
 ## **Быстрый старт**
@@ -47,7 +47,7 @@ source ../load-env.sh
 ./deploy-automated.sh
 ```
 
-##  **Основные компоненты**
+## **Основные компоненты**
 
 ### **Terraform конфигурации:**
 - **`cloudbridge-relay-ddos.tf`** - базовая инфраструктура с DDoS защитой
@@ -90,7 +90,7 @@ GitHub Repo → GitHub Actions → VK Cloud Registry → Terraform → VM с г�
 - **Контейнерная безопасность:** no-new-privileges, минимальные capabilities
 - **Сетевая защита:** Security Groups, firewall правила
 
-## 📞 **Поддержка**
+## **Поддержка**
 
 - **VK Cloud:** support@vk.com
 - **GitHub:** Issues в репозитории
