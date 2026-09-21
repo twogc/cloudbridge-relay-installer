@@ -1,8 +1,12 @@
 # CloudBridge Relay - Pitch для Инвесторов
 
+> ⚠️ **ДОКУМЕНТ УСТАРЕЛ.** Дата: 13 октября 2025. Указанные ниже оценки готовности («Production-ready компоненты», «98% MVP»)
+> не подтверждены и были завышены уже на момент написания. Проект заморожен ~11 мес.
+> Актуальный технический статус — только в `CLOUDBRIDGE_STRATEGY/2gc_cloudbridge/00_current_reality/REALITY_CHECK_vs_CODE.md`.
+
 **Дата**: 2025-10-13
-**Stage**: Pre-Seed / Seed
-**Ask**: ₽50M-100M (Series A later)
+**Stage**: Pre-Seed / Seed *(на момент написания; текущий статус сделки уточняется)*
+**Ask**: ₽50M-100M (Series A later) *(требует пересчёта на 2026)*
 
 ---
 
